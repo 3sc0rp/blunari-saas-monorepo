@@ -1,0 +1,17 @@
+{
+  "name": "@blunari/config",
+  "version": "1.0.0",
+  "description": "Shared configuration for Blunari SAAS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}

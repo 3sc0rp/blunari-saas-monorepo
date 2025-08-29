@@ -1,0 +1,4 @@
+project_id = "kbfbbkcaxhzlnbqxwgoz"
+
+[functions.tenant-provision]
+verify_jwt = false
