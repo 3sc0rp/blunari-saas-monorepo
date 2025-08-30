@@ -7,6 +7,7 @@ import { activityRoutes } from './activity';
 import { healthRoutes } from './health';
 import { alertsRoutes } from './alerts';
 import { schedulerRoutes } from './scheduler';
+import { tenantsRoutes } from './tenants';
 import { getPerformanceMetrics } from '../middleware/performance';
 import { getAdminAuditLog } from '../middleware/adminAudit';
 
@@ -25,6 +26,7 @@ export function setupRoutes(app: Express) {
   app.use(`${apiPrefix}/webhooks`, webhooksRoutes);
   app.use(`${apiPrefix}/alerts`, alertsRoutes);
   app.use(`${apiPrefix}/schedules`, schedulerRoutes);
+  app.use(`${apiPrefix}/tenants`, tenantsRoutes);
   
   // Performance and audit routes
   app.get(`${apiPrefix}/performance`, getPerformanceMetrics);

@@ -1,31 +1,21 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ProvisioningWizard, type ProvisioningData } from '@/components/provisioning/ProvisioningWizard'
-import { supabase } from '@/integrations/supabase/client'
+import { useTenantProvisioning } from '@/hooks/useTenantProvisioning'
 import { useToast } from '@/hooks/use-toast'
 
 export default function NewTenantPage() {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { provisionTenant } = useTenantProvisioning()
 
   const handleProvisioningComplete = async (data: ProvisioningData) => {
     try {
-      // Call the comprehensive provision-tenant edge function
-      const { data: result, error } = await supabase.functions.invoke('provision-tenant', {
-        body: data
-      })
-
-      if (error) throw error
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to provision tenant')
-      }
-
-      toast({
-        title: "Success!",
-        description: result.message || `${data.restaurantName} has been successfully created!`,
-      })
-
+      // Call the background-ops API for tenant provisioning
+      const result = await provisionTenant(data)
+      
+      console.log('Provisioning completed:', result)
+      
       // Navigate back to tenants list
       navigate('/admin/tenants')
     } catch (error) {

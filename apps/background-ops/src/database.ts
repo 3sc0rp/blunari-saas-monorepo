@@ -9,6 +9,8 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
+export { pool };
+
 export const db = {
   query: (text: string, params?: any[]) => pool.query(text, params),
   getClient: () => pool.connect(),
