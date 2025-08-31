@@ -68,6 +68,16 @@ async function startServer() {
     // HTTPS enforcement in production
     if (config.NODE_ENV === 'production') {
       app.use((req, res, next) => {
+        // Allow health/readiness/metrics endpoints without redirect (used by Fly checks)
+        const reqPath = req.path || req.url;
+        if (
+          reqPath.startsWith('/health') ||
+          reqPath.startsWith('/ready') ||
+          reqPath.startsWith('/live') ||
+          reqPath === '/metrics'
+        ) {
+          return next();
+        }
         if (req.header('x-forwarded-proto') !== 'https') {
           return res.redirect(`https://${req.header('host')}${req.url}`);
         }
