@@ -51,16 +51,16 @@ const hexToHsl = (hex: string): string => {
 export const TenantBrandingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { tenant } = useTenant();
   const [branding, setBranding] = useState<TenantBranding>({
-    logoUrl: '/placeholder.svg',
-    restaurantName: 'Demo Restaurant',
+    logoUrl: '/logo.png',
+    restaurantName: 'Blunari',
   });
 
   // Update branding when tenant data changes
   useEffect(() => {
     if (tenant) {
       const newBranding: TenantBranding = {
-        logoUrl: tenant.logo_url || '/placeholder.svg',
-        restaurantName: tenant.name || 'Demo Restaurant',
+        logoUrl: tenant.logo_url || '/logo.png',
+        restaurantName: tenant.name || 'Blunari',
         // Note: tenant.settings structure needs to be defined in types
         // For now, using fallback values
         primaryColor: undefined,

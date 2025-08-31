@@ -49,8 +49,9 @@ const Auth: React.FC = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const { signIn, user } = useAuth();
   const { logoUrl, restaurantName } = useTenantBranding();
-  const brandLogo = logoUrl || '/logo_svg.svg';
-  const brandName = restaurantName || 'Blunari';
+  // Use Blunari branding for login page with fallbacks to tenant branding
+  const brandLogo = '/logo.png'; // Always use Blunari logo on login
+  const brandName = 'Blunari'; // Always use Blunari name on login
   const navigate = useNavigate();
   const { toast } = useToast();
 
