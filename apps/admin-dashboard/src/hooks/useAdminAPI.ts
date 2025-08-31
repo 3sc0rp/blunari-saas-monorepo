@@ -49,9 +49,9 @@ export const useAdminAPI = () => {
   // Tenant Operations
   const provisionTenant = useCallback(async (
     data: ProvisioningRequestData
-  ): Promise<ProvisioningResponse> => {
+  ): Promise<APIResponse<ProvisioningResponse>> => {
     const response = await callEdgeFunction<ProvisioningResponse>('tenant-provisioning', data);
-    return response.data!;
+    return response;
   }, [callEdgeFunction]);
 
   const resendWelcomeEmail = useCallback(async (

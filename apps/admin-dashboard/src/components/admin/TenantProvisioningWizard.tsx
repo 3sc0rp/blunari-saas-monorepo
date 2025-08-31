@@ -103,11 +103,11 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
       const validatedData = ProvisioningRequestSchema.parse(formData);
       
       // Submit provisioning request
-      const provisioningResult = await provisionTenant(validatedData);
+      const apiResponse = await provisionTenant(validatedData);
       
-      setResult(provisioningResult);
-      
-      if (provisioningResult.success) {
+      if (apiResponse.success) {
+        const provisioningResult = apiResponse.data!;
+        setResult(provisioningResult);
         toast({
           title: "Tenant Provisioned Successfully! 🎉",
           description: provisioningResult.message || "Tenant has been created and configured.",
@@ -117,7 +117,7 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
           onComplete(provisioningResult);
         }
       } else {
-        throw new Error(provisioningResult.error || 'Provisioning failed');
+        throw new Error(apiResponse.error?.message || 'Provisioning failed');
       }
     } catch (error) {
       console.error('Provisioning error:', error);

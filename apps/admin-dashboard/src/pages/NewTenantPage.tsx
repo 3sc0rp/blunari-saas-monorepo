@@ -21,9 +21,9 @@ export default function NewTenantPage() {
       
       console.log('Provisioning completed:', result)
       
-      if (result.provisioningData) {
+      if ((result as any)?.provisioningData) {
         // Store provisioning data and show email dialog
-        setProvisioningData(result.provisioningData)
+        setProvisioningData((result as any).provisioningData)
         setShowEmailDialog(true)
       } else {
         // Navigate back to tenants list
