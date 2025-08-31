@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,15 +29,10 @@ export default function TenantDetailPage() {
   
   const [tenant, setTenant] = useState<TenantData | null>(null);
   const [loadingPage, setLoadingPage] = useState(true);
+  const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (tenantId) {
-      fetchTenant();
-    }
-  }, [tenantId]);
-
-  const fetchTenant = async () => {
+  const fetchTenant = useCallback(async () => {
     if (!tenantId) return;
     
     try {
@@ -51,15 +46,26 @@ export default function TenantDetailPage() {
     } finally {
       setLoadingPage(false);
     }
-  };
+  }, [tenantId, getTenant]);
+
+  useEffect(() => {
+    if (tenantId) {
+      fetchTenant();
+    }
+  }, [tenantId, fetchTenant]);
 
   const handleResendWelcomeEmail = async () => {
     if (!tenant) return;
     
     try {
+      setResending(true);
       await resendWelcomeEmail(tenant.slug);
+      toast({ title: 'Email Sent', description: 'Welcome email has been queued for delivery.' });
     } catch (error) {
       console.error('Error resending welcome email:', error);
+      toast({ title: 'Failed to Send Email', description: error instanceof Error ? error.message : 'Unknown error', variant: 'destructive' });
+    } finally {
+      setResending(false);
     }
   };
 
@@ -241,12 +247,12 @@ export default function TenantDetailPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Created</label>
-              <p className="text-foreground">{new Date(tenant.created_at).toLocaleDateString()}</p>
+              <p className="text-foreground">{tenant.created_at ? new Date(tenant.created_at).toLocaleString() : '-'}</p>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Last Updated</label>
-              <p className="text-foreground">{new Date(tenant.updated_at).toLocaleDateString()}</p>
+              <p className="text-foreground">{tenant.updated_at ? new Date(tenant.updated_at).toLocaleString() : '-'}</p>
             </div>
           </div>
 
