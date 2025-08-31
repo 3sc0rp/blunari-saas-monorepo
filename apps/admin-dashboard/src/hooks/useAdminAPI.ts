@@ -26,7 +26,12 @@ export const useAdminAPI = () => {
       });
 
       if (response.error) {
-        throw new Error(response.error.message);
+        const data: any = response.data;
+        const errObj = data?.error || data;
+        const message = errObj?.message || response.error.message || 'Edge function error';
+        const code = errObj?.code ? ` (${errObj.code})` : '';
+        const details = errObj?.details ? ` - ${errObj.details}` : '';
+        throw new Error(`${message}${code}${details}`);
       }
 
       return response.data as APIResponse<T>;
@@ -56,7 +61,7 @@ export const useAdminAPI = () => {
 
   const resendWelcomeEmail = useCallback(async (
     tenant: { id: string; slug: string }
-  ): Promise<void> => {
+  ): Promise<{ jobId?: string; message?: string }> => {
     const payload: any = {
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
@@ -72,11 +77,8 @@ export const useAdminAPI = () => {
       throw new Error(`${message}${code}`);
     }
 
-    toast({
-      title: "Queued",
-      description: response.message || "Welcome email has been queued for delivery.",
-    });
-  }, [callEdgeFunction, toast]);
+    return { jobId: (response as any).jobId, message: (response as any).message };
+  }, [callEdgeFunction]);
 
   // Features Management
   const getTenantFeatures = useCallback(async (
