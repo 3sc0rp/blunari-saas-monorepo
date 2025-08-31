@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -14,6 +15,7 @@ import {
   CreditCard, 
   Settings, 
   MessageSquare, 
+  Mail,
   Phone,
   Globe,
   Eye,
@@ -304,6 +306,38 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 </Select>
               </div>
             </div>
+
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.basics.description as any}
+                onChange={(e) => handleInputChange('basics', 'description', e.target.value)}
+                placeholder="A demo restaurant for testing"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="email">Business Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={(formData as any).basics.email || ''}
+                  onChange={(e) => handleInputChange('basics', 'email', e.target.value)}
+                  placeholder="contact@restaurant.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={(formData as any).basics.phone || ''}
+                  onChange={(e) => handleInputChange('basics', 'phone', e.target.value)}
+                  placeholder="+1 555 123 4567"
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -339,6 +373,48 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 checked={formData.owner.sendInvite}
                 onCheckedChange={(checked) => handleInputChange('owner', 'sendInvite', checked)}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Address */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Address
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="street">Street</Label>
+                <Input id="street" value={(formData as any).basics.address?.street || ''} onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  basics: { ...(prev as any).basics, address: { ...((prev as any).basics.address || {}), street: e.target.value } }
+                }))} />
+              </div>
+              <div>
+                <Label htmlFor="city">City</Label>
+                <Input id="city" value={(formData as any).basics.address?.city || ''} onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  basics: { ...(prev as any).basics, address: { ...((prev as any).basics.address || {}), city: e.target.value } }
+                }))} />
+              </div>
+              <div>
+                <Label htmlFor="state">State</Label>
+                <Input id="state" value={(formData as any).basics.address?.state || ''} onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  basics: { ...(prev as any).basics, address: { ...((prev as any).basics.address || {}), state: e.target.value } }
+                }))} />
+              </div>
+              <div>
+                <Label htmlFor="zip">ZIP</Label>
+                <Input id="zip" value={(formData as any).basics.address?.zipCode || ''} onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  basics: { ...(prev as any).basics, address: { ...((prev as any).basics.address || {}), zipCode: e.target.value } }
+                }))} />
+              </div>
             </div>
           </CardContent>
         </Card>
