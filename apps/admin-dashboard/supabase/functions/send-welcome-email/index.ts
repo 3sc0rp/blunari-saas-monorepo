@@ -86,9 +86,9 @@ const handler = async (req: Request): Promise<Response> => {
     if (!smtpUsername || !smtpPassword) {
       console.warn("SMTP credentials not configured - email sending skipped");
       return new Response(JSON.stringify({ 
-        success: true,
-        message: "Email sending skipped - SMTP not configured",
-        warning: "SMTP credentials missing"
+        success: false,
+        error: "SMTP credentials missing",
+        warning: "Email sending skipped - SMTP not configured"
       }), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
