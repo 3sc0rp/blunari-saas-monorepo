@@ -103,15 +103,16 @@ serve(async (req) => {
       throw new Error(`Provisioning failed: ${msg}`)
     }
 
-    // Send welcome email if requested
-    if (requestData.owner.sendInvite) {
-      await supabase.functions.invoke('send-welcome-email', {
-        body: {
-          tenantId,
-          ownerEmail: requestData.owner.email,
-          tenantName: requestData.basics.name
-        }
-      })
+    // Send emails if requested
+    if (requestData.owner?.sendInvite && requestData.owner?.email) {
+      const baseUrl = Deno.env.get('ADMIN_BASE_URL') ?? 'https://admin.blunari.ai'
+      const ownerEmail = requestData.owner.email
+      const restaurantName = requestData.basics.name
+
+      // Fire-and-forget; do not block provisioning on email transport
+      try { await supabase.functions.invoke('send-welcome-email', { body: { ownerName: restaurantName, ownerEmail, restaurantName, loginUrl: baseUrl } }) } catch (_) {}
+      try { await supabase.functions.invoke('send-welcome-pack', { body: { ownerName: restaurantName, ownerEmail, restaurantName, loginUrl: baseUrl } }) } catch (_) {}
+      try { await supabase.functions.invoke('send-credentials-email', { body: { ownerEmail, tenantName: restaurantName, loginUrl: baseUrl } }) } catch (_) {}
     }
 
     const responseData = {
