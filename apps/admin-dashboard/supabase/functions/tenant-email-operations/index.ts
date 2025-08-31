@@ -84,6 +84,9 @@ serve(async (req) => {
       .insert({
         job_type: emailType === 'welcome' ? 'WELCOME_EMAIL' : 'NOTIFICATION_EMAIL',
         job_name: jobName,
+        // compatibility with schemas that also store generic columns
+        type: emailType === 'welcome' ? 'WELCOME_EMAIL' : 'NOTIFICATION_EMAIL',
+        name: jobName,
         status: 'pending',
         payload: jobPayload,
         priority: 5,
