@@ -36,7 +36,7 @@ interface POSProvider {
   description: string;
   logo_url?: string;
   status: string;
-  event_types: string[] | Record<string, unknown>; // Can be string[] or Json from Supabase
+  event_types: string[]; // Simplified to just string array
   configuration_schema: Record<string, unknown>;
 }
 
@@ -81,13 +81,18 @@ export default function POSSystemsPage() {
   const [events, setEvents] = useState<POSEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [healthChecking, setHealthChecking] = useState(false);
+  const [individualHealthChecks, setIndividualHealthChecks] = useState<Set<string>>(new Set());
   const [selectedProvider, setSelectedProvider] = useState<POSProvider | null>(null);
   const [showAddIntegration, setShowAddIntegration] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadPOSData();
-    setupRealtimeSubscriptions();
+    const cleanup = setupRealtimeSubscriptions();
+    
+    return () => {
+      if (cleanup) cleanup();
+    };
   }, []);
 
   const loadPOSData = async () => {
@@ -103,6 +108,22 @@ export default function POSSystemsPage() {
 
       if (providersError) throw providersError;
 
+      // Transform providers data to match our interface
+      const transformedProviders: POSProvider[] = (providersData || []).map(provider => ({
+        id: provider.id,
+        name: provider.name,
+        slug: provider.slug,
+        description: provider.description,
+        logo_url: provider.logo_url,
+        status: provider.status,
+        event_types: Array.isArray(provider.event_types) 
+          ? (provider.event_types as string[])
+          : typeof provider.event_types === 'string' 
+            ? [provider.event_types] 
+            : [],
+        configuration_schema: (provider.configuration_schema as Record<string, unknown>) || {}
+      }));
+
       // Load integrations
       const { data: integrationsData, error: integrationsError } = await supabase
         .from('pos_integrations')
@@ -113,6 +134,28 @@ export default function POSSystemsPage() {
         .order('created_at', { ascending: false });
 
       if (integrationsError) throw integrationsError;
+
+      // Transform integrations data to match our interface
+      const transformedIntegrations: POSIntegration[] = (integrationsData || []).map(integration => ({
+        id: integration.id,
+        tenant_id: integration.tenant_id,
+        provider_id: integration.provider_id,
+        integration_name: integration.integration_name,
+        status: integration.status,
+        health_status: integration.health_status,
+        last_sync_at: integration.last_sync_at,
+        last_health_check: integration.last_health_check,
+        error_message: integration.error_message,
+        pos_providers: {
+          ...integration.pos_providers,
+          event_types: Array.isArray(integration.pos_providers.event_types) 
+            ? (integration.pos_providers.event_types as string[])
+            : typeof integration.pos_providers.event_types === 'string' 
+              ? [integration.pos_providers.event_types] 
+              : [],
+          configuration_schema: (integration.pos_providers.configuration_schema as Record<string, unknown>) || {}
+        }
+      }));
 
       // Load recent events
       const { data: eventsData, error: eventsError } = await supabase
@@ -129,8 +172,8 @@ export default function POSSystemsPage() {
 
       if (eventsError) throw eventsError;
 
-      setProviders(providersData || []);
-      setIntegrations(integrationsData || []);
+      setProviders(transformedProviders);
+      setIntegrations(transformedIntegrations);
       setEvents(eventsData || []);
 
     } catch (error: unknown) {
@@ -182,7 +225,11 @@ export default function POSSystemsPage() {
 
   const runHealthCheck = async (integrationId?: string) => {
     try {
-      setHealthChecking(true);
+      if (integrationId) {
+        setIndividualHealthChecks(prev => new Set([...prev, integrationId]));
+      } else {
+        setHealthChecking(true);
+      }
       
       const { data, error } = await supabase.functions.invoke('pos-health-monitor', {
         body: {
@@ -191,29 +238,45 @@ export default function POSSystemsPage() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || 'Health check failed');
+      }
 
       if (data?.success) {
         toast({
           title: "Health Check Complete",
           description: integrationId 
-            ? "Integration health check completed"
-            : `Checked ${data.results?.length || 0} integrations`,
+            ? "Integration health check completed successfully"
+            : `Successfully checked ${data.results?.length || 0} integrations`,
         });
         
         // Refresh data to show updated health status
         await loadPOSData();
+      } else {
+        throw new Error(data?.message || 'Health check returned unsuccessful result');
       }
 
     } catch (error: unknown) {
       console.error('Health check error:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'An unexpected error occurred during health check';
+        
       toast({
         title: "Health Check Failed",
-        description: error instanceof Error ? error.message : "Failed to run health check",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
-      setHealthChecking(false);
+      if (integrationId) {
+        setIndividualHealthChecks(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(integrationId);
+          return newSet;
+        });
+      } else {
+        setHealthChecking(false);
+      }
     }
   };
 
@@ -242,11 +305,11 @@ export default function POSSystemsPage() {
     }
   };
 
-  const getProviderLogo = (provider: POSProvider) => {
+  const getProviderLogo = (provider: POSProvider): string => {
     // In a real app, these would be actual logos
     const logos: Record<string, string> = {
       'toast': '🍞',
-      'square': '🔲',
+      'square': '�',
       'clover': '🍀',
       'resy': '🎯',
       'opentable': '📋',
@@ -436,9 +499,9 @@ export default function POSSystemsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => runHealthCheck(integration.id)}
-                          disabled={healthChecking}
+                          disabled={individualHealthChecks.has(integration.id)}
                         >
-                          {healthChecking ? (
+                          {individualHealthChecks.has(integration.id) ? (
                             <RefreshCw className="h-3 w-3 animate-spin" />
                           ) : (
                             <Activity className="h-3 w-3" />
@@ -475,14 +538,14 @@ export default function POSSystemsPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex flex-wrap gap-1">
-                      {(Array.isArray(provider.event_types) ? provider.event_types : []).slice(0, 3).map((eventType: string) => (
+                      {provider.event_types.slice(0, 3).map((eventType: string) => (
                         <Badge key={eventType} variant="secondary" className="text-xs">
-                          {eventType.replace('_', ' ')}
+                          {eventType.replace(/_/g, ' ')}
                         </Badge>
                       ))}
-                      {(Array.isArray(provider.event_types) ? provider.event_types : []).length > 3 && (
+                      {provider.event_types.length > 3 && (
                         <Badge variant="outline" className="text-xs">
-                          +{(Array.isArray(provider.event_types) ? provider.event_types : []).length - 3} more
+                          +{provider.event_types.length - 3} more
                         </Badge>
                       )}
                     </div>
@@ -521,11 +584,16 @@ export default function POSSystemsPage() {
                           }`} />
                           <div>
                             <div className="font-medium text-sm">
-                              {event.event_type.replace('_', ' ').toUpperCase()}
+                              {event.event_type.replace(/_/g, ' ').toUpperCase()}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {event.pos_integrations.pos_providers.name} • {event.pos_integrations.integration_name}
                             </div>
+                            {event.error_message && (
+                              <div className="text-xs text-destructive mt-1">
+                                {event.error_message}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="text-right">
@@ -539,8 +607,12 @@ export default function POSSystemsPage() {
                       </div>
                     ))}
                     {events.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No events received yet
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Zap className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <h3 className="font-medium mb-2">No Events Yet</h3>
+                        <p className="text-sm">
+                          Events will appear here once your POS integrations start sending data
+                        </p>
                       </div>
                     )}
                   </div>
