@@ -145,6 +145,11 @@ export const ProvisioningRequestSchema = z.object({
     timezone: z.string().min(1, 'Timezone is required'),
     currency: z.string().length(3, 'Currency must be 3 characters'),
     slug: z.string().min(1, 'Slug is required').regex(/^[a-z0-9\-]+$/, 'Invalid slug format'),
+    description: z.string().max(1000).optional(),
+    email: z.string().email('Invalid business email').optional(),
+    phone: z.string().max(50).optional(),
+    website: z.string().url('Invalid website URL').optional(),
+    cuisineTypeId: z.string().uuid().optional(),
   }),
   owner: z.object({
     email: z.string().email('Invalid email address'),

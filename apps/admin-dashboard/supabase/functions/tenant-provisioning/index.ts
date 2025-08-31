@@ -38,7 +38,24 @@ serve(async (req) => {
     const requestData = await req.json()
     // Validate minimally to avoid shape mismatches
     const Schema = z.object({
-      basics: z.object({ name: z.string(), slug: z.string(), timezone: z.string(), currency: z.string() }),
+      basics: z.object({ 
+        name: z.string(), 
+        slug: z.string(), 
+        timezone: z.string(), 
+        currency: z.string(),
+        description: z.string().optional(),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        website: z.string().url().optional(),
+        cuisineTypeId: z.string().uuid().optional(),
+        address: z.object({
+          street: z.string().optional(),
+          city: z.string().optional(),
+          state: z.string().optional(),
+          zipCode: z.string().optional(),
+          country: z.string().optional()
+        }).optional()
+      }),
       owner: z.object({ email: z.string().email(), sendInvite: z.boolean().optional() }).optional(),
       idempotencyKey: z.string().uuid().optional(),
     })
@@ -88,12 +105,12 @@ serve(async (req) => {
       p_restaurant_slug: requestData.basics.slug,
       p_timezone: requestData.basics.timezone,
       p_currency: requestData.basics.currency,
-      p_description: null,
-      p_phone: null,
-      p_email: null,
-      p_website: null,
-      p_address: null,
-      p_cuisine_type_id: null,
+      p_description: requestData.basics.description ?? null,
+      p_phone: requestData.basics.phone ?? null,
+      p_email: requestData.basics.email ?? null,
+      p_website: requestData.basics.website ?? null,
+      p_address: requestData.basics.address ? JSON.stringify(requestData.basics.address) : null,
+      p_cuisine_type_id: requestData.basics.cuisineTypeId ?? null,
     })
 
     if (provisionError) {
