@@ -1,9 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 }
 
 serve(async (req) => {
@@ -18,7 +21,13 @@ serve(async (req) => {
     )
 
     // Verify admin access
-    const authHeader = req.headers.get('Authorization')!
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Missing Authorization header', requestId: crypto.randomUUID() }
+      }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     
@@ -27,6 +36,19 @@ serve(async (req) => {
     }
 
     const requestData = await req.json()
+    // Validate minimally to avoid shape mismatches
+    const Schema = z.object({
+      basics: z.object({ name: z.string(), slug: z.string(), timezone: z.string(), currency: z.string() }),
+      owner: z.object({ email: z.string().email(), sendInvite: z.boolean().optional() }).optional(),
+      idempotencyKey: z.string().uuid().optional(),
+    })
+    const parsed = Schema.safeParse(requestData)
+    if (!parsed.success) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: parsed.error.issues.map(i => i.message).join('; '), requestId: crypto.randomUUID() }
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
     const requestId = crypto.randomUUID()
     
     console.log('Tenant provisioning request:', {
@@ -75,7 +97,10 @@ serve(async (req) => {
     })
 
     if (provisionError) {
-      throw new Error(`Provisioning failed: ${provisionError.message}`)
+      const msg = provisionError.message?.includes('duplicate key')
+        ? 'Slug already exists. Choose a different slug.'
+        : provisionError.message
+      throw new Error(`Provisioning failed: ${msg}`)
     }
 
     // Send welcome email if requested
