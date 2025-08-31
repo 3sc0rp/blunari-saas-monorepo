@@ -361,18 +361,30 @@ export const initializeSecurity = (): void => {
     RateLimitCache.cleanup();
   }, 60000); // Cleanup every minute
   
-  // Add security headers to all requests
+  // Add security headers to first‑party requests only (avoid CORS preflights on third‑party APIs)
   const originalFetch = window.fetch;
   window.fetch = (input, init = {}) => {
-    const headers = new Headers(init.headers);
-    
-    Object.entries(SecurityHeaders.getSecurityHeaders()).forEach(([key, value]) => {
-      if (value) headers.set(key, value);
-    });
-    
-    return originalFetch(input, {
-      ...init,
-      headers,
-    });
+    try {
+      const requestUrl = typeof input === 'string' || input instanceof URL ? new URL(input.toString(), window.location.origin) : new URL((input as Request).url);
+      const sameOrigin = requestUrl.origin === window.location.origin;
+      const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL;
+      const bgOpsUrl = (import.meta as any).env?.VITE_BACKGROUND_OPS_URL;
+      const isFirstParty = sameOrigin || (supabaseUrl && requestUrl.origin === new URL(supabaseUrl).origin) || (bgOpsUrl && requestUrl.origin === new URL(bgOpsUrl).origin);
+
+      // Only attach security headers to first‑party requests
+      if (isFirstParty) {
+        const headers = new Headers(init.headers);
+        Object.entries(SecurityHeaders.getSecurityHeaders()).forEach(([key, value]) => {
+          if (value) headers.set(key, value);
+        });
+        return originalFetch(input as any, { ...init, headers });
+      }
+
+      // Pass through unchanged for third‑party
+      return originalFetch(input as any, init as any);
+    } catch {
+      // Fallback to unmodified fetch on URL parsing error
+      return originalFetch(input as any, init as any);
+    }
   };
 };
