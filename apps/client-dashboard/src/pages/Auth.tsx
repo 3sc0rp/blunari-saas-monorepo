@@ -49,6 +49,8 @@ const Auth: React.FC = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const { signIn, user } = useAuth();
   const { logoUrl, restaurantName } = useTenantBranding();
+  const brandLogo = logoUrl || '/logo_svg.svg';
+  const brandName = restaurantName || 'Blunari';
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -295,14 +297,14 @@ const Auth: React.FC = () => {
       >
         <div className="text-center mb-8">
           <img 
-            src={logoUrl} 
-            alt={`${restaurantName} Logo`} 
+            src={brandLogo} 
+            alt={`${brandName} Logo`} 
             className="h-16 mx-auto mb-4 rounded-lg"
             onError={(e) => {
               e.currentTarget.src = '/placeholder.svg';
             }}
           />
-          <h1 className="text-h2 font-bold text-text">{restaurantName}</h1>
+          <h1 className="text-h2 font-bold text-text">{brandName}</h1>
           <p className="text-text-muted">Manage your restaurant operations</p>
         </div>
 
