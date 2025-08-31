@@ -5,8 +5,8 @@ import { validateApiKey } from '../middleware/auth';
 
 const router = Router();
 
-// Basic health check
-router.get('/health', async (req, res) => {
+// Basic health check (mounted at /health)
+router.get('/', async (req, res) => {
   try {
     const health = {
       status: 'healthy',
@@ -29,7 +29,7 @@ router.get('/health', async (req, res) => {
 });
 
 // Simple database test endpoint
-router.get('/health/db', async (req, res) => {
+router.get('/db', async (req, res) => {
   try {
     const result = await db.query('SELECT NOW() as current_time');
     res.json({
@@ -70,7 +70,7 @@ router.get('/health/jobs-table', async (req, res) => {
 });
 
 // Detailed health check with dependencies
-router.get('/health/detailed', async (req, res) => {
+router.get('/detailed', async (req, res) => {
   try {
     const [dbHealth] = await Promise.allSettled([
       databaseHealth()
@@ -156,7 +156,7 @@ router.get('/debug', async (req, res) => {
       authHeaderStart: authHeader ? authHeader.substring(0, 10) + '...' : 'none',
       apiKeyStart: apiKey ? apiKey.substring(0, 10) + '...' : 'none'
     },
-    expectedKeyStart: process.env.API_KEY ? process.env.API_KEY.substring(0, 10) + '...' : 'not set'
+    expectedKeyStart: process.env.X_API_KEY ? process.env.X_API_KEY.substring(0, 10) + '...' : 'not set'
   });
 });
 

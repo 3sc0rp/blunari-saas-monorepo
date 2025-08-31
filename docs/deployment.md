@@ -38,13 +38,16 @@ fly scale count 2
 
 #### Environment Variables
 ```bash
-# Set production environment variables
+# Set production environment variables (align with apps/background-ops/src/config.ts)
 fly secrets set NODE_ENV=production
 fly secrets set DATABASE_URL="postgresql://..."
-fly secrets set API_KEYS="prod-key-1,prod-key-2"
+fly secrets set X_API_KEY="your-32-char-min-secret"
+fly secrets set JWT_SECRET="your-32-char-min-secret"
+fly secrets set SIGNING_SECRET="your-32-char-min-secret"
+fly secrets set ALLOWED_ORIGINS="https://admin.blunari.ai,https://client.blunari.ai"
 fly secrets set LOG_LEVEL=info
-fly secrets set RATE_LIMIT_WINDOW=900000
-fly secrets set RATE_LIMIT_MAX=1000
+fly secrets set RATE_LIMIT_WINDOW_MS=900000
+fly secrets set RATE_LIMIT_MAX_REQUESTS=1000
 ```
 
 #### Production URLs
@@ -244,20 +247,24 @@ RATE_LIMIT_MAX=1000
 CORS_ORIGINS=https://admin.blunari.ai,https://client.blunari.ai
 ```
 
-#### Admin Dashboard
+#### Admin Dashboard (Vite SPA)
 ```bash
-NEXT_PUBLIC_API_URL=https://services.blunari.ai/api/v1
-NEXT_PUBLIC_WS_URL=wss://services.blunari.ai
-NEXT_PUBLIC_APP_ENV=production
-NEXT_PUBLIC_APP_VERSION=1.0.0
+# Vite envs must be prefixed with VITE_
+# Background Ops
+VITE_BACKGROUND_OPS_URL=https://services.blunari.ai
+VITE_BACKGROUND_OPS_API_KEY=your-api-key
+VITE_BACKGROUND_OPS_SIGNING_SECRET=your-signing-secret
+
+# Supabase
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-#### Client Dashboard
+#### Client Dashboard (Vite SPA)
 ```bash
-NEXT_PUBLIC_API_URL=https://services.blunari.ai/api/v1
-NEXT_PUBLIC_WS_URL=wss://services.blunari.ai
-NEXT_PUBLIC_APP_ENV=production
-NEXT_PUBLIC_APP_VERSION=1.0.0
+# Vite envs must be prefixed with VITE_
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ## Monitoring & Observability
