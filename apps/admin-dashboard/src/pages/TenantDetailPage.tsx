@@ -59,8 +59,13 @@ export default function TenantDetailPage() {
     
     try {
       setResending(true);
-      const { jobId, message } = await resendWelcomeEmail({ id: tenant.id, slug: tenant.slug });
-      toast({ title: 'Queued', description: message ?? (jobId ? `Job ${jobId}` : 'Welcome email has been queued for delivery.') });
+      const { jobId, message, email } = await resendWelcomeEmail({ id: tenant.id, slug: tenant.slug });
+      const sent = email?.success === true;
+      const title = sent ? 'Sent' : 'Queued';
+      const desc = sent
+        ? (email?.message || 'Welcome email sent')
+        : (message || email?.warning || email?.error || (jobId ? `Job ${jobId}` : 'Welcome email has been queued for delivery.'));
+      toast({ title, description: desc });
     } catch (error) {
       console.error('Error resending welcome email:', error);
       toast({ title: 'Failed to Send Email', description: error instanceof Error ? error.message : 'Unknown error', variant: 'destructive' });

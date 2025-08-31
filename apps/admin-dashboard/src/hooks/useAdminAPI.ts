@@ -61,7 +61,7 @@ export const useAdminAPI = () => {
 
   const resendWelcomeEmail = useCallback(async (
     tenant: { id: string; slug: string }
-  ): Promise<{ jobId?: string; message?: string }> => {
+  ): Promise<{ jobId?: string; message?: string; email?: { success?: boolean; message?: string; warning?: string; error?: string } }> => {
     const payload: any = {
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
@@ -77,7 +77,7 @@ export const useAdminAPI = () => {
       throw new Error(`${message}${code}`);
     }
 
-    return { jobId: (response as any).jobId, message: (response as any).message };
+    return { jobId: (response as any).jobId, message: (response as any).message, email: (response as any).email };
   }, [callEdgeFunction]);
 
   // Features Management
