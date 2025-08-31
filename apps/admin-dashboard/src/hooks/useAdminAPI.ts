@@ -55,18 +55,26 @@ export const useAdminAPI = () => {
   }, [callEdgeFunction]);
 
   const resendWelcomeEmail = useCallback(async (
-    tenantSlug: string
+    tenant: { id: string; slug: string }
   ): Promise<void> => {
-    const payload: EmailResendRequest = {
-      tenantSlug,
+    const payload: any = {
+      tenantId: tenant.id,
+      tenantSlug: tenant.slug,
       emailType: 'welcome'
     };
+
+    const response = await callEdgeFunction('tenant-email-operations', payload);
     
-    await callEdgeFunction('tenant-email-operations', payload);
-    
+    if (!response.success) {
+      const err = (response as any).error || {};
+      const message = err.message || 'Failed to queue email';
+      const code = err.code ? ` (${err.code})` : '';
+      throw new Error(`${message}${code}`);
+    }
+
     toast({
-      title: "Email Sent",
-      description: "Welcome email has been queued for delivery.",
+      title: "Queued",
+      description: response.message || "Welcome email has been queued for delivery.",
     });
   }, [callEdgeFunction, toast]);
 

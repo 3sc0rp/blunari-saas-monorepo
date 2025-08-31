@@ -38,14 +38,26 @@ serve(async (req) => {
       )
     }
 
-    const { tenantSlug, emailType } = await req.json()
+    const { tenantSlug, tenantId: inputTenantId, emailType } = await req.json()
 
-    // Resolve tenant ID from slug
-    const { data: tenant, error: tenantError } = await supabaseClient
-      .from('tenants')
-      .select('id, name, email')
-      .eq('slug', tenantSlug)
-      .single()
+    // Resolve tenant either by id or slug
+    let tenantIdToUse = inputTenantId as string | undefined
+    let tenantQuery
+    if (tenantIdToUse) {
+      tenantQuery = supabaseClient
+        .from('tenants')
+        .select('id, name, email')
+        .eq('id', tenantIdToUse)
+        .single()
+    } else {
+      tenantQuery = supabaseClient
+        .from('tenants')
+        .select('id, name, email')
+        .eq('slug', tenantSlug)
+        .single()
+    }
+
+    const { data: tenant, error: tenantError } = await tenantQuery
 
     if (tenantError || !tenant) {
       return new Response(
@@ -64,10 +76,14 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     }
 
+    // Build deterministic job_name to satisfy NOT NULL and aid debugging
+    const jobName = `WELCOME_EMAIL:${tenant.id}:${crypto.randomUUID()}`
+
     const { data: backgroundJob, error: jobError } = await supabaseClient
       .from('background_jobs')
       .insert({
         job_type: emailType === 'welcome' ? 'WELCOME_EMAIL' : 'NOTIFICATION_EMAIL',
+        job_name: jobName,
         status: 'pending',
         payload: jobPayload,
         priority: 5,
@@ -79,7 +95,20 @@ serve(async (req) => {
 
     if (jobError) {
       console.error('Failed to create background job:', jobError)
-      throw new Error('Failed to queue email for delivery')
+      const err: any = jobError
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: {
+            message: err.message || 'Failed to queue email for delivery',
+            code: err.code || 'DB_ERROR',
+            details: err.details || null,
+            hint: err.hint || null
+          },
+          requestId: crypto.randomUUID()
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     // Log the email operation

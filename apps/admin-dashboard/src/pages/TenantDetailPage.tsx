@@ -25,7 +25,7 @@ export default function TenantDetailPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getTenant, resendWelcomeEmail, loading } = useAdminAPI();
+  const { getTenant, resendWelcomeEmail } = useAdminAPI();
   
   const [tenant, setTenant] = useState<TenantData | null>(null);
   const [loadingPage, setLoadingPage] = useState(true);
@@ -59,8 +59,8 @@ export default function TenantDetailPage() {
     
     try {
       setResending(true);
-      await resendWelcomeEmail(tenant.slug);
-      toast({ title: 'Email Sent', description: 'Welcome email has been queued for delivery.' });
+      await resendWelcomeEmail({ id: tenant.id, slug: tenant.slug });
+      toast({ title: 'Queued', description: 'Welcome email has been queued for delivery.' });
     } catch (error) {
       console.error('Error resending welcome email:', error);
       toast({ title: 'Failed to Send Email', description: error instanceof Error ? error.message : 'Unknown error', variant: 'destructive' });
@@ -144,9 +144,9 @@ export default function TenantDetailPage() {
             variant="outline"
             size="sm"
             onClick={handleResendWelcomeEmail}
-            disabled={loading}
+            disabled={resending}
           >
-            {loading ? (
+            {resending ? (
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
             ) : (
               <Mail className="h-4 w-4 mr-2" />
