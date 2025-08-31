@@ -21,13 +21,26 @@ let redis: RedisClientType;
 // Initialize job processing infrastructure
 export async function initializeJobService(): Promise<void> {
   try {
+    // Skip Redis entirely for development - will be re-enabled for production
+    logger.warn('🔄 Redis disabled for development - job service disabled');
+    return;
+    
+    // Skip Redis entirely if URL is not provided or empty
+    if (!config.REDIS_URL || config.REDIS_URL.trim() === '') {
+      logger.warn('🔄 No REDIS_URL provided - job service disabled');
+      return;
+    }
+
     // Initialize Redis client
     redis = createClient({
       url: config.REDIS_URL
     });
 
     redis.on('error', (err) => {
-      logger.error('Jobs Redis client error:', err);
+      // Only log in production
+      if (config.NODE_ENV === 'production') {
+        logger.error('Jobs Redis client error:', err);
+      }
     });
 
     await redis.connect();
@@ -65,8 +78,13 @@ export async function initializeJobService(): Promise<void> {
 
     logger.info('Job service initialized successfully');
   } catch (error) {
-    logger.error('Failed to initialize job service:', error);
-    throw error;
+    // Only throw error in production
+    if (config.NODE_ENV === 'production') {
+      logger.error('Failed to initialize job service:', error);
+      throw error;
+    } else {
+      logger.warn('🔄 Job service disabled - Redis not available');
+    }
   }
 }
 

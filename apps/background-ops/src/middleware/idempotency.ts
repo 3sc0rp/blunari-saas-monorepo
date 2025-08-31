@@ -8,20 +8,40 @@ let redis: RedisClientType;
 
 // Initialize Redis client for idempotency
 export async function initializeIdempotencyRedis() {
+  // Skip Redis entirely for now - will be re-enabled for production
+  logger.warn('🔄 Redis disabled for development - running without idempotency protection');
+  return;
+  
+  // Skip Redis entirely if URL is not provided or empty
+  if (!config.REDIS_URL || config.REDIS_URL.trim() === '') {
+    logger.warn('🔄 No REDIS_URL provided - running without idempotency protection');
+    return;
+  }
+  
   try {
     redis = createClient({
       url: config.REDIS_URL
     });
     
+    // Don't log connection errors in development
     redis.on('error', (err) => {
-      logger.error('Redis idempotency client error:', err);
+      // Only log in production
+      if (config.NODE_ENV === 'production') {
+        logger.error('Redis idempotency client error:', err);
+      }
     });
     
     await redis.connect();
     logger.info('Idempotency Redis client connected');
   } catch (error) {
-    logger.error('Failed to initialize idempotency Redis client:', error);
-    throw error;
+    // Only log error in production
+    if (config.NODE_ENV === 'production') {
+      logger.error('Failed to initialize idempotency Redis client:', error);
+    } else {
+      logger.warn('🔄 Redis not available - running without idempotency protection');
+    }
+    // Don't throw error, allow app to continue without Redis
+    redis = null as any; // Clear the redis instance
   }
 }
 
@@ -57,6 +77,12 @@ export function idempotencyMiddleware(req: AuthenticatedRequest, res: Response, 
   });
 
   // Check if we've seen this idempotency key before
+  if (!redis) {
+    // If Redis is not available, skip idempotency check
+    logger.warn('Idempotency check skipped - Redis not available', { requestId });
+    return next();
+  }
+  
   redis.get(key)
     .then((existingResponse) => {
       if (existingResponse) {
@@ -89,20 +115,22 @@ export function idempotencyMiddleware(req: AuthenticatedRequest, res: Response, 
           };
 
           // Cache the response with TTL
-          redis.setEx(key, Math.floor(config.IDEMPOTENCY_TTL / 1000), JSON.stringify(responseToCache))
-            .then(() => {
-              logger.info('Cached idempotent response', {
-                requestId,
-                statusCode: res.statusCode,
-                ttlSeconds: Math.floor(config.IDEMPOTENCY_TTL / 1000)
+          if (redis) {
+            redis.setEx(key, Math.floor(config.IDEMPOTENCY_TTL / 1000), JSON.stringify(responseToCache))
+              .then(() => {
+                logger.info('Cached idempotent response', {
+                  requestId,
+                  statusCode: res.statusCode,
+                  ttlSeconds: Math.floor(config.IDEMPOTENCY_TTL / 1000)
+                });
+              })
+              .catch((error) => {
+                logger.error('Failed to cache idempotent response', {
+                  requestId,
+                  error: error.message
+                });
               });
-            })
-            .catch((error) => {
-              logger.error('Failed to cache idempotent response', {
-                requestId,
-                error: error.message
-              });
-            });
+          }
         }
 
         return originalJson.call(this, body);

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import crypto from 'crypto';
 
 const BACKGROUND_OPS_URL = import.meta.env.VITE_BACKGROUND_OPS_URL || 'https://background-ops.fly.dev';
 const API_KEY = import.meta.env.VITE_BACKGROUND_OPS_API_KEY;
@@ -68,17 +67,33 @@ export const useTenantProvisioning = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const createAuthHeaders = (body: any, tenantId: string = 'admin'): Record<string, string> => {
+  // Helper function to create HMAC signature using Web Crypto API
+  const createHmacSignature = async (message: string, secret: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secret);
+    const messageData = encoder.encode(message);
+    
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    const hashArray = Array.from(new Uint8Array(signature));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const createAuthHeaders = async (body: ProvisioningData | Record<string, unknown>, tenantId: string = 'admin'): Promise<Record<string, string>> => {
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    const requestId = crypto.randomBytes(16).toString('hex');
-    const idempotencyKey = crypto.randomBytes(16).toString('hex');
+    const requestId = crypto.getRandomValues(new Uint32Array(4)).join('');
+    const idempotencyKey = crypto.getRandomValues(new Uint32Array(4)).join('');
     
     // Create payload for HMAC signature
     const payload = JSON.stringify(body) + timestamp + tenantId + requestId;
-    const signature = 'sha256=' + crypto
-      .createHmac('sha256', SIGNING_SECRET!)
-      .update(payload)
-      .digest('hex');
+    const signature = 'sha256=' + await createHmacSignature(payload, SIGNING_SECRET!);
     
     return {
       'Content-Type': 'application/json',
@@ -97,7 +112,7 @@ export const useTenantProvisioning = () => {
       
       const response = await fetch(`${BACKGROUND_OPS_URL}/api/v1/tenants/provision`, {
         method: 'POST',
-        headers: createAuthHeaders(data),
+        headers: await createAuthHeaders(data),
         body: JSON.stringify(data),
       });
 

@@ -26,11 +26,19 @@ async function startServer() {
     // Initialize database
     await setupDatabase();
     
-    // Initialize Redis for idempotency
-    await initializeIdempotencyRedis();
+    // Initialize Redis for idempotency (optional)
+    try {
+      await initializeIdempotencyRedis();
+    } catch (error) {
+      logger.warn('Skipping idempotency Redis - not available');
+    }
     
-    // Initialize job service
-    await initializeJobService();
+    // Initialize job service (optional)
+    try {
+      await initializeJobService();
+    } catch (error) {
+      logger.warn('Skipping job service - Redis not available');
+    }
     
     // Create Express app
     const app = express();

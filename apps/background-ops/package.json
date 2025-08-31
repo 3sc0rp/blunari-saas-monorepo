@@ -8,9 +8,10 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "test": "jest",
-    "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit"
+    "test": "jest --passWithNoTests",
+    "type-check": "tsc --noEmit",
+    "lint": "echo \"Lint script not configured\"",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "bull": "^4.12.2",

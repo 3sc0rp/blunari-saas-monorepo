@@ -11,7 +11,7 @@ export const config = {
   DATABASE_URL: process.env.DATABASE_URL || 'postgresql://localhost:5432/background_ops',
   
   // Redis
-  REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+  REDIS_URL: process.env.REDIS_URL || '',
   
   // Security - ENHANCED VALIDATION
   JWT_SECRET: process.env.JWT_SECRET || (() => {
@@ -55,8 +55,8 @@ export const config = {
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   
   // SMTP Configuration
-  SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
-  SMTP_PORT: parseInt(process.env.SMTP_PORT || '587'),
+  SMTP_HOST: process.env.SMTP_HOST || 'smtp.fastmail.com',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT || '465'),
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
   
