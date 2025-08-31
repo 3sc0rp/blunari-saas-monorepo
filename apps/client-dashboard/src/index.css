@@ -2,157 +2,336 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Blunari Tenant Dashboard Design System
-All colors MUST be HSL. Restaurant-focused, professional palette.
-*/
+/* Global Design System - Design Tokens */
 
 @layer base {
   :root {
-    /* Core Brand Colors */
-    --background: 220 15% 97%;
-    --foreground: 215 25% 12%;
-
-    /* Card System */
-    --card: 0 0% 100%;
-    --card-foreground: 215 25% 12%;
-
-    /* Interactive Elements */
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 12%;
-
-    /* Brand Primary - Deep Restaurant Blue */
-    --primary: 215 84% 25%;
-    --primary-foreground: 0 0% 98%;
-    --primary-glow: 215 84% 35%;
-
-    /* Secondary - Warm Gold */
-    --secondary: 42 87% 55%;
-    --secondary-foreground: 215 25% 12%;
-
-    /* Muted States */
-    --muted: 220 15% 95%;
-    --muted-foreground: 215 16% 47%;
-
-    /* Accent - Success Green */
-    --accent: 142 76% 36%;
-    --accent-foreground: 0 0% 98%;
-
-    /* Status Colors */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 215 25% 12%;
+    /* === DESIGN TOKENS === */
+    
+    /* Brand Colors - Can be overridden by tenant branding */
+    --brand: 215 84% 25%;
+    --brand-foreground: 0 0% 98%;
+    
+    /* Surface System */
+    --surface: 0 0% 100%;
+    --surface-2: 220 13% 96%;
+    --surface-3: 220 13% 91%;
+    
+    /* Text System */
+    --text: 215 25% 12%;
+    --text-muted: 215 16% 47%;
+    --text-subtle: 215 13% 65%;
+    
+    /* Semantic Colors */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 98%;
-
-    /* UI Elements */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 215 84% 25%;
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(215 84% 25%), hsl(215 84% 35%));
-    --gradient-warm: linear-gradient(135deg, hsl(42 87% 55%), hsl(42 87% 65%));
-    --gradient-subtle: linear-gradient(180deg, hsl(220 15% 97%), hsl(220 15% 94%));
-
-    /* Shadows */
-    --shadow-soft: 0 2px 8px -2px hsl(215 25% 12% / 0.08);
-    --shadow-medium: 0 4px 16px -4px hsl(215 25% 12% / 0.12);
-    --shadow-strong: 0 8px 32px -8px hsl(215 25% 12% / 0.16);
-
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-    --radius: 0.75rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    /* Core Brand Colors - Dark Mode */
-    --background: 215 28% 8%;
-    --foreground: 220 15% 92%;
-
-    /* Card System */
-    --card: 215 25% 12%;
-    --card-foreground: 220 15% 92%;
-
-    /* Interactive Elements */
-    --popover: 215 25% 12%;
-    --popover-foreground: 220 15% 92%;
-
-    /* Brand Primary - Lighter in dark mode */
-    --primary: 215 84% 45%;
-    --primary-foreground: 0 0% 98%;
-    --primary-glow: 215 84% 55%;
-
-    /* Secondary - Adjusted gold for dark mode */
-    --secondary: 42 87% 65%;
-    --secondary-foreground: 215 28% 8%;
-
-    /* Muted States */
-    --muted: 215 25% 15%;
-    --muted-foreground: 215 16% 65%;
-
-    /* Accent - Success Green */
-    --accent: 142 76% 46%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 215 25% 12%;
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 0% 98%;
+    
+    /* Secondary & Accent */
+    --secondary: 42 87% 55%;
+    --secondary-foreground: 215 25% 12%;
+    --accent: 142 76% 36%;
     --accent-foreground: 0 0% 98%;
-
-    /* Status Colors */
-    --destructive: 0 84% 70%;
-    --destructive-foreground: 0 0% 98%;
-    --warning: 38 92% 60%;
-    --warning-foreground: 215 28% 8%;
-    --success: 142 76% 46%;
-    --success-foreground: 0 0% 98%;
-
-    /* UI Elements */
-    --border: 215 25% 18%;
-    --input: 215 25% 18%;
-    --ring: 215 84% 45%;
-
-    /* Gradients - Dark Mode */
-    --gradient-primary: linear-gradient(135deg, hsl(215 84% 45%), hsl(215 84% 55%));
-    --gradient-warm: linear-gradient(135deg, hsl(42 87% 65%), hsl(42 87% 75%));
-    --gradient-subtle: linear-gradient(180deg, hsl(215 28% 8%), hsl(215 25% 12%));
-
-    /* Shadows - Enhanced for dark mode */
-    --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
-    --shadow-medium: 0 4px 16px -4px hsl(0 0% 0% / 0.4);
-    --shadow-strong: 0 8px 32px -8px hsl(0 0% 0% / 0.5);
-
-    --sidebar-background: 215 25% 10%;
-    --sidebar-foreground: 220 15% 92%;
-    --sidebar-primary: 215 84% 45%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 215 25% 15%;
-    --sidebar-accent-foreground: 220 15% 92%;
-    --sidebar-border: 215 25% 18%;
-    --sidebar-ring: 215 84% 45%;
+    
+    /* Interactive Elements */
+    --ring: 215 84% 25%;
+    
+    /* Radius System */
+    --radius: 0.5rem;
+    
+    /* Shadow System */
+    --shadow-elev-1: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-elev-2: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-elev-3: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    
+    /* Motion System */
+    --motion-fast: 150ms;
+    --motion-normal: 250ms;
+    --motion-slow: 350ms;
+    --motion-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
+    
+    /* Spacing Scale - Consistent 4/8/12/16px increments */
+    --space-1: 0.25rem; /* 4px */
+    --space-2: 0.5rem;  /* 8px */
+    --space-3: 0.75rem; /* 12px */
+    --space-4: 1rem;    /* 16px */
+    --space-5: 1.25rem; /* 20px */
+    --space-6: 1.5rem;  /* 24px */
+    --space-8: 2rem;    /* 32px */
+    --space-10: 2.5rem; /* 40px */
+    --space-12: 3rem;   /* 48px */
+    --space-16: 4rem;   /* 64px */
+    --space-20: 5rem;   /* 80px */
+    --space-24: 6rem;   /* 96px */
   }
-}
 
-@layer base {
+  /* === DARK MODE THEME === */
+  .dark,
+  [data-theme="dark"] {
+    /* Brand Colors - Adjusted for dark mode */
+    --brand: 215 84% 45%;
+    --brand-foreground: 0 0% 98%;
+    
+    /* Surface System - Dark backgrounds */
+    --surface: 215 28% 8%;
+    --surface-2: 215 28% 12%;
+    --surface-3: 215 28% 16%;
+    
+    /* Text System - Light text on dark */
+    --text: 0 0% 98%;
+    --text-muted: 215 20% 65%;
+    --text-subtle: 215 15% 50%;
+    
+    /* Semantic Colors - Adjusted for dark mode */
+    --success: 142 76% 55%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 70%;
+    --warning-foreground: 215 25% 12%;
+    --danger: 0 84% 70%;
+    --danger-foreground: 0 0% 98%;
+    
+    /* Secondary & Accent - Dark mode variants */
+    --secondary: 42 87% 70%;
+    --secondary-foreground: 215 25% 12%;
+    --accent: 142 76% 55%;
+    --accent-foreground: 0 0% 98%;
+    
+    /* Interactive Elements */
+    --ring: 215 84% 45%;
+    
+    /* Shadow System - Darker shadows */
+    --shadow-elev-1: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+    --shadow-elev-2: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-elev-3: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  }
+
+  /* === HIGH CONTRAST MODE === */
+  [data-contrast="high"] {
+    /* Enhanced contrast ratios for accessibility */
+    --text: 0 0% 0%;
+    --text-muted: 0 0% 20%;
+    --surface-2: 0 0% 95%;
+    --surface-3: 0 0% 90%;
+    
+    /* High contrast semantic colors */
+    --success: 120 100% 25%;
+    --warning: 45 100% 35%;
+    --danger: 0 100% 40%;
+    
+    /* Stronger borders and outlines */
+    --ring: 0 0% 0%;
+  }
+
+  .dark[data-contrast="high"],
+  [data-theme="dark"][data-contrast="high"] {
+    /* Dark high contrast */
+    --text: 0 0% 100%;
+    --text-muted: 0 0% 85%;
+    --surface: 0 0% 0%;
+    --surface-2: 0 0% 5%;
+    --surface-3: 0 0% 10%;
+    
+    /* High contrast dark semantic colors */
+    --success: 120 100% 70%;
+    --warning: 45 100% 80%;
+    --danger: 0 100% 80%;
+    
+    /* Stronger contrast in dark mode */
+    --ring: 0 0% 100%;
+  }
+
+  /* === TYPOGRAPHY SCALE === */
+  
+  /* Typography tokens - Professional scale */
+  .text-h1 {
+    @apply text-[30px] leading-[36px] font-bold tracking-tight;
+  }
+  
+  .text-h2 {
+    @apply text-[24px] leading-[32px] font-semibold tracking-tight;
+  }
+  
+  .text-h3 {
+    @apply text-[20px] leading-[28px] font-semibold;
+  }
+  
+  .text-h4 {
+    @apply text-[18px] leading-[26px] font-medium;
+  }
+  
+  .text-body {
+    @apply text-[16px] leading-[24px];
+  }
+  
+  .text-body-sm {
+    @apply text-[14px] leading-[20px];
+  }
+  
+  .text-code {
+    @apply text-[13px] leading-[20px] font-mono;
+  }
+  
+  /* Tabular numerals for metrics and data */
+  .font-tabular {
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* === SPACING SCALE === */
+  
+  /* Page section spacing */
+  .page-padding {
+    @apply px-6 py-8;
+  }
+  
+  .page-padding-lg {
+    @apply px-8 py-12;
+  }
+  
+  .section-spacing {
+    @apply space-y-6;
+  }
+  
+  .section-spacing-lg {
+    @apply space-y-8;
+  }
+
+  /* === BASE STYLES === */
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-surface text-text font-sans;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1;
+    transition: background-color var(--motion-normal) var(--motion-easing),
+                color var(--motion-normal) var(--motion-easing);
+  }
+
+  /* === UTILITY CLASSES === */
+  
+  /* Motion utilities */
+  .transition-brand {
+    transition-timing-function: var(--motion-easing);
+  }
+  
+  /* Surface utilities */
+  .surface-1 {
+    @apply bg-surface;
+  }
+  
+  .surface-2 {
+    @apply bg-surface-2;
+  }
+  
+  .surface-3 {
+    @apply bg-surface-3;
+  }
+
+  /* Text utilities */
+  .text-brand {
+    color: hsl(var(--brand));
+  }
+
+  /* Mobile Safe Areas & Bottom Navigation Utilities */
+  .pb-safe-mobile {
+    @apply pb-4 lg:pb-4;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom) + 140px);
+  }
+
+  .h-safe-area-bottom {
+    height: env(safe-area-inset-bottom);
+  }
+
+  /* Scrollbar utilities */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Focus styles for accessibility */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2;
+  }
+
+  /* Global focus-visible styles for all interactive elements */
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  [role="tab"]:focus-visible,
+  [role="option"]:focus-visible,
+  [tabindex]:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Enhanced focus for high contrast mode */
+  [data-contrast="high"] .focus-ring,
+  [data-contrast="high"] button:focus-visible,
+  [data-contrast="high"] input:focus-visible,
+  [data-contrast="high"] select:focus-visible,
+  [data-contrast="high"] textarea:focus-visible,
+  [data-contrast="high"] a:focus-visible,
+  [data-contrast="high"] [role="button"]:focus-visible,
+  [data-contrast="high"] [role="tab"]:focus-visible,
+  [data-contrast="high"] [role="option"]:focus-visible,
+  [data-contrast="high"] [tabindex]:focus-visible {
+    @apply ring-4 ring-offset-4;
+  }
+
+  /* Form validation shake animation - respects reduced motion */
+  @media (prefers-reduced-motion: no-preference) {
+    .animate-shake {
+      animation: shake 0.5s ease-in-out;
+    }
+  }
+
+  /* Reduced Motion Support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    
+    .animate-shake {
+      animation: none;
+    }
+    
+    /* Disable all motion-based animations */
+    [data-state="open"],
+    [data-state="closed"] {
+      animation: none !important;
+    }
+  }
+  
+  /* Skip to main content link for screen readers */
+  .skip-to-main {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: hsl(var(--brand));
+    color: hsl(var(--brand-foreground));
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 1000;
+    transition: top 0.2s ease;
+  }
+  
+  .skip-to-main:focus {
+    top: 6px;
   }
 }

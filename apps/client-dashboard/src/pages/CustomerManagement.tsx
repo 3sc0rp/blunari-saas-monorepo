@@ -6,6 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTenant } from '@/hooks/useTenant';
+import { useCustomerManagement, Customer } from '@/hooks/useCustomerManagement';
+import PageHeader from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/state';
+import { SkeletonList, SkeletonMetricsCard } from '@/components/ui/skeleton-components';
 import { 
   Users, 
   Search, 
@@ -16,95 +20,18 @@ import {
   Star,
   MapPin,
   Gift,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  UserPlus
 } from 'lucide-react';
-
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  total_visits: number;
-  total_spent: number;
-  last_visit: string;
-  average_party_size: number;
-  customer_type: 'regular' | 'vip' | 'new' | 'inactive';
-  preferences: string[];
-  allergies: string[];
-  special_occasions: Array<{
-    type: string;
-    date: string;
-    notes?: string;
-  }>;
-  loyalty_points: number;
-  address?: {
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-  };
-}
 
 const CustomerManagement: React.FC = () => {
   const { tenant } = useTenant();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomerType, setSelectedCustomerType] = useState<string>('all');
 
-  // Mock customer data - in production this would come from the database
-  const customers: Customer[] = [
-    {
-      id: '1',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@email.com',
-      phone: '+1 (555) 123-4567',
-      total_visits: 24,
-      total_spent: 2850,
-      last_visit: '2024-01-15',
-      average_party_size: 2.3,
-      customer_type: 'vip',
-      preferences: ['Window seating', 'Quiet atmosphere', 'Wine pairings'],
-      allergies: ['Shellfish'],
-      special_occasions: [
-        { type: 'Anniversary', date: '2024-03-15', notes: 'Married 5 years' }
-      ],
-      loyalty_points: 1250,
-      address: {
-        street: '123 Main St',
-        city: 'San Francisco',
-        state: 'CA',
-        zip: '94105'
-      }
-    },
-    {
-      id: '2',
-      name: 'Michael Chen',
-      email: 'michael.chen@email.com',
-      phone: '+1 (555) 987-6543',
-      total_visits: 8,
-      total_spent: 920,
-      last_visit: '2024-01-12',
-      average_party_size: 4.2,
-      customer_type: 'regular',
-      preferences: ['Booth seating', 'Family-friendly'],
-      allergies: ['Nuts', 'Dairy'],
-      special_occasions: [],
-      loyalty_points: 460,
-    },
-    {
-      id: '3',
-      name: 'Emily Rodriguez',
-      email: 'emily.rodriguez@email.com',
-      total_visits: 1,
-      total_spent: 85,
-      last_visit: '2024-01-10',
-      average_party_size: 2,
-      customer_type: 'new',
-      preferences: [],
-      allergies: [],
-      special_occasions: [],
-      loyalty_points: 25,
-    }
-  ];
+  // Fetch real customer data from database
+  const { customers, isLoading, addCustomer } = useCustomerManagement(tenant?.id);
 
   // Filter customers based on search and type
   const filteredCustomers = customers.filter(customer => {
@@ -143,89 +70,178 @@ const CustomerManagement: React.FC = () => {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
+  const handleAddCustomer = () => {
+    console.log('Adding new customer...');
+  };
+
+  const handleExportCustomers = () => {
+    console.log('Exporting customer list...');
+  };
+
+  // Loading state
+  if (isLoading && customers.length === 0) {
+    return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        transition={{ duration: 0.3 }}
+        className="space-y-6"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Customer Management</h1>
-          <p className="text-muted-foreground">
-            Manage customer relationships and track dining preferences
-          </p>
+        <PageHeader
+          title="Customer Management"
+          description="Manage customer relationships and track dining preferences"
+        />
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <SkeletonMetricsCard key={i} />
+          ))}
         </div>
-        
-        <Button>
-          <Users className="h-4 w-4 mr-2" />
-          Add Customer
-        </Button>
+        <SkeletonList items={8} />
       </motion.div>
+    );
+  }
+
+  // Empty state
+  if (!isLoading && customers.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-6"
+      >
+        <PageHeader
+          title="Customer Management"
+          description="Manage customer relationships and track dining preferences"
+          primaryAction={{
+            label: 'Add Customer',
+            onClick: handleAddCustomer,
+            icon: UserPlus
+          }}
+        />
+        <EmptyState
+          variant="no-customers"
+          action={{
+            label: 'Add First Customer',
+            onClick: handleAddCustomer,
+            icon: UserPlus
+          }}
+          secondaryAction={{
+            label: 'View Bookings',
+            onClick: () => window.location.href = '/dashboard/bookings'
+          }}
+        />
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
+      <PageHeader
+        title="Customer Management"
+        description="Manage customer relationships and track dining preferences"
+        primaryAction={{
+          label: 'Add Customer',
+          onClick: handleAddCustomer,
+          icon: UserPlus
+        }}
+        secondaryActions={[
+          {
+            label: 'Export',
+            onClick: handleExportCustomers,
+            variant: 'outline'
+          }
+        ]}
+        tabs={[
+          { value: 'all', label: `All (${customerStats.total})` },
+          { value: 'vip', label: `VIP (${customerStats.vip})` },
+          { value: 'regular', label: `Regular (${customerStats.regular})` },
+          { value: 'new', label: `New (${customerStats.new})` },
+          { value: 'inactive', label: `Inactive (${customerStats.inactive})` }
+        ]}
+        activeTab={selectedCustomerType}
+        onTabChange={setSelectedCustomerType}
+      />
 
       {/* Customer Statistics */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
-      >
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{customerStats.total}</div>
-              <div className="text-sm text-muted-foreground">Total Customers</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">{customerStats.vip}</div>
-              <div className="text-sm text-muted-foreground">VIP</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{customerStats.regular}</div>
-              <div className="text-sm text-muted-foreground">Regular</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-success">{customerStats.new}</div>
-              <div className="text-sm text-muted-foreground">New</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">${customerStats.total_revenue.toLocaleString()}</div>
-              <div className="text-sm text-muted-foreground">Total Revenue</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">${Math.round(customerStats.average_spend)}</div>
-              <div className="text-sm text-muted-foreground">Avg. Spend</div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+      {isLoading ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+        >
+          {[...Array(6)].map((_, i) => (
+            <SkeletonMetricsCard key={i} />
+          ))}
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"
+        >
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold">{customerStats.total}</div>
+                <div className="text-sm text-muted-foreground">Total Customers</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">{customerStats.vip}</div>
+                <div className="text-sm text-muted-foreground">VIP</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">{customerStats.regular}</div>
+                <div className="text-sm text-muted-foreground">Regular</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-success">{customerStats.new}</div>
+                <div className="text-sm text-muted-foreground">New</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold">${customerStats.total_revenue.toLocaleString()}</div>
+                <div className="text-sm text-muted-foreground">Total Revenue</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold">${Math.round(customerStats.average_spend)}</div>
+                <div className="text-sm text-muted-foreground">Avg. Spend</div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Search and Filters */}
       <motion.div
@@ -235,20 +251,72 @@ const CustomerManagement: React.FC = () => {
       >
         <Card>
           <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+              {/* Search Input */}
+              <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by name, email, or phone..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
+                  aria-label="Search customers"
                 />
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filters
+              
+              {/* Filter Chips */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Filter by:</span>
+                </div>
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Customer type filters">
+                  {[
+                    { value: 'all', label: 'All' },
+                    { value: 'vip', label: 'VIP' },
+                    { value: 'regular', label: 'Regular' },
+                    { value: 'new', label: 'New' },
+                    { value: 'inactive', label: 'Inactive' }
+                  ].map((filter) => (
+                    <Button
+                      key={filter.value}
+                      variant={selectedCustomerType === filter.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedCustomerType(filter.value)}
+                      className="text-xs h-8 px-3 transition-all duration-200"
+                      role="button"
+                      aria-pressed={selectedCustomerType === filter.value}
+                      aria-label={`Filter by ${filter.label} customers`}
+                    >
+                      {filter.label}
+                      {filter.value !== 'all' && (
+                        <span className="ml-1 text-xs opacity-75">
+                          ({filter.value === 'vip' ? customerStats.vip : 
+                            filter.value === 'regular' ? customerStats.regular :
+                            filter.value === 'new' ? customerStats.new : 
+                            customerStats.inactive})
+                        </span>
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleExportCustomers}
+                  className="h-10 px-4"
+                >
+                  Export
+                </Button>
+                <Button 
+                  onClick={handleAddCustomer}
+                  className="h-10 px-4"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Customer
                 </Button>
               </div>
             </div>
@@ -256,50 +324,82 @@ const CustomerManagement: React.FC = () => {
         </Card>
       </motion.div>
 
-      {/* Customer Tabs */}
+      {/* Customer Content */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
       >
-        <Tabs value={selectedCustomerType} onValueChange={setSelectedCustomerType}>
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="all">All ({customerStats.total})</TabsTrigger>
-            <TabsTrigger value="vip">VIP ({customerStats.vip})</TabsTrigger>
-            <TabsTrigger value="regular">Regular ({customerStats.regular})</TabsTrigger>
-            <TabsTrigger value="new">New ({customerStats.new})</TabsTrigger>
-            <TabsTrigger value="inactive">Inactive ({customerStats.inactive})</TabsTrigger>
-          </TabsList>
+        {isLoading ? (
+          <SkeletonList items={6} className="mt-6" />
+        ) : filteredCustomers.length === 0 ? (
+          <Card className="border-dashed border-2 border-border/50 bg-surface/50">
+            <CardContent className="flex flex-col items-center justify-center text-center py-16 px-8">
+              <div className="mb-8">
+                <div className="w-20 h-20 mx-auto bg-surface-2 rounded-full flex items-center justify-center mb-6 ring-1 ring-border/10">
+                  <Users className="h-10 w-10 text-text-muted" />
+                </div>
+              </div>
 
-          <TabsContent value={selectedCustomerType} className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCustomers.map((customer, index) => (
-                <motion.div
-                  key={customer.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
+              <div className="max-w-md space-y-3 mb-8">
+                <h3 className="text-xl font-semibold text-foreground">
+                  {searchTerm || selectedCustomerType !== 'all' ? 'No customers found' : 'No customers yet'}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {searchTerm || selectedCustomerType !== 'all' 
+                    ? 'No customers match your current search criteria. Try adjusting your filters or search terms.' 
+                    : 'Customer profiles will appear here once you receive your first booking.'}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 flex-wrap justify-center">
+                {(searchTerm || selectedCustomerType !== 'all') ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedCustomerType('all');
+                    }}
+                    className="transition-brand"
+                  >
+                    Clear Filters
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => window.location.href = '/dashboard/bookings'}
+                    className="transition-brand"
+                  >
+                    View Bookings
+                  </Button>
+                )}
+                
+                <Button
+                  onClick={handleAddCustomer}
+                  className="transition-brand shadow-elev-1"
                 >
-                  <CustomerCard customer={customer} getCustomerTypeColor={getCustomerTypeColor} />
-                </motion.div>
-              ))}
-            </div>
-            
-            {filteredCustomers.length === 0 && (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium text-foreground mb-2">No customers found</h3>
-                  <p className="text-muted-foreground text-center max-w-sm">
-                    No customers match your current search criteria. Try adjusting your filters.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  {customers.length === 0 ? 'Add First Customer' : 'Add Customer'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCustomers.map((customer, index) => (
+              <motion.div
+                key={customer.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+              >
+                <CustomerCard customer={customer} getCustomerTypeColor={getCustomerTypeColor} />
+              </motion.div>
+            ))}
+          </div>
+        )}
       </motion.div>
-    </div>
+    </motion.div>
   );
 };
 

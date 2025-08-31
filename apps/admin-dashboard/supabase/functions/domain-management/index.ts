@@ -42,14 +42,10 @@ serve(async (req) => {
     }
 
     const cloudflareToken = Deno.env.get('CLOUDFLARE_API_TOKEN')
-    if (!cloudflareToken) {
-      throw new Error('Cloudflare API token not configured')
-    }
-
-    const cloudflareHeaders = {
+    const cloudflareHeaders = cloudflareToken ? {
       'Authorization': `Bearer ${cloudflareToken}`,
       'Content-Type': 'application/json',
-    }
+    } : null
 
     let result
     
@@ -99,6 +95,17 @@ serve(async (req) => {
 async function addDomain(supabase: any, params: any, cloudflareHeaders: any) {
   const { domain, tenant_id, domain_type = 'custom' } = params
   
+  // Check if domain already exists
+  const { data: existingDomain } = await supabase
+    .from('domains')
+    .select('id')
+    .eq('domain', domain)
+    .single()
+    
+  if (existingDomain) {
+    throw new Error(`Domain ${domain} already exists`)
+  }
+  
   // Create domain in our database
   const { data: domainData, error: domainError } = await supabase
     .rpc('add_domain', {
@@ -118,8 +125,15 @@ async function addDomain(supabase: any, params: any, cloudflareHeaders: any) {
     .eq('id', domainData)
     .single()
 
+  // Check if Cloudflare is configured
+  const cloudflareZoneId = Deno.env.get('CLOUDFLARE_ZONE_ID')
+  if (!cloudflareZoneId || !cloudflareHeaders) {
+    console.log('Cloudflare not configured, skipping external DNS setup')
+    return { domain_id: domainData, cloudflare_data: null }
+  }
+
   // Add to Cloudflare as custom hostname
-  const cloudflareResponse = await fetch(`https://api.cloudflare.com/client/v4/zones/${Deno.env.get('CLOUDFLARE_ZONE_ID')}/custom_hostnames`, {
+  const cloudflareResponse = await fetch(`https://api.cloudflare.com/client/v4/zones/${cloudflareZoneId}/custom_hostnames`, {
     method: 'POST',
     headers: cloudflareHeaders,
     body: JSON.stringify({
@@ -139,7 +153,9 @@ async function addDomain(supabase: any, params: any, cloudflareHeaders: any) {
   const cloudflareData: CloudflareResponse = await cloudflareResponse.json()
   
   if (!cloudflareData.success) {
-    throw new Error(`Cloudflare error: ${cloudflareData.errors?.[0]?.message || 'Unknown error'}`)
+    console.log('Cloudflare error:', cloudflareData.errors)
+    // Don't throw error - just log it and continue without Cloudflare
+    return { domain_id: domainData, cloudflare_data: null, warning: 'Domain created but Cloudflare setup failed' }
   }
 
   // Update domain with Cloudflare data

@@ -17,7 +17,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // Verify authentication
+    // Get auth header from request
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
@@ -26,6 +26,7 @@ serve(async (req) => {
       )
     }
 
+    // Verify the user is authenticated and has admin access
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
       authHeader.replace('Bearer ', '')
     )
@@ -37,88 +38,89 @@ serve(async (req) => {
       )
     }
 
-    // Parse request body for metric type
-    const requestData = await req.json()
-    const metricType = requestData.type || 'system'
-    
+    // Check if user has admin access
+    const { data: employee, error: employeeError } = await supabaseClient
+      .from('employees')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('status', 'ACTIVE')
+      .single()
+
+    if (employeeError || !employee || !['SUPER_ADMIN', 'ADMIN', 'SUPPORT'].includes(employee.role)) {
+      return new Response(
+        JSON.stringify({ error: 'Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const backgroundOpsUrl = Deno.env.get('BACKGROUND_OPS_URL')
     const backgroundOpsApiKey = Deno.env.get('BACKGROUND_OPS_API_KEY') ?? ''
 
-    console.log('Metrics API: Fetching system metrics')
-    console.log(`Background Ops URL: ${backgroundOpsUrl}`)
-    console.log(`API Key present: ${backgroundOpsApiKey ? 'Yes' : 'No'}`)
-    console.log(`Metric type: ${metricType}`)
-
-    // If no background ops URL is configured, use database metrics
+    // If no background ops URL configured, return database-based metrics
     if (!backgroundOpsUrl) {
-      console.log('BACKGROUND_OPS_URL not configured, using database metrics')
-      
-      try {
-        // Fetch existing metrics from database
-        const { data: existingMetrics, error: fetchError } = await supabaseClient
-          .from('system_health_metrics')
-          .select('*')
-          .order('recorded_at', { ascending: false })
-          .limit(20)
-        
-        if (fetchError) {
-          console.error('Error fetching metrics:', fetchError)
-          return new Response(JSON.stringify({ 
-            error: 'Failed to fetch metrics', 
-            details: fetchError.message 
-          }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-        
-        // If no metrics exist, return empty array
-        if (!existingMetrics || existingMetrics.length === 0) {
-          console.log('No metrics found in database')
-          
-          return new Response(JSON.stringify({
-            metrics: [],
-            timestamp: new Date().toISOString(),
-            source: 'database_empty'
-          }), {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-        
-        // Transform database metrics to expected format
-        const metrics = existingMetrics
-          .filter(m => !metricType || metricType === 'system' || m.metric_name.includes(metricType))
-          .map(metric => ({
-            name: metric.metric_name,
-            value: parseFloat(metric.metric_value),
-            unit: metric.metric_unit,
-            timestamp: metric.recorded_at,
-            service: metric.service_name
-          }))
-        
-        return new Response(JSON.stringify({
-          metrics: metrics,
-          timestamp: new Date().toISOString(),
-          source: 'database'
-        }), {
+      // Get recent system health metrics
+      const { data: healthMetrics } = await supabaseClient
+        .from('system_health_metrics')
+        .select('*')
+        .gte('recorded_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order('recorded_at', { ascending: false })
+        .limit(100)
+
+      // Get recent background jobs metrics
+      const { data: jobsData } = await supabaseClient
+        .from('background_jobs')
+        .select('status, created_at, completed_at, started_at')
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+
+      // Calculate job success rate
+      const totalJobs = jobsData?.length || 0
+      const successfulJobs = jobsData?.filter(job => job.status === 'completed').length || 0
+      const failedJobs = jobsData?.filter(job => job.status === 'failed').length || 0
+      const successRate = totalJobs > 0 ? (successfulJobs / totalJobs) * 100 : 100
+
+      // Calculate average response times
+      const completedJobs = jobsData?.filter(job => 
+        job.status === 'completed' && job.started_at && job.completed_at
+      ) || []
+
+      const responseTimes = completedJobs.map(job => {
+        const start = new Date(job.started_at!).getTime()
+        const end = new Date(job.completed_at!).getTime()
+        return end - start
+      })
+
+      const avgResponseTime = responseTimes.length > 0 
+        ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
+        : 0
+
+      const p95ResponseTime = responseTimes.length > 0 
+        ? responseTimes.sort((a, b) => a - b)[Math.floor(responseTimes.length * 0.95)]
+        : 0
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          source: 'database',
+          metrics: {
+            job_success_rate: Math.round(successRate * 100) / 100,
+            total_jobs_24h: totalJobs,
+            successful_jobs: successfulJobs,
+            failed_jobs: failedJobs,
+            avg_response_time_ms: Math.round(avgResponseTime),
+            p95_response_time_ms: Math.round(p95ResponseTime),
+            health_checks_count: healthMetrics?.length || 0
+          },
+          timestamp: new Date().toISOString()
+        }),
+        { 
           status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      } catch (error) {
-        console.error('Error handling metrics:', error)
-        return new Response(JSON.stringify({ 
-          error: 'Failed to process metrics', 
-          details: error.message 
-        }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
 
-    // Fetch metrics from background operations service
-    const response = await fetch(`${backgroundOpsUrl}/api/v1/metrics?type=${metricType}`, {
+    // Call background-ops metrics endpoint
+    const response = await fetch(`${backgroundOpsUrl}/api/v1/metrics`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -126,43 +128,32 @@ serve(async (req) => {
       },
     })
 
-    console.log(`Metrics response status: ${response.status}`)
-
     if (!response.ok) {
       const errorText = await response.text()
       console.error(`Background service metrics error: ${response.status} - ${errorText}`)
-      return new Response(
-        JSON.stringify({ 
-          error: `Background service returned ${response.status}`, 
-          details: errorText 
-        }),
-        { 
-          status: response.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+      throw new Error(`Metrics fetch failed: ${response.status}`)
     }
 
-    const metricsData = await response.json()
-    console.log(`Metrics data received: ${JSON.stringify(metricsData)}`)
+    const data = await response.json()
 
-    // Store metrics in Supabase
-    const { error: insertError } = await supabaseClient
-      .from('system_health_metrics')
-      .insert({
-        metric_name: 'background_ops_metrics',
-        metric_value: metricsData.metrics?.length || 0,
-        metric_unit: 'count',
-        service_name: 'background-ops',
-        metadata: metricsData
-      })
-
-    if (insertError) {
-      console.error('Error storing metrics:', insertError)
+    // Extract key metrics for admin dashboard
+    const adminMetrics = {
+      job_success_rate: data.jobs?.success_rate || 0,
+      p95_response_time_ms: data.performance?.p95_duration_ms || 0,
+      active_jobs: data.jobs?.active || 0,
+      failed_jobs_24h: data.jobs?.failed_24h || 0,
+      system_uptime: data.system?.uptime_seconds || 0,
+      memory_usage_percent: data.system?.memory_usage_percent || 0,
+      cpu_usage_percent: data.system?.cpu_usage_percent || 0
     }
 
     return new Response(
-      JSON.stringify(metricsData),
+      JSON.stringify({
+        success: true,
+        source: 'background-ops',
+        metrics: adminMetrics,
+        timestamp: new Date().toISOString()
+      }),
       { 
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -173,8 +164,9 @@ serve(async (req) => {
     console.error('Metrics API error:', error)
     return new Response(
       JSON.stringify({ 
+        success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
-        success: false 
+        timestamp: new Date().toISOString()
       }),
       { 
         status: 500, 

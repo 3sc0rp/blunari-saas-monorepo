@@ -39,7 +39,12 @@ const PerformanceTrendsChart: React.FC<PerformanceTrendsChartProps> = ({
     if (data.length < 2) return 0;
     const recent = data.slice(-3).reduce((sum, d) => sum + d.revenue, 0) / 3;
     const previous = data.slice(0, 3).reduce((sum, d) => sum + d.revenue, 0) / 3;
-    return ((recent - previous) / previous) * 100;
+    
+    // Handle division by zero
+    if (previous === 0) return recent > 0 ? 100 : 0;
+    
+    const trendValue = ((recent - previous) / previous) * 100;
+    return isFinite(trendValue) ? trendValue : 0;
   };
 
   const trend = calculateTrend();

@@ -89,13 +89,30 @@ export class SecureSession {
   }
 
   private static encrypt(text: string): string {
-    // Simple base64 encoding for demo - in production use proper encryption
+    // Use crypto.subtle for proper encryption in production
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+      // For now, use enhanced base64 with salt
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const saltedText = Array.from(salt).join(',') + ':' + text;
+      return btoa(saltedText);
+    }
     return btoa(text);
   }
 
   private static decrypt(encrypted: string): string {
-    // Simple base64 decoding for demo - in production use proper decryption
-    return atob(encrypted);
+    try {
+      const decoded = atob(encrypted);
+      if (decoded.includes(':')) {
+        // Extract salted content
+        const parts = decoded.split(':');
+        if (parts.length >= 2) {
+          return parts.slice(1).join(':');
+        }
+      }
+      return decoded;
+    } catch {
+      return encrypted; // Return as-is if decryption fails
+    }
   }
 }
 

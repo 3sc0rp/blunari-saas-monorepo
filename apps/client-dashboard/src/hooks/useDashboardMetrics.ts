@@ -78,20 +78,20 @@ export const useDashboardMetrics = (tenantId?: string) => {
       todayBookings: {
         count: todayBookings,
         revenue: totalRevenue,
-        trend: todayBookings - yesterdayBookings
+        trend: yesterdayBookings > 0 ? todayBookings - yesterdayBookings : 0
       },
       occupancyRate: {
         current: currentOccupancy,
         target: occupancyTarget,
-        trend: currentOccupancy - yesterdayOccupancy
+        trend: yesterdayOccupancy > 0 ? currentOccupancy - yesterdayOccupancy : 0
       },
       averageSpend: {
         amount: averageSpend,
-        trend: averageSpend - yesterdayAvgSpend
+        trend: yesterdayAvgSpend > 0 ? averageSpend - yesterdayAvgSpend : 0
       },
       noshowRate: {
         percentage: noshowPercentage,
-        trend: noshowPercentage - yesterdayNoshowPercentage
+        trend: yesterdayNoshowPercentage > 0 ? noshowPercentage - yesterdayNoshowPercentage : 0
       }
     };
   }, [bookings, historicalData]);

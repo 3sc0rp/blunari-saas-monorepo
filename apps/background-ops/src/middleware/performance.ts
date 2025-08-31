@@ -14,7 +14,7 @@ interface RequestMetrics {
 const activeRequests = new Map<string, RequestMetrics>();
 
 export function performanceMiddleware(req: Request, res: Response, next: NextFunction) {
-  const requestId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const requestId = (req as any).requestId || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const startTime = Date.now();
   
   // Store request metrics
@@ -141,12 +141,28 @@ export function getActiveRequests(): Array<RequestMetrics & { id: string; durati
 // Middleware to add performance headers
 export function performanceHeadersMiddleware(req: Request, res: Response, next: NextFunction) {
   const startTime = Date.now();
+  const requestId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  res.on('finish', () => {
+  // Store request ID for use in other middleware
+  (req as any).requestId = requestId;
+  
+  // Override res.json and res.send to add headers before sending
+  const originalJson = res.json.bind(res);
+  const originalSend = res.send.bind(res);
+  
+  res.json = function(body: any) {
     const duration = Date.now() - startTime;
     res.set('X-Response-Time', `${duration}ms`);
-    res.set('X-Request-ID', (req as any).requestId || 'unknown');
-  });
+    res.set('X-Request-ID', requestId);
+    return originalJson(body);
+  };
+  
+  res.send = function(body: any) {
+    const duration = Date.now() - startTime;
+    res.set('X-Response-Time', `${duration}ms`);
+    res.set('X-Request-ID', requestId);
+    return originalSend(body);
+  };
   
   next();
 }
@@ -156,31 +172,33 @@ export async function getPerformanceMetrics(req: Request, res: Response) {
   try {
     const { timeRange = '1h' } = req.query;
     
-    // Get performance metrics from the metrics service
-    const [responseTimeMetrics, requestCountMetrics, errorRateMetrics] = await Promise.all([
-      metricsService.getAggregatedMetrics('http_request_duration_ms', timeRange as string),
-      metricsService.getAggregatedMetrics('http_requests_total', timeRange as string),
-      getErrorRateMetrics(timeRange as string)
-    ]);
-    
+    // Get current metrics from the metrics service
+    const currentMetrics = await metricsService.getLatestMetrics();
     const activeRequests = getActiveRequests();
+    
+    // Extract relevant metrics for performance
+    const httpMetrics = currentMetrics.data.filter((m: any) => 
+      m.name.includes('http_request') || m.name.includes('http_requests')
+    );
+    
+    const responseTimeMetrics = httpMetrics.find((m: any) => m.name.includes('duration'));
+    const requestCountMetrics = httpMetrics.find((m: any) => m.name.includes('total'));
     
     res.json({
       timeRange,
-      responseTime: responseTimeMetrics,
-      requestCount: requestCountMetrics,
-      errorRate: errorRateMetrics,
+      responseTime: responseTimeMetrics || { value: 0, labels: {} },
+      requestCount: requestCountMetrics || { value: 0, labels: {} },
+      errorRate: await getErrorRateMetrics(timeRange as string),
       activeRequests: {
         count: activeRequests.length,
         requests: activeRequests.slice(0, 10) // Limit to 10 most recent
       },
       summary: {
-        totalRequests: requestCountMetrics.aggregations.reduce((sum, agg) => sum + agg.sample_count, 0),
-        avgResponseTime: responseTimeMetrics.aggregations.length > 0 
-          ? responseTimeMetrics.aggregations.reduce((sum, agg) => sum + agg.avg_value, 0) / responseTimeMetrics.aggregations.length
-          : 0,
+        totalRequests: requestCountMetrics?.value || 0,
+        avgResponseTime: responseTimeMetrics?.value || 0,
         slowRequests: activeRequests.filter(req => req.duration > 1000).length
-      }
+      },
+      timestamp: currentMetrics.timestamp
     });
     
   } catch (error) {
@@ -198,7 +216,7 @@ async function getErrorRateMetrics(timeRange: string) {
     return {
       metric_name: 'error_rate',
       time_range: timeRange,
-      aggregations: allMetrics.aggregations.map(agg => ({
+      aggregations: allMetrics.aggregations.map((agg: any) => ({
         ...agg,
         error_rate: (agg.sample_count > 0 ? (errorMetrics.length / agg.sample_count) * 100 : 0)
       }))

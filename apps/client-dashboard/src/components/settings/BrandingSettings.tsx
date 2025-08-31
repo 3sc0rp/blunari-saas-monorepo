@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,8 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Upload, Palette, Globe, Camera } from 'lucide-react';
 import { BrandingSettings as BrandingSettingsType } from '@/types/settings';
+import { useTenantBranding } from '@/contexts/TenantBrandingContext';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { toast } from '@/hooks/use-toast';
 
 interface BrandingSettingsProps {
   settings: BrandingSettingsType;
@@ -17,12 +19,34 @@ interface BrandingSettingsProps {
 }
 
 const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate, isUpdating }) => {
+  const { updateBranding } = useTenantBranding();
   const form = useForm<BrandingSettingsType>({
     defaultValues: settings,
   });
 
+  // Watch form changes for live preview updates
+  const watchedValues = form.watch();
+
+  // Update live preview with debounced effect to prevent infinite loops
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      updateBranding({
+        logoUrl: watchedValues.logoUrl,
+        restaurantName: watchedValues.restaurantName,
+        primaryColor: watchedValues.primaryColor,
+        accentColor: watchedValues.accentColor,
+      });
+    }, 100); // 100ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [watchedValues.logoUrl, watchedValues.restaurantName, watchedValues.primaryColor, watchedValues.accentColor]);
+
   const onSubmit = (data: BrandingSettingsType) => {
     onUpdate(data);
+    toast({
+      title: "Branding Updated",
+      description: "Your branding settings have been saved successfully.",
+    });
   };
 
   const getStatusBadgeVariant = (status: string) => {

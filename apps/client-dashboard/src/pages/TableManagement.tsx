@@ -4,7 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTenant } from '@/hooks/useTenant';
+import { useTableManagement, Table } from '@/hooks/useTableManagement';
+import { FloorPlan3DManager } from '@/components/tables/FloorPlan3D';
+import FloorPlanManager from '@/components/tables/FloorPlanManager';
+import FloorPlanViewer3D from '@/components/tables/FloorPlanViewer3D';
+import FloorPlanViewer2D from '@/components/tables/FloorPlanViewer2D';
 import { 
   Grid3X3, 
   Plus, 
@@ -14,81 +20,18 @@ import {
   Eye,
   EyeOff,
   Utensils,
-  Coffee
+  Coffee,
+  Move3D,
+  LayoutGrid
 } from 'lucide-react';
-
-interface Table {
-  id: string;
-  name: string;
-  capacity: number;
-  status: 'available' | 'occupied' | 'reserved' | 'maintenance';
-  position: { x: number; y: number };
-  table_type: 'standard' | 'bar' | 'booth' | 'outdoor' | 'private';
-  current_booking?: {
-    guest_name: string;
-    party_size: number;
-    time_remaining: number;
-  };
-}
 
 const TableManagement: React.FC = () => {
   const { tenant } = useTenant();
-  const [viewMode, setViewMode] = useState<'grid' | 'floor'>('floor');
+  const [viewMode, setViewMode] = useState<'grid' | 'floor' | '3d'>('floor');
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
 
-  // Mock table data - in production this would come from the database
-  const tables: Table[] = [
-    {
-      id: '1',
-      name: 'Table 1',
-      capacity: 2,
-      status: 'occupied',
-      position: { x: 100, y: 100 },
-      table_type: 'standard',
-      current_booking: {
-        guest_name: 'John Smith',
-        party_size: 2,
-        time_remaining: 45
-      }
-    },
-    {
-      id: '2',
-      name: 'Table 2',
-      capacity: 4,
-      status: 'available',
-      position: { x: 250, y: 100 },
-      table_type: 'standard'
-    },
-    {
-      id: '3',
-      name: 'Table 3',
-      capacity: 6,
-      status: 'reserved',
-      position: { x: 100, y: 250 },
-      table_type: 'booth',
-      current_booking: {
-        guest_name: 'Sarah Johnson',
-        party_size: 4,
-        time_remaining: 120
-      }
-    },
-    {
-      id: '4',
-      name: 'Bar 1',
-      capacity: 8,
-      status: 'available',
-      position: { x: 400, y: 100 },
-      table_type: 'bar'
-    },
-    {
-      id: '5',
-      name: 'Booth 1',
-      capacity: 4,
-      status: 'maintenance',
-      position: { x: 400, y: 250 },
-      table_type: 'booth'
-    }
-  ];
+  // Fetch real table data from database
+  const { tables, isLoading, updateTable } = useTableManagement(tenant?.id);
 
   const getStatusColor = (status: Table['status']) => {
     switch (status) {
@@ -150,11 +93,19 @@ const TableManagement: React.FC = () => {
             Floor Plan
           </Button>
           <Button
+            variant={viewMode === '3d' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('3d')}
+          >
+            <Move3D className="h-4 w-4 mr-2" />
+            3D View
+          </Button>
+          <Button
             variant={viewMode === 'grid' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setViewMode('grid')}
           >
-            <Grid3X3 className="h-4 w-4 mr-2" />
+            <LayoutGrid className="h-4 w-4 mr-2" />
             Grid View
           </Button>
           <Button>
@@ -165,57 +116,74 @@ const TableManagement: React.FC = () => {
       </motion.div>
 
       {/* Table Statistics */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-2 md:grid-cols-5 gap-4"
-      >
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{tableStats.total}</div>
-              <div className="text-sm text-muted-foreground">Total Tables</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-success">{tableStats.available}</div>
-              <div className="text-sm text-muted-foreground">Available</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-destructive">{tableStats.occupied}</div>
-              <div className="text-sm text-muted-foreground">Occupied</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-warning">{tableStats.reserved}</div>
-              <div className="text-sm text-muted-foreground">Reserved</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="pt-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-muted-foreground">{tableStats.maintenance}</div>
-              <div className="text-sm text-muted-foreground">Maintenance</div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+      {isLoading ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-5 gap-4"
+        >
+          {[...Array(5)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="pt-4">
+                <Skeleton className="h-16 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="grid grid-cols-2 md:grid-cols-5 gap-4"
+        >
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold">{tableStats.total}</div>
+                <div className="text-sm text-muted-foreground">Total Tables</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-success">{tableStats.available}</div>
+                <div className="text-sm text-muted-foreground">Available</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-destructive">{tableStats.occupied}</div>
+                <div className="text-sm text-muted-foreground">Occupied</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-warning">{tableStats.reserved}</div>
+                <div className="text-sm text-muted-foreground">Reserved</div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-muted-foreground">{tableStats.maintenance}</div>
+                <div className="text-sm text-muted-foreground">Maintenance</div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Table View */}
       <motion.div
@@ -231,6 +199,19 @@ const TableManagement: React.FC = () => {
             getStatusColor={getStatusColor}
             getTableIcon={getTableIcon}
           />
+        ) : viewMode === '3d' ? (
+          <div className="space-y-6">
+            <FloorPlanManager />
+            <FloorPlanViewer3D />
+            <details className="mt-4">
+              <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground">
+                View 2D Preview (Fallback)
+              </summary>
+              <div className="mt-2">
+                <FloorPlanViewer2D />
+              </div>
+            </details>
+          </div>
         ) : (
           <GridView 
             tables={tables}

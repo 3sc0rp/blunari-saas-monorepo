@@ -6,6 +6,7 @@ import { useTenant } from '@/hooks/useTenant';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRealtimeBookings } from '@/hooks/useRealtimeBookings';
 import { useTenantBranding } from '@/contexts/TenantBrandingContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { 
   Bell, 
   Settings, 
@@ -14,7 +15,9 @@ import {
   Wifi,
   WifiOff,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Moon,
+  Sun
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -26,6 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const DashboardHeader: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
   const { tenant } = useTenant();
   const { user, signOut } = useAuth();
   const { isConnected } = useRealtimeBookings(tenant?.id);
@@ -39,79 +43,86 @@ const DashboardHeader: React.FC = () => {
   });
 
   return (
-    <header className="bg-gradient-subtle border-b border-border px-4 py-6 md:px-6">
+    <header className="bg-gradient-to-r from-surface via-surface-2 to-surface border-b border-surface-2 px-4 py-6 md:px-6">
       <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
         {/* Restaurant Info & Date */}
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+        <div className="space-y-2">
+          <h1 className="text-h2 font-bold text-brand">
             {restaurantName}
           </h1>
-          <p className="text-muted-foreground flex items-center gap-2">
+          <p className="text-body-sm text-text-muted flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             {currentDate}
           </p>
         </div>
 
-        {/* Quick Stats */}
-        <div className="flex flex-wrap gap-3">
-          <Card className="px-3 py-2 bg-gradient-warm">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-secondary-foreground" />
-              <div className="text-sm">
-                <div className="font-semibold text-secondary-foreground">87%</div>
-                <div className="text-xs text-secondary-foreground/80">Capacity</div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="px-3 py-2">
-            <div className="flex items-center gap-2">
-              {/* Real-time connection indicator */}
-              <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-success animate-pulse-soft' : 'bg-destructive'}`}></div>
-              <div className="text-sm">
-                <div className="font-semibold">
+        {/* Single Status Indicator */}
+        <div className="flex items-center gap-4">
+          <div className="px-4 py-2 bg-surface border border-surface-3 rounded-lg shadow-elev-1">
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                isConnected 
+                  ? 'bg-success/10 text-success' 
+                  : 'bg-destructive/10 text-destructive'
+              }`}>
+                <div className={`h-2 w-2 rounded-full ${
+                  isConnected ? 'bg-success animate-pulse' : 'bg-destructive'
+                }`}></div>
+                <span className="text-sm font-medium">
                   {isConnected ? 'Live' : 'Offline'}
-                </div>
-                <div className="text-xs text-muted-foreground">Status</div>
+                </span>
+              </div>
+              <div className="text-body-sm">
+                <div className="font-semibold text-text font-tabular">87%</div>
+                <div className="text-xs text-text-muted">Capacity</div>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
-          {/* Real-time connection status */}
-          <Badge 
-            variant={isConnected ? "default" : "destructive"} 
-            className="flex items-center gap-1"
+        <div className="flex items-center gap-3">
+          {/* Dark mode toggle */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleTheme}
+            className="w-9 h-9 p-0 bg-surface border-surface-3 hover:bg-surface-2 hover:border-brand/20 transition-all duration-300"
+            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
           >
-            {isConnected ? (
-              <>
-                <Wifi className="h-3 w-3" />
-                Live
-              </>
+            {theme === 'light' ? (
+              <Moon className="h-4 w-4 text-text-muted hover:text-brand transition-colors duration-300" />
             ) : (
-              <>
-                <WifiOff className="h-3 w-3" />
-                Offline
-              </>
+              <Sun className="h-4 w-4 text-text-muted hover:text-brand transition-colors duration-300" />
             )}
-          </Badge>
+          </Button>
 
-          <Button variant="outline" size="sm" className="relative">
-            <Bell className="h-4 w-4" />
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="relative bg-surface border-surface-3 hover:bg-surface-2 hover:border-brand/20 transition-all duration-300"
+          >
+            <Bell className="h-4 w-4 text-text-muted hover:text-brand transition-colors duration-300" />
             <Badge className="absolute -top-1 -right-1 h-2 w-2 p-0 bg-destructive"></Badge>
           </Button>
           
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4" />
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="bg-surface border-surface-3 hover:bg-surface-2 hover:border-brand/20 transition-all duration-300"
+          >
+            <Settings className="h-4 w-4 text-text-muted hover:text-brand transition-colors duration-300" />
           </Button>
 
           {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <User className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="bg-surface border-surface-3 hover:bg-surface-2 hover:border-brand/20 transition-all duration-300"
+              >
+                <User className="h-4 w-4 text-text-muted hover:text-brand transition-colors duration-300" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

@@ -29,10 +29,14 @@ const getTenantSlugFromDomain = (): string | null => {
   const hostname = window.location.hostname;
   
   // Handle different domain patterns
-  if (hostname === 'localhost' || hostname.startsWith('127.0.0.1')) {
-    // For local development, check for ?tenant= parameter
+  if (hostname === 'localhost' || hostname.startsWith('127.0.0.1') || hostname.includes('lovable.dev')) {
+    // For local development, check for ?tenant= parameter first
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('tenant');
+    const tenantParam = urlParams.get('tenant');
+    if (tenantParam) return tenantParam;
+    
+    // Fallback to Demo Restaurant for development
+    return '2b6c705c-a484-4cda-9003-2f59a82b1c8e.sandbox.lovable.dev';
   }
   
   // Production patterns:
@@ -61,12 +65,11 @@ export const useTenant = () => {
     queryFn: async () => {
       if (!tenantSlug) return null;
 
-      // Try to find tenant by slug first
+      // Use the secure public tenant info view for public access
       let { data, error } = await supabase
-        .from('tenants')
+        .from('tenant_public_info')
         .select('*')
         .eq('slug', tenantSlug)
-        .eq('status', 'active')
         .single();
 
       if (error && error.code === 'PGRST116') {

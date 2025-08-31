@@ -106,6 +106,91 @@ async function createTables() {
       data JSONB NOT NULL,
       signature TEXT,
       timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )`,
+    
+    // Tenants table - CRITICAL for tenant provisioning
+    `CREATE TABLE IF NOT EXISTS tenants (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name VARCHAR(255) NOT NULL,
+      slug VARCHAR(100) NOT NULL UNIQUE,
+      timezone VARCHAR(50) NOT NULL,
+      currency VARCHAR(3) DEFAULT 'USD',
+      status VARCHAR(50) DEFAULT 'active',
+      description TEXT,
+      phone VARCHAR(20),
+      email VARCHAR(320),
+      website VARCHAR(500),
+      address JSONB,
+      cuisine_type_id UUID,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )`,
+    
+    // Tenant features table
+    `CREATE TABLE IF NOT EXISTS tenant_features (
+      id SERIAL PRIMARY KEY,
+      tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+      feature_key VARCHAR(100) NOT NULL,
+      enabled BOOLEAN DEFAULT true,
+      source VARCHAR(50) DEFAULT 'plan',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(tenant_id, feature_key)
+    )`,
+    
+    // Restaurant tables
+    `CREATE TABLE IF NOT EXISTS restaurant_tables (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+      name VARCHAR(100) NOT NULL,
+      capacity INTEGER NOT NULL,
+      table_type VARCHAR(50) DEFAULT 'standard',
+      active BOOLEAN DEFAULT true,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )`,
+    
+    // Business hours table
+    `CREATE TABLE IF NOT EXISTS business_hours (
+      id SERIAL PRIMARY KEY,
+      tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+      day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
+      is_open BOOLEAN DEFAULT false,
+      open_time TIME,
+      close_time TIME,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(tenant_id, day_of_week)
+    )`,
+    
+    // Party size configurations
+    `CREATE TABLE IF NOT EXISTS party_size_configs (
+      id SERIAL PRIMARY KEY,
+      tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE UNIQUE,
+      min_party_size INTEGER DEFAULT 1,
+      max_party_size INTEGER DEFAULT 10,
+      default_party_size INTEGER DEFAULT 2,
+      allow_large_parties BOOLEAN DEFAULT false,
+      large_party_threshold INTEGER DEFAULT 8,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )`,
+    
+    // Subscriptions table
+    `CREATE TABLE IF NOT EXISTS subscriptions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+      plan_id VARCHAR(100) NOT NULL,
+      status VARCHAR(50) DEFAULT 'active',
+      current_period_start TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      current_period_end TIMESTAMP WITH TIME ZONE,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )`,
+    
+    // Bookings table (for tenant metrics)
+    `CREATE TABLE IF NOT EXISTS bookings (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+      total_amount NUMERIC(10,2) DEFAULT 0,
+      status VARCHAR(50) DEFAULT 'confirmed',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )`
   ];
 
@@ -127,7 +212,16 @@ async function createTables() {
     'CREATE INDEX IF NOT EXISTS idx_service_health_checks_service_id ON service_health_checks(service_id)',
     'CREATE INDEX IF NOT EXISTS idx_activity_feed_service ON activity_feed(service)',
     'CREATE INDEX IF NOT EXISTS idx_activity_feed_timestamp ON activity_feed(timestamp)',
-    'CREATE INDEX IF NOT EXISTS idx_webhook_logs_source ON webhook_logs(source)'
+    'CREATE INDEX IF NOT EXISTS idx_webhook_logs_source ON webhook_logs(source)',
+    
+    // Tenant-related indexes
+    'CREATE INDEX IF NOT EXISTS idx_tenants_slug ON tenants(slug)',
+    'CREATE INDEX IF NOT EXISTS idx_tenants_status ON tenants(status)',
+    'CREATE INDEX IF NOT EXISTS idx_tenant_features_tenant_id ON tenant_features(tenant_id)',
+    'CREATE INDEX IF NOT EXISTS idx_restaurant_tables_tenant_id ON restaurant_tables(tenant_id)',
+    'CREATE INDEX IF NOT EXISTS idx_business_hours_tenant_id ON business_hours(tenant_id)',
+    'CREATE INDEX IF NOT EXISTS idx_subscriptions_tenant_id ON subscriptions(tenant_id)',
+    'CREATE INDEX IF NOT EXISTS idx_bookings_tenant_id ON bookings(tenant_id)'
   ];
 
   for (const index of indexes) {

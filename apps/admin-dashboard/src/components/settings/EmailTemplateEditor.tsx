@@ -81,10 +81,16 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
 
   const renderPreview = () => {
     if (previewMode === 'html') {
+      // Sanitize HTML content before rendering
+      const sanitizedHtml = editedTemplate.htmlContent
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/<[^>]*javascript:[^>]*>/gi, '')
+        .replace(/<(iframe|object|embed|form|input)[^>]*>/gi, '');
+      
       return (
         <div 
           className="prose prose-sm max-w-none"
-          dangerouslySetInnerHTML={{ __html: editedTemplate.htmlContent }}
+          dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
       );
     } else {

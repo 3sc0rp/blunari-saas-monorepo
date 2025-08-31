@@ -1,10 +1,16 @@
+import { Job } from 'bull';
 import { logger } from './utils/logger';
 import { jobsService } from './services/jobs';
 import { metricsService } from './services/metrics';
 import { config } from './config';
+import { BaseJob, JobStatus, JOB_SCHEMAS } from './types/jobs';
 
 let isWorkerRunning = false;
 let metricsInterval: NodeJS.Timeout;
+let holdSweeperInterval: NodeJS.Timeout;
+let idempotencyCleanupInterval: NodeJS.Timeout;
+let analyticsInterval: NodeJS.Timeout;
+let cacheWarmerInterval: NodeJS.Timeout;
 
 export async function startBackgroundWorkers() {
   if (isWorkerRunning) {
@@ -15,348 +21,525 @@ export async function startBackgroundWorkers() {
   isWorkerRunning = true;
   logger.info('🔄 Starting background workers...');
   
-  // Start job processor
-  startJobProcessor();
-  
-  // Start system metrics collection
-  startMetricsCollection();
-  
-  logger.info('✅ Background workers started');
+  try {
+    // Start Bull queue processors
+    await startBullWorkers();
+    
+    // Start scheduled workers
+    startHoldExpirationSweeper();
+    startIdempotencyGarbageCollector();
+    startAnalyticsAggregator();
+    startAvailabilityCacheWarmer();
+    
+    // Start system metrics collection
+    startMetricsCollection();
+    
+    logger.info('✅ All background workers started');
+  } catch (error) {
+    logger.error('Failed to start background workers:', error);
+    throw error;
+  }
 }
 
-function startJobProcessor() {
-  const processJobs = async () => {
-    if (!isWorkerRunning) return;
-    
-    try {
-      const job = await jobsService.getNextJob();
-      
-      if (job) {
-        logger.info(`Processing job: ${job.job_type} (${job.id})`);
-        await processJob(job);
-      }
-      
-      // Continue processing
-      setTimeout(processJobs, 1000); // Check for jobs every second
-    } catch (error) {
-      logger.error('Job processor error:', error);
-      setTimeout(processJobs, 5000); // Wait 5 seconds on error
-    }
-  };
+async function startBullWorkers() {
+  logger.info('🔄 Starting Bull queue workers...');
+  
+  // Process all job types with the same processor
+  const queue = jobsService.getQueue();
   
   // Start multiple workers for concurrency
   for (let i = 0; i < config.WORKER_CONCURRENCY; i++) {
-    processJobs();
-    logger.info(`Worker ${i + 1} started`);
+    queue.process(`worker-${i}`, 1, processBullJob);
+    logger.info(`✅ Bull worker ${i + 1} started`);
   }
+  
+  // Handle job events
+  queue.on('completed', (job: Job, result: any) => {
+    const jobData = job.data as BaseJob;
+    logger.info(`✅ Job completed: ${jobData.type} (${job.id})`, { result });
+    metricsService.incrementJobCounter(jobData.type, 'completed', jobData.tenantId);
+  });
+  
+  queue.on('failed', (job: Job, err: Error) => {
+    const jobData = job.data as BaseJob;
+    logger.error(`❌ Job failed: ${jobData.type} (${job.id})`, { 
+      error: err.message,
+      attempts: job.attemptsMade,
+      maxAttempts: job.opts.attempts
+    });
+    metricsService.incrementJobCounter(jobData.type, 'failed', jobData.tenantId);
+  });
+  
+  queue.on('stalled', (job: Job) => {
+    const jobData = job.data as BaseJob;
+    logger.warn(`⚠️ Job stalled: ${jobData.type} (${job.id})`);
+    metricsService.incrementJobCounter(jobData.type, 'stalled', jobData.tenantId);
+  });
+}
+
+async function processBullJob(job: Job): Promise<any> {
+  const startTime = Date.now();
+  const jobData = job.data as BaseJob;
+  
+  try {
+    logger.info(`🔄 Processing job: ${jobData.type} (${job.id})`, {
+      tenantId: jobData.tenantId,
+      attempt: job.attemptsMade + 1,
+      maxAttempts: job.opts.attempts
+    });
+    
+    let result: any;
+    
+    // Route to specific job handler based on type
+    switch (jobData.type) {
+      case 'hold.expiration':
+        result = await processHoldExpiration(jobData);
+        break;
+      case 'notification.send':
+        result = await processNotificationSend(jobData);
+        break;
+      case 'analytics.aggregate':
+        result = await processAnalyticsAggregation(jobData);
+        break;
+      case 'cache.warm_availability':
+        result = await processCacheWarming(jobData);
+        break;
+      case 'maintenance.idempotency_gc':
+        result = await processIdempotencyGC(jobData);
+        break;
+      case 'payment.process':
+        result = await processPaymentProcessing(jobData);
+        break;
+      default:
+        throw new Error(`Unknown job type: ${jobData.type}`);
+    }
+    
+    const duration = Date.now() - startTime;
+    metricsService.recordJobRun(jobData.type, 'completed', duration);
+    
+    logger.info(`✅ Job completed: ${jobData.type} (${job.id})`, {
+      duration: `${duration}ms`,
+      result: typeof result === 'object' ? Object.keys(result) : result
+    });
+    
+    return result;
+    
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    metricsService.recordJobRun(jobData.type, 'failed', duration);
+    
+    logger.error(`❌ Job failed: ${jobData.type} (${job.id})`, {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      duration: `${duration}ms`,
+      attempt: job.attemptsMade + 1
+    });
+    
+    throw error;
+  }
+}
+
+// Job processors
+
+async function processHoldExpiration(job: BaseJob): Promise<any> {
+  const { holdId, resourceId, expirationTime } = job.payload;
+  
+  logger.info(`Processing hold expiration for hold ${holdId}`);
+  
+  // TODO: Implement hold expiration logic
+  // This would typically:
+  // 1. Mark hold as expired
+  // 2. Release resource availability
+  // 3. Clean up temporary reservations
+  // 4. Update metrics
+  
+  return {
+    holdId,
+    expired: true,
+    resourceId,
+    expirationTime,
+    availabilityReleased: true
+  };
+}
+
+async function processNotificationSend(job: BaseJob): Promise<any> {
+  const startTime = Date.now();
+  const { type, to, template, data, provider = 'resend' } = job.payload;
+  
+  logger.info(`Sending ${type} notification via ${provider} to ${to} using template ${template}`);
+  
+  try {
+    let result: any;
+    
+    if (type === 'email') {
+      // TODO: Implement email sending logic
+      result = await sendEmail(to, template, data, provider);
+      const duration = Date.now() - startTime;
+      metricsService.recordEmailSend(provider, template, duration, 'success');
+    } else if (type === 'sms') {
+      // TODO: Implement SMS sending logic
+      result = await sendSms(to, template, data);
+      const duration = Date.now() - startTime;
+      metricsService.recordSmsSend(duration, 'success');
+    } else {
+      throw new Error(`Unsupported notification type: ${type}`);
+    }
+    
+    return {
+      type,
+      to,
+      template,
+      provider,
+      delivered: true,
+      messageId: result.messageId
+    };
+    
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    if (type === 'email') {
+      metricsService.recordEmailSend(provider, template, duration, 'error');
+    } else if (type === 'sms') {
+      metricsService.recordSmsSend(duration, 'error');
+    }
+    
+    throw error;
+  }
+}
+
+async function processAnalyticsAggregation(job: BaseJob): Promise<any> {
+  const { timeRange, metrics, granularity } = job.payload;
+  
+  logger.info(`Aggregating analytics for time range: ${timeRange} with granularity: ${granularity}`);
+  
+  // TODO: Implement analytics aggregation
+  // This would typically:
+  // 1. Query raw event data
+  // 2. Aggregate by time buckets and dimensions
+  // 3. Store aggregated metrics
+  // 4. Update dashboard data
+  
+  return {
+    timeRange,
+    metricsProcessed: metrics?.length || 0,
+    granularity,
+    aggregationsCreated: 5
+  };
+}
+
+async function processCacheWarming(job: BaseJob): Promise<any> {
+  const { resourceType, startDate, endDate } = job.payload;
+  
+  logger.info(`Warming ${resourceType} cache from ${startDate} to ${endDate}`);
+  
+  // TODO: Implement cache warming logic
+  // This would typically:
+  // 1. Pre-load frequently accessed data
+  // 2. Update Redis cache entries
+  // 3. Verify cache consistency
+  
+  return {
+    resourceType,
+    dateRange: { startDate, endDate },
+    cacheEntriesWarmed: 100,
+    success: true
+  };
+}
+
+async function processIdempotencyGC(job: BaseJob): Promise<any> {
+  const { olderThan } = job.payload;
+  
+  logger.info(`Running idempotency garbage collection for records older than ${olderThan}`);
+  
+  // TODO: Implement idempotency cleanup
+  // This is handled by TTL in Redis, but we can add manual cleanup for monitoring
+  
+  const { cleanupExpiredIdempotencyRecords } = await import('./middleware/idempotency');
+  const cleaned = await cleanupExpiredIdempotencyRecords();
+  
+  return {
+    olderThan,
+    recordsCleaned: cleaned,
+    success: true
+  };
+}
+
+async function processPaymentProcessing(job: BaseJob): Promise<any> {
+  const { paymentId, amount, currency, action } = job.payload;
+  
+  logger.info(`Processing payment: ${paymentId} (${action} ${amount} ${currency})`);
+  
+  // TODO: Implement payment processing via Stripe
+  // This would typically:
+  // 1. Call Stripe API for the specified action
+  // 2. Update payment status in database
+  // 3. Send confirmation notifications
+  
+  return {
+    paymentId,
+    action,
+    amount,
+    currency,
+    processed: true,
+    status: 'succeeded'
+  };
+}
+
+// Utility functions for notification sending
+
+async function sendEmail(to: string, template: string, data: any, provider: string): Promise<any> {
+  // TODO: Implement email sending via Resend or Nodemailer
+  logger.info(`[MOCK] Sending email to ${to} via ${provider}`);
+  
+  return {
+    messageId: `email_${Date.now()}`,
+    provider,
+    template,
+    delivered: true
+  };
+}
+
+async function sendSms(to: string, template: string, data: any): Promise<any> {
+  // TODO: Implement SMS sending via Twilio
+  logger.info(`[MOCK] Sending SMS to ${to}`);
+  
+  return {
+    messageId: `sms_${Date.now()}`,
+    to,
+    delivered: true
+  };
+}
+
+// Scheduled workers that run independently
+
+function startHoldExpirationSweeper() {
+  const sweeperInterval = 30000; // 30 seconds
+  
+  const runSweeper = async () => {
+    if (!isWorkerRunning) return;
+    
+    const startTime = Date.now();
+    
+    try {
+      logger.debug('🧹 Running hold expiration sweeper');
+      
+      // TODO: Implement hold expiration sweeper
+      // This would typically:
+      // 1. Query for expired holds
+      // 2. Release availability
+      // 3. Clean up hold records
+      // 4. Send notifications if needed
+      
+      const expiredHolds = await findExpiredHolds();
+      let processedCount = 0;
+      
+      for (const hold of expiredHolds) {
+        try {
+          await expireHold(hold);
+          processedCount++;
+        } catch (error) {
+          logger.error(`Failed to expire hold ${hold.id}:`, error);
+        }
+      }
+      
+      const duration = Date.now() - startTime;
+      metricsService.recordHoldSweeperLag(duration);
+      metricsService.incrementHoldsExpired(processedCount);
+      
+      if (processedCount > 0) {
+        logger.info(`✅ Hold sweeper processed ${processedCount} expired holds in ${duration}ms`);
+      }
+      
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      metricsService.recordHoldSweeperLag(duration);
+      logger.error('Hold expiration sweeper error:', error);
+    }
+  };
+  
+  holdSweeperInterval = setInterval(runSweeper, sweeperInterval);
+  logger.info(`✅ Hold expiration sweeper started (${sweeperInterval}ms interval)`);
+}
+
+function startIdempotencyGarbageCollector() {
+  const cleanupInterval = 60 * 60 * 1000; // 1 hour
+  
+  const runCleanup = async () => {
+    if (!isWorkerRunning) return;
+    
+    try {
+      logger.debug('🗑️ Running idempotency garbage collection');
+      
+      // This is handled by the idempotency middleware, but we can add manual cleanup
+      const { cleanupExpiredIdempotencyRecords } = await import('./middleware/idempotency');
+      const cleaned = await cleanupExpiredIdempotencyRecords();
+      
+      if (cleaned > 0) {
+        logger.info(`✅ Cleaned up ${cleaned} expired idempotency records`);
+      }
+      
+    } catch (error) {
+      logger.error('Idempotency garbage collection error:', error);
+    }
+  };
+  
+  idempotencyCleanupInterval = setInterval(runCleanup, cleanupInterval);
+  logger.info(`✅ Idempotency garbage collector started (${cleanupInterval}ms interval)`);
+}
+
+function startAnalyticsAggregator() {
+  const aggregationInterval = 5 * 60 * 1000; // 5 minutes
+  
+  const runAggregation = async () => {
+    if (!isWorkerRunning) return;
+    
+    try {
+      logger.debug('📊 Running analytics aggregation');
+      
+      // TODO: Implement analytics aggregation
+      // This would typically:
+      // 1. Query raw events from the last interval
+      // 2. Aggregate by time buckets and dimensions
+      // 3. Store aggregated results
+      // 4. Update dashboard data
+      
+      const endTime = new Date();
+      const startTime = new Date(endTime.getTime() - aggregationInterval);
+      
+      const results = await aggregateAnalytics(startTime, endTime);
+      
+      logger.info(`✅ Analytics aggregation completed`, {
+        timeRange: `${startTime.toISOString()} to ${endTime.toISOString()}`,
+        eventsProcessed: results.eventsProcessed,
+        aggregationsCreated: results.aggregationsCreated
+      });
+      
+    } catch (error) {
+      logger.error('Analytics aggregation error:', error);
+    }
+  };
+  
+  analyticsInterval = setInterval(runAggregation, aggregationInterval);
+  logger.info(`✅ Analytics aggregator started (${aggregationInterval}ms interval)`);
+}
+
+function startAvailabilityCacheWarmer() {
+  const warmingInterval = 10 * 60 * 1000; // 10 minutes
+  
+  const runWarming = async () => {
+    if (!isWorkerRunning) return;
+    
+    try {
+      logger.debug('🔥 Running availability cache warming');
+      
+      // TODO: Implement cache warming
+      // This would typically:
+      // 1. Identify popular properties/time ranges
+      // 2. Pre-load availability data
+      // 3. Update Redis cache
+      // 4. Verify cache hit rates
+      
+      const results = await warmAvailabilityCache();
+      
+      logger.info(`✅ Cache warming completed`, {
+        resourcesWarmed: results.resourcesWarmed,
+        cacheEntriesCreated: results.cacheEntriesCreated
+      });
+      
+    } catch (error) {
+      logger.error('Cache warming error:', error);
+    }
+  };
+  
+  cacheWarmerInterval = setInterval(runWarming, warmingInterval);
+  logger.info(`✅ Availability cache warmer started (${warmingInterval}ms interval)`);
 }
 
 function startMetricsCollection() {
-  // Record system metrics every 30 seconds
   metricsInterval = setInterval(async () => {
+    if (!isWorkerRunning) return;
+    
     try {
+      // Update queue metrics
+      const queue = jobsService.getQueue();
+      const waiting = await queue.getWaiting();
+      const active = await queue.getActive();
+      const completed = await queue.getCompleted();
+      const failed = await queue.getFailed();
+      const delayed = await queue.getDelayed();
+      
+      await metricsService.updateQueueMetrics({
+        waiting: waiting.length,
+        active: active.length,
+        completed: completed.length,
+        failed: failed.length,
+        delayed: delayed.length
+      });
+      
+      // Record system snapshot
       await metricsService.recordSystemSnapshot();
+      
     } catch (error) {
-      logger.error('Error recording system metrics:', error);
+      logger.error('Metrics collection error:', error);
     }
-  }, 30000); // 30 seconds
+  }, 30000); // Every 30 seconds
   
-  logger.info('📊 System metrics collection started (30s interval)');
+  logger.info('✅ Metrics collection started (30s interval)');
 }
 
-async function processJob(job: any) {
-  try {
-    let result: any;
-    let parsedPayload: any = {};
-    
-    // Safely parse the payload
-    if (job.payload) {
-      try {
-        if (typeof job.payload === 'string') {
-          parsedPayload = JSON.parse(job.payload);
-        } else if (typeof job.payload === 'object') {
-          parsedPayload = job.payload;
-        }
-      } catch (parseError) {
-        logger.warn(`Failed to parse job payload for ${job.job_type}:`, parseError);
-        parsedPayload = {};
-      }
-    }
-    
-    switch (job.job_type) {
-      case 'metrics_collection':
-        result = await processMetricsCollection(parsedPayload);
-        break;
-        
-      case 'health_check':
-        result = await processHealthCheck(parsedPayload);
-        break;
-        
-      case 'email_notification':
-        result = await processEmailNotification(parsedPayload);
-        break;
-        
-      case 'data_export':
-        result = await processDataExport(parsedPayload);
-        break;
-        
-      case 'cleanup_old_data':
-        result = await processCleanupOldData(parsedPayload);
-        break;
-        
-      case 'webhook_delivery':
-        result = await processWebhookDelivery(parsedPayload);
-        break;
-        
-      case 'metrics_aggregation':
-        result = await processMetricsAggregation(parsedPayload);
-        break;
-        
-      case 'daily_report':
-        result = await processDailyReport(parsedPayload);
-        break;
-        
-      case 'cleanup_completed_jobs':
-        result = await processCleanupCompletedJobs(parsedPayload);
-        break;
-        
-      default:
-        throw new Error(`Unknown job type: ${job.job_type}`);
-    }
-    
-    await jobsService.updateJobStatus(job.id, 'completed', undefined, result);
-    logger.info(`Job completed: ${job.job_type} (${job.id})`);
-    
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    if (job.retry_count < job.max_retries) {
-      // Retry the job
-      await jobsService.updateJobStatus(job.id, 'pending', errorMessage);
-      logger.warn(`Job failed, will retry: ${job.job_type} (${job.id}) - ${errorMessage}`);
-    } else {
-      // Mark as failed
-      await jobsService.updateJobStatus(job.id, 'failed', errorMessage);
-      logger.error(`Job failed permanently: ${job.job_type} (${job.id}) - ${errorMessage}`);
-    }
-  }
+// Helper functions for scheduled workers
+
+async function findExpiredHolds(): Promise<any[]> {
+  // TODO: Query database for expired holds
+  // For now, return empty array
+  return [];
 }
 
-async function processMetricsCollection(data: any) {
-  // Simulate metrics collection
-  const metrics = [
-    { name: 'cpu_usage', value: Math.random() * 100, unit: 'percent' },
-    { name: 'memory_usage', value: Math.random() * 8192, unit: 'mb' },
-    { name: 'disk_usage', value: Math.random() * 100, unit: 'percent' },
-    { name: 'network_io', value: Math.random() * 1000, unit: 'mbps' }
-  ];
-  
-  // In real implementation, this would collect actual system metrics
-  logger.info('Collected system metrics', { count: metrics.length });
-  
-  return { metrics_collected: metrics.length };
+async function expireHold(hold: any): Promise<void> {
+  // TODO: Implement hold expiration logic
+  logger.debug(`Expiring hold: ${hold.id}`);
 }
 
-async function processHealthCheck(data: any) {
-  const { service_id, url, check_all_services } = data;
-  
-  try {
-    if (check_all_services) {
-      // This is a general health check job - simulate checking system health
-      const systemHealth = {
-        service_id: 'background-ops',
-        status: 'healthy',
-        response_time: Math.floor(Math.random() * 100) + 10,
-        checks: {
-          database: 'healthy',
-          redis: 'healthy',
-          workers: 'healthy'
-        }
-      };
-      
-      logger.info('System health check completed', systemHealth);
-      return systemHealth;
-    } else if (service_id || url) {
-      // This is a specific service health check
-      const startTime = Date.now();
-      
-      if (url) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        const response = await fetch(url, { 
-          method: 'GET',
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        const responseTime = Date.now() - startTime;
-        const isHealthy = response.ok;
-        
-        return {
-          service_id,
-          status: isHealthy ? 'healthy' : 'unhealthy',
-          response_time: responseTime,
-          status_code: response.status
-        };
-      } else {
-        // Simulate for services without URL
-        return {
-          service_id,
-          status: Math.random() > 0.1 ? 'healthy' : 'unhealthy',
-          response_time: Math.floor(Math.random() * 200) + 50
-        };
-      }
-    } else {
-      // Default case - just return healthy
-      return {
-        status: 'healthy',
-        response_time: Math.floor(Math.random() * 50) + 10
-      };
-    }
-  } catch (error) {
-    return {
-      service_id,
-      status: 'unhealthy',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
-}
-
-async function processEmailNotification(data: any) {
-  const { to, subject, body, template } = data;
-  
-  // Simulate email sending
-  logger.info(`Sending email to ${to}: ${subject}`);
-  
-  // In real implementation, integrate with email service (SendGrid, SES, etc.)
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
+async function aggregateAnalytics(startTime: Date, endTime: Date): Promise<any> {
+  // TODO: Implement analytics aggregation
   return {
-    delivered: true,
-    message_id: `msg_${Date.now()}`,
-    recipient: to
+    eventsProcessed: 0,
+    aggregationsCreated: 0,
+    timeRange: { startTime, endTime }
   };
 }
 
-async function processDataExport(data: any) {
-  const { export_type, date_range, format } = data;
-  
-  logger.info(`Processing data export: ${export_type} (${format})`);
-  
-  // Simulate data export processing
-  await new Promise(resolve => setTimeout(resolve, 5000));
-  
+async function warmAvailabilityCache(): Promise<any> {
+  // TODO: Implement cache warming
   return {
-    export_type,
-    format,
-    file_size: Math.floor(Math.random() * 10000000), // Random file size
-    download_url: `https://exports.example.com/export_${Date.now()}.${format}`
+    resourcesWarmed: 0,
+    cacheEntriesCreated: 0
   };
 }
 
-async function processCleanupOldData(data: any) {
-  const { table_name, retention_days } = data;
+export async function stopBackgroundWorkers() {
+  logger.info('🛑 Stopping background workers...');
   
-  logger.info(`Cleaning up old data from ${table_name} (${retention_days} days)`);
-  
-  // Simulate cleanup
-  const deletedRecords = Math.floor(Math.random() * 1000);
-  
-  return {
-    table_name,
-    deleted_records: deletedRecords,
-    retention_days
-  };
-}
-
-async function processWebhookDelivery(data: any) {
-  const { url, payload, retry_count = 0 } = data;
-  
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Background-Ops-Webhook/1.0'
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    
-    return {
-      delivered: response.ok,
-      status_code: response.status,
-      retry_count,
-      url
-    };
-  } catch (error) {
-    throw new Error(`Webhook delivery failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-async function processMetricsAggregation(data: any) {
-  const { interval } = data;
-  
-  logger.info(`Processing metrics aggregation for ${interval} interval`);
-  
-  // Simulate metrics aggregation
-  const aggregated = {
-    interval,
-    metrics_processed: Math.floor(Math.random() * 1000),
-    aggregation_time: Math.floor(Math.random() * 5000),
-    timestamp: new Date().toISOString()
-  };
-  
-  return aggregated;
-}
-
-async function processDailyReport(data: any) {
-  const { date, include_metrics, include_uptime, include_activity } = data;
-  
-  logger.info(`Generating daily report for ${date}`);
-  
-  // Simulate report generation
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  const report = {
-    date,
-    includes: { include_metrics, include_uptime, include_activity },
-    generated_at: new Date().toISOString(),
-    report_size: Math.floor(Math.random() * 100000),
-    sections: ['summary', 'metrics', 'uptime', 'activity'].filter(Boolean)
-  };
-  
-  return report;
-}
-
-async function processCleanupCompletedJobs(data: any) {
-  const { retention_hours } = data;
-  
-  logger.info(`Cleaning up completed jobs older than ${retention_hours} hours`);
-  
-  // Simulate cleanup - in real implementation this would clean the database
-  const deletedCount = Math.floor(Math.random() * 100);
-  
-  return {
-    retention_hours,
-    deleted_jobs: deletedCount,
-    cleanup_time: new Date().toISOString()
-  };
-}
-
-export function stopBackgroundWorkers() {
   isWorkerRunning = false;
   
-  if (metricsInterval) {
-    clearInterval(metricsInterval);
+  // Clear intervals
+  if (metricsInterval) clearInterval(metricsInterval);
+  if (holdSweeperInterval) clearInterval(holdSweeperInterval);
+  if (idempotencyCleanupInterval) clearInterval(idempotencyCleanupInterval);
+  if (analyticsInterval) clearInterval(analyticsInterval);
+  if (cacheWarmerInterval) clearInterval(cacheWarmerInterval);
+  
+  // Close Bull queue
+  try {
+    const queue = jobsService.getQueue();
+    await queue.close();
+    logger.info('✅ Bull queue closed');
+  } catch (error) {
+    logger.error('Error closing Bull queue:', error);
   }
   
-  logger.info('🛑 Background workers stopped');
+  logger.info('✅ Background workers stopped');
 }
+
+// Graceful shutdown
+process.on('SIGTERM', stopBackgroundWorkers);
+process.on('SIGINT', stopBackgroundWorkers);

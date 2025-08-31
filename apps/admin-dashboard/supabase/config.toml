@@ -51,3 +51,15 @@ verify_jwt = false
 
 [functions.log-audit-event]
 verify_jwt = true
+
+[functions.send-welcome-email]
+verify_jwt = false
+
+[functions.send-welcome-pack]
+verify_jwt = false
+
+[functions.send-credentials-email]
+verify_jwt = false
+
+[functions.manage-tenant-credentials]
+verify_jwt = true

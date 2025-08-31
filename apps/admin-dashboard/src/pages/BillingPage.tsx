@@ -1,183 +1,83 @@
-import { useState, useEffect } from "react";
-// Remove AdminLayout import as it's not being used consistently
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
+import { useBillingAPI, Restaurant, PaymentHistory, BillingAnalytics } from '@/hooks/useBillingAPI';
 import { 
   CreditCard, 
   DollarSign, 
   TrendingUp, 
   Users, 
-  Calendar,
-  ExternalLink,
-  CheckCircle,
-  AlertCircle,
-  Crown,
-  Zap
-} from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+  AlertTriangle, 
+  CheckCircle, 
+  XCircle, 
+  Clock,
+  Download,
+  Send,
+  Settings,
+  BarChart3
+} from 'lucide-react';
 
-interface PricingPlan {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  monthly_price: number;
-  yearly_price: number;
-  features: any;
-  is_popular: boolean;
-  max_staff_accounts: number;
-  max_bookings_per_month: number;
-  max_tables: number;
-}
-
-interface Subscription {
-  id: string;
-  status: string;
-  current_period_start: string;
-  current_period_end: string;
-  cancel_at_period_end: boolean;
-  plan_id: string;
-  pricing_plans: PricingPlan;
-}
-
-interface UsageData {
-  staff_count: number;
-  bookings_this_month: number;
-  tables_count: number;
-}
-
-export default function BillingPage() {
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [usage, setUsage] = useState<UsageData | null>(null);
-  const [plans, setPlans] = useState<PricingPlan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [processingCheckout, setProcessingCheckout] = useState<string | null>(null);
+const BillingPage = () => {
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
+  const [analytics, setAnalytics] = useState<BillingAnalytics | null>(null);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState('overview');
   const { toast } = useToast();
+  
+  const {
+    loading,
+    getRestaurants,
+    getPaymentHistory,
+    sendPaymentReminder,
+    getBillingAnalytics,
+    updateSubscription,
+    exportBillingData,
+  } = useBillingAPI();
 
   useEffect(() => {
-    loadBillingData();
+    loadData();
   }, []);
 
-  const loadBillingData = async () => {
+  const loadData = async () => {
     try {
-      setLoading(true);
+      const [restaurantsData, paymentsData, analyticsData] = await Promise.all([
+        getRestaurants(),
+        getPaymentHistory(),
+        getBillingAnalytics()
+      ]);
       
-      // Load current subscription
-      const { data: subscriptionData } = await supabase
-        .from('subscriptions')
-        .select(`
-          *,
-          pricing_plans (*)
-        `)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      setSubscription(subscriptionData);
-
-      // Load usage data
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData.user) {
-        const { data: tenantData } = await supabase
-          .rpc('get_user_tenant', { p_user_id: userData.user.id })
-          .single();
-
-        if (tenantData) {
-          // Get staff count
-          const { count: staffCount } = await supabase
-            .from('employees')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'ACTIVE');
-
-          // Get bookings this month
-          const startOfMonth = new Date();
-          startOfMonth.setDate(1);
-          startOfMonth.setHours(0, 0, 0, 0);
-          
-          const { count: bookingsCount } = await supabase
-            .from('bookings')
-            .select('*', { count: 'exact', head: true })
-            .gte('created_at', startOfMonth.toISOString());
-
-          // Get tables count
-          const { count: tablesCount } = await supabase
-            .from('restaurant_tables')
-            .select('*', { count: 'exact', head: true })
-            .eq('active', true);
-
-          setUsage({
-            staff_count: staffCount || 0,
-            bookings_this_month: bookingsCount || 0,
-            tables_count: tablesCount || 0
-          });
-        }
-      }
-
-      // Load available plans
-      const { data: plansData } = await supabase
-        .from('pricing_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('monthly_price');
-
-      setPlans(plansData || []);
+      setRestaurants(restaurantsData);
+      setPaymentHistory(paymentsData);
+      setAnalytics(analyticsData);
     } catch (error) {
-      console.error('Error loading billing data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load billing information",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+      console.error('Error loading data:', error);
     }
   };
 
-  const handleUpgrade = async (planSlug: string, billingCycle: 'monthly' | 'yearly') => {
+  const handleSendReminder = async (tenantId: string, type: 'overdue' | 'failed' | 'upcoming') => {
     try {
-      setProcessingCheckout(planSlug);
-      
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { planSlug, billingCycle }
-      });
-
-      if (error) throw error;
-
-      // Open Stripe checkout in a new tab
-      window.open(data.url, '_blank');
-    } catch (error) {
-      console.error('Checkout error:', error);
+      await sendPaymentReminder(tenantId, type);
       toast({
-        title: "Error",
-        description: "Failed to create checkout session",
-        variant: "destructive"
+        title: "Success",
+        description: "Payment reminder sent successfully",
       });
-    } finally {
-      setProcessingCheckout(null);
+      await loadData();
+    } catch (error) {
+      console.error('Error sending reminder:', error);
     }
   };
 
-  const handleManageSubscription = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
-      
-      if (error) throw error;
-
-      // Open customer portal in a new tab
-      window.open(data.url, '_blank');
-    } catch (error) {
-      console.error('Portal error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to open customer portal",
-        variant: "destructive"
-      });
-    }
+  const handleExport = async (format: 'csv' | 'json') => {
+    const tenantId = selectedRestaurant === 'all' ? undefined : selectedRestaurant;
+    await exportBillingData(format, tenantId);
   };
 
   const formatPrice = (price: number) => {
@@ -187,33 +87,57 @@ export default function BillingPage() {
     }).format(price / 100);
   };
 
-  const getUsagePercentage = (current: number, limit: number | null) => {
-    if (!limit) return 0;
-    return Math.min((current / limit) * 100, 100);
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-success/10 text-success border-success/20';
-      case 'trialing':
-        return 'bg-primary/10 text-primary border-primary/20';
+      case 'paid':
+        return 'text-green-600 bg-green-50';
       case 'past_due':
-        return 'bg-warning/10 text-warning border-warning/20';
+      case 'pending':
+        return 'text-yellow-600 bg-yellow-50';
       case 'canceled':
-        return 'bg-destructive/10 text-destructive border-destructive/20';
+      case 'failed':
+        return 'text-red-600 bg-red-50';
       default:
-        return 'bg-muted/50 text-muted-foreground border-muted/20';
+        return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'active':
+      case 'paid':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'past_due':
+      case 'pending':
+        return <Clock className="h-4 w-4" />;
+      case 'canceled':
+      case 'failed':
+        return <XCircle className="h-4 w-4" />;
+      default:
+        return <AlertTriangle className="h-4 w-4" />;
     }
   };
 
   if (loading) {
     return (
-      <div className="p-8 space-y-6">
-        <div className="h-8 bg-muted rounded animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-muted rounded animate-pulse" />
+      <div className="container max-w-7xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-4 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-3">
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-20 mb-2" />
+                <Skeleton className="h-4 w-24" />
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
@@ -221,248 +145,238 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Billing Management</h1>
-          <p className="text-muted-foreground">
-            Manage your subscription, view usage, and upgrade your plan
-          </p>
-        </div>
-        {subscription && (
-          <Button onClick={handleManageSubscription} variant="outline">
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Manage Subscription
-          </Button>
-        )}
+    <div className="container max-w-7xl mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Restaurant Billing Management</h1>
+        <p className="text-muted-foreground mt-2">
+          Manage restaurant subscriptions, payments, and billing analytics
+        </p>
       </div>
 
-      {/* ... keep existing code (subscription cards, usage overview, plans) */}
-      
-      {/* Current Subscription */}
-      {subscription && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Crown className="w-5 h-5" />
-              Current Plan: {subscription.pricing_plans.name}
-              {subscription.pricing_plans.is_popular && (
-                <Badge variant="secondary">Most Popular</Badge>
-              )}
-            </CardTitle>
-            <CardDescription>
-              {subscription.pricing_plans.description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span>Status</span>
-              <Badge className={getStatusColor(subscription.status)}>
-                {subscription.status.toUpperCase()}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Current Period</span>
-              <span>
-                {format(new Date(subscription.current_period_start), 'MMM d')} - 
-                {format(new Date(subscription.current_period_end), 'MMM d, yyyy')}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Next Billing</span>
-              <span>
-                {formatDistanceToNow(new Date(subscription.current_period_end), { addSuffix: true })}
-              </span>
-            </div>
-            {subscription.cancel_at_period_end && (
-              <div className="flex items-center gap-2 text-yellow-600">
-                <AlertCircle className="w-4 h-4" />
-                <span>Your subscription will be canceled at the end of the current period</span>
+      {/* Analytics Overview */}
+      {analytics && (
+        <div className="grid gap-6 md:grid-cols-4 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatPrice(analytics.totalRevenue)}</div>
+              <p className="text-xs text-muted-foreground">
+                From {analytics.totalTransactions} transactions
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Restaurants</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {restaurants.filter(r => r.subscribers?.[0]?.subscribed).length}
               </div>
-            )}
-          </CardContent>
-        </Card>
+              <p className="text-xs text-muted-foreground">
+                Out of {restaurants.length} total
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Failed Payments</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {restaurants.reduce((sum, r) => sum + (r.failedPayments || 0), 0)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Requiring attention
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">85%</div>
+              <p className="text-xs text-muted-foreground">
+                Trial to paid conversion
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* Usage Overview */}
-      {usage && subscription && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Usage Overview
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Staff Accounts</span>
-                  <span className="text-sm text-muted-foreground">
-                    {usage.staff_count} / {subscription.pricing_plans.max_staff_accounts || '∞'}
-                  </span>
-                </div>
-                <Progress 
-                  value={getUsagePercentage(usage.staff_count, subscription.pricing_plans.max_staff_accounts)} 
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Bookings This Month</span>
-                  <span className="text-sm text-muted-foreground">
-                    {usage.bookings_this_month} / {subscription.pricing_plans.max_bookings_per_month || '∞'}
-                  </span>
-                </div>
-                <Progress 
-                  value={getUsagePercentage(usage.bookings_this_month, subscription.pricing_plans.max_bookings_per_month)} 
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Tables</span>
-                  <span className="text-sm text-muted-foreground">
-                    {usage.tables_count} / {subscription.pricing_plans.max_tables || '∞'}
-                  </span>
-                </div>
-                <Progress 
-                  value={getUsagePercentage(usage.tables_count, subscription.pricing_plans.max_tables)} 
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Main Content */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex justify-between items-center mb-6">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="restaurants">Restaurants</TabsTrigger>
+            <TabsTrigger value="payments">Payment History</TabsTrigger>
+          </TabsList>
 
-      {/* Available Plans */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Available Plans</CardTitle>
-          <CardDescription>
-            Upgrade or downgrade your plan to match your needs
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="monthly" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="monthly">Monthly</TabsTrigger>
-              <TabsTrigger value="yearly">Yearly (Save 10%)</TabsTrigger>
-            </TabsList>
+          <div className="flex gap-2">
+            <Select value={selectedRestaurant} onValueChange={setSelectedRestaurant}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by restaurant" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Restaurants</SelectItem>
+                {restaurants.map((restaurant) => (
+                  <SelectItem key={restaurant.id} value={restaurant.id}>
+                    {restaurant.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
-            <TabsContent value="monthly" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {plans.map((plan) => (
-                  <Card key={plan.id} className={`relative ${plan.is_popular ? 'border-primary' : ''}`}>
-                    {plan.is_popular && (
-                      <Badge className="absolute -top-2 left-1/2 -translate-x-1/2">
-                        Most Popular
+            <Button variant="outline" onClick={() => handleExport('csv')}>
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+          </div>
+        </div>
+
+        <TabsContent value="overview">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Payments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {paymentHistory.slice(0, 10).map((payment) => (
+                  <div key={payment.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {getStatusIcon(payment.status)}
+                      <div>
+                        <p className="font-medium">{payment.tenants?.name || 'Unknown'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {payment.subscribers?.subscription_tier || 'Free'} plan
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">{formatPrice(payment.amount)}</p>
+                      <Badge variant="outline" className={getStatusColor(payment.status)}>
+                        {payment.status}
                       </Badge>
-                    )}
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        {plan.slug === 'starter' && <Zap className="w-5 h-5" />}
-                        {plan.slug === 'professional' && <Crown className="w-5 h-5" />}
-                        {plan.slug === 'enterprise' && <Users className="w-5 h-5" />}
-                        {plan.name}
-                      </CardTitle>
-                      <CardDescription>{plan.description}</CardDescription>
-                      <div className="space-y-2">
-                        <div className="text-3xl font-bold">
-                          {formatPrice(plan.monthly_price)}
-                          <span className="text-base font-normal text-muted-foreground">/month</span>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <ul className="space-y-2">
-                        {(Array.isArray(plan.features) ? plan.features : []).map((feature, index) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <CheckCircle className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" />
-                            <span className="text-sm">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <Separator />
-                      <div className="space-y-2 text-sm text-muted-foreground">
-                        <div>• Up to {plan.max_staff_accounts || 'unlimited'} staff accounts</div>
-                        <div>• Up to {plan.max_bookings_per_month || 'unlimited'} bookings/month</div>
-                        <div>• Up to {plan.max_tables || 'unlimited'} tables</div>
-                      </div>
-                      <Button 
-                        className="w-full" 
-                        variant={subscription?.plan_id === plan.id ? "outline" : "default"}
-                        disabled={subscription?.plan_id === plan.id || processingCheckout === plan.slug}
-                        onClick={() => handleUpgrade(plan.slug, 'monthly')}
-                      >
-                        {subscription?.plan_id === plan.id ? "Current Plan" : 
-                         processingCheckout === plan.slug ? "Processing..." : "Upgrade"}
-                      </Button>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </TabsContent>
-            
-            <TabsContent value="yearly" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {plans.map((plan) => (
-                  <Card key={plan.id} className={`relative ${plan.is_popular ? 'border-primary' : ''}`}>
-                    {plan.is_popular && (
-                      <Badge className="absolute -top-2 left-1/2 -translate-x-1/2">
-                        Most Popular
-                      </Badge>
-                    )}
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        {plan.slug === 'starter' && <Zap className="w-5 h-5" />}
-                        {plan.slug === 'professional' && <Crown className="w-5 h-5" />}
-                        {plan.slug === 'enterprise' && <Users className="w-5 h-5" />}
-                        {plan.name}
-                      </CardTitle>
-                      <CardDescription>{plan.description}</CardDescription>
-                      <div className="space-y-2">
-                        <div className="text-3xl font-bold">
-                          {formatPrice(plan.yearly_price || plan.monthly_price * 12)}
-                          <span className="text-base font-normal text-muted-foreground">/year</span>
-                        </div>
-                        {plan.yearly_price && (
-                          <div className="text-sm text-green-600">
-                            Save {formatPrice((plan.monthly_price * 12) - plan.yearly_price)} yearly
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="restaurants">
+          <Card>
+            <CardHeader>
+              <CardTitle>Restaurant Billing Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Restaurant</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Revenue</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {restaurants.map((restaurant) => {
+                    const subscription = restaurant.subscribers?.[0];
+                    return (
+                      <TableRow key={restaurant.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{restaurant.name}</p>
+                            <p className="text-sm text-muted-foreground">{restaurant.slug}</p>
                           </div>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <ul className="space-y-2">
-                        {(Array.isArray(plan.features) ? plan.features : []).map((feature, index) => (
-                          <li key={index} className="flex items-start gap-2">
-                            <CheckCircle className="w-4 h-4 mt-0.5 text-green-500 flex-shrink-0" />
-                            <span className="text-sm">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <Separator />
-                      <div className="space-y-2 text-sm text-muted-foreground">
-                        <div>• Up to {plan.max_staff_accounts || 'unlimited'} staff accounts</div>
-                        <div>• Up to {plan.max_bookings_per_month || 'unlimited'} bookings/month</div>
-                        <div>• Up to {plan.max_tables || 'unlimited'} tables</div>
-                      </div>
-                      <Button 
-                        className="w-full" 
-                        variant={subscription?.plan_id === plan.id ? "outline" : "default"}
-                        disabled={subscription?.plan_id === plan.id || processingCheckout === plan.slug}
-                        onClick={() => handleUpgrade(plan.slug, 'yearly')}
-                      >
-                        {subscription?.plan_id === plan.id ? "Current Plan" : 
-                         processingCheckout === plan.slug ? "Processing..." : "Upgrade"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {subscription?.subscription_tier || 'Free'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(restaurant.status)}
+                            <Badge className={getStatusColor(restaurant.status)}>
+                              {restaurant.status}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>{formatPrice(restaurant.totalRevenue || 0)}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSendReminder(restaurant.id, 'upcoming')}
+                          >
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="payments">
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Restaurant</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paymentHistory
+                    .filter(payment => 
+                      selectedRestaurant === 'all' || payment.tenant_id === selectedRestaurant
+                    )
+                    .map((payment) => (
+                      <TableRow key={payment.id}>
+                        <TableCell>
+                          {new Date(payment.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>{payment.tenants?.name || 'Unknown'}</TableCell>
+                        <TableCell>{formatPrice(payment.amount)}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(payment.status)}>
+                            {payment.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
-}
+};
+
+export default BillingPage;

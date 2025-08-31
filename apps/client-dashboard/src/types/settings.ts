@@ -90,7 +90,7 @@ export interface NotificationSettings {
 export interface SecuritySettings {
   twoFactorAuth: {
     enabled: boolean;
-    method: 'sms' | 'email' | 'app';
+    method: 'sms' | 'email' | 'authenticator';
   };
   sessionTimeout: number;
   passwordPolicy: {

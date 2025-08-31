@@ -6,14 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Separator } from '@/components/ui/separator';
 import { useTenant } from '@/hooks/useTenant';
 import { useAdvancedBookings } from '@/hooks/useAdvancedBookings';
 import BookingCard from '@/components/dashboard/BookingCard';
+import AdvancedBookingStatusOverview from '@/components/booking/AdvancedBookingStatusOverview';
 import SmartBookingWizard from '@/components/booking/SmartBookingWizard';
-import AdvancedFilters from '@/components/booking/AdvancedFilters';
+import EnhancedFilters from '@/components/booking/EnhancedFilters';
+import OptimizedBookingsTable from '@/components/booking/VirtualizedBookingsTable';
 import { 
   Plus, 
   CalendarIcon,
+  Calendar,
   CheckSquare,
   Square,
   Trash2,
@@ -21,11 +25,16 @@ import {
   Edit,
   MoreHorizontal,
   MessageSquare,
-  Activity
+  Activity,
+  Clock,
+  Users,
+  TrendingUp,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 
 const BookingManagement: React.FC = () => {
-  const { tenant } = useTenant();
+  const { tenant, isLoading: tenantLoading } = useTenant();
   const {
     bookings,
     isLoading,
@@ -66,6 +75,20 @@ const BookingManagement: React.FC = () => {
     noshow: bookingsByStatus.noshow.length,
   };
 
+  // Calculate key metrics
+  const todaysBookings = bookings.filter(b => {
+    const bookingDate = new Date(b.booking_time).toDateString();
+    const today = new Date().toDateString();
+    return bookingDate === today;
+  });
+
+  const metrics = {
+    totalToday: todaysBookings.length,
+    pendingToday: todaysBookings.filter(b => b.status === 'pending').length,
+    confirmedToday: todaysBookings.filter(b => b.status === 'confirmed').length,
+    totalGuests: todaysBookings.reduce((sum, b) => sum + b.party_size, 0),
+  };
+
   const handleSelectAll = () => {
     if (selectedBookings.length === currentBookings.length) {
       setSelectedBookings([]);
@@ -88,6 +111,7 @@ const BookingManagement: React.FC = () => {
       bookingIds: selectedBookings,
       data: { status }
     });
+    setSelectedBookings([]); // Clear selection after bulk operation
   };
 
   const handleBulkNotification = () => {
@@ -99,6 +123,7 @@ const BookingManagement: React.FC = () => {
         template: 'booking_reminder' 
       }
     });
+    setSelectedBookings([]); // Clear selection after bulk operation
   };
 
   const handleBulkDelete = () => {
@@ -107,6 +132,7 @@ const BookingManagement: React.FC = () => {
       bookingIds: selectedBookings,
       data: {}
     });
+    setSelectedBookings([]); // Clear selection after bulk operation
   };
 
   const handleExportCSV = () => {
@@ -121,66 +147,154 @@ const BookingManagement: React.FC = () => {
     });
   };
 
+  if (tenantLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading restaurant data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tenant) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Restaurant Found</h3>
+            <p className="text-muted-foreground">
+              Please ensure you have a valid restaurant setup to view bookings.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-8 p-6">
+      {/* Enhanced Header with Metrics */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        className="space-y-6"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Booking Management</h1>
-          <p className="text-muted-foreground">
-            Comprehensive booking lifecycle management with smart features
-          </p>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-h1 font-bold text-text">Booking Management</h1>
+            <p className="text-body text-text-muted">
+              Comprehensive booking lifecycle management with smart features
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="flex items-center gap-2 px-3 py-1 bg-surface-2 border-surface-3">
+              <Activity className="h-4 w-4" />
+              Real-time Updates
+            </Badge>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="flex items-center gap-1">
-            <Activity className="h-3 w-3" />
-            Real-time Updates
-          </Badge>
-          <Button onClick={() => setShowWizard(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Smart Booking
-          </Button>
+
+        {/* Today's Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-surface border-surface-2 shadow-elev-1">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-brand/10 rounded-lg">
+                  <Calendar className="w-5 h-5 text-brand" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-text-muted">Today's Bookings</p>
+                  <p className="text-h3 font-bold text-text font-tabular">{metrics.totalToday}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-surface border-surface-2 shadow-elev-1">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-warning/10 rounded-lg">
+                  <Clock className="w-5 h-5 text-warning" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-text-muted">Pending</p>
+                  <p className="text-h3 font-bold text-text font-tabular">{metrics.pendingToday}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-surface border-surface-2 shadow-elev-1">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-success/10 rounded-lg">
+                  <CheckSquare className="w-5 h-5 text-success" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-text-muted">Confirmed</p>
+                  <p className="text-h3 font-bold text-text font-tabular">{metrics.confirmedToday}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-surface border-surface-2 shadow-elev-1">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-secondary/10 rounded-lg">
+                  <Users className="w-5 h-5 text-secondary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-text-muted">Total Guests</p>
+                  <p className="text-h3 font-bold text-text font-tabular">{metrics.totalGuests}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </motion.div>
 
-      {/* Advanced Filters */}
+      {/* Enhanced Filters */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <AdvancedFilters
+        <EnhancedFilters
           filters={filters}
           onFiltersChange={setFilters}
           totalBookings={bookings.length}
           onExportCSV={handleExportCSV}
+          onNewBooking={() => setShowWizard(true)}
         />
       </motion.div>
 
-      {/* Bulk Actions */}
+      {/* Enhanced Bulk Actions */}
       {selectedBookings.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <Card>
+          <Card className="bg-surface border-surface-2 shadow-elev-2 border-l-4 border-l-brand">
             <CardContent className="py-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex items-center gap-3">
                   <Checkbox
                     checked={selectedBookings.length === currentBookings.length}
                     onCheckedChange={handleSelectAll}
                   />
-                  <span className="font-medium">
+                  <span className="font-semibold text-lg text-text">
                     {selectedBookings.length} of {currentBookings.length} selected
                   </span>
+                  <Badge variant="secondary" className="bg-brand/10 text-brand border-brand/20">
+                    Bulk Actions Available
+                  </Badge>
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-2">
@@ -189,8 +303,13 @@ const BookingManagement: React.FC = () => {
                     size="sm"
                     onClick={() => handleBulkStatusUpdate('confirmed')}
                     disabled={isBulkOperationPending}
+                    className="shadow-sm"
                   >
-                    <CheckSquare className="h-4 w-4 mr-1" />
+                    {isBulkOperationPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckSquare className="h-4 w-4 mr-2" />
+                    )}
                     Confirm
                   </Button>
                   <Button
@@ -198,8 +317,9 @@ const BookingManagement: React.FC = () => {
                     size="sm"
                     onClick={() => handleBulkStatusUpdate('seated')}
                     disabled={isBulkOperationPending}
+                    className="shadow-sm"
                   >
-                    <Edit className="h-4 w-4 mr-1" />
+                    <Edit className="h-4 w-4 mr-2" />
                     Seat
                   </Button>
                   <Button
@@ -207,8 +327,9 @@ const BookingManagement: React.FC = () => {
                     size="sm"
                     onClick={handleBulkNotification}
                     disabled={isBulkOperationPending}
+                    className="shadow-sm"
                   >
-                    <MessageSquare className="h-4 w-4 mr-1" />
+                    <MessageSquare className="h-4 w-4 mr-2" />
                     Notify
                   </Button>
                   <AlertDialog>
@@ -217,8 +338,9 @@ const BookingManagement: React.FC = () => {
                         variant="outline"
                         size="sm"
                         disabled={isBulkOperationPending}
+                        className="shadow-sm border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                       >
-                        <Trash2 className="h-4 w-4 mr-1" />
+                        <Trash2 className="h-4 w-4 mr-2" />
                         Delete
                       </Button>
                     </AlertDialogTrigger>
@@ -227,13 +349,16 @@ const BookingManagement: React.FC = () => {
                         <AlertDialogTitle>Delete Selected Bookings</AlertDialogTitle>
                         <AlertDialogDescription>
                           Are you sure you want to delete {selectedBookings.length} booking(s)? 
-                          This action cannot be undone.
+                          This action cannot be undone and will permanently remove all booking data.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleBulkDelete}>
-                          Delete
+                        <AlertDialogAction 
+                          onClick={handleBulkDelete}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete Permanently
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -245,68 +370,36 @@ const BookingManagement: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Booking Status Tabs */}
+      {/* Advanced Booking Status Overview */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        <Tabs value={selectedStatus} onValueChange={setSelectedStatus}>
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="all" className="flex items-center gap-2">
-              All
-              <Badge variant="secondary" className="text-xs">
-                {statusCounts.all}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="flex items-center gap-2">
-              Pending
-              <Badge variant="secondary" className="text-xs">
-                {statusCounts.pending}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="confirmed" className="flex items-center gap-2">
-              Confirmed
-              <Badge variant="secondary" className="text-xs">
-                {statusCounts.confirmed}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="seated" className="flex items-center gap-2">
-              Seated
-              <Badge variant="secondary" className="text-xs">
-                {statusCounts.seated}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="flex items-center gap-2">
-              Completed
-              <Badge variant="secondary" className="text-xs">
-                {statusCounts.completed}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="cancelled" className="flex items-center gap-2">
-              Cancelled
-              <Badge variant="secondary" className="text-xs">
-                {statusCounts.cancelled}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="noshow" className="flex items-center gap-2">
-              No Show
-              <Badge variant="secondary" className="text-xs">
-                {statusCounts.noshow}
-              </Badge>
-            </TabsTrigger>
-          </TabsList>
+        <AdvancedBookingStatusOverview
+          bookings={bookings}
+          selectedStatus={selectedStatus}
+          onStatusChange={setSelectedStatus}
+          isLoading={isLoading}
+        />
+      </motion.div>
 
-          <TabsContent value={selectedStatus} className="mt-6">
-            <BookingsList 
-              bookings={currentBookings} 
-              isLoading={isLoading}
-              selectedBookings={selectedBookings}
-              onSelectBooking={handleSelectBooking}
-              onUpdateBooking={updateBooking}
-            />
-          </TabsContent>
-        </Tabs>
+      {/* Virtualized Bookings Table */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <OptimizedBookingsTable
+          bookings={currentBookings}
+          selectedBookings={selectedBookings}
+          onSelectBooking={handleSelectBooking}
+          onSelectAll={handleSelectAll}
+          onBookingClick={(booking) => console.log('Booking clicked:', booking)}
+          onStatusUpdate={(id, status) => updateBooking({ id, updates: { status } })}
+          isLoading={isLoading}
+          height={600}
+        />
       </motion.div>
 
       {/* Smart Booking Wizard */}
@@ -334,14 +427,18 @@ const BookingsList: React.FC<{
 }) => {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
+          <Card key={i} className="animate-pulse shadow-sm">
             <CardContent className="p-6">
-              <div className="space-y-3">
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
-                <div className="h-3 bg-muted rounded w-2/3"></div>
+              <div className="space-y-4">
+                <div className="h-5 bg-muted rounded w-3/4"></div>
+                <div className="h-4 bg-muted rounded w-1/2"></div>
+                <div className="h-4 bg-muted rounded w-2/3"></div>
+                <div className="flex gap-2">
+                  <div className="h-6 bg-muted rounded w-16"></div>
+                  <div className="h-6 bg-muted rounded w-20"></div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -352,39 +449,45 @@ const BookingsList: React.FC<{
 
   if (bookings.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No bookings found</h3>
-          <p className="text-muted-foreground text-center max-w-sm">
-            No bookings match your current search criteria. Try adjusting your filters or search terms.
+      <Card className="shadow-lg">
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <CalendarIcon className="h-16 w-16 text-muted-foreground mb-6" />
+          <h3 className="text-xl font-semibold text-foreground mb-3">No bookings found</h3>
+          <p className="text-muted-foreground text-center max-w-md">
+            No bookings match your current search criteria. Try adjusting your filters, search terms, or date range.
           </p>
+          <Button variant="outline" className="mt-6">
+            <Plus className="w-4 h-4 mr-2" />
+            Create New Booking
+          </Button>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {bookings.map((booking, index) => (
         <motion.div
           key={booking.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: index * 0.05 }}
-          className="relative"
+          className="relative group"
         >
-          <div className="absolute top-2 left-2 z-10">
+          <div className="absolute top-3 left-3 z-10">
             <Checkbox
               checked={selectedBookings.includes(booking.id)}
               onCheckedChange={() => onSelectBooking(booking.id)}
-              className="bg-background border-2"
+              className="bg-background/80 backdrop-blur-sm border-2 shadow-sm"
             />
           </div>
-          <BookingCard 
-            booking={booking} 
-            onUpdate={(updates) => onUpdateBooking({ id: booking.id, updates })}
-          />
+          <div className="transform transition-transform group-hover:scale-[1.02]">
+            <BookingCard 
+              booking={booking} 
+              onUpdate={(updates) => onUpdateBooking({ id: booking.id, updates })}
+            />
+          </div>
         </motion.div>
       ))}
     </div>

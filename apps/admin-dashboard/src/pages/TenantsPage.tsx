@@ -22,8 +22,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Search, 
   Filter, 
@@ -35,7 +46,8 @@ import {
   Building2,
   Users,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Trash2
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +77,8 @@ const TenantsPage = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [tenantToDelete, setTenantToDelete] = useState<Tenant | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -116,6 +130,64 @@ const TenantsPage = () => {
     }
   };
 
+  const handleDeleteTenant = async (tenant: Tenant) => {
+    console.log('Delete tenant called for:', tenant.name, tenant.id);
+    setIsDeleting(true);
+    try {
+      // First, check if tenant has any active bookings
+      const { count: bookingsCount, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', tenant.id);
+
+      if (bookingsError) {
+        console.error('Error checking bookings:', bookingsError);
+      }
+
+      if (bookingsCount && bookingsCount > 0) {
+        toast({
+          title: "Cannot Delete Tenant",
+          description: "This tenant has active bookings. Please cancel all bookings before deleting.",
+          variant: "destructive"
+        });
+        setIsDeleting(false);
+        return;
+      }
+
+      console.log('Starting tenant deletion using database function...');
+      
+      // Use the secure database function to delete the tenant completely
+      const { error } = await supabase.rpc('delete_tenant_complete', {
+        p_tenant_id: tenant.id
+      });
+
+      if (error) {
+        console.error('Database function error:', error);
+        throw new Error(error.message);
+      }
+
+      console.log('Tenant deletion completed successfully');
+      
+      toast({
+        title: "Tenant Deleted",
+        description: `${tenant.name} has been permanently deleted.`,
+      });
+
+      // Refresh the list
+      fetchTenants();
+      setTenantToDelete(null);
+    } catch (error) {
+      console.error('Error deleting tenant:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete tenant. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -129,37 +201,63 @@ const TenantsPage = () => {
     }
   };
 
-  // Memoized stats for performance
-  const stats = useMemo(() => [
-    {
-      title: "Total Tenants",
-      value: totalCount.toString(),
-      icon: Building2,
-      color: "from-blue-500 to-blue-600"
-    },
-    {
-      title: "Active Tenants", 
-      value: tenants.filter(t => t.status === 'active').length.toString(),
-      icon: Users,
-      color: "from-green-500 to-green-600"
-    },
-    {
-      title: "New This Month",
-      value: tenants.filter(t => {
-        const created = new Date(t.created_at);
-        const now = new Date();
-        return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-      }).length.toString(),
-      icon: Calendar,
-      color: "from-purple-500 to-purple-600"
-    },
-    {
-      title: "Growth Rate",
-      value: "+12.5%",
-      icon: TrendingUp,
-      color: "from-orange-500 to-orange-600"
-    }
-  ], [tenants, totalCount]);
+  // Memoized stats for performance with real data calculations
+  const stats = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // Calculate tenants from this month
+    const thisMonthTenants = tenants.filter(t => {
+      const created = new Date(t.created_at);
+      return created.getMonth() === currentMonth && created.getFullYear() === currentYear;
+    });
+    
+    // Calculate tenants from last month
+    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const lastMonthTenants = tenants.filter(t => {
+      const created = new Date(t.created_at);
+      return created.getMonth() === lastMonth && created.getFullYear() === lastMonthYear;
+    });
+    
+    // Calculate growth rate
+    const calculateGrowthRate = () => {
+      if (lastMonthTenants.length === 0) {
+        return thisMonthTenants.length > 0 ? "+100%" : "0%";
+      }
+      const growth = ((thisMonthTenants.length - lastMonthTenants.length) / lastMonthTenants.length) * 100;
+      const sign = growth >= 0 ? "+" : "";
+      return `${sign}${growth.toFixed(1)}%`;
+    };
+
+    return [
+      {
+        title: "Total Tenants",
+        value: totalCount.toString(),
+        icon: Building2,
+        color: "from-blue-500 to-blue-600"
+      },
+      {
+        title: "Active Tenants", 
+        value: tenants.filter(t => t.status === 'active').length.toString(),
+        icon: Users,
+        color: "from-green-500 to-green-600"
+      },
+      {
+        title: "New This Month",
+        value: thisMonthTenants.length.toString(),
+        icon: Calendar,
+        color: "from-purple-500 to-purple-600"
+      },
+      {
+        title: "Growth Rate",
+        value: calculateGrowthRate(),
+        icon: TrendingUp,
+        color: "from-orange-500 to-orange-600"
+      }
+    ];
+  }, [tenants, totalCount]);
 
   if (loading) {
     return <LoadingState title="Loading Tenants" description="Fetching tenant directory and statistics" rows={8} />;
@@ -180,12 +278,12 @@ const TenantsPage = () => {
           </p>
         </div>
         <Button 
-          onClick={() => navigate('/admin/tenants/new')}
+          onClick={() => navigate('/admin/tenants/provision')}
           variant="premium"
           className="hover:scale-105 transition-all duration-200"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Add New Tenant
+          Provision New Tenant
         </Button>
       </div>
 
@@ -314,8 +412,8 @@ const TenantsPage = () => {
                           ? 'Try adjusting your search criteria or filters to find tenants.'
                           : 'Get started by creating your first tenant to manage restaurant operations.'}
                         action={{
-                          label: 'Add New Tenant',
-                          onClick: () => navigate('/admin/tenants/new')
+                          label: 'Provision New Tenant',
+                          onClick: () => navigate('/admin/tenants/provision')
                         }}
                         className="m-6"
                       />
@@ -348,29 +446,49 @@ const TenantsPage = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="sm">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem 
-                              onClick={() => navigate(`/admin/tenants/${tenant.id}`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/admin/tenants/${tenant.id}`);
+                              }}
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
                             <DropdownMenuItem 
-                              onClick={() => navigate(`/admin/tenants/${tenant.id}/settings`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/admin/tenants/${tenant.id}/settings`);
+                              }}
                             >
                               <Settings className="h-4 w-4 mr-2" />
                               Settings
                             </DropdownMenuItem>
                             <DropdownMenuItem 
-                              onClick={() => navigate(`/admin/tenants/${tenant.id}/domains`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/admin/tenants/${tenant.id}/domains`);
+                              }}
                             >
                               <Globe className="h-4 w-4 mr-2" />
                               Domains
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTenantToDelete(tenant);
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Tenant
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -425,6 +543,38 @@ const TenantsPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!tenantToDelete} onOpenChange={() => setTenantToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Tenant</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{tenantToDelete?.name}</strong>? 
+              This action cannot be undone and will permanently remove:
+              <ul className="mt-2 ml-4 list-disc text-sm">
+                <li>All tenant data and settings</li>
+                <li>Restaurant tables and business hours</li>
+                <li>Domains and features</li>
+                <li>Provisioning records</li>
+              </ul>
+              <p className="mt-2 text-sm font-medium text-destructive">
+                Note: Tenants with active bookings cannot be deleted.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => tenantToDelete && handleDeleteTenant(tenantToDelete)}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete Tenant"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

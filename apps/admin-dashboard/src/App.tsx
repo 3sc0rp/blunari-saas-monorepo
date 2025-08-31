@@ -16,6 +16,7 @@ import Dashboard from "@/pages/Dashboard";
 import TenantsPage from "@/pages/TenantsPage";
 import TenantDetailPage from "@/pages/TenantDetailPage";
 import NewTenantPage from "@/pages/NewTenantPage";
+import TenantProvisioningPage from "@/pages/TenantProvisioningPage";
 import { EmployeesPage } from "@/pages/EmployeesPage";
 import SettingsPage from "@/pages/SettingsPage";
 import BillingPage from "@/pages/BillingPage";
@@ -61,6 +62,7 @@ function App() {
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="tenants" element={<TenantsPage />} />
                   <Route path="tenants/new" element={<NewTenantPage />} />
+                  <Route path="tenants/provision" element={<TenantProvisioningPage />} />
                   <Route path="tenants/:tenantId" element={<TenantDetailPage />} />
                   <Route path="employees" element={<EmployeesPage />} />
             <Route path="billing" element={<BillingPage />} />

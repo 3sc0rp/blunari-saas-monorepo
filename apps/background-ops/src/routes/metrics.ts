@@ -1,87 +1,151 @@
-import { Router } from 'express';
-import { z } from 'zod';
-import { logger } from '../utils/logger';
+import express from 'express';
+import { validateApiKey, AuthenticatedRequest } from '../middleware/auth';
 import { metricsService } from '../services/metrics';
-import { validateApiKey } from '../middleware/auth';
-const router = Router();
+import { logger } from '../utils/logger';
 
-// Apply API key authentication to all routes
-router.use(validateApiKey);
+const router = express.Router();
 
-// Get system metrics
+/**
+ * GET /metrics - Prometheus metrics endpoint (no auth required for Prometheus)
+ */
 router.get('/', async (req, res) => {
   try {
-    const metrics = await metricsService.getSystemMetrics();
-    res.json(metrics);
+    const metrics = await metricsService.getMetrics();
+    res.set('Content-Type', 'text/plain');
+    res.send(metrics);
   } catch (error) {
-    logger.error('Error fetching metrics:', error);
-    res.status(500).json({ error: 'Failed to fetch metrics' });
+    logger.error('Failed to generate Prometheus metrics', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    res.status(500).send('# Failed to generate metrics\n');
   }
 });
 
-// Get metrics for a specific time range
-const timeRangeSchema = z.object({
-  start: z.string().datetime(),
-  end: z.string().datetime(),
-  interval: z.enum(['1m', '5m', '15m', '1h', '6h', '24h']).optional()
-});
+// Apply authentication to all other routes
+router.use(validateApiKey);
 
-router.get('/range', async (req, res) => {
+/**
+ * GET /v1/metrics/json - Metrics in JSON format
+ */
+router.get('/json', async (req: AuthenticatedRequest, res) => {
+  const requestLogger = logger.child({ requestId: req.headers['x-request-id'] as string });
+  
   try {
-    const { start, end, interval } = timeRangeSchema.parse(req.query);
-    const metrics = await metricsService.getMetricsInRange(
-      new Date(start),
-      new Date(end),
-      interval
-    );
-    res.json(metrics);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'Invalid query parameters', details: error.errors });
-      return;
-    }
-    logger.error('Error fetching metrics range:', error);
-    res.status(500).json({ error: 'Failed to fetch metrics' });
-  }
-});
-
-// Record a new metric
-const recordMetricSchema = z.object({
-  name: z.string(),
-  value: z.number(),
-  unit: z.string(),
-  tags: z.record(z.string()).optional()
-});
-
-router.post('/', async (req, res) => {
-  try {
-    const metricData = recordMetricSchema.parse(req.body);
-    const metric = await metricsService.recordMetric(metricData);
-    res.status(201).json(metric);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: 'Invalid metric data', details: error.errors });
-      return;
-    }
-    logger.error('Error recording metric:', error);
-    res.status(500).json({ error: 'Failed to record metric' });
-  }
-});
-
-// Get aggregated metrics
-router.get('/aggregated/:metricName', async (req, res) => {
-  try {
-    const { metricName } = req.params;
-    const { timeRange = '1h' } = req.query;
+    const metrics = await metricsService.getMetricsJson();
     
-    const aggregated = await metricsService.getAggregatedMetrics(
-      metricName,
-      timeRange as string
-    );
-    res.json(aggregated);
+    res.json({
+      success: true,
+      data: {
+        metrics,
+        timestamp: new Date().toISOString()
+      }
+    });
   } catch (error) {
-    logger.error('Error fetching aggregated metrics:', error);
-    res.status(500).json({ error: 'Failed to fetch aggregated metrics' });
+    requestLogger.error('Failed to get metrics JSON', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to get metrics'
+    });
+  }
+});
+
+/**
+ * GET /v1/metrics/health - Health check for metrics subsystem
+ */
+router.get('/health', async (req: AuthenticatedRequest, res) => {
+  try {
+    const healthMetrics = metricsService.getHealthMetrics();
+    
+    res.json({
+      success: true,
+      data: healthMetrics
+    });
+  } catch (error) {
+    logger.error('Failed to get metrics health', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to get metrics health'
+    });
+  }
+});
+
+/**
+ * GET /v1/metrics/system - Legacy system metrics endpoint
+ */
+router.get('/system', async (req: AuthenticatedRequest, res) => {
+  const requestLogger = logger.child({ requestId: req.headers['x-request-id'] as string });
+  
+  try {
+    const systemMetrics = await metricsService.getSystemMetrics();
+    
+    res.json({
+      success: true,
+      data: systemMetrics
+    });
+  } catch (error) {
+    requestLogger.error('Failed to get system metrics', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to get system metrics'
+    });
+  }
+});
+
+/**
+ * POST /v1/metrics/record - Record a custom metric (legacy support)
+ */
+router.post('/record', async (req: AuthenticatedRequest, res) => {
+  const requestLogger = logger.child({ requestId: req.headers['x-request-id'] as string });
+  
+  try {
+    const { name, value, unit, tags } = req.body;
+    
+    if (!name || typeof value !== 'number' || !unit) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad request',
+        message: 'Missing required fields: name, value, unit'
+      });
+    }
+    
+    await metricsService.recordMetric({
+      name,
+      value,
+      unit,
+      tags: tags || {}
+    });
+    
+    return res.json({
+      success: true,
+      data: {
+        name,
+        value,
+        unit,
+        recorded: true
+      }
+    });
+  } catch (error) {
+    requestLogger.error('Failed to record metric', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: 'Failed to record metric'
+    });
   }
 });
 

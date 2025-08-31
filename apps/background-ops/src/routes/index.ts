@@ -1,6 +1,7 @@
 import { Express } from 'express';
 import { metricsRoutes } from './metrics';
 import { jobsRoutes } from './jobs';
+import { eventsRoutes } from './events';
 import { servicesRoutes } from './services';
 import { webhooksRoutes } from './webhooks';
 import { activityRoutes } from './activity';
@@ -12,15 +13,19 @@ import { getPerformanceMetrics } from '../middleware/performance';
 import { getAdminAuditLog } from '../middleware/adminAudit';
 
 export function setupRoutes(app: Express) {
+  // Health check (public, no API prefix)
+  app.use('/health', healthRoutes);
+  
+  // Prometheus metrics endpoint (public, no auth required)
+  app.get('/metrics', metricsRoutes);
+  
   // API prefix
   const apiPrefix = '/api/v1';
   
-  // Health and status routes
-  app.use('/', healthRoutes);
-  
-  // API routes
-  app.use(`${apiPrefix}/metrics`, metricsRoutes);
+  // Core API routes
   app.use(`${apiPrefix}/jobs`, jobsRoutes);
+  app.use(`${apiPrefix}/events`, eventsRoutes);
+  app.use(`${apiPrefix}/metrics`, metricsRoutes);
   app.use(`${apiPrefix}/services`, servicesRoutes);
   app.use(`${apiPrefix}/activity`, activityRoutes);
   app.use(`${apiPrefix}/webhooks`, webhooksRoutes);
@@ -35,6 +40,7 @@ export function setupRoutes(app: Express) {
   // 404 handler
   app.use('*', (req, res) => {
     res.status(404).json({
+      success: false,
       error: 'Not Found',
       message: `Route ${req.originalUrl} not found`
     });

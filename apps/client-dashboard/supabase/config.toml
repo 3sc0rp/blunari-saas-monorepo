@@ -1,4 +1,19 @@
 project_id = "kbfbbkcaxhzlnbqxwgoz"
 
+[functions.analyze-floor-plan]
+verify_jwt = false
+
+[functions.send-password-reset]
+verify_jwt = false
+
 [functions.tenant-provision]
+verify_jwt = false
+
+[functions.pos-webhook]
+verify_jwt = false
+
+[functions.pos-health-check]
+verify_jwt = false
+
+[functions.widget-booking]
 verify_jwt = false

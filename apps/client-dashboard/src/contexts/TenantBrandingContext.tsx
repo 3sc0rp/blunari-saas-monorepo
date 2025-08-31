@@ -1,111 +1,138 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useTenant } from '@/hooks/useTenant';
 
-interface TenantBrandingContextType {
-  primaryColor: string;
-  secondaryColor: string;
+interface TenantBranding {
   logoUrl: string;
   restaurantName: string;
-  updateBranding: (branding: Partial<TenantBrandingContextType>) => void;
+  primaryColor?: string;
+  accentColor?: string;
+  fontFamily?: string;
+  borderRadius?: string;
+}
+
+interface TenantBrandingContextType {
+  logoUrl: string;
+  restaurantName: string;
+  updateBranding: (branding: Partial<TenantBranding>) => void;
 }
 
 const TenantBrandingContext = createContext<TenantBrandingContextType | undefined>(undefined);
 
+// Helper function to convert hex to HSL
+const hexToHsl = (hex: string): string => {
+  // Remove the hash if present
+  hex = hex.replace('#', '');
+  
+  // Convert to RGB
+  const r = parseInt(hex.substr(0, 2), 16) / 255;
+  const g = parseInt(hex.substr(2, 2), 16) / 255;
+  const b = parseInt(hex.substr(4, 2), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+};
+
 export const TenantBrandingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { tenant } = useTenant();
-  const [primaryColor, setPrimaryColor] = useState('#1e3a8a'); // Default primary
-  const [secondaryColor, setSecondaryColor] = useState('#f59e0b'); // Default secondary
-  const [logoUrl, setLogoUrl] = useState('https://raw.githubusercontent.com/3sc0rp/Blunari/refs/heads/main/logo-bg.png');
-  const [restaurantName, setRestaurantName] = useState('Restaurant Dashboard');
+  const [branding, setBranding] = useState<TenantBranding>({
+    logoUrl: '/placeholder.svg',
+    restaurantName: 'Demo Restaurant',
+  });
 
-  // Update branding when tenant changes
+  // Update branding when tenant data changes
   useEffect(() => {
     if (tenant) {
-      if (tenant.primary_color) {
-        setPrimaryColor(tenant.primary_color);
-        updateCSSVariable('--primary', tenant.primary_color);
-      }
+      const newBranding: TenantBranding = {
+        logoUrl: tenant.logo_url || '/placeholder.svg',
+        restaurantName: tenant.name || 'Demo Restaurant',
+        // Note: tenant.settings structure needs to be defined in types
+        // For now, using fallback values
+        primaryColor: undefined,
+        accentColor: undefined,
+        fontFamily: undefined,
+        borderRadius: undefined,
+      };
       
-      if (tenant.secondary_color) {
-        setSecondaryColor(tenant.secondary_color);
-        updateCSSVariable('--secondary', tenant.secondary_color);
-      }
-      
-      if (tenant.logo_url) {
-        setLogoUrl(tenant.logo_url);
-      }
-      
-      setRestaurantName(tenant.name);
-      
-      // Update page title
-      document.title = `${tenant.name} - Dashboard`;
+      setBranding(newBranding);
+      applyBrandingToCSS(newBranding);
     }
   }, [tenant]);
 
-  const updateCSSVariable = (variable: string, value: string) => {
-    // Convert hex to HSL if needed
-    const hslValue = hexToHsl(value);
-    document.documentElement.style.setProperty(variable, hslValue);
-  };
+  // Apply branding to CSS variables
+  const applyBrandingToCSS = (brandingData: TenantBranding) => {
+    const root = document.documentElement;
 
-  const hexToHsl = (hex: string): string => {
-    // Remove the hash if present
-    hex = hex.replace('#', '');
-    
-    // Parse RGB values
-    const r = parseInt(hex.substring(0, 2), 16) / 255;
-    const g = parseInt(hex.substring(2, 4), 16) / 255;
-    const b = parseInt(hex.substring(4, 6), 16) / 255;
-    
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h = 0;
-    let s = 0;
-    const l = (max + min) / 2;
-    
-    if (max !== min) {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
+    // Apply primary color if provided
+    if (brandingData.primaryColor) {
+      try {
+        const hslColor = hexToHsl(brandingData.primaryColor);
+        root.style.setProperty('--brand', hslColor);
+        root.style.setProperty('--ring', hslColor);
+        
+        // Create a lighter variant for foreground
+        const [h, s, l] = hslColor.split(' ');
+        const lighterL = Math.min(parseInt(l.replace('%', '')) + 20, 90);
+        root.style.setProperty('--brand-foreground', `${h} ${s} ${lighterL}%`);
+      } catch (error) {
+        console.warn('Invalid primary color format:', brandingData.primaryColor);
       }
-      h /= 6;
     }
-    
-    return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+
+    // Apply accent color if provided
+    if (brandingData.accentColor) {
+      try {
+        const hslColor = hexToHsl(brandingData.accentColor);
+        root.style.setProperty('--accent', hslColor);
+        
+        // Create foreground variant
+        const [h, s, l] = hslColor.split(' ');
+        const lighterL = Math.min(parseInt(l.replace('%', '')) + 20, 90);
+        root.style.setProperty('--accent-foreground', `${h} ${s} ${lighterL}%`);
+      } catch (error) {
+        console.warn('Invalid accent color format:', brandingData.accentColor);
+      }
+    }
+
+    // Apply border radius if provided
+    if (brandingData.borderRadius) {
+      root.style.setProperty('--radius', brandingData.borderRadius);
+    }
+
+    // Apply font family if provided
+    if (brandingData.fontFamily) {
+      root.style.setProperty('font-family', brandingData.fontFamily);
+    }
   };
 
-  const updateBranding = (branding: Partial<TenantBrandingContextType>) => {
-    if (branding.primaryColor) {
-      setPrimaryColor(branding.primaryColor);
-      updateCSSVariable('--primary', branding.primaryColor);
-    }
-    if (branding.secondaryColor) {
-      setSecondaryColor(branding.secondaryColor);
-      updateCSSVariable('--secondary', branding.secondaryColor);
-    }
-    if (branding.logoUrl) {
-      setLogoUrl(branding.logoUrl);
-    }
-    if (branding.restaurantName) {
-      setRestaurantName(branding.restaurantName);
-      document.title = `${branding.restaurantName} - Dashboard`;
-    }
-  };
-
-  const value = {
-    primaryColor,
-    secondaryColor,
-    logoUrl,
-    restaurantName,
-    updateBranding,
+  const updateBranding = (newBranding: Partial<TenantBranding>) => {
+    const updatedBranding = { ...branding, ...newBranding };
+    setBranding(updatedBranding);
+    applyBrandingToCSS(updatedBranding);
   };
 
   return (
-    <TenantBrandingContext.Provider value={value}>
+    <TenantBrandingContext.Provider
+      value={{
+        logoUrl: branding.logoUrl,
+        restaurantName: branding.restaurantName,
+        updateBranding,
+      }}
+    >
       {children}
     </TenantBrandingContext.Provider>
   );

@@ -1,70 +1,120 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { logger } from '../utils/logger';
 import { pool } from '../database';
+import { authenticateRequest, validateApiKey, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
-interface ProvisionTenantRequest {
-  // Basic Information
-  restaurantName: string;
-  slug: string;
-  description?: string;
-  phone?: string;
-  email?: string;
-  website?: string;
-  address?: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
-  cuisineTypeId?: string;
+// Apply authentication to all tenant routes
+router.use(validateApiKey);
 
-  // Owner Account
-  ownerFirstName: string;
-  ownerLastName: string;
-  ownerEmail: string;
-  ownerPassword: string;
+// Input validation schema
+const ProvisionTenantSchema = z.object({
+  // Basic Information - REQUIRED
+  restaurantName: z.string().min(1, 'Restaurant name is required').max(255, 'Restaurant name too long'),
+  slug: z.string().min(1, 'Slug is required').max(100, 'Slug too long').regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
+  description: z.string().max(1000, 'Description too long').optional(),
+  phone: z.string().max(20, 'Phone number too long').optional(),
+  email: z.string().email('Invalid email format').max(320, 'Email too long').optional(),
+  website: z.string().url('Invalid website URL').max(500, 'Website URL too long').optional(),
+  address: z.object({
+    street: z.string().min(1, 'Street is required').max(255, 'Street too long'),
+    city: z.string().min(1, 'City is required').max(100, 'City too long'),
+    state: z.string().min(1, 'State is required').max(100, 'State too long'),
+    zipCode: z.string().min(1, 'Zip code is required').max(20, 'Zip code too long'),
+    country: z.string().min(1, 'Country is required').max(100, 'Country too long'),
+  }).optional(),
+  cuisineTypeId: z.string().uuid('Invalid cuisine type ID').optional(),
 
-  // Business Configuration
-  timezone: string;
-  businessHours: Array<{
-    dayOfWeek: number;
-    isOpen: boolean;
-    openTime?: string;
-    closeTime?: string;
-  }>;
-  partySizeConfig: {
-    minPartySize: number;
-    maxPartySize: number;
-    defaultPartySize: number;
-    allowLargeParties: boolean;
-    largePartyThreshold: number;
-  };
+  // Owner Account - REQUIRED
+  ownerFirstName: z.string().min(1, 'Owner first name is required').max(100, 'First name too long'),
+  ownerLastName: z.string().min(1, 'Owner last name is required').max(100, 'Last name too long'),
+  ownerEmail: z.string().email('Invalid owner email format').max(320, 'Owner email too long'),
+  ownerPassword: z.string().min(8, 'Password must be at least 8 characters').max(200, 'Password too long'),
 
-  // Billing Setup
-  selectedPlanId: string;
-  billingCycle: 'monthly' | 'yearly';
+  // Business Configuration - REQUIRED
+  timezone: z.string().min(1, 'Timezone is required').max(50, 'Timezone too long'),
+  businessHours: z.array(z.object({
+    dayOfWeek: z.number().int().min(0).max(6, 'Day of week must be 0-6'),
+    isOpen: z.boolean(),
+    openTime: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format').optional(),
+    closeTime: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format').optional(),
+  })).length(7, 'Must provide business hours for all 7 days'),
+  partySizeConfig: z.object({
+    minPartySize: z.number().int().min(1, 'Min party size must be at least 1').max(20, 'Min party size too large'),
+    maxPartySize: z.number().int().min(1, 'Max party size must be at least 1').max(50, 'Max party size too large'),
+    defaultPartySize: z.number().int().min(1, 'Default party size must be at least 1').max(20, 'Default party size too large'),
+    allowLargeParties: z.boolean(),
+    largePartyThreshold: z.number().int().min(1, 'Large party threshold must be at least 1').max(50, 'Large party threshold too large'),
+  }),
+
+  // Billing Setup - REQUIRED
+  selectedPlanId: z.string().uuid('Invalid plan ID'),
+  billingCycle: z.enum(['monthly', 'yearly'], { required_error: 'Billing cycle must be monthly or yearly' }),
   
-  // Feature Configuration
-  enabledFeatures: {
-    deposits: boolean;
-    posIntegration: boolean;
-    etaNotifications: boolean;
-    customBranding: boolean;
-    advancedAnalytics: boolean;
-    multiLocation: boolean;
-  };
-}
+  // Feature Configuration - REQUIRED
+  enabledFeatures: z.object({
+    deposits: z.boolean(),
+    posIntegration: z.boolean(),
+    etaNotifications: z.boolean(),
+    customBranding: z.boolean(),
+    advancedAnalytics: z.boolean(),
+    multiLocation: z.boolean(),
+  }),
+}).strict(); // Reject any additional properties
 
-// Provision new tenant
-router.post('/provision', async (req, res) => {
+interface ProvisionTenantRequest extends z.infer<typeof ProvisionTenantSchema> {}
+
+// Provision new tenant - REQUIRES FULL AUTHENTICATION
+router.post('/provision', authenticateRequest, async (req: AuthenticatedRequest, res) => {
   const client = await pool.connect();
   
   try {
-    const data: ProvisionTenantRequest = req.body;
-    logger.info('Starting tenant provisioning', { restaurantName: data.restaurantName });
+    // VALIDATE INPUT DATA - CRITICAL SECURITY!
+    let data: ProvisionTenantRequest;
+    try {
+      data = ProvisionTenantSchema.parse(req.body);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        logger.warn('Invalid tenant provisioning data', { 
+          errors: error.errors,
+          requestId: req.requestId,
+          tenantId: req.tenantId
+        });
+        res.status(400).json({
+          success: false,
+          error: 'Invalid input data',
+          details: error.errors
+        });
+        return;
+      }
+      throw error;
+    }
+
+    // Additional business logic validation
+    if (data.partySizeConfig.defaultPartySize < data.partySizeConfig.minPartySize || 
+        data.partySizeConfig.defaultPartySize > data.partySizeConfig.maxPartySize) {
+      res.status(400).json({
+        success: false,
+        error: 'Default party size must be between min and max party size'
+      });
+      return;
+    }
+
+    if (data.partySizeConfig.maxPartySize < data.partySizeConfig.minPartySize) {
+      res.status(400).json({
+        success: false,
+        error: 'Max party size must be greater than or equal to min party size'
+      });
+      return;
+    }
+
+    logger.info('Starting tenant provisioning', { 
+      restaurantName: data.restaurantName,
+      requestId: req.requestId,
+      tenantId: req.tenantId
+    });
 
     // Start transaction
     await client.query('BEGIN');
@@ -283,7 +333,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get tenant by ID
-router.get('/:id', async (req, res): Promise<void> => {
+router.get('/:id', async (req: AuthenticatedRequest, res): Promise<void> => {
   try {
     const { id } = req.params;
     

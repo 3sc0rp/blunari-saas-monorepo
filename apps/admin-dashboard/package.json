@@ -1,22 +1,16 @@
 {
-  "name": "@blunari/admin-dashboard",
+  "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "1.0.0",
-  "description": "Admin dashboard for Blunari SAAS platform",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3001",
+    "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview --port 3001",
-    "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@blunari/types": "*",
-    "@blunari/utils": "*",
-    "@blunari/config": "*",
     "@capacitor/android": "^7.4.3",
     "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",

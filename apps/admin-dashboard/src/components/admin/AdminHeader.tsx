@@ -1,24 +1,23 @@
-import { useAuth } from "@/contexts/AuthContext"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { ThemeToggle } from "@/components/ThemeToggle"
-import { Input } from "@/components/ui/input"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { useNavigate, useLocation } from "react-router-dom"
-import { useState, useCallback } from "react"
+import React, { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Bell, 
-  Search, 
-  Plus, 
   User, 
-  Settings, 
-  HelpCircle, 
   LogOut, 
-  Command,
-  CreditCard,
-  Activity
-} from "lucide-react"
+  Settings, 
+  CreditCard, 
+  Activity,
+  UserPlus,
+  AlertTriangle,
+  Search,
+  Plus,
+  HelpCircle
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,35 +25,62 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
 
 export function AdminHeader() {
-  const { user, profile, signOut } = useAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const [searchQuery, setSearchQuery] = useState("")
+  const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const { notifications, getTimeAgo, getNotificationIcon, getNotificationColor } = useNotifications();
+
+  // Get unread notifications (recent ones from last 24 hours)
+  const unreadNotifications = notifications.filter(n => {
+    const notifDate = new Date(n.created_at);
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    return notifDate > dayAgo;
+  }).slice(0, 5); // Show only latest 5
 
   const initials = profile?.first_name && profile?.last_name 
     ? `${profile.first_name[0]}${profile.last_name[0]}` 
-    : user?.email?.[0]?.toUpperCase() || "A"
+    : user?.email?.[0]?.toUpperCase() || "A";
 
   const displayName = profile?.first_name && profile?.last_name
     ? `${profile.first_name} ${profile.last_name}`
-    : user?.email?.split('@')[0] || "Admin"
+    : user?.email?.split('@')[0] || "Admin";
 
   const handleSearchKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
-      console.log('Searching for:', searchQuery)
+      console.log('Searching for:', searchQuery);
     }
-  }, [searchQuery])
+  }, [searchQuery]);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  }, [navigate, signOut]);
 
   const handleNotificationClick = useCallback(() => {
     navigate('/admin/notifications')
-  }, [navigate])
+  }, [navigate]);
 
-  const handleQuickAction = useCallback(() => {
-    navigate('/admin/tenants/new')
-  }, [navigate])
+  const getIconComponent = (iconName: string) => {
+    switch (iconName) {
+      case 'User': return User;
+      case 'UserPlus': return UserPlus;
+      case 'CreditCard': return CreditCard;
+      case 'Activity': return Activity;
+      case 'AlertTriangle': return AlertTriangle;
+      default: return Bell;
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full bg-slate-900 border-b border-slate-800 text-white">
@@ -184,9 +210,11 @@ export function AdminHeader() {
                 className="relative h-8 w-8 text-white hover:bg-slate-800 hover:text-white"
               >
                 <Bell className="h-4 w-4" />
-                <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-xs bg-orange-500 text-white border-2 border-slate-900">
-                  3
-                </Badge>
+                {unreadNotifications.length > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-xs bg-orange-500 text-white border-2 border-slate-900">
+                    {unreadNotifications.length}
+                  </Badge>
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent 
@@ -197,49 +225,56 @@ export function AdminHeader() {
               <DropdownMenuLabel className="p-4 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">Notifications</span>
-                  <Badge variant="secondary" className="text-xs">3 new</Badge>
+                  {unreadNotifications.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {unreadNotifications.length} new
+                    </Badge>
+                  )}
                 </div>
               </DropdownMenuLabel>
               
               <div className="max-h-96 overflow-y-auto">
-                <DropdownMenuItem className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer border-b border-slate-100 dark:border-slate-700">
-                  <div className="flex gap-3">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                      <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">New user registered</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Sarah Johnson joined your platform</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500">2 minutes ago</p>
-                    </div>
+                {unreadNotifications.length === 0 ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No new notifications</p>
                   </div>
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer border-b border-slate-100 dark:border-slate-700">
-                  <div className="flex gap-3">
-                    <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                      <CreditCard className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">Payment received</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">$299 from Premium subscription</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500">5 minutes ago</p>
-                    </div>
-                  </div>
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
-                  <div className="flex gap-3">
-                    <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
-                      <Activity className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">System update</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Platform maintenance completed</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500">1 hour ago</p>
-                    </div>
-                  </div>
-                </DropdownMenuItem>
+                ) : (
+                  unreadNotifications.map((notification) => {
+                    const IconComponent = getIconComponent(getNotificationIcon(notification.type));
+                    const color = getNotificationColor(notification.type);
+                    
+                    return (
+                      <DropdownMenuItem 
+                        key={notification.id}
+                        className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer border-b border-slate-100 dark:border-slate-700"
+                      >
+                        <div className="flex gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                            color === 'blue' ? 'bg-blue-100 dark:bg-blue-900' :
+                            color === 'green' ? 'bg-green-100 dark:bg-green-900' :
+                            color === 'orange' ? 'bg-orange-100 dark:bg-orange-900' :
+                            color === 'red' ? 'bg-red-100 dark:bg-red-900' :
+                            'bg-gray-100 dark:bg-gray-900'
+                          }`}>
+                            <IconComponent className={`h-4 w-4 ${
+                              color === 'blue' ? 'text-blue-600 dark:text-blue-400' :
+                              color === 'green' ? 'text-green-600 dark:text-green-400' :
+                              color === 'orange' ? 'text-orange-600 dark:text-orange-400' :
+                              color === 'red' ? 'text-red-600 dark:text-red-400' :
+                              'text-gray-600 dark:text-gray-400'
+                            }`} />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm font-medium">{notification.title}</p>
+                            <p className="text-xs text-slate-600 dark:text-slate-400">{notification.message}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-500">{getTimeAgo(notification.created_at)}</p>
+                          </div>
+                        </div>
+                      </DropdownMenuItem>
+                    );
+                  })
+                )}
               </div>
               
               <div className="p-3 border-t border-slate-200 dark:border-slate-700">
@@ -295,7 +330,7 @@ export function AdminHeader() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
-                onClick={signOut}
+                onClick={handleLogout}
                 className="cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
               >
                 <LogOut className="mr-2 h-4 w-4" />

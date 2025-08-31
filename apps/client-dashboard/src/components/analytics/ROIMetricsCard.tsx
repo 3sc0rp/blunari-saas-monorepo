@@ -31,7 +31,7 @@ const ROIMetricsCard: React.FC<ROIMetricsCardProps> = ({ metrics }) => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white/10 rounded-lg p-3 backdrop-blur-sm"
+            className="bg-surface-2/60 rounded-lg p-3 backdrop-blur-sm border border-surface-3/50"
           >
             <div className="flex items-center gap-2 mb-2">
               <Shield className="h-4 w-4" />
@@ -49,7 +49,7 @@ const ROIMetricsCard: React.FC<ROIMetricsCardProps> = ({ metrics }) => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white/10 rounded-lg p-3 backdrop-blur-sm"
+            className="bg-surface-2/60 rounded-lg p-3 backdrop-blur-sm border border-surface-3/50"
           >
             <div className="flex items-center gap-2 mb-2">
               <Users className="h-4 w-4" />
@@ -67,7 +67,7 @@ const ROIMetricsCard: React.FC<ROIMetricsCardProps> = ({ metrics }) => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white/10 rounded-lg p-3 backdrop-blur-sm"
+            className="bg-surface-2/60 rounded-lg p-3 backdrop-blur-sm border border-surface-3/50"
           >
             <div className="flex items-center gap-2 mb-2">
               <Target className="h-4 w-4" />
@@ -85,7 +85,7 @@ const ROIMetricsCard: React.FC<ROIMetricsCardProps> = ({ metrics }) => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-white/10 rounded-lg p-3 backdrop-blur-sm"
+            className="bg-surface-2/60 rounded-lg p-3 backdrop-blur-sm border border-surface-3/50"
           >
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="h-4 w-4" />

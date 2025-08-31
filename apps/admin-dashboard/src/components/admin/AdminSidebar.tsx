@@ -1,4 +1,5 @@
 import React, { memo, useMemo } from 'react';
+import { useTenantCount } from "@/hooks/useTenantCount";
 import { 
   Sidebar, 
   SidebarContent, 
@@ -238,6 +239,7 @@ export const AdminSidebar = memo(() => {
   const { open } = useSidebar();
   const { sidebarOpen, toggleSidebar } = useDashboardStore();
   const location = useLocation();
+  const { count: tenantCount, loading: tenantCountLoading } = useTenantCount();
 
   const isActive = useMemo(() => (path: string) => {
     if (path === "/admin/dashboard") {
@@ -253,6 +255,19 @@ export const AdminSidebar = memo(() => {
     
     return `${baseClasses} ${isActive(path) ? activeClasses : inactiveClasses}`;
   }, [isActive]);
+
+  // Create dynamic navigation with real tenant count
+  const dynamicMainNavigation = useMemo(() => {
+    return mainNavigation.map(item => {
+      if (item.title === "Tenants") {
+        return {
+          ...item,
+          badge: tenantCountLoading ? "..." : tenantCount.toString()
+        };
+      }
+      return item;
+    });
+  }, [tenantCount, tenantCountLoading]);
 
   return (
     <Sidebar className={`${!open ? "w-16" : "w-64"} border-r border-border/40 transition-all duration-300 bg-sidebar shadow-card`}>
@@ -286,7 +301,7 @@ export const AdminSidebar = memo(() => {
         <div className="space-y-4 py-6">
           <NavigationSection
             title="Main"
-            items={mainNavigation}
+            items={dynamicMainNavigation}
             isActive={isActive}
             getNavClassName={getNavClassName}
             showTooltips={!open}

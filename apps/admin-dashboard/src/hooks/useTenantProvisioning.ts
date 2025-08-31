@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import crypto from 'crypto';
 
 const BACKGROUND_OPS_URL = import.meta.env.VITE_BACKGROUND_OPS_URL || 'https://background-ops.fly.dev';
+const API_KEY = import.meta.env.VITE_BACKGROUND_OPS_API_KEY;
+const SIGNING_SECRET = import.meta.env.VITE_BACKGROUND_OPS_SIGNING_SECRET;
+
+if (!API_KEY || !SIGNING_SECRET) {
+  throw new Error('Missing required environment variables: VITE_BACKGROUND_OPS_API_KEY and VITE_BACKGROUND_OPS_SIGNING_SECRET');
+}
 
 export interface ProvisioningData {
   // Basic Information
@@ -61,20 +68,36 @@ export const useTenantProvisioning = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  const createAuthHeaders = (body: any, tenantId: string = 'admin'): Record<string, string> => {
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const requestId = crypto.randomBytes(16).toString('hex');
+    const idempotencyKey = crypto.randomBytes(16).toString('hex');
+    
+    // Create payload for HMAC signature
+    const payload = JSON.stringify(body) + timestamp + tenantId + requestId;
+    const signature = 'sha256=' + crypto
+      .createHmac('sha256', SIGNING_SECRET!)
+      .update(payload)
+      .digest('hex');
+    
+    return {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY!,
+      'x-signature': signature,
+      'x-timestamp': timestamp,
+      'x-tenant-id': tenantId,
+      'x-request-id': requestId,
+      'x-idempotency-key': idempotencyKey,
+    };
+  };
+
   const provisionTenant = async (data: ProvisioningData) => {
     try {
       setLoading(true);
       
-      console.log('Provisioning tenant via background-ops API', { 
-        restaurantName: data.restaurantName,
-        url: `${BACKGROUND_OPS_URL}/api/v1/tenants/provision`
-      });
-
       const response = await fetch(`${BACKGROUND_OPS_URL}/api/v1/tenants/provision`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: createAuthHeaders(data),
         body: JSON.stringify(data),
       });
 
@@ -97,7 +120,6 @@ export const useTenantProvisioning = () => {
       return result;
 
     } catch (error) {
-      console.error('Tenant provisioning error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
       toast({
@@ -128,7 +150,11 @@ export const useTenantProvisioning = () => {
       }
       
       const url = `${BACKGROUND_OPS_URL}/api/v1/tenants${params.toString() ? `?${params.toString()}` : ''}`;
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+        },
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to fetch tenants: HTTP ${response.status}`);
@@ -137,7 +163,6 @@ export const useTenantProvisioning = () => {
       return await response.json();
       
     } catch (error) {
-      console.error('Error fetching tenants:', error);
       toast({
         title: "Error",
         description: "Failed to fetch tenants",
@@ -153,7 +178,11 @@ export const useTenantProvisioning = () => {
     try {
       setLoading(true);
       
-      const response = await fetch(`${BACKGROUND_OPS_URL}/api/v1/tenants/${id}`);
+      const response = await fetch(`${BACKGROUND_OPS_URL}/api/v1/tenants/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`,
+        },
+      });
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -165,7 +194,6 @@ export const useTenantProvisioning = () => {
       return await response.json();
       
     } catch (error) {
-      console.error('Error fetching tenant:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to fetch tenant",

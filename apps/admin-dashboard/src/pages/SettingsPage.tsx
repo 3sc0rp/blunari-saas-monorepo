@@ -16,6 +16,7 @@ import {
   Key,
   Save
 } from "lucide-react"
+import { SecurityAuditPanel } from "@/components/security/SecurityAuditPanel"
 import { Separator } from "@/components/ui/separator"
 
 const SettingsPage = () => {
@@ -174,6 +175,9 @@ const SettingsPage = () => {
                 </Button>
               </CardContent>
             </Card>
+            
+            {/* Security Audit Panel */}
+            <SecurityAuditPanel />
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6">

@@ -7,7 +7,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 3001,
+    port: 8080,
   },
   plugins: [
     react(),
@@ -16,12 +16,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "@blunari/types": path.resolve(__dirname, "../../packages/types/src"),
-      "@blunari/utils": path.resolve(__dirname, "../../packages/utils/src"), 
-      "@blunari/config": path.resolve(__dirname, "../../packages/config/src"),
     },
-  },
-  optimizeDeps: {
-    include: ["@blunari/types", "@blunari/utils", "@blunari/config"],
   },
 }));

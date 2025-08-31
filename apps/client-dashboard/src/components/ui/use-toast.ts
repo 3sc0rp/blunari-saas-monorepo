@@ -1,3 +1,5 @@
-import { useToast, toast } from "@/hooks/use-toast";
+// Re-export the modern toast utilities
+export { toast } from "@/lib/toast"
 
-export { useToast, toast };
+// Legacy support for existing code using the old hook
+export { useToast } from "@/hooks/use-toast"

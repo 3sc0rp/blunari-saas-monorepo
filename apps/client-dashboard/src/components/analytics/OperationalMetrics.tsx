@@ -35,10 +35,10 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Service Times */}
-      <Card>
+      <Card className="bg-surface border-surface-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
+            <Clock className="h-5 w-5 text-brand" />
             Service Times
           </CardTitle>
         </CardHeader>
@@ -79,10 +79,10 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
       </Card>
 
       {/* Staff Efficiency */}
-      <Card>
+      <Card className="bg-surface border-surface-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
+            <Users className="h-5 w-5 text-brand" />
             Staff Efficiency
           </CardTitle>
         </CardHeader>
@@ -119,10 +119,10 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
       </Card>
 
       {/* Table Utilization */}
-      <Card>
+      <Card className="bg-surface border-surface-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
+            <Target className="h-5 w-5 text-brand" />
             Table Utilization
           </CardTitle>
         </CardHeader>
@@ -155,7 +155,7 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
       </Card>
 
       {/* No-Show Analysis */}
-      <Card>
+      <Card className="bg-surface border-surface-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-warning" />
