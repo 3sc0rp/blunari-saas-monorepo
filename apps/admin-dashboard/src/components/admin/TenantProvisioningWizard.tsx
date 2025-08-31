@@ -119,19 +119,15 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
       } else {
         throw new Error(apiResponse.error?.message || 'Provisioning failed');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Provisioning error:', error);
-      
-      let errorMessage = 'An unexpected error occurred';
-      if (error instanceof z.ZodError) {
-        errorMessage = error.errors[0]?.message || 'Validation failed';
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
+
+      const anyErr = error as any;
+      const msg = anyErr?.errors?.[0]?.message || anyErr?.message || 'Provisioning failed';
+
       toast({
         title: "Provisioning Failed",
-        description: errorMessage,
+        description: msg,
         variant: "destructive",
       });
     } finally {

@@ -63,7 +63,12 @@ serve(async (req) => {
     if (!parsed.success) {
       return new Response(JSON.stringify({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: parsed.error.issues.map(i => i.message).join('; '), requestId: crypto.randomUUID() }
+        error: { 
+          code: 'VALIDATION_ERROR', 
+          message: parsed.error.issues.map(i => i.message).join('; '), 
+          details: parsed.error.issues, 
+          requestId: crypto.randomUUID() 
+        }
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
     const requestId = crypto.randomUUID()
@@ -117,7 +122,10 @@ serve(async (req) => {
       const msg = provisionError.message?.includes('duplicate key')
         ? 'Slug already exists. Choose a different slug.'
         : provisionError.message
-      throw new Error(`Provisioning failed: ${msg}`)
+      return new Response(JSON.stringify({
+        success: false,
+        error: { code: 'DB_ERROR', message: `Provisioning failed: ${msg}`, requestId }
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     // Send emails if requested
