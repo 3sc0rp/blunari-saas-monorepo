@@ -59,12 +59,19 @@ serve(async (req) => {
     }
 
     // Call the provision_tenant database function
+    // NOTE: There are multiple overloaded versions in the DB; pass full argument list to disambiguate
     const { data: tenantId, error: provisionError } = await supabase.rpc('provision_tenant', {
       p_user_id: user.id,
       p_restaurant_name: requestData.basics.name,
       p_restaurant_slug: requestData.basics.slug,
       p_timezone: requestData.basics.timezone,
-      p_currency: requestData.basics.currency
+      p_currency: requestData.basics.currency,
+      p_description: null,
+      p_phone: null,
+      p_email: null,
+      p_website: null,
+      p_address: null,
+      p_cuisine_type_id: null,
     })
 
     if (provisionError) {
