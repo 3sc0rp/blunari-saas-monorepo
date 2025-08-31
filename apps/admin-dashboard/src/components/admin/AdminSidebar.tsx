@@ -276,7 +276,7 @@ export const AdminSidebar = memo(() => {
         {open && (
           <div className="flex items-center gap-3">
             <img
-              src="https://raw.githubusercontent.com/3sc0rp/Blunari/refs/heads/main/logo-bg.png"
+              src="/logo_svg.svg"
               alt="Blunari"
               className="h-8 w-8 rounded-lg object-cover shadow-elegant"
               loading="lazy"
@@ -289,7 +289,7 @@ export const AdminSidebar = memo(() => {
         )}
         {!open && (
           <img
-            src="https://raw.githubusercontent.com/3sc0rp/Blunari/refs/heads/main/logo-bg.png"
+            src="/logo_svg.svg"
             alt="Blunari"
             className="h-8 w-8 rounded-lg object-cover shadow-elegant mx-auto"
             loading="lazy"

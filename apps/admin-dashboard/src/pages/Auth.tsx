@@ -151,7 +151,7 @@ const Auth = () => {
           <CardHeader className="text-center pb-6">
             <div className="flex items-center justify-center gap-3 mb-6 animate-fade-in-down">
               <img 
-                src="https://raw.githubusercontent.com/3sc0rp/Blunari/refs/heads/main/logo-bg.png" 
+                src="/logo_svg.svg" 
                 alt="Blunari Logo"
                 className="w-12 h-12 rounded-xl"
               />

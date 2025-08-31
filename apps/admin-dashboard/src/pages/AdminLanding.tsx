@@ -10,7 +10,7 @@ const AdminLanding = () => {
         {/* Header */}
         <div className="text-center space-y-4">
           <img 
-            src="https://raw.githubusercontent.com/3sc0rp/Blunari/refs/heads/main/logo-bg.png" 
+            src="/logo_svg.svg" 
             alt="Blunari Admin"
             className="w-16 h-16 mx-auto rounded-lg"
           />
