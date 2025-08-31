@@ -29,14 +29,14 @@ const getTenantSlugFromDomain = (): string | null => {
   const hostname = window.location.hostname;
   
   // Handle different domain patterns
-  if (hostname === 'localhost' || hostname.startsWith('127.0.0.1') || hostname.includes('lovable.dev')) {
+  if (hostname === 'localhost' || hostname.startsWith('127.0.0.1')) {
     // For local development, check for ?tenant= parameter first
     const urlParams = new URLSearchParams(window.location.search);
     const tenantParam = urlParams.get('tenant');
     if (tenantParam) return tenantParam;
     
     // Fallback to Demo Restaurant for development
-    return '2b6c705c-a484-4cda-9003-2f59a82b1c8e.sandbox.lovable.dev';
+    return 'demo-restaurant';
   }
   
   // Production patterns:

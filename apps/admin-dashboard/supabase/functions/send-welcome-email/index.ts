@@ -76,6 +76,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Welcome email request received:', { ownerName, ownerEmail, restaurantName, loginUrl });
 
+    const brandLogoUrl = Deno.env.get("BRAND_LOGO_URL") || Deno.env.get("ADMIN_LOGO_URL");
+
     const defaultLoginUrl = "https://app.blunari.ai/auth";
     const finalLoginUrl = loginUrl || defaultLoginUrl;
 
@@ -113,6 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
           <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
             <!-- Header -->
             <div style="text-align: center; padding: 40px 0; border-bottom: 2px solid #f0f0f0;">
+              ${brandLogoUrl ? `<img src="${brandLogoUrl}" alt="Brand" style="height: 40px; margin-bottom: 12px;" />` : ``}
               <h1 style="color: #1a365d; margin: 0; font-size: 28px; font-weight: 700;">Welcome to Blunari</h1>
               <p style="color: #4a5568; margin: 10px 0 0 0; font-size: 16px;">Your restaurant management platform</p>
             </div>

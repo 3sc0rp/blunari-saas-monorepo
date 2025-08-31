@@ -31,7 +31,7 @@ INSERT INTO public.tenants (id, name, slug, status, timezone, currency, descript
 VALUES (
   'f47ac10b-58cc-4372-a567-0e02b2c3d479'::uuid,
   'Demo Restaurant',
-  '2b6c705c-a484-4cda-9003-2f59a82b1c8e.sandbox.lovable.dev',
+  'demo-restaurant',
   'active',
   'America/New_York',
   'USD',
