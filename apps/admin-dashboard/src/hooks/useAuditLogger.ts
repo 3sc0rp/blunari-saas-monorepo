@@ -123,20 +123,30 @@ export function useAuditLogger() {
 // Helper function to get client IP (simplified for demo)
 async function getClientIP(): Promise<string | null> {
   try {
-    // Use a more reliable IP service or fallback gracefully
-    const response = await fetch('https://api.ipify.org?format=json', {
-      signal: AbortSignal.timeout(3000) // 3 second timeout
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    // Try ipify first
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+    const response = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+    clearTimeout(timeout);
+    if (response.ok) {
+      const data = await response.json();
+      if (data?.ip) return data.ip;
     }
-    
-    const data = await response.json();
-    return data.ip;
-  } catch (error) {
-    console.warn('Could not get client IP:', error);
-    // Return a placeholder instead of null to avoid blocking audit logs
+    throw new Error('ipify failed');
+  } catch {
+    try {
+      // Fallback to Cloudflare trace
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace', { signal: controller.signal });
+      clearTimeout(timeout);
+      if (res.ok) {
+        const text = await res.text();
+        const match = text.match(/ip=(.*)/);
+        if (match?.[1]) return match[1].trim();
+      }
+    } catch {}
+    // Final fallback
     return '0.0.0.0';
   }
 }

@@ -89,26 +89,33 @@ serve(async (req) => {
       })
     }
 
-    const result = {
-      success: true,
+    const responseData = {
       runId: crypto.randomUUID(),
       tenantId,
       slug: requestData.basics.slug,
       primaryUrl: Deno.env.get('ADMIN_BASE_URL') ?? 'https://admin.blunari.ai',
-      message: 'Tenant provisioned successfully',
-      requestId
+      message: 'Tenant provisioned successfully'
     }
 
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify({
+      success: true,
+      data: responseData,
+      requestId
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error) {
     console.error('Tenant provisioning error:', error)
     
+    const requestId = crypto.randomUUID()
     return new Response(JSON.stringify({
       success: false,
-      error: error.message,
-      requestId: crypto.randomUUID()
+      error: {
+        code: 'PROVISIONING_FAILED',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        requestId
+      },
+      requestId
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
