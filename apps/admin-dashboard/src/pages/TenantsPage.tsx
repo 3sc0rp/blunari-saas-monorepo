@@ -72,6 +72,7 @@ const TenantsPage = () => {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -86,19 +87,34 @@ const TenantsPage = () => {
   const itemsPerPage = 10;
 
   useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  useEffect(() => {
     fetchTenants();
-  }, [searchTerm, statusFilter, sortBy, sortOrder, currentPage]);
+  }, [debouncedSearch, statusFilter, sortBy, sortOrder, currentPage]);
 
   const fetchTenants = async () => {
     setLoading(true);
     try {
       let query = supabase
         .from('tenants')
-        .select('*', { count: 'exact' });
+        .select(`
+          id,
+          name,
+          slug,
+          status,
+          currency,
+          timezone,
+          created_at,
+          updated_at,
+          domains:domains(count)
+        `, { count: 'exact' });
 
       // Apply filters
-      if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,slug.ilike.%${searchTerm}%`);
+      if (debouncedSearch) {
+        query = query.or(`name.ilike.%${debouncedSearch}%,slug.ilike.%${debouncedSearch}%`);
       }
       
       if (statusFilter !== 'all') {
@@ -116,7 +132,19 @@ const TenantsPage = () => {
 
       if (error) throw error;
 
-      setTenants(data || []);
+      const mapped = (data || []).map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        status: row.status,
+        currency: row.currency,
+        timezone: row.timezone,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        domains_count: Array.isArray(row.domains) ? row.domains.length : 0,
+      })) as Tenant[];
+
+      setTenants(mapped);
       setTotalCount(count || 0);
     } catch (error) {
       console.error('Error fetching tenants:', error);
