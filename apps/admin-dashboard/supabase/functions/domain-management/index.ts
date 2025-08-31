@@ -286,7 +286,7 @@ async function checkDomainHealth(supabase: any, params: any, cloudflareHeaders: 
   }
 
   const startTime = Date.now()
-  let healthData: any = {
+  const healthData: any = {
     domain: domain.domain,
     status: 'unknown',
     response_time_ms: 0,

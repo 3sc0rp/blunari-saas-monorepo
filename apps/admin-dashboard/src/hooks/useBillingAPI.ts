@@ -56,7 +56,7 @@ export const useBillingAPI = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const callBillingAPI = async (endpoint: string, options?: { method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'; body?: any }) => {
+  const callBillingAPI = async (endpoint: string, options?: { method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'; body?: Record<string, unknown> }) => {
     try {
       setLoading(true);
       console.log('Calling billing API:', endpoint, options);
@@ -75,14 +75,15 @@ export const useBillingAPI = () => {
       
       console.log('Billing API response:', data);
       return data;
-    } catch (error: any) {
-      console.error('Billing API error:', error);
+    } catch (error: unknown) {
+      const errorObj = error as Error;
+      console.error('Billing API error:', errorObj);
       toast({
         title: "Error",
-        description: error.message || "An error occurred while calling the billing API",
+        description: errorObj.message || "An error occurred while calling the billing API",
         variant: "destructive",
       });
-      throw error;
+      throw errorObj;
     } finally {
       setLoading(false);
     }

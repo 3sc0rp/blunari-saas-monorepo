@@ -182,7 +182,7 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                 <Label htmlFor="source">Booking Source</Label>
                 <Select 
                   value={formData.source} 
-                  onValueChange={(value) => updateFormData({ source: value as any })}
+                  onValueChange={(value: 'phone' | 'walk_in' | 'website' | 'social' | 'partner') => updateFormData({ source: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />

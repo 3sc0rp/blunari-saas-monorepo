@@ -24,12 +24,34 @@ import {
 } from 'lucide-react';
 import { useAdminAPI } from '@/hooks/useAdminAPI';
 import { useToast } from '@/hooks/use-toast';
-import type { ProvisioningRequestData } from '@/types/admin';
+import type { ProvisioningRequestData, ProvisioningResponse } from '@/types/admin';
 import { ProvisioningRequestSchema } from '@/types/admin';
 import { z } from 'zod';
 
+interface ExtendedBasics {
+  name: string;
+  timezone: string;
+  currency: string;
+  slug: string;
+  description?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  cuisineTypeId?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+  };
+}
+
+interface ExtendedProvisioningRequestData extends Omit<ProvisioningRequestData, 'basics'> {
+  basics: ExtendedBasics;
+}
+
 interface ProvisioningWizardProps {
-  onComplete?: (result: any) => void;
+  onComplete?: (result: ProvisioningResponse) => void;
   onCancel?: () => void;
 }
 
@@ -40,7 +62,7 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
   const { provisionTenant } = useAdminAPI();
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState<ProvisioningRequestData>({
+  const [formData, setFormData] = useState<ExtendedProvisioningRequestData>({
     basics: {
       name: '',
       timezone: 'America/New_York',
@@ -69,13 +91,13 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
     idempotencyKey,
   });
 
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ProvisioningResponse | null>(null);
 
-  const handleInputChange = (section: keyof ProvisioningRequestData, field: string, value: any) => {
+  const handleInputChange = (section: keyof ExtendedProvisioningRequestData, field: string, value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [section]: {
-        ...(prev[section] as any),
+        ...(prev[section] as Record<string, unknown>),
         [field]: value,
       },
     }));
@@ -124,8 +146,8 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
     } catch (error: unknown) {
       console.error('Provisioning error:', error);
 
-      const anyErr = error as any;
-      const msg = anyErr?.errors?.[0]?.message || anyErr?.message || 'Provisioning failed';
+      const errorObj = error as Error & { errors?: Array<{ message: string }> };
+      const msg = errorObj?.errors?.[0]?.message || errorObj?.message || 'Provisioning failed';
 
       toast({
         title: "Provisioning Failed",
@@ -311,7 +333,7 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={formData.basics.description as any}
+                value={formData.basics.description || ''}
                 onChange={(e) => handleInputChange('basics', 'description', e.target.value)}
                 placeholder="A demo restaurant for testing"
               />
@@ -323,7 +345,7 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 <Input
                   id="email"
                   type="email"
-                  value={(formData as any).basics.email || ''}
+                  value={(formData.basics as { email?: string }).email || ''}
                   onChange={(e) => handleInputChange('basics', 'email', e.target.value)}
                   placeholder="contact@restaurant.com"
                 />
@@ -332,7 +354,7 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
-                  value={(formData as any).basics.phone || ''}
+                  value={(formData.basics as { phone?: string }).phone || ''}
                   onChange={(e) => handleInputChange('basics', 'phone', e.target.value)}
                   placeholder="+1 555 123 4567"
                 />
@@ -389,30 +411,30 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="street">Street</Label>
-                <Input id="street" value={(formData as any).basics.address?.street || ''} onChange={(e) => setFormData(prev => ({
+                <Input id="street" value={formData.basics.address?.street || ''} onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  basics: { ...(prev as any).basics, address: { ...((prev as any).basics.address || {}), street: e.target.value } }
+                  basics: { ...prev.basics, address: { ...(prev.basics.address || {}), street: e.target.value } }
                 }))} />
               </div>
               <div>
                 <Label htmlFor="city">City</Label>
-                <Input id="city" value={(formData as any).basics.address?.city || ''} onChange={(e) => setFormData(prev => ({
+                <Input id="city" value={formData.basics.address?.city || ''} onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  basics: { ...(prev as any).basics, address: { ...((prev as any).basics.address || {}), city: e.target.value } }
+                  basics: { ...prev.basics, address: { ...(prev.basics.address || {}), city: e.target.value } }
                 }))} />
               </div>
               <div>
                 <Label htmlFor="state">State</Label>
-                <Input id="state" value={(formData as any).basics.address?.state || ''} onChange={(e) => setFormData(prev => ({
+                <Input id="state" value={formData.basics.address?.state || ''} onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  basics: { ...(prev as any).basics, address: { ...((prev as any).basics.address || {}), state: e.target.value } }
+                  basics: { ...prev.basics, address: { ...(prev.basics.address || {}), state: e.target.value } }
                 }))} />
               </div>
               <div>
                 <Label htmlFor="zip">ZIP</Label>
-                <Input id="zip" value={(formData as any).basics.address?.zipCode || ''} onChange={(e) => setFormData(prev => ({
+                <Input id="zip" value={formData.basics.address?.zipCode || ''} onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  basics: { ...(prev as any).basics, address: { ...((prev as any).basics.address || {}), zipCode: e.target.value } }
+                  basics: { ...prev.basics, address: { ...(prev.basics.address || {}), zipCode: e.target.value } }
                 }))} />
               </div>
             </div>

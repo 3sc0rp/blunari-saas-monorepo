@@ -197,7 +197,16 @@ const FloorPlan3D: React.FC<FloorPlanProps> = ({ floorPlanImage, tables }) => {
 };
 
 // Main Component
-export const FloorPlan3DManager: React.FC<{ tables: any[], onTablesDetected?: (tables: DetectedTable[]) => void }> = ({ tables, onTablesDetected }) => {
+export const FloorPlan3DManager: React.FC<{ 
+  tables: Array<{
+    id: string;
+    name: string;
+    capacity: number;
+    position: { x: number; y: number };
+    active: boolean;
+  }>;
+  onTablesDetected?: (tables: DetectedTable[]) => void;
+}> = ({ tables, onTablesDetected }) => {
   const { toast } = useToast();
   const [floorPlanImage, setFloorPlanImage] = useState<string>('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);

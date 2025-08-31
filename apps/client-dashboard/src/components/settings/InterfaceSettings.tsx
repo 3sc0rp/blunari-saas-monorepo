@@ -78,7 +78,7 @@ const InterfaceSettings: React.FC = () => {
 
           <RadioGroup 
             value={preference} 
-            onValueChange={(value) => setPreference(value as any)}
+            onValueChange={(value: 'sidebar' | 'bottom' | 'auto') => setPreference(value)}
             className="space-y-4"
           >
             {navigationOptions.map((option) => {

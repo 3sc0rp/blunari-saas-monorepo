@@ -103,7 +103,7 @@ const Analytics: React.FC = () => {
 
   const insights = generateInsights();
 
-  const handlePeriodChange = (period: TimePeriod, range: any) => {
+  const handlePeriodChange = (period: TimePeriod, range: { from: Date; to: Date; label: string }) => {
     setActivePeriod(period);
     setTimeRange(range);
   };

@@ -1,3 +1,5 @@
+/// <reference path="../shared-types.d.ts" />
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
@@ -14,24 +16,45 @@ const supabase = createClient(
 interface WebhookRequest {
   provider: string;
   event_type: string;
-  data: any;
+  data: Record<string, unknown>;
   signature?: string;
   timestamp?: string;
 }
 
 // POS provider webhook signature verification
-const verifySignature = (provider: string, signature: string, payload: string, secret: string): boolean => {
+const verifySignature = async (provider: string, signature: string, payload: string, secret: string): Promise<boolean> => {
   try {
     switch (provider) {
-      case 'toast':
+      case 'toast': {
         // Toast webhook signature verification
-        const toastExpected = `sha256=${crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret + payload))}`;
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(secret);
+        const payloadData = encoder.encode(payload);
+        
+        const key = await crypto.subtle.importKey(
+          'raw',
+          keyData,
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign']
+        );
+        
+        const hashBuffer = await crypto.subtle.sign('HMAC', key, payloadData);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        const toastExpected = `sha256=${hashHex}`;
         return signature === toastExpected;
+      }
       
-      case 'square':
+      case 'square': {
         // Square webhook signature verification  
-        const squareExpected = crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload + secret));
+        const encoder = new TextEncoder();
+        const data = encoder.encode(payload + secret);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const squareExpected = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         return signature === squareExpected;
+      }
       
       case 'clover':
         // Clover webhook signature verification
@@ -47,7 +70,7 @@ const verifySignature = (provider: string, signature: string, payload: string, s
 };
 
 // Process different event types
-const processEvent = async (integrationId: string, eventType: string, eventData: any) => {
+const processEvent = async (integrationId: string, eventType: string, eventData: Record<string, unknown>) => {
   console.log(`Processing ${eventType} event for integration ${integrationId}`);
   
   try {
@@ -90,19 +113,41 @@ const processEvent = async (integrationId: string, eventType: string, eventData:
   }
 };
 
-const handleOrderEvent = async (integrationId: string, orderData: any) => {
+interface OrderData {
+  id?: string;
+  order_id?: string;
+  customer?: {
+    name?: string;
+    email?: string;
+  };
+  guest_name?: string;
+  guest_email?: string;
+  total?: number;
+  amount?: number;
+  currency?: string;
+  status?: string;
+  items?: unknown[];
+  line_items?: unknown[];
+  created_at?: string;
+  timestamp?: string;
+  [key: string]: unknown;
+}
+
+const handleOrderEvent = async (integrationId: string, orderData: Record<string, unknown>) => {
   console.log('Handling order event:', orderData);
+  
+  const typedOrderData = orderData as OrderData;
   
   // Transform order data to standard format
   const standardizedOrder = {
-    external_id: orderData.id || orderData.order_id,
-    customer_name: orderData.customer?.name || orderData.guest_name,
-    customer_email: orderData.customer?.email || orderData.guest_email,
-    total_amount: orderData.total || orderData.amount,
-    currency: orderData.currency || 'USD',
-    status: orderData.status,
-    items: orderData.items || orderData.line_items || [],
-    created_at: orderData.created_at || orderData.timestamp,
+    external_id: typedOrderData.id || typedOrderData.order_id,
+    customer_name: typedOrderData.customer?.name || typedOrderData.guest_name,
+    customer_email: typedOrderData.customer?.email || typedOrderData.guest_email,
+    total_amount: typedOrderData.total || typedOrderData.amount,
+    currency: typedOrderData.currency || 'USD',
+    status: typedOrderData.status,
+    items: typedOrderData.items || typedOrderData.line_items || [],
+    created_at: typedOrderData.created_at || typedOrderData.timestamp,
     metadata: orderData
   };
   
@@ -110,25 +155,45 @@ const handleOrderEvent = async (integrationId: string, orderData: any) => {
   console.log('Standardized order:', standardizedOrder);
 };
 
-const handleMenuItemUpdate = async (integrationId: string, menuData: any) => {
+interface MenuItemData {
+  id?: string;
+  item_id?: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  category?: string;
+  price?: number;
+  currency?: string;
+  available?: boolean;
+  modifiers?: unknown[];
+  allergens?: unknown[];
+  nutrition?: Record<string, unknown>;
+  image_url?: string;
+  photo_url?: string;
+  [key: string]: unknown;
+}
+
+const handleMenuItemUpdate = async (integrationId: string, menuData: Record<string, unknown>) => {
   console.log('Handling menu item update:', menuData);
+  
+  const typedMenuData = menuData as MenuItemData;
   
   try {
     // Sync menu item using database function
     const { data, error } = await supabase.rpc('sync_pos_menu_item', {
       p_integration_id: integrationId,
-      p_external_id: menuData.id || menuData.item_id,
+      p_external_id: typedMenuData.id || typedMenuData.item_id,
       p_item_data: {
-        name: menuData.name || menuData.title,
-        description: menuData.description,
-        category: menuData.category,
-        price: Math.round((menuData.price || 0) * 100), // Convert to cents
-        currency: menuData.currency || 'USD',
-        available: menuData.available !== false,
-        modifiers: menuData.modifiers || [],
-        allergens: menuData.allergens || [],
-        nutrition_info: menuData.nutrition || {},
-        image_url: menuData.image_url || menuData.photo_url,
+        name: typedMenuData.name || typedMenuData.title,
+        description: typedMenuData.description,
+        category: typedMenuData.category,
+        price: Math.round(((typedMenuData.price as number) || 0) * 100), // Convert to cents
+        currency: typedMenuData.currency || 'USD',
+        available: typedMenuData.available !== false,
+        modifiers: typedMenuData.modifiers || [],
+        allergens: typedMenuData.allergens || [],
+        nutrition_info: typedMenuData.nutrition || {},
+        image_url: typedMenuData.image_url || typedMenuData.photo_url,
         metadata: menuData
       }
     });
@@ -145,18 +210,34 @@ const handleMenuItemUpdate = async (integrationId: string, menuData: any) => {
   }
 };
 
-const handlePaymentEvent = async (integrationId: string, paymentData: any) => {
+interface PaymentData {
+  id?: string;
+  payment_id?: string;
+  order_id?: string;
+  amount?: number;
+  currency?: string;
+  method?: string;
+  payment_method?: string;
+  status?: string;
+  processed_at?: string;
+  timestamp?: string;
+  [key: string]: unknown;
+}
+
+const handlePaymentEvent = async (integrationId: string, paymentData: Record<string, unknown>) => {
   console.log('Handling payment event:', paymentData);
+  
+  const typedPaymentData = paymentData as PaymentData;
   
   // Process payment data for analytics and reporting
   const standardizedPayment = {
-    external_id: paymentData.id || paymentData.payment_id,
-    order_id: paymentData.order_id,
-    amount: paymentData.amount,
-    currency: paymentData.currency || 'USD',
-    method: paymentData.method || paymentData.payment_method,
-    status: paymentData.status,
-    processed_at: paymentData.processed_at || paymentData.timestamp,
+    external_id: typedPaymentData.id || typedPaymentData.payment_id,
+    order_id: typedPaymentData.order_id,
+    amount: typedPaymentData.amount,
+    currency: typedPaymentData.currency || 'USD',
+    method: typedPaymentData.method || typedPaymentData.payment_method,
+    status: typedPaymentData.status,
+    processed_at: typedPaymentData.processed_at || typedPaymentData.timestamp,
     metadata: paymentData
   };
   
@@ -231,7 +312,7 @@ serve(async (req: Request) => {
     // Verify webhook signature if present
     const signature = headers['x-signature'] || headers['signature'];
     if (signature && integration.webhook_secret) {
-      const isValid = verifySignature(
+      const isValid = await verifySignature(
         integration.provider,
         signature,
         requestBody,
@@ -292,7 +373,7 @@ serve(async (req: Request) => {
         .update({
           response_status: 500,
           processing_result: 'error',
-          error_message: error.message
+          error_message: error instanceof Error ? error.message : 'Unknown error'
         })
         .eq('integration_id', integrationId)
         .order('created_at', { ascending: false })
@@ -302,13 +383,13 @@ serve(async (req: Request) => {
       await supabase.rpc('update_pos_integration_health', {
         p_integration_id: integrationId,
         p_status: 'unhealthy',
-        p_error_message: error.message
+        p_error_message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
 
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
-      message: error.message 
+      message: error instanceof Error ? error.message : 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

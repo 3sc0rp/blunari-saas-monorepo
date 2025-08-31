@@ -36,12 +36,21 @@ const BookingPatternsChart: React.FC<BookingPatternsChartProps> = ({ data }) => 
     CHART_COLORS.quinary,
   ];
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{
+      color: string;
+      name: string;
+      value: number;
+      dataKey?: string;
+    }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-surface p-3 rounded-md shadow-elev-2 border border-surface-2">
           <p className="text-body-sm font-medium text-text mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <div key={index} className="flex items-center gap-2 text-body-sm">
               <div 
                 className="w-3 h-3 rounded-full" 
@@ -214,7 +223,7 @@ const BookingPatternsChart: React.FC<BookingPatternsChartProps> = ({ data }) => 
 
   const getChartStats = () => {
     switch (activeChart) {
-      case 'hours':
+      case 'hours': {
         const peakHour = data.peakHours.reduce((max, current) => 
           current.bookings > max.bookings ? current : max, data.peakHours[0] || { hour: 0, bookings: 0 });
         return {
@@ -222,8 +231,9 @@ const BookingPatternsChart: React.FC<BookingPatternsChartProps> = ({ data }) => 
           value: formatHour(peakHour?.hour || 0),
           subtitle: `${peakHour?.bookings || 0} bookings`
         };
+      }
 
-      case 'days':
+      case 'days': {
         const peakDay = data.dayOfWeek.reduce((max, current) => 
           current.bookings > max.bookings ? current : max, data.dayOfWeek[0] || { day: 'Monday', bookings: 0 });
         return {
@@ -231,8 +241,9 @@ const BookingPatternsChart: React.FC<BookingPatternsChartProps> = ({ data }) => 
           value: peakDay?.day || 'Monday',
           subtitle: `${peakDay?.bookings || 0} bookings`
         };
+      }
 
-      case 'sources':
+      case 'sources': {
         const topSource = data.sourcePerformance.reduce((max, current) => 
           current.bookings > max.bookings ? current : max, data.sourcePerformance[0] || { source: 'website', bookings: 0 });
         return {
@@ -240,6 +251,7 @@ const BookingPatternsChart: React.FC<BookingPatternsChartProps> = ({ data }) => 
           value: topSource?.source?.charAt(0).toUpperCase() + topSource?.source?.slice(1) || 'Website',
           subtitle: `${topSource?.bookings || 0} bookings`
         };
+      }
 
       default:
         return { title: "", value: "", subtitle: "" };

@@ -73,7 +73,7 @@ export class InputSanitizer {
    */
   static sanitizePhoneNumber(phone: string): string {
     return phone
-      .replace(/[^0-9+\-\s\(\)]/g, '') // Only allow phone number characters
+      .replace(/[^0-9+\-\s()]/g, '') // Only allow phone number characters
       .trim();
   }
 }

@@ -29,12 +29,21 @@ const RevenueChart: React.FC<RevenueChartProps> = ({
     }).format(value);
   };
   
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{
+      color: string;
+      name: string;
+      value: number;
+      dataKey?: string;
+    }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-surface p-3 rounded-md shadow-elev-2 border border-surface-2">
           <p className="text-body-sm font-medium text-text mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index: number) => (
             <div key={index} className="flex items-center gap-2 text-body-sm">
               <div 
                 className="w-3 h-3 rounded-full" 

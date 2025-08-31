@@ -79,22 +79,26 @@ const EnhancedFilters: React.FC<EnhancedFiltersProps> = ({
       case 'today':
         range = { from: today, to: today };
         break;
-      case 'tomorrow':
+      case 'tomorrow': {
         const tomorrow = addDays(today, 1);
         range = { from: tomorrow, to: tomorrow };
         break;
-      case 'this-week':
+      }
+      case 'this-week': {
         range = { from: startOfWeek(today), to: endOfWeek(today) };
         break;
-      case 'next-week':
+      }
+      case 'next-week': {
         const nextWeek = addDays(today, 7);
         range = { from: startOfWeek(nextWeek), to: endOfWeek(nextWeek) };
         break;
-      case 'this-weekend':
+      }
+      case 'this-weekend': {
         const saturday = addDays(startOfWeek(today), 6);
         const sunday = addDays(saturday, 1);
         range = { from: saturday, to: sunday };
         break;
+      }
     }
 
     if (range) {

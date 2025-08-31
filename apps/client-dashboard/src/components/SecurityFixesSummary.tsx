@@ -77,7 +77,7 @@ const SecurityFixesSummary: React.FC = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-medium text-sm">{fix.title}</h4>
-                    <Badge variant={getSeverityColor(fix.severity) as any} className="text-xs">
+                    <Badge variant={getSeverityColor(fix.severity) as 'default' | 'secondary' | 'destructive' | 'outline'} className="text-xs">
                       {fix.severity}
                     </Badge>
                   </div>
@@ -104,7 +104,7 @@ const SecurityFixesSummary: React.FC = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-medium text-sm">{action.title}</h4>
-                    <Badge variant={getSeverityColor(action.severity) as any} className="text-xs">
+                    <Badge variant={getSeverityColor(action.severity) as 'default' | 'secondary' | 'destructive' | 'outline'} className="text-xs">
                       {action.severity}
                     </Badge>
                   </div>

@@ -22,10 +22,11 @@ interface Domain {
   ssl_status: 'pending' | 'active' | 'failed' | 'expired'
   ssl_expires_at: string | null
   verification_status: string
+  verification_record?: string
   is_primary: boolean
   created_at: string
   tenant_id: string
-  metadata: any
+  metadata: Record<string, unknown>
 }
 
 interface DomainHealthCheck {
@@ -44,6 +45,14 @@ interface DomainAnalytics {
   cache_hit_rate: number
   error_rate: number
   date: string
+}
+
+interface DomainComponentProps {
+  domains: Domain[];
+  healthChecks?: DomainHealthCheck[];
+  analytics?: DomainAnalytics[];
+  selectedDomain: Domain | null;
+  onSelectDomain: (domain: Domain | null) => void;
 }
 
 // Helper functions
@@ -538,7 +547,7 @@ function DomainTable({
 }
 
 // Component placeholders for other tabs
-function HealthMonitoring({ domains, healthChecks, selectedDomain, onSelectDomain }: any) {
+function HealthMonitoring({ domains, healthChecks, selectedDomain, onSelectDomain }: DomainComponentProps) {
   return (
     <div className="space-y-4">
       <Select value={selectedDomain?.id || ""} onValueChange={(value) => {
@@ -615,7 +624,7 @@ function HealthMonitoring({ domains, healthChecks, selectedDomain, onSelectDomai
   )
 }
 
-function DomainAnalytics({ analytics, selectedDomain, onSelectDomain, domains }: any) {
+function DomainAnalytics({ analytics, selectedDomain, onSelectDomain, domains }: DomainComponentProps) {
   return (
     <div className="space-y-4">
       <Select value={selectedDomain?.id || ""} onValueChange={(value) => {
@@ -714,7 +723,7 @@ function DomainAnalytics({ analytics, selectedDomain, onSelectDomain, domains }:
   )
 }
 
-function DNSManagement({ selectedDomain, onSelectDomain, domains }: any) {
+function DNSManagement({ selectedDomain, onSelectDomain, domains }: Pick<DomainComponentProps, 'selectedDomain' | 'onSelectDomain' | 'domains'>) {
   return (
     <div className="space-y-4">
       <Select value={selectedDomain?.id || ""} onValueChange={(value) => {

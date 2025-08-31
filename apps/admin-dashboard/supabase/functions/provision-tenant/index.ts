@@ -339,7 +339,7 @@ serve(async (req) => {
     logStep("Provisioning completed successfully", { tenantId })
 
     // Don't send email automatically - let user choose which email to send
-    let emailStatus = "pending";
+    const emailStatus = "pending";
 
     return new Response(JSON.stringify({ 
       success: true, 

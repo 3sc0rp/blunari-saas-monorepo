@@ -16,7 +16,13 @@ export interface TenantData {
   phone?: string;
   email?: string;
   website?: string;
-  address?: any;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postal_code?: string;
+  };
   created_at: string;
   updated_at: string;
   domainsCount: number;
@@ -144,7 +150,7 @@ export const ProvisioningRequestSchema = z.object({
     name: z.string().min(1, 'Restaurant name is required').max(100),
     timezone: z.string().min(1, 'Timezone is required'),
     currency: z.string().length(3, 'Currency must be 3 characters'),
-    slug: z.string().min(1, 'Slug is required').regex(/^[a-z0-9\-]+$/, 'Invalid slug format'),
+    slug: z.string().min(1, 'Slug is required').regex(/^[a-z0-9-]+$/, 'Invalid slug format'),
     description: z.string().max(1000).optional(),
     email: z.string().email('Invalid business email').optional(),
     phone: z.string().max(50).optional(),

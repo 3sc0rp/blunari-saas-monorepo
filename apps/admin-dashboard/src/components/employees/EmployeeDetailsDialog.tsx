@@ -12,6 +12,27 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Activity, Shield, Settings, Save, Loader2 } from "lucide-react";
 
+type EmployeeRole = 'SUPER_ADMIN' | 'ADMIN' | 'SUPPORT' | 'OPS' | 'VIEWER';
+type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'SUSPENDED';
+
+interface PermissionSet {
+  can_manage_tenants?: boolean;
+  can_view_analytics?: boolean;
+  can_manage_users?: boolean;
+  can_access_logs?: boolean;
+  can_manage_billing?: boolean;
+  [key: string]: boolean | undefined;
+}
+
+interface ActivityLogDetails {
+  action_type?: string;
+  resource_name?: string;
+  ip_address?: string;
+  user_agent?: string;
+  changes?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 interface Employee {
   id: string;
   employee_id: string;
@@ -22,7 +43,7 @@ interface Employee {
   last_activity: string;
   user_id: string;
   department_id: string;
-  permissions: any;
+  permissions: PermissionSet;
   profiles: {
     first_name: string;
     last_name: string;
@@ -45,7 +66,7 @@ interface ActivityLog {
   resource_type: string;
   resource_id: string;
   created_at: string;
-  details: any;
+  details: ActivityLogDetails;
 }
 
 interface EmployeeDetailsDialogProps {
@@ -65,8 +86,8 @@ export const EmployeeDetailsDialog = ({
 }: EmployeeDetailsDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [role, setRole] = useState<'SUPER_ADMIN' | 'ADMIN' | 'SUPPORT' | 'OPS' | 'VIEWER'>(employee.role as any);
-  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE' | 'PENDING' | 'SUSPENDED'>(employee.status as any);
+  const [role, setRole] = useState<EmployeeRole>(employee.role as EmployeeRole);
+  const [status, setStatus] = useState<EmployeeStatus>(employee.status as EmployeeStatus);
   const [departmentId, setDepartmentId] = useState(employee.department_id || "");
   const [hireDate, setHireDate] = useState(employee.hire_date || "");
 
@@ -86,7 +107,10 @@ export const EmployeeDetailsDialog = ({
         .limit(50);
 
       if (error) throw error;
-      setActivityLogs(data || []);
+      setActivityLogs((data || []).map(log => ({
+        ...log,
+        details: log.details as ActivityLogDetails
+      })));
     } catch (error) {
       console.error('Error fetching activity logs:', error);
     }
@@ -214,7 +238,7 @@ export const EmployeeDetailsDialog = ({
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="role">Role</Label>
-                    <Select value={role} onValueChange={(value) => setRole(value as any)}>
+                    <Select value={role} onValueChange={(value) => setRole(value as EmployeeRole)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -230,7 +254,7 @@ export const EmployeeDetailsDialog = ({
 
                   <div>
                     <Label htmlFor="status">Status</Label>
-                    <Select value={status} onValueChange={(value) => setStatus(value as any)}>
+                    <Select value={status} onValueChange={(value) => setStatus(value as EmployeeStatus)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>

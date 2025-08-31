@@ -94,7 +94,7 @@ const TodaysBookings = () => {
                     guests: booking.party_size,
                     table: booking.table_id || 'TBD',
                     phone: booking.guest_phone || '',
-                    status: booking.status as any,
+                    status: booking.status as 'confirmed' | 'seated' | 'completed' | 'cancelled',
                     specialRequests: booking.special_requests
                   }}
                 />

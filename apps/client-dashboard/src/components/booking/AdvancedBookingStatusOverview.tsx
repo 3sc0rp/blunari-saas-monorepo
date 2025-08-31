@@ -380,7 +380,7 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
           </CardTitle>
           
           <div className="flex items-center gap-2 flex-wrap">
-            <Tabs value={timeRange} onValueChange={(value) => setTimeRange(value as any)}>
+            <Tabs value={timeRange} onValueChange={(value) => setTimeRange(value as 'today' | 'week' | 'month')}>
               <TabsList className="grid w-fit grid-cols-3">
                 <TabsTrigger value="today" className="text-xs">Today</TabsTrigger>
                 <TabsTrigger value="week" className="text-xs">Week</TabsTrigger>

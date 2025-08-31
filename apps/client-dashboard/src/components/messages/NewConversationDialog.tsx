@@ -41,7 +41,7 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
     templateId: '',
   });
   const [recipientType, setRecipientType] = useState<'customer' | 'email' | 'phone'>('customer');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; email?: string; phone?: string }>>([]);
 
   const handleSendMessage = (content: string, templateId?: string) => {
     const data = {

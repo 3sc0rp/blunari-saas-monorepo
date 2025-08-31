@@ -77,7 +77,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
   };
 
   // Calculate recommendation score for table optimization
-  const calculateRecommendationScore = (table: any, partySize: number) => {
+  const calculateRecommendationScore = (table: { capacity: number; [key: string]: unknown }, partySize: number) => {
     const utilization = (partySize / table.capacity) * 100;
     
     // Perfect utilization is around 75-85%

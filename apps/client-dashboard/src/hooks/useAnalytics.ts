@@ -182,7 +182,7 @@ function getDefaultBookingPatterns(): BookingPatterns {
   };
 }
 
-function calculateRevenueGrowth(bookings: any[]): number {
+function calculateRevenueGrowth(bookings: BookingData[]): number {
   const now = new Date();
   const currentMonth = now.getMonth();
   const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
@@ -190,12 +190,12 @@ function calculateRevenueGrowth(bookings: any[]): number {
   const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
   const currentMonthBookings = bookings.filter(booking => {
-    const bookingDate = new Date(booking.booking_time);
+    const bookingDate = new Date(booking.booking_time || booking.created_at);
     return bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear;
   });
 
   const lastMonthBookings = bookings.filter(booking => {
-    const bookingDate = new Date(booking.booking_time);
+    const bookingDate = new Date(booking.booking_time || booking.created_at);
     return bookingDate.getMonth() === lastMonth && bookingDate.getFullYear() === lastMonthYear;
   });
 
@@ -214,11 +214,19 @@ function getDefaultOperationalMetrics(): OperationalMetrics {
   };
 }
 
-function groupBookingsByDay(bookings: any[]) {
-  const groups: { [key: string]: any[] } = {};
+interface BookingData {
+  created_at: string;
+  booking_time?: string;
+  total_amount?: number;
+  party_size?: number;
+  status?: string;
+}
+
+function groupBookingsByDay(bookings: BookingData[]) {
+  const groups: { [key: string]: BookingData[] } = {};
   
   bookings.forEach(booking => {
-    const date = new Date(booking.booking_time);
+    const date = new Date(booking.booking_time || booking.created_at);
     const key = date.toISOString().split('T')[0];
     
     if (!groups[key]) groups[key] = [];
@@ -228,15 +236,15 @@ function groupBookingsByDay(bookings: any[]) {
   return Object.entries(groups).map(([date, bookings]) => ({
     date,
     revenue: bookings.length * 85,
-    covers: bookings.reduce((sum, b) => sum + b.party_size, 0),
+    covers: bookings.reduce((sum, b) => sum + (b.party_size || 0), 0),
   }));
 }
 
-function groupBookingsByWeek(bookings: any[]) {
-  const groups: { [key: string]: any[] } = {};
+function groupBookingsByWeek(bookings: BookingData[]) {
+  const groups: { [key: string]: BookingData[] } = {};
   
   bookings.forEach(booking => {
-    const date = new Date(booking.booking_time);
+    const date = new Date(booking.booking_time || booking.created_at);
     const week = getWeekNumber(date);
     const key = `${date.getFullYear()}-W${week}`;
     
@@ -247,15 +255,15 @@ function groupBookingsByWeek(bookings: any[]) {
   return Object.entries(groups).map(([week, bookings]) => ({
     week,
     revenue: bookings.length * 85,
-    covers: bookings.reduce((sum, b) => sum + b.party_size, 0),
+    covers: bookings.reduce((sum, b) => sum + (b.party_size || 0), 0),
   }));
 }
 
-function groupBookingsByMonth(bookings: any[]) {
-  const groups: { [key: string]: any[] } = {};
+function groupBookingsByMonth(bookings: BookingData[]) {
+  const groups: { [key: string]: BookingData[] } = {};
   
   bookings.forEach(booking => {
-    const date = new Date(booking.booking_time);
+    const date = new Date(booking.booking_time || booking.created_at);
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     
     if (!groups[key]) groups[key] = [];
@@ -265,15 +273,15 @@ function groupBookingsByMonth(bookings: any[]) {
   return Object.entries(groups).map(([month, bookings]) => ({
     month,
     revenue: bookings.length * 85,
-    covers: bookings.reduce((sum, b) => sum + b.party_size, 0),
+    covers: bookings.reduce((sum, b) => sum + (b.party_size || 0), 0),
   }));
 }
 
-function calculatePeakHours(bookings: any[]) {
+function calculatePeakHours(bookings: BookingData[]) {
   const hourCounts: { [hour: number]: number } = {};
   
   bookings.forEach(booking => {
-    const hour = new Date(booking.booking_time).getHours();
+    const hour = new Date(booking.booking_time || booking.created_at).getHours();
     hourCounts[hour] = (hourCounts[hour] || 0) + 1;
   });
   
@@ -284,12 +292,12 @@ function calculatePeakHours(bookings: any[]) {
   }));
 }
 
-function calculateDayOfWeekPatterns(bookings: any[]) {
+function calculateDayOfWeekPatterns(bookings: BookingData[]) {
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const dayCounts: { [day: number]: { bookings: number; revenue: number } } = {};
   
   bookings.forEach(booking => {
-    const day = new Date(booking.booking_time).getDay();
+    const day = new Date(booking.booking_time || booking.created_at).getDay();
     if (!dayCounts[day]) dayCounts[day] = { bookings: 0, revenue: 0 };
     dayCounts[day].bookings += 1;
     dayCounts[day].revenue += (booking.status === 'completed' ? 85 : 0);
@@ -302,7 +310,7 @@ function calculateDayOfWeekPatterns(bookings: any[]) {
   }));
 }
 
-function calculateSourcePerformance(bookings: any[]) {
+function calculateSourcePerformance(bookings: BookingData[]) {
   const sources = ['phone', 'website', 'walk_in', 'social', 'partner'];
   const sourceData: { [source: string]: { bookings: number; revenue: number } } = {};
   
@@ -321,11 +329,11 @@ function calculateSourcePerformance(bookings: any[]) {
   }));
 }
 
-function calculateTableUtilization(bookings: any[]) {
+function calculateTableUtilization(bookings: BookingData[]) {
   const tableData: { [tableId: string]: { bookings: number; revenue: number } } = {};
   
   bookings.forEach(booking => {
-    const tableId = booking.table_id || 'unassigned';
+    const tableId = (booking as BookingData & { table_id?: string }).table_id || 'unassigned';
     if (!tableData[tableId]) tableData[tableId] = { bookings: 0, revenue: 0 };
     tableData[tableId].bookings += 1;
     tableData[tableId].revenue += 85;

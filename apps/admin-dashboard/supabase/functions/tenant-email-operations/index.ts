@@ -41,7 +41,7 @@ serve(async (req) => {
     const { tenantSlug, tenantId: inputTenantId, emailType } = await req.json()
 
     // Resolve tenant either by id or slug
-    let tenantIdToUse = inputTenantId as string | undefined
+    const tenantIdToUse = inputTenantId as string | undefined
     let tenantQuery
     if (tenantIdToUse) {
       tenantQuery = supabaseClient

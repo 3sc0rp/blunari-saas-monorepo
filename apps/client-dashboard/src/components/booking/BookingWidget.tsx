@@ -84,7 +84,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
     }
   }, [tenant, slug, state.start_time]);
 
-  const handleStepComplete = useCallback(async (stepData: any) => {
+  const handleStepComplete = useCallback(async (stepData: Record<string, unknown>) => {
     if (!tenant) return;
     
     recordStepTime();
@@ -97,7 +97,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
         case 1:
           setState(prev => ({ 
             ...prev, 
-            party_size: stepData.party_size, 
+            party_size: stepData.party_size as number, 
             step: 2 
           }));
           await sendAnalyticsEvent('step_completed', {
@@ -107,30 +107,32 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
           });
           break;
 
-        case 2:
+        case 2: {
+          const slot = stepData.slot as TimeSlot;
           setState(prev => ({ 
             ...prev, 
-            selected_slot: stepData.slot, 
+            selected_slot: slot, 
             step: 3 
           }));
           await sendAnalyticsEvent('step_completed', {
             step: 2,
-            slot_time: stepData.slot.time,
-            optimal_selected: stepData.slot.optimal || false,
+            slot_time: slot.time,
+            optimal_selected: slot.optimal || false,
             tenant_id: tenant.tenant_id,
           });
-          if (stepData.slot.optimal) {
+          if (slot.optimal) {
             await sendAnalyticsEvent('optimal_slot_selected', {
-              slot_time: stepData.slot.time,
+              slot_time: slot.time,
               tenant_id: tenant.tenant_id,
             });
           }
           break;
+        }
 
         case 3:
           setState(prev => ({ 
             ...prev, 
-            guest_details: stepData.guest_details, 
+            guest_details: stepData.guest_details as GuestDetails, 
             step: 4 
           }));
           await sendAnalyticsEvent('step_completed', {
@@ -160,7 +162,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
     }
   }, [state.step, tenant, recordStepTime, onError]);
 
-  const handleBookingComplete = useCallback(async (reservation: any) => {
+  const handleBookingComplete = useCallback(async (reservation: { reservation_id: string; [key: string]: unknown }) => {
     if (!tenant) return;
     
     const totalTime = Date.now() - state.start_time;

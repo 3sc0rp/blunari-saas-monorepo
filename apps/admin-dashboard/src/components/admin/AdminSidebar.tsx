@@ -41,7 +41,7 @@ import { useDashboardStore } from "@/stores/dashboardStore";
 interface NavigationItem {
   title: string;
   url: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; size?: string | number }>;
   badge?: string | null;
   description?: string;
 }

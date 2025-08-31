@@ -168,11 +168,12 @@ const Auth: React.FC = () => {
       } else {
         throw new Error(result.error || 'Failed to send security code');
       }
-    } catch (error: any) {
-      console.error('Reset password error:', error);
+    } catch (error: unknown) {
+      const errorObj = error as Error;
+      console.error('Reset password error:', errorObj);
       toast({
         title: 'Error',
-        description: error.message || 'Something went wrong. Please try again.',
+        description: errorObj.message || 'Something went wrong. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -216,11 +217,12 @@ const Auth: React.FC = () => {
       } else {
         throw new Error(result.error || 'Failed to resend security code');
       }
-    } catch (error: any) {
-      console.error('Resend code error:', error);
+    } catch (error: unknown) {
+      const errorObj = error as Error;
+      console.error('Resend code error:', errorObj);
       toast({
         title: 'Error',
-        description: error.message || 'Something went wrong. Please try again.',
+        description: errorObj.message || 'Something went wrong. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -275,11 +277,12 @@ const Auth: React.FC = () => {
       } else {
         throw new Error(result.error || 'Failed to reset password');
       }
-    } catch (error: any) {
-      console.error('Password reset error:', error);
+    } catch (error: unknown) {
+      const errorObj = error as Error;
+      console.error('Password reset error:', errorObj);
       toast({
         title: 'Error',
-        description: error.message || 'Invalid security code or failed to reset password. Please try again.',
+        description: errorObj.message || 'Invalid security code or failed to reset password. Please try again.',
         variant: 'destructive',
       });
     } finally {

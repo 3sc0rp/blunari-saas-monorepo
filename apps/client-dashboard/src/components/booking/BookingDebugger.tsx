@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 interface DebugResult {
   step: string;
   status: 'pending' | 'success' | 'error';
-  data?: any;
+  data?: Record<string, unknown>;
   error?: string;
   duration?: number;
 }
@@ -27,7 +27,7 @@ const BookingDebugger: React.FC<BookingDebuggerProps> = ({ slug }) => {
     service_date: format(new Date(), 'yyyy-MM-dd'),
   });
 
-  const logResult = (step: string, status: 'pending' | 'success' | 'error', data?: any, error?: string, duration?: number) => {
+  const logResult = (step: string, status: 'pending' | 'success' | 'error', data?: Record<string, unknown>, error?: string, duration?: number) => {
     setResults(prev => {
       const existing = prev.findIndex(r => r.step === step);
       const result = { step, status, data, error, duration };

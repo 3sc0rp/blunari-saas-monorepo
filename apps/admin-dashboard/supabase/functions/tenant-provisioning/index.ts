@@ -1,6 +1,40 @@
+/// <reference path="../shared-types.d.ts" />
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts"
+
+interface Address {
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+}
+
+interface BasicInfo {
+  name: string;
+  slug: string;
+  timezone: string;
+  currency: string;
+  description?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  cuisineTypeId?: string;
+  address?: Address;
+}
+
+interface OwnerInfo {
+  email: string;
+  sendInvite?: boolean;
+}
+
+interface TenantProvisioningRequest {
+  basics: BasicInfo;
+  owner?: OwnerInfo;
+  idempotencyKey?: string;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,7 +43,7 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -65,7 +99,7 @@ serve(async (req) => {
         success: false,
         error: { 
           code: 'VALIDATION_ERROR', 
-          message: parsed.error.issues.map(i => i.message).join('; '), 
+          message: parsed.error.issues.map((i: { message: string }) => i.message).join('; '), 
           details: parsed.error.issues, 
           requestId: crypto.randomUUID() 
         }
@@ -135,9 +169,9 @@ serve(async (req) => {
       const restaurantName = requestData.basics.name
 
       // Fire-and-forget; do not block provisioning on email transport
-      try { await supabase.functions.invoke('send-welcome-email', { body: { ownerName: restaurantName, ownerEmail, restaurantName, loginUrl: baseUrl } }) } catch (_) {}
-      try { await supabase.functions.invoke('send-welcome-pack', { body: { ownerName: restaurantName, ownerEmail, restaurantName, loginUrl: baseUrl } }) } catch (_) {}
-      try { await supabase.functions.invoke('send-credentials-email', { body: { ownerEmail, tenantName: restaurantName, loginUrl: baseUrl } }) } catch (_) {}
+      try { await supabase.functions.invoke('send-welcome-email', { body: { ownerName: restaurantName, ownerEmail, restaurantName, loginUrl: baseUrl } }) } catch { /* ignore email errors */ }
+      try { await supabase.functions.invoke('send-welcome-pack', { body: { ownerName: restaurantName, ownerEmail, restaurantName, loginUrl: baseUrl } }) } catch { /* ignore email errors */ }
+      try { await supabase.functions.invoke('send-credentials-email', { body: { ownerEmail, tenantName: restaurantName, loginUrl: baseUrl } }) } catch { /* ignore email errors */ }
     }
 
     const responseData = {

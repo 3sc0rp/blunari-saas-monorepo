@@ -36,8 +36,8 @@ interface POSProvider {
   description: string;
   logo_url?: string;
   status: string;
-  event_types: any; // Can be string[] or Json from Supabase
-  configuration_schema: any;
+  event_types: string[] | Record<string, unknown>; // Can be string[] or Json from Supabase
+  configuration_schema: Record<string, unknown>;
 }
 
 interface POSIntegration {
@@ -133,7 +133,7 @@ export default function POSSystemsPage() {
       setIntegrations(integrationsData || []);
       setEvents(eventsData || []);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading POS data:', error);
       toast({
         title: "Error",
@@ -205,11 +205,11 @@ export default function POSSystemsPage() {
         await loadPOSData();
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Health check error:', error);
       toast({
         title: "Health Check Failed",
-        description: error.message || "Failed to run health check",
+        description: error instanceof Error ? error.message : "Failed to run health check",
         variant: "destructive"
       });
     } finally {

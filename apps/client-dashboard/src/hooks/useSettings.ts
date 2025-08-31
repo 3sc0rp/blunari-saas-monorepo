@@ -198,7 +198,7 @@ export const useSettings = () => {
   };
 };
 
-function getDefaultSettings(tenant: any): TenantSettings {
+function getDefaultSettings(tenant: { name?: string; timezone?: string }): TenantSettings {
   return {
     branding: {
       primaryColor: '#1e3a8a',
@@ -218,7 +218,7 @@ function getDefaultSettings(tenant: any): TenantSettings {
         '5': { isOpen: true, openTime: '09:00', closeTime: '23:00' },
         '6': { isOpen: true, openTime: '09:00', closeTime: '23:00' },
       },
-      timezone: tenant.timezone || 'America/New_York',
+      timezone: (tenant.timezone as string) || 'America/New_York',
       defaultServiceDuration: 120,
       tableCapacities: {},
       depositPolicy: {

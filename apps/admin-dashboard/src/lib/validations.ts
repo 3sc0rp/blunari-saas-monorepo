@@ -24,7 +24,7 @@ export const signUpSchema = z.object({
 export const profileUpdateSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50, 'First name too long'),
   lastName: z.string().min(1, 'Last name is required').max(50, 'Last name too long'),
-  phone: z.string().optional().or(z.string().regex(/^\+?[\d\s\-\(\)]+$/, 'Invalid phone number')),
+  phone: z.string().optional().or(z.string().regex(/^\+?[\d\s-()]+$/, 'Invalid phone number')),
   jobTitle: z.string().max(100, 'Job title too long').optional(),
   department: z.string().max(100, 'Department too long').optional(),
   bio: z.string().max(500, 'Bio too long').optional(),
@@ -50,7 +50,7 @@ export const createAPIKeySchema = z.object({
   name: z.string()
     .min(1, 'API key name is required')
     .max(100, 'Name too long')
-    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Name contains invalid characters'),
+    .regex(/^[a-zA-Z0-9\s_-]+$/, 'Name contains invalid characters'),
   description: z.string().max(500, 'Description too long').optional(),
   permissions: z.array(z.string()).min(1, 'At least one permission is required'),
   expiresAt: z.string().optional().or(z.date().optional()),
@@ -76,15 +76,15 @@ export const createTenantSchema = z.object({
   name: z.string()
     .min(1, 'Restaurant name is required')
     .max(100, 'Name too long')
-    .regex(/^[a-zA-Z0-9\s\-'&.]+$/, 'Name contains invalid characters'),
+    .regex(/^[a-zA-Z0-9\s'&.-]+$/, 'Name contains invalid characters'),
   slug: z.string()
     .min(1, 'Slug is required')
     .max(50, 'Slug too long')
-    .regex(/^[a-z0-9\-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only'),
+    .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only'),
   timezone: z.string().min(1, 'Timezone is required'),
   currency: z.string().length(3, 'Currency must be 3 characters').regex(/^[A-Z]{3}$/, 'Invalid currency code'),
   description: z.string().max(1000, 'Description too long').optional(),
-  phone: z.string().regex(/^\+?[\d\s\-\(\)]+$/, 'Invalid phone number').optional(),
+  phone: z.string().regex(/^\+?[\d\s-()]+$/, 'Invalid phone number').optional(),
   email: z.string().email('Invalid email address').optional(),
   website: z.string().url('Invalid website URL').optional(),
 });
@@ -93,7 +93,7 @@ export const createTenantSchema = z.object({
 export const addDomainSchema = z.object({
   domain: z.string()
     .min(1, 'Domain is required')
-    .regex(/^[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?)*$/i, 'Invalid domain format'),
+    .regex(/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i, 'Invalid domain format'),
   domainType: z.enum(['custom', 'subdomain'], {
     errorMap: () => ({ message: 'Invalid domain type' })
   }),
@@ -131,7 +131,7 @@ export const startImpersonationSchema = z.object({
 export const sanitizeString = (str: string): string => {
   return str
     .trim()
-    .replace(/[<>\"']/g, '') // Remove potential XSS characters
+    .replace(/[<>"']/g, '') // Remove potential XSS characters
     .substring(0, 1000); // Limit length
 };
 
@@ -143,9 +143,9 @@ export const sanitizeSlug = (slug: string): string => {
   return slug
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9\-]/g, '')
-    .replace(/\-+/g, '-')
-    .replace(/^\-|\-$/g, '');
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 };
 
 // File Upload Validation

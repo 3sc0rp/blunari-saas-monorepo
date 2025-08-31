@@ -13,7 +13,13 @@ interface Tenant {
   phone?: string;
   email?: string;
   website?: string;
-  address?: any;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postal_code?: string;
+  };
   cuisine_type_id?: string;
   logo_url?: string;
   primary_color?: string;
@@ -66,13 +72,16 @@ export const useTenant = () => {
       if (!tenantSlug) return null;
 
       // Use the secure public tenant info view for public access
-      let { data, error } = await supabase
+      let data;
+      const { data: initialData, error: tenantError } = await supabase
         .from('tenant_public_info')
         .select('*')
         .eq('slug', tenantSlug)
         .single();
 
-      if (error && error.code === 'PGRST116') {
+      data = initialData;
+
+      if (tenantError && tenantError.code === 'PGRST116') {
         // Not found by slug, try by custom domain
         const { data: domainData, error: domainError } = await supabase
           .from('domains')
@@ -89,10 +98,10 @@ export const useTenant = () => {
           .single();
 
         if (domainError) return null;
-        data = domainData?.tenants as any;
+        data = domainData?.tenants as Tenant;
       }
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (tenantError && tenantError.code !== 'PGRST116') throw tenantError;
       return data as Tenant | null;
     },
     enabled: !!tenantSlug,

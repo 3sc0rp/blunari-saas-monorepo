@@ -23,8 +23,13 @@ export const TenantActions: React.FC<TenantActionsProps> = ({
 }) => {
   const [showAnalyticsDialog, setShowAnalyticsDialog] = useState(false);
   const [showFeaturesDialog, setShowFeaturesDialog] = useState(false);
-  const [analyticsData, setAnalyticsData] = useState<any>(null);
-  const [features, setFeatures] = useState<any>({});
+  const [analyticsData, setAnalyticsData] = useState<{
+    total_bookings?: number;
+    revenue?: number;
+    active_tables?: number;
+    occupancy_rate?: number;
+  } | null>(null);
+  const [features, setFeatures] = useState<Record<string, boolean>>({});
   
   const { 
     loading, 

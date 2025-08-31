@@ -194,7 +194,7 @@ async function processSquareWebhook(integrationId: string, data: any) {
 async function processCloverWebhook(integrationId: string, data: any) {
   console.log('Processing Clover webhook:', data);
   
-  let eventType = data.type || 'unknown';
+  const eventType = data.type || 'unknown';
   return await processEvent(integrationId, eventType, data, data.id);
 }
 
@@ -231,7 +231,7 @@ async function processResyWebhook(integrationId: string, data: any) {
 async function processOpenTableWebhook(integrationId: string, data: any) {
   console.log('Processing OpenTable webhook:', data);
   
-  let eventType = data.event_type || 'unknown';
+  const eventType = data.event_type || 'unknown';
   return await processEvent(integrationId, eventType, data, data.reservation_id);
 }
 

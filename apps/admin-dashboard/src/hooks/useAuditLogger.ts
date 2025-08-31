@@ -1,12 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import type { Json } from '@/integrations/supabase/types';
 
 interface AuditLogEntry {
   eventType: string;
   severity?: 'low' | 'medium' | 'high' | 'critical';
   resourceType?: string;
   resourceId?: string;
-  eventData?: Record<string, any>;
+  eventData?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -26,7 +27,7 @@ export function useAuditLogger() {
         p_user_id: user?.id,
         p_ip_address: ipAddress,
         p_user_agent: userAgent,
-        p_event_data: entry.eventData || {}
+        p_event_data: (entry.eventData || {}) as Json
       });
     } catch (error) {
       console.error('Failed to log security event:', error);
@@ -37,14 +38,14 @@ export function useAuditLogger() {
     action: string,
     resourceType?: string,
     resourceId?: string,
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) => {
     try {
       await supabase.rpc('log_employee_activity', {
         p_action: action,
         p_resource_type: resourceType,
         p_resource_id: resourceId,
-        p_details: details
+        p_details: details as Json
       });
     } catch (error) {
       console.error('Failed to log employee activity:', error);
@@ -145,7 +146,9 @@ async function getClientIP(): Promise<string | null> {
         const match = text.match(/ip=(.*)/);
         if (match?.[1]) return match[1].trim();
       }
-    } catch {}
+    } catch {
+      // Ignore parsing errors
+    }
     // Final fallback
     return '0.0.0.0';
   }

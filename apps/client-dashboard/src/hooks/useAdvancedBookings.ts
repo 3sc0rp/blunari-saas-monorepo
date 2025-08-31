@@ -72,36 +72,40 @@ export const useAdvancedBookings = (tenantId?: string) => {
   const bulkOperationMutation = useMutation({
     mutationFn: async (operation: BulkOperation) => {
       switch (operation.type) {
-        case 'status_update':
+        case 'status_update': {
           const { error: updateError } = await supabase
             .from('bookings')
             .update({ status: operation.data.status })
             .in('id', operation.bookingIds);
           if (updateError) throw updateError;
           break;
+        }
 
-        case 'send_notification':
+        case 'send_notification': {
           // Call notification edge function
           const { error: notificationError } = await supabase.functions.invoke('send-bulk-notifications', {
             body: { bookingIds: operation.bookingIds, ...operation.data }
           });
           if (notificationError) throw notificationError;
           break;
+        }
 
-        case 'export':
+        case 'export': {
           // Generate CSV export
           const bookingsToExport = bookings.filter(b => operation.bookingIds.includes(b.id));
           const csv = generateCSV(bookingsToExport);
           downloadCSV(csv, 'bookings-export.csv');
           break;
+        }
 
-        case 'delete':
+        case 'delete': {
           const { error: deleteError } = await supabase
             .from('bookings')
             .delete()
             .in('id', operation.bookingIds);
           if (deleteError) throw deleteError;
           break;
+        }
       }
     },
     onSuccess: (_, operation) => {

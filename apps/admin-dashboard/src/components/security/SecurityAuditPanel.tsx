@@ -6,14 +6,21 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import type { Json } from '@/integrations/supabase/types';
 
 interface SecurityEvent {
   id: string;
   event_type: string;
   severity: string;
   created_at: string;
-  event_data: any;
-  user_id?: string;
+  event_data: Json | null;
+  user_id?: string | null;
+  employee_id?: string | null;
+  ip_address?: unknown | null;
+  resolved?: boolean | null;
+  resolved_at?: string | null;
+  resolved_by?: string | null;
+  user_agent?: string | null;
 }
 
 interface SecurityVulnerability {

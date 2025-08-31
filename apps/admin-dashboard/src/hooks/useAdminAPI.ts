@@ -14,9 +14,9 @@ export const useAdminAPI = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const callEdgeFunction = useCallback(async <T = any>(
+  const callEdgeFunction = useCallback(async <T = unknown>(
     functionName: string, 
-    payload?: any
+    payload?: Record<string, unknown>
   ): Promise<APIResponse<T>> => {
     try {
       setLoading(true);
@@ -26,11 +26,11 @@ export const useAdminAPI = () => {
       });
 
       if (response.error) {
-        const data: any = response.data;
+        const data: Record<string, unknown> = response.data as Record<string, unknown>;
         const errObj = data?.error || data;
-        const message = errObj?.message || response.error.message || 'Edge function error';
-        const code = errObj?.code ? ` (${errObj.code})` : '';
-        const details = errObj?.details ? ` - ${errObj.details}` : '';
+        const message = (errObj as { message?: string })?.message || response.error.message || 'Edge function error';
+        const code = (errObj as { code?: string })?.code ? ` (${(errObj as { code: string }).code})` : '';
+        const details = (errObj as { details?: string })?.details ? ` - ${(errObj as { details: string }).details}` : '';
         throw new Error(`${message}${code}${details}`);
       }
 
@@ -62,7 +62,7 @@ export const useAdminAPI = () => {
   const resendWelcomeEmail = useCallback(async (
     tenant: { id: string; slug: string }
   ): Promise<{ jobId?: string; message?: string; email?: { success?: boolean; message?: string; warning?: string; error?: string } }> => {
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
       emailType: 'welcome'
@@ -71,13 +71,14 @@ export const useAdminAPI = () => {
     const response = await callEdgeFunction('tenant-email-operations', payload);
     
     if (!response.success) {
-      const err = (response as any).error || {};
+      const err = (response as { error?: { message?: string; code?: string } }).error || {};
       const message = err.message || 'Failed to queue email';
       const code = err.code ? ` (${err.code})` : '';
       throw new Error(`${message}${code}`);
     }
 
-    return { jobId: (response as any).jobId, message: (response as any).message, email: (response as any).email };
+    const responseData = response as { jobId?: string; message?: string; email?: { success?: boolean; message?: string; warning?: string; error?: string } };
+    return { jobId: responseData.jobId, message: responseData.message, email: responseData.email };
   }, [callEdgeFunction]);
 
   // Features Management

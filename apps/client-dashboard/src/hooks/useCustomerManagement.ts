@@ -48,7 +48,17 @@ export const useCustomerManagement = (tenantId?: string) => {
       if (bookingsError) throw bookingsError;
 
       // Group bookings by customer email
-      const customerMap = new Map<string, any>();
+      const customerMap = new Map<string, {
+        id: string;
+        name: string;
+        email: string;
+        phone: string | null;
+        bookings: Array<typeof bookingsData[0]>;
+        total_spent: number;
+        total_visits: number;
+        party_sizes: number[];
+        lastVisit: string;
+      }>();
 
       bookingsData.forEach(booking => {
         const key = booking.guest_email;
@@ -62,11 +72,11 @@ export const useCustomerManagement = (tenantId?: string) => {
             total_spent: 0,
             total_visits: 0,
             party_sizes: [],
-            last_visit: booking.booking_time
+            lastVisit: booking.booking_time
           });
         }
 
-        const customer = customerMap.get(key);
+        const customer = customerMap.get(key)!;
         customer.bookings.push(booking);
         customer.total_visits++;
         customer.party_sizes.push(booking.party_size);
@@ -77,8 +87,8 @@ export const useCustomerManagement = (tenantId?: string) => {
         }
 
         // Update last visit to most recent
-        if (new Date(booking.booking_time) > new Date(customer.last_visit)) {
-          customer.last_visit = booking.booking_time;
+        if (new Date(booking.booking_time) > new Date(customer.lastVisit)) {
+          customer.lastVisit = booking.booking_time;
         }
       });
 
@@ -90,7 +100,7 @@ export const useCustomerManagement = (tenantId?: string) => {
 
         // Determine customer type based on visit frequency and recency
         let customerType: Customer['customer_type'] = 'new';
-        const daysSinceLastVisit = (Date.now() - new Date(customerData.last_visit).getTime()) / (1000 * 60 * 60 * 24);
+        const daysSinceLastVisit = (Date.now() - new Date(customerData.lastVisit).getTime()) / (1000 * 60 * 60 * 24);
         
         if (customerData.total_visits >= 10 || customerData.total_spent >= 1000) {
           customerType = 'vip';
@@ -107,7 +117,7 @@ export const useCustomerManagement = (tenantId?: string) => {
           phone: customerData.phone,
           total_visits: customerData.total_visits,
           total_spent: customerData.total_spent,
-          last_visit: customerData.last_visit,
+          last_visit: customerData.lastVisit,
           average_party_size: Math.round(avgPartySize * 10) / 10,
           customer_type: customerType,
           preferences: [], // Could be expanded with customer preferences table

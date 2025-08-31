@@ -36,7 +36,7 @@ export const DataAccessGuard = ({
 
       try {
         // Basic access check - can be enhanced with actual role validation
-        let accessGranted = true;
+        const accessGranted = true;
 
         // Log access attempt
         await logSecurityEvent({

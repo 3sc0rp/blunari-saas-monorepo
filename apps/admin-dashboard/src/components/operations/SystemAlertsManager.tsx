@@ -647,7 +647,7 @@ const AlertRuleForm: React.FC<AlertRuleFormProps> = ({ initialRule, onSubmit, on
         
         <div>
           <Label htmlFor="operator">Operator</Label>
-          <Select value={formData.operator} onValueChange={(value: any) => setFormData(prev => ({ ...prev, operator: value }))}>
+          <Select value={formData.operator} onValueChange={(value: AlertRule['operator']) => setFormData(prev => ({ ...prev, operator: value }))}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -674,7 +674,7 @@ const AlertRuleForm: React.FC<AlertRuleFormProps> = ({ initialRule, onSubmit, on
         
         <div>
           <Label htmlFor="severity">Severity</Label>
-          <Select value={formData.severity} onValueChange={(value: any) => setFormData(prev => ({ ...prev, severity: value }))}>
+          <Select value={formData.severity} onValueChange={(value: AlertRule['severity']) => setFormData(prev => ({ ...prev, severity: value }))}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>

@@ -1,3 +1,5 @@
+/// <reference path="../shared-types.d.ts" />
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -8,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -169,15 +171,15 @@ Be very careful and precise - it's better to miss a table than to incorrectly id
     });
   } catch (error) {
     console.error('Error in analyze-floor-plan function:', {
-      message: error.message,
-      stack: error.stack,
-      type: error.constructor.name
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      type: error instanceof Error ? error.constructor.name : typeof error
     });
     
     // Handle specific OpenAI errors
-    let errorMessage = error.message;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     let recommendations = [
-      `Analysis failed: ${error.message}`,
+      `Analysis failed: ${errorMessage}`,
       "This could be due to:",
       "• API rate limits (OpenAI usage exceeded)",
       "• Network connectivity issues", 
@@ -187,7 +189,7 @@ Be very careful and precise - it's better to miss a table than to incorrectly id
     ];
 
     // Check for specific error types
-    if (error.message.includes('429')) {
+    if (errorMessage.includes('429')) {
       recommendations = [
         "OpenAI API rate limit exceeded",
         "• Please wait a few minutes before trying again",
@@ -195,7 +197,7 @@ Be very careful and precise - it's better to miss a table than to incorrectly id
         "• You can manually position tables using the Floor Plan view",
         "• Consider upgrading your OpenAI plan for higher limits"
       ];
-    } else if (error.message.includes('401')) {
+    } else if (errorMessage.includes('401')) {
       recommendations = [
         "OpenAI API authentication failed",
         "• Check if your OpenAI API key is valid",

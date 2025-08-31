@@ -8,7 +8,7 @@ interface MetricsCardProps {
   title: string;
   value: string | number;
   trend: number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
   color: string;
   bgColor: string;
   format?: 'currency' | 'percentage' | 'number';

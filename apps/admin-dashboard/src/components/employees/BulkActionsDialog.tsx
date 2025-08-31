@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, Loader2 } from "lucide-react";
+import type { Json } from "@/integrations/supabase/types";
 
 interface Employee {
   id: string;
@@ -61,7 +62,8 @@ export const BulkActionsDialog = ({
 
     setLoading(true);
     try {
-      let updates: any = {};
+      // eslint-disable-next-line prefer-const
+      let updates: Record<string, unknown> = {};
       
       switch (action) {
         case 'change_role':
@@ -109,7 +111,7 @@ export const BulkActionsDialog = ({
           action,
           updates,
           affected_count: selectedEmployees.length
-        }
+        } as unknown as Json
       });
 
       toast.success(`Successfully updated ${selectedEmployees.length} employees`);

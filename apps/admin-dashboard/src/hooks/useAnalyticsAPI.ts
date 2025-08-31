@@ -110,7 +110,7 @@ export const useAnalyticsAPI = () => {
     return callAnalyticsAPI(endpoint);
   };
 
-  const exportAnalyticsData = async (type: 'performance' | 'business' | 'usage', format: 'csv' | 'json', filters?: any) => {
+  const exportAnalyticsData = async (type: 'performance' | 'business' | 'usage', format: 'csv' | 'json', filters?: Record<string, unknown>) => {
     const endpoint = `/analytics/export/${type}`;
     return callAnalyticsAPI(endpoint, {
       method: 'POST',

@@ -10,7 +10,7 @@ serve(async (req) => {
 
   const { socket, response } = Deno.upgradeWebSocket(req)
   
-  let clients = new Set<WebSocket>()
+  const clients = new Set<WebSocket>()
   clients.add(socket)
 
   socket.onopen = () => {

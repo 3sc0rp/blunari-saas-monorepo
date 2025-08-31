@@ -2,11 +2,12 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { TenantInfo } from '@/types/booking-api';
 
 interface TenantAccessDisplayProps {
   accessType: 'domain' | 'user';
   tenantSlug?: string;
-  tenant: any;
+  tenant: TenantInfo | null;
 }
 
 const TenantAccessDisplay: React.FC<TenantAccessDisplayProps> = ({ 

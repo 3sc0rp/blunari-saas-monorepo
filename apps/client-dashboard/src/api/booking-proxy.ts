@@ -13,14 +13,14 @@ import {
 } from '@/types/booking-api';
 
 class BookingAPIError extends Error {
-  constructor(public code: string, message: string, public details?: any) {
+  constructor(public code: string, message: string, public details?: Record<string, unknown>) {
     super(message);
     this.name = 'BookingAPIError';
   }
 }
 
 // Live API functions using Supabase edge functions
-async function callEdgeFunction(functionName: string, body: any = {}): Promise<any> {
+async function callEdgeFunction(functionName: string, body: Record<string, unknown> = {}): Promise<unknown> {
   try {
     console.log(`Calling edge function: ${functionName}`, body);
     
@@ -206,7 +206,7 @@ export async function getTenantPolicies(tenantId: string) {
 
 export async function sendAnalyticsEvent(
   event: string, 
-  data: Record<string, any>
+  data: Record<string, unknown>
 ): Promise<void> {
   // For demo, we'll just log analytics events
   // In production, this should be replaced with actual analytics API calls

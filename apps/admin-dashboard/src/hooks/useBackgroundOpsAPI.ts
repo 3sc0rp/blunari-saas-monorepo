@@ -6,7 +6,7 @@ export interface BackgroundJob {
   id: string
   type: string
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
-  payload: Record<string, any>
+  payload: Record<string, unknown>
   priority: number
   progress: number
   error?: string
@@ -19,12 +19,12 @@ export interface SystemMetrics {
   name: string
   value: number
   unit: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded'
-  services: Record<string, any>
+  services: Record<string, unknown>
   uptime: number
   version?: string
 }
@@ -33,7 +33,7 @@ export const useBackgroundOpsAPI = () => {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
-  const callAPI = useCallback(async (functionName: string, options: any = {}) => {
+  const callAPI = useCallback(async (functionName: string, options: Record<string, unknown> = {}) => {
     try {
       setLoading(true)
       
@@ -73,7 +73,7 @@ export const useBackgroundOpsAPI = () => {
 
   const createJob = useCallback(async (jobData: {
     type: string
-    payload: Record<string, any>
+    payload: Record<string, unknown>
     priority?: number
   }): Promise<BackgroundJob> => {
     return callAPI('jobs-api', {

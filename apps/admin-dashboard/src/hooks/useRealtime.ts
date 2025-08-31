@@ -9,7 +9,7 @@ interface UseRealtimeOptions {
 
 interface RealtimeData {
   type: string;
-  data?: any;
+  data?: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -168,7 +168,7 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
     });
   }, [cleanup]);
 
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback((message: Record<string, unknown>) => {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       if (process.env.NODE_ENV === 'development') {
         console.warn('Cannot send message: WebSocket not connected');
@@ -194,7 +194,7 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
     });
   }, [sendMessage]);
 
-  const trackEvent = useCallback((event: string, data?: any) => {
+  const trackEvent = useCallback((event: string, data?: Record<string, unknown>) => {
     return sendMessage({
       type: 'analytics_event',
       event,
@@ -215,10 +215,8 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
 
   // Auto-connect on mount, cleanup on unmount
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    
     // Delay initial connection to avoid race conditions
-    timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       connect();
     }, 100);
 

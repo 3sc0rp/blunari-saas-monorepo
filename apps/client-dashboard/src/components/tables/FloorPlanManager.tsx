@@ -161,7 +161,7 @@ export default function FloorPlanManager() {
 
         // Enhanced table sizing based on AI analysis and capacity
         const capacity = Math.max(2, Math.min(12, table.estimatedCapacity || 4));
-        const tableType = (table as any).tableType || 'round';
+        const tableType = (table as { tableType?: string }).tableType || 'round';
         
         // Determine shape based on AI analysis or capacity
         let shape: 'ROUND' | 'RECT';
@@ -210,7 +210,7 @@ export default function FloorPlanManager() {
             tableType,
             originalPosition: table.position,
             detectionIndex: index,
-            description: (table as any).description || 'AI detected table'
+            description: (table as { description?: string }).description || 'AI detected table'
           }
         };
         

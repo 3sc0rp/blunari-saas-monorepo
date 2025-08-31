@@ -6,13 +6,13 @@ interface MetricData {
   value: number;
   unit?: string;
   category?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface FeatureUsageData {
   feature: string;
   action: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export const useAnalyticsTracking = () => {
@@ -38,7 +38,7 @@ export const useAnalyticsTracking = () => {
     }
   }, []);
 
-  const trackFeatureUsage = useCallback(async (feature: string, action: string, metadata?: Record<string, any>) => {
+  const trackFeatureUsage = useCallback(async (feature: string, action: string, metadata?: Record<string, unknown>) => {
     try {
       const usageData: FeatureUsageData = {
         feature,
@@ -61,7 +61,7 @@ export const useAnalyticsTracking = () => {
     }
   }, []);
 
-  const trackUserAction = useCallback(async (action: string, category?: string, metadata?: Record<string, any>) => {
+  const trackUserAction = useCallback(async (action: string, category?: string, metadata?: Record<string, unknown>) => {
     try {
       const actionData = {
         action,
@@ -100,7 +100,7 @@ export const useAnalyticsTracking = () => {
     }
   }, [recordMetric]);
 
-  const trackError = useCallback(async (error: Error, context?: Record<string, any>) => {
+  const trackError = useCallback(async (error: Error, context?: Record<string, unknown>) => {
     try {
       const errorData = {
         message: error.message,

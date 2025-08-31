@@ -325,7 +325,7 @@ export const BackupManager: React.FC = () => {
                 <label className="text-sm font-medium">Backup Frequency</label>
                 <Select 
                   value={config.frequency}
-                  onValueChange={(frequency: any) => updateConfig({ frequency })}
+                  onValueChange={(frequency: BackupConfig['frequency']) => updateConfig({ frequency })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -343,7 +343,7 @@ export const BackupManager: React.FC = () => {
                 <label className="text-sm font-medium">Storage Location</label>
                 <Select 
                   value={config.storageLocation}
-                  onValueChange={(storageLocation: any) => updateConfig({ storageLocation })}
+                  onValueChange={(storageLocation: BackupConfig['storageLocation']) => updateConfig({ storageLocation })}
                 >
                   <SelectTrigger>
                     <SelectValue />

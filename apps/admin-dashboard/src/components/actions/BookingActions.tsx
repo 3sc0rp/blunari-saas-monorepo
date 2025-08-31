@@ -24,7 +24,7 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
   const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
   const [availabilityDate, setAvailabilityDate] = useState('');
   const [partySize, setPartySize] = useState(2);
-  const [availabilityResults, setAvailabilityResults] = useState<any>(null);
+  const [availabilityResults, setAvailabilityResults] = useState<Array<{ time: string; available_tables: number }> | null>(null);
   
   const { 
     loading, 
@@ -185,7 +185,7 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
               <h4 className="font-medium mb-2">Available Times:</h4>
               {availabilityResults.length > 0 ? (
                 <div className="grid grid-cols-3 gap-2">
-                  {availabilityResults.map((slot: any, index: number) => (
+                  {availabilityResults.map((slot, index: number) => (
                     <Badge key={index} variant="outline">
                       {slot.time} ({slot.available_tables} tables)
                     </Badge>

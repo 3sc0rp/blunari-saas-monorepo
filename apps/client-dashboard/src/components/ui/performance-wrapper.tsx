@@ -10,7 +10,7 @@ class ErrorBoundary extends Component<
   { children: ReactNode; fallback: (error: Error, reset: () => void) => ReactNode },
   ErrorBoundaryState
 > {
-  constructor(props: any) {
+  constructor(props: { children: ReactNode; fallback: (error: Error, reset: () => void) => ReactNode }) {
     super(props);
     this.state = { hasError: false };
   }
