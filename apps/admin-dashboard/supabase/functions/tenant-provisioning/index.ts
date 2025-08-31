@@ -94,7 +94,7 @@ serve(async (req) => {
       runId: crypto.randomUUID(),
       tenantId,
       slug: requestData.basics.slug,
-      primaryUrl: `https://${requestData.basics.slug}.lovable.app`,
+      primaryUrl: Deno.env.get('ADMIN_BASE_URL') ?? 'https://admin.blunari.ai',
       message: 'Tenant provisioned successfully',
       requestId
     }
