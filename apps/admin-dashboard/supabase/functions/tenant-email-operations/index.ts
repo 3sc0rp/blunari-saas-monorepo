@@ -114,6 +114,23 @@ serve(async (req) => {
       )
     }
 
+    // Optionally send the email immediately via the dedicated function (if SMTP is configured)
+    let emailDispatch: any = null;
+    try {
+      const sendResp = await supabaseClient.functions.invoke('send-welcome-email', {
+        body: {
+          ownerName: tenant.name,
+          ownerEmail: tenant.email,
+          restaurantName: tenant.name,
+          loginUrl: Deno.env.get('ADMIN_BASE_URL') ?? 'https://admin.blunari.ai'
+        }
+      });
+      emailDispatch = sendResp.data;
+    } catch (e) {
+      // Soft-fail: keep the job queued even if direct send fails
+      emailDispatch = { success: false, error: e instanceof Error ? e.message : 'Email dispatch failed' };
+    }
+
     // Log the email operation
     await supabaseClient
       .from('activity_logs')
@@ -124,7 +141,8 @@ serve(async (req) => {
           tenantSlug,
           emailType,
           jobId: backgroundJob.id,
-          requestedBy: user.id
+          requestedBy: user.id,
+          emailDispatch
         },
         user_id: user.id
       })
@@ -134,6 +152,7 @@ serve(async (req) => {
         success: true, 
         message: `${emailType} email has been queued for delivery`,
         jobId: backgroundJob.id,
+        email: emailDispatch,
         requestId: crypto.randomUUID()
       }),
       { 
