@@ -31,6 +31,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useCateringPackages } from '@/hooks/useCateringPackages';
 import { useCateringOrders } from '@/hooks/useCateringOrders';
 import { useCateringAnalytics } from '@/hooks/useCateringAnalytics';
+import { useTenant } from '@/hooks/useTenant';
+import { CateringSampleDataSeeder } from '@/components/dev/CateringSampleDataSeeder';
 
 import type { 
   CateringPackage, 
@@ -42,6 +44,9 @@ import type {
 import { CATERING_SERVICE_TYPE_LABELS, CATERING_STATUS_COLORS } from '@/types/catering';
 
 export default function CateringPage() {
+  // Get tenant context
+  const { tenant, isLoading: tenantLoading } = useTenant();
+  
   // State management
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<CateringPackage | null>(null);
@@ -50,8 +55,8 @@ export default function CateringPage() {
   const [serviceTypeFilter, setServiceTypeFilter] = useState<CateringServiceType | 'all'>('all');
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('all');
 
-  // Hooks - using real data once database is set up
-  const { packages, isLoading: packagesLoading, error: packagesError } = useCateringPackages();
+  // Hooks - using real data with tenant context
+  const { packages, isLoading: packagesLoading, error: packagesError } = useCateringPackages(tenant?.id);
   const { 
     orders, 
     isLoading: ordersLoading, 
@@ -60,8 +65,8 @@ export default function CateringPage() {
     isCreating, 
     isCancelling,
     error: ordersError 
-  } = useCateringOrders();
-  const { analytics, isLoading: analyticsLoading } = useCateringAnalytics();
+  } = useCateringOrders(tenant?.id);
+  const { analytics, isLoading: analyticsLoading } = useCateringAnalytics(tenant?.id);
 
   // Form state
   const [orderForm, setOrderForm] = useState<Partial<CreateCateringOrderRequest>>({
@@ -126,26 +131,76 @@ export default function CateringPage() {
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedPackage || !orderForm.event_date || !orderForm.contact_name || !orderForm.contact_email) {
+    if (!selectedPackage || !orderForm.event_date || !orderForm.contact_name || !orderForm.contact_email || !tenant) {
       return;
     }
 
-    // Mock order creation - replace with real API call
-    console.log('Order submitted:', {
-      package_id: selectedPackage.id,
-      ...orderForm
-    });
+    try {
+      const orderData: CreateCateringOrderRequest = {
+        package_id: selectedPackage.id,
+        event_name: orderForm.event_name || `${selectedPackage.name} Event`,
+        event_date: orderForm.event_date!,
+        event_start_time: orderForm.event_start_time || '12:00',
+        guest_count: orderForm.guest_count!,
+        service_type: orderForm.service_type!,
+        contact_name: orderForm.contact_name!,
+        contact_email: orderForm.contact_email!,
+        contact_phone: orderForm.contact_phone,
+        venue_name: orderForm.venue_name,
+        venue_address: orderForm.venue_address,
+        special_instructions: orderForm.special_instructions,
+        dietary_requirements: orderForm.dietary_requirements || []
+      };
 
-    setShowOrderForm(false);
-    setSelectedPackage(null);
-    alert('Order submitted successfully! We will contact you soon with a quote.');
+      await createOrder(orderData);
+      setShowOrderForm(false);
+      setSelectedPackage(null);
+      setOrderForm({
+        event_date: '',
+        event_start_time: '',
+        guest_count: 50,
+        service_type: 'drop_off',
+        contact_name: '',
+        contact_email: '',
+        contact_phone: '',
+        venue_name: '',
+        venue_address: '',
+        special_instructions: '',
+        dietary_requirements: []
+      });
+    } catch (error) {
+      console.error('Error creating order:', error);
+    }
   };
 
   const handleCancelOrder = async (orderId: string) => {
-    // Mock order cancellation - replace with real API call
-    console.log('Cancel order:', orderId);
+    await cancelOrder(orderId);
     setShowOrderDetails(null);
   };
+
+  // Show loading state while tenant is loading
+  if (tenantLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading catering services...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if no tenant found
+  if (!tenant) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Tenant not found</h2>
+          <p className="text-muted-foreground">Unable to load restaurant information.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -158,10 +213,15 @@ export default function CateringPage() {
           </p>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-primary">Coming Soon</div>
-          <div className="text-muted-foreground text-sm">Full functionality</div>
+          <div className="text-2xl font-bold text-primary">{tenant.name}</div>
+          <div className="text-muted-foreground text-sm">Catering Dashboard</div>
         </div>
       </div>
+
+      {/* Development Tools - Remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <CateringSampleDataSeeder />
+      )}
 
       <Tabs defaultValue="packages" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
