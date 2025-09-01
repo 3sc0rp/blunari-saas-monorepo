@@ -16,11 +16,13 @@ import Dashboard from "./pages/Dashboard";
 import Bookings from "./pages/Bookings";
 import Customers from "./pages/Customers";
 import BookingWidget from "./pages/BookingWidget";
+import WidgetPreview from "./pages/WidgetPreview";
 import POSIntegration from "./pages/POSIntegration";
 import Waitlist from "./pages/Waitlist";
 import Staff from "./pages/Staff";
 import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
+import Security from "./pages/Security";
 import NotFound from "./pages/NotFound";
 import BookingPage from "./pages/BookingPage";
 import Catering from "./pages/Catering";
@@ -67,6 +69,7 @@ const App = () => (
               } />
               <Route path="customers" element={<Customers />} />
               <Route path="widget-preview" element={<BookingWidget />} />
+              <Route path="widget-settings" element={<WidgetPreview />} />
               <Route path="pos-integrations" element={<POSIntegration />} />
               <Route path="waitlist" element={<Waitlist />} />
               <Route path="staff" element={<Staff />} />
@@ -78,6 +81,7 @@ const App = () => (
               } />
               <Route path="catering" element={<Catering />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="security" element={<Security />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

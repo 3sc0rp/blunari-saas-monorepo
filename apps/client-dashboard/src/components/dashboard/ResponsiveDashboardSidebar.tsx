@@ -12,7 +12,9 @@ import {
   CreditCard,
   Shield,
   Building,
-  ChefHat
+  ChefHat,
+  Puzzle,
+  Eye
 } from 'lucide-react';
 import {
   Sidebar,
@@ -51,6 +53,13 @@ const navigationItems = [
       { title: 'Customers', url: '/dashboard/customers', icon: Users },
       { title: 'Staff', url: '/dashboard/staff', icon: Building },
       { title: 'Messages', url: '/dashboard/messages', icon: MessageSquare },
+    ]
+  },
+  {
+    section: 'Tools',
+    items: [
+      { title: 'Widget Preview', url: '/dashboard/widget-preview', icon: Eye },
+      { title: 'Widget Settings', url: '/dashboard/widget-settings', icon: Puzzle },
     ]
   },
   {
