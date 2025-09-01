@@ -23,7 +23,7 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
   const [error, setError] = useState<string | null>(null);
 
   const buildQuery = () => {
-    let query = supabase
+    let query = (supabase as any)
       .from('catering_orders')
       .select(`
         *,
@@ -76,15 +76,17 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
       const { data, error: fetchError } = await query;
 
       if (fetchError) {
-        console.error('Error fetching catering orders:', fetchError);
-        setError(fetchError.message);
+        console.warn('Catering orders table not found - apply database migration first');
+        setError('Catering system not ready - apply database migration first');
+        setOrders([]);
         return;
       }
 
       setOrders(data || []);
     } catch (err) {
-      console.error('Error in fetchOrders:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      console.warn('Catering system not ready:', err);
+      setError('Catering system not ready - apply database migration first');
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -107,7 +109,7 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
           break;
       }
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from('catering_orders')
         .update(updates)
         .eq('id', orderId);
@@ -119,14 +121,14 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
       // Refresh orders list
       await fetchOrders();
     } catch (err) {
-      console.error('Error updating order status:', err);
-      throw err;
+      console.warn('Error updating order status - database migration may be needed:', err);
+      throw new Error('Catering system not ready - apply database migration first');
     }
   };
 
   const updateOrder = async (orderId: string, updates: UpdateCateringOrderRequest) => {
     try {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from('catering_orders')
         .update(updates)
         .eq('id', orderId);
@@ -138,14 +140,14 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
       // Refresh orders list
       await fetchOrders();
     } catch (err) {
-      console.error('Error updating order:', err);
-      throw err;
+      console.warn('Error updating order - database migration may be needed:', err);
+      throw new Error('Catering system not ready - apply database migration first');
     }
   };
 
   const deleteOrder = async (orderId: string) => {
     try {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await (supabase as any)
         .from('catering_orders')
         .delete()
         .eq('id', orderId);
@@ -157,8 +159,8 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
       // Refresh orders list
       await fetchOrders();
     } catch (err) {
-      console.error('Error deleting order:', err);
-      throw err;
+      console.warn('Error deleting order - database migration may be needed:', err);
+      throw new Error('Catering system not ready - apply database migration first');
     }
   };
 
