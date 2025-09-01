@@ -71,10 +71,10 @@ export const useCateringOrders = (tenantId?: string) => {
         query = query.or(`event_name.ilike.%${filters.search}%,contact_name.ilike.%${filters.search}%,contact_email.ilike.%${filters.search}%`);
       }
 
-      const { data, error } = await query;
+      const { data: ordersData, error } = await query;
       if (error) throw error;
 
-      return data as CateringOrder[];
+      return (ordersData || []) as CateringOrder[];
     },
     enabled: !!tenantId,
     staleTime: 30000, // Consider data fresh for 30 seconds

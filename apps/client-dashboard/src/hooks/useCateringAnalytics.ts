@@ -60,7 +60,7 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
       }
 
       // Fetch orders within date range
-      const { data: orders, error: ordersError } = await supabase
+      const { data: ordersData, error: ordersError } = await supabase
         .from('catering_orders')
         .select(`
           *,
@@ -70,7 +70,7 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
             price_per_person
           ),
           catering_feedback (
-            rating,
+            overall_rating,
             created_at
           )
         `)
@@ -80,6 +80,9 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
         .order('created_at', { ascending: true });
 
       if (ordersError) throw ordersError;
+
+      // Type assertion for the orders data
+      const orders = (ordersData || []) as CateringOrder[];
 
       // Calculate order metrics
       const orderMetrics: CateringOrderMetrics = {
@@ -135,7 +138,7 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
       };
 
       // Calculate average order value
-      const revenueOrders = orders.filter(o => (order.total_amount || 0) > 0);
+      const revenueOrders = orders.filter(o => (o.total_amount || 0) > 0);
       revenueMetrics.average_order_value = revenueOrders.length > 0 ? 
         revenueMetrics.total / revenueOrders.length : 0;
 
@@ -222,10 +225,10 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
       // Customer satisfaction from feedback
       const feedbackWithRatings = orders
         .flatMap(order => order.catering_feedback || [])
-        .filter(feedback => feedback.rating > 0);
+        .filter(feedback => (feedback as any).overall_rating > 0);
 
       if (feedbackWithRatings.length > 0) {
-        const totalRating = feedbackWithRatings.reduce((sum, feedback) => sum + feedback.rating, 0);
+        const totalRating = feedbackWithRatings.reduce((sum, feedback) => sum + ((feedback as any).overall_rating), 0);
         performanceMetrics.customer_satisfaction = totalRating / feedbackWithRatings.length;
       }
 

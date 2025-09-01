@@ -18,7 +18,7 @@ export const useCateringPackages = (tenantId?: string) => {
     queryFn: async () => {
       if (!tenantId) return [];
       
-      const { data, error } = await supabase
+      const { data: packagesData, error } = await supabase
         .from('catering_packages')
         .select('*')
         .eq('active', true)
@@ -26,7 +26,7 @@ export const useCateringPackages = (tenantId?: string) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as CateringPackage[];
+      return (packagesData || []) as CateringPackage[];
     },
     enabled: !!tenantId,
     staleTime: 300000, // Consider data fresh for 5 minutes

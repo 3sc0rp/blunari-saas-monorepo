@@ -4,7 +4,10 @@ import {
   CateringOrder,
   CateringStatus,
   CateringOrderFilters,
-  UpdateCateringOrderRequest
+  UpdateCateringOrderRequest,
+  CateringOrderHistory,
+  CateringQuote,
+  CateringFeedback
 } from '@/types/catering';
 
 export interface UseCateringOrdersReturn {
@@ -12,9 +15,12 @@ export interface UseCateringOrdersReturn {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  updateOrderStatus: (orderId: string, status: CateringStatus) => Promise<void>;
+  updateOrderStatus: (orderId: string, status: CateringStatus, notes?: string) => Promise<void>;
   updateOrder: (orderId: string, updates: UpdateCateringOrderRequest) => Promise<void>;
   deleteOrder: (orderId: string) => Promise<void>;
+  getOrderHistory: (orderId: string) => Promise<CateringOrderHistory[]>;
+  createQuote: (orderId: string, quoteData: Partial<CateringQuote>) => Promise<void>;
+  addFeedback: (orderId: string, feedback: Partial<CateringFeedback>) => Promise<void>;
 }
 
 export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOrdersReturn {
@@ -24,14 +30,11 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
 
   const buildQuery = () => {
     let query = (supabase as any)
-      .from('catering_orders')
-      .select(`
-        *,
-        catering_packages(*)
-      `)
+      .from('catering_orders_with_details')
+      .select('*')
       .order('created_at', { ascending: false });
 
-    // Apply filters
+    // Apply comprehensive filters
     if (filters?.status && filters.status.length > 0) {
       query = query.in('status', filters.status);
     }
@@ -64,6 +67,10 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
       query = query.lte('total_amount', filters.total_amount_max);
     }
 
+    if (filters?.search) {
+      query = query.or(`event_name.ilike.%${filters.search}%,contact_name.ilike.%${filters.search}%,venue_name.ilike.%${filters.search}%`);
+    }
+
     return query;
   };
 
@@ -92,7 +99,7 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
     }
   };
 
-  const updateOrderStatus = async (orderId: string, status: CateringStatus) => {
+  const updateOrderStatus = async (orderId: string, status: CateringStatus, notes?: string) => {
     try {
       const updates: any = { status };
 
@@ -116,6 +123,18 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
 
       if (updateError) {
         throw updateError;
+      }
+
+      // Add history entry if notes provided
+      if (notes) {
+        await (supabase as any)
+          .from('catering_order_history')
+          .insert({
+            order_id: orderId,
+            status,
+            notes,
+            changed_by: (await supabase.auth.getUser()).data.user?.id
+          });
       }
 
       // Refresh orders list
@@ -164,6 +183,74 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
     }
   };
 
+  const getOrderHistory = async (orderId: string): Promise<CateringOrderHistory[]> => {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('catering_order_history')
+        .select(`
+          *,
+          changed_by_user:changed_by (
+            id,
+            full_name:user_metadata->>full_name,
+            email
+          )
+        `)
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.warn('Error fetching order history:', err);
+      return [];
+    }
+  };
+
+  const createQuote = async (orderId: string, quoteData: Partial<CateringQuote>) => {
+    try {
+      const user = (await supabase.auth.getUser()).data.user;
+      const quoteNumber = `Q-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+      
+      const { error } = await (supabase as any)
+        .from('catering_quotes')
+        .insert({
+          order_id: orderId,
+          quote_number: quoteNumber,
+          valid_until: quoteData.valid_until || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days
+          terms_conditions: quoteData.terms_conditions,
+          notes: quoteData.notes,
+          created_by: user?.id,
+          ...quoteData
+        });
+
+      if (error) throw error;
+      await fetchOrders();
+    } catch (err) {
+      console.warn('Error creating quote:', err);
+      throw new Error('Could not create quote - catering system may not be ready');
+    }
+  };
+
+  const addFeedback = async (orderId: string, feedback: Partial<CateringFeedback>) => {
+    try {
+      const user = (await supabase.auth.getUser()).data.user;
+      
+      const { error } = await (supabase as any)
+        .from('catering_feedback')
+        .insert({
+          order_id: orderId,
+          customer_id: user?.id,
+          ...feedback
+        });
+
+      if (error) throw error;
+      await fetchOrders();
+    } catch (err) {
+      console.warn('Error adding feedback:', err);
+      throw new Error('Could not add feedback - catering system may not be ready');
+    }
+  };
+
   const refetch = fetchOrders;
 
   useEffect(() => {
@@ -201,5 +288,8 @@ export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOr
     updateOrderStatus,
     updateOrder,
     deleteOrder,
+    getOrderHistory,
+    createQuote,
+    addFeedback,
   };
 }

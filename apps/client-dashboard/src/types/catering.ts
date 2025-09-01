@@ -1,9 +1,61 @@
-// Catering system types for client dashboard
-export type CateringServiceType = 'drop_off' | 'buffet_setup' | 'plated_service' | 'stationed_service';
+// Comprehensive Catering system types for client dashboard
+export type CateringServiceType = 'pickup' | 'delivery' | 'drop_off' | 'full_service';
 export type CateringOrderStatus = 'inquiry' | 'quoted' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
-export type CateringDietaryAccommodation = 'vegetarian' | 'vegan' | 'gluten_free' | 'dairy_free' | 'kosher' | 'halal' | 'keto' | 'paleo';
+export type DietaryRestriction = 'vegetarian' | 'vegan' | 'gluten_free' | 'dairy_free' | 'kosher' | 'halal' | 'keto' | 'paleo';
+export type CateringDietaryAccommodation = DietaryRestriction;
 
 // Core interfaces
+export interface CateringEventType {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description?: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CateringMenuCategory {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description?: string;
+  display_order: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CateringMenuItem {
+  id: string;
+  tenant_id: string;
+  category_id: string;
+  name: string;
+  description?: string;
+  base_price: number;
+  unit: string;
+  dietary_restrictions: DietaryRestriction[];
+  allergen_info?: string;
+  image_url?: string;
+  display_order: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CateringEquipment {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description?: string;
+  category: string;
+  quantity_available: number;
+  rental_price_per_day: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CateringPackage {
   id: string;
   tenant_id: string;
@@ -11,27 +63,38 @@ export interface CateringPackage {
   description?: string;
   price_per_person: number;
   min_guests: number;
-  max_guests: number;
-  service_types: CateringServiceType[];
-  dietary_accommodations?: CateringDietaryAccommodation[];
+  max_guests?: number;
   includes_setup: boolean;
   includes_service: boolean;
   includes_cleanup: boolean;
-  popular: boolean;
+  dietary_accommodations: DietaryRestriction[];
   image_url?: string;
-  available: boolean;
+  popular: boolean;
+  active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface CateringPackageItem {
+  id: string;
+  package_id: string;
+  menu_item_id: string;
+  quantity_per_person: number;
+  is_included: boolean;
+  additional_cost_per_person?: number;
+  created_at: string;
 }
 
 export interface CateringOrder {
   id: string;
   tenant_id: string;
-  package_id: string;
+  package_id?: string;
+  event_type_id?: string;
   user_id?: string;
   event_name: string;
   event_date: string;
   event_start_time: string;
+  event_end_time?: string;
   guest_count: number;
   service_type: CateringServiceType;
   status: CateringOrderStatus;
@@ -39,15 +102,10 @@ export interface CateringOrder {
   contact_email: string;
   contact_phone?: string;
   venue_name?: string;
-  venue_address: {
-    street: string;
-    city: string;
-    state: string;
-    zip_code: string;
-    country: string;
-  };
+  venue_address?: string;
+  delivery_address?: string;
   special_instructions?: string;
-  dietary_requirements: CateringDietaryAccommodation[];
+  dietary_requirements: DietaryRestriction[];
   subtotal?: number;
   tax_amount?: number;
   service_fee?: number;
@@ -55,36 +113,133 @@ export interface CateringOrder {
   total_amount?: number;
   deposit_amount?: number;
   deposit_paid?: boolean;
+  balance_due?: number;
+  payment_terms?: string;
+  setup_time?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  
+  // Relations
+  catering_packages?: CateringPackage;
+  catering_feedback?: CateringFeedback[];
+}
+
+export interface CateringOrderItem {
+  id: string;
+  order_id: string;
+  menu_item_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  special_instructions?: string;
+  created_at: string;
+}
+
+export interface CateringOrderHistory {
+  id: string;
+  order_id: string;
+  status: CateringOrderStatus;
+  notes?: string;
+  changed_by?: string;
+  created_at: string;
+}
+
+export interface CateringQuote {
+  id: string;
+  order_id: string;
+  quote_number: string;
+  subtotal: number;
+  tax_amount: number;
+  service_fee: number;
+  delivery_fee: number;
+  total_amount: number;
+  deposit_amount: number;
+  valid_until: string;
+  terms_and_conditions?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
 }
 
+export interface CateringOrderEquipment {
+  id: string;
+  order_id: string;
+  equipment_id: string;
+  quantity: number;
+  rental_days: number;
+  unit_price: number;
+  total_price: number;
+  delivery_date: string;
+  pickup_date: string;
+  created_at: string;
+}
+
+export interface CateringStaffAssignment {
+  id: string;
+  order_id: string;
+  staff_user_id: string;
+  role: string;
+  start_time: string;
+  end_time: string;
+  hourly_rate?: number;
+  total_hours?: number;
+  total_cost?: number;
+  notes?: string;
+  created_at: string;
+}
+
+export interface CateringFeedback {
+  id: string;
+  order_id: string;
+  customer_id?: string;
+  overall_rating: number;
+  food_quality_rating: number;
+  service_rating: number;
+  presentation_rating: number;
+  comments?: string;
+  would_recommend: boolean;
+  improvements_suggested?: string;
+  created_at: string;
+  rating: number; // Alias for overall_rating
+}
+
 // Form interfaces
-export interface CateringOrderCreate {
-  package_id: string;
+export interface CreateCateringOrderRequest {
+  package_id?: string;
+  event_type_id?: string;
   event_name: string;
   event_date: string;
   event_start_time: string;
+  event_end_time?: string;
   guest_count: number;
   service_type: CateringServiceType;
   contact_name: string;
   contact_email: string;
   contact_phone?: string;
   venue_name?: string;
-  venue_address: {
-    street: string;
-    city: string;
-    state: string;
-    zip_code: string;
-    country: string;
-  };
+  venue_address?: string;
+  delivery_address?: string;
   special_instructions?: string;
-  dietary_requirements: CateringDietaryAccommodation[];
+  dietary_requirements: DietaryRestriction[];
 }
 
-export interface CateringOrderUpdate {
+export interface UpdateCateringOrderRequest {
   status?: CateringOrderStatus;
+  event_name?: string;
+  event_date?: string;
+  event_start_time?: string;
+  event_end_time?: string;
+  guest_count?: number;
+  service_type?: CateringServiceType;
+  contact_name?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  venue_name?: string;
+  venue_address?: string;
+  delivery_address?: string;
+  special_instructions?: string;
+  dietary_requirements?: DietaryRestriction[];
   subtotal?: number;
   tax_amount?: number;
   service_fee?: number;
@@ -92,19 +247,102 @@ export interface CateringOrderUpdate {
   total_amount?: number;
   deposit_amount?: number;
   deposit_paid?: boolean;
+  balance_due?: number;
+  payment_terms?: string;
+  setup_time?: string;
   notes?: string;
 }
 
+export interface CreateCateringPackageRequest {
+  name: string;
+  description?: string;
+  price_per_person: number;
+  min_guests: number;
+  max_guests?: number;
+  includes_setup: boolean;
+  includes_service: boolean;
+  includes_cleanup: boolean;
+  dietary_accommodations: DietaryRestriction[];
+  image_url?: string;
+  popular?: boolean;
+}
+
+export interface UpdateCateringPackageRequest {
+  name?: string;
+  description?: string;
+  price_per_person?: number;
+  min_guests?: number;
+  max_guests?: number;
+  includes_setup?: boolean;
+  includes_service?: boolean;
+  includes_cleanup?: boolean;
+  dietary_accommodations?: DietaryRestriction[];
+  image_url?: string;
+  popular?: boolean;
+  active?: boolean;
+}
+
+// Filter interfaces
+export interface CateringOrderFilters {
+  status: CateringOrderStatus[];
+  service_type: CateringServiceType[];
+  date_range: {
+    start: string;
+    end: string;
+  };
+  search: string;
+}
+
 // Analytics interfaces
-export interface CateringAnalytics {
-  total_orders: number;
-  total_revenue: number;
-  average_order_value: number;
-  average_guest_count: number;
+export interface CateringOrderMetrics {
+  total: number;
+  confirmed: number;
+  completed: number;
+  cancelled: number;
+  inquiry: number;
+  quoted: number;
   conversion_rate: number;
-  revenue_growth?: number;
-  popular_packages: CateringPopularPackage[];
-  package_metrics: CateringPackageMetric[];
+  average_lead_time: number;
+  guest_count_total: number;
+  average_guest_count: number;
+}
+
+export interface CateringRevenueMetrics {
+  total: number;
+  confirmed: number;
+  completed: number;
+  pending: number;
+  average_order_value: number;
+  deposits_collected: number;
+  deposits_pending: number;
+  revenue_by_service_type: Record<CateringServiceType, number>;
+}
+
+export interface CateringPerformanceMetrics {
+  popular_packages: Array<{
+    package_id: string;
+    name: string;
+    count: number;
+    revenue: number;
+  }>;
+  busiest_days: Array<{
+    day: string;
+    count: number;
+  }>;
+  service_type_distribution: Record<CateringServiceType, number>;
+  monthly_trend: Array<{
+    month: string;
+    orders: number;
+    revenue: number;
+  }>;
+  customer_satisfaction: number;
+  repeat_customer_rate: number;
+}
+
+export interface CateringAnalytics {
+  orders: CateringOrderMetrics;
+  revenue: CateringRevenueMetrics;
+  performance: CateringPerformanceMetrics;
 }
 
 export interface CateringPopularPackage {
@@ -126,10 +364,10 @@ export interface CateringPackageMetric {
 
 // Constants
 export const CATERING_SERVICE_TYPE_LABELS: Record<CateringServiceType, string> = {
+  pickup: 'Customer Pickup',
+  delivery: 'Delivery Only',
   drop_off: 'Drop-off Service',
-  buffet_setup: 'Buffet Setup & Service',
-  plated_service: 'Full Plated Service',
-  stationed_service: 'Stationed Service'
+  full_service: 'Full Service with Staff'
 };
 
 export const CATERING_STATUS_COLORS: Record<CateringOrderStatus, string> = {
@@ -141,7 +379,7 @@ export const CATERING_STATUS_COLORS: Record<CateringOrderStatus, string> = {
   cancelled: 'bg-red-100 text-red-800'
 };
 
-export const DIETARY_ACCOMMODATIONS: { value: CateringDietaryAccommodation; label: string }[] = [
+export const DIETARY_ACCOMMODATIONS: { value: DietaryRestriction; label: string }[] = [
   { value: 'vegetarian', label: 'Vegetarian' },
   { value: 'vegan', label: 'Vegan' },
   { value: 'gluten_free', label: 'Gluten-Free' },
