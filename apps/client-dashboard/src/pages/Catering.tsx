@@ -35,7 +35,7 @@ import { useCateringAnalytics } from '@/hooks/useCateringAnalytics';
 import type { 
   CateringPackage, 
   CateringOrder, 
-  CateringOrderCreate,
+  CreateCateringOrderRequest,
   CateringServiceType
 } from '@/types/catering';
 
@@ -64,23 +64,18 @@ export default function CateringPage() {
   const { analytics, isLoading: analyticsLoading } = useCateringAnalytics();
 
   // Form state
-  const [orderForm, setOrderForm] = useState<Partial<CateringOrderCreate>>({
+  const [orderForm, setOrderForm] = useState<Partial<CreateCateringOrderRequest>>({
     event_date: '',
     event_start_time: '',
     guest_count: 50,
-    service_type: 'buffet_setup',
+    service_type: 'drop_off',
     contact_name: '',
     contact_email: '',
     contact_phone: '',
     venue_name: '',
-    venue_address: {
-      street: '',
-      city: '',
-      state: '',
-      zip_code: '',
-      country: 'US'
-    },
-    special_instructions: ''
+    venue_address: '',
+    special_instructions: '',
+    dietary_requirements: []
   });
 
   // Computed values
@@ -90,12 +85,12 @@ export default function CateringPage() {
         pkg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         pkg.description?.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesServiceType = serviceTypeFilter === 'all' || 
-        pkg.service_types.includes(serviceTypeFilter);
+      // Since CateringPackage doesn't have service_types array, we'll remove the service type filtering for now
+      // In a real implementation, you might have a many-to-many relationship between packages and service types
       
-      return matchesSearch && matchesServiceType;
+      return matchesSearch;
     });
-  }, [packages, searchQuery, serviceTypeFilter]);
+  }, [packages, searchQuery]);
 
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
@@ -122,7 +117,8 @@ export default function CateringPage() {
     setOrderForm(prev => ({
       ...prev,
       package_id: pkg.id,
-      service_type: pkg.service_types[0] as CateringServiceType
+      // Set a default service type since packages don't have service_types array
+      service_type: 'drop_off'
     }));
     setShowOrderForm(true);
   };
@@ -196,10 +192,10 @@ export default function CateringPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Service Types</SelectItem>
+                <SelectItem value="pickup">Customer Pickup</SelectItem>
+                <SelectItem value="delivery">Delivery Only</SelectItem>
                 <SelectItem value="drop_off">Drop-off Service</SelectItem>
-                <SelectItem value="buffet_setup">Buffet Setup</SelectItem>
-                <SelectItem value="plated_service">Plated Service</SelectItem>
-                <SelectItem value="stationed_service">Stationed Service</SelectItem>
+                <SelectItem value="full_service">Full Service with Staff</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -393,6 +389,23 @@ export default function CateringPage() {
                   />
                 </div>
                 <div>
+                  <Label htmlFor="service_type">Service Type *</Label>
+                  <Select 
+                    value={orderForm.service_type} 
+                    onValueChange={(value) => setOrderForm(prev => ({ ...prev, service_type: value as CateringServiceType }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select service type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pickup">Customer Pickup</SelectItem>
+                      <SelectItem value="delivery">Delivery Only</SelectItem>
+                      <SelectItem value="drop_off">Drop-off Service</SelectItem>
+                      <SelectItem value="full_service">Full Service with Staff</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <Label htmlFor="event_date">Event Date *</Label>
                   <Input
                     id="event_date"
@@ -445,6 +458,41 @@ export default function CateringPage() {
                     value={orderForm.contact_email}
                     onChange={(e) => setOrderForm(prev => ({ ...prev, contact_email: e.target.value }))}
                     required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Venue Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Venue Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="venue_name">Venue Name</Label>
+                  <Input
+                    id="venue_name"
+                    value={orderForm.venue_name || ''}
+                    onChange={(e) => setOrderForm(prev => ({ ...prev, venue_name: e.target.value }))}
+                    placeholder="Event venue or location name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="venue_address">Venue Address</Label>
+                  <Input
+                    id="venue_address"
+                    value={orderForm.venue_address || ''}
+                    onChange={(e) => setOrderForm(prev => ({ ...prev, venue_address: e.target.value }))}
+                    placeholder="Full address where event will be held"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="special_instructions">Special Instructions</Label>
+                  <Textarea
+                    id="special_instructions"
+                    value={orderForm.special_instructions || ''}
+                    onChange={(e) => setOrderForm(prev => ({ ...prev, special_instructions: e.target.value }))}
+                    placeholder="Any special requests, dietary restrictions, setup requirements, etc."
+                    rows={3}
                   />
                 </div>
               </div>

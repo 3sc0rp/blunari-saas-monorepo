@@ -9,6 +9,7 @@ import { healthRoutes } from './health';
 import { alertsRoutes } from './alerts';
 import { schedulerRoutes } from './scheduler';
 import { tenantsRoutes } from './tenants';
+import { cateringRoutes } from './catering';
 import { getPerformanceMetrics } from '../middleware/performance';
 import { getAdminAuditLog } from '../middleware/adminAudit';
 
@@ -32,6 +33,7 @@ export function setupRoutes(app: Express) {
   app.use(`${apiPrefix}/alerts`, alertsRoutes);
   app.use(`${apiPrefix}/schedules`, schedulerRoutes);
   app.use(`${apiPrefix}/tenants`, tenantsRoutes);
+  app.use(`${apiPrefix}/catering`, cateringRoutes);
   
   // Performance and audit routes
   app.get(`${apiPrefix}/performance`, getPerformanceMetrics);

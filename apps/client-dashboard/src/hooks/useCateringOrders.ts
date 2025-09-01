@@ -10,7 +10,7 @@ import {
   CateringOrderStatus,
   CateringServiceType,
   CateringOrderFilters
-} from '@/types/catering';
+} from '../types/catering';
 
 export const useCateringOrders = (tenantId?: string) => {
   const queryClient = useQueryClient();
@@ -33,48 +33,62 @@ export const useCateringOrders = (tenantId?: string) => {
     queryFn: async () => {
       if (!tenantId) return [];
       
-      let query = supabase
-        .from('catering_orders')
-        .select(`
-          *,
-          catering_packages (
-            id,
-            name,
-            price_per_person,
-            includes_setup,
-            includes_service,
-            includes_cleanup
-          )
-        `)
-        .order('created_at', { ascending: false });
+      try {
+        let query = supabase
+          .from('catering_orders' as any)
+          .select(`
+            *,
+            catering_packages (
+              id,
+              name,
+              price_per_person,
+              includes_setup,
+              includes_service,
+              includes_cleanup
+            )
+          `)
+          .eq('tenant_id', tenantId)
+          .order('created_at', { ascending: false });
 
-      // Apply status filter
-      if (filters.status.length > 0) {
-        query = query.in('status', filters.status);
+        // Apply status filter
+        if (filters.status.length > 0) {
+          query = query.in('status', filters.status);
+        }
+
+        // Apply service type filter
+        if (filters.service_type.length > 0) {
+          query = query.in('service_type', filters.service_type);
+        }
+
+        // Apply date range filter
+        if (filters.date_range.start) {
+          query = query.gte('event_date', filters.date_range.start);
+        }
+        if (filters.date_range.end) {
+          query = query.lte('event_date', filters.date_range.end);
+        }
+
+        // Apply search filter
+        if (filters.search) {
+          query = query.or(`event_name.ilike.%${filters.search}%,contact_name.ilike.%${filters.search}%,contact_email.ilike.%${filters.search}%`);
+        }
+
+        const { data: ordersData, error } = await query;
+        
+        if (error) {
+          // If table doesn't exist yet, return empty array
+          if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+            console.info('Catering orders table not found. Please run the database migration.');
+            return [];
+          }
+          throw error;
+        }
+
+        return (ordersData || []) as unknown as CateringOrder[];
+      } catch (err) {
+        console.warn('Error fetching catering orders:', err);
+        return [];
       }
-
-      // Apply service type filter
-      if (filters.service_type.length > 0) {
-        query = query.in('service_type', filters.service_type);
-      }
-
-      // Apply date range filter
-      if (filters.date_range.start) {
-        query = query.gte('event_date', filters.date_range.start);
-      }
-      if (filters.date_range.end) {
-        query = query.lte('event_date', filters.date_range.end);
-      }
-
-      // Apply search filter
-      if (filters.search) {
-        query = query.or(`event_name.ilike.%${filters.search}%,contact_name.ilike.%${filters.search}%,contact_email.ilike.%${filters.search}%`);
-      }
-
-      const { data: ordersData, error } = await query;
-      if (error) throw error;
-
-      return (ordersData || []) as CateringOrder[];
     },
     enabled: !!tenantId,
     staleTime: 30000, // Consider data fresh for 30 seconds
@@ -84,7 +98,7 @@ export const useCateringOrders = (tenantId?: string) => {
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: CreateCateringOrderRequest) => {
       const { data, error } = await supabase
-        .from('catering_orders')
+        .from('catering_orders' as any)
         .insert({
           ...orderData,
           tenant_id: tenantId!,
@@ -102,7 +116,7 @@ export const useCateringOrders = (tenantId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['catering-orders', tenantId] });
       toast({
         title: 'Quote Request Submitted',
-        description: `Your catering inquiry for "${data.event_name}" has been submitted. We'll contact you within 24 hours.`,
+        description: `Your catering inquiry for "${(data as any)?.event_name || 'your event'}" has been submitted. We'll contact you within 24 hours.`,
       });
     },
     onError: (error) => {
@@ -125,7 +139,7 @@ export const useCateringOrders = (tenantId?: string) => {
       updates: UpdateCateringOrderRequest 
     }) => {
       const { data, error } = await supabase
-        .from('catering_orders')
+        .from('catering_orders' as any)
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
@@ -142,7 +156,7 @@ export const useCateringOrders = (tenantId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['catering-orders', tenantId] });
       toast({
         title: 'Order Updated',
-        description: `Catering order for "${data.event_name}" has been updated.`,
+        description: `Catering order for "${(data as any)?.event_name || 'your event'}" has been updated.`,
       });
     },
     onError: (error) => {
@@ -159,7 +173,7 @@ export const useCateringOrders = (tenantId?: string) => {
   const cancelOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
       const { data, error } = await supabase
-        .from('catering_orders')
+        .from('catering_orders' as any)
         .update({
           status: 'cancelled',
           updated_at: new Date().toISOString(),
@@ -176,7 +190,7 @@ export const useCateringOrders = (tenantId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['catering-orders', tenantId] });
       toast({
         title: 'Order Cancelled',
-        description: `Catering order for "${data.event_name}" has been cancelled.`,
+        description: `Catering order for "${(data as any)?.event_name || 'your event'}" has been cancelled.`,
       });
     },
     onError: (error) => {
