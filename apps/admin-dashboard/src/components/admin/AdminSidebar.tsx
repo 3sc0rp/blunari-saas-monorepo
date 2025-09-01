@@ -24,6 +24,7 @@ import {
   Activity, 
   Shield, 
   Utensils, 
+  ChefHat,
   Globe, 
   Building2, 
   BarChart3, 
@@ -115,6 +116,13 @@ const platformNavigation: NavigationItem[] = [
     icon: Utensils,
     badge: null,
     description: "Point of sale integrations"
+  },
+  {
+    title: "Catering",
+    url: "/admin/catering", 
+    icon: ChefHat,
+    badge: null,
+    description: "Catering orders and menu management"
   },
   {
     title: "Domains",

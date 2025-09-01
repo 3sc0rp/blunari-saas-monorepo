@@ -22,7 +22,8 @@ import {
   Code,
   Plug,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UtensilsCrossed
 } from 'lucide-react';
 
 const navigation = [
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Bookings', href: '/dashboard/bookings', icon: Calendar, badge: 'bookings' },
   { name: 'Tables', href: '/dashboard/tables', icon: TableProperties },
   { name: 'Customers', href: '/dashboard/customers', icon: Users },
+  { name: 'Catering', href: '/dashboard/catering', icon: UtensilsCrossed },
   { name: 'Booking Widget', href: '/dashboard/widget-preview', icon: Code },
   { name: 'POS Integrations', href: '/dashboard/pos-integrations', icon: Plug },
   { name: 'Waitlist', href: '/dashboard/waitlist', icon: Clock },

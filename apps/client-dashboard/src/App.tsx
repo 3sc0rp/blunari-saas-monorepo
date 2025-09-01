@@ -23,6 +23,7 @@ import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import BookingPage from "./pages/BookingPage";
+import Catering from "./pages/Catering";
 import { Suspense, lazy } from "react";
 import { SkeletonPage } from "@/components/ui/skeleton-components";
 import { DesignQAProvider } from "@/components/dev/DesignQAProvider";
@@ -75,6 +76,7 @@ const App = () => (
                   <Analytics />
                 </Suspense>
               } />
+              <Route path="catering" element={<Catering />} />
               <Route path="settings" element={<Settings />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -33,6 +33,7 @@ import { IntegrationsPage } from "@/pages/IntegrationsPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { AnalyticsPage } from "@/pages/AnalyticsPage";
 import { SupportPage } from "@/pages/SupportPage";
+import CateringManagement from "@/pages/CateringManagement";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ function App() {
               <Route path="integrations" element={<IntegrationsPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="catering" element={<CateringManagement />} />
               <Route path="support" element={<SupportPage />} />
               <Route path="roadmap" element={<RoadmapPage />} />
                   <Route path="settings" element={<SettingsPage />} />

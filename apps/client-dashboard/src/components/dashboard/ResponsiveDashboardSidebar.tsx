@@ -11,7 +11,8 @@ import {
   UserCheck,
   CreditCard,
   Shield,
-  Building
+  Building,
+  ChefHat
 } from 'lucide-react';
 import {
   Sidebar,
@@ -41,6 +42,7 @@ const navigationItems = [
       { title: 'Bookings', url: '/dashboard/bookings', icon: Calendar },
       { title: 'Tables', url: '/dashboard/tables', icon: TableProperties },
       { title: 'Waitlist', url: '/dashboard/waitlist', icon: UserCheck },
+      { title: 'Catering', url: '/dashboard/catering', icon: ChefHat },
     ]
   },
   {

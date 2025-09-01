@@ -1,0 +1,203 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  CateringOrder,
+  CateringStatus,
+  CateringOrderFilters,
+  UpdateCateringOrderRequest
+} from '@/types/catering';
+
+export interface UseCateringOrdersReturn {
+  orders: CateringOrder[] | null;
+  loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+  updateOrderStatus: (orderId: string, status: CateringStatus) => Promise<void>;
+  updateOrder: (orderId: string, updates: UpdateCateringOrderRequest) => Promise<void>;
+  deleteOrder: (orderId: string) => Promise<void>;
+}
+
+export function useCateringOrders(filters?: CateringOrderFilters): UseCateringOrdersReturn {
+  const [orders, setOrders] = useState<CateringOrder[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const buildQuery = () => {
+    let query = supabase
+      .from('catering_orders')
+      .select(`
+        *,
+        catering_packages(*)
+      `)
+      .order('created_at', { ascending: false });
+
+    // Apply filters
+    if (filters?.status && filters.status.length > 0) {
+      query = query.in('status', filters.status);
+    }
+
+    if (filters?.service_type && filters.service_type.length > 0) {
+      query = query.in('service_type', filters.service_type);
+    }
+
+    if (filters?.date_from) {
+      query = query.gte('event_date', filters.date_from);
+    }
+
+    if (filters?.date_to) {
+      query = query.lte('event_date', filters.date_to);
+    }
+
+    if (filters?.guest_count_min) {
+      query = query.gte('guest_count', filters.guest_count_min);
+    }
+
+    if (filters?.guest_count_max) {
+      query = query.lte('guest_count', filters.guest_count_max);
+    }
+
+    if (filters?.total_amount_min) {
+      query = query.gte('total_amount', filters.total_amount_min);
+    }
+
+    if (filters?.total_amount_max) {
+      query = query.lte('total_amount', filters.total_amount_max);
+    }
+
+    return query;
+  };
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const query = buildQuery();
+      const { data, error: fetchError } = await query;
+
+      if (fetchError) {
+        console.error('Error fetching catering orders:', fetchError);
+        setError(fetchError.message);
+        return;
+      }
+
+      setOrders(data || []);
+    } catch (err) {
+      console.error('Error in fetchOrders:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: CateringStatus) => {
+    try {
+      const updates: any = { status };
+
+      // Set timestamps based on status
+      switch (status) {
+        case 'quoted':
+          updates.quoted_at = new Date().toISOString();
+          break;
+        case 'confirmed':
+          updates.confirmed_at = new Date().toISOString();
+          break;
+        case 'completed':
+          updates.completed_at = new Date().toISOString();
+          break;
+      }
+
+      const { error: updateError } = await supabase
+        .from('catering_orders')
+        .update(updates)
+        .eq('id', orderId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Refresh orders list
+      await fetchOrders();
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      throw err;
+    }
+  };
+
+  const updateOrder = async (orderId: string, updates: UpdateCateringOrderRequest) => {
+    try {
+      const { error: updateError } = await supabase
+        .from('catering_orders')
+        .update(updates)
+        .eq('id', orderId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Refresh orders list
+      await fetchOrders();
+    } catch (err) {
+      console.error('Error updating order:', err);
+      throw err;
+    }
+  };
+
+  const deleteOrder = async (orderId: string) => {
+    try {
+      const { error: deleteError } = await supabase
+        .from('catering_orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      // Refresh orders list
+      await fetchOrders();
+    } catch (err) {
+      console.error('Error deleting order:', err);
+      throw err;
+    }
+  };
+
+  const refetch = fetchOrders;
+
+  useEffect(() => {
+    fetchOrders();
+  }, [filters]);
+
+  // Set up real-time subscription for order updates
+  useEffect(() => {
+    const subscription = supabase
+      .channel('catering_orders_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'catering_orders',
+        },
+        (payload) => {
+          console.log('Catering order change received:', payload);
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
+
+  return {
+    orders,
+    loading,
+    error,
+    refetch,
+    updateOrderStatus,
+    updateOrder,
+    deleteOrder,
+  };
+}

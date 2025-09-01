@@ -21,13 +21,14 @@ const navigation = [
   { name: 'Bookings', href: '/dashboard/bookings', icon: Calendar },
   { name: 'Tables', href: '/dashboard/tables', icon: TableProperties },
   { name: 'Customers', href: '/dashboard/customers', icon: Users },
-  { name: 'Widget', href: '/dashboard/widget-preview', icon: Code },
+  { name: 'Catering', href: '/dashboard/catering', icon: ChefHat },
 ];
 
 const secondaryNavigation = [
+  { name: 'Widget', href: '/dashboard/widget-preview', icon: Code },
   { name: 'POS', href: '/dashboard/pos-integrations', icon: Plug },
   { name: 'Waitlist', href: '/dashboard/waitlist', icon: Clock },
-  { name: 'Staff', href: '/dashboard/staff', icon: ChefHat },
+  { name: 'Staff', href: '/dashboard/staff', icon: Users },
   { name: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
