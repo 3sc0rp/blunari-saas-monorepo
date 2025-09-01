@@ -1,372 +1,317 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTenant } from '@/hooks/useTenant';
-import BookingWidget from '@/components/booking/BookingWidget';
-import PageHeader from '@/components/ui/page-header';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Code, 
   Eye, 
-  Settings, 
   Copy, 
   ExternalLink, 
-  Palette,
-  Globe,
-  Smartphone,
   Monitor,
   Tablet,
-  Download
+  Smartphone,
+  Check,
+  Globe,
+  RefreshCw,
+  Share
 } from 'lucide-react';
 
 const BookingWidgetPage: React.FC = () => {
-  const { tenant } = useTenant();
+  const { tenant, isLoading } = useTenant();
+  const { toast } = useToast();
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [widgetSettings, setWidgetSettings] = useState({
-    theme: 'light',
-    primaryColor: '#3b82f6',
-    borderRadius: 'rounded',
-    showAvailability: true,
-    showPricing: false,
-    requirePhone: true,
-    allowCancellation: true,
-    maxAdvanceBooking: 30
-  });
+  const [copied, setCopied] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const embedCode = `<script src="${window.location.origin}/widget/booking.js"></script>
-<div id="booking-widget" data-restaurant="${tenant?.slug || 'demo'}"></div>`;
+  const bookingUrl = `/book/${tenant?.slug || 'demo'}`;
+  const fullBookingUrl = `${window.location.origin}${bookingUrl}`;
 
-  const getPreviewWidth = () => {
-    switch (previewMode) {
-      case 'mobile': return 'w-80';
-      case 'tablet': return 'w-96';
-      default: return 'w-full max-w-2xl';
+  const embedCode = `<iframe 
+  src="${fullBookingUrl}"
+  width="100%" 
+  height="600" 
+  frameborder="0"
+  style="border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);"
+  title="${tenant?.name || 'Restaurant'} Booking Widget">
+</iframe>`;
+
+  const deviceConfigs = {
+    desktop: { width: 'w-full max-w-5xl', height: 'h-[600px]', label: 'Desktop', icon: Monitor },
+    tablet: { width: 'w-full max-w-3xl', height: 'h-[550px]', label: 'Tablet', icon: Tablet },
+    mobile: { width: 'w-full max-w-sm', height: 'h-[600px]', label: 'Mobile', icon: Smartphone },
+  };
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast({
+        title: "Copied!",
+        description: `${label} copied to clipboard`,
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Please copy the code manually",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(embedCode);
-    console.log('Embed code copied!');
+  const refreshPreview = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const handleOpenPreview = () => {
-    window.open(`/booking/${tenant?.slug}`, '_blank');
-  };
-
-  const handleDownloadGuide = () => {
-    console.log('Downloading integration guide...');
-  };
+  if (isLoading) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-muted rounded w-1/3"></div>
+          <div className="h-4 bg-muted rounded w-2/3"></div>
+          <div className="h-96 bg-muted rounded"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-6"
+      className="p-8 max-w-7xl mx-auto space-y-8"
     >
-      <PageHeader
-        title="Booking Widget"
-        description="Embed a booking widget on your website to accept reservations directly from your customers."
-        primaryAction={{
-          label: 'Copy Embed Code',
-          onClick: handleCopyCode,
-          icon: Copy
-        }}
-        secondaryActions={[
-          {
-            label: 'Open Preview',
-            onClick: handleOpenPreview,
-            icon: ExternalLink,
-            variant: 'outline'
-          },
-          {
-            label: 'Download Guide',
-            onClick: handleDownloadGuide,
-            icon: Download,
-            variant: 'ghost'
-          }
-        ]}
-        tabs={[
-          { value: 'widget', label: 'Widget Setup' },
-          { value: 'analytics', label: 'Analytics' },
-          { value: 'integrations', label: 'Integrations' }
-        ]}
-        activeTab="widget"
-      />
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Widget Preview</h1>
+          <p className="text-lg text-muted-foreground">
+            Preview your booking widget across different devices
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={refreshPreview} disabled={refreshing}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          
+          <Button asChild>
+            <a href={bookingUrl} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Open Widget
+            </a>
+          </Button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Configuration Panel */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="lg:col-span-1 space-y-6"
-        >
-          {/* Widget Settings */}
+      {/* Status Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Globe className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Status</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-muted-foreground">Live & Active</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Eye className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Restaurant</p>
+                <p className="text-sm text-muted-foreground truncate">{tenant?.name}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Code className="w-4 h-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Widget URL</p>
+                <p className="text-sm text-muted-foreground truncate">{bookingUrl}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="preview" className="space-y-6">
+        <TabsList className="grid w-full max-w-lg grid-cols-2">
+          <TabsTrigger value="preview" className="flex items-center gap-2">
+            <Eye className="w-4 h-4" />
+            Preview
+          </TabsTrigger>
+          <TabsTrigger value="embed" className="flex items-center gap-2">
+            <Code className="w-4 h-4" />
+            Embed Code
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="preview" className="space-y-6">
+          {/* Device Selector */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Widget Configuration
-              </CardTitle>
+              <CardTitle>Device Preview</CardTitle>
+              <CardDescription>
+                Test your booking widget across different screen sizes
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Theme</label>
-                <div className="flex gap-2 mt-2">
-                  <Button 
-                    variant={widgetSettings.theme === 'light' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setWidgetSettings(prev => ({ ...prev, theme: 'light' }))}
-                  >
-                    Light
-                  </Button>
-                  <Button 
-                    variant={widgetSettings.theme === 'dark' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setWidgetSettings(prev => ({ ...prev, theme: 'dark' }))}
-                  >
-                    Dark
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Primary Color</label>
-                <Input
-                  type="color"
-                  value={widgetSettings.primaryColor}
-                  onChange={(e) => setWidgetSettings(prev => ({ ...prev, primaryColor: e.target.value }))}
-                  className="mt-2 h-10"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Show Availability</label>
-                  <Switch
-                    checked={widgetSettings.showAvailability}
-                    onCheckedChange={(checked) => setWidgetSettings(prev => ({ ...prev, showAvailability: checked }))}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Show Pricing</label>
-                  <Switch
-                    checked={widgetSettings.showPricing}
-                    onCheckedChange={(checked) => setWidgetSettings(prev => ({ ...prev, showPricing: checked }))}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Require Phone</label>
-                  <Switch
-                    checked={widgetSettings.requirePhone}
-                    onCheckedChange={(checked) => setWidgetSettings(prev => ({ ...prev, requirePhone: checked }))}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Allow Cancellation</label>
-                  <Switch
-                    checked={widgetSettings.allowCancellation}
-                    onCheckedChange={(checked) => setWidgetSettings(prev => ({ ...prev, allowCancellation: checked }))}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Max Advance Booking (days)</label>
-                <Input
-                  type="number"
-                  value={widgetSettings.maxAdvanceBooking}
-                  onChange={(e) => setWidgetSettings(prev => ({ ...prev, maxAdvanceBooking: Number(e.target.value) }))}
-                  className="mt-2"
-                  min="1"
-                  max="365"
-                />
+            <CardContent>
+              <div className="flex items-center gap-2">
+                {Object.entries(deviceConfigs).map(([key, config]) => {
+                  const IconComponent = config.icon;
+                  const isActive = previewMode === key;
+                  return (
+                    <motion.div key={key} whileTap={{ scale: 0.95 }}>
+                      <Button
+                        variant={isActive ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setPreviewMode(key as any)}
+                        className="flex items-center gap-2"
+                      >
+                        <IconComponent className="w-4 h-4" />
+                        <span className="hidden sm:inline">{config.label}</span>
+                      </Button>
+                    </motion.div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
 
+          {/* Preview Frame */}
+          <motion.div
+            key={previewMode}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            className="flex justify-center"
+          >
+            <div className={`${deviceConfigs[previewMode].width} transition-all duration-300`}>
+              <Card className="overflow-hidden shadow-2xl">
+                <CardContent className="p-0">
+                  <iframe
+                    key={refreshing.toString()}
+                    src={bookingUrl}
+                    className={`w-full border-0 ${deviceConfigs[previewMode].height}`}
+                    title="Booking Widget Preview"
+                    onError={(e) => {
+                      console.error('Iframe loading error:', e);
+                      toast({
+                        title: "Preview Error",
+                        description: "Unable to load the booking widget preview. The widget may still work when embedded.",
+                        variant: "destructive",
+                      });
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+        </TabsContent>
+
+        <TabsContent value="embed" className="space-y-6">
           {/* Embed Code */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Code className="h-5 w-5" />
+                <Code className="w-5 h-5" />
                 Embed Code
               </CardTitle>
+              <CardDescription>
+                Copy this code and paste it into your website where you want the booking widget to appear
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">HTML Snippet</label>
-                  <Textarea
-                    value={embedCode}
-                    readOnly
-                    className="mt-2 font-mono text-xs"
-                    rows={4}
-                  />
-                </div>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={embedCode}
+                readOnly
+                className="font-mono text-sm min-h-[120px]"
+              />
+              
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => copyToClipboard(embedCode, "Embed code")}
+                  className="flex-1"
+                >
+                  {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                  {copied ? "Copied!" : "Copy Embed Code"}
+                </Button>
                 
-                <div className="flex gap-2">
-                  <Button size="sm" className="flex-1">
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy Code
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Docs
-                  </Button>
-                </div>
+                <Button variant="outline" onClick={() => copyToClipboard(fullBookingUrl, "Widget URL")}>
+                  <Share className="w-4 h-4 mr-2" />
+                  Share URL
+                </Button>
+              </div>
 
-                <div className="text-xs text-muted-foreground">
-                  <p>Add this code to your website where you want the booking widget to appear.</p>
-                </div>
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p><strong>Quick Start:</strong></p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>Copy the embed code above</li>
+                  <li>Paste it into your website's HTML</li>
+                  <li>The widget will automatically load and be ready for bookings</li>
+                </ol>
               </div>
             </CardContent>
           </Card>
 
-          {/* Quick Stats */}
+          {/* Features */}
           <Card>
             <CardHeader>
-              <CardTitle>Widget Analytics</CardTitle>
+              <CardTitle>Widget Features</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Total Views</span>
-                  <span className="font-medium">2,847</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Smartphone className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium">Mobile Ready</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Conversions</span>
-                  <span className="font-medium">142</span>
+                
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <RefreshCw className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-medium">Real-time</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Conversion Rate</span>
-                  <span className="font-medium">4.99%</span>
+                
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Globe className="w-4 h-4 text-orange-600" />
+                  <span className="text-sm font-medium">Universal</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
 
-        {/* Preview Panel */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="lg:col-span-2"
-        >
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
-                  Live Preview
-                </CardTitle>
-                
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant={previewMode === 'desktop' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setPreviewMode('desktop')}
-                  >
-                    <Monitor className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={previewMode === 'tablet' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setPreviewMode('tablet')}
-                  >
-                    <Tablet className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={previewMode === 'mobile' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setPreviewMode('mobile')}
-                  >
-                    <Smartphone className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center">
-                <div className={`transition-all duration-300 ${getPreviewWidth()}`}>
-                  <div className="border rounded-lg p-4 bg-background">
-                    <div className="p-4 border rounded bg-muted/20">
-                      <p className="text-center text-muted-foreground">
-                        Booking Widget Preview - {tenant?.name || 'Demo Restaurant'}
-                      </p>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Badge variant="outline" className="text-xs">
+                    Branded
+                  </Badge>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          {/* Integration Instructions */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Integration Guide</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="website" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="website">Website</TabsTrigger>
-                  <TabsTrigger value="wordpress">WordPress</TabsTrigger>
-                  <TabsTrigger value="shopify">Shopify</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="website" className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">1. Copy the embed code</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Use the HTML snippet from the left panel.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">2. Paste into your HTML</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Add the code where you want the booking widget to appear on your page.
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">3. Customize appearance</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Use the configuration panel to match your brand colors and preferences.
-                    </p>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="wordpress" className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">WordPress Integration</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Add the embed code to any page or post using the HTML block or custom HTML widget.
-                    </p>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="shopify" className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Shopify Integration</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Add the embed code to your theme's template files or use a custom HTML section.
-                    </p>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </motion.div>
   );
 };

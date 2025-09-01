@@ -15,12 +15,16 @@ import {
   RefreshCw,
   Share,
   Download,
-  QrCode
+  QrCode,
+  Sliders
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useTenant } from '@/hooks/useTenant';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +36,20 @@ const WidgetPreview: React.FC = () => {
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Widget configuration state
+  const [widgetConfig, setWidgetConfig] = useState({
+    theme: 'light',
+    primaryColor: tenant?.primary_color || '#3b82f6',
+    showAvailability: true,
+    showPricing: false,
+    requirePhone: true,
+    allowCancellation: true,
+    maxAdvanceBooking: 30,
+    enableNotifications: true,
+    showReviews: true,
+    customCss: ''
+  });
 
   // Use the current tenant's slug for the booking URL
   const bookingUrl = `/book/${tenant?.slug || 'demo'}`;
@@ -131,9 +149,9 @@ const WidgetPreview: React.FC = () => {
       >
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">Booking Widget Preview</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Widget Settings & Management</h1>
             <p className="text-lg text-muted-foreground">
-              Preview and customize your restaurant's booking experience
+              Configure, preview, and manage your restaurant's booking widget
             </p>
           </div>
           
@@ -210,8 +228,12 @@ const WidgetPreview: React.FC = () => {
       </motion.div>
 
       {/* Main Content */}
-      <Tabs defaultValue="preview" className="space-y-6">
+      <Tabs defaultValue="settings" className="space-y-6">
         <TabsList className="grid w-full max-w-2xl grid-cols-4">
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <Sliders className="w-4 h-4" />
+            Settings
+          </TabsTrigger>
           <TabsTrigger value="preview" className="flex items-center gap-2">
             <Eye className="w-4 h-4" />
             Preview
@@ -219,10 +241,6 @@ const WidgetPreview: React.FC = () => {
           <TabsTrigger value="embed" className="flex items-center gap-2">
             <Code2 className="w-4 h-4" />
             Embed
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings2 className="w-4 h-4" />
-            Settings
           </TabsTrigger>
           <TabsTrigger value="debug" className="flex items-center gap-2">
             <RefreshCw className="w-4 h-4" />
@@ -382,18 +400,172 @@ const WidgetPreview: React.FC = () => {
 
         <TabsContent value="settings" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
-            {/* Restaurant Info */}
+            {/* Widget Configuration */}
             <Card>
               <CardHeader>
-                <CardTitle>Restaurant Information</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Sliders className="w-5 h-5" />
+                  Widget Configuration
+                </CardTitle>
                 <CardDescription>
-                  Current settings for {tenant?.name}
+                  Customize your widget's appearance and behavior
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Theme Selection */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Theme</Label>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant={widgetConfig.theme === 'light' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setWidgetConfig(prev => ({ ...prev, theme: 'light' }))}
+                    >
+                      Light
+                    </Button>
+                    <Button 
+                      variant={widgetConfig.theme === 'dark' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setWidgetConfig(prev => ({ ...prev, theme: 'dark' }))}
+                    >
+                      Dark
+                    </Button>
+                    <Button 
+                      variant={widgetConfig.theme === 'auto' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setWidgetConfig(prev => ({ ...prev, theme: 'auto' }))}
+                    >
+                      Auto
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Primary Color */}
+                <div className="space-y-3">
+                  <Label htmlFor="primary-color" className="text-sm font-medium">Primary Color</Label>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      id="primary-color"
+                      type="color"
+                      value={widgetConfig.primaryColor}
+                      onChange={(e) => setWidgetConfig(prev => ({ ...prev, primaryColor: e.target.value }))}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={widgetConfig.primaryColor}
+                      onChange={(e) => setWidgetConfig(prev => ({ ...prev, primaryColor: e.target.value }))}
+                      className="flex-1 font-mono text-sm"
+                      placeholder="#3b82f6"
+                    />
+                  </div>
+                </div>
+
+                {/* Feature Toggles */}
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium">Features</Label>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label className="text-sm">Show Availability</Label>
+                        <p className="text-xs text-muted-foreground">Display real-time table availability</p>
+                      </div>
+                      <Switch
+                        checked={widgetConfig.showAvailability}
+                        onCheckedChange={(checked) => setWidgetConfig(prev => ({ ...prev, showAvailability: checked }))}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label className="text-sm">Show Pricing</Label>
+                        <p className="text-xs text-muted-foreground">Display pricing information</p>
+                      </div>
+                      <Switch
+                        checked={widgetConfig.showPricing}
+                        onCheckedChange={(checked) => setWidgetConfig(prev => ({ ...prev, showPricing: checked }))}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label className="text-sm">Require Phone Number</Label>
+                        <p className="text-xs text-muted-foreground">Make phone number mandatory</p>
+                      </div>
+                      <Switch
+                        checked={widgetConfig.requirePhone}
+                        onCheckedChange={(checked) => setWidgetConfig(prev => ({ ...prev, requirePhone: checked }))}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label className="text-sm">Allow Cancellation</Label>
+                        <p className="text-xs text-muted-foreground">Let customers cancel bookings</p>
+                      </div>
+                      <Switch
+                        checked={widgetConfig.allowCancellation}
+                        onCheckedChange={(checked) => setWidgetConfig(prev => ({ ...prev, allowCancellation: checked }))}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label className="text-sm">Enable Notifications</Label>
+                        <p className="text-xs text-muted-foreground">Send booking confirmations</p>
+                      </div>
+                      <Switch
+                        checked={widgetConfig.enableNotifications}
+                        onCheckedChange={(checked) => setWidgetConfig(prev => ({ ...prev, enableNotifications: checked }))}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label className="text-sm">Show Reviews</Label>
+                        <p className="text-xs text-muted-foreground">Display customer reviews</p>
+                      </div>
+                      <Switch
+                        checked={widgetConfig.showReviews}
+                        onCheckedChange={(checked) => setWidgetConfig(prev => ({ ...prev, showReviews: checked }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Advanced Settings */}
+                <div className="space-y-3">
+                  <Label htmlFor="advance-booking" className="text-sm font-medium">
+                    Maximum Advance Booking (days)
+                  </Label>
+                  <Input
+                    id="advance-booking"
+                    type="number"
+                    value={widgetConfig.maxAdvanceBooking}
+                    onChange={(e) => setWidgetConfig(prev => ({ ...prev, maxAdvanceBooking: Number(e.target.value) }))}
+                    min="1"
+                    max="365"
+                    className="w-full"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Restaurant Branding */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="w-5 h-5" />
+                  Branding & Information
+                </CardTitle>
+                <CardDescription>
+                  Current restaurant settings from your profile
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-sm font-medium">Name</span>
+                    <span className="text-sm font-medium">Restaurant Name</span>
                     <span className="text-sm text-muted-foreground">{tenant?.name}</span>
                   </div>
                   
@@ -407,27 +579,14 @@ const WidgetPreview: React.FC = () => {
                     <Badge variant="outline">{tenant?.currency || 'USD'}</Badge>
                   </div>
                   
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-sm font-medium">Widget URL</span>
-                    <code className="text-xs bg-muted px-2 py-1 rounded">{bookingUrl}</code>
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-sm font-medium">Widget Slug</span>
+                    <code className="text-xs bg-muted px-2 py-1 rounded">{tenant?.slug}</code>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* Branding */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Branding & Appearance</CardTitle>
-                <CardDescription>
-                  Visual customization settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {tenant?.primary_color && (
-                  <div className="space-y-3">
+                  {tenant?.primary_color && (
                     <div className="flex justify-between items-center py-2 border-b">
-                      <span className="text-sm font-medium">Primary Color</span>
+                      <span className="text-sm font-medium">Brand Color</span>
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-5 h-5 rounded border shadow-sm"
@@ -436,56 +595,54 @@ const WidgetPreview: React.FC = () => {
                         <code className="text-xs">{tenant.primary_color}</code>
                       </div>
                     </div>
-                    
-                    {tenant.secondary_color && (
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-sm font-medium">Secondary Color</span>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-5 h-5 rounded border shadow-sm"
-                            style={{ backgroundColor: tenant.secondary_color }}
-                          />
-                          <code className="text-xs">{tenant.secondary_color}</code>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
                 
                 <Separator />
                 
-                <div className="text-sm text-muted-foreground">
-                  <p>To modify branding settings, visit the <strong>Settings</strong> page in your dashboard.</p>
+                <div className="space-y-3">
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Settings2 className="w-4 h-4 mr-2" />
+                    Edit Restaurant Settings
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Update branding and restaurant information in the main Settings page
+                  </p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Quick Actions */}
+          {/* Widget Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>Widget Actions</CardTitle>
               <CardDescription>
-                Common tasks and useful links
+                Apply changes and manage your widget
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-3">
-                <Button variant="outline" asChild>
-                  <a href={bookingUrl} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Test Booking
-                  </a>
+                <Button className="flex-1 sm:flex-none">
+                  <Download className="w-4 h-4 mr-2" />
+                  Save Configuration
                 </Button>
                 
                 <Button variant="outline" onClick={() => copyToClipboard(fullBookingUrl, "Widget URL")}>
                   <Share className="w-4 h-4 mr-2" />
-                  Share URL
+                  Share Widget URL
                 </Button>
                 
-                <Button variant="outline" onClick={() => copyToClipboard(embedCode, "Embed code")}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Get Embed Code
+                <Button variant="outline" asChild>
+                  <a href={bookingUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Test Live Widget
+                  </a>
+                </Button>
+
+                <Button variant="ghost" size="sm">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Reset to Defaults
                 </Button>
               </div>
             </CardContent>
