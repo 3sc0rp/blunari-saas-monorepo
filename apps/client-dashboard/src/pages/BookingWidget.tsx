@@ -18,26 +18,33 @@ import {
   Check,
   Globe,
   RefreshCw,
-  Share
+  Share,
+  Calendar,
+  ChefHat
 } from 'lucide-react';
+
+type WidgetType = 'booking' | 'catering';
 
 const BookingWidgetPage: React.FC = () => {
   const { tenant, isLoading } = useTenant();
   const { toast } = useToast();
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [widgetType, setWidgetType] = useState<WidgetType>('booking');
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const bookingUrl = `/book/${tenant?.slug || 'demo'}`;
-  const fullBookingUrl = `${window.location.origin}${bookingUrl}`;
+  const cateringUrl = `/catering/${tenant?.slug || 'demo'}`;
+  const currentUrl = widgetType === 'booking' ? bookingUrl : cateringUrl;
+  const fullCurrentUrl = `${window.location.origin}${currentUrl}`;
 
   const embedCode = `<iframe 
-  src="${fullBookingUrl}"
+  src="${fullCurrentUrl}"
   width="100%" 
   height="600" 
   frameborder="0"
   style="border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);"
-  title="${tenant?.name || 'Restaurant'} Booking Widget">
+  title="${tenant?.name || 'Restaurant'} ${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget">
 </iframe>`;
 
   const deviceConfigs = {
@@ -93,7 +100,7 @@ const BookingWidgetPage: React.FC = () => {
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Widget Preview</h1>
           <p className="text-lg text-muted-foreground">
-            Preview your booking widget across different devices
+            Preview your booking and catering widgets across different devices
           </p>
         </div>
         
@@ -104,13 +111,41 @@ const BookingWidgetPage: React.FC = () => {
           </Button>
           
           <Button asChild>
-            <a href={bookingUrl} target="_blank" rel="noopener noreferrer">
+            <a href={currentUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="w-4 h-4 mr-2" />
               Open Widget
             </a>
           </Button>
         </div>
       </div>
+
+      {/* Widget Type Selector */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Widget Type</CardTitle>
+          <CardDescription>Choose which widget to preview and configure</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-3">
+            <Button
+              variant={widgetType === 'booking' ? 'default' : 'outline'}
+              onClick={() => setWidgetType('booking')}
+              className="flex items-center gap-2"
+            >
+              <Calendar className="w-4 h-4" />
+              Booking Widget
+            </Button>
+            <Button
+              variant={widgetType === 'catering' ? 'default' : 'outline'}
+              onClick={() => setWidgetType('catering')}
+              className="flex items-center gap-2"
+            >
+              <ChefHat className="w-4 h-4" />
+              Catering Widget
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -135,11 +170,17 @@ const BookingWidgetPage: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Eye className="w-4 h-4 text-blue-600" />
+                {widgetType === 'booking' ? (
+                  <Calendar className="w-4 h-4 text-blue-600" />
+                ) : (
+                  <ChefHat className="w-4 h-4 text-blue-600" />
+                )}
               </div>
               <div>
-                <p className="text-sm font-medium">Restaurant</p>
-                <p className="text-sm text-muted-foreground truncate">{tenant?.name}</p>
+                <p className="text-sm font-medium">Widget Type</p>
+                <p className="text-sm text-muted-foreground">
+                  {widgetType === 'booking' ? 'Table Reservations' : 'Catering Orders'}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -153,7 +194,7 @@ const BookingWidgetPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-medium">Widget URL</p>
-                <p className="text-sm text-muted-foreground truncate">{bookingUrl}</p>
+                <p className="text-sm text-muted-foreground truncate">{currentUrl}</p>
               </div>
             </div>
           </CardContent>
@@ -216,15 +257,15 @@ const BookingWidgetPage: React.FC = () => {
               <Card className="overflow-hidden shadow-2xl">
                 <CardContent className="p-0">
                   <iframe
-                    key={refreshing.toString()}
-                    src={bookingUrl}
+                    key={`${widgetType}-${refreshing.toString()}`}
+                    src={currentUrl}
                     className={`w-full border-0 ${deviceConfigs[previewMode].height}`}
-                    title="Booking Widget Preview"
+                    title={`${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Preview`}
                     onError={(e) => {
                       console.error('Iframe loading error:', e);
                       toast({
                         title: "Preview Error",
-                        description: "Unable to load the booking widget preview. The widget may still work when embedded.",
+                        description: `Unable to load the ${widgetType} widget preview. The widget may still work when embedded.`,
                         variant: "destructive",
                       });
                     }}
@@ -241,10 +282,10 @@ const BookingWidgetPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Code className="w-5 h-5" />
-                Embed Code
+                {widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Embed Code
               </CardTitle>
               <CardDescription>
-                Copy this code and paste it into your website where you want the booking widget to appear
+                Copy this code and paste it into your website where you want the {widgetType} widget to appear
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -263,7 +304,7 @@ const BookingWidgetPage: React.FC = () => {
                   {copied ? "Copied!" : "Copy Embed Code"}
                 </Button>
                 
-                <Button variant="outline" onClick={() => copyToClipboard(fullBookingUrl, "Widget URL")}>
+                <Button variant="outline" onClick={() => copyToClipboard(fullCurrentUrl, "Widget URL")}>
                   <Share className="w-4 h-4 mr-2" />
                   Share URL
                 </Button>

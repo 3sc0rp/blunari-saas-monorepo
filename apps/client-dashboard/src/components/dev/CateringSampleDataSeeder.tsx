@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 
 export const CateringSampleDataSeeder: React.FC = () => {
   const [isSeeding, setIsSeeding] = useState(false);
@@ -9,9 +9,37 @@ export const CateringSampleDataSeeder: React.FC = () => {
 
   const seedSampleData = async () => {
     setIsSeeding(true);
-    setStatus('Finding demo tenant...');
+    setStatus('Checking database configuration...');
 
     try {
+      // Check if catering tables exist by trying to query them
+      const { data: tables, error } = await supabase
+        .from('catering_packages' as any)
+        .select('id')
+        .limit(1);
+
+      if (error) {
+        if (error.code === '42P01' || error.message.includes('does not exist')) {
+          setStatus(`
+            ⚠️ Catering System Setup Required
+            
+            The catering tables are not yet configured in this database.
+            
+            To enable the full catering system:
+            1. Run the catering migration in your database
+            2. Or use the admin dashboard to set up catering
+            
+            This is a demo environment - the catering UI shows 
+            what the system would look like with real data.
+          `);
+          return;
+        }
+        throw error;
+      }
+
+      // If we get here, the tables exist, so proceed with seeding
+      setStatus('Finding demo tenant...');
+
       // First, find the demo tenant
       const { data: tenants, error: tenantError } = await supabase
         .from('tenants')
@@ -102,7 +130,7 @@ export const CateringSampleDataSeeder: React.FC = () => {
       for (const pkg of samplePackages) {
         try {
           const { data, error } = await supabase
-            .from('catering_packages')
+            .from('catering_packages' as any)
             .insert(pkg)
             .select()
             .single();
@@ -132,23 +160,29 @@ export const CateringSampleDataSeeder: React.FC = () => {
   };
 
   return (
-    <div className="p-4 border border-dashed border-gray-300 rounded-lg bg-gray-50">
-      <h3 className="text-lg font-medium mb-2">Developer Tools</h3>
-      <p className="text-sm text-muted-foreground mb-4">
-        Add sample catering packages for testing purposes.
+    <div className="p-4 border border-dashed border-orange-300 rounded-lg bg-orange-50">
+      <div className="flex items-center gap-2 mb-2">
+        <AlertTriangle className="h-5 w-5 text-orange-600" />
+        <h3 className="text-lg font-medium text-orange-800">Development Tools</h3>
+      </div>
+      
+      <p className="text-sm text-orange-700 mb-4">
+        This tool attempts to add sample catering packages for testing. 
+        Note: Catering system requires proper database setup.
       </p>
       
       <Button 
         onClick={seedSampleData}
         disabled={isSeeding}
         className="mb-2"
+        variant="outline"
       >
         {isSeeding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-        Add Sample Catering Data
+        Test Catering System Setup
       </Button>
       
       {status && (
-        <div className="text-sm p-2 bg-white rounded border">
+        <div className="text-sm p-3 bg-white rounded border border-orange-200 whitespace-pre-line">
           {status}
         </div>
       )}
