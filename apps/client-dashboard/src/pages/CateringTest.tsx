@@ -2,8 +2,8 @@ import React from "react";
 import CateringWidget from "@/components/catering/CateringWidget";
 
 const CateringTestPage: React.FC = () => {
-  // Test with a sample slug - you can change this to test different tenants
-  const testSlug = "demo-restaurant";
+  // Use real tenant slug from URL or props
+  const testSlug = "demo";
 
   return (
     <div className="min-h-screen">

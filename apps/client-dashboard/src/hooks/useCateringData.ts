@@ -107,72 +107,12 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       setTablesExist(exist);
 
       if (!exist) {
-        // Provide mock data for development/demo purposes
-        const mockPackages: CateringPackage[] = [
-          {
-            id: "mock-1",
-            tenant_id: tenantId,
-            name: "Executive Lunch Package",
-            description:
-              "Professional catering package perfect for corporate events and business meetings.",
-            price_per_person: 2500, // $25.00 in cents
-            min_guests: 10,
-            max_guests: 100,
-            includes_setup: true,
-            includes_service: true,
-            includes_cleanup: true,
-            dietary_accommodations: ["vegetarian", "gluten_free"],
-            image_url: null,
-            popular: true,
-            active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: "mock-2",
-            tenant_id: tenantId,
-            name: "Casual Buffet Package",
-            description:
-              "Relaxed buffet-style catering ideal for informal gatherings and team events.",
-            price_per_person: 1800, // $18.00 in cents
-            min_guests: 15,
-            max_guests: 200,
-            includes_setup: true,
-            includes_service: false,
-            includes_cleanup: true,
-            dietary_accommodations: ["vegetarian", "vegan"],
-            image_url: null,
-            popular: false,
-            active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: "mock-3",
-            tenant_id: tenantId,
-            name: "Premium Dinner Package",
-            description:
-              "Elegant multi-course dinner service for special occasions and upscale events.",
-            price_per_person: 4500, // $45.00 in cents
-            min_guests: 8,
-            max_guests: 60,
-            includes_setup: true,
-            includes_service: true,
-            includes_cleanup: true,
-            dietary_accommodations: ["vegetarian", "gluten_free", "dairy_free"],
-            image_url: null,
-            popular: true,
-            active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ];
-
-        setPackages(mockPackages);
-        setError(
-          "Demo mode: Using sample catering packages. Database tables need to be created for full functionality.",
-        );
+        // No mock data - only real database data
+        console.log('No catering packages found for tenant:', tenantId);
+        setError('No catering packages found');
         return;
+        console.log('No catering packages found for tenant:', tenantId);
+        return { data: null, error: { message: 'No catering packages found' } };
       }
 
       // Real database query (only if tables exist)

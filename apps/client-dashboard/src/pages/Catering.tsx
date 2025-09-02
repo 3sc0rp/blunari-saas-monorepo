@@ -59,7 +59,6 @@ import { useCateringPackages } from "@/hooks/useCateringPackages";
 import { useCateringOrders } from "@/hooks/useCateringOrders";
 import { useCateringAnalytics } from "@/hooks/useCateringAnalytics";
 import { useTenant } from "@/hooks/useTenant";
-import { CateringSampleDataSeeder } from "@/components/dev/CateringSampleDataSeeder";
 
 import type {
   CateringPackage,
@@ -278,7 +277,10 @@ export default function CateringPage() {
       </div>
 
       {/* Development Tools - Remove in production */}
-      {process.env.NODE_ENV === "development" && <CateringSampleDataSeeder />}
+            {/* Real catering data only - no development sample data */}
+    </div>
+  );
+};
 
       <Tabs defaultValue="packages" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
@@ -720,10 +722,19 @@ export default function CateringPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit">
+                            <Button type="submit">
                 <FileText className="h-4 w-4 mr-2" />
                 Request Quote
               </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Real catering data only - no development sample data */}
+    </div>
+  );
+};
             </div>
           </form>
         </DialogContent>

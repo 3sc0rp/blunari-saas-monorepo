@@ -119,29 +119,6 @@ const TenantLoadingFallback = ({
               </div>
             )}
           </div>
-
-          {/* Available Demo Tenants */}
-          <div className="pt-4 border-t">
-            <p className="text-sm text-gray-600 mb-2">Try these demo restaurants:</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.location.href = '/kpizza'}
-                className="text-xs"
-              >
-                K Pizza
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.location.href = '/demo'}
-                className="text-xs"
-              >
-                Demo Restaurant
-              </Button>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
