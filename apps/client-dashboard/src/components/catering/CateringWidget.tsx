@@ -13,7 +13,7 @@ import { CheckCircle, Clock, Users, ChefHat, Calendar, Mail, Phone, MapPin, File
 import { useCateringData } from '@/hooks/useCateringData';
 import { useTenantBySlug } from '@/hooks/useTenantBySlug';
 import { CreateCateringOrderRequest, CateringPackage, CateringServiceType, DietaryRestriction } from '@/types/catering';
-import { ErrorBoundary } from '@/components/booking/ErrorBoundary';
+import ErrorBoundary from '@/components/booking/ErrorBoundary';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface CateringWidgetProps {
