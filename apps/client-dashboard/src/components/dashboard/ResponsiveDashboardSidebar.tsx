@@ -101,27 +101,29 @@ export function ResponsiveDashboardSidebar() {
   const collapsed = state === "collapsed";
 
   return (
-    <Sidebar className="border-r border-surface-2 bg-surface">
+    <Sidebar className="border-r-0 bg-surface">
       <SidebarContent>
-        {/* Restaurant Logo/Name */}
-        <div className="p-4 border-b border-surface-2">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center">
+        {/* Integrated Header Top Section - matches main header height */}
+        <div className="h-[88px] p-4 border-b border-surface-2 bg-gradient-to-r from-surface via-surface-2 to-surface flex items-center relative">
+          {/* Subtle right border to blend with main header */}
+          <div className="absolute right-0 top-0 bottom-0 w-px bg-surface-2"></div>
+          <div className="flex items-center gap-3 w-full">
+            <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
               <Building className="w-4 h-4 text-brand-foreground" />
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-text truncate">
+                <h2 className="font-semibold text-text truncate text-lg">
                   {tenant?.name || "Restaurant"}
                 </h2>
-                <p className="text-xs text-text-muted truncate">Dashboard</p>
+                <p className="text-sm text-text-muted truncate opacity-80">Dashboard Portal</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Navigation Sections */}
-        <div className="flex-1 px-3 py-4 space-y-6">
+        <div className="flex-1 px-3 py-4 space-y-6 border-r border-surface-2">
           {navigationItems.map((section) => (
             <SidebarGroup key={section.section}>
               {!collapsed && (
@@ -159,7 +161,7 @@ export function ResponsiveDashboardSidebar() {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-surface-2">
+        <div className="p-4 border-t border-r border-surface-2">
           {!collapsed ? (
             <div className="text-xs text-text-subtle">
               <p className="font-medium">Blunari Dashboard</p>

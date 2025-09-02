@@ -35,14 +35,20 @@ const DashboardLayout: React.FC = () => {
           {shouldShowSidebar && <ResponsiveDashboardSidebar />}
 
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-            {/* Header with Sidebar Toggle */}
+            {/* Integrated Header Strip - matches sidebar top */}
             <header
               role="banner"
-              className="flex items-center gap-4 p-4 border-b border-surface-2 bg-surface w-full min-w-0"
+              className="h-[88px] flex items-center border-b border-surface-2 bg-gradient-to-r from-surface via-surface-2 to-surface w-full min-w-0"
             >
-              {shouldShowSidebar && <SidebarTrigger className="lg:hidden" />}
-              <div className="flex-1">
-                <BreadcrumbHeader />
+              <div className="flex items-center w-full h-full">
+                {shouldShowSidebar && (
+                  <div className="flex items-center pl-4 lg:hidden">
+                    <SidebarTrigger />
+                  </div>
+                )}
+                <div className="flex-1 h-full flex items-center">
+                  <BreadcrumbHeader />
+                </div>
               </div>
             </header>
 
