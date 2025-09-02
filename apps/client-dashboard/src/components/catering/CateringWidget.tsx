@@ -367,11 +367,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                               <div className="space-y-2 mb-4">
                                 <div className="flex items-center gap-2 text-sm">
                                   <Users className="w-4 h-4 text-muted-foreground" />
-                                  <span>{pkg.min_guests} - {pkg.max_guests} guests</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Clock className="w-4 h-4 text-muted-foreground" />
-                                  <span>{pkg.preparation_time_hours}h preparation time</span>
+                                  <span>{pkg.min_guests}{pkg.max_guests ? ` - ${pkg.max_guests}` : '+'} guests</span>
                                 </div>
                               </div>
 

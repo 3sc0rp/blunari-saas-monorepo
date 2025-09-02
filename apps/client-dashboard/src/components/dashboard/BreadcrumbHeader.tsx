@@ -52,19 +52,26 @@ const BreadcrumbHeader: React.FC = () => {
   };
 
   return (
-    <div className={`sticky top-0 z-30 bg-surface/95 backdrop-blur-sm border-b border-border/50 ${
-      actualLayout === 'sidebar' ? 'px-6 py-4' : 'px-4 py-3'
+    <div className={`bg-gradient-to-r from-surface via-surface-2 to-surface border-b border-surface-2 ${
+      actualLayout === 'sidebar' ? 'px-6 py-6' : 'px-4 py-4'
     }`}>
-      <div className={`flex items-center justify-between ${isMobile ? 'gap-2' : 'gap-4'}`}>
-        {/* Breadcrumb & Page Title */}
-        <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-4'}`}>
-          <div className={`flex items-center gap-2 ${isMobile ? 'text-sm' : 'text-body-sm'} text-muted-foreground`}>
-            <Home className={isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-            <span className={isMobile ? 'truncate max-w-[120px]' : ''}>{restaurantName}</span>
+      <div className={`flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 ${isMobile ? 'gap-2' : 'gap-4'}`}>
+        
+        {/* Restaurant Info & Breadcrumb Section */}
+        <div className="space-y-3">
+          {/* Restaurant Name */}
+          <h1 className="text-2xl font-bold text-brand">
+            {restaurantName}
+          </h1>
+          
+          {/* Enhanced Breadcrumb Navigation */}
+          <div className={`flex items-center gap-2 ${isMobile ? 'text-sm' : 'text-body-sm'}`}>
+            <Home className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground`} />
+            <span className="text-muted-foreground">Dashboard</span>
             {!isHomePage && (
               <>
-                <ChevronRight className={isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-                <span className={`text-foreground font-medium ${isMobile ? 'truncate max-w-[100px]' : ''}`}>
+                <ChevronRight className={`${isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground`} />
+                <span className={`text-brand font-semibold border-b-2 border-brand pb-0.5 ${isMobile ? 'truncate max-w-[100px]' : ''}`}>
                   {currentRoute?.title || 'Page'}
                 </span>
               </>
@@ -72,77 +79,88 @@ const BreadcrumbHeader: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Actions & Status */}
-        <div className={`flex items-center ${isMobile ? 'gap-1' : 'gap-3'}`}>
-          {/* Connection Status */}
-          <Badge 
-            variant={isConnected ? "default" : "destructive"}
-            className={`text-xs ${
-              isConnected ? 'bg-success/10 text-success border-success/20' : ''
-            }`}
-          >
-            {isConnected ? 'Live' : 'Offline'}
-          </Badge>
-
-          {/* Quick Actions */}
-          <div className={`flex items-center ${isMobile ? 'gap-1' : 'gap-2'}`}>
-            {!isMobile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefresh}
-                className="h-8 px-3 hover:bg-primary/5"
-              >
-                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                Refresh
-              </Button>
-            )}
-            
-            {!isMobile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleQuickSave}
-                className="h-8 px-3 hover:bg-primary/5"
-              >
-                <Save className="h-3.5 w-3.5 mr-1.5" />
-                Quick Save
-              </Button>
-            )}
-
-            {/* Mobile quick actions */}
-            {isMobile && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={handleRefresh}
-                className="h-8 w-8 p-0 hover:bg-primary/5"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </Button>
-            )}
-
-            {/* Notification Bell */}
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="h-8 w-8 p-0 relative hover:bg-primary/5"
-            >
-              <Bell className={isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-              <Badge className="absolute -top-1 -right-1 h-2 w-2 p-0 bg-destructive"></Badge>
-            </Button>
-
-            {/* Settings */}
-            {!isMobile && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-8 w-8 p-0 hover:bg-primary/5"
-              >
-                <Settings2 className="h-4 w-4" />
-              </Button>
-            )}
+        {/* Status & Capacity Indicator */}
+        <div className="flex items-center gap-4">
+          <div className="px-4 py-2 bg-card border border-border rounded-lg shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                isConnected 
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300' 
+                  : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+              }`}>
+                <div className={`h-2 w-2 rounded-full ${
+                  isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+                }`}></div>
+                <span className="text-sm font-medium">
+                  {isConnected ? 'Live' : 'Offline'}
+                </span>
+              </div>
+              <div className="text-sm">
+                <div className="font-semibold text-foreground">87%</div>
+                <div className="text-xs text-muted-foreground">Capacity</div>
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-3'}`}>
+          {!isMobile && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              className="h-9 px-3 bg-card border-border hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          )}
+          
+          {!isMobile && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleQuickSave}
+              className="h-9 px-3 bg-card border-border hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Quick Save
+            </Button>
+          )}
+
+          {/* Mobile Refresh Button */}
+          {isMobile && (
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              className="h-9 w-9 p-0 bg-card border-border hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          )}
+
+          {/* Notification Bell */}
+          <Button 
+            variant="outline"
+            size="sm"
+            className="h-9 w-9 p-0 relative bg-card border-border hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            <Bell className="h-4 w-4" />
+            <Badge className="absolute -top-1 -right-1 h-2 w-2 p-0 bg-destructive border-0"></Badge>
+          </Button>
+
+          {/* Settings Button */}
+          {!isMobile && (
+            <Button 
+              variant="outline"
+              size="sm"
+              className="h-9 w-9 p-0 bg-card border-border hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <Settings2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
     </div>
