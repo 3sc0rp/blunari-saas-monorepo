@@ -276,12 +276,6 @@ export default function CateringPage() {
         </div>
       </div>
 
-      {/* Development Tools - Remove in production */}
-            {/* Real catering data only - no development sample data */}
-    </div>
-  );
-};
-
       <Tabs defaultValue="packages" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="packages">Browse Packages</TabsTrigger>
@@ -726,15 +720,6 @@ export default function CateringPage() {
                 <FileText className="h-4 w-4 mr-2" />
                 Request Quote
               </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Real catering data only - no development sample data */}
-    </div>
-  );
-};
             </div>
           </form>
         </DialogContent>

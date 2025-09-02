@@ -100,14 +100,6 @@ const POSIntegrations: React.FC = () => {
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  useEffect(() => {
-    if (tenant?.id) {
-      fetchIntegrations();
-      fetchRecentEvents();
-      fetchHealthChecks();
-    }
-  }, [tenant?.id, fetchIntegrations, fetchRecentEvents, fetchHealthChecks]);
-
   const fetchIntegrations = async () => {
     try {
       const { data, error } = await supabase
@@ -317,6 +309,14 @@ const POSIntegrations: React.FC = () => {
       </Card>
     );
   };
+
+  useEffect(() => {
+    if (tenant?.id) {
+      fetchIntegrations();
+      fetchRecentEvents();
+      fetchHealthChecks();
+    }
+  }, [tenant?.id]);
 
   if (loading) {
     return (

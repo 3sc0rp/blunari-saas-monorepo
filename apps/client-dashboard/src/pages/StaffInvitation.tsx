@@ -15,13 +15,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
+// Types for staff invitation system
+interface StaffInvitation {
+  id: string;
+  tenant_id: string;
+  employee_id: string;
+  email: string;
+  invitation_token: string;
+  status: string;
+  invited_by: string;
+  invited_at: string;
+  expires_at: string;
+}
+
+interface Employee {
+  employee_id: string;
+  role: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+interface InvitationWithEmployee extends StaffInvitation {
+  employee?: Employee;
+}
+
 export default function StaffInvitation() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get("token");
 
   const [loading, setLoading] = useState(true);
-  const [invitation, setInvitation] = useState<any>(null);
+  const [invitation, setInvitation] = useState<InvitationWithEmployee | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     password: "",
@@ -31,23 +55,14 @@ export default function StaffInvitation() {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!token) {
-      setError("Invalid invitation link");
-      setLoading(false);
-      return;
-    }
-
-    verifyInvitation();
-  }, [token, verifyInvitation]);
-
   const verifyInvitation = async () => {
     try {
       setLoading(true);
 
-      // Verify invitation token and get employee info
+      // Use raw SQL-like queries to bypass TypeScript type checking issues
+      // This is a temporary workaround until types are regenerated
       const { data: invitationData, error: invitationError } = await supabase
-        .from("staff_invitations")
+        .from("staff_invitations" as any)
         .select("*")
         .eq("invitation_token", token)
         .eq("status", "pending")
@@ -59,31 +74,33 @@ export default function StaffInvitation() {
         return;
       }
 
-      // Get employee details separately
+      // Get employee details separately with proper error handling
       const { data: employeeData, error: employeeError } = await supabase
         .from("employees")
         .select("employee_id, role, first_name, last_name")
-        .eq("employee_id", invitationData.employee_id)
+        .eq("employee_id", (invitationData as any).employee_id)
         .single();
 
-      if (employeeError) {
-        console.warn("Could not fetch employee details:", employeeError);
+      // Handle employee data safely
+      let employee: Employee | undefined = undefined;
+      if (!employeeError && employeeData) {
+        employee = employeeData as any as Employee;
       }
 
       // Combine invitation and employee data
-      const combinedData = {
-        ...invitationData,
-        employee: employeeData,
+      const combinedData: InvitationWithEmployee = {
+        ...(invitationData as any),
+        employee,
       };
 
       setInvitation(combinedData);
 
       // Pre-fill form if we have employee data
-      if (employeeData?.first_name || employeeData?.last_name) {
+      if (employee?.first_name || employee?.last_name) {
         setFormData((prev) => ({
           ...prev,
-          firstName: employeeData.first_name || "",
-          lastName: employeeData.last_name || "",
+          firstName: employee?.first_name || "",
+          lastName: employee?.last_name || "",
         }));
       }
     } catch (err: any) {
@@ -93,6 +110,16 @@ export default function StaffInvitation() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!token) {
+      setError("Invalid invitation link");
+      setLoading(false);
+      return;
+    }
+
+    verifyInvitation();
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +167,7 @@ export default function StaffInvitation() {
         throw new Error("Failed to create user account");
       }
 
-      // Update employee record with user_id
+      // Update employee record with user_id and personal info
       const { error: updateError } = await supabase
         .from("employees")
         .update({
@@ -155,9 +182,9 @@ export default function StaffInvitation() {
         console.error("Failed to update employee record:", updateError);
       }
 
-      // Mark invitation as accepted
+      // Mark invitation as accepted using type assertion
       const { error: invitationUpdateError } = await supabase
-        .from("staff_invitations")
+        .from("staff_invitations" as any)
         .update({
           status: "accepted",
           accepted_at: new Date().toISOString(),
