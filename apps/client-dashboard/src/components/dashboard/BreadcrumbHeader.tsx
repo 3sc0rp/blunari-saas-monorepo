@@ -54,15 +54,15 @@ const BreadcrumbHeader: React.FC = () => {
 
   return (
     <div
-      className={`header-full-width bg-gradient-to-r from-surface via-surface-2 to-surface border-b border-surface-2 ${
+      className={`bg-gradient-to-r from-surface via-surface-2 to-surface border-b border-surface-2 w-full ${
         actualLayout === "sidebar" ? "px-6 py-6" : "px-4 py-4"
       }`}
     >
       <div
-        className={`flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 ${isMobile ? "gap-2" : "gap-4"}`}
+        className={`flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 min-w-0 ${isMobile ? "gap-2" : "gap-4"}`}
       >
         {/* Restaurant Info & Breadcrumb Section */}
-        <div className="space-y-3">
+        <div className="space-y-3 min-w-0 flex-shrink-0">
           {/* Restaurant Name */}
           <h1 className="text-2xl font-bold text-brand">{restaurantName}</h1>
 
@@ -90,7 +90,7 @@ const BreadcrumbHeader: React.FC = () => {
         </div>
 
         {/* Status & Capacity Indicator */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-shrink-0">
           <div className="px-4 py-2 bg-card border border-border rounded-lg shadow-sm">
             <div className="flex items-center gap-3">
               <div
@@ -118,7 +118,7 @@ const BreadcrumbHeader: React.FC = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className={`flex items-center ${isMobile ? "gap-2" : "gap-3"}`}>
+        <div className={`flex items-center flex-shrink-0 ${isMobile ? "gap-2" : "gap-3"}`}>
           {!isMobile && (
             <Button
               variant="outline"

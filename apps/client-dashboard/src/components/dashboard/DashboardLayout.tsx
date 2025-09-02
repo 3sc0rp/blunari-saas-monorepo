@@ -6,7 +6,6 @@ import { ResponsiveDashboardSidebar } from "./ResponsiveDashboardSidebar";
 import BottomNavigation from "./BottomNavigation";
 import BreadcrumbHeader from "./BreadcrumbHeader";
 import GlobalStatusStrip from "./GlobalStatusStrip";
-import HeaderDebug from "../debug/HeaderDebug";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -29,7 +28,6 @@ const DashboardLayout: React.FC = () => {
 
       {/* Global Status Strip */}
       <GlobalStatusStrip />
-      <HeaderDebug />
 
       {shouldShowSidebar ? (
         <SidebarProvider defaultOpen={true}>
@@ -37,11 +35,11 @@ const DashboardLayout: React.FC = () => {
             {/* Responsive Sidebar */}
             <ResponsiveDashboardSidebar />
 
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
               {/* Header with Sidebar Toggle */}
               <header
                 role="banner"
-                className="flex items-center gap-4 p-4 border-b border-surface-2 bg-surface w-full"
+                className="flex items-center gap-4 p-4 border-b border-surface-2 bg-surface w-full min-w-0"
               >
                 <SidebarTrigger className="lg:hidden" />
                 <div className="flex-1">
@@ -71,8 +69,7 @@ const DashboardLayout: React.FC = () => {
         </SidebarProvider>
       ) : (
         <div className="flex min-h-screen flex-col">
-          {/* Mobile Header - Full width outside of any container */}
-          <HeaderDebug />
+          {/* Mobile Header */}
           <header role="banner" className="w-full">
             <BreadcrumbHeader />
           </header>
