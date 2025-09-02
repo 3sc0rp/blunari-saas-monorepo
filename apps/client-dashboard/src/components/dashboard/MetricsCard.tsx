@@ -92,7 +92,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
 
   return (
     <TooltipProvider>
-      <Card className="relative overflow-hidden bg-gradient-to-br from-surface via-surface to-surface-2/30 border border-surface-2/50 hover:shadow-elevation-medium transition-all duration-300 group hover:scale-[1.02] hover:border-brand/30 backdrop-blur-sm">
+      <Card className="relative overflow-hidden bg-gradient-to-br from-surface via-surface to-surface-2/30 border border-surface-2/50 hover:shadow-elev-2 transition-all duration-300 group hover:scale-[1.02] hover:border-brand/30 backdrop-blur-sm">
         {/* Professional Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-surface-2/5 to-surface-2/10 opacity-50"></div>
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand/2 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -114,7 +114,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
             </Tooltip>
           </div>
           <div
-            className={`h-11 w-11 rounded-xl ${bgColor} flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-elevation-low border border-surface-2/30`}
+            className={`h-11 w-11 rounded-xl ${bgColor} flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-elev-1 border border-surface-2/30`}
           >
             <Icon className={`h-5 w-5 ${color}`} />
           </div>

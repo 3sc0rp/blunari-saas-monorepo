@@ -93,7 +93,7 @@ const BreadcrumbHeader: React.FC = () => {
         {/* Enhanced Status & Actions */}
         <div className="flex items-center gap-3 flex-shrink-0">
           {/* Professional Status Dashboard */}
-          <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-surface-2/30 to-surface-2/20 backdrop-blur-sm border border-surface-2/40 rounded-xl shadow-elevation-low">
+          <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-surface-2/30 to-surface-2/20 backdrop-blur-sm border border-surface-2/40 rounded-xl shadow-elev-1">
             {/* Connection Status */}
             <div
               className={`flex items-center gap-2 px-3 py-1 rounded-lg transition-all duration-300 ${
@@ -169,7 +169,7 @@ const BreadcrumbHeader: React.FC = () => {
 
           {/* User Avatar - Premium Touch */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-brand/10 to-brand/5 backdrop-blur-sm rounded-xl border border-brand/20">
-            <div className="w-6 h-6 bg-gradient-to-br from-brand to-brand/80 rounded-full flex items-center justify-center shadow-elevation-medium">
+            <div className="w-6 h-6 bg-gradient-to-br from-brand to-brand/80 rounded-full flex items-center justify-center shadow-elev-2">
               <span className="text-xs font-bold text-brand-foreground">
                 {user?.email?.charAt(0).toUpperCase() || 'U'}
               </span>

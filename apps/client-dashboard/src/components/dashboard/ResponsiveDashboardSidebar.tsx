@@ -107,7 +107,7 @@ export function ResponsiveDashboardSidebar() {
         <div className="h-[64px] p-4 flex items-center relative">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-surface-2/10 to-transparent" />
           <div className="flex items-center gap-3 w-full relative z-10">
-            <div className="w-8 h-8 bg-gradient-to-br from-brand via-brand/90 to-brand/70 rounded-xl flex items-center justify-center flex-shrink-0 shadow-elevation-medium ring-1 ring-brand/20">
+            <div className="w-8 h-8 bg-gradient-to-br from-brand via-brand/90 to-brand/70 rounded-xl flex items-center justify-center flex-shrink-0 shadow-elev-2 ring-1 ring-brand/20">
               <Building className="w-4 h-4 text-brand-foreground" />
             </div>
             {!collapsed && (
@@ -159,7 +159,7 @@ export function ResponsiveDashboardSidebar() {
                               </span>
                             )}
                             {!collapsed && item.title === "Messages" && (
-                              <Badge className="ml-auto h-5 min-w-[20px] px-1.5 bg-destructive text-destructive-foreground text-xs font-medium shadow-elevation-low animate-pulse">
+                              <Badge className="ml-auto h-5 min-w-[20px] px-1.5 bg-destructive text-destructive-foreground text-xs font-medium shadow-elev-1 animate-pulse">
                                 3
                               </Badge>
                             )}

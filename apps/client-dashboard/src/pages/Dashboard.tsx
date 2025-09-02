@@ -50,7 +50,7 @@ const Dashboard: React.FC = () => {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-        className="relative overflow-hidden bg-gradient-to-br from-brand via-brand/95 to-brand/90 rounded-2xl p-8 text-brand-foreground shadow-elevation-high backdrop-blur-sm border border-brand/20"
+        className="relative overflow-hidden bg-gradient-to-br from-brand via-brand/95 to-brand/90 rounded-2xl p-8 text-brand-foreground shadow-xl backdrop-blur-sm border border-brand/20"
       >
         {/* Professional Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-brand-foreground/5 to-brand-foreground/10 opacity-50"></div>

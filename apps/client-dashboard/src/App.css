@@ -143,6 +143,27 @@ html, body {
   box-shadow: var(--shadow-elev-1);
 }
 
+/* Professional Shadow System with Brand Integration */
+.shadow-brand {
+  box-shadow: 0 4px 12px hsl(var(--brand) / 0.15), 0 2px 4px hsl(var(--brand) / 0.1);
+}
+
+.shadow-success {
+  box-shadow: 0 4px 12px hsl(var(--success) / 0.15), 0 2px 4px hsl(var(--success) / 0.1);
+}
+
+.shadow-glow-success {
+  box-shadow: 0 0 8px hsl(var(--success) / 0.6);
+}
+
+.shadow-glow-destructive {
+  box-shadow: 0 0 8px hsl(var(--danger) / 0.6);
+}
+
+.shadow-glow-brand {
+  box-shadow: 0 0 12px hsl(var(--brand) / 0.4);
+}
+
 /* Safe Area Utilities */
 .pt-safe {
   padding-top: max(var(--space-lg), var(--safe-top));
