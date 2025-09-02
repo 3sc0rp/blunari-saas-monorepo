@@ -54,7 +54,7 @@ const BreadcrumbHeader: React.FC = () => {
 
   return (
     <div
-      className={`bg-gradient-to-r from-surface via-surface-2 to-surface border-b border-surface-2 ${
+      className={`bg-gradient-to-r from-surface via-surface-2 to-surface border-b border-surface-2 w-full ${
         actualLayout === "sidebar" ? "px-6 py-6" : "px-4 py-4"
       }`}
     >

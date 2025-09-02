@@ -39,7 +39,7 @@ const DashboardLayout: React.FC = () => {
               {/* Header with Sidebar Toggle */}
               <header
                 role="banner"
-                className="flex items-center gap-4 p-4 border-b border-surface-2 bg-surface"
+                className="flex items-center gap-4 p-4 border-b border-surface-2 bg-surface w-full"
               >
                 <SidebarTrigger className="lg:hidden" />
                 <div className="flex-1">
@@ -70,7 +70,7 @@ const DashboardLayout: React.FC = () => {
       ) : (
         <div className="flex min-h-screen flex-col">
           {/* Mobile Header */}
-          <header role="banner">
+          <header role="banner" className="w-full">
             <BreadcrumbHeader />
           </header>
 
