@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useRealtimeCommandCenterContext } from "@/contexts/RealtimeCommandCenterContext";
 import { useTodayData } from "@/hooks/useTodayData";
 import { 
   Square, 
@@ -52,37 +53,54 @@ interface BookingData {
   duration_minutes?: number;
 }
 
-// Mock floor plan data - in real app this would come from the database
-const MOCK_FLOOR_PLAN: TablePosition[] = [
-  // Main dining area
-  { id: '1', x: 50, y: 50, width: 80, height: 80, shape: 'circle', seats: 4, number: '1', section: 'Main' },
-  { id: '2', x: 200, y: 50, width: 80, height: 80, shape: 'circle', seats: 4, number: '2', section: 'Main' },
-  { id: '3', x: 350, y: 50, width: 80, height: 80, shape: 'circle', seats: 4, number: '3', section: 'Main' },
+// Real floor plan generation from database tables
+const generateFloorPlanFromTables = (tables: RealtimeTable[]): TablePosition[] => {
+  if (!tables.length) return [];
   
-  { id: '4', x: 50, y: 180, width: 120, height: 60, shape: 'rectangle', seats: 6, number: '4', section: 'Main' },
-  { id: '5', x: 230, y: 180, width: 120, height: 60, shape: 'rectangle', seats: 6, number: '5', section: 'Main' },
+  // Generate positions for tables in a grid layout
+  const gridCols = Math.ceil(Math.sqrt(tables.length));
+  const gridRows = Math.ceil(tables.length / gridCols);
+  const cellWidth = 150;
+  const cellHeight = 120;
+  const margin = 50;
   
-  { id: '6', x: 50, y: 310, width: 80, height: 80, shape: 'circle', seats: 4, number: '6', section: 'Main' },
-  { id: '7', x: 200, y: 310, width: 80, height: 80, shape: 'circle', seats: 4, number: '7', section: 'Main' },
-  { id: '8', x: 350, y: 310, width: 80, height: 80, shape: 'circle', seats: 4, number: '8', section: 'Main' },
-  
-  // Bar area
-  { id: '9', x: 500, y: 50, width: 60, height: 60, shape: 'square', seats: 2, number: '9', section: 'Bar' },
-  { id: '10', x: 580, y: 50, width: 60, height: 60, shape: 'square', seats: 2, number: '10', section: 'Bar' },
-  { id: '11', x: 660, y: 50, width: 60, height: 60, shape: 'square', seats: 2, number: '11', section: 'Bar' },
-  
-  // Private dining
-  { id: '12', x: 500, y: 180, width: 160, height: 100, shape: 'rectangle', seats: 8, number: '12', section: 'Private' },
-  { id: '13', x: 500, y: 310, width: 160, height: 100, shape: 'rectangle', seats: 8, number: '13', section: 'Private' },
-];
+  return tables.map((table, index) => {
+    const col = index % gridCols;
+    const row = Math.floor(index / gridCols);
+    
+    // Determine shape and size based on capacity
+    const isLarge = table.capacity > 6;
+    const isSmall = table.capacity <= 2;
+    
+    const width = isLarge ? 120 : isSmall ? 60 : 80;
+    const height = isLarge ? 80 : isSmall ? 60 : 80;
+    const shape = isSmall ? 'circle' : isLarge ? 'rectangle' : 'circle';
+    
+    return {
+      id: table.id,
+      number: table.name || `${index + 1}`,
+      x: col * cellWidth + margin,
+      y: row * cellHeight + margin,
+      width,
+      height,
+      seats: table.capacity,
+      shape,
+      section: 'Main',
+    } as TablePosition;
+  });
+};
 
 const FloorMap: React.FC = () => {
+  const { tables } = useRealtimeCommandCenterContext();
   const { data, isLoading, error } = useTodayData();
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  // Generate floor plan from real table data
+  const floorPlan = useMemo(() => generateFloorPlanFromTables(tables), [tables]);
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Calculate table statuses based on current bookings
@@ -339,7 +357,7 @@ const FloorMap: React.FC = () => {
             <text x="580" y="160" textAnchor="middle" className="fill-slate-600 text-sm font-semibold">Private Dining</text>
 
             {/* Tables */}
-            {MOCK_FLOOR_PLAN.map(table => {
+            {floorPlan.map(table => {
               const status = tableStatuses[table.id] || { id: table.id, status: 'available' as const };
               const isSelected = selectedTable === table.id;
 

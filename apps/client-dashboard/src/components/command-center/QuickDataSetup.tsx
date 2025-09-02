@@ -1,148 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, Plus, Database, CheckCircle } from "lucide-react";
+import { useRealtimeCommandCenterContext } from "@/contexts/RealtimeCommandCenterContext";
+import { Loader2, Database, CheckCircle, RefreshCw, BarChart3, Users, Calendar } from "lucide-react";
 
 const QuickDataSetup: React.FC = () => {
   const { tenant } = useTenant();
   const { user } = useAuth();
+  const { metrics, isLoading, error } = useRealtimeCommandCenterContext();
+  const [dataStats, setDataStats] = useState<{
+    tables: number;
+    bookings: number;
+    waitlist: number;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<string[]>([]);
-  const [success, setSuccess] = useState(false);
 
-  const addStatus = (message: string) => {
-    setStatus(prev => [...prev, message]);
-  };
-
-  const createDemoData = async () => {
-    if (!tenant) {
-      addStatus("❌ No tenant available");
-      return;
+  useEffect(() => {
+    if (metrics) {
+      setDataStats({
+        tables: metrics.totalTables || 0,
+        bookings: metrics.totalBookings || 0,
+        waitlist: metrics.waitlistData?.length || 0
+      });
     }
+  }, [metrics]);
 
+  const refreshData = async () => {
+    if (!tenant) return;
+    
     setLoading(true);
-    setStatus([]);
-    setSuccess(false);
-
     try {
-      addStatus("🚀 Starting data setup...");
-
-      // Check existing tables
-      const { data: existingTables } = await supabase
-        .from('restaurant_tables')
-        .select('id, name')
-        .eq('tenant_id', tenant.id);
-
-      if (!existingTables || existingTables.length === 0) {
-        addStatus("📋 Creating restaurant tables...");
-        
-        const sampleTables = [
-          { name: 'Table 1', capacity: 4, table_type: 'standard', active: true, tenant_id: tenant.id, position_x: 100, position_y: 100 },
-          { name: 'Table 2', capacity: 2, table_type: 'small', active: true, tenant_id: tenant.id, position_x: 200, position_y: 100 },
-          { name: 'Table 3', capacity: 6, table_type: 'large', active: true, tenant_id: tenant.id, position_x: 300, position_y: 100 },
-          { name: 'Table 4', capacity: 4, table_type: 'standard', active: true, tenant_id: tenant.id, position_x: 100, position_y: 200 },
-          { name: 'Bar Counter', capacity: 8, table_type: 'bar', active: true, tenant_id: tenant.id, position_x: 200, position_y: 200 },
-        ];
-
-        const { error: tableError } = await supabase
-          .from('restaurant_tables')
-          .insert(sampleTables);
-
-        if (tableError) {
-          addStatus(`❌ Failed to create tables: ${tableError.message}`);
-          return;
-        } else {
-          addStatus(`✅ Created ${sampleTables.length} tables`);
-        }
-      } else {
-        addStatus(`✅ Found ${existingTables.length} existing tables`);
-      }
-
-      // Check existing bookings for today
-      const today = new Date().toISOString().split('T')[0];
-      const { data: existingBookings } = await supabase
-        .from('bookings')
-        .select('id, guest_name')
-        .eq('tenant_id', tenant.id)
-        .gte('booking_time', today);
-
-      if (!existingBookings || existingBookings.length === 0) {
-        addStatus("📅 Creating sample bookings...");
-        
-        const now = new Date();
-        const sampleBookings = [
-          {
-            tenant_id: tenant.id,
-            guest_name: 'John Smith',
-            guest_email: 'john@demo.com',
-            guest_phone: '+1-555-0101',
-            booking_time: new Date(now.getTime() + 60 * 60 * 1000).toISOString(), // +1 hour
-            party_size: 4,
-            status: 'confirmed',
-            duration_minutes: 90,
-            deposit_required: false,
-            deposit_paid: false
-          },
-          {
-            tenant_id: tenant.id,
-            guest_name: 'Sarah Johnson',
-            guest_email: 'sarah@demo.com',
-            guest_phone: '+1-555-0102',
-            booking_time: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(), // +2 hours
-            party_size: 2,
-            status: 'confirmed',
-            duration_minutes: 60,
-            deposit_required: false,
-            deposit_paid: false
-          },
-          {
-            tenant_id: tenant.id,
-            guest_name: 'Mike Wilson',
-            guest_email: 'mike@demo.com',
-            guest_phone: '+1-555-0103',
-            booking_time: new Date(now.getTime() + 30 * 60 * 1000).toISOString(), // +30 minutes
-            party_size: 6,
-            status: 'seated',
-            duration_minutes: 120,
-            deposit_required: false,
-            deposit_paid: false
-          },
-          {
-            tenant_id: tenant.id,
-            guest_name: 'Emily Brown',
-            guest_email: 'emily@demo.com',
-            guest_phone: '+1-555-0104',
-            booking_time: new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString(), // +4 hours
-            party_size: 3,
-            status: 'confirmed',
-            duration_minutes: 75,
-            deposit_required: true,
-            deposit_paid: true
-          }
-        ];
-
-        const { error: bookingError } = await supabase
-          .from('bookings')
-          .insert(sampleBookings);
-
-        if (bookingError) {
-          addStatus(`❌ Failed to create bookings: ${bookingError.message}`);
-          return;
-        } else {
-          addStatus(`✅ Created ${sampleBookings.length} bookings`);
-        }
-      } else {
-        addStatus(`✅ Found ${existingBookings.length} existing bookings today`);
-      }
-
-      addStatus("✨ Demo data setup complete!");
-      setSuccess(true);
-      
+      // Force refresh the data by invalidating the React Query cache
+      // This would need to be implemented in the context
+      window.location.reload();
     } catch (error) {
-      addStatus(`❌ Setup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Failed to refresh data:', error);
     } finally {
       setLoading(false);
     }
@@ -152,7 +47,7 @@ const QuickDataSetup: React.FC = () => {
     return (
       <Card className="border-amber-200 bg-amber-50">
         <CardContent className="p-4">
-          <p className="text-amber-800">⚠️ No tenant available for data setup</p>
+          <p className="text-amber-800">⚠️ No tenant available for data display</p>
         </CardContent>
       </Card>
     );
@@ -163,54 +58,97 @@ const QuickDataSetup: React.FC = () => {
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-blue-800">
           <Database className="w-5 h-5" />
-          Quick Data Setup
+          Live Data Overview
         </CardTitle>
         <p className="text-sm text-blue-600">
-          Create sample data for testing Command Center functionality
+          Real-time data from your restaurant system
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Button 
-            onClick={createDemoData} 
-            disabled={loading || success}
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : success ? (
-              <CheckCircle className="w-4 h-4 mr-2" />
-            ) : (
-              <Plus className="w-4 h-4 mr-2" />
+        {error ? (
+          <div className="bg-red-100 border border-red-300 rounded p-3">
+            <p className="text-sm text-red-800">
+              ❌ <strong>Error loading data:</strong> {error.message}
+            </p>
+          </div>
+        ) : isLoading ? (
+          <div className="bg-gray-100 rounded p-3 flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm text-gray-600">Loading real-time data...</span>
+          </div>
+        ) : dataStats ? (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white/70 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="text-xl font-bold text-blue-800">{dataStats.tables}</div>
+              <div className="text-xs text-blue-600">Tables</div>
+            </div>
+            
+            <div className="bg-white/70 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Calendar className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="text-xl font-bold text-green-800">{dataStats.bookings}</div>
+              <div className="text-xs text-green-600">Bookings</div>
+            </div>
+            
+            <div className="bg-white/70 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Users className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="text-xl font-bold text-amber-800">{dataStats.waitlist}</div>
+              <div className="text-xs text-amber-600">Waitlist</div>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={refreshData} 
+              disabled={loading}
+              variant="outline"
+              size="sm"
+              className="border-blue-300 text-blue-700 hover:bg-blue-100"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              )}
+              Refresh Data
+            </Button>
+            
+            {tenant && (
+              <span className="text-sm text-blue-600">
+                {tenant.name} ({tenant.slug})
+              </span>
             )}
-            {success ? 'Data Created' : 'Create Sample Data'}
-          </Button>
+          </div>
           
-          {tenant && (
-            <span className="text-sm text-blue-600">
-              for {tenant.name} ({tenant.slug})
-            </span>
+          {dataStats && (
+            <div className="flex items-center gap-1">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <span className="text-xs text-green-600">Live Data</span>
+            </div>
           )}
         </div>
 
-        {status.length > 0 && (
-          <div className="bg-white/50 rounded border p-3">
-            <h4 className="font-medium text-sm mb-2">Setup Progress:</h4>
-            <div className="space-y-1 text-sm font-mono max-h-32 overflow-y-auto">
-              {status.map((message, index) => (
-                <div key={index} className="text-gray-700">
-                  {message}
-                </div>
-              ))}
-            </div>
+        <div className="bg-white/50 rounded border p-3">
+          <h4 className="font-medium text-sm mb-2 text-blue-800">Data Sources:</h4>
+          <div className="space-y-1 text-xs text-blue-600">
+            <div>• Tables: Real restaurant_tables from database</div>
+            <div>• Bookings: Live bookings with real-time updates</div>
+            <div>• Waitlist: Real-time waitlist with Supabase subscriptions</div>
           </div>
-        )}
+        </div>
 
-        {success && (
-          <div className="bg-green-100 border border-green-300 rounded p-3">
-            <p className="text-sm text-green-800">
-              ✅ <strong>Success!</strong> You can now reload the page to see the Command Center with sample data.
+        {!dataStats?.tables && !isLoading && (
+          <div className="bg-yellow-100 border border-yellow-300 rounded p-3">
+            <p className="text-sm text-yellow-800">
+              💡 <strong>Note:</strong> No tables found. You may need to set up your restaurant tables first.
             </p>
           </div>
         )}

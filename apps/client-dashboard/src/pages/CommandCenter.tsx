@@ -43,7 +43,8 @@ const createSafeImport = (modulePath: string) => {
   return async () => {
     try {
       const startTime = performance.now();
-      const module = await import(modulePath);
+      // Use /* @vite-ignore */ to suppress Vite warning
+      const module = await import(/* @vite-ignore */ modulePath);
       const loadTime = performance.now() - startTime;
       
       // Log successful loads in development
@@ -330,7 +331,7 @@ const CommandCenter: React.FC = memo(() => {
     // Example: errorTracker.captureException(error, { 
     //   extra: { ...errorInfo, currentMetrics: loadingMetrics, componentStatus: componentLoadStatus }
     // });
-  }, []); // Removed unnecessary dependencies as they're captured in closure
+  }, [loadingMetrics, componentLoadStatus]);
 
   const handleGlobalReset = useCallback(() => {
     setResetKey(prev => prev + 1);

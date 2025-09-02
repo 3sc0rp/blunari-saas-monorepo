@@ -159,29 +159,77 @@ export const useRealtimeCommandCenter = () => {
     staleTime: 10000,
   });
 
-  // For now, create mock waitlist data since the table might not exist yet
-  const waitlist: WaitlistEntry[] = [];
-  const waitlistLoading = false;
-  const waitlistError = null;
+  // Fetch real waitlist data from the database
+  const {
+    data: waitlist = [],
+    isLoading: waitlistLoading,
+    error: waitlistError,
+  } = useQuery({
+    queryKey: ["command-center", "waitlist", tenantId],
+    queryFn: async () => {
+      if (!tenantId) return [];
 
-  // Calculate real-time metrics
+      try {
+        const { data, error } = await supabase
+          .from("waitlist")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .eq("status", "waiting")
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          console.warn("Waitlist table might not exist yet:", error);
+          return [];
+        }
+        
+        return (data || []).map(entry => ({
+          id: entry.id,
+          name: entry.name || "Guest",
+          party_size: entry.party_size || 1,
+          phone: entry.phone || "",
+          estimated_wait: entry.estimated_wait || 0,
+          created_at: entry.created_at,
+          status: entry.status || "waiting"
+        })) as WaitlistEntry[];
+      } catch (err) {
+        console.warn("Failed to fetch waitlist:", err);
+        return [];
+      }
+    },
+    enabled: !!tenantId,
+    refetchInterval: 30000, // Fallback polling every 30 seconds
+    staleTime: 10000, // Consider data stale after 10 seconds
+  });
+
+  // Calculate real-time metrics based on actual data
   const metrics = useMemo((): CommandCenterMetrics => {
     const activeBookings = bookings.filter(
       (b) => ["confirmed", "seated"].includes(b.status)
     ).length;
 
-    // For now, simulate table occupancy based on bookings
-    const tablesWithBookings = bookings.filter(b => 
-      b.table_id && ["confirmed", "seated"].includes(b.status)
-    ).length;
+    // Calculate real table occupancy based on actual bookings and table status
+    const occupiedTables = tables.filter(table => {
+      // Check if table has an active booking
+      const hasActiveBooking = bookings.some(booking => 
+        booking.table_id === table.id && 
+        ["confirmed", "seated"].includes(booking.status)
+      );
+      // Or check if table status indicates it's occupied
+      return hasActiveBooking || table.status === "occupied";
+    }).length;
     
-    const occupiedTables = Math.min(tablesWithBookings, tables.length);
-    const availableTables = Math.max(0, tables.length - occupiedTables);
+    const availableTables = tables.filter(table => 
+      table.status === "available" && 
+      !bookings.some(booking => 
+        booking.table_id === table.id && 
+        ["confirmed", "seated"].includes(booking.status)
+      )
+    ).length;
 
     const waitlistCount = waitlist.length;
 
     const avgWaitTime = waitlist.length > 0
-      ? waitlist.reduce((sum, w) => sum + w.estimated_wait_time, 0) / waitlist.length
+      ? waitlist.reduce((sum, w) => sum + (w.estimated_wait || 0), 0) / waitlist.length
       : 0;
 
     const completedBookings = bookings.filter(b => b.status === "completed");
@@ -204,7 +252,7 @@ export const useRealtimeCommandCenter = () => {
       coverCount,
       turnover,
     };
-  }, [bookings, tables.length, waitlist]);
+  }, [bookings, tables, waitlist]);
 
   // Set up real-time subscriptions
   useEffect(() => {
@@ -274,11 +322,39 @@ export const useRealtimeCommandCenter = () => {
       )
       .subscribe(handleTableSubscription);
 
+    // Waitlist subscription
+    const waitlistChannel = supabase
+      .channel(`command-center-waitlist-${tenantId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "waitlist",
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          console.log("👥 Waitlist update:", payload);
+          queryClient.invalidateQueries({ 
+            queryKey: ["command-center", "waitlist", tenantId] 
+          });
+          setLastUpdate(new Date());
+        }
+      )
+      .subscribe((status) => {
+        console.log("👥 Waitlist subscription status:", status);
+        setConnectionStatus(prevStatus => ({ 
+          ...prevStatus, 
+          waitlist: status === "SUBSCRIBED" 
+        }));
+      });
+
     // Cleanup subscriptions
     return () => {
       console.log("🧹 Cleaning up Command Center subscriptions");
       supabase.removeChannel(bookingsChannel);
       supabase.removeChannel(tablesChannel);
+      supabase.removeChannel(waitlistChannel);
       setConnectionStatus({
         bookings: false,
         tables: false,

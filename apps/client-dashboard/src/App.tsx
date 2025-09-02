@@ -71,12 +71,12 @@ const App = () => (
                       <Route path="/book/:slug" element={<BookingPage />} />
                       <Route path="/catering/:slug" element={<BookingPage />} />
 
-                      {/* Direct command-center redirect - goes to fullscreen by default */}
+                      {/* Direct Command Center route - standalone Command Center */}
                       <Route 
                         path="/command-center" 
                         element={
                           <ProtectedRoute>
-                            <Navigate to="/fullscreen/command-center" replace />
+                            <CommandCenter />
                           </ProtectedRoute>
                         } 
                       />
