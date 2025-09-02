@@ -2,13 +2,13 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 type NavigationPreference = "sidebar" | "bottom" | "auto";
 
-interface NavigationContextType {
+export interface NavigationContextType {
   preference: NavigationPreference;
   setPreference: (preference: NavigationPreference) => void;
   actualLayout: "sidebar" | "bottom"; // What's actually shown based on preference + screen size
 }
 
-const NavigationContext = createContext<NavigationContextType | undefined>(
+export const NavigationContext = createContext<NavigationContextType | undefined>(
   undefined,
 );
 

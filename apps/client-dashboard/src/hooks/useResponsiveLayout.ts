@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigation } from '@/contexts/NavigationContext';
+import { useState, useEffect, useContext } from 'react';
+import { NavigationContext, NavigationContextType } from '@/contexts/NavigationContext';
 
 export interface ResponsiveLayout {
   isMobile: boolean;
@@ -20,8 +20,8 @@ const MOBILE_BREAKPOINT = 768;
 const TABLET_BREAKPOINT = 1024;
 
 export const useResponsiveLayout = (): ResponsiveLayout => {
-  // Get navigation context using the proper hook
-  const navigation = useNavigation();
+  // Use context directly to avoid throwing errors when provider is missing
+  const navigation: NavigationContextType | undefined = useContext(NavigationContext);
   
   // Always call all hooks at the top level
   const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
