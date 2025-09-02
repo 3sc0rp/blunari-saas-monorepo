@@ -60,3 +60,28 @@ temp/
 # Supabase
 **/supabase/.branches
 **/supabase/.temp
+
+# Test results and reports
+test-results/
+playwright-report/
+coverage/
+
+# Development and debug files
+*debug*.md
+*DEBUG*.md
+*REPORT*.md
+*ANALYSIS*.md
+*.timestamp-*
+
+# Performance audit files
+performance-audit*.json
+performance-audit*.cjs
+
+# Temporary SQL files
+*-fix-only.sql
+demo-*.sql
+temp-*.sql
+
+# Build artifacts
+*.tsbuildinfo
+.turbo/
