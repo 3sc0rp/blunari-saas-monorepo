@@ -54,10 +54,9 @@ const BreadcrumbHeader: React.FC = () => {
 
   return (
     <div
-      className={`bg-gradient-to-r from-surface via-surface-2 to-surface border-b border-surface-2 w-full min-w-full ${
+      className={`bg-gradient-to-r from-surface via-surface-2 to-surface border-b border-surface-2 w-screen ${
         actualLayout === "sidebar" ? "px-6 py-6" : "px-4 py-4"
       }`}
-      style={{ width: '100vw', margin: 0, padding: `${actualLayout === "sidebar" ? "1.5rem" : "1rem"}` }}
     >
       <div
         className={`flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 ${isMobile ? "gap-2" : "gap-4"}`}
