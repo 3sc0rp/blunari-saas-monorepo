@@ -13,7 +13,7 @@ import {
   Shield,
   Building,
   ChefHat,
-  Puzzle,
+  Cog,
   Eye
 } from 'lucide-react';
 import {
@@ -58,8 +58,7 @@ const navigationItems = [
   {
     section: 'Tools',
     items: [
-      { title: 'Widget Preview', url: '/dashboard/widget-preview', icon: Eye },
-      { title: 'Widget Settings', url: '/dashboard/widget-settings', icon: Puzzle },
+      { title: 'Widget Management', url: '/dashboard/widget-management', icon: Cog },
     ]
   },
   {

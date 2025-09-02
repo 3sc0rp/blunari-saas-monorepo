@@ -16,7 +16,8 @@ import Dashboard from "./pages/Dashboard";
 import Bookings from "./pages/Bookings";
 import Customers from "./pages/Customers";
 import BookingWidget from "./pages/BookingWidget";
-import WidgetPreview from "./pages/WidgetPreview";
+import WidgetManagement from "./pages/WidgetManagement";
+import { ResponsiveDashboardSidebar } from './components/dashboard/ResponsiveDashboardSidebar';
 import POSIntegration from "./pages/POSIntegration";
 import Waitlist from "./pages/Waitlist";
 import Staff from "./pages/Staff";
@@ -69,7 +70,7 @@ const App = () => (
               } />
               <Route path="customers" element={<Customers />} />
               <Route path="widget-preview" element={<BookingWidget />} />
-              <Route path="widget-settings" element={<WidgetPreview />} />
+              <Route path="widget-management" element={<WidgetManagement />} />
               <Route path="pos-integrations" element={<POSIntegration />} />
               <Route path="waitlist" element={<Waitlist />} />
               <Route path="staff" element={<Staff />} />
