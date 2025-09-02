@@ -9,17 +9,24 @@
   ],
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --parallel",
+    "dev": "node dev.js",
+    "start:dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
     "test": "turbo run test",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "migrate:all": "turbo run migrate",
     "deploy:all": "turbo run deploy",
     "dev:background-ops": "turbo run dev --filter=background-ops",
     "dev:admin": "turbo run dev --filter=admin-dashboard",
-    "dev:client": "turbo run dev --filter=client-dashboard"
+    "dev:client": "turbo run dev --filter=client-dashboard",
+    "setup": "node dev.js setup",
+    "quality:check": "node dev.js quality:check",
+    "quality:fix": "node dev.js quality:fix",
+    "secrets:setup": "node scripts/setup-secrets.js"
   },
   "devDependencies": {
     "@turbo/gen": "^1.10.12",
