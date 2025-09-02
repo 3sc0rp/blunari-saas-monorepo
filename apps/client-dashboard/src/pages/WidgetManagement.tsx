@@ -245,9 +245,9 @@ const WidgetManagement: React.FC = () => {
 
   // Memoized computations
   const widgetUrls = useMemo(() => ({
-    booking: `${window.location.origin}/booking-widget/${tenant?.id || 'demo'}`,
-    catering: `${window.location.origin}/catering-widget/${tenant?.id || 'demo'}`
-  }), [tenant?.id]);
+    booking: `${window.location.origin}/book/${tenant?.slug || 'demo'}`,
+    catering: `${window.location.origin}/catering/${tenant?.slug || 'demo'}`
+  }), [tenant?.slug]);
 
   const currentUrl = widgetUrls[widgetType];
 

@@ -55,6 +55,7 @@ const App = () => (
             
             {/* Public booking widget routes */}
             <Route path="/book/:slug" element={<BookingPage />} />
+            <Route path="/catering/:slug" element={<BookingPage />} />
             
             <Route path="/dashboard" element={
               <ProtectedRoute>
