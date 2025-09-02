@@ -31,74 +31,39 @@ const DashboardLayout: React.FC = () => {
       {/* Global Status Strip */}
       <GlobalStatusStrip />
 
-      <SidebarProvider defaultOpen={shouldShowSidebar && !sidebarCollapsed}>
-        {/* Professional Layout Container */}
-        <div className="relative min-h-screen">
-          {/* Unified Header Strip with Glass Effect */}
-          <div className="sticky top-0 z-40 border-b border-surface-2/30 bg-surface">
-            <div className="flex w-full">
-              {/* Responsive Sidebar - Enhanced Integration */}
-              {shouldShowSidebar && (
-                <div className="flex-shrink-0">
-                  <ResponsiveDashboardSidebar />
-                </div>
-              )}
+      <SidebarProvider defaultOpen={true}>
+        <ResponsiveDashboardSidebar />
 
-              <div className="flex-1 flex flex-col min-w-0">
-                {/* Seamless Header Strip */}
-                <header
-                  role="banner"
-                  className="h-[64px] flex items-center w-full min-w-0"
-                >
-                  <div className="flex items-center w-full h-full">
-                    {shouldShowSidebar && (
-                      <div className="flex items-center pl-3 lg:hidden">
-                        <SidebarTrigger className="h-8 w-8" />
-                      </div>
-                    )}
-                    <div className="flex-1 h-full flex items-center">
-                      <BreadcrumbHeader />
-                    </div>
-                  </div>
-                </header>
-              </div>
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Header */}
+          <header className="sticky top-0 z-40 border-b border-surface-2/30 bg-surface h-[64px] flex items-center px-4">
+            <div className="flex items-center mr-4">
+              <SidebarTrigger className="h-8 w-8" />
             </div>
-          </div>
+            <div className="flex-1">
+              <BreadcrumbHeader />
+            </div>
+          </header>
 
-          {/* Main Content Area with Professional Layout */}
-          <div className="flex min-h-[calc(100vh-64px)]">
-            {/* Enhanced Main Content - Fixed positioning issues */}
-            <main
-              id="main-content"
-              role="main" 
-              className="flex-1 relative w-full overflow-x-hidden"
-              style={{
-                minHeight: 'calc(100vh - 64px)',
-                // Remove fixed margin, let CSS classes handle responsive spacing
-                paddingBottom: shouldShowBottomNav ? '80px' : '0',
-              }}
+          {/* Main Content */}
+          <main
+            id="main-content"
+            role="main" 
+            className="flex-1 p-6 overflow-auto"
+            style={{ paddingBottom: shouldShowBottomNav ? '80px' : '0' }}
+          >
+            <motion.div
+              initial={prefersReducedMotion || isSSR ? false : { opacity: 0, y: 10 }}
+              animate={prefersReducedMotion || isSSR ? false : { opacity: 1, y: 0 }}
+              transition={prefersReducedMotion || isSSR ? { duration: 0 } : { duration: 0.3, ease: 'easeOut' }}
+              className="w-full h-full"
             >
-              {/* Content Container with proper spacing and no content hiding */}
-              <motion.div
-                initial={prefersReducedMotion || isSSR ? false : { opacity: 0, y: 10 }}
-                animate={prefersReducedMotion || isSSR ? false : { opacity: 1, y: 0 }}
-                transition={prefersReducedMotion || isSSR ? { duration: 0 } : { duration: 0.3, ease: 'easeOut' }}
-                className="w-full h-full"
-                style={{ 
-                  padding: 'var(--content-padding, 1.5rem)',
-                  minHeight: 'calc(100vh - 64px)',
-                }}
-              >
-                {/* Ensure content is never hidden */}
-                <div className="w-full max-w-none relative">
-                  <Outlet />
-                </div>
-              </motion.div>
-            </main>
-          </div>
+              <Outlet />
+            </motion.div>
+          </main>
         </div>
 
-        {/* Enhanced Bottom Navigation for Mobile */}
+        {/* Bottom Navigation for Mobile */}
         {shouldShowBottomNav && (
           <nav 
             role="navigation" 
