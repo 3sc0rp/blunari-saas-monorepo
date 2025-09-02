@@ -19,6 +19,10 @@ const DashboardLayout: React.FC = () => {
   const shouldShowSidebar = !isMobile;
   const shouldShowBottomNav = isMobile || actualLayout === "bottom";
 
+  // Check for reduced motion preference
+  const prefersReducedMotion = typeof window !== 'undefined' ? 
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Accessibility: Skip to main content */}
@@ -76,21 +80,14 @@ const DashboardLayout: React.FC = () => {
               role="main"
               className={`flex-1 relative min-h-screen ${getLayoutClasses().main}`}
             >
-              {/* Content Container with Professional Animation */}
+              {/* Content Container with subtle animation */}
               <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.4,
-                  ease: [0.4, 0, 0.2, 1],
-                }}
+                initial={prefersReducedMotion ? false : { opacity: 0 }}
+                animate={prefersReducedMotion ? false : { opacity: 1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
                 className={`relative z-10 w-full ${getLayoutClasses().container}`}
                 style={{ minHeight: "100vh" }}
               >
-                {/* Debug: Layout content indicator */}
-                <div className="p-2 bg-yellow-100 text-yellow-900 rounded border mb-2">
-                  <span className="text-sm font-bold">Layout Debug: Content should render below</span>
-                </div>
                 <div className="w-full">
                   <Outlet />
                 </div>

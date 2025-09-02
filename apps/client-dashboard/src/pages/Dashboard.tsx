@@ -32,25 +32,19 @@ const Dashboard: React.FC = () => {
   );
   const { alerts, dismissAlert, clearAllAlerts } = useAlertSystem(tenant?.id);
 
+  // Check for reduced motion preference
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   // Debug: Log rendering status
   console.log("Dashboard rendering:", { tenant, accessType, tenantSlug, isLoading });
 
   return (
     <div className="space-y-6 w-full min-h-screen">
-      {/* Debug: Visible content indicator */}
-      <div className="p-4 bg-green-100 text-green-900 rounded-lg border-2 border-green-200 mb-4">
-        <h2 className="text-xl font-bold">Dashboard Debug</h2>
-        <p>Tenant: {tenant?.name || 'Loading...'}</p>
-        <p>Access Type: {accessType}</p>
-        <p>Loading: {isLoading ? 'Yes' : 'No'}</p>
-        <p>Current Time: {new Date().toLocaleString()}</p>
-      </div>
-
       {/* Tenant Access Information */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4 }}
+        initial={prefersReducedMotion ? false : { opacity: 0 }}
+        animate={prefersReducedMotion ? false : { opacity: 1 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.3 }}
       >
         <TenantAccessDisplay
           accessType={accessType as "domain" | "user"}
@@ -61,9 +55,9 @@ const Dashboard: React.FC = () => {
 
       {/* Enhanced Welcome Section with Professional Styling */}
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+        initial={prefersReducedMotion ? false : { opacity: 0 }}
+        animate={prefersReducedMotion ? false : { opacity: 1 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.4 }}
         className="relative overflow-hidden bg-gradient-to-br from-brand via-brand/95 to-brand/90 rounded-2xl p-8 text-brand-foreground shadow-xl backdrop-blur-sm border border-brand/20"
       >
         {/* Professional Background Pattern */}
@@ -76,9 +70,9 @@ const Dashboard: React.FC = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="space-y-3">
               <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
+                initial={prefersReducedMotion ? false : { opacity: 0 }}
+                animate={prefersReducedMotion ? false : { opacity: 1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.1, duration: 0.3 }}
               >
                 <h1 className="text-4xl lg:text-5xl font-bold mb-2 bg-gradient-to-r from-brand-foreground via-brand-foreground to-brand-foreground/90 bg-clip-text text-transparent">
                   Good{" "}
@@ -91,9 +85,9 @@ const Dashboard: React.FC = () => {
                 </h1>
               </motion.div>
               <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
+                initial={prefersReducedMotion ? false : { opacity: 0 }}
+                animate={prefersReducedMotion ? false : { opacity: 1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.2, duration: 0.3 }}
               >
                 <p className="text-brand-foreground/90 text-lg leading-relaxed">
                   Here's what's happening at{" "}
@@ -107,9 +101,9 @@ const Dashboard: React.FC = () => {
             
             {/* Enhanced Status Indicators */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
+              initial={prefersReducedMotion ? false : { opacity: 0 }}
+              animate={prefersReducedMotion ? false : { opacity: 1 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3, duration: 0.3 }}
               className="flex flex-col sm:flex-row gap-4 items-start sm:items-center"
             >
               <div className="bg-brand-foreground/20 backdrop-blur-sm rounded-xl p-4 border border-brand-foreground/30">
@@ -140,11 +134,11 @@ const Dashboard: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Enhanced Key Metrics with Staggered Animation */}
+      {/* Enhanced Key Metrics with subtle animation */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
+        initial={prefersReducedMotion ? false : { opacity: 0 }}
+        animate={prefersReducedMotion ? false : { opacity: 1 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.3, delay: 0.1 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
       >
         {[
@@ -195,9 +189,9 @@ const Dashboard: React.FC = () => {
         ].map((metric, index) => (
           <motion.div
             key={metric.title}
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 20, scale: 0.9 }}
+            animate={prefersReducedMotion ? false : { opacity: 1, y: 0, scale: 1 }}
+            transition={prefersReducedMotion ? { duration: 0 } : {
               duration: 0.5,
               delay: metric.delay,
               type: "spring",
@@ -211,9 +205,9 @@ const Dashboard: React.FC = () => {
 
       {/* Enhanced Performance Trends Chart */}
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.6 }}
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
+        animate={prefersReducedMotion ? false : { opacity: 1, y: 0 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.7, delay: 0.6 }}
         className="relative"
       >
         <div className="absolute inset-0 bg-gradient-subtle rounded-2xl opacity-50 blur-sm"></div>
@@ -229,9 +223,9 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Today's Bookings with Enhanced Animation */}
         <motion.div
-          initial={{ opacity: 0, x: -40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{
+          initial={prefersReducedMotion ? false : { opacity: 0, x: -40 }}
+          animate={prefersReducedMotion ? false : { opacity: 1, x: 0 }}
+          transition={prefersReducedMotion ? { duration: 0 } : {
             duration: 0.6,
             delay: 0.8,
             type: "spring",
@@ -246,9 +240,9 @@ const Dashboard: React.FC = () => {
 
         {/* Enhanced Alerts and Quick Actions */}
         <motion.div
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{
+          initial={prefersReducedMotion ? false : { opacity: 0, x: 40 }}
+          animate={prefersReducedMotion ? false : { opacity: 1, x: 0 }}
+          transition={prefersReducedMotion ? { duration: 0 } : {
             duration: 0.6,
             delay: 0.9,
             type: "spring",
@@ -271,9 +265,9 @@ const Dashboard: React.FC = () => {
 
       {/* Enhanced Table Status */}
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
+        animate={prefersReducedMotion ? false : { opacity: 1, y: 0 }}
+        transition={prefersReducedMotion ? { duration: 0 } : {
           duration: 0.6,
           delay: 1.0,
           type: "spring",
@@ -289,9 +283,9 @@ const Dashboard: React.FC = () => {
       {(import.meta.env.MODE === 'development' || window.location.hostname === 'localhost') && (
         <>
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
+            animate={prefersReducedMotion ? false : { opacity: 1, y: 0 }}
+            transition={prefersReducedMotion ? { duration: 0 } : {
               duration: 0.6,
               delay: 1.2,
               type: "spring",
@@ -302,9 +296,9 @@ const Dashboard: React.FC = () => {
           </motion.div>
           
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
+            animate={prefersReducedMotion ? false : { opacity: 1, y: 0 }}
+            transition={prefersReducedMotion ? { duration: 0 } : {
               duration: 0.6,
               delay: 1.4,
               type: "spring",

@@ -86,7 +86,7 @@ export const useResponsiveLayout = () => {
     if (isTablet) {
       return {
         ...baseClasses,
-        container: "px-6 py-6 max-w-6xl mx-auto space-y-6 page-padding motion-reduce:transform-none",
+        container: "px-6 py-6 w-full space-y-6",
         grid: "grid-cols-1 md:grid-cols-2 gap-6",
         content: "space-y-6",
         padding: "p-6",
@@ -97,7 +97,7 @@ export const useResponsiveLayout = () => {
     if (isLargeDesktop) {
       return {
         ...baseClasses,
-        container: "px-8 py-8 max-w-8xl mx-auto space-y-8 page-padding motion-reduce:transform-none",
+        container: "px-8 py-8 w-full space-y-8",
         grid: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8",
         content: "space-y-8",
         padding: "p-8",
@@ -105,10 +105,10 @@ export const useResponsiveLayout = () => {
       };
     }
 
-    // Default desktop
+    // Default desktop - simplified for better visibility
     return {
       ...baseClasses,
-      container: "px-6 py-6 max-w-7xl mx-auto space-y-6 page-padding motion-reduce:transform-none",
+      container: "px-6 py-6 w-full space-y-6",
       grid: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
       content: "space-y-6",
       padding: "p-6",
