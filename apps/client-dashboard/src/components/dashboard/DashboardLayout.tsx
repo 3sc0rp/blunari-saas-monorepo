@@ -8,15 +8,13 @@ import BreadcrumbHeader from "./BreadcrumbHeader";
 import GlobalStatusStrip from "./GlobalStatusStrip";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const DashboardLayout: React.FC = () => {
   const { actualLayout } = useNavigation();
-  const { getLayoutClasses } = useResponsiveLayout();
-  const isMobile = useIsMobile();
+  const { getLayoutClasses, isMobile, isDesktop, sidebarCollapsed, isSSR } = useResponsiveLayout();
 
   // Use sidebar for desktop, bottom navigation for mobile
-  const shouldShowSidebar = !isMobile;
+  const shouldShowSidebar = isDesktop;
   const shouldShowBottomNav = isMobile || actualLayout === "bottom";
 
   // Check for reduced motion preference
@@ -24,7 +22,7 @@ const DashboardLayout: React.FC = () => {
     window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className={getLayoutClasses()}>
       {/* Accessibility: Skip to main content */}
       <a href="#main-content" className="skip-to-main">
         Skip to main content
@@ -33,7 +31,7 @@ const DashboardLayout: React.FC = () => {
       {/* Global Status Strip */}
       <GlobalStatusStrip />
 
-      <SidebarProvider defaultOpen={shouldShowSidebar}>
+      <SidebarProvider defaultOpen={shouldShowSidebar && !sidebarCollapsed}>
         {/* Professional Layout Container */}
         <div className="relative min-h-screen">
           {/* Unified Header Strip with Glass Effect */}
@@ -69,22 +67,32 @@ const DashboardLayout: React.FC = () => {
 
           {/* Main Content Area with Professional Layout */}
           <div className="flex min-h-[calc(100vh-64px)]">
-            {/* Enhanced Main Content */}
+            {/* Enhanced Main Content - Fixed positioning issues */}
             <main
               id="main-content"
               role="main" 
-              className={`w-full relative min-h-screen ${getLayoutClasses().main}`}
-              style={{ marginLeft: shouldShowSidebar ? "280px" : "0" }}
+              className="flex-1 relative w-full overflow-x-hidden"
+              style={{
+                minHeight: 'calc(100vh - 64px)',
+                // Remove fixed margin, let CSS classes handle responsive spacing
+                paddingBottom: shouldShowBottomNav ? '80px' : '0',
+              }}
             >
-              {/* Content Container with subtle animation */}
+              {/* Content Container with proper spacing and no content hiding */}
               <motion.div
-                initial={prefersReducedMotion ? false : { opacity: 0 }}
-                animate={prefersReducedMotion ? false : { opacity: 1 }}
-                transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
-                className="w-full p-6"
-                style={{ minHeight: "100vh" }}
+                initial={prefersReducedMotion || isSSR ? false : { opacity: 0, y: 10 }}
+                animate={prefersReducedMotion || isSSR ? false : { opacity: 1, y: 0 }}
+                transition={prefersReducedMotion || isSSR ? { duration: 0 } : { duration: 0.3, ease: 'easeOut' }}
+                className="w-full h-full"
+                style={{ 
+                  padding: 'var(--content-padding, 1.5rem)',
+                  minHeight: 'calc(100vh - 64px)',
+                }}
               >
-                <Outlet />
+                {/* Ensure content is never hidden */}
+                <div className="w-full max-w-none relative">
+                  <Outlet />
+                </div>
               </motion.div>
             </main>
           </div>

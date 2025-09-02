@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import { NavigationContext, NavigationContextType } from '@/contexts/NavigationContext';
 
 export interface ResponsiveLayout {
@@ -13,80 +13,158 @@ export interface ResponsiveLayout {
     width: number;
     height: number;
   };
+  isSSR: boolean; // Add flag to detect server-side rendering
 }
 
-// Breakpoint constants
-const MOBILE_BREAKPOINT = 768;
-const TABLET_BREAKPOINT = 1024;
+// Breakpoint constants - made configurable for better maintainability
+const BREAKPOINTS = {
+  MOBILE: 768,
+  TABLET: 1024,
+  DESKTOP: 1280,
+} as const;
+
+// Debounce utility to prevent excessive resize events
+const debounce = <T extends (...args: unknown[]) => void>(func: T, delay: number): ((...args: Parameters<T>) => void) => {
+  let timeoutId: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
 
 export const useResponsiveLayout = (): ResponsiveLayout => {
   // Use context directly to avoid throwing errors when provider is missing
   const navigation: NavigationContextType | undefined = useContext(NavigationContext);
   
-  // Always call all hooks at the top level
-  const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
+  // State with better initial values to prevent hydration mismatch
+  const [screenSize, setScreenSize] = useState<{ width: number; height: number }>({ width: 1024, height: 768 }); // Default to desktop-like dimensions
   const [isClient, setIsClient] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // Default to collapsed for better UX
+  const [isSSR, setIsSSR] = useState(true);
 
-  // Handle client-side hydration
+  // Memoized breakpoint calculations to prevent unnecessary re-computations
+  const breakpointValues = useMemo(() => {
+    // During SSR or before client hydration, default to desktop to prevent layout shift
+    if (!isClient || isSSR) {
+      return {
+        isMobile: false,
+        isTablet: false,
+        isDesktop: true,
+      };
+    }
+
+    const isMobile = screenSize.width < BREAKPOINTS.MOBILE;
+    const isTablet = screenSize.width >= BREAKPOINTS.MOBILE && screenSize.width < BREAKPOINTS.TABLET;
+    const isDesktop = screenSize.width >= BREAKPOINTS.TABLET;
+
+    return { isMobile, isTablet, isDesktop };
+  }, [screenSize.width, isClient, isSSR]);
+
+  // Debounced resize handler to improve performance
+  const debouncedUpdateScreenSize = useMemo(
+    () => debounce(() => {
+      if (typeof window !== 'undefined') {
+        setScreenSize({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+      }
+    }, 100), // 100ms debounce
+    []
+  );
+
+  // Handle client-side hydration and window events
   useEffect(() => {
+    // Ensure we're on the client side
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    // Set client flag and initial screen size
     setIsClient(true);
+    setIsSSR(false);
     
-    const updateScreenSize = () => {
-      setScreenSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
+    // Set initial size immediately
+    setScreenSize({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
 
-    // Set initial size
-    updateScreenSize();
-
-    // Add event listener with proper cleanup
-    window.addEventListener('resize', updateScreenSize);
+    // Add resize event listener with debouncing
+    window.addEventListener('resize', debouncedUpdateScreenSize, { passive: true });
     
+    // Cleanup function
     return () => {
-      window.removeEventListener('resize', updateScreenSize);
+      window.removeEventListener('resize', debouncedUpdateScreenSize);
     };
-  }, []);
+  }, [debouncedUpdateScreenSize]);
 
-  // Calculate breakpoints based on actual screen size
-  const isMobile = isClient ? screenSize.width < MOBILE_BREAKPOINT : false;
-  const isTablet = isClient ? screenSize.width >= MOBILE_BREAKPOINT && screenSize.width < TABLET_BREAKPOINT : false;
-  const isDesktop = isClient ? screenSize.width >= TABLET_BREAKPOINT : true; // Default to desktop for SSR
-
-  // Update sidebar state based on navigation context and screen size
+  // Update sidebar state based on navigation context and screen size with proper dependencies
   useEffect(() => {
-    if (navigation?.actualLayout === 'sidebar' && !isMobile) {
+    // Don't update during SSR
+    if (isSSR) return;
+
+    const { isMobile } = breakpointValues;
+    const actualLayout = navigation?.actualLayout || 'bottom';
+
+    if (actualLayout === 'sidebar' && !isMobile) {
       setSidebarCollapsed(false);
     } else {
       setSidebarCollapsed(true);
     }
-  }, [navigation?.actualLayout, isMobile]);
+  }, [navigation?.actualLayout, breakpointValues, isSSR]);
 
-  const toggleSidebar = () => {
+  // Memoized toggle function to prevent unnecessary re-renders
+  const toggleSidebar = useCallback(() => {
     setSidebarCollapsed(prev => !prev);
-  };
+  }, []);
 
-  const getLayoutClasses = () => {
-    const baseClasses = ["min-h-screen", "bg-background"];
+  // Optimized layout class generation with proper memoization
+  const getLayoutClasses = useCallback(() => {
+    const classes = ['min-h-screen', 'bg-background', 'transition-all', 'duration-300'];
+    
+    const { isMobile, isDesktop } = breakpointValues;
+    
+    // Add responsive classes
     if (isMobile) {
-      baseClasses.push("mobile-layout");
+      classes.push('mobile-layout');
+    } else if (isDesktop) {
+      classes.push('desktop-layout');
     }
+    
+    // Add sidebar state classes
     if (isDesktop && !sidebarCollapsed) {
-      baseClasses.push("sidebar-open");
+      classes.push('sidebar-open');
+    } else {
+      classes.push('sidebar-closed');
     }
-    return baseClasses.join(" ");
-  };
 
-  return {
-    isMobile,
-    isTablet,
-    isDesktop,
+    // Add SSR safety class
+    if (isSSR) {
+      classes.push('ssr-safe');
+    }
+    
+    return classes.join(' ');
+  }, [breakpointValues, sidebarCollapsed, isSSR]);
+
+  // Return memoized values to prevent unnecessary re-renders in consuming components
+  return useMemo(() => ({
+    isMobile: breakpointValues.isMobile,
+    isTablet: breakpointValues.isTablet,
+    isDesktop: breakpointValues.isDesktop,
     sidebarCollapsed,
     toggleSidebar,
     actualLayout: navigation?.actualLayout || "bottom",
     getLayoutClasses,
     screenSize,
-  };
+    isSSR,
+  }), [
+    breakpointValues,
+    sidebarCollapsed,
+    toggleSidebar,
+    navigation?.actualLayout,
+    getLayoutClasses,
+    screenSize,
+    isSSR,
+  ]);
 };
