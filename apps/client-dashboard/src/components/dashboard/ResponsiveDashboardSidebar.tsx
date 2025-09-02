@@ -14,6 +14,13 @@ import {
   ChefHat,
   Cog,
   Eye,
+  Monitor,
+  Command,
+  MapPin,
+  Clock,
+  TrendingUp,
+  FileText,
+  Settings2
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,8 +35,29 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { useTenant } from "@/hooks/useTenant";
+import { useUIMode } from "@/lib/ui-mode";
+import { ModeSwitch } from "@/components/ModeSwitch";
 
-const navigationItems = [
+// Mode-aware navigation items
+const operationsNavigation = [
+  {
+    section: "Command Center",
+    items: [
+      { title: "Command Center", url: "/dashboard/command-center", icon: Monitor },
+      { title: "Live Floor", url: "/dashboard/tables", icon: MapPin },
+      { title: "Timeline", url: "/dashboard/bookings", icon: Clock },
+    ],
+  },
+  {
+    section: "Service",
+    items: [
+      { title: "Waitlist", url: "/dashboard/waitlist", icon: UserCheck },
+      { title: "Messages", url: "/dashboard/messages", icon: MessageSquare },
+    ],
+  },
+];
+
+const managementNavigation = [
   {
     section: "Overview",
     items: [
@@ -81,11 +109,18 @@ export function ResponsiveDashboardSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const { tenant } = useTenant();
+  const { mode } = useUIMode();
   const currentPath = location.pathname;
+
+  // Select navigation based on current UI mode
+  const navigationItems = mode === "operations" ? operationsNavigation : managementNavigation;
 
   const isActive = (path: string) => {
     if (path === "/dashboard") {
       return currentPath === "/dashboard";
+    }
+    if (path === "/dashboard/command-center") {
+      return currentPath === "/dashboard/command-center";
     }
     return currentPath.startsWith(path);
   };
@@ -116,12 +151,21 @@ export function ResponsiveDashboardSidebar() {
                   {tenant?.name || "Restaurant"}
                 </h2>
                 <p className="text-xs text-text-muted truncate opacity-75 leading-tight">
-                  Management Portal
+                  {mode === "operations" ? "Operations Center" : "Management Portal"}
                 </p>
               </div>
             )}
           </div>
         </div>
+
+        {/* Mode Switch - Only show when not collapsed */}
+        {!collapsed && (
+          <div className="px-4 pb-4">
+            <div className="bg-surface-2/20 backdrop-blur-sm rounded-lg p-3 border border-surface-2/30">
+              <ModeSwitch />
+            </div>
+          </div>
+        )}
 
         {/* Professional Navigation Sections */}
         <div className="flex-1 px-4 py-2 space-y-8 relative">

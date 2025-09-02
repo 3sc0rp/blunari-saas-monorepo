@@ -7,12 +7,15 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantBrandingProvider } from "@/contexts/TenantBrandingContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ModeProvider } from "@/lib/ui-mode";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import LandingMiddleware from "@/components/LandingMiddleware";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import StaffInvitation from "./pages/StaffInvitation";
 import Dashboard from "./pages/Dashboard";
+import CommandCenter from "./pages/CommandCenter";
 import Bookings from "./pages/Bookings";
 import Customers from "./pages/Customers";
 import BookingWidget from "./pages/BookingWidget";
@@ -42,80 +45,90 @@ const App = () => (
     <ThemeProvider>
       <AuthProvider>
         <TenantBrandingProvider>
-          <NavigationProvider>
-            <TooltipProvider>
-              <DesignQAProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
-                    {/* Debug route for development */}
-                    {import.meta.env.MODE === 'development' && (
-                      <Route path="/debug-tenant" element={<DebugTenantPage />} />
-                    )}
-                    <Route
-                      path="/staff-invitation"
-                      element={<StaffInvitation />}
-                    />
+          <ModeProvider>
+            <NavigationProvider>
+              <TooltipProvider>
+                <DesignQAProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/auth" element={<Auth />} />
+                      {/* Debug route for development */}
+                      {import.meta.env.MODE === 'development' && (
+                        <Route path="/debug-tenant" element={<DebugTenantPage />} />
+                      )}
+                      <Route
+                        path="/staff-invitation"
+                        element={<StaffInvitation />}
+                      />
 
-                    {/* Public booking widget routes */}
-                    <Route path="/book/:slug" element={<BookingPage />} />
-                    <Route path="/catering/:slug" element={<BookingPage />} />
+                      {/* Public booking widget routes */}
+                      <Route path="/book/:slug" element={<BookingPage />} />
+                      <Route path="/catering/:slug" element={<BookingPage />} />
 
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <ProtectedRoute>
-                          <DashboardLayout />
-                        </ProtectedRoute>
-                      }
-                    >
-                      <Route index element={<Dashboard />} />
-                      <Route path="bookings" element={<Bookings />} />
                       <Route
-                        path="tables"
+                        path="/dashboard"
                         element={
-                          <Suspense fallback={<SkeletonPage />}>
-                            <Tables />
-                          </Suspense>
+                          <ProtectedRoute>
+                            <DashboardLayout />
+                          </ProtectedRoute>
                         }
-                      />
-                      <Route path="customers" element={<Customers />} />
-                      <Route
-                        path="widget-preview"
-                        element={<BookingWidget />}
-                      />
-                      <Route
-                        path="widget-management"
-                        element={<WidgetManagement />}
-                      />
-                      <Route
-                        path="pos-integrations"
-                        element={<POSIntegration />}
-                      />
-                      <Route path="waitlist" element={<Waitlist />} />
-                      <Route path="staff" element={<Staff />} />
-                      <Route path="messages" element={<Messages />} />
-                      <Route
-                        path="analytics"
-                        element={
-                          <Suspense fallback={<SkeletonPage />}>
-                            <Analytics />
-                          </Suspense>
-                        }
-                      />
-                      <Route path="catering" element={<Catering />} />
-                      <Route path="settings" element={<Settings />} />
-                    </Route>
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
-              </DesignQAProvider>
-            </TooltipProvider>
-          </NavigationProvider>
+                      >
+                        <Route 
+                          index 
+                          element={
+                            <LandingMiddleware>
+                              <Dashboard />
+                            </LandingMiddleware>
+                          } 
+                        />
+                        <Route path="command-center" element={<CommandCenter />} />
+                        <Route path="bookings" element={<Bookings />} />
+                        <Route
+                          path="tables"
+                          element={
+                            <Suspense fallback={<SkeletonPage />}>
+                              <Tables />
+                            </Suspense>
+                          }
+                        />
+                        <Route path="customers" element={<Customers />} />
+                        <Route
+                          path="widget-preview"
+                          element={<BookingWidget />}
+                        />
+                        <Route
+                          path="widget-management"
+                          element={<WidgetManagement />}
+                        />
+                        <Route
+                          path="pos-integrations"
+                          element={<POSIntegration />}
+                        />
+                        <Route path="waitlist" element={<Waitlist />} />
+                        <Route path="staff" element={<Staff />} />
+                        <Route path="messages" element={<Messages />} />
+                        <Route
+                          path="analytics"
+                          element={
+                            <Suspense fallback={<SkeletonPage />}>
+                              <Analytics />
+                            </Suspense>
+                          }
+                        />
+                        <Route path="catering" element={<Catering />} />
+                        <Route path="settings" element={<Settings />} />
+                      </Route>
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </BrowserRouter>
+                </DesignQAProvider>
+              </TooltipProvider>
+            </NavigationProvider>
+          </ModeProvider>
         </TenantBrandingProvider>
       </AuthProvider>
     </ThemeProvider>
