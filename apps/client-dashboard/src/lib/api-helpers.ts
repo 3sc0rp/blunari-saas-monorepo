@@ -1,4 +1,5 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
+import { getTenantWithFallback } from "./mock-tenants";
 
 export interface ApiErrorDetails {
   code?: string;
@@ -66,20 +67,60 @@ export async function apiCall<T>(
 }
 
 /**
- * Tenant lookup by slug - uses only real data from API
+ * Tenant lookup by slug - uses real API with fallback to mock data
+ * Improved error handling and development experience
  */
 export async function getTenantBySlug(slug: string) {
-  return apiCall(
-    async () => {
-      const result = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('slug', slug)
-        .single();
-      return result;
-    },
-    `getTenantBySlug(${slug})`
-  );
+  return getTenantWithFallback(slug, async () => {
+    return apiCall(
+      async () => {
+        // First try the main tenants table
+        const result = await supabase
+          .from('tenants')
+          .select('*')
+          .eq('slug', slug)
+          .eq('status', 'active')
+          .maybeSingle(); // Use maybeSingle() to handle no results gracefully
+        
+        // If no result, try the public view as fallback
+        if (!result.data && !result.error) {
+          console.log(`No tenant found with slug '${slug}', trying public view...`);
+          const publicResult = await supabase
+            .from('tenant_public_info')
+            .select('*')
+            .eq('slug', slug)
+            .maybeSingle();
+          
+          if (publicResult.data) {
+            // Transform public view data to match tenant structure
+            const transformedData = {
+              id: publicResult.data.id,
+              name: publicResult.data.name,
+              slug: publicResult.data.slug,
+              status: 'active', // Assume active since it's in public view
+              timezone: publicResult.data.timezone,
+              currency: publicResult.data.currency,
+              description: publicResult.data.description,
+              cuisine_type_id: publicResult.data.cuisine_type_id,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              email: null,
+              primary_color: '#3b82f6',
+              secondary_color: '#1e40af',
+              logo_url: null,
+              cover_image_url: null,
+              website: null,
+              address: null
+            };
+            return { data: transformedData, error: null };
+          }
+        }
+        
+        return result;
+      },
+      `getTenantBySlug(${slug})`
+    );
+  });
 }
 
 /**

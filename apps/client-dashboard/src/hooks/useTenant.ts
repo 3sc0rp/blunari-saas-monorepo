@@ -61,13 +61,14 @@ export const useTenant = () => {
       
       if (error) {
         console.error(`Tenant lookup failed for "${tenantSlug}":`, error);
-        throw new Error(`Failed to load tenant: ${error.message}`);
+        // Don't throw error, just return null to allow fallback
+        return null;
       }
 
       return data as Tenant | null;
     },
     enabled: !!tenantSlug,
-    retry: 1,
+    retry: 2, // Increased retry attempts
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });

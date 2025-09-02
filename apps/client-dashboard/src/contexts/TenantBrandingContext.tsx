@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useTenant } from "@/hooks/useTenant";
+import TenantLoadingFallback from "@/components/TenantLoadingFallback";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface TenantBranding {
   logoUrl: string;
@@ -60,11 +62,43 @@ const hexToHsl = (hex: string): string => {
 export const TenantBrandingProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  const { tenant } = useTenant();
+  const { tenant, tenantSlug, isLoading, error } = useTenant();
+  const queryClient = useQueryClient();
   const [branding, setBranding] = useState<TenantBranding>({
     logoUrl: "/logo.png",
     restaurantName: "Blunari",
   });
+
+  // Handle loading and error states
+  const handleRetry = () => {
+    // Invalidate the tenant queries to force a refetch
+    queryClient.invalidateQueries({ queryKey: ["tenant-by-domain"] });
+    queryClient.invalidateQueries({ queryKey: ["tenant-by-user"] });
+  };
+
+  // Show fallback if we're trying to load a tenant but failing
+  if (tenantSlug && !tenant && (isLoading || error)) {
+    // Don't show fallback immediately, give it a moment to load
+    if (isLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        </div>
+      );
+    }
+    
+    // Show fallback if there's an error
+    if (error) {
+      return (
+        <TenantLoadingFallback
+          tenantSlug={tenantSlug}
+          error={error}
+          onRetry={handleRetry}
+          isLoading={false}
+        />
+      );
+    }
+  }
 
   // Update branding when tenant data changes
   useEffect(() => {
