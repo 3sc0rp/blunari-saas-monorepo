@@ -182,39 +182,59 @@ const InterfaceSettings: React.FC = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Button
                 variant={theme === "light" ? "default" : "outline"}
                 onClick={() => setTheme("light")}
-                className="flex-1 flex items-center gap-2 h-12"
+                className="flex-1 flex items-center gap-3 h-16 relative overflow-hidden"
               >
-                <Sun className="h-4 w-4" />
-                <span className="flex flex-col items-start">
-                  <span className="font-medium">Light</span>
-                  <span className="text-xs opacity-75">Clean & bright</span>
-                </span>
+                {/* Color Preview */}
+                <div className="absolute inset-0 bg-gradient-to-r from-white via-blue-50 to-purple-50 opacity-50" />
+                <div className="relative z-10 flex items-center gap-3">
+                  <div className="p-2 bg-blue-500 text-white rounded-lg">
+                    <Sun className="h-4 w-4" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold text-gray-900">Light</span>
+                    <span className="text-xs text-gray-600">Clean & bright</span>
+                  </div>
+                </div>
               </Button>
+              
               <Button
                 variant={theme === "dark" ? "default" : "outline"}
                 onClick={() => setTheme("dark")}
-                className="flex-1 flex items-center gap-2 h-12"
+                className="flex-1 flex items-center gap-3 h-16 relative overflow-hidden"
               >
-                <Moon className="h-4 w-4" />
-                <span className="flex flex-col items-start">
-                  <span className="font-medium">Dark</span>
-                  <span className="text-xs opacity-75">Easy on eyes</span>
-                </span>
+                {/* Color Preview */}
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-slate-800 to-blue-900 opacity-80" />
+                <div className="relative z-10 flex items-center gap-3">
+                  <div className="p-2 bg-blue-400 text-white rounded-lg">
+                    <Moon className="h-4 w-4" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold text-white">Dark</span>
+                    <span className="text-xs text-gray-300">Easy on eyes</span>
+                  </div>
+                </div>
               </Button>
+              
               <Button
                 variant={theme === "deep-sea" ? "default" : "outline"}
                 onClick={() => setTheme("deep-sea")}
-                className="flex-1 flex items-center gap-2 h-12"
+                className="flex-1 flex items-center gap-3 h-16 relative overflow-hidden"
               >
-                <Waves className="h-4 w-4" />
-                <span className="flex flex-col items-start">
-                  <span className="font-medium">Deep Sea</span>
-                  <span className="text-xs opacity-75">Ocean vibes</span>
-                </span>
+                {/* Color Preview */}
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-900 via-teal-800 to-emerald-800 opacity-90" />
+                <div className="relative z-10 flex items-center gap-3">
+                  <div className="p-2 bg-cyan-400 text-white rounded-lg">
+                    <Waves className="h-4 w-4" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold text-cyan-100">Deep Sea</span>
+                    <span className="text-xs text-cyan-200">Ocean vibes</span>
+                  </div>
+                </div>
               </Button>
             </div>
           </div>

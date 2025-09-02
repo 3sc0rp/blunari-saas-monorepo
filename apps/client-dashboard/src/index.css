@@ -6,46 +6,46 @@
 
 @layer base {
   :root {
-    /* === DESIGN TOKENS === */
+    /* === ENHANCED LIGHT THEME === */
     
-    /* Brand Colors - Can be overridden by tenant branding */
-    --brand: 215 84% 25%;
-    --brand-foreground: 0 0% 98%;
+    /* Brand Colors - Modern vibrant blue */
+    --brand: 217 91% 60%;
+    --brand-foreground: 0 0% 100%;
     
-    /* Surface System */
+    /* Surface System - Clean whites with subtle warmth */
     --surface: 0 0% 100%;
-    --surface-2: 220 13% 96%;
-    --surface-3: 220 13% 91%;
+    --surface-2: 220 14% 98%;
+    --surface-3: 220 14% 95%;
     
-    /* Text System */
-    --text: 215 25% 12%;
+    /* Text System - Rich charcoal */
+    --text: 222 84% 5%;
     --text-muted: 215 16% 47%;
     --text-subtle: 215 13% 65%;
     
-    /* Semantic Colors */
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 98%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 215 25% 12%;
+    /* Semantic Colors - Vibrant and modern */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 95% 44%;
+    --warning-foreground: 0 0% 100%;
     --danger: 0 84% 60%;
-    --danger-foreground: 0 0% 98%;
+    --danger-foreground: 0 0% 100%;
     
-    /* Secondary & Accent */
-    --secondary: 42 87% 55%;
-    --secondary-foreground: 215 25% 12%;
-    --accent: 142 76% 36%;
-    --accent-foreground: 0 0% 98%;
+    /* Secondary & Accent - Premium colors */
+    --secondary: 262 83% 58%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
     
     /* Interactive Elements */
-    --ring: 215 84% 25%;
+    --ring: 217 91% 60%;
     
     /* Radius System */
     --radius: 0.5rem;
     
-    /* Shadow System */
-    --shadow-elev-1: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-elev-2: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-elev-3: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    /* Shadow System - Softer with color tint */
+    --shadow-elev-1: 0 1px 3px 0 rgb(59 130 246 / 0.08), 0 1px 2px -1px rgb(59 130 246 / 0.08);
+    --shadow-elev-2: 0 4px 6px -1px rgb(59 130 246 / 0.1), 0 2px 4px -2px rgb(59 130 246 / 0.1);
+    --shadow-elev-3: 0 10px 15px -3px rgb(59 130 246 / 0.1), 0 4px 6px -4px rgb(59 130 246 / 0.1);
     
     /* Motion System */
     --motion-fast: 150ms;
@@ -53,15 +53,15 @@
     --motion-slow: 350ms;
     --motion-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
     
-    /* Sidebar Variables - Light Mode */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar Variables - Enhanced Light Mode */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 84% 5%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 98%;
+    --sidebar-accent-foreground: 222 84% 5%;
+    --sidebar-border: 220 14% 91%;
+    --sidebar-ring: 217 91% 60%;
     
     /* Spacing Scale - Consistent 4/8/12/16px increments */
     --space-1: 0.25rem; /* 4px */
@@ -78,104 +78,104 @@
     --space-24: 6rem;   /* 96px */
   }
 
-  /* === DARK MODE THEME === */
+  /* === ENHANCED DARK THEME === */
   .dark,
   [data-theme="dark"] {
-    /* Brand Colors - Adjusted for dark mode */
-    --brand: 215 84% 45%;
-    --brand-foreground: 0 0% 98%;
+    /* Brand Colors - Vibrant electric blue */
+    --brand: 217 91% 65%;
+    --brand-foreground: 0 0% 100%;
     
-    /* Surface System - Dark backgrounds */
-    --surface: 215 28% 8%;
-    --surface-2: 215 28% 12%;
-    --surface-3: 215 28% 16%;
+    /* Surface System - Rich dark with subtle blue tint */
+    --surface: 222 84% 5%;
+    --surface-2: 222 47% 11%;
+    --surface-3: 222 47% 15%;
     
-    /* Text System - Light text on dark */
-    --text: 0 0% 98%;
+    /* Text System - Crisp whites */
+    --text: 0 0% 100%;
     --text-muted: 215 20% 65%;
     --text-subtle: 215 15% 50%;
     
-    /* Semantic Colors - Adjusted for dark mode */
+    /* Semantic Colors - Bright and clear */
     --success: 142 76% 55%;
-    --success-foreground: 0 0% 98%;
-    --warning: 38 92% 70%;
-    --warning-foreground: 215 25% 12%;
-    --danger: 0 84% 70%;
-    --danger-foreground: 0 0% 98%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 95% 55%;
+    --warning-foreground: 0 0% 100%;
+    --danger: 0 84% 65%;
+    --danger-foreground: 0 0% 100%;
     
-    /* Secondary & Accent - Dark mode variants */
-    --secondary: 42 87% 70%;
-    --secondary-foreground: 215 25% 12%;
+    /* Secondary & Accent - Electric purple and green */
+    --secondary: 262 83% 65%;
+    --secondary-foreground: 0 0% 100%;
     --accent: 142 76% 55%;
-    --accent-foreground: 0 0% 98%;
+    --accent-foreground: 0 0% 100%;
     
     /* Interactive Elements */
-    --ring: 215 84% 45%;
+    --ring: 217 91% 65%;
     
-    /* Shadow System - Darker shadows */
-    --shadow-elev-1: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
-    --shadow-elev-2: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-    --shadow-elev-3: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    /* Shadow System - Deep with blue tint */
+    --shadow-elev-1: 0 1px 3px 0 rgb(59 130 246 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.8);
+    --shadow-elev-2: 0 4px 6px -1px rgb(59 130 246 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.8);
+    --shadow-elev-3: 0 10px 15px -3px rgb(59 130 246 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.8);
     
-    /* Sidebar Variables - Dark Mode */
-    --sidebar-background: 220 13% 6%;
-    --sidebar-foreground: 220 13% 91%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 220 13% 9%;
-    --sidebar-accent: 220 13% 11%;
-    --sidebar-accent-foreground: 220 13% 91%;
-    --sidebar-border: 220 13% 11%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar Variables - Enhanced Dark Mode */
+    --sidebar-background: 222 84% 4%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 217 91% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 9%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 222 47% 11%;
+    --sidebar-ring: 217 91% 65%;
   }
 
-  /* === DEEP SEA GREEN THEME === */
+  /* === ENHANCED DEEP SEA GREEN THEME === */
   .deep-sea,
   [data-theme="deep-sea"] {
-    /* Brand Colors - Deep Sea Green palette */
-    --brand: 160 84% 25%;
-    --brand-foreground: 0 0% 98%;
+    /* Brand Colors - Vibrant ocean teal */
+    --brand: 174 72% 56%;
+    --brand-foreground: 0 0% 100%;
     
-    /* Surface System - Deep ocean tones */
-    --surface: 160 28% 8%;
-    --surface-2: 160 28% 12%;
-    --surface-3: 160 28% 16%;
+    /* Surface System - Rich deep ocean */
+    --surface: 195 100% 3%;
+    --surface-2: 194 100% 6%;
+    --surface-3: 193 100% 10%;
     
-    /* Text System - Light text with green tint */
-    --text: 160 15% 95%;
-    --text-muted: 160 20% 65%;
-    --text-subtle: 160 15% 50%;
+    /* Text System - Ocean foam whites */
+    --text: 180 25% 95%;
+    --text-muted: 174 20% 70%;
+    --text-subtle: 174 15% 55%;
     
-    /* Semantic Colors - Ocean inspired */
-    --success: 150 76% 45%;
-    --success-foreground: 0 0% 98%;
-    --warning: 45 92% 60%;
-    --warning-foreground: 160 25% 12%;
-    --danger: 10 84% 60%;
-    --danger-foreground: 0 0% 98%;
+    /* Semantic Colors - Marine life inspired */
+    --success: 158 64% 52%;
+    --success-foreground: 0 0% 100%;
+    --warning: 35 91% 65%;
+    --warning-foreground: 0 0% 100%;
+    --danger: 14 91% 65%;
+    --danger-foreground: 0 0% 100%;
     
-    /* Secondary & Accent - Teal and aqua tones */
-    --secondary: 180 87% 45%;
-    --secondary-foreground: 160 25% 12%;
-    --accent: 160 76% 35%;
-    --accent-foreground: 0 0% 98%;
+    /* Secondary & Accent - Coral and aqua */
+    --secondary: 191 85% 56%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 158 64% 52%;
+    --accent-foreground: 0 0% 100%;
     
     /* Interactive Elements */
-    --ring: 160 84% 35%;
+    --ring: 174 72% 56%;
     
-    /* Shadow System - Deep sea shadows */
-    --shadow-elev-1: 0 1px 3px 0 rgb(0 40 30 / 0.5), 0 1px 2px -1px rgb(0 40 30 / 0.5);
-    --shadow-elev-2: 0 4px 6px -1px rgb(0 40 30 / 0.5), 0 2px 4px -2px rgb(0 40 30 / 0.5);
-    --shadow-elev-3: 0 10px 15px -3px rgb(0 40 30 / 0.5), 0 4px 6px -4px rgb(0 40 30 / 0.5);
+    /* Shadow System - Underwater glow */
+    --shadow-elev-1: 0 1px 3px 0 rgb(6 182 212 / 0.25), 0 1px 2px -1px rgb(0 0 0 / 0.6);
+    --shadow-elev-2: 0 4px 6px -1px rgb(6 182 212 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.6);
+    --shadow-elev-3: 0 10px 15px -3px rgb(6 182 212 / 0.35), 0 4px 6px -4px rgb(0 0 0 / 0.6);
     
-    /* Sidebar Variables - Deep Sea Mode */
-    --sidebar-background: 160 35% 6%;
-    --sidebar-foreground: 160 25% 85%;
-    --sidebar-primary: 160 15% 92%;
-    --sidebar-primary-foreground: 160 35% 9%;
-    --sidebar-accent: 160 35% 11%;
-    --sidebar-accent-foreground: 160 25% 85%;
-    --sidebar-border: 160 35% 11%;
-    --sidebar-ring: 160 84% 45%;
+    /* Sidebar Variables - Enhanced Deep Sea Mode */
+    --sidebar-background: 195 100% 2%;
+    --sidebar-foreground: 180 25% 90%;
+    --sidebar-primary: 174 72% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 194 100% 5%;
+    --sidebar-accent-foreground: 180 25% 90%;
+    --sidebar-border: 194 100% 8%;
+    --sidebar-ring: 174 72% 56%;
   }
 
   /* === HIGH CONTRAST MODE === */
@@ -545,5 +545,28 @@
   .dark .glass-effect {
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Theme Selection Button Enhancements */
+  .theme-preview-light {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+    color: #1e293b;
+  }
+  
+  .theme-preview-dark {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    color: #f8fafc;
+  }
+  
+  .theme-preview-deep-sea {
+    background: linear-gradient(135deg, #164e63 0%, #0f766e 50%, #047857 100%);
+    color: #a7f3d0;
+  }
+  
+  /* Enhanced theme button states */
+  .theme-button-active {
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px -5px rgba(59, 130, 246, 0.3);
+    border: 2px solid hsl(var(--brand));
   }
 }
