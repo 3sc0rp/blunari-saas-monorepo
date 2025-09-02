@@ -71,7 +71,8 @@ const DashboardLayout: React.FC = () => {
         </SidebarProvider>
       ) : (
         <div className="flex min-h-screen flex-col">
-          {/* Mobile Header */}
+          {/* Mobile Header - Full width outside of any container */}
+          <HeaderDebug />
           <header role="banner" className="w-full">
             <BreadcrumbHeader />
           </header>

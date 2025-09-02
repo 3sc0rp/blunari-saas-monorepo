@@ -13,6 +13,16 @@ html, body {
   max-width: none !important;
 }
 
+/* Force header to full width regardless of parent constraints */
+.header-full-width {
+  width: 100vw !important;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw !important;
+  margin-right: -50vw !important;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
