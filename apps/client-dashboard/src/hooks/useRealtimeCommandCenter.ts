@@ -40,11 +40,17 @@ interface WaitlistEntry {
   id: string;
   tenant_id: string;
   guest_name: string;
+  guest_email: string;
+  guest_phone?: string;
   party_size: number;
-  estimated_wait_time: number;
-  status: "waiting" | "seated" | "cancelled";
+  preferred_date: string;
+  preferred_time: string;
+  status: "active" | "notified" | "expired" | "cancelled";
+  notified_at?: string;
+  expires_at?: string;
   created_at: string;
-  updated_at: string;
+  // Computed fields for compatibility
+  estimated_wait_time?: number;
 }
 
 interface CommandCenterMetrics {
@@ -169,27 +175,26 @@ export const useRealtimeCommandCenter = () => {
     queryFn: async () => {
       if (!tenantId) return [];
 
-      try {
-        const { data, error } = await supabase
-          .from("waitlist")
-          .select("*")
-          .eq("tenant_id", tenantId)
-          .eq("status", "waiting")
-          .order("created_at", { ascending: true });
+        try {
+          const { data, error } = await supabase
+            .from("waitlist_entries")
+            .select("*")
+            .eq("tenant_id", tenantId)
+            .eq("status", "active")
+            .order("created_at", { ascending: true });
 
-        if (error) {
-          console.warn("Waitlist table might not exist yet:", error);
-          return [];
-        }
-        
-        return (data || []).map(entry => ({
-          id: entry.id,
-          name: entry.name || "Guest",
-          party_size: entry.party_size || 1,
-          phone: entry.phone || "",
-          estimated_wait: entry.estimated_wait || 0,
-          created_at: entry.created_at,
-          status: entry.status || "waiting"
+          if (error) {
+            console.warn("Waitlist entries table might not exist yet:", error);
+            return [];
+          }        return (data || []).map(entry => ({
+          ...entry,
+          // Add estimated wait time based on current time and preferred time
+          estimated_wait_time: (() => {
+            const now = new Date();
+            const preferredDateTime = new Date(`${entry.preferred_date}T${entry.preferred_time}`);
+            const diffInMinutes = Math.max(0, Math.floor((preferredDateTime.getTime() - now.getTime()) / (1000 * 60)));
+            return diffInMinutes > 0 ? diffInMinutes : 15; // Default to 15 min if preferred time has passed
+          })()
         })) as WaitlistEntry[];
       } catch (err) {
         console.warn("Failed to fetch waitlist:", err);
@@ -229,7 +234,7 @@ export const useRealtimeCommandCenter = () => {
     const waitlistCount = waitlist.length;
 
     const avgWaitTime = waitlist.length > 0
-      ? waitlist.reduce((sum, w) => sum + (w.estimated_wait || 0), 0) / waitlist.length
+      ? waitlist.reduce((sum, w) => sum + (w.estimated_wait_time || 0), 0) / waitlist.length
       : 0;
 
     const completedBookings = bookings.filter(b => b.status === "completed");
@@ -330,7 +335,7 @@ export const useRealtimeCommandCenter = () => {
         {
           event: "*",
           schema: "public",
-          table: "waitlist",
+          table: "waitlist_entries",
           filter: `tenant_id=eq.${tenantId}`,
         },
         (payload) => {

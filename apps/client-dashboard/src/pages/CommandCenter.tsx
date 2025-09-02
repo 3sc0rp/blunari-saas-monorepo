@@ -38,67 +38,39 @@ const createLazyComponent = (
   );
 };
 
-// Type-safe dynamic import wrapper with enhanced error handling
-const createSafeImport = (modulePath: string) => {
-  return async () => {
-    try {
-      const startTime = performance.now();
-      // Use /* @vite-ignore */ to suppress Vite warning
-      const module = await import(/* @vite-ignore */ modulePath);
-      const loadTime = performance.now() - startTime;
-      
-      // Log successful loads in development
-      if (process.env.NODE_ENV === 'development') {
-        console.debug(`✅ Loaded ${modulePath} in ${loadTime.toFixed(2)}ms`);
-      }
-      
-      return module;
-    } catch (error) {
-      console.error(`❌ Failed to import module: ${modulePath}`, error);
-      
-      // Log error to performance monitoring
-      if (typeof window !== 'undefined' && window.performance) {
-        performance.mark(`import-error-${modulePath.split('/').pop()}`);
-      }
-      
-      throw error;
-    }
-  };
-};
-
 // Lazy load Command Center components with enhanced error handling
 const KpiBar = createLazyComponent(
-  createSafeImport("@/components/command-center/KpiBar"),
+  () => import("@/components/command-center/KpiBar"),
   "KPI Bar",
   TrendingUp
 );
 const Timeline = createLazyComponent(
-  createSafeImport("@/components/command-center/Timeline"),
+  () => import("@/components/command-center/Timeline"),
   "Timeline", 
   Clock
 );
 const FloorMap = createLazyComponent(
-  createSafeImport("@/components/command-center/FloorMap"),
+  () => import("@/components/command-center/FloorMap"),
   "Floor Map",
   Square
 );
 const Waitlist = createLazyComponent(
-  createSafeImport("@/components/command-center/Waitlist"),
+  () => import("@/components/command-center/Waitlist"),
   "Waitlist",
   Users
 );
 const DetailsDrawer = createLazyComponent(
-  createSafeImport("@/components/command-center/DetailsDrawer"),
+  () => import("@/components/command-center/DetailsDrawer"),
   "Details Drawer",
   Activity
 );
 const QuickActions = createLazyComponent(
-  createSafeImport("@/components/command-center/QuickActions"),
+  () => import("@/components/command-center/QuickActions"),
   "Quick Actions",
   Activity
 );
 const OnboardingTour = lazy(() => 
-  createSafeImport("@/components/command-center/OnboardingTour")().catch((error) => {
+  import("@/components/command-center/OnboardingTour").catch((error) => {
     console.debug("OnboardingTour failed to load:", error);
     return { default: () => null };
   })
