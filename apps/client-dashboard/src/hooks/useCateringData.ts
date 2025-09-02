@@ -29,8 +29,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       setError(null);
 
       // Fetch catering packages with their menu items for this tenant
-      // Using any to avoid TypeScript issues with non-existent tables
-      const { data: packagesData, error: packagesError } = await (supabase as any)
+      const { data: packagesData, error: packagesError } = await supabase
         .from('catering_packages')
         .select(`
           *,
@@ -84,7 +83,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
     }
 
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('catering_orders')
         .insert([
           {
@@ -110,7 +109,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       }
 
       // Create order history entry
-      await (supabase as any)
+      await supabase
         .from('catering_order_history')
         .insert({
           order_id: data.id,
@@ -137,7 +136,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
     }
 
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('catering_orders')
         .select(`
           *,
@@ -177,7 +176,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
 
     try {
       // Update the order status
-      const { error: updateError } = await (supabase as any)
+      const { error: updateError } = await supabase
         .from('catering_orders')
         .update({
           status,
@@ -191,7 +190,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       }
 
       // Create history entry
-      const { error: historyError } = await (supabase as any)
+      const { error: historyError } = await supabase
         .from('catering_order_history')
         .insert({
           order_id: orderId,
@@ -243,7 +242,7 @@ export function useCateringAnalytics(tenantId?: string) {
         setLoading(true);
 
         // Fetch catering analytics from the view
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from('catering_order_metrics')
           .select('*')
           .eq('tenant_id', tenantId)
