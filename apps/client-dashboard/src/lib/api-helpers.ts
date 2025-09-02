@@ -31,8 +31,6 @@ export async function apiCall<T>(
   operationName = 'API call'
 ): Promise<{ data: T | null; error: ApiError | null }> {
   try {
-    console.log(`Starting ${operationName}...`);
-    
     const result = await operation();
     
     if (result.error) {
@@ -49,7 +47,6 @@ export async function apiCall<T>(
       return { data: null, error: new ApiError(errorDetails) };
     }
 
-    console.log(`${operationName} completed successfully with data:`, result.data);
     return { data: result.data, error: null };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unexpected error occurred';
@@ -162,8 +159,6 @@ export async function getUserTenant(userId: string) {
  * Check API connectivity and database health
  */
 export async function checkApiHealth() {
-  console.log('Checking API health...');
-  
   const tests = [
     {
       name: 'Basic connectivity',
@@ -202,6 +197,5 @@ export async function checkApiHealth() {
     }
   }
   
-  console.log('API Health Check Results:', results);
   return results;
 }

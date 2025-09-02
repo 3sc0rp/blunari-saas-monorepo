@@ -81,11 +81,11 @@ const CustomerManagement: React.FC = () => {
   };
 
   const handleAddCustomer = () => {
-    console.log("Adding new customer...");
+    // Add customer logic here
   };
 
   const handleExportCustomers = () => {
-    console.log("Exporting customer list...");
+    // Export customer list logic
   };
 
   // Loading state

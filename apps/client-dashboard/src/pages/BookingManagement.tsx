@@ -435,7 +435,9 @@ const BookingManagement: React.FC = () => {
           selectedBookings={selectedBookings}
           onSelectBooking={handleSelectBooking}
           onSelectAll={handleSelectAll}
-          onBookingClick={(booking) => console.log("Booking clicked:", booking)}
+          onBookingClick={(booking) => {
+            // Handle booking click logic here
+          }}
           onStatusUpdate={(id, status) =>
             updateBooking({ id, updates: { status } })
           }

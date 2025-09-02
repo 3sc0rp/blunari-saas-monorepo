@@ -11,8 +11,6 @@ import TableStatus from "@/components/dashboard/TableStatus";
 import MetricsCard from "@/components/dashboard/MetricsCard";
 import PerformanceTrendsChart from "@/components/dashboard/PerformanceTrendsChart";
 import AlertSystem from "@/components/dashboard/AlertSystem";
-import { ApiDebugPanel } from "@/components/ApiDebugPanel";
-import { TenantDebugger } from "@/components/TenantDebugger";
 import {
   Users,
   Calendar,
@@ -34,9 +32,6 @@ const Dashboard: React.FC = () => {
 
   // Check for reduced motion preference
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // Debug: Log rendering status
-  console.log("Dashboard rendering:", { tenant, accessType, tenantSlug, isLoading });
 
   return (
     <div className="space-y-6 w-full min-h-screen">
@@ -278,37 +273,6 @@ const Dashboard: React.FC = () => {
           <TableStatus />
         </div>
       </motion.div>
-
-      {/* API Debug Panel (Development Only) */}
-      {(import.meta.env.MODE === 'development' || window.location.hostname === 'localhost') && (
-        <>
-          <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
-            animate={prefersReducedMotion ? false : { opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : {
-              duration: 0.6,
-              delay: 1.2,
-              type: "spring",
-              stiffness: 60,
-            }}
-          >
-            <TenantDebugger />
-          </motion.div>
-          
-          <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0, y: 30 }}
-            animate={prefersReducedMotion ? false : { opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : {
-              duration: 0.6,
-              delay: 1.4,
-              type: "spring",
-              stiffness: 60,
-            }}
-          >
-            <ApiDebugPanel />
-          </motion.div>
-        </>
-      )}
     </div>
   );
 };

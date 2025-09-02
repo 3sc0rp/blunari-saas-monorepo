@@ -34,7 +34,7 @@ const DemoPage: React.FC = () => {
   }, []);
 
   const handleCreate = () => {
-    console.log("Creating new item...");
+    // Create new item logic
   };
 
   const handleRefresh = () => {

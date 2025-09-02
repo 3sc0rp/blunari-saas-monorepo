@@ -170,7 +170,7 @@ const Analytics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleSetupAnalytics = () => {
-    console.log("Setting up analytics...");
+    // Set up analytics functionality
   };
 
   // Show skeleton loading state
