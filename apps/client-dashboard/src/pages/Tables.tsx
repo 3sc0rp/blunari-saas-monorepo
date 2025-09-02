@@ -80,7 +80,16 @@ const Tables: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full min-h-screen">
+      {/* Debug: Visible content indicator */}
+      <div className="p-4 bg-red-100 text-red-900 rounded-lg border-2 border-red-200 mb-4">
+        <h2 className="text-xl font-bold">Tables Page Debug</h2>
+        <p>Tenant: {tenant?.name || 'Loading...'}</p>
+        <p>Tables Count: {tables.length}</p>
+        <p>Loading: {isLoading ? 'Yes' : 'No'}</p>
+        <p>View Mode: {viewMode}</p>
+      </div>
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

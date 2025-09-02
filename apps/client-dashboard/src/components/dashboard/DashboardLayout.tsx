@@ -87,6 +87,10 @@ const DashboardLayout: React.FC = () => {
                 className={`relative z-10 w-full ${getLayoutClasses().container}`}
                 style={{ minHeight: "100vh" }}
               >
+                {/* Debug: Layout content indicator */}
+                <div className="p-2 bg-yellow-100 text-yellow-900 rounded border mb-2">
+                  <span className="text-sm font-bold">Layout Debug: Content should render below</span>
+                </div>
                 <div className="w-full">
                   <Outlet />
                 </div>

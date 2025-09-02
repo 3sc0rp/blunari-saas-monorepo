@@ -36,13 +36,14 @@ const Dashboard: React.FC = () => {
   console.log("Dashboard rendering:", { tenant, accessType, tenantSlug, isLoading });
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-6 w-full min-h-screen">
       {/* Debug: Visible content indicator */}
-      <div className="p-4 bg-blue-100 text-blue-900 rounded-lg border-2 border-blue-200">
+      <div className="p-4 bg-green-100 text-green-900 rounded-lg border-2 border-green-200 mb-4">
         <h2 className="text-xl font-bold">Dashboard Debug</h2>
         <p>Tenant: {tenant?.name || 'Loading...'}</p>
         <p>Access Type: {accessType}</p>
         <p>Loading: {isLoading ? 'Yes' : 'No'}</p>
+        <p>Current Time: {new Date().toLocaleString()}</p>
       </div>
 
       {/* Tenant Access Information */}
