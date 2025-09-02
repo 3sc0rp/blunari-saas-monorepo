@@ -112,38 +112,57 @@ function executeCommand(command) {
   }
 }
 
+// Check if GitHub CLI is installed
 function checkGitHubCLI() {
   try {
-    execSync("gh --version", { stdio: "pipe" });
+    execSync('"C:\Program Files\GitHub CLI\gh.exe" --version', { stdio: "pipe" });
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    try {
+      execSync("gh --version", { stdio: "pipe" });
+      return true;
+    } catch (error2) {
+      return false;
+    }
   }
 }
 
 function checkRepositoryAuth() {
   try {
-    const result = execSync("gh repo view --json name", {
-      encoding: "utf8",
-      stdio: "pipe",
-    });
+    let result;
+    try {
+      result = execSync('"C:\\Program Files\\GitHub CLI\\gh.exe" repo view --json name', {
+        encoding: "utf8",
+        stdio: "pipe",
+      });
+    } catch (error) {
+      result = execSync("gh repo view --json name", {
+        encoding: "utf8",
+        stdio: "pipe",
+      });
+    }
     return JSON.parse(result).name;
   } catch {
     return null;
   }
 }
 
-async function setGitHubSecret(name, value) {
+function setSecret(name, value) {
   try {
-    execSync(`gh secret set ${name}`, {
-      input: value,
-      encoding: "utf8",
-      stdio: "pipe",
-    });
-    log(`✅ Secret ${name} set successfully`, "green");
+    try {
+      execSync(`"C:\Program Files\GitHub CLI\gh.exe" secret set ${name}`, {
+        input: value,
+        stdio: ["pipe", "inherit", "inherit"],
+      });
+    } catch (error) {
+      execSync(`gh secret set ${name}`, {
+        input: value,
+        stdio: ["pipe", "inherit", "inherit"],
+      });
+    }
     return true;
   } catch (error) {
-    log(`❌ Failed to set ${name}: ${error.message}`, "red");
+    log(`❌ Failed to set secret ${name}: ${error.message}`, "red");
     return false;
   }
 }
