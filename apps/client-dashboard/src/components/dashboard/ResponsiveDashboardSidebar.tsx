@@ -10,7 +10,6 @@ import {
   TableProperties,
   UserCheck,
   CreditCard,
-  Shield,
   Building,
   ChefHat,
   Cog,
@@ -65,7 +64,6 @@ const navigationItems = [
     section: 'Admin',
     items: [
       { title: 'Settings', url: '/dashboard/settings', icon: Settings },
-      { title: 'Security', url: '/dashboard/security', icon: Shield },
       { title: 'POS Integration', url: '/dashboard/pos-integrations', icon: CreditCard },
     ]
   }

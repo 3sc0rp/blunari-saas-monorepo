@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CateringPackage, CreateCateringOrderRequest } from '@/types/catering';
+import { CateringPackage, CreateCateringOrderRequest, CateringOrder } from '@/types/catering';
 
 interface UseCateringDataReturn {
   packages: CateringPackage[] | null;
   loading: boolean;
   error: string | null;
-  createOrder: (orderData: CreateCateringOrderRequest) => Promise<void>;
+  createOrder: (orderData: CreateCateringOrderRequest) => Promise<any>;
   refetch: () => Promise<void>;
+  // Additional utility functions
+  getOrdersByStatus: (status: string) => Promise<CateringOrder[]>;
+  updateOrderStatus: (orderId: string, status: string, notes?: string) => Promise<void>;
 }
 
 export function useCateringData(tenantId?: string): UseCateringDataReturn {
@@ -25,21 +28,26 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       setLoading(true);
       setError(null);
 
-      // Fetch catering packages for this tenant
-      const { data: packagesData, error: packagesError } = await supabase
+      // Fetch catering packages with their menu items for this tenant
+      // Using any to avoid TypeScript issues with non-existent tables
+      const { data: packagesData, error: packagesError } = await (supabase as any)
         .from('catering_packages')
         .select(`
           *,
-          catering_package_items!inner(
-            quantity,
-            catering_menu_items!inner(
+          catering_package_items (
+            id,
+            quantity_per_person,
+            is_included,
+            additional_cost_per_person,
+            catering_menu_items (
               id,
               name,
               description,
-              category_id,
-              price_per_person,
+              base_price,
+              unit,
               dietary_restrictions,
-              allergens
+              allergen_info,
+              image_url
             )
           )
         `)
@@ -52,11 +60,18 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
         throw packagesError;
       }
 
-      setPackages(packagesData || []);
-    } catch (err) {
+      setPackages(packagesData as CateringPackage[] || []);
+      
+    } catch (err: any) {
       console.error('Error fetching catering packages:', err);
-      setError('Failed to load catering packages');
-      // For development - show empty packages instead of error
+      
+      // Check if it's a table not found error (catering tables not yet created)
+      if (err.code === 'PGRST106' || err.message?.includes('relation') || err.message?.includes('does not exist')) {
+        setError('Catering functionality is not yet available. Please contact support to enable catering features.');
+      } else {
+        setError('Failed to load catering packages');
+      }
+      
       setPackages([]);
     } finally {
       setLoading(false);
@@ -69,7 +84,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('catering_orders')
         .insert([
           {
@@ -80,17 +95,120 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
             updated_at: new Date().toISOString()
           }
         ])
-        .select()
+        .select(`
+          *,
+          catering_packages (
+            id,
+            name,
+            price_per_person
+          )
+        `)
         .single();
 
       if (error) {
         throw error;
       }
 
+      // Create order history entry
+      await (supabase as any)
+        .from('catering_order_history')
+        .insert({
+          order_id: data.id,
+          status: 'inquiry',
+          notes: 'Order created by customer'
+        });
+
       return data;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating catering order:', err);
-      throw new Error('Failed to submit catering order');
+      
+      // Check if it's a table not found error
+      if (err.code === 'PGRST106' || err.message?.includes('relation') || err.message?.includes('does not exist')) {
+        throw new Error('Catering functionality is not yet available. Please contact support to enable catering features.');
+      } else {
+        throw new Error('Failed to submit catering order');
+      }
+    }
+  };
+
+  const getOrdersByStatus = async (status: string): Promise<CateringOrder[]> => {
+    if (!tenantId) {
+      throw new Error('Tenant ID is required');
+    }
+
+    try {
+      const { data, error } = await (supabase as any)
+        .from('catering_orders')
+        .select(`
+          *,
+          catering_packages (
+            id,
+            name,
+            price_per_person
+          ),
+          catering_feedback (
+            id,
+            overall_rating,
+            comments
+          )
+        `)
+        .eq('tenant_id', tenantId)
+        .eq('status', status)
+        .order('event_date', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      return data as CateringOrder[];
+    } catch (err: any) {
+      console.error('Error fetching orders by status:', err);
+      if (err.code === 'PGRST106' || err.message?.includes('relation') || err.message?.includes('does not exist')) {
+        throw new Error('Catering functionality is not yet available');
+      }
+      throw new Error('Failed to fetch orders');
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, status: string, notes?: string): Promise<void> => {
+    if (!tenantId) {
+      throw new Error('Tenant ID is required');
+    }
+
+    try {
+      // Update the order status
+      const { error: updateError } = await (supabase as any)
+        .from('catering_orders')
+        .update({
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId)
+        .eq('tenant_id', tenantId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Create history entry
+      const { error: historyError } = await (supabase as any)
+        .from('catering_order_history')
+        .insert({
+          order_id: orderId,
+          status,
+          notes: notes || `Status updated to ${status}`
+        });
+
+      if (historyError) {
+        console.error('Failed to create history entry:', historyError);
+      }
+
+    } catch (err: any) {
+      console.error('Error updating order status:', err);
+      if (err.code === 'PGRST106' || err.message?.includes('relation') || err.message?.includes('does not exist')) {
+        throw new Error('Catering functionality is not yet available');
+      }
+      throw new Error('Failed to update order status');
     }
   };
 
@@ -103,6 +221,53 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
     loading,
     error,
     createOrder,
-    refetch: fetchPackages
+    refetch: fetchPackages,
+    getOrdersByStatus,
+    updateOrderStatus
+  };
+}
+
+// Additional utility hook for catering analytics
+export function useCateringAnalytics(tenantId?: string) {
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      if (!tenantId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        // Fetch catering analytics from the view
+        const { data, error } = await (supabase as any)
+          .from('catering_order_metrics')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .order('month', { ascending: false })
+          .limit(12);
+
+        if (error && error.code !== 'PGRST106') {
+          throw error;
+        }
+
+        setAnalytics(data || []);
+      } catch (err) {
+        console.error('Error fetching catering analytics:', err);
+        setAnalytics([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [tenantId]);
+
+  return {
+    analytics,
+    loading
   };
 }

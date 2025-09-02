@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Breadcrumb,
   BreadcrumbItem,
@@ -18,13 +19,15 @@ import {
   Clock, 
   Plug, 
   Bell, 
-  Shield, 
   Save,
   RefreshCw,
   Wrench,
   Eye,
   Monitor,
-  Home
+  Home,
+  AlertCircle,
+  CheckCircle,
+  Loader
 } from 'lucide-react';
 import { useSettings } from '@/hooks/useSettings';
 import { useTenant } from '@/hooks/useTenant';
@@ -32,10 +35,10 @@ import { useTenantBranding } from '@/contexts/TenantBrandingContext';
 import BrandingSettings from '@/components/settings/BrandingSettings';
 import OperationalSettings from '@/components/settings/OperationalSettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
-import SecuritySettings from '@/components/settings/SecuritySettings';
 import IntegrationSettings from '@/components/settings/IntegrationSettings';
 import InterfaceSettings from '@/components/settings/InterfaceSettings';
 import AdvancedSettings from '@/components/settings/AdvancedSettings';
+import SettingsErrorBoundary from '@/components/settings/SettingsErrorBoundary';
 import { EmptyState } from '@/components/ui/state';
 import { toast } from '@/lib/toast';
 
@@ -44,15 +47,54 @@ const Settings: React.FC = () => {
   const { logoUrl, restaurantName } = useTenantBranding();
   const { 
     settings, 
-    isLoading, 
+    isLoading,
+    error,
     updateBranding, 
     updateOperational, 
     updateNotifications,
-    updateSecurity,
     updateIntegrations,
-    isUpdating 
+    isUpdatingBranding,
+    isUpdatingOperational,
+    isUpdatingNotifications,
+    isUpdatingIntegrations
   } = useSettings();
   const [activeTab, setActiveTab] = useState('branding');
+
+  // Error handling
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+            <p className="text-muted-foreground">Configure your restaurant settings and preferences</p>
+          </div>
+        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load settings. Please refresh the page or try again later.
+            {process.env.NODE_ENV === 'development' && (
+              <details className="mt-2">
+                <summary className="cursor-pointer">Error details</summary>
+                <pre className="mt-2 text-xs">{error.message}</pre>
+              </details>
+            )}
+          </AlertDescription>
+        </Alert>
+        <div className="flex gap-4">
+          <Button onClick={() => window.location.reload()} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+          <Button onClick={() => window.location.href = '/dashboard'} variant="secondary">
+            <Home className="h-4 w-4 mr-2" />
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading || !settings) {
     return (
@@ -245,8 +287,12 @@ const Settings: React.FC = () => {
                   <div className="font-medium">Integrations</div>
                   <div className="text-sm text-muted-foreground">SMS, email, POS, analytics</div>
                 </div>
-                <Badge variant={Object.values(settings.integrations).some(i => i.enabled) ? 'default' : 'outline'}>
-                  {Object.values(settings.integrations).filter(i => i.enabled).length} active
+                <Badge variant={
+                  [settings.integrations.sms, settings.integrations.email, settings.integrations.pos, settings.integrations.analytics]
+                    .some(i => i?.enabled) ? 'default' : 'outline'
+                }>
+                  {[settings.integrations.sms, settings.integrations.email, settings.integrations.pos, settings.integrations.analytics]
+                    .filter(i => i?.enabled).length} active
                 </Badge>
               </div>
             </CardContent>
@@ -270,29 +316,6 @@ const Settings: React.FC = () => {
                 </div>
                 <Badge variant={settings.notifications.email.confirmations ? 'default' : 'outline'}>
                   {settings.notifications.email.confirmations ? 'enabled' : 'disabled'}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <Card className="cursor-pointer hover:shadow-medium transition-shadow" onClick={() => setActiveTab('security')}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-destructive/10 rounded-full flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-destructive" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">Security</div>
-                  <div className="text-sm text-muted-foreground">2FA, sessions, API limits</div>
-                </div>
-                <Badge variant={settings.security.twoFactorAuth.enabled ? 'default' : 'destructive'}>
-                  {settings.security.twoFactorAuth.enabled ? '2FA enabled' : '2FA disabled'}
                 </Badge>
               </div>
             </CardContent>
@@ -386,16 +409,6 @@ const Settings: React.FC = () => {
             )}
           </TabsTrigger>
           <TabsTrigger 
-            value="security" 
-            className="flex items-center gap-2 relative data-[state=active]:bg-brand data-[state=active]:text-brand-foreground data-[state=active]:shadow-sm transition-all duration-200"
-          >
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Security</span>
-            {activeTab === 'security' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand rounded-full" />
-            )}
-          </TabsTrigger>
-          <TabsTrigger 
             value="interface" 
             className="flex items-center gap-2 relative data-[state=active]:bg-brand data-[state=active]:text-brand-foreground data-[state=active]:shadow-sm transition-all duration-200"
           >
@@ -418,51 +431,55 @@ const Settings: React.FC = () => {
         </TabsList>
 
         <TabsContent value="branding" className="space-y-6 p-6 bg-surface/30 rounded-lg border border-border/50">
-          <BrandingSettings
-            settings={settings.branding}
-            onUpdate={updateBranding}
-            isUpdating={isUpdating}
-          />
+          <SettingsErrorBoundary>
+            <BrandingSettings
+              settings={settings.branding}
+              onUpdate={updateBranding}
+              isUpdating={isUpdatingBranding}
+            />
+          </SettingsErrorBoundary>
         </TabsContent>
 
         <TabsContent value="operational" className="space-y-6 p-6 bg-surface/30 rounded-lg border border-border/50">
-          <OperationalSettings
-            settings={settings.operational}
-            onUpdate={updateOperational}
-            isUpdating={isUpdating}
-          />
+          <SettingsErrorBoundary>
+            <OperationalSettings
+              settings={settings.operational}
+              onUpdate={updateOperational}
+              isUpdating={isUpdatingOperational}
+            />
+          </SettingsErrorBoundary>
         </TabsContent>
 
         <TabsContent value="integrations" className="space-y-6 p-6 bg-surface/30 rounded-lg border border-border/50">
-          <IntegrationSettings
-            settings={settings.integrations}
-            onUpdate={updateIntegrations}
-            isUpdating={isUpdating}
-          />
+          <SettingsErrorBoundary>
+            <IntegrationSettings
+              settings={settings.integrations}
+              onUpdate={updateIntegrations}
+              isUpdating={isUpdatingIntegrations}
+            />
+          </SettingsErrorBoundary>
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6 p-6 bg-surface/30 rounded-lg border border-border/50">
-          <NotificationSettings
-            settings={settings.notifications}
-            onUpdate={updateNotifications}
-            isUpdating={isUpdating}
-          />
-        </TabsContent>
-
-        <TabsContent value="security" className="space-y-6 p-6 bg-surface/30 rounded-lg border border-border/50">
-          <SecuritySettings
-            settings={settings.security}
-            onUpdate={updateSecurity}
-            isUpdating={isUpdating}
-          />
+          <SettingsErrorBoundary>
+            <NotificationSettings
+              settings={settings.notifications}
+              onUpdate={updateNotifications}
+              isUpdating={isUpdatingNotifications}
+            />
+          </SettingsErrorBoundary>
         </TabsContent>
 
         <TabsContent value="interface" className="space-y-6 p-6 bg-surface/30 rounded-lg border border-border/50">
-          <InterfaceSettings />
+          <SettingsErrorBoundary>
+            <InterfaceSettings />
+          </SettingsErrorBoundary>
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-6 p-6 bg-surface/30 rounded-lg border border-border/50">
-          <AdvancedSettings />
+          <SettingsErrorBoundary>
+            <AdvancedSettings />
+          </SettingsErrorBoundary>
         </TabsContent>
       </Tabs>
 
@@ -473,7 +490,7 @@ const Settings: React.FC = () => {
             <div>
               <div className="text-body-sm font-medium text-text">Last Updated</div>
               <div className="text-xs text-text-muted">
-                {new Date(settings.lastUpdated).toLocaleString()}
+                {new Date().toLocaleString()}
               </div>
             </div>
             <div className="text-right">

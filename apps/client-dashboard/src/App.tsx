@@ -23,7 +23,6 @@ import Waitlist from "./pages/Waitlist";
 import Staff from "./pages/Staff";
 import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
-import Security from "./pages/Security";
 import NotFound from "./pages/NotFound";
 import BookingPage from "./pages/BookingPage";
 import Catering from "./pages/Catering";
@@ -83,7 +82,6 @@ const App = () => (
               } />
               <Route path="catering" element={<Catering />} />
               <Route path="settings" element={<Settings />} />
-              <Route path="security" element={<Security />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

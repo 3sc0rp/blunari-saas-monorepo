@@ -87,34 +87,10 @@ export interface NotificationSettings {
   };
 }
 
-export interface SecuritySettings {
-  twoFactorAuth: {
-    enabled: boolean;
-    method: 'sms' | 'email' | 'authenticator';
-  };
-  sessionTimeout: number;
-  passwordPolicy: {
-    minLength: number;
-    requireUppercase: boolean;
-    requireNumbers: boolean;
-    requireSymbols: boolean;
-  };
-  apiRateLimit: {
-    requestsPerHour: number;
-    burstLimit: number;
-  };
-  loginAttempts: {
-    maxAttempts: number;
-    lockoutDuration: number;
-  };
-  auditLogging: boolean;
-}
-
 export interface TenantSettings {
   branding: BrandingSettings;
   operational: OperationalSettings;
   integrations: IntegrationSettings;
   notifications: NotificationSettings;
-  security: SecuritySettings;
   lastUpdated: string;
 }

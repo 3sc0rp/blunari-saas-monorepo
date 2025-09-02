@@ -1,20 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
 
-interface Tenant {
-  id: string;
-  name: string;
-  slug: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  description?: string;
-  logo_url?: string;
-  website_url?: string;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+type Tenant = Database['public']['Tables']['tenants']['Row'];
 
 interface UseTenantBySlugReturn {
   tenant: Tenant | null;
@@ -42,7 +30,7 @@ export function useTenantBySlug(slug: string): UseTenantBySlugReturn {
           .from('tenants')
           .select('*')
           .eq('slug', slug)
-          .eq('active', true)
+          .eq('status', 'active')
           .single();
 
         if (error) {

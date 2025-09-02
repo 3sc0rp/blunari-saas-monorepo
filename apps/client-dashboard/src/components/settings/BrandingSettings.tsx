@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Palette, Globe, Camera } from 'lucide-react';
+import { FileUpload } from '@/components/ui/file-upload';
+import { Palette, Globe } from 'lucide-react';
 import { BrandingSettings as BrandingSettingsType } from '@/types/settings';
 import { useTenantBranding } from '@/contexts/TenantBrandingContext';
 import { useForm } from 'react-hook-form';
@@ -27,6 +27,13 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
   // Watch form changes for live preview updates
   const watchedValues = form.watch();
 
+  // Update form values when settings prop changes
+  useEffect(() => {
+    if (settings) {
+      form.reset(settings);
+    }
+  }, [settings, form]);
+
   // Update live preview with debounced effect to prevent infinite loops
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -39,14 +46,10 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
     }, 100); // 100ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [watchedValues.logoUrl, watchedValues.restaurantName, watchedValues.primaryColor, watchedValues.accentColor]);
+  }, [watchedValues.logoUrl, watchedValues.restaurantName, watchedValues.primaryColor, watchedValues.accentColor, updateBranding]);
 
   const onSubmit = (data: BrandingSettingsType) => {
     onUpdate(data);
-    toast({
-      title: "Branding Updated",
-      description: "Your branding settings have been saved successfully.",
-    });
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -191,65 +194,21 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
             <div className="space-y-4">
               <Label className="text-sm font-medium">Logo & Assets</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <Label className="text-sm">Restaurant Logo</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    {settings.logoUrl ? (
-                      <div className="space-y-2">
-                        <img 
-                          src={settings.logoUrl} 
-                          alt="Logo" 
-                          className="max-h-20 mx-auto"
-                        />
-                        <Button variant="outline" size="sm">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Change Logo
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Camera className="h-8 w-8 mx-auto text-muted-foreground" />
-                        <div className="text-sm text-muted-foreground">
-                          Upload your restaurant logo
-                        </div>
-                        <Button variant="outline" size="sm">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Logo
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <FileUpload
+                  value={form.watch('logoUrl')}
+                  onChange={(url) => form.setValue('logoUrl', url)}
+                  label="Restaurant Logo"
+                  description="Upload your restaurant logo (PNG, JPG, SVG)"
+                  maxSize={2 * 1024 * 1024} // 2MB
+                />
 
-                <div className="space-y-3">
-                  <Label className="text-sm">Favicon</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    {settings.faviconUrl ? (
-                      <div className="space-y-2">
-                        <img 
-                          src={settings.faviconUrl} 
-                          alt="Favicon" 
-                          className="max-h-8 mx-auto"
-                        />
-                        <Button variant="outline" size="sm">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Change Favicon
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Camera className="h-8 w-8 mx-auto text-muted-foreground" />
-                        <div className="text-sm text-muted-foreground">
-                          Upload favicon (32x32px)
-                        </div>
-                        <Button variant="outline" size="sm">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Favicon
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <FileUpload
+                  value={form.watch('faviconUrl')}
+                  onChange={(url) => form.setValue('faviconUrl', url)}
+                  label="Favicon"
+                  description="Upload favicon (32x32px recommended)"
+                  maxSize={512 * 1024} // 512KB
+                />
               </div>
             </div>
 
