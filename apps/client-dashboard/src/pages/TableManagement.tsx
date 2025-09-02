@@ -1,58 +1,58 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useTenant } from '@/hooks/useTenant';
-import { useTableManagement, Table } from '@/hooks/useTableManagement';
-import { FloorPlan3DManager } from '@/components/tables/FloorPlan3D';
-import FloorPlanManager from '@/components/tables/FloorPlanManager';
-import FloorPlanViewer3D from '@/components/tables/FloorPlanViewer3D';
-import FloorPlanViewer2D from '@/components/tables/FloorPlanViewer2D';
-import { 
-  Grid3X3, 
-  Plus, 
-  Users, 
-  Clock, 
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTenant } from "@/hooks/useTenant";
+import { useTableManagement, Table } from "@/hooks/useTableManagement";
+import { FloorPlan3DManager } from "@/components/tables/FloorPlan3D";
+import FloorPlanManager from "@/components/tables/FloorPlanManager";
+import FloorPlanViewer3D from "@/components/tables/FloorPlanViewer3D";
+import FloorPlanViewer2D from "@/components/tables/FloorPlanViewer2D";
+import {
+  Grid3X3,
+  Plus,
+  Users,
+  Clock,
   Settings,
   Eye,
   EyeOff,
   Utensils,
   Coffee,
   Move3D,
-  LayoutGrid
-} from 'lucide-react';
+  LayoutGrid,
+} from "lucide-react";
 
 const TableManagement: React.FC = () => {
   const { tenant } = useTenant();
-  const [viewMode, setViewMode] = useState<'grid' | 'floor' | '3d'>('floor');
+  const [viewMode, setViewMode] = useState<"grid" | "floor" | "3d">("floor");
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
 
   // Fetch real table data from database
   const { tables, isLoading, updateTable } = useTableManagement(tenant?.id);
 
-  const getStatusColor = (status: Table['status']) => {
+  const getStatusColor = (status: Table["status"]) => {
     switch (status) {
-      case 'available':
-        return 'bg-success text-success-foreground';
-      case 'occupied':
-        return 'bg-destructive text-destructive-foreground';
-      case 'reserved':
-        return 'bg-warning text-warning-foreground';
-      case 'maintenance':
-        return 'bg-muted text-muted-foreground';
+      case "available":
+        return "bg-success text-success-foreground";
+      case "occupied":
+        return "bg-destructive text-destructive-foreground";
+      case "reserved":
+        return "bg-warning text-warning-foreground";
+      case "maintenance":
+        return "bg-muted text-muted-foreground";
       default:
-        return 'bg-muted text-muted-foreground';
+        return "bg-muted text-muted-foreground";
     }
   };
 
-  const getTableIcon = (tableType: Table['table_type']) => {
+  const getTableIcon = (tableType: Table["table_type"]) => {
     switch (tableType) {
-      case 'bar':
+      case "bar":
         return Coffee;
-      case 'booth':
+      case "booth":
         return Utensils;
       default:
         return Grid3X3;
@@ -61,10 +61,10 @@ const TableManagement: React.FC = () => {
 
   const tableStats = {
     total: tables.length,
-    available: tables.filter(t => t.status === 'available').length,
-    occupied: tables.filter(t => t.status === 'occupied').length,
-    reserved: tables.filter(t => t.status === 'reserved').length,
-    maintenance: tables.filter(t => t.status === 'maintenance').length,
+    available: tables.filter((t) => t.status === "available").length,
+    occupied: tables.filter((t) => t.status === "occupied").length,
+    reserved: tables.filter((t) => t.status === "reserved").length,
+    maintenance: tables.filter((t) => t.status === "maintenance").length,
   };
 
   return (
@@ -77,33 +77,35 @@ const TableManagement: React.FC = () => {
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Table Management</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            Table Management
+          </h1>
           <p className="text-muted-foreground">
             Manage your restaurant floor plan and table status
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button
-            variant={viewMode === 'floor' ? 'default' : 'outline'}
+            variant={viewMode === "floor" ? "default" : "outline"}
             size="sm"
-            onClick={() => setViewMode('floor')}
+            onClick={() => setViewMode("floor")}
           >
             <Eye className="h-4 w-4 mr-2" />
             Floor Plan
           </Button>
           <Button
-            variant={viewMode === '3d' ? 'default' : 'outline'}
+            variant={viewMode === "3d" ? "default" : "outline"}
             size="sm"
-            onClick={() => setViewMode('3d')}
+            onClick={() => setViewMode("3d")}
           >
             <Move3D className="h-4 w-4 mr-2" />
             3D View
           </Button>
           <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            variant={viewMode === "grid" ? "default" : "outline"}
             size="sm"
-            onClick={() => setViewMode('grid')}
+            onClick={() => setViewMode("grid")}
           >
             <LayoutGrid className="h-4 w-4 mr-2" />
             Grid View
@@ -142,42 +144,52 @@ const TableManagement: React.FC = () => {
             <CardContent className="pt-4">
               <div className="text-center">
                 <div className="text-2xl font-bold">{tableStats.total}</div>
-                <div className="text-sm text-muted-foreground">Total Tables</div>
+                <div className="text-sm text-muted-foreground">
+                  Total Tables
+                </div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="pt-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-success">{tableStats.available}</div>
+                <div className="text-2xl font-bold text-success">
+                  {tableStats.available}
+                </div>
                 <div className="text-sm text-muted-foreground">Available</div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="pt-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-destructive">{tableStats.occupied}</div>
+                <div className="text-2xl font-bold text-destructive">
+                  {tableStats.occupied}
+                </div>
                 <div className="text-sm text-muted-foreground">Occupied</div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="pt-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-warning">{tableStats.reserved}</div>
+                <div className="text-2xl font-bold text-warning">
+                  {tableStats.reserved}
+                </div>
                 <div className="text-sm text-muted-foreground">Reserved</div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="pt-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-muted-foreground">{tableStats.maintenance}</div>
+                <div className="text-2xl font-bold text-muted-foreground">
+                  {tableStats.maintenance}
+                </div>
                 <div className="text-sm text-muted-foreground">Maintenance</div>
               </div>
             </CardContent>
@@ -191,15 +203,15 @@ const TableManagement: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
       >
-        {viewMode === 'floor' ? (
-          <FloorPlanView 
+        {viewMode === "floor" ? (
+          <FloorPlanView
             tables={tables}
             selectedTable={selectedTable}
             onSelectTable={setSelectedTable}
             getStatusColor={getStatusColor}
             getTableIcon={getTableIcon}
           />
-        ) : viewMode === '3d' ? (
+        ) : viewMode === "3d" ? (
           <div className="space-y-6">
             <FloorPlanManager />
             <FloorPlanViewer3D />
@@ -213,7 +225,7 @@ const TableManagement: React.FC = () => {
             </details>
           </div>
         ) : (
-          <GridView 
+          <GridView
             tables={tables}
             selectedTable={selectedTable}
             onSelectTable={setSelectedTable}
@@ -231,9 +243,15 @@ const FloorPlanView: React.FC<{
   tables: Table[];
   selectedTable: string | null;
   onSelectTable: (id: string | null) => void;
-  getStatusColor: (status: Table['status']) => string;
-  getTableIcon: (type: Table['table_type']) => any;
-}> = ({ tables, selectedTable, onSelectTable, getStatusColor, getTableIcon }) => {
+  getStatusColor: (status: Table["status"]) => string;
+  getTableIcon: (type: Table["table_type"]) => any;
+}> = ({
+  tables,
+  selectedTable,
+  onSelectTable,
+  getStatusColor,
+  getTableIcon,
+}) => {
   return (
     <Card>
       <CardHeader>
@@ -244,14 +262,14 @@ const FloorPlanView: React.FC<{
           {tables.map((table) => {
             const TableIcon = getTableIcon(table.table_type);
             const isSelected = selectedTable === table.id;
-            
+
             return (
               <div
                 key={table.id}
                 className={`
                   absolute w-20 h-20 rounded-lg border-2 cursor-pointer transition-all duration-200
                   ${getStatusColor(table.status)}
-                  ${isSelected ? 'ring-2 ring-primary ring-offset-2 scale-110' : 'hover:scale-105'}
+                  ${isSelected ? "ring-2 ring-primary ring-offset-2 scale-110" : "hover:scale-105"}
                 `}
                 style={{
                   left: table.position.x,
@@ -267,7 +285,7 @@ const FloorPlanView: React.FC<{
               </div>
             );
           })}
-          
+
           {/* Legend */}
           <div className="absolute bottom-4 right-4 bg-card p-4 rounded-lg border shadow-sm">
             <h4 className="font-medium mb-2">Status Legend</h4>
@@ -291,12 +309,12 @@ const FloorPlanView: React.FC<{
             </div>
           </div>
         </div>
-        
+
         {/* Selected Table Info */}
         {selectedTable && (
           <div className="mt-4">
-            <SelectedTableInfo 
-              table={tables.find(t => t.id === selectedTable)!}
+            <SelectedTableInfo
+              table={tables.find((t) => t.id === selectedTable)!}
               onClose={() => onSelectTable(null)}
             />
           </div>
@@ -311,20 +329,26 @@ const GridView: React.FC<{
   tables: Table[];
   selectedTable: string | null;
   onSelectTable: (id: string | null) => void;
-  getStatusColor: (status: Table['status']) => string;
-  getTableIcon: (type: Table['table_type']) => any;
-}> = ({ tables, selectedTable, onSelectTable, getStatusColor, getTableIcon }) => {
+  getStatusColor: (status: Table["status"]) => string;
+  getTableIcon: (type: Table["table_type"]) => any;
+}> = ({
+  tables,
+  selectedTable,
+  onSelectTable,
+  getStatusColor,
+  getTableIcon,
+}) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {tables.map((table) => {
         const TableIcon = getTableIcon(table.table_type);
         const isSelected = selectedTable === table.id;
-        
+
         return (
           <Card
             key={table.id}
             className={`cursor-pointer transition-all duration-200 ${
-              isSelected ? 'ring-2 ring-primary' : 'hover:shadow-md'
+              isSelected ? "ring-2 ring-primary" : "hover:shadow-md"
             }`}
             onClick={() => onSelectTable(isSelected ? null : table.id)}
           >
@@ -338,7 +362,7 @@ const GridView: React.FC<{
                   {table.status}
                 </Badge>
               </div>
-              
+
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Capacity:</span>
@@ -348,7 +372,7 @@ const GridView: React.FC<{
                   <span className="text-muted-foreground">Type:</span>
                   <span className="capitalize">{table.table_type}</span>
                 </div>
-                
+
                 {table.current_booking && (
                   <div className="pt-2 border-t">
                     <div className="flex justify-between text-xs">
@@ -385,12 +409,17 @@ const SelectedTableInfo: React.FC<{
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <span>{table.name}</span>
-            <Badge className={
-              table.status === 'available' ? 'bg-success text-success-foreground' :
-              table.status === 'occupied' ? 'bg-destructive text-destructive-foreground' :
-              table.status === 'reserved' ? 'bg-warning text-warning-foreground' :
-              'bg-muted text-muted-foreground'
-            }>
+            <Badge
+              className={
+                table.status === "available"
+                  ? "bg-success text-success-foreground"
+                  : table.status === "occupied"
+                    ? "bg-destructive text-destructive-foreground"
+                    : table.status === "reserved"
+                      ? "bg-warning text-warning-foreground"
+                      : "bg-muted text-muted-foreground"
+              }
+            >
               {table.status}
             </Badge>
           </CardTitle>
@@ -411,7 +440,7 @@ const SelectedTableInfo: React.FC<{
               <p className="text-lg capitalize">{table.table_type}</p>
             </div>
           </div>
-          
+
           {table.current_booking && (
             <div className="border-t pt-4">
               <h4 className="font-medium mb-2">Current Booking</h4>
@@ -431,17 +460,15 @@ const SelectedTableInfo: React.FC<{
               </div>
             </div>
           )}
-          
+
           <div className="flex gap-2 pt-4">
             <Button size="sm" variant="outline">
               Edit Table
             </Button>
-            {table.status === 'available' && (
-              <Button size="sm">
-                Make Reservation
-              </Button>
+            {table.status === "available" && (
+              <Button size="sm">Make Reservation</Button>
             )}
-            {table.status === 'occupied' && (
+            {table.status === "occupied" && (
               <Button size="sm" variant="destructive">
                 Clear Table
               </Button>

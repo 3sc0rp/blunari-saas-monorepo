@@ -9,7 +9,13 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "env": ["NODE_ENV", "PORT", "DATABASE_URL", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
+      "env": [
+        "NODE_ENV",
+        "PORT",
+        "DATABASE_URL",
+        "SUPABASE_URL",
+        "SUPABASE_ANON_KEY"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"],
@@ -36,10 +42,5 @@
       "cache": false
     }
   },
-  "globalDependencies": [
-    "package.json",
-    "turbo.json",
-    ".env",
-    ".env.local"
-  ]
+  "globalDependencies": ["package.json", "turbo.json", ".env", ".env.local"]
 }

@@ -1,47 +1,54 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from "react";
 
-type NavigationPreference = 'sidebar' | 'bottom' | 'auto';
+type NavigationPreference = "sidebar" | "bottom" | "auto";
 
 interface NavigationContextType {
   preference: NavigationPreference;
   setPreference: (preference: NavigationPreference) => void;
-  actualLayout: 'sidebar' | 'bottom'; // What's actually shown based on preference + screen size
+  actualLayout: "sidebar" | "bottom"; // What's actually shown based on preference + screen size
 }
 
-const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
+const NavigationContext = createContext<NavigationContextType | undefined>(
+  undefined,
+);
 
-export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [preference, setPreferenceState] = useState<NavigationPreference>('bottom');
-  const [actualLayout, setActualLayout] = useState<'sidebar' | 'bottom'>('bottom');
+export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [preference, setPreferenceState] =
+    useState<NavigationPreference>("bottom");
+  const [actualLayout, setActualLayout] = useState<"sidebar" | "bottom">(
+    "bottom",
+  );
 
   // Load preference from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('navigation-preference');
-    if (saved && ['sidebar', 'bottom', 'auto'].includes(saved)) {
+    const saved = localStorage.getItem("navigation-preference");
+    if (saved && ["sidebar", "bottom", "auto"].includes(saved)) {
       setPreferenceState(saved as NavigationPreference);
     } else {
       // Set default to bottom if no preference saved
-      setPreferenceState('bottom');
-      localStorage.setItem('navigation-preference', 'bottom');
+      setPreferenceState("bottom");
+      localStorage.setItem("navigation-preference", "bottom");
     }
   }, []);
 
   // Save preference to localStorage
   const setPreference = (newPreference: NavigationPreference) => {
     setPreferenceState(newPreference);
-    localStorage.setItem('navigation-preference', newPreference);
+    localStorage.setItem("navigation-preference", newPreference);
   };
 
   // Determine actual layout based on preference and screen size
   useEffect(() => {
     const updateActualLayout = () => {
-      if (preference === 'sidebar') {
-        setActualLayout('sidebar');
-      } else if (preference === 'bottom') {
-        setActualLayout('bottom');
+      if (preference === "sidebar") {
+        setActualLayout("sidebar");
+      } else if (preference === "bottom") {
+        setActualLayout("bottom");
       } else {
         // Auto mode - responsive based on screen size
-        setActualLayout(window.innerWidth >= 1024 ? 'sidebar' : 'bottom');
+        setActualLayout(window.innerWidth >= 1024 ? "sidebar" : "bottom");
       }
     };
 
@@ -50,21 +57,23 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     // Always listen for resize events in auto mode, and also when preference changes
     const handleResize = () => {
-      if (preference === 'auto') {
+      if (preference === "auto") {
         updateActualLayout();
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    
+    window.addEventListener("resize", handleResize);
+
     // Also trigger update when preference changes
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, [preference]);
 
   return (
-    <NavigationContext.Provider value={{ preference, setPreference, actualLayout }}>
+    <NavigationContext.Provider
+      value={{ preference, setPreference, actualLayout }}
+    >
       {children}
     </NavigationContext.Provider>
   );
@@ -73,7 +82,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 export const useNavigation = () => {
   const context = useContext(NavigationContext);
   if (context === undefined) {
-    throw new Error('useNavigation must be used within a NavigationProvider');
+    throw new Error("useNavigation must be used within a NavigationProvider");
   }
   return context;
 };

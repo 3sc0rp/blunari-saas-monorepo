@@ -1,9 +1,16 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { DemoTenant } from '@/types/agency';
-import { Calendar, Eye, Bookmark, ExternalLink, Clock, Trash2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DemoTenant } from "@/types/agency";
+import {
+  Calendar,
+  Eye,
+  Bookmark,
+  ExternalLink,
+  Clock,
+  Trash2,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 interface DemoTenantCardProps {
   demo: DemoTenant;
@@ -12,32 +19,37 @@ interface DemoTenantCardProps {
   onViewDetails?: (demoId: string) => void;
 }
 
-export function DemoTenantCard({ demo, onExtend, onDelete, onViewDetails }: DemoTenantCardProps) {
-  const getStatusColor = (status: DemoTenant['status']) => {
+export function DemoTenantCard({
+  demo,
+  onExtend,
+  onDelete,
+  onViewDetails,
+}: DemoTenantCardProps) {
+  const getStatusColor = (status: DemoTenant["status"]) => {
     switch (status) {
-      case 'Active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'Expired':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
-      case 'Scheduled for Cleanup':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+      case "Active":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "Expired":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+      case "Scheduled for Cleanup":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
-  const getTemplateColor = (template: DemoTenant['template']) => {
+  const getTemplateColor = (template: DemoTenant["template"]) => {
     switch (template) {
-      case 'Italian':
-        return 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/10 dark:text-green-400 dark:border-green-800';
-      case 'Fine Dining':
-        return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/10 dark:text-purple-400 dark:border-purple-800';
-      case 'Casual':
-        return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/10 dark:text-blue-400 dark:border-blue-800';
-      case 'Coffee Shop':
-        return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/10 dark:text-amber-400 dark:border-amber-800';
+      case "Italian":
+        return "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/10 dark:text-green-400 dark:border-green-800";
+      case "Fine Dining":
+        return "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/10 dark:text-purple-400 dark:border-purple-800";
+      case "Casual":
+        return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/10 dark:text-blue-400 dark:border-blue-800";
+      case "Coffee Shop":
+        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/10 dark:text-amber-400 dark:border-amber-800";
       default:
-        return 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/10 dark:text-gray-400 dark:border-gray-800';
+        return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900/10 dark:text-gray-400 dark:border-gray-800";
     }
   };
 
@@ -57,12 +69,13 @@ export function DemoTenantCard({ demo, onExtend, onDelete, onViewDetails }: Demo
             <p className="text-sm text-muted-foreground">{demo.partnerName}</p>
           </div>
           <div className="flex gap-2">
-            <Badge className={getTemplateColor(demo.template)} variant="outline">
+            <Badge
+              className={getTemplateColor(demo.template)}
+              variant="outline"
+            >
               {demo.template}
             </Badge>
-            <Badge className={getStatusColor(demo.status)}>
-              {demo.status}
-            </Badge>
+            <Badge className={getStatusColor(demo.status)}>{demo.status}</Badge>
           </div>
         </div>
       </CardHeader>
@@ -82,14 +95,20 @@ export function DemoTenantCard({ demo, onExtend, onDelete, onViewDetails }: Demo
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span>Expires {formatDistanceToNow(new Date(demo.expiresAt), { addSuffix: true })}</span>
-            {isExpiringSoon() && (
-              <Clock className="h-4 w-4 text-amber-500" />
-            )}
+            <span>
+              Expires{" "}
+              {formatDistanceToNow(new Date(demo.expiresAt), {
+                addSuffix: true,
+              })}
+            </span>
+            {isExpiringSoon() && <Clock className="h-4 w-4 text-amber-500" />}
           </div>
           {demo.lastAccessed && (
             <div className="text-muted-foreground">
-              Last accessed {formatDistanceToNow(new Date(demo.lastAccessed), { addSuffix: true })}
+              Last accessed{" "}
+              {formatDistanceToNow(new Date(demo.lastAccessed), {
+                addSuffix: true,
+              })}
             </div>
           )}
         </div>
@@ -104,14 +123,14 @@ export function DemoTenantCard({ demo, onExtend, onDelete, onViewDetails }: Demo
           <Button
             variant="outline"
             size="sm"
-            onClick={() => window.open(demo.demoUrl, '_blank')}
+            onClick={() => window.open(demo.demoUrl, "_blank")}
             className="flex-1"
           >
             <ExternalLink className="h-4 w-4 mr-2" />
             View Demo
           </Button>
-          
-          {demo.status === 'Active' && onExtend && (
+
+          {demo.status === "Active" && onExtend && (
             <Button
               variant="outline"
               size="sm"

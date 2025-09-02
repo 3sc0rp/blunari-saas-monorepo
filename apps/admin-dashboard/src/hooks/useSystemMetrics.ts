@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
 interface SystemMetric {
   id: string;
@@ -6,7 +6,7 @@ interface SystemMetric {
   metric_value: number;
   metric_unit: string;
   service_name: string;
-  severity: 'info' | 'warning' | 'error' | 'critical';
+  severity: "info" | "warning" | "error" | "critical";
   recorded_at: string;
 }
 
@@ -35,13 +35,17 @@ interface PerformanceTrend {
 export const useSystemMetrics = () => {
   const [systemMetrics, setSystemMetrics] = useState<SystemMetric[]>([]);
   const [databaseMetrics, setDatabaseMetrics] = useState<DatabaseMetric[]>([]);
-  const [performanceTrends, setPerformanceTrends] = useState<PerformanceTrend[]>([]);
+  const [performanceTrends, setPerformanceTrends] = useState<
+    PerformanceTrend[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Remove mock data completely - this hook should not be used anymore
   useEffect(() => {
-    console.warn('useSystemMetrics hook contains mock data and should not be used for operations page');
+    console.warn(
+      "useSystemMetrics hook contains mock data and should not be used for operations page",
+    );
     setLoading(false);
   }, []);
 
@@ -49,16 +53,16 @@ export const useSystemMetrics = () => {
     if (systemMetrics.length === 0) return 100;
 
     let score = 100;
-    
-    systemMetrics.forEach(metric => {
+
+    systemMetrics.forEach((metric) => {
       switch (metric.severity) {
-        case 'critical':
+        case "critical":
           score -= 25;
           break;
-        case 'error':
+        case "error":
           score -= 15;
           break;
-        case 'warning':
+        case "warning":
           score -= 5;
           break;
         default:
@@ -69,16 +73,24 @@ export const useSystemMetrics = () => {
     return Math.max(0, score);
   }, [systemMetrics]);
 
-  const getMetricsByCategory = useCallback((category: string) => {
-    return systemMetrics.filter(metric => 
-      metric.service_name.includes(category) || metric.metric_name.includes(category)
-    );
-  }, [systemMetrics]);
+  const getMetricsByCategory = useCallback(
+    (category: string) => {
+      return systemMetrics.filter(
+        (metric) =>
+          metric.service_name.includes(category) ||
+          metric.metric_name.includes(category),
+      );
+    },
+    [systemMetrics],
+  );
 
-  const getLatestMetricValue = useCallback((metricName: string) => {
-    const metric = systemMetrics.find(m => m.metric_name === metricName);
-    return metric ? metric.metric_value : null;
-  }, [systemMetrics]);
+  const getLatestMetricValue = useCallback(
+    (metricName: string) => {
+      const metric = systemMetrics.find((m) => m.metric_name === metricName);
+      return metric ? metric.metric_value : null;
+    },
+    [systemMetrics],
+  );
 
   return {
     systemMetrics,
@@ -88,6 +100,6 @@ export const useSystemMetrics = () => {
     error,
     calculateHealthScore,
     getMetricsByCategory,
-    getLatestMetricValue
+    getLatestMetricValue,
   };
 };

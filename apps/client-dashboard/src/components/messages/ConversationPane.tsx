@@ -1,11 +1,11 @@
-import React from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Message, Conversation } from '@/types/messages';
-import { format, isToday, isYesterday, isSameDay } from 'date-fns';
-import { Check, CheckCheck, Clock, AlertCircle } from 'lucide-react';
+import React from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Message, Conversation } from "@/types/messages";
+import { format, isToday, isYesterday, isSameDay } from "date-fns";
+import { Check, CheckCheck, Clock, AlertCircle } from "lucide-react";
 
 interface ConversationPaneProps {
   conversation: Conversation;
@@ -21,34 +21,34 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
   const formatMessageTime = (timestamp: string) => {
     const date = new Date(timestamp);
     if (isToday(date)) {
-      return format(date, 'h:mm a');
+      return format(date, "h:mm a");
     } else if (isYesterday(date)) {
-      return `Yesterday at ${format(date, 'h:mm a')}`;
+      return `Yesterday at ${format(date, "h:mm a")}`;
     } else {
-      return format(date, 'MMM dd at h:mm a');
+      return format(date, "MMM dd at h:mm a");
     }
   };
 
   const formatDateSeparator = (timestamp: string) => {
     const date = new Date(timestamp);
     if (isToday(date)) {
-      return 'Today';
+      return "Today";
     } else if (isYesterday(date)) {
-      return 'Yesterday';
+      return "Yesterday";
     } else {
-      return format(date, 'MMMM dd, yyyy');
+      return format(date, "MMMM dd, yyyy");
     }
   };
 
   const getMessageStatus = (message: Message) => {
     switch (message.status) {
-      case 'sent':
+      case "sent":
         return <Clock className="h-3 w-3 text-text-muted" />;
-      case 'delivered':
+      case "delivered":
         return <Check className="h-3 w-3 text-text-muted" />;
-      case 'read':
+      case "read":
         return <CheckCheck className="h-3 w-3 text-success" />;
-      case 'failed':
+      case "failed":
         return <AlertCircle className="h-3 w-3 text-danger" />;
       default:
         return null;
@@ -57,9 +57,9 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -69,7 +69,7 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
       <div
         key={message.id}
         className={`flex items-end gap-2 mb-4 ${
-          isOwn ? 'justify-end' : 'justify-start'
+          isOwn ? "justify-end" : "justify-start"
         }`}
       >
         {!isOwn && (
@@ -80,12 +80,12 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
             </AvatarFallback>
           </Avatar>
         )}
-        
+
         <div
           className={`max-w-[70%] rounded-2xl px-4 py-2 ${
             isOwn
-              ? 'bg-brand text-brand-foreground rounded-br-sm'
-              : 'bg-surface-2 text-text rounded-bl-sm'
+              ? "bg-brand text-brand-foreground rounded-br-sm"
+              : "bg-surface-2 text-text rounded-bl-sm"
           }`}
         >
           {!isOwn && (
@@ -93,14 +93,16 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
               {message.sender_name}
             </div>
           )}
-          
+
           <div className="text-body-sm leading-relaxed whitespace-pre-wrap">
             {message.content}
           </div>
-          
-          <div className={`flex items-center gap-1 mt-2 justify-end ${
-            isOwn ? 'text-brand-foreground/70' : 'text-text-muted'
-          }`}>
+
+          <div
+            className={`flex items-center gap-1 mt-2 justify-end ${
+              isOwn ? "text-brand-foreground/70" : "text-text-muted"
+            }`}
+          >
             <span className="text-xs">
               {formatMessageTime(message.created_at)}
             </span>
@@ -120,14 +122,17 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
   };
 
   // Group messages by date
-  const groupedMessages = messages.reduce((groups, message) => {
-    const date = format(new Date(message.created_at), 'yyyy-MM-dd');
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(message);
-    return groups;
-  }, {} as Record<string, Message[]>);
+  const groupedMessages = messages.reduce(
+    (groups, message) => {
+      const date = format(new Date(message.created_at), "yyyy-MM-dd");
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(message);
+      return groups;
+    },
+    {} as Record<string, Message[]>,
+  );
 
   return (
     <Card className="h-full bg-surface border-surface-2">
@@ -140,7 +145,7 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
               {getInitials(conversation.customer_name)}
             </AvatarFallback>
           </Avatar>
-          
+
           <div className="flex-1 min-w-0">
             <h3 className="text-h4 font-semibold text-text truncate">
               {conversation.customer_name}
@@ -149,9 +154,9 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
               {conversation.customer_email}
             </p>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            {conversation.status === 'draft' && (
+            {conversation.status === "draft" && (
               <Badge variant="outline" className="text-xs">
                 Draft
               </Badge>
@@ -177,15 +182,17 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
                     </span>
                   </div>
                 </div>
-                
+
                 {/* Messages for this date */}
                 {dayMessages.map((message) => {
-                  const isOwn = message.sender_type === 'staff' && message.sender_id === currentUserId;
+                  const isOwn =
+                    message.sender_type === "staff" &&
+                    message.sender_id === currentUserId;
                   return renderMessageBubble(message, isOwn);
                 })}
               </div>
             ))}
-            
+
             {messages.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-text-muted text-body-sm">

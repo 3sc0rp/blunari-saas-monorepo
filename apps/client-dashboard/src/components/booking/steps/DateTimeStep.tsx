@@ -1,16 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Calendar, Clock, TrendingUp, ArrowLeft, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { TenantInfo, TimeSlot, AvailabilityResponse } from '@/types/booking-api';
-import { searchAvailability } from '@/api/booking-proxy';
-import { format, addDays, parseISO } from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  Calendar,
+  Clock,
+  TrendingUp,
+  ArrowLeft,
+  RefreshCw,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  TenantInfo,
+  TimeSlot,
+  AvailabilityResponse,
+} from "@/types/booking-api";
+import { searchAvailability } from "@/api/booking-proxy";
+import { format, addDays, parseISO } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
+import { toast } from "sonner";
 
 interface DateTimeStepProps {
   tenant: TenantInfo;
@@ -20,78 +30,83 @@ interface DateTimeStepProps {
   loading: boolean;
 }
 
-const DateTimeStep: React.FC<DateTimeStepProps> = ({ 
-  tenant, 
-  partySize, 
-  onComplete, 
-  onBack, 
-  loading: parentLoading 
+const DateTimeStep: React.FC<DateTimeStepProps> = ({
+  tenant,
+  partySize,
+  onComplete,
+  onBack,
+  loading: parentLoading,
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [availability, setAvailability] = useState<AvailabilityResponse | null>(null);
+  const [availability, setAvailability] = useState<AvailabilityResponse | null>(
+    null,
+  );
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const timezone = tenant.timezone || 'UTC';
+  const timezone = tenant.timezone || "UTC";
 
   const fetchAvailability = async (date: Date) => {
     setLoadingSlots(true);
     setError(null);
-    
+
     try {
       const searchRequest = {
         tenant_id: tenant.tenant_id,
         party_size: Number(partySize), // Ensure it's a number
-        service_date: format(date, 'yyyy-MM-dd'), // Plain date string in YYYY-MM-DD format
+        service_date: format(date, "yyyy-MM-dd"), // Plain date string in YYYY-MM-DD format
       };
-      
-      console.log('Making availability search request:', searchRequest);
-      console.log('Tenant info available:', { 
-        tenant_id: tenant.tenant_id, 
+
+      console.log("Making availability search request:", searchRequest);
+      console.log("Tenant info available:", {
+        tenant_id: tenant.tenant_id,
         name: tenant.name,
         party_size: partySize,
-        selected_date: format(date, 'yyyy-MM-dd')
+        selected_date: format(date, "yyyy-MM-dd"),
       });
-      
+
       // Add timeout to prevent infinite loading
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout - please try again')), 15000)
+        setTimeout(
+          () => reject(new Error("Request timeout - please try again")),
+          15000,
+        ),
       );
-      
-      const result = await Promise.race([
+
+      const result = (await Promise.race([
         searchAvailability(searchRequest),
-        timeoutPromise
-      ]) as AvailabilityResponse;
-      
-      console.log('Availability search result:', result);
+        timeoutPromise,
+      ])) as AvailabilityResponse;
+
+      console.log("Availability search result:", result);
       setAvailability(result);
-      
+
       if (result && result.slots && result.slots.length === 0) {
-        toast('No availability found for this date', {
-          description: 'Try selecting a different date or party size'
+        toast("No availability found for this date", {
+          description: "Try selecting a different date or party size",
         });
       }
     } catch (err) {
       const error = err as Error;
-      console.error('Availability search failed:', error);
-      
+      console.error("Availability search failed:", error);
+
       // Handle specific error types
-      let errorMessage = 'Failed to load availability';
-      if (error.message.includes('timeout')) {
-        errorMessage = 'Request timed out - please try again';
-      } else if (error.message.includes('TENANT_NOT_FOUND')) {
-        errorMessage = 'Restaurant configuration not found';
-      } else if (error.message.includes('EDGE_FUNCTION_ERROR')) {
-        errorMessage = 'Service temporarily unavailable';
-      } else if (error.message.includes('NETWORK_ERROR')) {
-        errorMessage = 'Network connection issue';
+      let errorMessage = "Failed to load availability";
+      if (error.message.includes("timeout")) {
+        errorMessage = "Request timed out - please try again";
+      } else if (error.message.includes("TENANT_NOT_FOUND")) {
+        errorMessage = "Restaurant configuration not found";
+      } else if (error.message.includes("EDGE_FUNCTION_ERROR")) {
+        errorMessage = "Service temporarily unavailable";
+      } else if (error.message.includes("NETWORK_ERROR")) {
+        errorMessage = "Network connection issue";
       } else {
         errorMessage = error.message;
       }
-      
+
       setError(errorMessage);
-      toast.error('Failed to load availability', {
-        description: errorMessage
+      toast.error("Failed to load availability", {
+        description: errorMessage,
       });
     } finally {
       setLoadingSlots(false);
@@ -113,7 +128,7 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
   };
 
   const formatSlotTime = (timeISO: string) => {
-    return formatInTimeZone(parseISO(timeISO), timezone, 'h:mm a');
+    return formatInTimeZone(parseISO(timeISO), timezone, "h:mm a");
   };
 
   const isDateDisabled = (date: Date) => {
@@ -163,7 +178,9 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                 onClick={() => fetchAvailability(selectedDate)}
                 disabled={loadingSlots}
               >
-                <RefreshCw className={`w-4 h-4 ${loadingSlots ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-4 h-4 ${loadingSlots ? "animate-spin" : ""}`}
+                />
               </Button>
             </div>
 
@@ -175,9 +192,11 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
               </div>
             ) : error ? (
               <div className="text-center py-8">
-                <p className="text-destructive mb-2">Failed to load availability</p>
-                <Button 
-                  variant="outline" 
+                <p className="text-destructive mb-2">
+                  Failed to load availability
+                </p>
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => fetchAvailability(selectedDate)}
                 >
@@ -211,22 +230,26 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                         <div className="text-lg font-bold text-text group-hover:text-brand transition-colors">
                           {formatSlotTime(slot.time)}
                         </div>
-                        
+
                         {/* Enhanced Capacity Pill */}
-                        <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
-                          slot.available_tables <= 2 
-                            ? 'bg-destructive/10 text-destructive' 
-                            : slot.available_tables <= 5
-                              ? 'bg-warning/10 text-warning'
-                              : 'bg-success/10 text-success'
-                        }`}>
-                          <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                            slot.available_tables <= 2 
-                              ? 'bg-destructive animate-pulse' 
+                        <div
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                            slot.available_tables <= 2
+                              ? "bg-destructive/10 text-destructive"
                               : slot.available_tables <= 5
-                                ? 'bg-warning'
-                                : 'bg-success'
-                          }`} />
+                                ? "bg-warning/10 text-warning"
+                                : "bg-success/10 text-success"
+                          }`}
+                        >
+                          <div
+                            className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                              slot.available_tables <= 2
+                                ? "bg-destructive animate-pulse"
+                                : slot.available_tables <= 5
+                                  ? "bg-warning"
+                                  : "bg-success"
+                            }`}
+                          />
                           {slot.available_tables} available
                         </div>
                       </div>
@@ -239,8 +262,8 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ delay: 0.2 }}
                           >
-                            <Badge 
-                              variant="secondary" 
+                            <Badge
+                              variant="secondary"
                               className="text-xs px-2 py-0.5 bg-success/10 text-success border-success/20 shadow-sm"
                             >
                               <TrendingUp className="w-2.5 h-2.5 mr-1" />
@@ -254,8 +277,8 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ delay: 0.3 }}
                           >
-                            <Badge 
-                              variant="outline" 
+                            <Badge
+                              variant="outline"
                               className="text-xs px-2 py-0.5 bg-warning/10 text-warning border-warning/20 shadow-sm"
                             >
                               💰 ${slot.revenue_projection}
@@ -268,8 +291,8 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ delay: 0.1 }}
                           >
-                            <Badge 
-                              variant="outline" 
+                            <Badge
+                              variant="outline"
                               className="text-xs px-2 py-0.5 bg-destructive/10 text-destructive border-destructive/20 shadow-sm animate-pulse"
                             >
                               ⚡ Limited
@@ -280,13 +303,13 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
 
                       {/* Enhanced hover effect overlay */}
                       <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-brand/5 to-accent/5 opacity-0 group-hover:opacity-100 transition-all duration-300" />
-                      
+
                       {/* Subtle shine effect on hover */}
                       <motion.div
                         className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0"
-                        whileHover={{ 
+                        whileHover={{
                           opacity: [0, 1, 0],
-                          x: ['-100%', '100%']
+                          x: ["-100%", "100%"],
                         }}
                         transition={{ duration: 0.8 }}
                       />
@@ -295,31 +318,32 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                 </div>
 
                 {/* Alternative times if provided by API */}
-                {availability.alternatives && availability.alternatives.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-3 text-muted-foreground">
-                      Alternative times
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {availability.alternatives.map((slot, index) => (
-                        <Button
-                          key={index}
-                          variant="ghost"
-                          className="w-full h-auto p-3 flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground"
-                          onClick={() => handleSlotSelect(slot)}
-                          disabled={parentLoading}
-                        >
-                          <div className="font-medium">
-                            {formatSlotTime(slot.time)}
-                          </div>
-                          <div className="text-xs">
-                            {slot.available_tables} available
-                          </div>
-                        </Button>
-                      ))}
+                {availability.alternatives &&
+                  availability.alternatives.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-3 text-muted-foreground">
+                        Alternative times
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {availability.alternatives.map((slot, index) => (
+                          <Button
+                            key={index}
+                            variant="ghost"
+                            className="w-full h-auto p-3 flex flex-col items-center gap-1 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleSlotSelect(slot)}
+                            disabled={parentLoading}
+                          >
+                            <div className="font-medium">
+                              {formatSlotTime(slot.time)}
+                            </div>
+                            <div className="text-xs">
+                              {slot.available_tables} available
+                            </div>
+                          </Button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             )}
           </div>

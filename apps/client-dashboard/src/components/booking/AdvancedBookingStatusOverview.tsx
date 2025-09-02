@@ -1,21 +1,27 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Calendar, 
-  Clock, 
-  Users, 
-  CheckCircle2, 
-  AlertCircle, 
-  XCircle, 
-  UserX, 
+import React, { useState, useMemo, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  Clock,
+  Users,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+  UserX,
   Activity,
   BarChart3,
   PieChart,
@@ -29,9 +35,24 @@ import {
   Zap,
   Target,
   DollarSign,
-  Timer
-} from 'lucide-react';
-import { PieChart as RechartsPieChart, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Line, LineChart, Pie, Area, AreaChart } from 'recharts';
+  Timer,
+} from "lucide-react";
+import {
+  PieChart as RechartsPieChart,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Line,
+  LineChart,
+  Pie,
+  Area,
+  AreaChart,
+} from "recharts";
 
 interface Booking {
   id: string;
@@ -49,14 +70,15 @@ interface AdvancedBookingStatusOverviewProps {
   isLoading?: boolean;
 }
 
-const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps> = ({
-  bookings,
-  selectedStatus,
-  onStatusChange,
-  isLoading = false
-}) => {
-  const [viewMode, setViewMode] = useState<'overview' | 'analytics' | 'trends'>('overview');
-  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
+const AdvancedBookingStatusOverview: React.FC<
+  AdvancedBookingStatusOverviewProps
+> = ({ bookings, selectedStatus, onStatusChange, isLoading = false }) => {
+  const [viewMode, setViewMode] = useState<"overview" | "analytics" | "trends">(
+    "overview",
+  );
+  const [timeRange, setTimeRange] = useState<"today" | "week" | "month">(
+    "today",
+  );
   const [compareMode, setCompareMode] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -66,122 +88,167 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
-
   // Status configuration with colors and icons
   const statusConfig = {
-    all: { 
-      label: 'All Bookings', 
-      color: 'hsl(var(--muted))', 
-      icon: Activity, 
-      gradient: 'from-slate-500 to-slate-600' 
+    all: {
+      label: "All Bookings",
+      color: "hsl(var(--muted))",
+      icon: Activity,
+      gradient: "from-slate-500 to-slate-600",
     },
-    pending: { 
-      label: 'Pending', 
-      color: 'hsl(var(--warning))', 
-      icon: Clock, 
-      gradient: 'from-yellow-500 to-orange-500' 
+    pending: {
+      label: "Pending",
+      color: "hsl(var(--warning))",
+      icon: Clock,
+      gradient: "from-yellow-500 to-orange-500",
     },
-    confirmed: { 
-      label: 'Confirmed', 
-      color: 'hsl(var(--success))', 
-      icon: CheckCircle2, 
-      gradient: 'from-green-500 to-emerald-500' 
+    confirmed: {
+      label: "Confirmed",
+      color: "hsl(var(--success))",
+      icon: CheckCircle2,
+      gradient: "from-green-500 to-emerald-500",
     },
-    seated: { 
-      label: 'Seated', 
-      color: 'hsl(var(--primary))', 
-      icon: Users, 
-      gradient: 'from-blue-500 to-cyan-500' 
+    seated: {
+      label: "Seated",
+      color: "hsl(var(--primary))",
+      icon: Users,
+      gradient: "from-blue-500 to-cyan-500",
     },
-    completed: { 
-      label: 'Completed', 
-      color: 'hsl(var(--success))', 
-      icon: CheckCircle2, 
-      gradient: 'from-emerald-600 to-green-600' 
+    completed: {
+      label: "Completed",
+      color: "hsl(var(--success))",
+      icon: CheckCircle2,
+      gradient: "from-emerald-600 to-green-600",
     },
-    cancelled: { 
-      label: 'Cancelled', 
-      color: 'hsl(var(--destructive))', 
-      icon: XCircle, 
-      gradient: 'from-red-500 to-rose-500' 
+    cancelled: {
+      label: "Cancelled",
+      color: "hsl(var(--destructive))",
+      icon: XCircle,
+      gradient: "from-red-500 to-rose-500",
     },
-    noshow: { 
-      label: 'No Show', 
-      color: 'hsl(var(--destructive))', 
-      icon: UserX, 
-      gradient: 'from-red-600 to-red-700' 
-    }
+    noshow: {
+      label: "No Show",
+      color: "hsl(var(--destructive))",
+      icon: UserX,
+      gradient: "from-red-600 to-red-700",
+    },
   };
 
   // Advanced analytics calculations
   const analytics = useMemo(() => {
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     const startOfWeek = new Date(startOfDay);
     startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const getDateFilter = () => {
       switch (timeRange) {
-        case 'today': return (date: Date) => date >= startOfDay;
-        case 'week': return (date: Date) => date >= startOfWeek;
-        case 'month': return (date: Date) => date >= startOfMonth;
-        default: return () => true;
+        case "today":
+          return (date: Date) => date >= startOfDay;
+        case "week":
+          return (date: Date) => date >= startOfWeek;
+        case "month":
+          return (date: Date) => date >= startOfMonth;
+        default:
+          return () => true;
       }
     };
 
-    const filteredBookings = bookings.filter(b => 
-      getDateFilter()(new Date(b.booking_time))
+    const filteredBookings = bookings.filter((b) =>
+      getDateFilter()(new Date(b.booking_time)),
     );
 
-    const statusCounts = Object.keys(statusConfig).reduce((acc, status) => {
-      acc[status] = status === 'all' 
-        ? filteredBookings.length 
-        : filteredBookings.filter(b => b.status === status).length;
-      return acc;
-    }, {} as Record<string, number>);
+    const statusCounts = Object.keys(statusConfig).reduce(
+      (acc, status) => {
+        acc[status] =
+          status === "all"
+            ? filteredBookings.length
+            : filteredBookings.filter((b) => b.status === status).length;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
-    const totalGuests = filteredBookings.reduce((sum, b) => sum + b.party_size, 0);
-    const avgPartySize = filteredBookings.length > 0 ? totalGuests / filteredBookings.length : 0;
+    const totalGuests = filteredBookings.reduce(
+      (sum, b) => sum + b.party_size,
+      0,
+    );
+    const avgPartySize =
+      filteredBookings.length > 0 ? totalGuests / filteredBookings.length : 0;
 
     // Conversion rates
-    const confirmationRate = statusCounts.all > 0 
-      ? ((statusCounts.confirmed + statusCounts.seated + statusCounts.completed) / statusCounts.all) * 100 
-      : 0;
-    
-    const completionRate = statusCounts.confirmed > 0 
-      ? (statusCounts.completed / (statusCounts.confirmed + statusCounts.seated + statusCounts.completed)) * 100 
-      : 0;
+    const confirmationRate =
+      statusCounts.all > 0
+        ? ((statusCounts.confirmed +
+            statusCounts.seated +
+            statusCounts.completed) /
+            statusCounts.all) *
+          100
+        : 0;
 
-    const noshowRate = statusCounts.all > 0 
-      ? (statusCounts.noshow / statusCounts.all) * 100 
-      : 0;
+    const completionRate =
+      statusCounts.confirmed > 0
+        ? (statusCounts.completed /
+            (statusCounts.confirmed +
+              statusCounts.seated +
+              statusCounts.completed)) *
+          100
+        : 0;
+
+    const noshowRate =
+      statusCounts.all > 0 ? (statusCounts.noshow / statusCounts.all) * 100 : 0;
 
     // Trend calculations (compare with previous period)
     const previousPeriod = new Date(startOfDay);
-    if (timeRange === 'today') previousPeriod.setDate(previousPeriod.getDate() - 1);
-    else if (timeRange === 'week') previousPeriod.setDate(previousPeriod.getDate() - 7);
-    else if (timeRange === 'month') previousPeriod.setMonth(previousPeriod.getMonth() - 1);
+    if (timeRange === "today")
+      previousPeriod.setDate(previousPeriod.getDate() - 1);
+    else if (timeRange === "week")
+      previousPeriod.setDate(previousPeriod.getDate() - 7);
+    else if (timeRange === "month")
+      previousPeriod.setMonth(previousPeriod.getMonth() - 1);
 
-    const previousBookings = bookings.filter(b => {
+    const previousBookings = bookings.filter((b) => {
       const bookingDate = new Date(b.booking_time);
-      return bookingDate >= previousPeriod && bookingDate < (timeRange === 'today' ? startOfDay : 
-        timeRange === 'week' ? startOfWeek : startOfMonth);
+      return (
+        bookingDate >= previousPeriod &&
+        bookingDate <
+          (timeRange === "today"
+            ? startOfDay
+            : timeRange === "week"
+              ? startOfWeek
+              : startOfMonth)
+      );
     });
 
     const getTrend = (current: number, previous: number) => {
-      if (previous === 0) return { direction: 'none' as const, percentage: 0 };
+      if (previous === 0) return { direction: "none" as const, percentage: 0 };
       const change = ((current - previous) / previous) * 100;
       return {
-        direction: change > 0 ? 'up' as const : change < 0 ? 'down' as const : 'none' as const,
-        percentage: Math.abs(change)
+        direction:
+          change > 0
+            ? ("up" as const)
+            : change < 0
+              ? ("down" as const)
+              : ("none" as const),
+        percentage: Math.abs(change),
       };
     };
 
     const trends = {
       total: getTrend(filteredBookings.length, previousBookings.length),
-      confirmed: getTrend(statusCounts.confirmed, previousBookings.filter(b => b.status === 'confirmed').length),
-      completed: getTrend(statusCounts.completed, previousBookings.filter(b => b.status === 'completed').length)
+      confirmed: getTrend(
+        statusCounts.confirmed,
+        previousBookings.filter((b) => b.status === "confirmed").length,
+      ),
+      completed: getTrend(
+        statusCounts.completed,
+        previousBookings.filter((b) => b.status === "completed").length,
+      ),
     };
 
     return {
@@ -192,42 +259,42 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
       completionRate,
       noshowRate,
       trends,
-      filteredBookings
+      filteredBookings,
     };
   }, [bookings, timeRange]);
 
   // Advanced insights calculations
   const insights = useMemo(() => {
     const { filteredBookings } = analytics;
-    
+
     // Peak hours analysis
     const hourlyDistribution = Array.from({ length: 24 }, (_, hour) => {
-      const count = filteredBookings.filter(b => 
-        new Date(b.booking_time).getHours() === hour
+      const count = filteredBookings.filter(
+        (b) => new Date(b.booking_time).getHours() === hour,
       ).length;
       return { hour, count };
     });
-    
-    const peakHour = hourlyDistribution.reduce((max, current) => 
-      current.count > max.count ? current : max
+
+    const peakHour = hourlyDistribution.reduce((max, current) =>
+      current.count > max.count ? current : max,
     );
 
     // Revenue potential (assuming avg price per person)
     const avgPricePerPerson = 45;
     const potentialRevenue = analytics.totalGuests * avgPricePerPerson;
-    
+
     // Efficiency metrics
     const capacityUtilization = Math.min(analytics.totalGuests / 100, 1) * 100;
-    
+
     // Response time analysis
     const avgResponseTime = analytics.totalGuests ? 12 : 0; // From real analytics when available
-    
+
     return {
       peakHour: peakHour.hour,
       potentialRevenue,
       capacityUtilization,
       avgResponseTime,
-      hourlyDistribution
+      hourlyDistribution,
     };
   }, [analytics]);
 
@@ -235,27 +302,29 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
   const getTimelineData = () => {
     const now = new Date();
     const periods = [];
-    
-    if (timeRange === 'today') {
+
+    if (timeRange === "today") {
       // Hourly data for today
       for (let i = 23; i >= 0; i--) {
         const hour = new Date(now);
         hour.setHours(now.getHours() - i, 0, 0, 0);
         const nextHour = new Date(hour);
         nextHour.setHours(hour.getHours() + 1);
-        
-        const hourBookings = bookings.filter(b => {
+
+        const hourBookings = bookings.filter((b) => {
           const bookingTime = new Date(b.booking_time);
           return bookingTime >= hour && bookingTime < nextHour;
         });
-        
+
         periods.push({
           period: `${hour.getHours()}:00`,
           bookings: hourBookings.length,
-          confirmed: hourBookings.filter(b => ['confirmed', 'seated', 'completed'].includes(b.status)).length
+          confirmed: hourBookings.filter((b) =>
+            ["confirmed", "seated", "completed"].includes(b.status),
+          ).length,
         });
       }
-    } else if (timeRange === 'week') {
+    } else if (timeRange === "week") {
       // Daily data for past 7 days
       for (let i = 6; i >= 0; i--) {
         const day = new Date(now);
@@ -263,100 +332,120 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
         day.setHours(0, 0, 0, 0);
         const nextDay = new Date(day);
         nextDay.setDate(day.getDate() + 1);
-        
-        const dayBookings = bookings.filter(b => {
+
+        const dayBookings = bookings.filter((b) => {
           const bookingTime = new Date(b.booking_time);
           return bookingTime >= day && bookingTime < nextDay;
         });
-        
+
         periods.push({
-          period: day.toLocaleDateString('en-US', { weekday: 'short' }),
+          period: day.toLocaleDateString("en-US", { weekday: "short" }),
           bookings: dayBookings.length,
-          confirmed: dayBookings.filter(b => ['confirmed', 'seated', 'completed'].includes(b.status)).length
+          confirmed: dayBookings.filter((b) =>
+            ["confirmed", "seated", "completed"].includes(b.status),
+          ).length,
         });
       }
     } else {
       // Weekly data for past 4 weeks
       for (let i = 3; i >= 0; i--) {
         const weekStart = new Date(now);
-        weekStart.setDate(now.getDate() - (i * 7) - now.getDay());
+        weekStart.setDate(now.getDate() - i * 7 - now.getDay());
         weekStart.setHours(0, 0, 0, 0);
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 7);
-        
-        const weekBookings = bookings.filter(b => {
+
+        const weekBookings = bookings.filter((b) => {
           const bookingTime = new Date(b.booking_time);
           return bookingTime >= weekStart && bookingTime < weekEnd;
         });
-        
+
         periods.push({
           period: `Week ${4 - i}`,
           bookings: weekBookings.length,
-          confirmed: weekBookings.filter(b => ['confirmed', 'seated', 'completed'].includes(b.status)).length
+          confirmed: weekBookings.filter((b) =>
+            ["confirmed", "seated", "completed"].includes(b.status),
+          ).length,
         });
       }
     }
-    
+
     return periods;
   };
 
   // Pie chart data
   const pieData = Object.entries(analytics.statusCounts)
-    .filter(([status]) => status !== 'all' && analytics.statusCounts[status] > 0)
+    .filter(
+      ([status]) => status !== "all" && analytics.statusCounts[status] > 0,
+    )
     .map(([status, count]) => ({
       name: statusConfig[status as keyof typeof statusConfig].label,
       value: count,
-      color: statusConfig[status as keyof typeof statusConfig].color
+      color: statusConfig[status as keyof typeof statusConfig].color,
     }));
 
-  const TrendIndicator: React.FC<{ trend: { direction: 'up' | 'down' | 'none'; percentage: number } }> = ({ trend }) => {
-    if (trend.direction === 'none') return <Minus className="h-3 w-3 text-muted-foreground" />;
-    
-    const Icon = trend.direction === 'up' ? ArrowUp : ArrowDown;
-    const colorClass = trend.direction === 'up' ? 'text-success' : 'text-destructive';
-    
+  const TrendIndicator: React.FC<{
+    trend: { direction: "up" | "down" | "none"; percentage: number };
+  }> = ({ trend }) => {
+    if (trend.direction === "none")
+      return <Minus className="h-3 w-3 text-muted-foreground" />;
+
+    const Icon = trend.direction === "up" ? ArrowUp : ArrowDown;
+    const colorClass =
+      trend.direction === "up" ? "text-success" : "text-destructive";
+
     return (
       <div className={`flex items-center gap-1 ${colorClass}`}>
         <Icon className="h-3 w-3" />
-        <span className="text-xs font-medium">{trend.percentage.toFixed(1)}%</span>
+        <span className="text-xs font-medium">
+          {trend.percentage.toFixed(1)}%
+        </span>
       </div>
     );
   };
 
-  const StatusCard: React.FC<{ status: string; count: number; isSelected: boolean }> = ({ 
-    status, 
-    count, 
-    isSelected 
-  }) => {
+  const StatusCard: React.FC<{
+    status: string;
+    count: number;
+    isSelected: boolean;
+  }> = ({ status, count, isSelected }) => {
     const config = statusConfig[status as keyof typeof statusConfig];
     const Icon = config.icon;
-    const percentage = analytics.statusCounts.all > 0 ? (count / analytics.statusCounts.all) * 100 : 0;
+    const percentage =
+      analytics.statusCounts.all > 0
+        ? (count / analytics.statusCounts.all) * 100
+        : 0;
 
     return (
       <motion.div
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         className={`cursor-pointer transition-all duration-200 ${
-          isSelected ? 'ring-2 ring-primary' : ''
+          isSelected ? "ring-2 ring-primary" : ""
         }`}
         onClick={() => onStatusChange(status)}
       >
-        <Card className={`h-full bg-gradient-to-br ${config.gradient} text-white shadow-lg hover:shadow-xl transition-shadow`}>
+        <Card
+          className={`h-full bg-gradient-to-br ${config.gradient} text-white shadow-lg hover:shadow-xl transition-shadow`}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
               <Icon className="h-5 w-5 opacity-80" />
-              {status !== 'all' && (
-                <TrendIndicator trend={analytics.trends[status as keyof typeof analytics.trends] || { direction: 'none', percentage: 0 }} />
+              {status !== "all" && (
+                <TrendIndicator
+                  trend={
+                    analytics.trends[
+                      status as keyof typeof analytics.trends
+                    ] || { direction: "none", percentage: 0 }
+                  }
+                />
               )}
             </div>
             <div className="space-y-2">
               <div className="text-2xl font-bold">{count}</div>
               <div className="text-sm opacity-90">{config.label}</div>
-              {status !== 'all' && (
-                <Progress 
-                  value={percentage} 
-                  className="h-1 bg-white/30" 
-                />
+              {status !== "all" && (
+                <Progress value={percentage} className="h-1 bg-white/30" />
               )}
             </div>
           </CardContent>
@@ -378,51 +467,64 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
               Live
             </Badge>
           </CardTitle>
-          
+
           <div className="flex items-center gap-2 flex-wrap">
-            <Tabs value={timeRange} onValueChange={(value) => setTimeRange(value as 'today' | 'week' | 'month')}>
+            <Tabs
+              value={timeRange}
+              onValueChange={(value) =>
+                setTimeRange(value as "today" | "week" | "month")
+              }
+            >
               <TabsList className="grid w-fit grid-cols-3">
-                <TabsTrigger value="today" className="text-xs">Today</TabsTrigger>
-                <TabsTrigger value="week" className="text-xs">Week</TabsTrigger>
-                <TabsTrigger value="month" className="text-xs">Month</TabsTrigger>
+                <TabsTrigger value="today" className="text-xs">
+                  Today
+                </TabsTrigger>
+                <TabsTrigger value="week" className="text-xs">
+                  Week
+                </TabsTrigger>
+                <TabsTrigger value="month" className="text-xs">
+                  Month
+                </TabsTrigger>
               </TabsList>
             </Tabs>
 
             <div className="flex items-center gap-1 border rounded-lg p-1">
               <Button
-                variant={viewMode === 'overview' ? 'default' : 'ghost'}
+                variant={viewMode === "overview" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setViewMode('overview')}
+                onClick={() => setViewMode("overview")}
                 className="h-8 px-3"
               >
                 <Eye className="h-3 w-3" />
               </Button>
               <Button
-                variant={viewMode === 'analytics' ? 'default' : 'ghost'}
+                variant={viewMode === "analytics" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setViewMode('analytics')}
+                onClick={() => setViewMode("analytics")}
                 className="h-8 px-3"
               >
                 <PieChart className="h-3 w-3" />
               </Button>
               <Button
-                variant={viewMode === 'trends' ? 'default' : 'ghost'}
+                variant={viewMode === "trends" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setViewMode('trends')}
+                onClick={() => setViewMode("trends")}
                 className="h-8 px-3"
               >
                 <TrendingUp className="h-3 w-3" />
               </Button>
             </div>
 
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="gap-2"
               onClick={handleRefresh}
               disabled={refreshing}
             >
-              <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
 
@@ -436,7 +538,7 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
 
       <CardContent className="space-y-6">
         <AnimatePresence mode="wait">
-          {viewMode === 'overview' && (
+          {viewMode === "overview" && (
             <motion.div
               key="overview"
               initial={{ opacity: 0, y: 20 }}
@@ -447,39 +549,53 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
             >
               {/* Status Cards Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                {Object.entries(analytics.statusCounts).map(([status, count]) => (
-                  <StatusCard
-                    key={status}
-                    status={status}
-                    count={count}
-                    isSelected={selectedStatus === status}
-                  />
-                ))}
+                {Object.entries(analytics.statusCounts).map(
+                  ([status, count]) => (
+                    <StatusCard
+                      key={status}
+                      status={status}
+                      count={count}
+                      isSelected={selectedStatus === status}
+                    />
+                  ),
+                )}
               </div>
 
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-blue-700">{analytics.totalGuests}</div>
+                    <div className="text-2xl font-bold text-blue-700">
+                      {analytics.totalGuests}
+                    </div>
                     <div className="text-sm text-blue-600">Total Guests</div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-green-700">{analytics.confirmationRate.toFixed(1)}%</div>
-                    <div className="text-sm text-green-600">Confirmation Rate</div>
+                    <div className="text-2xl font-bold text-green-700">
+                      {analytics.confirmationRate.toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-green-600">
+                      Confirmation Rate
+                    </div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-purple-700">{analytics.avgPartySize.toFixed(1)}</div>
-                    <div className="text-sm text-purple-600">Avg Party Size</div>
+                    <div className="text-2xl font-bold text-purple-700">
+                      {analytics.avgPartySize.toFixed(1)}
+                    </div>
+                    <div className="text-sm text-purple-600">
+                      Avg Party Size
+                    </div>
                   </CardContent>
                 </Card>
                 <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
                   <CardContent className="p-4 text-center">
-                    <div className="text-2xl font-bold text-orange-700">{analytics.noshowRate.toFixed(1)}%</div>
+                    <div className="text-2xl font-bold text-orange-700">
+                      {analytics.noshowRate.toFixed(1)}%
+                    </div>
                     <div className="text-sm text-orange-600">No-Show Rate</div>
                   </CardContent>
                 </Card>
@@ -498,30 +614,46 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
                     <div className="text-center space-y-2">
                       <div className="flex items-center justify-center">
                         <Clock className="h-4 w-4 text-orange-500 mr-1" />
-                        <span className="text-lg font-bold">{insights.peakHour}:00</span>
+                        <span className="text-lg font-bold">
+                          {insights.peakHour}:00
+                        </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">Peak Hour</div>
+                      <div className="text-xs text-muted-foreground">
+                        Peak Hour
+                      </div>
                     </div>
                     <div className="text-center space-y-2">
                       <div className="flex items-center justify-center">
                         <DollarSign className="h-4 w-4 text-green-500 mr-1" />
-                        <span className="text-lg font-bold">${insights.potentialRevenue.toLocaleString()}</span>
+                        <span className="text-lg font-bold">
+                          ${insights.potentialRevenue.toLocaleString()}
+                        </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">Revenue Potential</div>
+                      <div className="text-xs text-muted-foreground">
+                        Revenue Potential
+                      </div>
                     </div>
                     <div className="text-center space-y-2">
                       <div className="flex items-center justify-center">
                         <Target className="h-4 w-4 text-blue-500 mr-1" />
-                        <span className="text-lg font-bold">{insights.capacityUtilization.toFixed(1)}%</span>
+                        <span className="text-lg font-bold">
+                          {insights.capacityUtilization.toFixed(1)}%
+                        </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">Capacity Used</div>
+                      <div className="text-xs text-muted-foreground">
+                        Capacity Used
+                      </div>
                     </div>
                     <div className="text-center space-y-2">
                       <div className="flex items-center justify-center">
                         <Timer className="h-4 w-4 text-purple-500 mr-1" />
-                        <span className="text-lg font-bold">{insights.avgResponseTime}m</span>
+                        <span className="text-lg font-bold">
+                          {insights.avgResponseTime}m
+                        </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">Avg Response</div>
+                      <div className="text-xs text-muted-foreground">
+                        Avg Response
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -529,7 +661,7 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
             </motion.div>
           )}
 
-          {viewMode === 'analytics' && (
+          {viewMode === "analytics" && (
             <motion.div
               key="analytics"
               initial={{ opacity: 0, y: 20 }}
@@ -541,7 +673,9 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
               {/* Status Distribution Pie Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Status Distribution</CardTitle>
+                  <CardTitle className="text-base">
+                    Status Distribution
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-64">
@@ -568,29 +702,49 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
               {/* Performance Metrics */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Performance Metrics</CardTitle>
+                  <CardTitle className="text-base">
+                    Performance Metrics
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Confirmation Rate</span>
-                      <span className="font-semibold">{analytics.confirmationRate.toFixed(1)}%</span>
+                      <span className="text-sm text-muted-foreground">
+                        Confirmation Rate
+                      </span>
+                      <span className="font-semibold">
+                        {analytics.confirmationRate.toFixed(1)}%
+                      </span>
                     </div>
-                    <Progress value={analytics.confirmationRate} className="h-2" />
+                    <Progress
+                      value={analytics.confirmationRate}
+                      className="h-2"
+                    />
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Completion Rate</span>
-                      <span className="font-semibold">{analytics.completionRate.toFixed(1)}%</span>
+                      <span className="text-sm text-muted-foreground">
+                        Completion Rate
+                      </span>
+                      <span className="font-semibold">
+                        {analytics.completionRate.toFixed(1)}%
+                      </span>
                     </div>
-                    <Progress value={analytics.completionRate} className="h-2" />
+                    <Progress
+                      value={analytics.completionRate}
+                      className="h-2"
+                    />
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">No-Show Rate</span>
-                      <span className="font-semibold text-destructive">{analytics.noshowRate.toFixed(1)}%</span>
+                      <span className="text-sm text-muted-foreground">
+                        No-Show Rate
+                      </span>
+                      <span className="font-semibold text-destructive">
+                        {analytics.noshowRate.toFixed(1)}%
+                      </span>
                     </div>
                     <Progress value={analytics.noshowRate} className="h-2" />
                   </div>
@@ -599,7 +753,7 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
             </motion.div>
           )}
 
-          {viewMode === 'trends' && (
+          {viewMode === "trends" && (
             <motion.div
               key="trends"
               initial={{ opacity: 0, y: 20 }}
@@ -613,8 +767,12 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm text-muted-foreground">Total Bookings</div>
-                        <div className="text-2xl font-bold">{analytics.statusCounts.all}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Total Bookings
+                        </div>
+                        <div className="text-2xl font-bold">
+                          {analytics.statusCounts.all}
+                        </div>
                       </div>
                       <TrendIndicator trend={analytics.trends.total} />
                     </div>
@@ -624,8 +782,12 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm text-muted-foreground">Confirmed</div>
-                        <div className="text-2xl font-bold">{analytics.statusCounts.confirmed}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Confirmed
+                        </div>
+                        <div className="text-2xl font-bold">
+                          {analytics.statusCounts.confirmed}
+                        </div>
                       </div>
                       <TrendIndicator trend={analytics.trends.confirmed} />
                     </div>
@@ -635,8 +797,12 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm text-muted-foreground">Completed</div>
-                        <div className="text-2xl font-bold">{analytics.statusCounts.completed}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Completed
+                        </div>
+                        <div className="text-2xl font-bold">
+                          {analytics.statusCounts.completed}
+                        </div>
                       </div>
                       <TrendIndicator trend={analytics.trends.completed} />
                     </div>
@@ -652,38 +818,50 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={getTimelineData()}>
-                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                        <XAxis 
-                          dataKey="period" 
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          className="opacity-30"
+                        />
+                        <XAxis
+                          dataKey="period"
                           className="text-xs"
                           tick={{ fontSize: 12 }}
                         />
-                        <YAxis 
-                          className="text-xs"
-                          tick={{ fontSize: 12 }}
-                        />
-                        <Tooltip 
+                        <YAxis className="text-xs" tick={{ fontSize: 12 }} />
+                        <Tooltip
                           contentStyle={{
-                            backgroundColor: 'hsl(var(--background))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px'
+                            backgroundColor: "hsl(var(--background))",
+                            border: "1px solid hsl(var(--border))",
+                            borderRadius: "8px",
                           }}
                         />
-                        <Line 
-                          type="monotone" 
-                          dataKey="bookings" 
-                          stroke="hsl(var(--primary))" 
+                        <Line
+                          type="monotone"
+                          dataKey="bookings"
+                          stroke="hsl(var(--primary))"
                           strokeWidth={2}
-                          dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                          activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
+                          dot={{
+                            fill: "hsl(var(--primary))",
+                            strokeWidth: 2,
+                            r: 4,
+                          }}
+                          activeDot={{
+                            r: 6,
+                            stroke: "hsl(var(--primary))",
+                            strokeWidth: 2,
+                          }}
                         />
-                        <Line 
-                          type="monotone" 
-                          dataKey="confirmed" 
-                          stroke="hsl(var(--success))" 
+                        <Line
+                          type="monotone"
+                          dataKey="confirmed"
+                          stroke="hsl(var(--success))"
                           strokeWidth={2}
                           strokeDasharray="5 5"
-                          dot={{ fill: 'hsl(var(--success))', strokeWidth: 2, r: 3 }}
+                          dot={{
+                            fill: "hsl(var(--success))",
+                            strokeWidth: 2,
+                            r: 3,
+                          }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -691,7 +869,9 @@ const AdvancedBookingStatusOverview: React.FC<AdvancedBookingStatusOverviewProps
                   <div className="flex items-center justify-center gap-6 mt-4 text-xs">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-0.5 bg-primary rounded"></div>
-                      <span className="text-muted-foreground">Total Bookings</span>
+                      <span className="text-muted-foreground">
+                        Total Bookings
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-0.5 bg-success rounded border-dashed border border-success"></div>

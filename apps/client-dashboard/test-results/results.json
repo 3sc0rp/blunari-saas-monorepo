@@ -13,10 +13,7 @@
     "metadata": {},
     "preserveOutput": "always",
     "reporter": [
-      [
-        "html",
-        null
-      ],
+      ["html", null],
       [
         "json",
         {
@@ -39,9 +36,7 @@
         "name": "chromium",
         "testDir": "C:/Users/Drood/Desktop/Blunari SAAS/apps/client-dashboard/tests",
         "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
         "timeout": 30000
       },
       {
@@ -53,9 +48,7 @@
         "name": "firefox",
         "testDir": "C:/Users/Drood/Desktop/Blunari SAAS/apps/client-dashboard/tests",
         "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
         "timeout": 30000
       },
       {
@@ -67,9 +60,7 @@
         "name": "webkit",
         "testDir": "C:/Users/Drood/Desktop/Blunari SAAS/apps/client-dashboard/tests",
         "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
         "timeout": 30000
       },
       {
@@ -81,9 +72,7 @@
         "name": "Mobile Chrome",
         "testDir": "C:/Users/Drood/Desktop/Blunari SAAS/apps/client-dashboard/tests",
         "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
         "timeout": 30000
       },
       {
@@ -95,9 +84,7 @@
         "name": "Mobile Safari",
         "testDir": "C:/Users/Drood/Desktop/Blunari SAAS/apps/client-dashboard/tests",
         "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
         "timeout": 30000
       }
     ],
@@ -121,8 +108,8 @@
     }
   ],
   "stats": {
-    "startTime": "2025-08-31T15:27:39.071Z",
-    "duration": 120164.511,
+    "startTime": "2025-09-02T03:05:14.764Z",
+    "duration": 120201.316,
     "expected": 0,
     "skipped": 0,
     "unexpected": 0,

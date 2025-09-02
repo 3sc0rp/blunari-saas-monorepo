@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Live API Response Schemas - no mocks, only what comes from real endpoints
 export const TenantInfoSchema = z.object({
@@ -7,15 +7,19 @@ export const TenantInfoSchema = z.object({
   name: z.string(),
   timezone: z.string(),
   currency: z.string().optional(),
-  branding: z.object({
-    primary_color: z.string().optional(),
-    secondary_color: z.string().optional(),
-    logo_url: z.string().optional(),
-  }).optional(),
-  features: z.object({
-    deposit_enabled: z.boolean().optional(),
-    revenue_optimization: z.boolean().optional(),
-  }).optional(),
+  branding: z
+    .object({
+      primary_color: z.string().optional(),
+      secondary_color: z.string().optional(),
+      logo_url: z.string().optional(),
+    })
+    .optional(),
+  features: z
+    .object({
+      deposit_enabled: z.boolean().optional(),
+      revenue_optimization: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const TimeSlotSchema = z.object({
@@ -34,14 +38,18 @@ export const SearchRequestSchema = z.object({
   tenant_id: z.string().uuid(),
   party_size: z.number().min(1),
   service_date: z.string(), // ISO date
-  time_window: z.object({
-    start: z.string().optional(),
-    end: z.string().optional(),
-  }).optional(),
-  preferences: z.object({
-    table_type: z.string().optional(),
-    accessibility: z.boolean().optional(),
-  }).optional(),
+  time_window: z
+    .object({
+      start: z.string().optional(),
+      end: z.string().optional(),
+    })
+    .optional(),
+  preferences: z
+    .object({
+      table_type: z.string().optional(),
+      accessibility: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const HoldRequestSchema = z.object({
@@ -74,7 +82,7 @@ export const ReservationRequestSchema = z.object({
 export const ReservationResponseSchema = z.object({
   reservation_id: z.string().uuid(),
   confirmation_number: z.string(),
-  status: z.enum(['confirmed', 'pending', 'waitlisted']),
+  status: z.enum(["confirmed", "pending", "waitlisted"]),
   summary: z.object({
     date: z.string(),
     time: z.string(),
@@ -95,10 +103,12 @@ export const DepositPolicySchema = z.object({
 
 export const PolicyResponseSchema = z.object({
   deposit: DepositPolicySchema,
-  cancellation: z.object({
-    allowed_hours: z.number().optional(),
-    fee_percentage: z.number().optional(),
-  }).optional(),
+  cancellation: z
+    .object({
+      allowed_hours: z.number().optional(),
+      fee_percentage: z.number().optional(),
+    })
+    .optional(),
 });
 
 export const ROIMetricsSchema = z.object({

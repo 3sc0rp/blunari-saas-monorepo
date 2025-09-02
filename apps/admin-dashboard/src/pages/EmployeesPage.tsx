@@ -4,13 +4,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Filter, MoreHorizontal, Mail, Shield, Activity, Users } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
+  Mail,
+  Shield,
+  Activity,
+  Users,
+} from "lucide-react";
 import { InviteEmployeeDialog } from "@/components/employees/InviteEmployeeDialog";
 import { EmployeeDetailsDialog } from "@/components/employees/EmployeeDetailsDialog";
 import { BulkActionsDialog } from "@/components/employees/BulkActionsDialog";
@@ -54,7 +82,9 @@ export const EmployeesPage = () => {
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showBulkActions, setShowBulkActions] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+    null,
+  );
 
   useEffect(() => {
     fetchEmployees();
@@ -65,19 +95,21 @@ export const EmployeesPage = () => {
     try {
       // Fix the query to properly join with profiles table
       const { data, error } = await supabase
-        .from('employees')
-        .select(`
+        .from("employees")
+        .select(
+          `
           *,
           profiles!inner(*),
           departments(name)
-        `)
-        .order('created_at', { ascending: false });
+        `,
+        )
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setEmployees((data || []) as unknown as Employee[]);
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      toast.error('Failed to load employees');
+      console.error("Error fetching employees:", error);
+      toast.error("Failed to load employees");
     } finally {
       setLoading(false);
     }
@@ -86,62 +118,79 @@ export const EmployeesPage = () => {
   const fetchDepartments = async () => {
     try {
       const { data, error } = await supabase
-        .from('departments')
-        .select('*')
-        .order('name');
+        .from("departments")
+        .select("*")
+        .order("name");
 
       if (error) throw error;
       setDepartments(data || []);
     } catch (error) {
-      console.error('Error fetching departments:', error);
+      console.error("Error fetching departments:", error);
     }
   };
 
-  const filteredEmployees = employees.filter(employee => {
-    const matchesSearch = 
-      employee.profiles?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.profiles?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredEmployees = employees.filter((employee) => {
+    const matchesSearch =
+      employee.profiles?.first_name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      employee.profiles?.last_name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      employee.profiles?.email
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       employee.employee_id?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesRole = roleFilter === "all" || employee.role === roleFilter;
-    const matchesStatus = statusFilter === "all" || employee.status === statusFilter;
-    const matchesDepartment = departmentFilter === "all" || employee.department_id === departmentFilter;
+    const matchesStatus =
+      statusFilter === "all" || employee.status === statusFilter;
+    const matchesDepartment =
+      departmentFilter === "all" || employee.department_id === departmentFilter;
 
     return matchesSearch && matchesRole && matchesStatus && matchesDepartment;
   });
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case 'ACTIVE': return 'default';
-      case 'INACTIVE': return 'secondary';
-      case 'PENDING': return 'outline';
-      case 'SUSPENDED': return 'destructive';
-      default: return 'secondary';
+      case "ACTIVE":
+        return "default";
+      case "INACTIVE":
+        return "secondary";
+      case "PENDING":
+        return "outline";
+      case "SUSPENDED":
+        return "destructive";
+      default:
+        return "secondary";
     }
   };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case 'SUPER_ADMIN': return 'destructive';
-      case 'ADMIN': return 'default';
-      case 'SUPPORT': return 'secondary';
-      case 'OPS': return 'outline';
-      case 'VIEWER': return 'secondary';
-      default: return 'secondary';
+      case "SUPER_ADMIN":
+        return "destructive";
+      case "ADMIN":
+        return "default";
+      case "SUPPORT":
+        return "secondary";
+      case "OPS":
+        return "outline";
+      case "VIEWER":
+        return "secondary";
+      default:
+        return "secondary";
     }
   };
 
   const handleSelectEmployee = (employeeId: string, checked: boolean) => {
-    setSelectedEmployees(prev => 
-      checked 
-        ? [...prev, employeeId]
-        : prev.filter(id => id !== employeeId)
+    setSelectedEmployees((prev) =>
+      checked ? [...prev, employeeId] : prev.filter((id) => id !== employeeId),
     );
   };
 
   const handleSelectAll = (checked: boolean) => {
-    setSelectedEmployees(checked ? filteredEmployees.map(e => e.id) : []);
+    setSelectedEmployees(checked ? filteredEmployees.map((e) => e.id) : []);
   };
 
   if (loading) {
@@ -163,7 +212,9 @@ export const EmployeesPage = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Employee Management</h1>
-          <p className="text-muted-foreground">Manage staff, roles, and permissions</p>
+          <p className="text-muted-foreground">
+            Manage staff, roles, and permissions
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {selectedEmployees.length > 0 && (
@@ -187,11 +238,13 @@ export const EmployeesPage = () => {
       </div>
 
       {/* ... keep existing code (stats cards, filters, table, dialogs) */}
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Employees
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -205,7 +258,7 @@ export const EmployeesPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {employees.filter(e => e.status === 'ACTIVE').length}
+              {employees.filter((e) => e.status === "ACTIVE").length}
             </div>
           </CardContent>
         </Card>
@@ -216,7 +269,7 @@ export const EmployeesPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {employees.filter(e => e.status === 'PENDING').length}
+              {employees.filter((e) => e.status === "PENDING").length}
             </div>
           </CardContent>
         </Card>
@@ -271,13 +324,16 @@ export const EmployeesPage = () => {
                 <SelectItem value="SUSPENDED">Suspended</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+            <Select
+              value={departmentFilter}
+              onValueChange={setDepartmentFilter}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Filter by dept" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Departments</SelectItem>
-                {departments.map(dept => (
+                {departments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>
@@ -296,7 +352,9 @@ export const EmployeesPage = () => {
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
-                    checked={selectedEmployees.length === filteredEmployees.length}
+                    checked={
+                      selectedEmployees.length === filteredEmployees.length
+                    }
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
@@ -315,7 +373,7 @@ export const EmployeesPage = () => {
                   <TableCell>
                     <Checkbox
                       checked={selectedEmployees.includes(employee.id)}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         handleSelectEmployee(employee.id, checked as boolean)
                       }
                     />
@@ -323,14 +381,17 @@ export const EmployeesPage = () => {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        {employee.profiles?.first_name?.[0] || employee.profiles?.email?.[0] || 'U'}
+                        {employee.profiles?.first_name?.[0] ||
+                          employee.profiles?.email?.[0] ||
+                          "U"}
                       </div>
                       <div>
                         <div className="font-medium">
-                          {employee.profiles?.first_name || ''} {employee.profiles?.last_name || ''}
+                          {employee.profiles?.first_name || ""}{" "}
+                          {employee.profiles?.last_name || ""}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {employee.profiles?.email || 'No email'}
+                          {employee.profiles?.email || "No email"}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           ID: {employee.employee_id}
@@ -340,11 +401,11 @@ export const EmployeesPage = () => {
                   </TableCell>
                   <TableCell>
                     <Badge variant={getRoleBadgeVariant(employee.role)}>
-                      {employee.role.replace('_', ' ')}
+                      {employee.role.replace("_", " ")}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {employee.departments?.name || 'No Department'}
+                    {employee.departments?.name || "No Department"}
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(employee.status)}>
@@ -352,16 +413,14 @@ export const EmployeesPage = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {employee.last_activity 
+                    {employee.last_activity
                       ? new Date(employee.last_activity).toLocaleDateString()
-                      : 'Never'
-                    }
+                      : "Never"}
                   </TableCell>
                   <TableCell>
-                    {employee.hire_date 
+                    {employee.hire_date
                       ? new Date(employee.hire_date).toLocaleDateString()
-                      : '-'
-                    }
+                      : "-"}
                   </TableCell>
                   <TableCell>
                     <Button

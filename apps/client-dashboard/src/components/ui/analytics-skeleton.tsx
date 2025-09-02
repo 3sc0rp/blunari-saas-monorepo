@@ -1,6 +1,6 @@
-import React from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import React from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const AnalyticsTimePicker = () => (
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -130,7 +130,7 @@ export const OperationalMetricsSkeleton = () => (
 export const AnalyticsPageSkeleton = () => (
   <div className="space-y-6">
     <AnalyticsTimePicker />
-    
+
     {/* ROI Card */}
     <Card>
       <CardContent className="p-6">
@@ -150,12 +150,12 @@ export const AnalyticsPageSkeleton = () => (
     </Card>
 
     <MetricsCards />
-    
+
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <ChartSkeleton />
       <ChartSkeleton />
     </div>
-    
+
     <OperationalMetricsSkeleton />
   </div>
 );

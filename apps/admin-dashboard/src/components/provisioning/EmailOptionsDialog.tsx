@@ -1,5 +1,10 @@
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,29 +32,32 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
   const { toast } = useToast();
 
   const sendWelcomePack = async () => {
-    console.log('Sending welcome pack email...');
+    console.log("Sending welcome pack email...");
     setSendingWelcome(true);
     try {
-      console.log('Invoking send-welcome-pack function with data:', {
+      console.log("Invoking send-welcome-pack function with data:", {
         ownerName: provisioningData.ownerName,
         ownerEmail: provisioningData.ownerEmail,
         restaurantName: provisioningData.restaurantName,
-        loginUrl: provisioningData.loginUrl
+        loginUrl: provisioningData.loginUrl,
       });
 
-      const { data, error } = await supabase.functions.invoke('send-welcome-pack', {
-        body: {
-          ownerName: provisioningData.ownerName,
-          ownerEmail: provisioningData.ownerEmail,
-          restaurantName: provisioningData.restaurantName,
-          loginUrl: provisioningData.loginUrl
-        }
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "send-welcome-pack",
+        {
+          body: {
+            ownerName: provisioningData.ownerName,
+            ownerEmail: provisioningData.ownerEmail,
+            restaurantName: provisioningData.restaurantName,
+            loginUrl: provisioningData.loginUrl,
+          },
+        },
+      );
 
-      console.log('Welcome pack response:', { data, error });
+      console.log("Welcome pack response:", { data, error });
 
       if (error) {
-        console.error('Supabase function error:', error);
+        console.error("Supabase function error:", error);
         throw error;
       }
 
@@ -62,10 +70,13 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
         throw new Error(data?.error || "Failed to send welcome pack");
       }
     } catch (error) {
-      console.error('Error sending welcome pack:', error);
+      console.error("Error sending welcome pack:", error);
       toast({
         title: "Failed to Send Welcome Pack",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -74,31 +85,34 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
   };
 
   const sendCredentials = async () => {
-    console.log('Sending credentials email...');
+    console.log("Sending credentials email...");
     setSendingCredentials(true);
     try {
-      console.log('Invoking send-credentials-email function with data:', {
+      console.log("Invoking send-credentials-email function with data:", {
         ownerName: provisioningData.ownerName,
         ownerEmail: provisioningData.ownerEmail,
-        ownerPassword: '***HIDDEN***',
+        ownerPassword: "***HIDDEN***",
         restaurantName: provisioningData.restaurantName,
-        loginUrl: provisioningData.loginUrl
+        loginUrl: provisioningData.loginUrl,
       });
 
-      const { data, error } = await supabase.functions.invoke('send-credentials-email', {
-        body: {
-          ownerName: provisioningData.ownerName,
-          ownerEmail: provisioningData.ownerEmail,
-          ownerPassword: provisioningData.ownerPassword,
-          restaurantName: provisioningData.restaurantName,
-          loginUrl: provisioningData.loginUrl
-        }
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "send-credentials-email",
+        {
+          body: {
+            ownerName: provisioningData.ownerName,
+            ownerEmail: provisioningData.ownerEmail,
+            ownerPassword: provisioningData.ownerPassword,
+            restaurantName: provisioningData.restaurantName,
+            loginUrl: provisioningData.loginUrl,
+          },
+        },
+      );
 
-      console.log('Credentials response:', { data, error });
+      console.log("Credentials response:", { data, error });
 
       if (error) {
-        console.error('Supabase function error:', error);
+        console.error("Supabase function error:", error);
         throw error;
       }
 
@@ -111,10 +125,13 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
         throw new Error(data?.error || "Failed to send credentials");
       }
     } catch (error) {
-      console.error('Error sending credentials:', error);
+      console.error("Error sending credentials:", error);
       toast({
         title: "Failed to Send Credentials",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -122,7 +139,7 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
     }
   };
 
-  console.log('EmailOptionsDialog rendering with data:', provisioningData);
+  console.log("EmailOptionsDialog rendering with data:", provisioningData);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -133,12 +150,14 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
             Send Welcome Emails
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           <p className="text-sm text-muted-foreground">
-            Choose which email(s) to send to <strong>{provisioningData.ownerEmail}</strong> for <strong>{provisioningData.restaurantName}</strong>:
+            Choose which email(s) to send to{" "}
+            <strong>{provisioningData.ownerEmail}</strong> for{" "}
+            <strong>{provisioningData.restaurantName}</strong>:
           </p>
-          
+
           <div className="grid gap-3">
             <Button
               onClick={sendWelcomePack}
@@ -158,7 +177,7 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
                 </div>
               </div>
             </Button>
-            
+
             <Button
               onClick={sendCredentials}
               disabled={sendingCredentials}
@@ -178,13 +197,9 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
               </div>
             </Button>
           </div>
-          
+
           <div className="pt-4 border-t">
-            <Button
-              onClick={onClose}
-              variant="secondary"
-              className="w-full"
-            >
+            <Button onClick={onClose} variant="secondary" className="w-full">
               Close
             </Button>
           </div>

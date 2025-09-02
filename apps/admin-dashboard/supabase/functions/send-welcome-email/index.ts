@@ -15,7 +15,8 @@ const smtp = new SMTPClient({
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 interface WelcomeEmailRequest {
@@ -33,50 +34,70 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     let requestData: WelcomeEmailRequest;
-    
+
     try {
       requestData = await req.json();
     } catch (parseError) {
       console.error("Invalid request body:", parseError);
-      return new Response(JSON.stringify({ 
-        error: "Invalid request body", 
-        success: false 
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Invalid request body",
+          success: false,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     const { ownerName, ownerEmail, restaurantName, loginUrl } = requestData;
 
     // Validate required fields
     if (!ownerName || !ownerEmail || !restaurantName) {
-      console.error("Missing required fields:", { ownerName: !!ownerName, ownerEmail: !!ownerEmail, restaurantName: !!restaurantName });
-      return new Response(JSON.stringify({ 
-        error: "Missing required fields: ownerName, ownerEmail, and restaurantName are required",
-        success: false 
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+      console.error("Missing required fields:", {
+        ownerName: !!ownerName,
+        ownerEmail: !!ownerEmail,
+        restaurantName: !!restaurantName,
       });
+      return new Response(
+        JSON.stringify({
+          error:
+            "Missing required fields: ownerName, ownerEmail, and restaurantName are required",
+          success: false,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(ownerEmail)) {
       console.error("Invalid email format:", ownerEmail);
-      return new Response(JSON.stringify({ 
-        error: "Invalid email format",
-        success: false 
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Invalid email format",
+          success: false,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
-    console.log('Welcome email request received:', { ownerName, ownerEmail, restaurantName, loginUrl });
+    console.log("Welcome email request received:", {
+      ownerName,
+      ownerEmail,
+      restaurantName,
+      loginUrl,
+    });
 
-    const brandLogoUrl = Deno.env.get("BRAND_LOGO_URL") || Deno.env.get("ADMIN_LOGO_URL");
+    const brandLogoUrl =
+      Deno.env.get("BRAND_LOGO_URL") || Deno.env.get("ADMIN_LOGO_URL");
 
     const defaultLoginUrl = "https://app.blunari.ai/auth";
     const finalLoginUrl = loginUrl || defaultLoginUrl;
@@ -84,20 +105,23 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if SMTP credentials are configured
     const smtpUsername = Deno.env.get("FASTMAIL_SMTP_USERNAME");
     const smtpPassword = Deno.env.get("FASTMAIL_SMTP_PASSWORD");
-    
+
     if (!smtpUsername || !smtpPassword) {
       console.warn("SMTP credentials not configured - email sending skipped");
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: "SMTP credentials missing",
-        warning: "Email sending skipped - SMTP not configured"
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "SMTP credentials missing",
+          warning: "Email sending skipped - SMTP not configured",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
-    console.log('Attempting to send email with SMTP configuration');
+    console.log("Attempting to send email with SMTP configuration");
 
     const emailResponse = await smtp.send({
       from: "Blunari Team <no-reply@blunari.ai>",
@@ -168,24 +192,27 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Welcome email sent successfully:", emailResponse);
 
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Welcome email sent successfully",
-      data: emailResponse
-    }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Welcome email sent successfully",
+        data: emailResponse,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
       },
-    });
+    );
   } catch (error: any) {
     console.error("Error in send-welcome-email function:", error);
-    
+
     // Determine error type for better response
     let status = 500;
     let errorMessage = "Failed to send welcome email";
-    
+
     if (error.name === "SMTPError" || error.message?.includes("SMTP")) {
       errorMessage = "Email service temporarily unavailable";
       status = 503;
@@ -193,15 +220,18 @@ const handler = async (req: Request): Promise<Response> => {
       errorMessage = "Email sending timed out";
       status = 408;
     }
-    
-    return new Response(JSON.stringify({ 
-      success: false,
-      error: errorMessage,
-      details: error.message 
-    }), {
-      status,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: errorMessage,
+        details: error.message,
+      }),
+      {
+        status,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
   }
 };
 

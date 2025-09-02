@@ -9,7 +9,11 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "echo \"No lint configured for types package\"",
+    "lint:fix": "echo \"No lint configured for types package\"",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\""
   },
   "devDependencies": {
     "typescript": "^5.2.2"

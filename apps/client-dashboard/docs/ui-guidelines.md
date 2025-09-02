@@ -9,30 +9,31 @@ This document outlines the design system, patterns, and best practices for the B
 Our color system is built on semantic tokens that adapt to light/dark modes and maintain proper contrast ratios.
 
 #### Primary Colors
+
 ```css
---brand: 220 100% 50%          /* Primary brand color */
---brand-foreground: 0 0% 100%  /* Text on brand backgrounds */
+--brand: 220 100% 50% /* Primary brand color */ --brand-foreground: 0 0% 100%
+  /* Text on brand backgrounds */;
 ```
 
 #### Surface Colors
+
 ```css
---surface: 0 0% 100%           /* Main background */
---surface-2: 240 5% 96%        /* Secondary surfaces */
---surface-3: 240 5% 92%        /* Tertiary surfaces */
+--surface: 0 0% 100% /* Main background */ --surface-2: 240 5% 96%
+  /* Secondary surfaces */ --surface-3: 240 5% 92% /* Tertiary surfaces */;
 ```
 
 #### Text Colors
+
 ```css
---text: 240 10% 4%             /* Primary text */
---text-muted: 240 4% 46%       /* Secondary text */
---text-subtle: 240 3% 64%      /* Tertiary text */
+--text: 240 10% 4% /* Primary text */ --text-muted: 240 4% 46%
+  /* Secondary text */ --text-subtle: 240 3% 64% /* Tertiary text */;
 ```
 
 #### Semantic Colors
+
 ```css
---success: 142 76% 36%         /* Success states */
---warning: 38 92% 50%          /* Warning states */
---danger: 0 84% 60%            /* Error/destructive states */
+--success: 142 76% 36% /* Success states */ --warning: 38 92% 50%
+  /* Warning states */ --danger: 0 84% 60% /* Error/destructive states */;
 ```
 
 ### Typography Scale
@@ -40,12 +41,14 @@ Our color system is built on semantic tokens that adapt to light/dark modes and 
 Typography uses the Inter font with specific weights and line heights optimized for readability.
 
 #### Headings
+
 - **H1**: 30px / 36px (1.2 line height)
-- **H2**: 24px / 32px (1.33 line height)  
+- **H2**: 24px / 32px (1.33 line height)
 - **H3**: 20px / 28px (1.4 line height)
 - **H4**: 18px / 26px (1.44 line height)
 
 #### Body Text
+
 - **Body**: 16px / 24px (1.5 line height)
 - **Body Small**: 14px / 20px (1.43 line height)
 - **Code**: 13px / 20px (1.54 line height)
@@ -63,9 +66,11 @@ Our spacing system uses a 4px base unit with a consistent scale:
 ### Elevation & Shadows
 
 ```css
---shadow-elev-1: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)
---shadow-elev-2: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)
---shadow-elev-3: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23)
+--shadow-elev-1:
+  0 1px 3px rgba(0, 0, 0, 0.12),
+  0 1px 2px rgba(0, 0, 0, 0.24) --shadow-elev-2: 0 3px 6px rgba(0, 0, 0, 0.16),
+  0 3px 6px rgba(0, 0, 0, 0.23) --shadow-elev-3: 0 10px 20px rgba(0, 0, 0, 0.19),
+  0 6px 6px rgba(0, 0, 0, 0.23);
 ```
 
 ## Component Patterns
@@ -73,24 +78,30 @@ Our spacing system uses a 4px base unit with a consistent scale:
 ### Buttons
 
 #### Primary Actions
+
 ```tsx
 <Button variant="default">Primary Action</Button>
 ```
+
 - Use for the main action on a page/section
 - High contrast brand color
 - Only one primary button per section
 
-#### Secondary Actions  
+#### Secondary Actions
+
 ```tsx
 <Button variant="outline">Secondary Action</Button>
 ```
+
 - Use for less important actions
 - Outline style to reduce visual weight
 
 #### Destructive Actions
+
 ```tsx
 <Button variant="destructive">Delete Item</Button>
 ```
+
 - Use for dangerous actions
 - Always require confirmation
 - Use warning colors
@@ -100,18 +111,18 @@ Our spacing system uses a 4px base unit with a consistent scale:
 Cards are the primary container component for grouping related content.
 
 #### Standard Card
+
 ```tsx
 <Card>
   <CardHeader>
     <CardTitle>Title</CardTitle>
   </CardHeader>
-  <CardContent>
-    Content goes here
-  </CardContent>
+  <CardContent>Content goes here</CardContent>
 </Card>
 ```
 
 #### Metrics Card
+
 ```tsx
 <Card>
   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -120,9 +131,7 @@ Cards are the primary container component for grouping related content.
   </CardHeader>
   <CardContent>
     <div className="text-2xl font-bold">$1,234</div>
-    <p className="text-xs text-muted-foreground">
-      +12% from last month
-    </p>
+    <p className="text-xs text-muted-foreground">+12% from last month</p>
   </CardContent>
 </Card>
 ```
@@ -130,6 +139,7 @@ Cards are the primary container component for grouping related content.
 ### Forms
 
 #### Form Structure
+
 ```tsx
 <Form {...form}>
   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -142,9 +152,7 @@ Cards are the primary container component for grouping related content.
           <FormControl>
             <Input placeholder="Placeholder text" {...field} />
           </FormControl>
-          <FormDescription>
-            Helpful description text
-          </FormDescription>
+          <FormDescription>Helpful description text</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -154,6 +162,7 @@ Cards are the primary container component for grouping related content.
 ```
 
 #### Validation States
+
 - **Error**: Red border, error message below
 - **Success**: Green border, success message
 - **Loading**: Disabled state with spinner
@@ -161,6 +170,7 @@ Cards are the primary container component for grouping related content.
 ### Tables
 
 #### Standard Table
+
 ```tsx
 <Table>
   <TableHeader>
@@ -179,6 +189,7 @@ Cards are the primary container component for grouping related content.
 ```
 
 #### Interactive Rows
+
 - Hover states for all interactive rows
 - Selection states with checkboxes
 - Action menus aligned to the right
@@ -193,16 +204,19 @@ Cards are the primary container component for grouping related content.
 4. **Consistent**: Use standardized timing and easing
 
 ### Timing
+
 - **Fast**: 150ms for micro-interactions
-- **Normal**: 300ms for page transitions  
+- **Normal**: 300ms for page transitions
 - **Slow**: 500ms for complex animations
 
 ### Easing
+
 ```css
---motion-easing: cubic-bezier(0.4, 0, 0.2, 1)
+--motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
 ```
 
 ### Examples
+
 ```tsx
 // Page transitions
 <motion.div
@@ -224,15 +238,18 @@ Cards are the primary container component for grouping related content.
 ### Focus Management
 
 #### Focus Rings
+
 All interactive elements must have visible focus indicators:
+
 ```css
-.focus-visible:outline-none 
-.focus-visible:ring-2 
-.focus-visible:ring-brand 
+.focus-visible:outline-none
+.focus-visible:ring-2
+.focus-visible:ring-brand
 .focus-visible:ring-offset-2
 ```
 
 #### Focus Order
+
 - Logical tab order top to bottom, left to right
 - Skip links for keyboard navigation
 - Focus trapping in modals
@@ -240,6 +257,7 @@ All interactive elements must have visible focus indicators:
 ### ARIA Patterns
 
 #### Labels
+
 ```tsx
 // Icon buttons need labels
 <Button aria-label="Close dialog">
@@ -252,16 +270,18 @@ All interactive elements must have visible focus indicators:
 ```
 
 #### Live Regions
+
 ```tsx
 // For dynamic content updates
 <div aria-live="polite" aria-label="Notifications">
-  {notifications.map(notification => (
+  {notifications.map((notification) => (
     <Toast key={notification.id}>{notification.message}</Toast>
   ))}
 </div>
 ```
 
 #### Landmarks
+
 ```tsx
 <main role="main">
   <header role="banner">
@@ -271,7 +291,7 @@ All interactive elements must have visible focus indicators:
 ### Color Contrast
 
 - **Normal text**: Minimum 4.5:1 contrast ratio
-- **Large text**: Minimum 3:1 contrast ratio  
+- **Large text**: Minimum 3:1 contrast ratio
 - **Interactive elements**: Minimum 3:1 for focus states
 
 ## Layout Patterns
@@ -279,6 +299,7 @@ All interactive elements must have visible focus indicators:
 ### Grid System
 
 Use CSS Grid for complex layouts:
+
 ```css
 .dashboard-grid {
   display: grid;
@@ -288,12 +309,15 @@ Use CSS Grid for complex layouts:
 ```
 
 ### Responsive Breakpoints
+
 - **Mobile**: < 768px
 - **Tablet**: 768px - 1024px
 - **Desktop**: > 1024px
 
 ### Safe Areas
+
 For mobile devices with notches:
+
 ```css
 .mobile-safe {
   padding-bottom: env(safe-area-inset-bottom);
@@ -303,16 +327,19 @@ For mobile devices with notches:
 ## Performance Guidelines
 
 ### Image Optimization
+
 - Use WebP format when possible
 - Implement lazy loading for below-fold images
 - Provide appropriate alt text
 
 ### Bundle Splitting
+
 - Code split by route for large pages
 - Lazy load heavy components
 - Preload critical resources
 
 ### Animation Performance
+
 - Use `transform` and `opacity` for animations
 - Avoid animating layout properties
 - Use `will-change` sparingly
@@ -338,18 +365,21 @@ For mobile devices with notches:
 ## Testing Checklist
 
 ### Visual QA
+
 - [ ] Design matches specifications
 - [ ] Consistent spacing and typography
 - [ ] Proper color contrast ratios
 - [ ] Responsive across breakpoints
 
-### Accessibility QA  
+### Accessibility QA
+
 - [ ] Keyboard navigation works
 - [ ] Screen reader friendly
 - [ ] Focus indicators visible
 - [ ] ARIA labels present
 
 ### Performance QA
+
 - [ ] Images optimized and lazy loaded
 - [ ] No layout shift on load
 - [ ] Animations respect reduced motion
@@ -358,20 +388,26 @@ For mobile devices with notches:
 ## Development Tools
 
 ### Design QA Overlay
+
 Use `Ctrl+Shift+Q` in development to toggle the Design QA overlay which shows:
+
 - Spacing grid and baseline
 - Contrast checking
 - Typography validation
 - Focus indicator testing
 
 ### Visual Regression Testing
+
 Run Playwright tests to catch visual regressions:
+
 ```bash
 npx playwright test tests/visual.spec.ts
 ```
 
 ### Browser Extensions
+
 Recommended tools for manual testing:
+
 - **axe DevTools**: Accessibility testing
 - **Lighthouse**: Performance and SEO audit
 - **Colour Contrast Analyser**: WCAG compliance

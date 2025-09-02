@@ -1,26 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { format, addDays } from 'date-fns';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { CheckCircle, Clock, Users, ChefHat, Calendar, Mail, Phone, MapPin, FileText, Star, ArrowLeft } from 'lucide-react';
-import { useCateringData } from '@/hooks/useCateringData';
-import { useTenantBySlug } from '@/hooks/useTenantBySlug';
-import { CreateCateringOrderRequest, CateringPackage, CateringServiceType, DietaryRestriction } from '@/types/catering';
-import ErrorBoundary from '@/components/booking/ErrorBoundary';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { format, addDays } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  CheckCircle,
+  Clock,
+  Users,
+  ChefHat,
+  Calendar,
+  Mail,
+  Phone,
+  MapPin,
+  FileText,
+  Star,
+  ArrowLeft,
+} from "lucide-react";
+import { useCateringData } from "@/hooks/useCateringData";
+import { useTenantBySlug } from "@/hooks/useTenantBySlug";
+import {
+  CreateCateringOrderRequest,
+  CateringPackage,
+  CateringServiceType,
+  DietaryRestriction,
+} from "@/types/catering";
+import ErrorBoundary from "@/components/booking/ErrorBoundary";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface CateringWidgetProps {
   slug: string;
 }
 
-type Step = 'packages' | 'customize' | 'details' | 'confirmation';
+type Step = "packages" | "customize" | "details" | "confirmation";
 
 interface OrderForm {
   package_id?: string;
@@ -41,39 +64,45 @@ interface OrderForm {
 }
 
 const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
-  const { tenant, loading: tenantLoading, error: tenantError } = useTenantBySlug(slug);
-  const { 
-    packages, 
-    loading: packagesLoading, 
-    createOrder, 
+  const {
+    tenant,
+    loading: tenantLoading,
+    error: tenantError,
+  } = useTenantBySlug(slug);
+  const {
+    packages,
+    loading: packagesLoading,
+    createOrder,
     error: cateringError,
     tablesExist,
-    diagnosticInfo 
+    diagnosticInfo,
   } = useCateringData(tenant?.id);
 
-  const [currentStep, setCurrentStep] = useState<Step>('packages');
-  const [selectedPackage, setSelectedPackage] = useState<CateringPackage | null>(null);
+  const [currentStep, setCurrentStep] = useState<Step>("packages");
+  const [selectedPackage, setSelectedPackage] =
+    useState<CateringPackage | null>(null);
   const [orderForm, setOrderForm] = useState<OrderForm>({
-    event_name: '',
-    event_date: '',
-    event_start_time: '12:00',
+    event_name: "",
+    event_date: "",
+    event_start_time: "12:00",
     guest_count: 50,
-    service_type: 'drop_off',
-    contact_name: '',
-    contact_email: '',
-    contact_phone: '',
-    venue_name: '',
-    venue_address: '',
-    special_instructions: '',
-    dietary_requirements: []
+    service_type: "drop_off",
+    contact_name: "",
+    contact_email: "",
+    contact_phone: "",
+    venue_name: "",
+    venue_address: "",
+    special_instructions: "",
+    dietary_requirements: [],
   });
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  
+
   // Enhanced error handling with user feedback
   const displayError = tenantError || cateringError || submitError;
-  const isInDemoMode = !tablesExist && diagnosticInfo?.cateringTablesAvailable === false;
+  const isInDemoMode =
+    !tablesExist && diagnosticInfo?.cateringTablesAvailable === false;
 
   // Loading states with better UX
   if (tenantLoading || packagesLoading) {
@@ -83,13 +112,14 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
           <CardContent className="p-8 text-center">
             <LoadingSpinner className="w-8 h-8 mx-auto mb-4" />
             <h2 className="text-lg font-semibold mb-2">
-              {tenantLoading ? 'Finding Restaurant...' : 'Loading Catering Services'}
+              {tenantLoading
+                ? "Finding Restaurant..."
+                : "Loading Catering Services"}
             </h2>
             <p className="text-muted-foreground">
-              {tenantLoading 
-                ? 'Please wait while we verify the restaurant details...' 
-                : 'Please wait while we load your catering options...'
-              }
+              {tenantLoading
+                ? "Please wait while we verify the restaurant details..."
+                : "Please wait while we load your catering options..."}
             </p>
             {isInDemoMode && (
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
@@ -112,23 +142,23 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
           <CardContent className="p-8 text-center">
             <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-lg font-semibold mb-2">
-              {tenantError ? 'Restaurant Not Found' : 'Service Issue'}
+              {tenantError ? "Restaurant Not Found" : "Service Issue"}
             </h2>
             <p className="text-muted-foreground mb-4">
-              {tenantError ? 
-                `The restaurant "${slug}" could not be found or is not available for catering.` :
-                displayError
-              }
+              {tenantError
+                ? `The restaurant "${slug}" could not be found or is not available for catering.`
+                : displayError}
             </p>
             {isInDemoMode && (
               <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
                 <p className="text-sm text-yellow-700">
-                  ℹ️ This is a demo environment. Contact support for full functionality.
+                  ℹ️ This is a demo environment. Contact support for full
+                  functionality.
                 </p>
               </div>
             )}
-            <Button 
-              onClick={() => window.location.reload()} 
+            <Button
+              onClick={() => window.location.reload()}
               variant="outline"
               className="mt-4"
             >
@@ -147,7 +177,9 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
           <CardContent className="p-8 text-center">
             <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-lg font-semibold mb-2">Invalid Restaurant</h2>
-            <p className="text-muted-foreground">Please check the catering link and try again.</p>
+            <p className="text-muted-foreground">
+              Please check the catering link and try again.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -156,13 +188,13 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
   const handlePackageSelect = (pkg: CateringPackage) => {
     setSelectedPackage(pkg);
-    setOrderForm(prev => ({
+    setOrderForm((prev) => ({
       ...prev,
       package_id: pkg.id,
       guest_count: Math.max(prev.guest_count, pkg.min_guests),
-      event_name: `${pkg.name} Event`
+      event_name: `${pkg.name} Event`,
     }));
-    setCurrentStep('customize');
+    setCurrentStep("customize");
   };
 
   const handleOrderSubmit = async () => {
@@ -170,29 +202,29 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
     // Client-side validation
     if (!orderForm.event_name.trim()) {
-      setSubmitError('Event name is required');
+      setSubmitError("Event name is required");
       return;
     }
 
     if (!orderForm.event_date) {
-      setSubmitError('Event date is required');
+      setSubmitError("Event date is required");
       return;
     }
 
     if (!orderForm.contact_name.trim()) {
-      setSubmitError('Contact name is required');
+      setSubmitError("Contact name is required");
       return;
     }
 
     if (!orderForm.contact_email.trim()) {
-      setSubmitError('Contact email is required');
+      setSubmitError("Contact email is required");
       return;
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(orderForm.contact_email)) {
-      setSubmitError('Please enter a valid email address');
+      setSubmitError("Please enter a valid email address");
       return;
     }
 
@@ -200,13 +232,13 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
     const eventDate = new Date(orderForm.event_date);
     const minDate = addDays(new Date(), 3);
     if (eventDate < minDate) {
-      setSubmitError('Event date must be at least 3 days in advance');
+      setSubmitError("Event date must be at least 3 days in advance");
       return;
     }
 
     setSubmitting(true);
     setSubmitError(null);
-    
+
     try {
       const orderData: CreateCateringOrderRequest = {
         package_id: selectedPackage.id,
@@ -223,15 +255,18 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
         venue_address: orderForm.venue_address?.trim(),
         delivery_address: orderForm.delivery_address?.trim(),
         special_instructions: orderForm.special_instructions?.trim(),
-        dietary_requirements: orderForm.dietary_requirements
+        dietary_requirements: orderForm.dietary_requirements,
       };
 
       await createOrder(orderData);
       setOrderConfirmed(true);
-      setCurrentStep('confirmation');
+      setCurrentStep("confirmation");
     } catch (error) {
-      console.error('Error creating catering order:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to submit catering order';
+      console.error("Error creating catering order:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to submit catering order";
       setSubmitError(errorMessage);
     } finally {
       setSubmitting(false);
@@ -239,12 +274,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   };
 
   const formatPrice = (priceInCents: number) => {
-    if (typeof priceInCents !== 'number' || isNaN(priceInCents)) {
-      return '$0.00';
+    if (typeof priceInCents !== "number" || isNaN(priceInCents)) {
+      return "$0.00";
     }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(priceInCents / 100);
   };
 
@@ -255,8 +290,10 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
   const validateGuestCount = (count: number) => {
     if (!selectedPackage) return true;
-    return count >= selectedPackage.min_guests && 
-           (!selectedPackage.max_guests || count <= selectedPackage.max_guests);
+    return (
+      count >= selectedPackage.min_guests &&
+      (!selectedPackage.max_guests || count <= selectedPackage.max_guests)
+    );
   };
 
   return (
@@ -270,13 +307,15 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                 <ChefHat className="w-8 h-8 text-orange-500" />
                 <div>
                   <h1 className="text-xl font-bold">{tenant.name}</h1>
-                  <p className="text-sm text-muted-foreground">Catering Services</p>
+                  <p className="text-sm text-muted-foreground">
+                    Catering Services
+                  </p>
                 </div>
               </div>
-              {currentStep !== 'packages' && (
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setCurrentStep('packages')}
+              {currentStep !== "packages" && (
+                <Button
+                  variant="ghost"
+                  onClick={() => setCurrentStep("packages")}
                   className="flex items-center gap-2"
                 >
                   <ArrowLeft className="w-4 h-4" />
@@ -293,29 +332,43 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
             <div className="mb-8">
               <div className="flex items-center justify-between max-w-2xl mx-auto">
                 {[
-                  { key: 'packages', label: 'Choose Package', icon: ChefHat },
-                  { key: 'customize', label: 'Customize', icon: Users },
-                  { key: 'details', label: 'Details', icon: FileText },
-                  { key: 'confirmation', label: 'Confirmation', icon: CheckCircle }
+                  { key: "packages", label: "Choose Package", icon: ChefHat },
+                  { key: "customize", label: "Customize", icon: Users },
+                  { key: "details", label: "Details", icon: FileText },
+                  {
+                    key: "confirmation",
+                    label: "Confirmation",
+                    icon: CheckCircle,
+                  },
                 ].map((step, index) => {
                   const isActive = currentStep === step.key;
-                  const isCompleted = ['packages', 'customize', 'details'].indexOf(currentStep) > ['packages', 'customize', 'details'].indexOf(step.key);
+                  const isCompleted =
+                    ["packages", "customize", "details"].indexOf(currentStep) >
+                    ["packages", "customize", "details"].indexOf(step.key);
                   const IconComponent = step.icon;
-                  
+
                   return (
                     <div key={step.key} className="flex items-center">
-                      <div className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all ${
-                        isActive ? 'bg-orange-100 text-orange-700' : 
-                        isCompleted ? 'bg-green-100 text-green-700' : 
-                        'bg-muted text-muted-foreground'
-                      }`}>
+                      <div
+                        className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all ${
+                          isActive
+                            ? "bg-orange-100 text-orange-700"
+                            : isCompleted
+                              ? "bg-green-100 text-green-700"
+                              : "bg-muted text-muted-foreground"
+                        }`}
+                      >
                         <IconComponent className="w-4 h-4" />
-                        <span className="text-sm font-medium hidden sm:inline">{step.label}</span>
+                        <span className="text-sm font-medium hidden sm:inline">
+                          {step.label}
+                        </span>
                       </div>
                       {index < 3 && (
-                        <div className={`w-8 h-0.5 mx-2 transition-colors ${
-                          isCompleted ? 'bg-green-300' : 'bg-muted'
-                        }`} />
+                        <div
+                          className={`w-8 h-0.5 mx-2 transition-colors ${
+                            isCompleted ? "bg-green-300" : "bg-muted"
+                          }`}
+                        />
                       )}
                     </div>
                   );
@@ -325,7 +378,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
             <AnimatePresence mode="wait">
               {/* Step 1: Package Selection */}
-              {currentStep === 'packages' && (
+              {currentStep === "packages" && (
                 <motion.div
                   key="packages"
                   initial={{ opacity: 0, x: 20 }}
@@ -334,8 +387,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                   transition={{ duration: 0.3 }}
                 >
                   <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold mb-2">Choose Your Catering Package</h2>
-                    <p className="text-muted-foreground">Select from our professional catering packages</p>
+                    <h2 className="text-3xl font-bold mb-2">
+                      Choose Your Catering Package
+                    </h2>
+                    <p className="text-muted-foreground">
+                      Select from our professional catering packages
+                    </p>
                   </div>
 
                   {packages && packages.length > 0 ? (
@@ -349,25 +406,41 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                           <Card className="h-full cursor-pointer hover:shadow-lg transition-all border-2 hover:border-orange-200">
                             <CardHeader>
                               <div className="flex items-start justify-between">
-                                <CardTitle className="text-lg">{pkg.name}</CardTitle>
+                                <CardTitle className="text-lg">
+                                  {pkg.name}
+                                </CardTitle>
                                 {pkg.popular && (
-                                  <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                                  <Badge
+                                    variant="secondary"
+                                    className="bg-orange-100 text-orange-700"
+                                  >
                                     <Star className="w-3 h-3 mr-1" />
                                     Popular
                                   </Badge>
                                 )}
                               </div>
                               <div className="text-2xl font-bold text-orange-600">
-                                {formatPrice(pkg.price_per_person)}<span className="text-sm text-muted-foreground">/person</span>
+                                {formatPrice(pkg.price_per_person)}
+                                <span className="text-sm text-muted-foreground">
+                                  /person
+                                </span>
                               </div>
                             </CardHeader>
                             <CardContent>
-                              <p className="text-muted-foreground mb-4">{pkg.description}</p>
-                              
+                              <p className="text-muted-foreground mb-4">
+                                {pkg.description}
+                              </p>
+
                               <div className="space-y-2 mb-4">
                                 <div className="flex items-center gap-2 text-sm">
                                   <Users className="w-4 h-4 text-muted-foreground" />
-                                  <span>{pkg.min_guests}{pkg.max_guests ? ` - ${pkg.max_guests}` : '+'} guests</span>
+                                  <span>
+                                    {pkg.min_guests}
+                                    {pkg.max_guests
+                                      ? ` - ${pkg.max_guests}`
+                                      : "+"}{" "}
+                                    guests
+                                  </span>
                                 </div>
                               </div>
 
@@ -392,20 +465,29 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                                 )}
                               </div>
 
-                              {pkg.dietary_accommodations && pkg.dietary_accommodations.length > 0 && (
-                                <div className="mb-4">
-                                  <p className="text-xs text-muted-foreground mb-1">Dietary accommodations:</p>
-                                  <div className="flex flex-wrap gap-1">
-                                    {pkg.dietary_accommodations.map((diet) => (
-                                      <Badge key={diet} variant="outline" className="text-xs">
-                                        {diet.replace('_', ' ')}
-                                      </Badge>
-                                    ))}
+                              {pkg.dietary_accommodations &&
+                                pkg.dietary_accommodations.length > 0 && (
+                                  <div className="mb-4">
+                                    <p className="text-xs text-muted-foreground mb-1">
+                                      Dietary accommodations:
+                                    </p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {pkg.dietary_accommodations.map(
+                                        (diet) => (
+                                          <Badge
+                                            key={diet}
+                                            variant="outline"
+                                            className="text-xs"
+                                          >
+                                            {diet.replace("_", " ")}
+                                          </Badge>
+                                        ),
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
 
-                              <Button 
+                              <Button
                                 onClick={() => handlePackageSelect(pkg)}
                                 className="w-full bg-orange-600 hover:bg-orange-700"
                               >
@@ -419,9 +501,13 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                   ) : (
                     <Card className="text-center p-8">
                       <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No Packages Available</h3>
+                      <h3 className="text-lg font-semibold mb-2">
+                        No Packages Available
+                      </h3>
                       <p className="text-muted-foreground mb-4">
-                        This restaurant doesn't have catering packages set up yet. Please contact them directly for custom catering options.
+                        This restaurant doesn't have catering packages set up
+                        yet. Please contact them directly for custom catering
+                        options.
                       </p>
                     </Card>
                   )}
@@ -429,7 +515,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
               )}
 
               {/* Step 2: Customize Package */}
-              {currentStep === 'customize' && selectedPackage && (
+              {currentStep === "customize" && selectedPackage && (
                 <motion.div
                   key="customize"
                   initial={{ opacity: 0, x: 20 }}
@@ -438,8 +524,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                   transition={{ duration: 0.3 }}
                 >
                   <div className="text-center mb-8">
-                    <h2 className="text-2xl font-bold mb-2">Customize Your Order</h2>
-                    <p className="text-muted-foreground">Package: {selectedPackage.name}</p>
+                    <h2 className="text-2xl font-bold mb-2">
+                      Customize Your Order
+                    </h2>
+                    <p className="text-muted-foreground">
+                      Package: {selectedPackage.name}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -456,7 +546,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                               <Input
                                 id="event_name"
                                 value={orderForm.event_name}
-                                onChange={(e) => setOrderForm(prev => ({ ...prev, event_name: e.target.value }))}
+                                onChange={(e) =>
+                                  setOrderForm((prev) => ({
+                                    ...prev,
+                                    event_name: e.target.value,
+                                  }))
+                                }
                                 placeholder="Birthday Party, Corporate Event, etc."
                               />
                             </div>
@@ -466,7 +561,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                                 id="guest_count"
                                 type="number"
                                 value={orderForm.guest_count}
-                                onChange={(e) => setOrderForm(prev => ({ ...prev, guest_count: parseInt(e.target.value) || 0 }))}
+                                onChange={(e) =>
+                                  setOrderForm((prev) => ({
+                                    ...prev,
+                                    guest_count: parseInt(e.target.value) || 0,
+                                  }))
+                                }
                                 min={selectedPackage.min_guests}
                                 max={selectedPackage.max_guests}
                               />
@@ -480,45 +580,78 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                                 id="event_date"
                                 type="date"
                                 value={orderForm.event_date}
-                                onChange={(e) => setOrderForm(prev => ({ ...prev, event_date: e.target.value }))}
-                                min={format(addDays(new Date(), 3), 'yyyy-MM-dd')}
+                                onChange={(e) =>
+                                  setOrderForm((prev) => ({
+                                    ...prev,
+                                    event_date: e.target.value,
+                                  }))
+                                }
+                                min={format(
+                                  addDays(new Date(), 3),
+                                  "yyyy-MM-dd",
+                                )}
                               />
                             </div>
                             <div>
-                              <Label htmlFor="event_start_time">Start Time</Label>
+                              <Label htmlFor="event_start_time">
+                                Start Time
+                              </Label>
                               <Input
                                 id="event_start_time"
                                 type="time"
                                 value={orderForm.event_start_time}
-                                onChange={(e) => setOrderForm(prev => ({ ...prev, event_start_time: e.target.value }))}
+                                onChange={(e) =>
+                                  setOrderForm((prev) => ({
+                                    ...prev,
+                                    event_start_time: e.target.value,
+                                  }))
+                                }
                               />
                             </div>
                           </div>
 
                           <div>
                             <Label htmlFor="service_type">Service Type *</Label>
-                            <Select 
-                              value={orderForm.service_type} 
-                              onValueChange={(value: CateringServiceType) => setOrderForm(prev => ({ ...prev, service_type: value }))}
+                            <Select
+                              value={orderForm.service_type}
+                              onValueChange={(value: CateringServiceType) =>
+                                setOrderForm((prev) => ({
+                                  ...prev,
+                                  service_type: value,
+                                }))
+                              }
                             >
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="pickup">Pickup</SelectItem>
-                                <SelectItem value="delivery">Delivery</SelectItem>
-                                <SelectItem value="drop_off">Drop Off</SelectItem>
-                                <SelectItem value="full_service">Full Service</SelectItem>
+                                <SelectItem value="delivery">
+                                  Delivery
+                                </SelectItem>
+                                <SelectItem value="drop_off">
+                                  Drop Off
+                                </SelectItem>
+                                <SelectItem value="full_service">
+                                  Full Service
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
 
                           <div>
-                            <Label htmlFor="special_instructions">Special Instructions</Label>
+                            <Label htmlFor="special_instructions">
+                              Special Instructions
+                            </Label>
                             <Textarea
                               id="special_instructions"
-                              value={orderForm.special_instructions || ''}
-                              onChange={(e) => setOrderForm(prev => ({ ...prev, special_instructions: e.target.value }))}
+                              value={orderForm.special_instructions || ""}
+                              onChange={(e) =>
+                                setOrderForm((prev) => ({
+                                  ...prev,
+                                  special_instructions: e.target.value,
+                                }))
+                              }
                               placeholder="Any special requests, dietary restrictions, setup requirements, etc."
                               rows={3}
                             />
@@ -536,32 +669,40 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                         <CardContent>
                           <div className="space-y-4">
                             <div>
-                              <h4 className="font-medium">{selectedPackage.name}</h4>
-                              <p className="text-sm text-muted-foreground">{selectedPackage.description}</p>
+                              <h4 className="font-medium">
+                                {selectedPackage.name}
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                {selectedPackage.description}
+                              </p>
                             </div>
-                            
+
                             <Separator />
-                            
+
                             <div className="flex justify-between">
                               <span>Guests:</span>
                               <span>{orderForm.guest_count}</span>
                             </div>
                             <div className="flex justify-between">
                               <span>Price per person:</span>
-                              <span>{formatPrice(selectedPackage.price_per_person)}</span>
+                              <span>
+                                {formatPrice(selectedPackage.price_per_person)}
+                              </span>
                             </div>
-                            
+
                             <Separator />
-                            
+
                             <div className="flex justify-between font-semibold text-lg">
                               <span>Estimated Total:</span>
                               <span>{formatPrice(getTotalPrice())}</span>
                             </div>
 
-                            <Button 
-                              onClick={() => setCurrentStep('details')}
+                            <Button
+                              onClick={() => setCurrentStep("details")}
                               className="w-full bg-orange-600 hover:bg-orange-700"
-                              disabled={!orderForm.event_date || !orderForm.contact_name}
+                              disabled={
+                                !orderForm.event_date || !orderForm.contact_name
+                              }
                             >
                               Continue
                             </Button>
@@ -574,7 +715,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
               )}
 
               {/* Step 3: Contact Details */}
-              {currentStep === 'details' && (
+              {currentStep === "details" && (
                 <motion.div
                   key="details"
                   initial={{ opacity: 0, x: 20 }}
@@ -583,8 +724,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                   transition={{ duration: 0.3 }}
                 >
                   <div className="text-center mb-8">
-                    <h2 className="text-2xl font-bold mb-2">Contact Information</h2>
-                    <p className="text-muted-foreground">We'll use this information to confirm your catering order</p>
+                    <h2 className="text-2xl font-bold mb-2">
+                      Contact Information
+                    </h2>
+                    <p className="text-muted-foreground">
+                      We'll use this information to confirm your catering order
+                    </p>
                   </div>
 
                   <div className="max-w-2xl mx-auto">
@@ -596,7 +741,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                             <Input
                               id="contact_name"
                               value={orderForm.contact_name}
-                              onChange={(e) => setOrderForm(prev => ({ ...prev, contact_name: e.target.value }))}
+                              onChange={(e) =>
+                                setOrderForm((prev) => ({
+                                  ...prev,
+                                  contact_name: e.target.value,
+                                }))
+                              }
                             />
                           </div>
                           <div>
@@ -604,8 +754,13 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                             <Input
                               id="contact_phone"
                               type="tel"
-                              value={orderForm.contact_phone || ''}
-                              onChange={(e) => setOrderForm(prev => ({ ...prev, contact_phone: e.target.value }))}
+                              value={orderForm.contact_phone || ""}
+                              onChange={(e) =>
+                                setOrderForm((prev) => ({
+                                  ...prev,
+                                  contact_phone: e.target.value,
+                                }))
+                              }
                             />
                           </div>
                           <div className="md:col-span-2">
@@ -614,7 +769,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                               id="contact_email"
                               type="email"
                               value={orderForm.contact_email}
-                              onChange={(e) => setOrderForm(prev => ({ ...prev, contact_email: e.target.value }))}
+                              onChange={(e) =>
+                                setOrderForm((prev) => ({
+                                  ...prev,
+                                  contact_email: e.target.value,
+                                }))
+                              }
                             />
                           </div>
                         </div>
@@ -622,14 +782,21 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                         <Separator />
 
                         <div className="space-y-4">
-                          <h3 className="text-lg font-medium">Venue Information</h3>
+                          <h3 className="text-lg font-medium">
+                            Venue Information
+                          </h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <Label htmlFor="venue_name">Venue Name</Label>
                               <Input
                                 id="venue_name"
-                                value={orderForm.venue_name || ''}
-                                onChange={(e) => setOrderForm(prev => ({ ...prev, venue_name: e.target.value }))}
+                                value={orderForm.venue_name || ""}
+                                onChange={(e) =>
+                                  setOrderForm((prev) => ({
+                                    ...prev,
+                                    venue_name: e.target.value,
+                                  }))
+                                }
                               />
                             </div>
                           </div>
@@ -637,8 +804,13 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                             <Label htmlFor="venue_address">Venue Address</Label>
                             <Textarea
                               id="venue_address"
-                              value={orderForm.venue_address || ''}
-                              onChange={(e) => setOrderForm(prev => ({ ...prev, venue_address: e.target.value }))}
+                              value={orderForm.venue_address || ""}
+                              onChange={(e) =>
+                                setOrderForm((prev) => ({
+                                  ...prev,
+                                  venue_address: e.target.value,
+                                }))
+                              }
                               rows={2}
                             />
                           </div>
@@ -646,16 +818,24 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
                         {submitError && (
                           <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                            <p className="text-sm text-red-600">{submitError}</p>
+                            <p className="text-sm text-red-600">
+                              {submitError}
+                            </p>
                           </div>
                         )}
 
-                        <Button 
+                        <Button
                           onClick={handleOrderSubmit}
                           className="w-full bg-orange-600 hover:bg-orange-700"
-                          disabled={!orderForm.contact_name || !orderForm.contact_email || submitting}
+                          disabled={
+                            !orderForm.contact_name ||
+                            !orderForm.contact_email ||
+                            submitting
+                          }
                         >
-                          {submitting ? 'Submitting...' : 'Submit Catering Request'}
+                          {submitting
+                            ? "Submitting..."
+                            : "Submit Catering Request"}
                         </Button>
                       </CardContent>
                     </Card>
@@ -664,7 +844,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
               )}
 
               {/* Step 4: Confirmation */}
-              {currentStep === 'confirmation' && orderConfirmed && (
+              {currentStep === "confirmation" && orderConfirmed && (
                 <motion.div
                   key="confirmation"
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -674,9 +854,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                   <div className="text-center">
                     <div className="mb-8">
                       <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                      <h2 className="text-3xl font-bold mb-2">Request Submitted!</h2>
+                      <h2 className="text-3xl font-bold mb-2">
+                        Request Submitted!
+                      </h2>
                       <p className="text-muted-foreground">
-                        Your catering request has been submitted successfully. We'll contact you soon to confirm the details.
+                        Your catering request has been submitted successfully.
+                        We'll contact you soon to confirm the details.
                       </p>
                     </div>
 
@@ -687,10 +870,15 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                       <CardContent>
                         <div className="space-y-4">
                           <div>
-                            <h4 className="font-medium">Event: {orderForm.event_name}</h4>
-                            <p className="text-muted-foreground">{format(new Date(orderForm.event_date), 'PPP')} at {orderForm.event_start_time}</p>
+                            <h4 className="font-medium">
+                              Event: {orderForm.event_name}
+                            </h4>
+                            <p className="text-muted-foreground">
+                              {format(new Date(orderForm.event_date), "PPP")} at{" "}
+                              {orderForm.event_start_time}
+                            </p>
                           </div>
-                          
+
                           <div className="flex justify-between">
                             <span>Package:</span>
                             <span>{selectedPackage?.name}</span>
@@ -701,11 +889,13 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                           </div>
                           <div className="flex justify-between">
                             <span>Service Type:</span>
-                            <span>{orderForm.service_type.replace('_', ' ')}</span>
+                            <span>
+                              {orderForm.service_type.replace("_", " ")}
+                            </span>
                           </div>
-                          
+
                           <Separator />
-                          
+
                           <div className="flex justify-between font-semibold">
                             <span>Estimated Total:</span>
                             <span>{formatPrice(getTotalPrice())}</span>
@@ -715,7 +905,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                     </Card>
 
                     <div className="mt-8">
-                      <Button 
+                      <Button
                         onClick={() => window.location.reload()}
                         variant="outline"
                       >

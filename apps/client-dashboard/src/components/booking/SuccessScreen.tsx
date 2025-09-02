@@ -1,10 +1,19 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { CheckCircle2, Calendar, Clock, Users, MapPin, Trophy, Star, Zap } from 'lucide-react';
+import React from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  CheckCircle2,
+  Calendar,
+  Clock,
+  Users,
+  MapPin,
+  Trophy,
+  Star,
+  Zap,
+} from "lucide-react";
 
 interface SuccessScreenProps {
   reservation: {
@@ -27,12 +36,15 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
   achievements,
   totalTime,
   onNewBooking,
-  onViewReservation
+  onViewReservation,
 }) => {
   const getAchievementBadge = () => {
-    if (totalTime < 20000) return { type: 'gold', icon: Trophy, label: 'Gold Speed Master' };
-    if (totalTime < 60000) return { type: 'silver', icon: Star, label: 'Silver Speedster' };
-    if (totalTime < 120000) return { type: 'bronze', icon: Zap, label: 'Bronze Booker' };
+    if (totalTime < 20000)
+      return { type: "gold", icon: Trophy, label: "Gold Speed Master" };
+    if (totalTime < 60000)
+      return { type: "silver", icon: Star, label: "Silver Speedster" };
+    if (totalTime < 120000)
+      return { type: "bronze", icon: Zap, label: "Bronze Booker" };
     return null;
   };
 
@@ -41,9 +53,9 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    
+
     if (minutes > 0) {
-      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+      return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
     }
     return `${remainingSeconds}s`;
   };
@@ -51,17 +63,17 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
   const formatBookingTime = (isoString: string) => {
     const date = new Date(isoString);
     return {
-      date: date.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      date: date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       }),
-      time: date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })
+      time: date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }),
     };
   };
 
@@ -90,7 +102,7 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
           >
             <CheckCircle2 className="w-10 h-10 text-success-foreground" />
           </motion.div>
-          
+
           {/* Achievement Badge */}
           {achievement && (
             <motion.div
@@ -99,13 +111,13 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
               transition={{ delay: 0.6, type: "spring", stiffness: 150 }}
               className="absolute -top-2 -right-2"
             >
-              <Badge 
+              <Badge
                 className={`px-3 py-1 text-xs font-bold shadow-lg ${
-                  achievement.type === 'gold' 
-                    ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900' 
-                    : achievement.type === 'silver'
-                      ? 'bg-gradient-to-r from-surface-2 to-surface-3 text-text-muted'
-                      : 'bg-gradient-to-r from-warning to-warning text-warning-foreground'
+                  achievement.type === "gold"
+                    ? "bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-900"
+                    : achievement.type === "silver"
+                      ? "bg-gradient-to-r from-surface-2 to-surface-3 text-text-muted"
+                      : "bg-gradient-to-r from-warning to-warning text-warning-foreground"
                 }`}
               >
                 <achievement.icon className="w-3 h-3 mr-1" />
@@ -123,7 +135,7 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
         >
           Booking Confirmed!
         </motion.h1>
-        
+
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -154,11 +166,12 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
                 <div>
                   <p className="font-medium">{reservation.guest_name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {reservation.party_size} {reservation.party_size === 1 ? 'guest' : 'guests'}
+                    {reservation.party_size}{" "}
+                    {reservation.party_size === 1 ? "guest" : "guests"}
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <Clock className="h-5 w-5 text-muted-foreground" />
                 <div>
@@ -173,23 +186,28 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
                 <MapPin className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="font-medium">Table Assignment</p>
-                  <p className="text-sm text-muted-foreground">{reservation.table_info}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {reservation.table_info}
+                  </p>
                 </div>
               </div>
             )}
 
             <Separator />
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Confirmation Code</p>
                 <p className="text-lg font-mono font-bold text-brand">
-                  {reservation.confirmation_code || reservation.reservation_id.slice(-8).toUpperCase()}
+                  {reservation.confirmation_code ||
+                    reservation.reservation_id.slice(-8).toUpperCase()}
                 </p>
               </div>
-              
+
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Booking completed in</p>
+                <p className="text-sm text-muted-foreground">
+                  Booking completed in
+                </p>
                 <p className="font-bold text-brand">{formatTime(totalTime)}</p>
               </div>
             </div>
@@ -221,7 +239,10 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
                     animate={{ scale: 1, rotate: 0 }}
                     transition={{ delay: 0.9 + index * 0.1, type: "spring" }}
                   >
-                    <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+                    <Badge
+                      variant="outline"
+                      className="bg-warning/10 text-warning border-warning/20"
+                    >
                       🏆 {achievement}
                     </Badge>
                   </motion.div>
@@ -239,16 +260,12 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
         transition={{ delay: 1.0 }}
         className="flex flex-col sm:flex-row gap-4 mt-8"
       >
-        <Button 
-          size="lg" 
-          className="flex-1"
-          onClick={onViewReservation}
-        >
+        <Button size="lg" className="flex-1" onClick={onViewReservation}>
           View Reservation Details
         </Button>
-        <Button 
-          variant="outline" 
-          size="lg" 
+        <Button
+          variant="outline"
+          size="lg"
           className="flex-1"
           onClick={onNewBooking}
         >

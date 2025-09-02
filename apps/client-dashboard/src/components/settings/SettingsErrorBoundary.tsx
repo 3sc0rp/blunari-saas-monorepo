@@ -1,8 +1,8 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
+import React, { Component, ErrorInfo, ReactNode } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, RefreshCw, Home, Bug } from "lucide-react";
 
 interface Props {
   children: ReactNode;
@@ -17,7 +17,7 @@ interface State {
 
 class SettingsErrorBoundary extends Component<Props, State> {
   public state: State = {
-    hasError: false
+    hasError: false,
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -25,9 +25,9 @@ class SettingsErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Settings Error Boundary caught an error:', error, errorInfo);
+    console.error("Settings Error Boundary caught an error:", error, errorInfo);
     this.setState({ error, errorInfo });
-    
+
     // In a real app, you'd log this to your error reporting service
     // logErrorToService(error, errorInfo);
   }
@@ -38,7 +38,7 @@ class SettingsErrorBoundary extends Component<Props, State> {
   };
 
   private handleGoHome = () => {
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   private handleReportBug = () => {
@@ -48,13 +48,13 @@ class SettingsErrorBoundary extends Component<Props, State> {
       componentStack: this.state.errorInfo?.componentStack,
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
-      url: window.location.href
+      url: window.location.href,
     };
 
     const mailtoLink = `mailto:support@blunari.com?subject=Settings Error Report&body=${encodeURIComponent(
-      `I encountered an error in the Settings page:\n\n${JSON.stringify(errorReport, null, 2)}`
+      `I encountered an error in the Settings page:\n\n${JSON.stringify(errorReport, null, 2)}`,
     )}`;
-    
+
     window.open(mailtoLink);
   };
 
@@ -75,22 +75,27 @@ class SettingsErrorBoundary extends Component<Props, State> {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-center text-sm text-muted-foreground">
-                Something went wrong while loading the settings page. This error has been logged automatically.
+                Something went wrong while loading the settings page. This error
+                has been logged automatically.
               </div>
 
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {process.env.NODE_ENV === "development" && this.state.error && (
                 <div className="space-y-2">
                   <Badge variant="outline" className="text-xs">
                     Development Mode
                   </Badge>
                   <div className="rounded border p-3 text-xs font-mono">
-                    <div className="font-semibold text-destructive mb-2">Error:</div>
+                    <div className="font-semibold text-destructive mb-2">
+                      Error:
+                    </div>
                     <div className="text-muted-foreground whitespace-pre-wrap">
                       {this.state.error.message}
                     </div>
                     {this.state.error.stack && (
                       <>
-                        <div className="font-semibold text-destructive mt-3 mb-2">Stack:</div>
+                        <div className="font-semibold text-destructive mt-3 mb-2">
+                          Stack:
+                        </div>
                         <div className="text-muted-foreground whitespace-pre-wrap text-xs">
                           {this.state.error.stack.slice(0, 500)}...
                         </div>
@@ -105,13 +110,13 @@ class SettingsErrorBoundary extends Component<Props, State> {
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Reload Settings
                 </Button>
-                
+
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" onClick={this.handleGoHome}>
                     <Home className="h-4 w-4 mr-2" />
                     Go Home
                   </Button>
-                  
+
                   <Button variant="outline" onClick={this.handleReportBug}>
                     <Bug className="h-4 w-4 mr-2" />
                     Report Bug

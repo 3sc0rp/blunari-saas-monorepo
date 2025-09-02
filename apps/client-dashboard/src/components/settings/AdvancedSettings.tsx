@@ -1,18 +1,28 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { 
-  Download, 
-  Trash2, 
-  Eye, 
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Download,
+  Trash2,
+  Eye,
   Settings as SettingsIcon,
   Database,
   Shield,
@@ -20,18 +30,18 @@ import {
   Zap,
   Key,
   FileText,
-  AlertTriangle
-} from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTenant } from '@/hooks/useTenant';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+  AlertTriangle,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTenant } from "@/hooks/useTenant";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const AdvancedSettings: React.FC = () => {
   const { user } = useAuth();
   const { tenant } = useTenant();
   const [isExporting, setIsExporting] = useState(false);
-  const [apiKey, setApiKey] = useState('blun_live_sk_1234...abcd');
+  const [apiKey, setApiKey] = useState("blun_live_sk_1234...abcd");
 
   const handleExportData = async () => {
     if (!tenant?.id) return;
@@ -40,23 +50,25 @@ const AdvancedSettings: React.FC = () => {
     try {
       // Simulate data export - in real implementation, you'd fetch all tenant data
       const { data: bookings } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('tenant_id', tenant.id);
+        .from("bookings")
+        .select("*")
+        .eq("tenant_id", tenant.id);
 
       const exportData = {
         tenant: tenant,
         bookings: bookings || [],
         exportedAt: new Date().toISOString(),
-        format: 'json'
+        format: "json",
       };
 
       // Create and download file
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `${tenant.name?.replace(/\s+/g, '_')}_data_export_${new Date().getTime()}.json`;
+      a.download = `${tenant.name?.replace(/\s+/g, "_")}_data_export_${new Date().getTime()}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -67,7 +79,7 @@ const AdvancedSettings: React.FC = () => {
         description: "Your data has been exported successfully.",
       });
     } catch (error) {
-      console.error('Export error:', error);
+      console.error("Export error:", error);
       toast({
         title: "Export Failed",
         description: "Failed to export data. Please try again.",
@@ -83,7 +95,7 @@ const AdvancedSettings: React.FC = () => {
       // Clear browser storage
       localStorage.clear();
       sessionStorage.clear();
-      
+
       // Clear query cache
       window.location.reload();
 
@@ -105,10 +117,11 @@ const AdvancedSettings: React.FC = () => {
       // In a real implementation, you'd call an API to regenerate the key
       const newKey = `blun_live_sk_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       setApiKey(newKey);
-      
+
       toast({
         title: "API Key Regenerated",
-        description: "Your API key has been regenerated. Please update your integrations.",
+        description:
+          "Your API key has been regenerated. Please update your integrations.",
       });
     } catch (error) {
       toast({
@@ -126,7 +139,8 @@ const AdvancedSettings: React.FC = () => {
       // This would be implemented with proper cascading deletes
       toast({
         title: "Data Deletion Started",
-        description: "All tenant data deletion has been queued. This may take a few minutes.",
+        description:
+          "All tenant data deletion has been queued. This may take a few minutes.",
       });
     } catch (error) {
       toast({
@@ -151,7 +165,7 @@ const AdvancedSettings: React.FC = () => {
           <div className="space-y-2">
             <Label>API Key</Label>
             <div className="flex gap-2">
-              <Input 
+              <Input
                 value={apiKey}
                 readOnly
                 className="font-mono text-sm"
@@ -162,7 +176,8 @@ const AdvancedSettings: React.FC = () => {
               </Button>
             </div>
             <div className="text-sm text-muted-foreground">
-              Use this API key to integrate with external services. Keep it secure!
+              Use this API key to integrate with external services. Keep it
+              secure!
             </div>
           </div>
 
@@ -219,12 +234,12 @@ const AdvancedSettings: React.FC = () => {
                 </div>
               </div>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleExportData}
               disabled={isExporting}
             >
-              {isExporting ? 'Exporting...' : 'Export Data'}
+              {isExporting ? "Exporting..." : "Export Data"}
             </Button>
           </div>
 
@@ -251,9 +266,11 @@ const AdvancedSettings: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-destructive" />
-              <Label className="font-medium text-destructive">Danger Zone</Label>
+              <Label className="font-medium text-destructive">
+                Danger Zone
+              </Label>
             </div>
-            
+
             <div className="border border-destructive/20 rounded-lg p-4 space-y-3">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -264,15 +281,18 @@ const AdvancedSettings: React.FC = () => {
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      Are you absolutely sure?
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete all your 
-                      restaurant data including bookings, customers, and settings.
+                      This action cannot be undone. This will permanently delete
+                      all your restaurant data including bookings, customers,
+                      and settings.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
+                    <AlertDialogAction
                       onClick={handleDeleteAllData}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
@@ -281,10 +301,10 @@ const AdvancedSettings: React.FC = () => {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-              
+
               <div className="text-sm text-muted-foreground">
-                This will permanently delete all data associated with your restaurant.
-                Make sure to export your data first if you need it.
+                This will permanently delete all data associated with your
+                restaurant. Make sure to export your data first if you need it.
               </div>
             </div>
           </div>
@@ -307,14 +327,14 @@ const AdvancedSettings: React.FC = () => {
                 {tenant?.id}
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label className="text-sm font-medium">Database Region</Label>
               <div className="font-mono text-sm p-2 bg-muted rounded">
                 us-east-1
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label className="text-sm font-medium">Plan</Label>
               <div className="flex items-center gap-2">
@@ -322,7 +342,7 @@ const AdvancedSettings: React.FC = () => {
                 <span className="text-sm text-muted-foreground">$49/month</span>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label className="text-sm font-medium">Storage Used</Label>
               <div className="text-sm">
@@ -331,7 +351,10 @@ const AdvancedSettings: React.FC = () => {
                   <span className="text-muted-foreground">23%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 mt-1">
-                  <div className="bg-primary h-2 rounded-full" style={{ width: '23%' }}></div>
+                  <div
+                    className="bg-primary h-2 rounded-full"
+                    style={{ width: "23%" }}
+                  ></div>
                 </div>
               </div>
             </div>

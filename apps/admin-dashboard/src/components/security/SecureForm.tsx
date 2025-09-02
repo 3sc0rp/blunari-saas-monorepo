@@ -24,7 +24,7 @@ export const SecureForm = ({
   action = "form_submit",
   rateLimit = { limit: 10, windowMinutes: 5 },
   sanitizeInputs = true,
-  className = ""
+  className = "",
 }: SecureFormProps) => {
   const { user } = useAuth();
   const { logSecurityEvent } = useAuditLogger();
@@ -32,91 +32,90 @@ export const SecureForm = ({
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (isSubmitting) return;
-    
+
     const form = e.currentTarget;
     const formData = new FormData(form);
-    
+
     // Rate limiting check
     if (user) {
       const isRateLimited = RateLimiter.isRateLimited(
         user.id,
         action,
         rateLimit.limit,
-        rateLimit.windowMinutes
+        rateLimit.windowMinutes,
       );
-      
+
       if (isRateLimited) {
         toast.error("Too many requests. Please wait before trying again.");
         await logSecurityEvent({
-          eventType: 'rate_limit_violation',
-          severity: 'medium',
+          eventType: "rate_limit_violation",
+          severity: "medium",
           eventData: {
             action,
             form_action: action,
-            blocked: true
-          }
+            blocked: true,
+          },
         });
         return;
       }
     }
-    
+
     // CSRF token validation
     const csrfToken = CSRFProtection.getToken();
     if (!csrfToken || !CSRFProtection.validateToken(csrfToken)) {
       toast.error("Security token invalid. Please refresh the page.");
       await logSecurityEvent({
-        eventType: 'csrf_validation_failed',
-        severity: 'high',
+        eventType: "csrf_validation_failed",
+        severity: "high",
         eventData: {
           action,
-          has_token: !!csrfToken
-        }
+          has_token: !!csrfToken,
+        },
       });
       return;
     }
-    
+
     // Add CSRF token to form data
-    formData.set('csrf_token', csrfToken);
-    
+    formData.set("csrf_token", csrfToken);
+
     // Sanitize inputs if enabled
     if (sanitizeInputs) {
       for (const [key, value] of formData.entries()) {
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
           const sanitized = InputSanitizer.sanitizeUserInput(value);
           formData.set(key, sanitized);
         }
       }
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       await onSubmit(formData);
-      
+
       // Log successful form submission
       await logSecurityEvent({
-        eventType: 'secure_form_submitted',
-        severity: 'low',
+        eventType: "secure_form_submitted",
+        severity: "low",
         eventData: {
           action,
           sanitized: sanitizeInputs,
-          csrf_validated: true
-        }
+          csrf_validated: true,
+        },
       });
-      
     } catch (error) {
-      console.error('Form submission error:', error);
+      console.error("Form submission error:", error);
       toast.error("An error occurred. Please try again.");
-      
+
       await logSecurityEvent({
-        eventType: 'secure_form_error',
-        severity: 'medium',
+        eventType: "secure_form_error",
+        severity: "medium",
         eventData: {
           action,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       });
     } finally {
       setIsSubmitting(false);
@@ -125,7 +124,11 @@ export const SecureForm = ({
 
   return (
     <form onSubmit={handleSubmit} className={className}>
-      <input type="hidden" name="csrf_token" value={CSRFProtection.getToken() || ""} />
+      <input
+        type="hidden"
+        name="csrf_token"
+        value={CSRFProtection.getToken() || ""}
+      />
       {children}
     </form>
   );

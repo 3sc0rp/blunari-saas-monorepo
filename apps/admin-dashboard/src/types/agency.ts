@@ -1,7 +1,11 @@
-export type PartnerTier = 'Bronze' | 'Silver' | 'Gold';
-export type PartnerStatus = 'Active' | 'Pending' | 'Suspended' | 'Inactive';
-export type DemoStatus = 'Active' | 'Expired' | 'Scheduled for Cleanup';
-export type RestaurantTemplate = 'Italian' | 'Fine Dining' | 'Casual' | 'Coffee Shop';
+export type PartnerTier = "Bronze" | "Silver" | "Gold";
+export type PartnerStatus = "Active" | "Pending" | "Suspended" | "Inactive";
+export type DemoStatus = "Active" | "Expired" | "Scheduled for Cleanup";
+export type RestaurantTemplate =
+  | "Italian"
+  | "Fine Dining"
+  | "Casual"
+  | "Coffee Shop";
 
 export interface AgencyPartner {
   id: string;
@@ -49,11 +53,11 @@ export interface AgencyKit {
   fileSize: string;
   lastUpdated: string;
   downloadCount: number;
-  type: 'WordPress Plugin' | 'HTML Kit' | 'Documentation' | 'Branding Assets';
+  type: "WordPress Plugin" | "HTML Kit" | "Documentation" | "Branding Assets";
 }
 
 export interface IntegrationCode {
-  type: 'WordPress Shortcode' | 'HTML Embed' | 'Widget URL' | 'API Integration';
+  type: "WordPress Shortcode" | "HTML Embed" | "Widget URL" | "API Integration";
   code: string;
   description: string;
   parameters?: Record<string, string>;

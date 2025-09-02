@@ -1,6 +1,6 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PageHeaderProps {
   title: string;
@@ -9,13 +9,13 @@ interface PageHeaderProps {
     label: string;
     onClick: () => void;
     icon?: React.ComponentType<{ className?: string }>;
-    variant?: 'default' | 'outline' | 'secondary';
+    variant?: "default" | "outline" | "secondary";
   };
   secondaryActions?: Array<{
     label: string;
     onClick: () => void;
     icon?: React.ComponentType<{ className?: string }>;
-    variant?: 'default' | 'outline' | 'secondary' | 'ghost';
+    variant?: "default" | "outline" | "secondary" | "ghost";
   }>;
   tabs?: Array<{
     value: string;
@@ -34,16 +34,12 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   tabs,
   activeTab,
   onTabChange,
-  breadcrumb
+  breadcrumb,
 }) => {
   return (
     <div className="section-spacing">
       {/* Breadcrumb */}
-      {breadcrumb && (
-        <div className="mb-4">
-          {breadcrumb}
-        </div>
-      )}
+      {breadcrumb && <div className="mb-4">{breadcrumb}</div>}
 
       {/* Header Content */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
@@ -65,7 +61,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             {secondaryActions.map((action, index) => (
               <Button
                 key={index}
-                variant={action.variant || 'outline'}
+                variant={action.variant || "outline"}
                 onClick={action.onClick}
                 className="transition-brand"
               >
@@ -77,11 +73,13 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             {/* Primary Action */}
             {primaryAction && (
               <Button
-                variant={primaryAction.variant || 'default'}
+                variant={primaryAction.variant || "default"}
                 onClick={primaryAction.onClick}
                 className="transition-brand shadow-elev-1"
               >
-                {primaryAction.icon && <primaryAction.icon className="h-4 w-4 mr-2" />}
+                {primaryAction.icon && (
+                  <primaryAction.icon className="h-4 w-4 mr-2" />
+                )}
                 {primaryAction.label}
               </Button>
             )}

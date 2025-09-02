@@ -22,11 +22,13 @@ blunari-saas/
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - npm 9+
 - PostgreSQL (for background-ops)
 
 ### Installation
+
 ```bash
 # Install dependencies for all packages
 npm install
@@ -39,11 +41,12 @@ npm run dev
 ```
 
 ### Individual App Commands
+
 ```bash
 # Start only background-ops API
 npm run dev:background-ops
 
-# Start only admin dashboard  
+# Start only admin dashboard
 npm run dev:admin
 
 # Start only client dashboard
@@ -53,6 +56,7 @@ npm run dev:client
 ## 📋 Applications
 
 ### Background-ops API
+
 - **Location**: `apps/background-ops/`
 - **Tech Stack**: Node.js, TypeScript, Express, PostgreSQL
 - **Purpose**: Backend API for job processing, scheduling, and system monitoring
@@ -60,12 +64,14 @@ npm run dev:client
 - **Production**: https://services.blunari.ai
 
 ### Admin Dashboard
+
 - **Location**: `apps/admin-dashboard/`
 - **Tech Stack**: TBD (React/Next.js recommended)
 - **Purpose**: Administrative interface for system management
 - **Port**: 3001 (development)
 
-### Client Dashboard  
+### Client Dashboard
+
 - **Location**: `apps/client-dashboard/`
 - **Tech Stack**: TBD (React/Next.js recommended)
 - **Purpose**: Client-facing interface
@@ -74,20 +80,25 @@ npm run dev:client
 ## 📦 Shared Packages
 
 ### @blunari/types
+
 Shared TypeScript types and interfaces used across all applications.
 
 ### @blunari/utils
+
 Common utility functions, date formatting, validation helpers, etc.
 
 ### @blunari/config
+
 Shared configuration values, API endpoints, constants, and feature flags.
 
 ### @blunari/ui (planned)
+
 Shared React components and design system.
 
 ## 🛠️ Development Workflow
 
 ### Adding New Dependencies
+
 ```bash
 # Add to specific app
 npm install package-name --workspace=apps/admin-dashboard
@@ -100,6 +111,7 @@ npm install -D package-name
 ```
 
 ### Building Packages
+
 ```bash
 # Build all packages
 npm run build
@@ -109,6 +121,7 @@ npm run build --workspace=packages/types
 ```
 
 ### Type Checking
+
 ```bash
 # Type check all packages
 npm run type-check
@@ -120,25 +133,30 @@ npm run type-check --workspace=apps/background-ops
 ## 🚢 Deployment
 
 ### Background-ops API
+
 Currently deployed to Fly.io:
+
 ```bash
 cd apps/background-ops
 fly deploy
 ```
 
 ### Frontend Applications
+
 Deployment configuration TBD (recommended: Vercel/Netlify)
 
 ## 🔧 Configuration
 
 ### Environment Variables
+
 Each app manages its own environment variables:
 
 - `apps/background-ops/.env` - API configuration
-- `apps/admin-dashboard/.env.local` - Admin dashboard config  
+- `apps/admin-dashboard/.env.local` - Admin dashboard config
 - `apps/client-dashboard/.env.local` - Client dashboard config
 
 ### Shared Configuration
+
 Common configuration is managed in `packages/config/src/index.ts`
 
 ## 📊 Monitoring & Observability
@@ -152,7 +170,7 @@ Common configuration is managed in `packages/config/src/index.ts`
 
 1. Make changes in feature branches
 2. Ensure all tests pass: `npm run test`
-3. Type check: `npm run type-check`  
+3. Type check: `npm run type-check`
 4. Format code: `npm run format`
 5. Submit pull request
 
@@ -164,19 +182,20 @@ Common configuration is managed in `packages/config/src/index.ts`
 
 ## ⚡ Scripts Reference
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start all apps in development mode |
-| `npm run build` | Build all packages and apps |
-| `npm run lint` | Lint all code |
-| `npm run test` | Run all tests |
-| `npm run type-check` | Type check all TypeScript |
-| `npm run clean` | Clean all build artifacts |
-| `npm run format` | Format code with Prettier |
+| Command              | Description                        |
+| -------------------- | ---------------------------------- |
+| `npm run dev`        | Start all apps in development mode |
+| `npm run build`      | Build all packages and apps        |
+| `npm run lint`       | Lint all code                      |
+| `npm run test`       | Run all tests                      |
+| `npm run type-check` | Type check all TypeScript          |
+| `npm run clean`      | Clean all build artifacts          |
+| `npm run format`     | Format code with Prettier          |
 
 ## 🏗️ Architecture
 
 The monorepo uses:
+
 - **Turborepo** for build orchestration and caching
 - **TypeScript** for type safety across all packages
 - **Shared packages** for common functionality

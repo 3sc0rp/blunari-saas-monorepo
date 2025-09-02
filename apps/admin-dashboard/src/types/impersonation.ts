@@ -2,7 +2,7 @@ export interface ImpersonationSession {
   id: string;
   impersonatorId: string;
   impersonatorName: string;
-  impersonatorRole: 'SUPER_ADMIN' | 'ADMIN' | 'SUPPORT';
+  impersonatorRole: "SUPER_ADMIN" | "ADMIN" | "SUPPORT";
   targetTenantId: string;
   targetTenantName: string;
   targetUserId?: string;
@@ -13,7 +13,7 @@ export interface ImpersonationSession {
   startedAt: string;
   expiresAt: string;
   endedAt?: string;
-  status: 'active' | 'expired' | 'terminated' | 'completed';
+  status: "active" | "expired" | "terminated" | "completed";
   permissions: ImpersonationPermission[];
   restrictions: ImpersonationRestriction[];
   metadata: {
@@ -31,7 +31,7 @@ export interface ImpersonationPermission {
 }
 
 export interface ImpersonationRestriction {
-  type: 'time_limit' | 'action_limit' | 'resource_limit' | 'approval_required';
+  type: "time_limit" | "action_limit" | "resource_limit" | "approval_required";
   description: string;
   value?: string | number;
   active: boolean;
@@ -43,7 +43,7 @@ export interface ImpersonationAuditLog {
   impersonatorId: string;
   targetTenantId: string;
   action: string;
-  actionType: 'view' | 'create' | 'update' | 'delete' | 'export' | 'system';
+  actionType: "view" | "create" | "update" | "delete" | "export" | "system";
   resource: string;
   resourceId?: string;
   description: string;
@@ -61,7 +61,7 @@ export interface TenantImpersonationRequest {
   duration: number; // in minutes
   permissions: string[];
   ticketNumber?: string;
-  urgencyLevel: 'low' | 'medium' | 'high' | 'critical';
+  urgencyLevel: "low" | "medium" | "high" | "critical";
 }
 
 export interface ImpersonationAnalytics {

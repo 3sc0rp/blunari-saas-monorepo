@@ -1,9 +1,9 @@
 // Enhanced error boundary with better error reporting and recovery
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
+import React, { Component, ErrorInfo, ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle, RefreshCw, Home, Bug } from "lucide-react";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -14,19 +14,26 @@ interface ErrorBoundaryState {
 
 interface ErrorBoundaryProps {
   children: ReactNode;
-  fallback?: React.ComponentType<{ error: Error; resetError: () => void; errorId: string }>;
+  fallback?: React.ComponentType<{
+    error: Error;
+    resetError: () => void;
+    errorId: string;
+  }>;
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   private retryCount = 0;
   private maxRetries = 3;
 
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { 
+    this.state = {
       hasError: false,
-      errorId: this.generateErrorId()
+      errorId: this.generateErrorId(),
     };
   }
 
@@ -35,10 +42,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    return { 
-      hasError: true, 
+    return {
+      hasError: true,
       error,
-      errorId: `ERR_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      errorId: `ERR_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     };
   }
 
@@ -52,15 +59,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
       url: window.location.href,
-      retryCount: this.retryCount
+      retryCount: this.retryCount,
     };
 
     // Log to console only in development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       console.group(`🚨 Error Boundary Caught Error [${this.state.errorId}]`);
-      console.error('Error:', error);
-      console.error('Component Stack:', errorInfo.componentStack);
-      console.error('Full Error Data:', errorData);
+      console.error("Error:", error);
+      console.error("Component Stack:", errorInfo.componentStack);
+      console.error("Full Error Data:", errorData);
       console.groupEnd();
     }
 
@@ -73,11 +80,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   resetError = () => {
     this.retryCount++;
-    this.setState({ 
-      hasError: false, 
-      error: undefined, 
+    this.setState({
+      hasError: false,
+      error: undefined,
       errorInfo: undefined,
-      errorId: this.generateErrorId()
+      errorId: this.generateErrorId(),
     });
   };
 
@@ -85,8 +92,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.state.hasError) {
       const FallbackComponent = this.props.fallback || DefaultErrorFallback;
       return (
-        <FallbackComponent 
-          error={this.state.error!} 
+        <FallbackComponent
+          error={this.state.error!}
           resetError={this.resetError}
           errorId={this.state.errorId}
         />
@@ -103,10 +110,10 @@ interface DefaultErrorFallbackProps {
   errorId: string;
 }
 
-const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ 
-  error, 
+const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
+  error,
   resetError,
-  errorId
+  errorId,
 }) => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -142,16 +149,12 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <Button 
-              onClick={resetError}
-              className="flex-1"
-              variant="default"
-            >
+            <Button onClick={resetError} className="flex-1" variant="default">
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={() => window.location.reload()}
               variant="outline"
               className="flex-1"
@@ -159,9 +162,9 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
               <RefreshCw className="w-4 h-4 mr-2" />
               Reload Page
             </Button>
-            
-            <Button 
-              onClick={() => window.location.href = '/'}
+
+            <Button
+              onClick={() => (window.location.href = "/")}
               variant="outline"
               className="flex-1"
             >

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useTenantCount = () => {
   const [count, setCount] = useState<number>(0);
@@ -9,12 +9,12 @@ export const useTenantCount = () => {
     const fetchTenantCount = async () => {
       try {
         const { count: tenantCount } = await supabase
-          .from('tenants')
-          .select('*', { count: 'exact', head: true });
-        
+          .from("tenants")
+          .select("*", { count: "exact", head: true });
+
         setCount(tenantCount || 0);
       } catch (error) {
-        console.error('Error fetching tenant count:', error);
+        console.error("Error fetching tenant count:", error);
         setCount(0);
       } finally {
         setLoading(false);
@@ -25,17 +25,17 @@ export const useTenantCount = () => {
 
     // Set up real-time subscription for tenant changes
     const channel = supabase
-      .channel('tenant-count-changes')
+      .channel("tenant-count-changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'tenants'
+          event: "*",
+          schema: "public",
+          table: "tenants",
         },
         () => {
           fetchTenantCount();
-        }
+        },
       )
       .subscribe();
 

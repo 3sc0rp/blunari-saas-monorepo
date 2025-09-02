@@ -1,51 +1,63 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AgencyPartner } from '@/types/agency';
-import { Mail, Phone, Globe, TrendingUp, Star, Calendar, Activity } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AgencyPartner } from "@/types/agency";
+import {
+  Mail,
+  Phone,
+  Globe,
+  TrendingUp,
+  Star,
+  Calendar,
+  Activity,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 interface PartnerCardProps {
   partner: AgencyPartner;
   onViewDetails?: (partnerId: string) => void;
-  onUpdateStatus?: (partnerId: string, status: AgencyPartner['status']) => void;
+  onUpdateStatus?: (partnerId: string, status: AgencyPartner["status"]) => void;
 }
 
-export function PartnerCard({ partner, onViewDetails, onUpdateStatus }: PartnerCardProps) {
-  const getTierColor = (tier: AgencyPartner['tier']) => {
+export function PartnerCard({
+  partner,
+  onViewDetails,
+  onUpdateStatus,
+}: PartnerCardProps) {
+  const getTierColor = (tier: AgencyPartner["tier"]) => {
     switch (tier) {
-      case 'Gold':
-        return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white';
-      case 'Silver':
-        return 'bg-gradient-to-r from-gray-400 to-gray-600 text-white';
-      case 'Bronze':
-        return 'bg-gradient-to-r from-amber-600 to-amber-800 text-white';
+      case "Gold":
+        return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white";
+      case "Silver":
+        return "bg-gradient-to-r from-gray-400 to-gray-600 text-white";
+      case "Bronze":
+        return "bg-gradient-to-r from-amber-600 to-amber-800 text-white";
       default:
-        return 'bg-muted text-muted-foreground';
+        return "bg-muted text-muted-foreground";
     }
   };
 
-  const getStatusColor = (status: AgencyPartner['status']) => {
+  const getStatusColor = (status: AgencyPartner["status"]) => {
     switch (status) {
-      case 'Active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'Pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case 'Suspended':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
-      case 'Inactive':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+      case "Active":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "Pending":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+      case "Suspended":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+      case "Inactive":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -56,7 +68,12 @@ export function PartnerCard({ partner, onViewDetails, onUpdateStatus }: PartnerC
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12">
               <AvatarImage src={partner.avatar} alt={partner.name} />
-              <AvatarFallback>{partner.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+              <AvatarFallback>
+                {partner.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </AvatarFallback>
             </Avatar>
             <div>
               <h3 className="font-semibold text-lg">{partner.name}</h3>
@@ -64,9 +81,7 @@ export function PartnerCard({ partner, onViewDetails, onUpdateStatus }: PartnerC
             </div>
           </div>
           <div className="flex gap-2">
-            <Badge className={getTierColor(partner.tier)}>
-              {partner.tier}
-            </Badge>
+            <Badge className={getTierColor(partner.tier)}>{partner.tier}</Badge>
             <Badge className={getStatusColor(partner.status)}>
               {partner.status}
             </Badge>
@@ -79,7 +94,9 @@ export function PartnerCard({ partner, onViewDetails, onUpdateStatus }: PartnerC
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm">
               <TrendingUp className="h-4 w-4 text-green-600" />
-              <span className="font-medium">{formatCurrency(partner.monthlyCommission)}</span>
+              <span className="font-medium">
+                {formatCurrency(partner.monthlyCommission)}
+              </span>
               <span className="text-muted-foreground">this month</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
@@ -116,7 +133,12 @@ export function PartnerCard({ partner, onViewDetails, onUpdateStatus }: PartnerC
           {partner.website && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Globe className="h-4 w-4" />
-              <a href={partner.website} target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+              <a
+                href={partner.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-primary"
+              >
                 {partner.website}
               </a>
             </div>
@@ -124,7 +146,10 @@ export function PartnerCard({ partner, onViewDetails, onUpdateStatus }: PartnerC
         </div>
 
         <div className="text-xs text-muted-foreground border-t pt-2">
-          Last active {formatDistanceToNow(new Date(partner.lastActive), { addSuffix: true })}
+          Last active{" "}
+          {formatDistanceToNow(new Date(partner.lastActive), {
+            addSuffix: true,
+          })}
         </div>
 
         <div className="flex gap-2 pt-2">
@@ -136,10 +161,10 @@ export function PartnerCard({ partner, onViewDetails, onUpdateStatus }: PartnerC
           >
             View Details
           </Button>
-          {onUpdateStatus && partner.status !== 'Active' && (
+          {onUpdateStatus && partner.status !== "Active" && (
             <Button
               size="sm"
-              onClick={() => onUpdateStatus(partner.id, 'Active')}
+              onClick={() => onUpdateStatus(partner.id, "Active")}
               className="bg-green-600 hover:bg-green-700"
             >
               Activate

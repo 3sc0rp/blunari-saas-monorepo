@@ -1,27 +1,40 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  MessageSquare, 
-  Mail, 
-  CreditCard, 
-  BarChart3, 
-  Webhook, 
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  MessageSquare,
+  Mail,
+  CreditCard,
+  BarChart3,
+  Webhook,
   Settings as SettingsIcon,
   ExternalLink,
   CheckCircle,
   AlertCircle,
-  Plug
-} from 'lucide-react';
-import { IntegrationSettings as IntegrationSettingsType } from '@/types/settings';
-import { useForm } from 'react-hook-form';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+  Plug,
+} from "lucide-react";
+import { IntegrationSettings as IntegrationSettingsType } from "@/types/settings";
+import { useForm } from "react-hook-form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 interface IntegrationSettingsProps {
   settings: IntegrationSettingsType;
@@ -29,10 +42,10 @@ interface IntegrationSettingsProps {
   isUpdating: boolean;
 }
 
-const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({ 
-  settings, 
-  onUpdate, 
-  isUpdating 
+const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
+  settings,
+  onUpdate,
+  isUpdating,
 }) => {
   const form = useForm<IntegrationSettingsType>({
     defaultValues: settings,
@@ -52,8 +65,8 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
 
   const getStatusBadge = (enabled: boolean) => {
     return (
-      <Badge variant={enabled ? 'default' : 'outline'}>
-        {enabled ? 'Connected' : 'Disconnected'}
+      <Badge variant={enabled ? "default" : "outline"}>
+        {enabled ? "Connected" : "Disconnected"}
       </Badge>
     );
   };
@@ -69,7 +82,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                 <MessageSquare className="h-5 w-5 text-primary" />
                 SMS Integration
               </div>
-              {getStatusBadge(form.watch('sms.enabled'))}
+              {getStatusBadge(form.watch("sms.enabled"))}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -85,13 +98,16 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                     </div>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
 
-            {form.watch('sms.enabled') && (
+            {form.watch("sms.enabled") && (
               <FormField
                 control={form.control}
                 name="sms.provider"
@@ -118,12 +134,11 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
             )}
 
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {getStatusIcon(form.watch('sms.enabled'))}
+              {getStatusIcon(form.watch("sms.enabled"))}
               <span>
-                {form.watch('sms.enabled') 
-                  ? 'SMS integration is active and ready to send messages' 
-                  : 'SMS integration is disabled'
-                }
+                {form.watch("sms.enabled")
+                  ? "SMS integration is active and ready to send messages"
+                  : "SMS integration is disabled"}
               </span>
             </div>
           </CardContent>
@@ -137,7 +152,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                 <Mail className="h-5 w-5 text-primary" />
                 Email Integration
               </div>
-              {getStatusBadge(form.watch('email.enabled'))}
+              {getStatusBadge(form.watch("email.enabled"))}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -153,13 +168,16 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                     </div>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
 
-            {form.watch('email.enabled') && (
+            {form.watch("email.enabled") && (
               <FormField
                 control={form.control}
                 name="email.provider"
@@ -186,12 +204,11 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
             )}
 
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {getStatusIcon(form.watch('email.enabled'))}
+              {getStatusIcon(form.watch("email.enabled"))}
               <span>
-                {form.watch('email.enabled') 
-                  ? 'Email integration is active and ready to send emails' 
-                  : 'Email integration is disabled'
-                }
+                {form.watch("email.enabled")
+                  ? "Email integration is active and ready to send emails"
+                  : "Email integration is disabled"}
               </span>
             </div>
           </CardContent>
@@ -205,7 +222,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                 <CreditCard className="h-5 w-5 text-primary" />
                 POS Integration
               </div>
-              {getStatusBadge(form.watch('pos.enabled'))}
+              {getStatusBadge(form.watch("pos.enabled"))}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -221,13 +238,16 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                     </div>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
 
-            {form.watch('pos.enabled') && (
+            {form.watch("pos.enabled") && (
               <FormField
                 control={form.control}
                 name="pos.provider"
@@ -256,16 +276,15 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
             )}
 
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {getStatusIcon(form.watch('pos.enabled'))}
+              {getStatusIcon(form.watch("pos.enabled"))}
               <span>
-                {form.watch('pos.enabled') 
-                  ? 'POS integration is active and syncing data' 
-                  : 'POS integration is disabled'
-                }
+                {form.watch("pos.enabled")
+                  ? "POS integration is active and syncing data"
+                  : "POS integration is disabled"}
               </span>
             </div>
 
-            {form.watch('pos.enabled') && (
+            {form.watch("pos.enabled") && (
               <div className="space-y-2">
                 <Separator />
                 <div className="flex items-center justify-between">
@@ -291,7 +310,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                 <BarChart3 className="h-5 w-5 text-primary" />
                 Analytics Integration
               </div>
-              {getStatusBadge(form.watch('analytics.enabled'))}
+              {getStatusBadge(form.watch("analytics.enabled"))}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -307,30 +326,34 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                     </div>
                   </div>
                   <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
 
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {getStatusIcon(form.watch('analytics.enabled'))}
+              {getStatusIcon(form.watch("analytics.enabled"))}
               <span>
-                {form.watch('analytics.enabled') 
-                  ? 'Analytics tracking is active' 
-                  : 'Analytics tracking is disabled'
-                }
+                {form.watch("analytics.enabled")
+                  ? "Analytics tracking is active"
+                  : "Analytics tracking is disabled"}
               </span>
             </div>
 
-            {form.watch('analytics.enabled') && (
+            {form.watch("analytics.enabled") && (
               <div className="space-y-2">
                 <Separator />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-success" />
-                      <span className="text-sm font-medium">Customer Journey Tracking</span>
+                      <span className="text-sm font-medium">
+                        Customer Journey Tracking
+                      </span>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       Track customer behavior and preferences
@@ -339,7 +362,9 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-success" />
-                      <span className="text-sm font-medium">Revenue Analytics</span>
+                      <span className="text-sm font-medium">
+                        Revenue Analytics
+                      </span>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       Monitor revenue trends and forecasting
@@ -361,13 +386,14 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-sm text-muted-foreground mb-4">
-              Configure webhooks to receive real-time notifications about booking events
+              Configure webhooks to receive real-time notifications about
+              booking events
             </div>
 
             <div className="space-y-3">
               <Label htmlFor="webhook-url">Webhook URL</Label>
-              <Input 
-                id="webhook-url" 
+              <Input
+                id="webhook-url"
                 placeholder="https://your-app.com/webhook/bookings"
                 type="url"
               />
@@ -382,12 +408,12 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
               <Label>Events to Send</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
-                  'booking.created',
-                  'booking.cancelled',
-                  'booking.confirmed',
-                  'booking.completed',
-                  'booking.no_show',
-                  'customer.created'
+                  "booking.created",
+                  "booking.cancelled",
+                  "booking.confirmed",
+                  "booking.completed",
+                  "booking.no_show",
+                  "customer.created",
                 ].map((event) => (
                   <div key={event} className="flex items-center space-x-2">
                     <Switch id={event} />
@@ -413,7 +439,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isUpdating}>
-            {isUpdating ? 'Saving...' : 'Save Integration Settings'}
+            {isUpdating ? "Saving..." : "Save Integration Settings"}
           </Button>
         </div>
       </form>

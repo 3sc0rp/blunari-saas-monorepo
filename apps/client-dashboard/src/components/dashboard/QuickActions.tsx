@@ -1,4 +1,11 @@
-import { Plus, Calendar, Users, Table, Settings, BarChart3 } from "lucide-react";
+import {
+  Plus,
+  Calendar,
+  Users,
+  Table,
+  Settings,
+  BarChart3,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -9,43 +16,43 @@ const QuickActions = () => {
       description: "Add a new reservation",
       icon: Plus,
       color: "bg-gradient-primary text-primary-foreground",
-      action: () => console.log("New booking")
+      action: () => console.log("New booking"),
     },
     {
       title: "View Calendar",
       description: "Check availability",
       icon: Calendar,
       color: "bg-gradient-warm text-secondary-foreground",
-      action: () => console.log("View calendar")
+      action: () => console.log("View calendar"),
     },
     {
       title: "Manage Tables",
       description: "Table status & layout",
       icon: Table,
       color: "bg-accent text-accent-foreground",
-      action: () => console.log("Manage tables")
+      action: () => console.log("Manage tables"),
     },
     {
       title: "Customer List",
       description: "View all customers",
       icon: Users,
       color: "bg-muted text-muted-foreground hover:bg-muted/80",
-      action: () => console.log("Customer list")
+      action: () => console.log("Customer list"),
     },
     {
       title: "Reports",
       description: "Analytics & insights",
       icon: BarChart3,
       color: "bg-muted text-muted-foreground hover:bg-muted/80",
-      action: () => console.log("Reports")
+      action: () => console.log("Reports"),
     },
     {
       title: "Settings",
       description: "Restaurant preferences",
       icon: Settings,
       color: "bg-muted text-muted-foreground hover:bg-muted/80",
-      action: () => console.log("Settings")
-    }
+      action: () => console.log("Settings"),
+    },
   ];
 
   return (

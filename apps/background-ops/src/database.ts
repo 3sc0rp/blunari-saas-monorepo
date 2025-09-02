@@ -1,6 +1,6 @@
-import { Pool } from 'pg';
-import { config } from './config';
-import { logger } from './utils/logger';
+import { Pool } from "pg";
+import { config } from "./config";
+import { logger } from "./utils/logger";
 
 const pool = new Pool({
   connectionString: config.DATABASE_URL,
@@ -19,14 +19,13 @@ export const db = {
 export async function setupDatabase() {
   try {
     // Test connection
-    await db.query('SELECT NOW()');
-    logger.info('✅ Database connected successfully');
-    
+    await db.query("SELECT NOW()");
+    logger.info("✅ Database connected successfully");
+
     // Create tables if they don't exist
     await createTables();
-    
   } catch (error) {
-    logger.error('❌ Database connection failed:', error);
+    logger.error("❌ Database connection failed:", error);
     throw error;
   }
 }
@@ -42,7 +41,7 @@ async function createTables() {
       tags JSONB DEFAULT '{}',
       recorded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )`,
-    
+
     // Background jobs table
     `CREATE TABLE IF NOT EXISTS background_jobs (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -60,7 +59,7 @@ async function createTables() {
       failed_at TIMESTAMP WITH TIME ZONE,
       scheduled_for TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )`,
-    
+
     // Services table
     `CREATE TABLE IF NOT EXISTS services (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -75,7 +74,7 @@ async function createTables() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )`,
-    
+
     // Service health checks table
     `CREATE TABLE IF NOT EXISTS service_health_checks (
       id SERIAL PRIMARY KEY,
@@ -85,7 +84,7 @@ async function createTables() {
       details JSONB DEFAULT '{}',
       checked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )`,
-    
+
     // Activity feed table
     `CREATE TABLE IF NOT EXISTS activity_feed (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -97,7 +96,7 @@ async function createTables() {
       user_id VARCHAR(255),
       timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )`,
-    
+
     // Webhook logs table
     `CREATE TABLE IF NOT EXISTS webhook_logs (
       id SERIAL PRIMARY KEY,
@@ -107,7 +106,7 @@ async function createTables() {
       signature TEXT,
       timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )`,
-    
+
     // Tenants table - CRITICAL for tenant provisioning
     `CREATE TABLE IF NOT EXISTS tenants (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -125,7 +124,7 @@ async function createTables() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )`,
-    
+
     // Tenant features table
     `CREATE TABLE IF NOT EXISTS tenant_features (
       id SERIAL PRIMARY KEY,
@@ -136,7 +135,7 @@ async function createTables() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       UNIQUE(tenant_id, feature_key)
     )`,
-    
+
     // Restaurant tables
     `CREATE TABLE IF NOT EXISTS restaurant_tables (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -147,7 +146,7 @@ async function createTables() {
       active BOOLEAN DEFAULT true,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )`,
-    
+
     // Business hours table
     `CREATE TABLE IF NOT EXISTS business_hours (
       id SERIAL PRIMARY KEY,
@@ -159,7 +158,7 @@ async function createTables() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       UNIQUE(tenant_id, day_of_week)
     )`,
-    
+
     // Party size configurations
     `CREATE TABLE IF NOT EXISTS party_size_configs (
       id SERIAL PRIMARY KEY,
@@ -171,7 +170,7 @@ async function createTables() {
       large_party_threshold INTEGER DEFAULT 8,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )`,
-    
+
     // Subscriptions table
     `CREATE TABLE IF NOT EXISTS subscriptions (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -183,7 +182,7 @@ async function createTables() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
     )`,
-    
+
     // Bookings table (for tenant metrics)
     `CREATE TABLE IF NOT EXISTS bookings (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -191,94 +190,94 @@ async function createTables() {
       total_amount NUMERIC(10,2) DEFAULT 0,
       status VARCHAR(50) DEFAULT 'confirmed',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    )`
+    )`,
   ];
 
   for (const table of tables) {
     try {
       await db.query(table);
     } catch (error) {
-      logger.error('Error creating table:', error);
+      logger.error("Error creating table:", error);
       throw error;
     }
   }
-  
+
   // Create indexes
   const indexes = [
-    'CREATE INDEX IF NOT EXISTS idx_system_metrics_name ON system_metrics(name)',
-    'CREATE INDEX IF NOT EXISTS idx_system_metrics_recorded_at ON system_metrics(recorded_at)',
-    'CREATE INDEX IF NOT EXISTS idx_background_jobs_status ON background_jobs(status)',
-    'CREATE INDEX IF NOT EXISTS idx_background_jobs_scheduled_for ON background_jobs(scheduled_for)',
-    'CREATE INDEX IF NOT EXISTS idx_service_health_checks_service_id ON service_health_checks(service_id)',
-    'CREATE INDEX IF NOT EXISTS idx_activity_feed_service ON activity_feed(service)',
-    'CREATE INDEX IF NOT EXISTS idx_activity_feed_timestamp ON activity_feed(timestamp)',
-    'CREATE INDEX IF NOT EXISTS idx_webhook_logs_source ON webhook_logs(source)',
-    
+    "CREATE INDEX IF NOT EXISTS idx_system_metrics_name ON system_metrics(name)",
+    "CREATE INDEX IF NOT EXISTS idx_system_metrics_recorded_at ON system_metrics(recorded_at)",
+    "CREATE INDEX IF NOT EXISTS idx_background_jobs_status ON background_jobs(status)",
+    "CREATE INDEX IF NOT EXISTS idx_background_jobs_scheduled_for ON background_jobs(scheduled_for)",
+    "CREATE INDEX IF NOT EXISTS idx_service_health_checks_service_id ON service_health_checks(service_id)",
+    "CREATE INDEX IF NOT EXISTS idx_activity_feed_service ON activity_feed(service)",
+    "CREATE INDEX IF NOT EXISTS idx_activity_feed_timestamp ON activity_feed(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_webhook_logs_source ON webhook_logs(source)",
+
     // Tenant-related indexes
-    'CREATE INDEX IF NOT EXISTS idx_tenants_slug ON tenants(slug)',
-    'CREATE INDEX IF NOT EXISTS idx_tenants_status ON tenants(status)',
-    'CREATE INDEX IF NOT EXISTS idx_tenant_features_tenant_id ON tenant_features(tenant_id)',
-    'CREATE INDEX IF NOT EXISTS idx_restaurant_tables_tenant_id ON restaurant_tables(tenant_id)',
-    'CREATE INDEX IF NOT EXISTS idx_business_hours_tenant_id ON business_hours(tenant_id)',
-    'CREATE INDEX IF NOT EXISTS idx_subscriptions_tenant_id ON subscriptions(tenant_id)',
-    'CREATE INDEX IF NOT EXISTS idx_bookings_tenant_id ON bookings(tenant_id)'
+    "CREATE INDEX IF NOT EXISTS idx_tenants_slug ON tenants(slug)",
+    "CREATE INDEX IF NOT EXISTS idx_tenants_status ON tenants(status)",
+    "CREATE INDEX IF NOT EXISTS idx_tenant_features_tenant_id ON tenant_features(tenant_id)",
+    "CREATE INDEX IF NOT EXISTS idx_restaurant_tables_tenant_id ON restaurant_tables(tenant_id)",
+    "CREATE INDEX IF NOT EXISTS idx_business_hours_tenant_id ON business_hours(tenant_id)",
+    "CREATE INDEX IF NOT EXISTS idx_subscriptions_tenant_id ON subscriptions(tenant_id)",
+    "CREATE INDEX IF NOT EXISTS idx_bookings_tenant_id ON bookings(tenant_id)",
   ];
 
   for (const index of indexes) {
     try {
       await db.query(index);
     } catch (error) {
-      logger.warn('Index creation warning:', error);
+      logger.warn("Index creation warning:", error);
     }
   }
 
   // Add missing columns if they don't exist
   const migrations = [
     // Fix background_jobs table - ensure all expected columns exist
-    'ALTER TABLE background_jobs ADD COLUMN IF NOT EXISTS failed_at TIMESTAMP WITH TIME ZONE',
-    'ALTER TABLE background_jobs ADD COLUMN IF NOT EXISTS type VARCHAR(255)',
-    'ALTER TABLE background_jobs ADD COLUMN IF NOT EXISTS job_name VARCHAR(255)',
-    'ALTER TABLE background_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(255)',
-    
+    "ALTER TABLE background_jobs ADD COLUMN IF NOT EXISTS failed_at TIMESTAMP WITH TIME ZONE",
+    "ALTER TABLE background_jobs ADD COLUMN IF NOT EXISTS type VARCHAR(255)",
+    "ALTER TABLE background_jobs ADD COLUMN IF NOT EXISTS job_name VARCHAR(255)",
+    "ALTER TABLE background_jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(255)",
+
     // Fix system_metrics table (missing columns for indexes)
-    'ALTER TABLE system_metrics ADD COLUMN IF NOT EXISTS name VARCHAR(255) NOT NULL DEFAULT \'unknown\'',
-    'ALTER TABLE system_metrics ADD COLUMN IF NOT EXISTS recorded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()',
-    
+    "ALTER TABLE system_metrics ADD COLUMN IF NOT EXISTS name VARCHAR(255) NOT NULL DEFAULT 'unknown'",
+    "ALTER TABLE system_metrics ADD COLUMN IF NOT EXISTS recorded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()",
+
     // Fix activity_feed table
-    'ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS type VARCHAR(255) NOT NULL DEFAULT \'info\'',
-    'ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS service VARCHAR(255) NOT NULL DEFAULT \'background-ops\'',
-    'ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()',
-    'ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS message TEXT NOT NULL DEFAULT \'\'',
-    'ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT \'info\'',
-    'ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS details JSONB DEFAULT \'{}\'',
-    'ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS user_id VARCHAR(255)',
-    
-    // Fix webhook_logs table 
-    'ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS source VARCHAR(255) NOT NULL DEFAULT \'unknown\'',
-    'ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()',
-    'ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS event_type VARCHAR(255) NOT NULL DEFAULT \'unknown\'',
-    'ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS data JSONB NOT NULL DEFAULT \'{}\'',
-    'ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS signature TEXT'
+    "ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS type VARCHAR(255) NOT NULL DEFAULT 'info'",
+    "ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS service VARCHAR(255) NOT NULL DEFAULT 'background-ops'",
+    "ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()",
+    "ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS message TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS status VARCHAR(50) NOT NULL DEFAULT 'info'",
+    "ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS details JSONB DEFAULT '{}'",
+    "ALTER TABLE activity_feed ADD COLUMN IF NOT EXISTS user_id VARCHAR(255)",
+
+    // Fix webhook_logs table
+    "ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS source VARCHAR(255) NOT NULL DEFAULT 'unknown'",
+    "ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()",
+    "ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS event_type VARCHAR(255) NOT NULL DEFAULT 'unknown'",
+    "ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS data JSONB NOT NULL DEFAULT '{}'",
+    "ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS signature TEXT",
   ];
 
   for (const migration of migrations) {
     try {
       await db.query(migration);
-      logger.info('✅ Database migration executed:', migration);
+      logger.info("✅ Database migration executed:", migration);
     } catch (error) {
-      logger.warn('Migration warning:', error);
+      logger.warn("Migration warning:", error);
     }
   }
 
-  logger.info('✅ Database tables and indexes created/verified');
+  logger.info("✅ Database tables and indexes created/verified");
 }
 
 export async function databaseHealth(): Promise<boolean> {
   try {
-    await db.query('SELECT 1');
+    await db.query("SELECT 1");
     return true;
   } catch (error) {
-    logger.error('Database health check failed:', error);
+    logger.error("Database health check failed:", error);
     return false;
   }
 }

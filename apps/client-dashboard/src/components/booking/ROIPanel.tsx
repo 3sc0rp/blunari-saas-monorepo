@@ -1,8 +1,8 @@
-import React from 'react';
-import { TrendingUp, Clock, Star, DollarSign } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ReservationResponse, ROIMetrics } from '@/types/booking-api';
+import React from "react";
+import { TrendingUp, Clock, Star, DollarSign } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ReservationResponse, ROIMetrics } from "@/types/booking-api";
 
 interface ROIPanelProps {
   reservation: ReservationResponse;
@@ -10,7 +10,11 @@ interface ROIPanelProps {
   totalTime: number;
 }
 
-const ROIPanel: React.FC<ROIPanelProps> = ({ reservation, stepTimes, totalTime }) => {
+const ROIPanel: React.FC<ROIPanelProps> = ({
+  reservation,
+  stepTimes,
+  totalTime,
+}) => {
   // Only show if we have actual ROI data from the API
   // This component will be empty if the API doesn't provide ROI metrics
   const [roiData, setROIData] = React.useState<ROIMetrics | null>(null);
@@ -25,18 +29,32 @@ const ROIPanel: React.FC<ROIPanelProps> = ({ reservation, stepTimes, totalTime }
     if (seconds < 60) return `${seconds}s`;
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
   const getAchievements = () => {
     const achievements = [];
     const totalSeconds = totalTime / 1000;
-    
-    if (totalSeconds < 60) achievements.push({ icon: Clock, label: 'Speed Demon', desc: 'Under 1 minute' });
-    else if (totalSeconds < 120) achievements.push({ icon: Clock, label: 'Quick Booker', desc: 'Under 2 minutes' });
-    
+
+    if (totalSeconds < 60)
+      achievements.push({
+        icon: Clock,
+        label: "Speed Demon",
+        desc: "Under 1 minute",
+      });
+    else if (totalSeconds < 120)
+      achievements.push({
+        icon: Clock,
+        label: "Quick Booker",
+        desc: "Under 2 minutes",
+      });
+
     if (reservation.summary) {
-      achievements.push({ icon: Star, label: 'Confirmed', desc: 'Successful booking' });
+      achievements.push({
+        icon: Star,
+        label: "Confirmed",
+        desc: "Successful booking",
+      });
     }
 
     return achievements;
@@ -64,7 +82,11 @@ const ROIPanel: React.FC<ROIPanelProps> = ({ reservation, stepTimes, totalTime }
             <h4 className="text-sm font-medium mb-2">Achievements</h4>
             <div className="flex flex-wrap gap-2">
               {achievements.map((achievement, index) => (
-                <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                <Badge
+                  key={index}
+                  variant="secondary"
+                  className="flex items-center gap-1"
+                >
                   <achievement.icon className="w-3 h-3" />
                   {achievement.label}
                 </Badge>
@@ -80,7 +102,9 @@ const ROIPanel: React.FC<ROIPanelProps> = ({ reservation, stepTimes, totalTime }
             <div className="text-sm text-muted-foreground">Total Time</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold">{Object.keys(stepTimes).length}</div>
+            <div className="text-2xl font-bold">
+              {Object.keys(stepTimes).length}
+            </div>
             <div className="text-sm text-muted-foreground">Steps Completed</div>
           </div>
         </div>
@@ -102,13 +126,17 @@ const ROIPanel: React.FC<ROIPanelProps> = ({ reservation, stepTimes, totalTime }
               {roiData.additional_covers && (
                 <div className="flex justify-between">
                   <span>Additional Covers:</span>
-                  <span className="font-medium">{roiData.additional_covers}</span>
+                  <span className="font-medium">
+                    {roiData.additional_covers}
+                  </span>
                 </div>
               )}
               {roiData.experience_score && (
                 <div className="flex justify-between">
                   <span>Experience Score:</span>
-                  <span className="font-medium">{roiData.experience_score}/10</span>
+                  <span className="font-medium">
+                    {roiData.experience_score}/10
+                  </span>
                 </div>
               )}
               {roiData.total_value && (

@@ -1,14 +1,19 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { IntegrationCode } from '@/types/agency';
-import { Copy, Code, Settings, ExternalLink } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { IntegrationCode } from "@/types/agency";
+import { Copy, Code, Settings, ExternalLink } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface IntegrationCodeDialogProps {
   open: boolean;
@@ -17,29 +22,34 @@ interface IntegrationCodeDialogProps {
   restaurantName?: string;
 }
 
-export function IntegrationCodeDialog({ open, onOpenChange, demoUrl, restaurantName }: IntegrationCodeDialogProps) {
-  const [selectedTenantId, setSelectedTenantId] = useState('demo-12345');
-  const [widgetColor, setWidgetColor] = useState('#3B82F6');
-  const [widgetSize, setWidgetSize] = useState('medium');
+export function IntegrationCodeDialog({
+  open,
+  onOpenChange,
+  demoUrl,
+  restaurantName,
+}: IntegrationCodeDialogProps) {
+  const [selectedTenantId, setSelectedTenantId] = useState("demo-12345");
+  const [widgetColor, setWidgetColor] = useState("#3B82F6");
+  const [widgetSize, setWidgetSize] = useState("medium");
   const { toast } = useToast();
 
   const generateIntegrationCodes = (): IntegrationCode[] => {
-    const baseUrl = 'https://widget.blunari.com';
+    const baseUrl = "https://widget.blunari.com";
     const tenantId = selectedTenantId;
-    
+
     return [
       {
-        type: 'WordPress Shortcode',
+        type: "WordPress Shortcode",
         code: `[blunari_booking tenant_id="${tenantId}" color="${widgetColor}" size="${widgetSize}"]`,
-        description: 'Simple WordPress shortcode for easy integration',
+        description: "Simple WordPress shortcode for easy integration",
         parameters: {
-          tenant_id: 'Your unique tenant identifier',
-          color: 'Primary color for the widget (hex code)',
-          size: 'Widget size: small, medium, large'
-        }
+          tenant_id: "Your unique tenant identifier",
+          color: "Primary color for the widget (hex code)",
+          size: "Widget size: small, medium, large",
+        },
       },
       {
-        type: 'HTML Embed',
+        type: "HTML Embed",
         code: `<div id="blunari-widget-${tenantId}"></div>
 <script>
   (function() {
@@ -57,25 +67,25 @@ export function IntegrationCodeDialog({ open, onOpenChange, demoUrl, restaurantN
     document.head.appendChild(script);
   })();
 </script>`,
-        description: 'Standard HTML embed code for any website',
+        description: "Standard HTML embed code for any website",
         parameters: {
-          containerId: 'Unique container ID for the widget',
-          tenantId: 'Your tenant identifier',
-          responsive: 'Auto-adjust to container width'
-        }
+          containerId: "Unique container ID for the widget",
+          tenantId: "Your tenant identifier",
+          responsive: "Auto-adjust to container width",
+        },
       },
       {
-        type: 'Widget URL',
+        type: "Widget URL",
         code: `${baseUrl}/embed/${tenantId}?color=${encodeURIComponent(widgetColor)}&size=${widgetSize}`,
-        description: 'Direct iframe URL for quick integration',
+        description: "Direct iframe URL for quick integration",
         parameters: {
-          color: 'Widget color theme',
-          size: 'Display size preference',
-          lang: 'Language code (optional)'
-        }
+          color: "Widget color theme",
+          size: "Display size preference",
+          lang: "Language code (optional)",
+        },
       },
       {
-        type: 'API Integration',
+        type: "API Integration",
         code: `// Initialize Blunari API Client
 const blunari = new BlunariAPI({
   tenantId: '${tenantId}',
@@ -93,13 +103,13 @@ const booking = await blunari.bookings.create({
 });
 
 console.log('Booking created:', booking.id);`,
-        description: 'Full API integration for custom implementations',
+        description: "Full API integration for custom implementations",
         parameters: {
-          apiKey: 'Your API authentication key',
-          environment: 'production or sandbox',
-          webhookUrl: 'Callback URL for booking events'
-        }
-      }
+          apiKey: "Your API authentication key",
+          environment: "production or sandbox",
+          webhookUrl: "Callback URL for booking events",
+        },
+      },
     ];
   };
 
@@ -116,23 +126,23 @@ console.log('Booking created:', booking.id);`,
       toast({
         title: "Copy Failed",
         description: "Unable to copy to clipboard. Please copy manually.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-  const getTypeIcon = (type: IntegrationCode['type']) => {
+  const getTypeIcon = (type: IntegrationCode["type"]) => {
     switch (type) {
-      case 'WordPress Shortcode':
-        return '🔌';
-      case 'HTML Embed':
-        return '📄';
-      case 'Widget URL':
-        return '🔗';
-      case 'API Integration':
-        return '⚡';
+      case "WordPress Shortcode":
+        return "🔌";
+      case "HTML Embed":
+        return "📄";
+      case "Widget URL":
+        return "🔗";
+      case "API Integration":
+        return "⚡";
       default:
-        return '📋';
+        return "📋";
     }
   };
 
@@ -179,7 +189,7 @@ console.log('Booking created:', booking.id);`,
               </div>
               <div>
                 <Label htmlFor="widgetSize">Widget Size</Label>
-                <select 
+                <select
                   id="widgetSize"
                   value={widgetSize}
                   onChange={(e) => setWidgetSize(e.target.value)}
@@ -196,8 +206,13 @@ console.log('Booking created:', booking.id);`,
           <Tabs defaultValue="WordPress Shortcode" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               {integrationCodes.map((integration) => (
-                <TabsTrigger key={integration.type} value={integration.type} className="text-xs">
-                  {getTypeIcon(integration.type)} {integration.type.split(' ')[0]}
+                <TabsTrigger
+                  key={integration.type}
+                  value={integration.type}
+                  className="text-xs"
+                >
+                  {getTypeIcon(integration.type)}{" "}
+                  {integration.type.split(" ")[0]}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -213,15 +228,19 @@ console.log('Booking created:', booking.id);`,
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => copyToClipboard(integration.code, integration.type)}
+                        onClick={() =>
+                          copyToClipboard(integration.code, integration.type)
+                        }
                       >
                         <Copy className="h-4 w-4 mr-2" />
                         Copy Code
                       </Button>
                     </CardTitle>
-                    <p className="text-sm text-muted-foreground">{integration.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {integration.description}
+                    </p>
                   </CardHeader>
-                  
+
                   <CardContent className="space-y-4">
                     <div className="bg-gray-950 text-gray-100 p-4 rounded-lg overflow-auto">
                       <pre className="text-sm whitespace-pre-wrap break-words">
@@ -233,24 +252,30 @@ console.log('Booking created:', booking.id);`,
                       <div>
                         <h4 className="font-medium mb-2">Parameters:</h4>
                         <div className="space-y-2">
-                          {Object.entries(integration.parameters).map(([key, description]) => (
-                            <div key={key} className="flex items-start gap-2">
-                              <Badge variant="outline" className="shrink-0">
-                                {key}
-                              </Badge>
-                              <span className="text-sm text-muted-foreground">{description}</span>
-                            </div>
-                          ))}
+                          {Object.entries(integration.parameters).map(
+                            ([key, description]) => (
+                              <div key={key} className="flex items-start gap-2">
+                                <Badge variant="outline" className="shrink-0">
+                                  {key}
+                                </Badge>
+                                <span className="text-sm text-muted-foreground">
+                                  {description}
+                                </span>
+                              </div>
+                            ),
+                          )}
                         </div>
                       </div>
                     )}
 
-                    {integration.type === 'Widget URL' && (
+                    {integration.type === "Widget URL" && (
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(integration.code, '_blank')}
+                          onClick={() =>
+                            window.open(integration.code, "_blank")
+                          }
                         >
                           <ExternalLink className="h-4 w-4 mr-2" />
                           Test Widget
@@ -267,12 +292,20 @@ console.log('Booking created:', booking.id);`,
             <div className="flex items-start gap-2">
               <Settings className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-medium text-blue-900 dark:text-blue-100">Implementation Tips</h4>
+                <h4 className="font-medium text-blue-900 dark:text-blue-100">
+                  Implementation Tips
+                </h4>
                 <ul className="text-sm text-blue-700 dark:text-blue-200 mt-1 space-y-1">
-                  <li>• Test all integrations in a staging environment first</li>
-                  <li>• Configure webhook URLs for real-time booking notifications</li>
+                  <li>
+                    • Test all integrations in a staging environment first
+                  </li>
+                  <li>
+                    • Configure webhook URLs for real-time booking notifications
+                  </li>
                   <li>• Use responsive widgets for better mobile experience</li>
-                  <li>• Contact support for custom styling and advanced features</li>
+                  <li>
+                    • Contact support for custom styling and advanced features
+                  </li>
                 </ul>
               </div>
             </div>

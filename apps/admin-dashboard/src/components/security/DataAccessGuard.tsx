@@ -19,7 +19,7 @@ export const DataAccessGuard = ({
   resourceType,
   resourceId,
   tenantId,
-  fallback
+  fallback,
 }: DataAccessGuardProps) => {
   const { user } = useAuth();
   const { logSecurityEvent } = useAuditLogger();
@@ -40,28 +40,28 @@ export const DataAccessGuard = ({
 
         // Log access attempt
         await logSecurityEvent({
-          eventType: 'data_access_attempt',
-          severity: 'low',
+          eventType: "data_access_attempt",
+          severity: "low",
           eventData: {
             resourceType,
             resourceId,
             tenantId,
             requiredRole,
-            granted: accessGranted
-          }
+            granted: accessGranted,
+          },
         });
 
         setHasAccess(accessGranted);
       } catch (error) {
-        console.error('Access check failed:', error);
+        console.error("Access check failed:", error);
         await logSecurityEvent({
-          eventType: 'access_check_failed',
-          severity: 'medium',
+          eventType: "access_check_failed",
+          severity: "medium",
           eventData: {
             resourceType,
             resourceId,
-            error: error instanceof Error ? error.message : 'Unknown error'
-          }
+            error: error instanceof Error ? error.message : "Unknown error",
+          },
         });
         setHasAccess(false);
       } finally {
@@ -70,7 +70,14 @@ export const DataAccessGuard = ({
     };
 
     checkAccess();
-  }, [user, requiredRole, resourceType, resourceId, tenantId, logSecurityEvent]);
+  }, [
+    user,
+    requiredRole,
+    resourceType,
+    resourceId,
+    tenantId,
+    logSecurityEvent,
+  ]);
 
   if (isLoading) {
     return (
@@ -88,7 +95,9 @@ export const DataAccessGuard = ({
     return (
       <Card className="p-6 text-center">
         <AlertTriangle className="w-12 h-12 text-warning mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-foreground mb-2">Access Denied</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-2">
+          Access Denied
+        </h3>
         <p className="text-muted-foreground">
           You don't have permission to access this resource.
         </p>

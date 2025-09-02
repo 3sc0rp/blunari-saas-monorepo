@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Trash2, Bug, RefreshCw } from 'lucide-react';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Trash2, Bug, RefreshCw } from "lucide-react";
 
 export const JobsDebugger = () => {
   const [loading, setLoading] = useState(false);
@@ -14,8 +14,8 @@ export const JobsDebugger = () => {
   const handleDebug = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('jobs-api', {
-        body: { action: 'debug' }
+      const { data, error } = await supabase.functions.invoke("jobs-api", {
+        body: { action: "debug" },
       });
 
       if (error) throw error;
@@ -26,10 +26,11 @@ export const JobsDebugger = () => {
         description: `Found ${data.jobsInDatabase} jobs in database`,
       });
     } catch (error) {
-      console.error('Debug error:', error);
+      console.error("Debug error:", error);
       toast({
         title: "Debug Failed",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
     } finally {
@@ -40,8 +41,8 @@ export const JobsDebugger = () => {
   const handleCleanup = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('jobs-api', {
-        body: { action: 'cleanup' }
+      const { data, error } = await supabase.functions.invoke("jobs-api", {
+        body: { action: "cleanup" },
       });
 
       if (error) throw error;
@@ -50,14 +51,15 @@ export const JobsDebugger = () => {
         title: "Cleanup Complete",
         description: data.message,
       });
-      
+
       // Refresh debug data
       handleDebug();
     } catch (error) {
-      console.error('Cleanup error:', error);
+      console.error("Cleanup error:", error);
       toast({
         title: "Cleanup Failed",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
     } finally {
@@ -75,15 +77,11 @@ export const JobsDebugger = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-2">
-          <Button
-            onClick={handleDebug}
-            disabled={loading}
-            variant="outline"
-          >
+          <Button onClick={handleDebug} disabled={loading} variant="outline">
             <Bug className="h-4 w-4 mr-2" />
             Debug Database
           </Button>
-          
+
           <Button
             onClick={handleCleanup}
             disabled={loading}
@@ -103,7 +101,11 @@ export const JobsDebugger = () => {
               </div>
               <div>
                 <p className="text-sm font-medium">Background Ops URL</p>
-                <Badge variant={debugData.backgroundOpsUrl ? "default" : "destructive"}>
+                <Badge
+                  variant={
+                    debugData.backgroundOpsUrl ? "default" : "destructive"
+                  }
+                >
                   {debugData.backgroundOpsUrl || "Missing"}
                 </Badge>
               </div>
@@ -113,14 +115,25 @@ export const JobsDebugger = () => {
               <p className="text-sm font-medium mb-2">Recent Jobs</p>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {debugData.jobs?.map((job: any, index: number) => (
-                  <div key={job.id || index} className="p-2 border rounded text-xs">
+                  <div
+                    key={job.id || index}
+                    className="p-2 border rounded text-xs"
+                  >
                     <div className="flex justify-between items-center">
-                      <span className="font-mono">{job.job_type || 'Unknown'}</span>
-                      <Badge variant={
-                        job.status === 'completed' ? 'default' :
-                        job.status === 'failed' ? 'destructive' :
-                        job.status === 'running' ? 'secondary' : 'outline'
-                      }>
+                      <span className="font-mono">
+                        {job.job_type || "Unknown"}
+                      </span>
+                      <Badge
+                        variant={
+                          job.status === "completed"
+                            ? "default"
+                            : job.status === "failed"
+                              ? "destructive"
+                              : job.status === "running"
+                                ? "secondary"
+                                : "outline"
+                        }
+                      >
                         {job.status}
                       </Badge>
                     </div>

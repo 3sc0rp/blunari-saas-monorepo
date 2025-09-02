@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -7,10 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Activity, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle,
   Database,
   Server,
   TrendingUp,
@@ -22,10 +28,20 @@ import {
   BarChart3,
   RefreshCw,
   Eye,
-  EyeOff
+  EyeOff,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+} from "recharts";
 
 interface SystemMetric {
   id: string;
@@ -70,7 +86,9 @@ export default function ObservabilityPage() {
   const [systemMetrics, setSystemMetrics] = useState<SystemMetric[]>([]);
   const [errorLogs, setErrorLogs] = useState<ErrorLog[]>([]);
   const [alerts, setAlerts] = useState<AlertInstance[]>([]);
-  const [performanceTrends, setPerformanceTrends] = useState<PerformanceTrend[]>([]);
+  const [performanceTrends, setPerformanceTrends] = useState<
+    PerformanceTrend[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const { toast } = useToast();
@@ -78,7 +96,7 @@ export default function ObservabilityPage() {
   useEffect(() => {
     loadObservabilityData();
     setupRealtimeSubscriptions();
-    
+
     if (autoRefresh) {
       const interval = setInterval(loadObservabilityData, 30000); // 30 seconds
       return () => clearInterval(interval);
@@ -89,51 +107,51 @@ export default function ObservabilityPage() {
     try {
       // Load system metrics (last hour)
       const { data: metricsData } = await supabase
-        .from('system_health_metrics')
-        .select('*')
-        .gte('recorded_at', new Date(Date.now() - 3600000).toISOString())
-        .order('recorded_at', { ascending: false })
+        .from("system_health_metrics")
+        .select("*")
+        .gte("recorded_at", new Date(Date.now() - 3600000).toISOString())
+        .order("recorded_at", { ascending: false })
         .limit(100);
 
       setSystemMetrics(metricsData || []);
 
       // Load error logs (last 24 hours, unresolved)
       const { data: errorsData } = await supabase
-        .from('error_logs')
-        .select('*')
-        .eq('resolved', false)
-        .gte('occurred_at', new Date(Date.now() - 86400000).toISOString())
-        .order('occurred_at', { ascending: false })
+        .from("error_logs")
+        .select("*")
+        .eq("resolved", false)
+        .gte("occurred_at", new Date(Date.now() - 86400000).toISOString())
+        .order("occurred_at", { ascending: false })
         .limit(50);
 
       setErrorLogs(errorsData || []);
 
       // Load active alerts
       const { data: alertsData } = await supabase
-        .from('alert_instances')
-        .select('*')
-        .eq('status', 'active')
-        .order('fired_at', { ascending: false })
+        .from("alert_instances")
+        .select("*")
+        .eq("status", "active")
+        .order("fired_at", { ascending: false })
         .limit(20);
 
       setAlerts(alertsData || []);
 
       // Load performance trends (last 24 hours)
       const { data: trendsData } = await supabase
-        .from('performance_trends')
-        .select('*')
-        .eq('aggregation_period', 'hour')
-        .gte('period_start', new Date(Date.now() - 86400000).toISOString())
-        .order('period_start', { ascending: false })
+        .from("performance_trends")
+        .select("*")
+        .eq("aggregation_period", "hour")
+        .gte("period_start", new Date(Date.now() - 86400000).toISOString())
+        .order("period_start", { ascending: false })
         .limit(24);
 
       setPerformanceTrends(trendsData || []);
     } catch (error) {
-      console.error('Error loading observability data:', error);
+      console.error("Error loading observability data:", error);
       toast({
         title: "Error",
         description: "Failed to load monitoring data",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -143,56 +161,78 @@ export default function ObservabilityPage() {
   const setupRealtimeSubscriptions = () => {
     // Subscribe to new system metrics
     const metricsChannel = supabase
-      .channel('system-metrics')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'system_health_metrics'
-      }, (payload) => {
-        setSystemMetrics(prev => [payload.new as SystemMetric, ...prev.slice(0, 99)]);
-      })
+      .channel("system-metrics")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "system_health_metrics",
+        },
+        (payload) => {
+          setSystemMetrics((prev) => [
+            payload.new as SystemMetric,
+            ...prev.slice(0, 99),
+          ]);
+        },
+      )
       .subscribe();
 
     // Subscribe to new error logs
     const errorsChannel = supabase
-      .channel('error-logs')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'error_logs'
-      }, (payload) => {
-        setErrorLogs(prev => [payload.new as ErrorLog, ...prev.slice(0, 49)]);
-        
-        // Show toast for critical errors
-        const newError = payload.new as ErrorLog;
-        if (newError.severity === 'critical') {
-          toast({
-            title: "Critical Error Detected",
-            description: newError.message,
-            variant: "destructive"
-          });
-        }
-      })
+      .channel("error-logs")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "error_logs",
+        },
+        (payload) => {
+          setErrorLogs((prev) => [
+            payload.new as ErrorLog,
+            ...prev.slice(0, 49),
+          ]);
+
+          // Show toast for critical errors
+          const newError = payload.new as ErrorLog;
+          if (newError.severity === "critical") {
+            toast({
+              title: "Critical Error Detected",
+              description: newError.message,
+              variant: "destructive",
+            });
+          }
+        },
+      )
       .subscribe();
 
     // Subscribe to new alerts
     const alertsChannel = supabase
-      .channel('alert-instances')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'alert_instances'
-      }, (payload) => {
-        setAlerts(prev => [payload.new as AlertInstance, ...prev.slice(0, 19)]);
-        
-        // Show toast for new alerts
-        const newAlert = payload.new as AlertInstance;
-        toast({
-          title: `${newAlert.severity.toUpperCase()} Alert`,
-          description: newAlert.message,
-          variant: newAlert.severity === 'critical' ? "destructive" : "default"
-        });
-      })
+      .channel("alert-instances")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "alert_instances",
+        },
+        (payload) => {
+          setAlerts((prev) => [
+            payload.new as AlertInstance,
+            ...prev.slice(0, 19),
+          ]);
+
+          // Show toast for new alerts
+          const newAlert = payload.new as AlertInstance;
+          toast({
+            title: `${newAlert.severity.toUpperCase()} Alert`,
+            description: newAlert.message,
+            variant:
+              newAlert.severity === "critical" ? "destructive" : "default",
+          });
+        },
+      )
       .subscribe();
 
     return () => {
@@ -205,23 +245,23 @@ export default function ObservabilityPage() {
   const triggerMonitoring = async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.functions.invoke('monitor-system');
-      
+      const { error } = await supabase.functions.invoke("monitor-system");
+
       if (error) throw error;
-      
+
       toast({
         title: "Success",
         description: "Monitoring data collected successfully",
       });
-      
+
       // Refresh data after a short delay
       setTimeout(loadObservabilityData, 1000);
     } catch (error) {
-      console.error('Error triggering monitoring:', error);
+      console.error("Error triggering monitoring:", error);
       toast({
         title: "Error",
         description: "Failed to collect monitoring data",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -231,27 +271,27 @@ export default function ObservabilityPage() {
   const acknowledgeAlert = async (alertId: string) => {
     try {
       const { error } = await supabase
-        .from('alert_instances')
-        .update({ 
-          status: 'acknowledged', 
-          acknowledged_at: new Date().toISOString() 
+        .from("alert_instances")
+        .update({
+          status: "acknowledged",
+          acknowledged_at: new Date().toISOString(),
         })
-        .eq('id', alertId);
+        .eq("id", alertId);
 
       if (error) throw error;
 
-      setAlerts(prev => prev.filter(alert => alert.id !== alertId));
-      
+      setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
+
       toast({
         title: "Alert Acknowledged",
         description: "Alert has been marked as acknowledged",
       });
     } catch (error) {
-      console.error('Error acknowledging alert:', error);
+      console.error("Error acknowledging alert:", error);
       toast({
         title: "Error",
         description: "Failed to acknowledge alert",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -259,64 +299,64 @@ export default function ObservabilityPage() {
   const resolveError = async (errorId: string) => {
     try {
       const { error } = await supabase
-        .from('error_logs')
-        .update({ 
-          resolved: true, 
-          resolved_at: new Date().toISOString() 
+        .from("error_logs")
+        .update({
+          resolved: true,
+          resolved_at: new Date().toISOString(),
         })
-        .eq('id', errorId);
+        .eq("id", errorId);
 
       if (error) throw error;
 
-      setErrorLogs(prev => prev.filter(log => log.id !== errorId));
-      
+      setErrorLogs((prev) => prev.filter((log) => log.id !== errorId));
+
       toast({
         title: "Error Resolved",
         description: "Error has been marked as resolved",
       });
     } catch (error) {
-      console.error('Error resolving error log:', error);
+      console.error("Error resolving error log:", error);
       toast({
         title: "Error",
         description: "Failed to resolve error",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
   const getMetricsByName = (metricName: string) => {
     return systemMetrics
-      .filter(m => m.metric_name === metricName)
+      .filter((m) => m.metric_name === metricName)
       .slice(0, 20)
       .reverse();
   };
 
   const getCurrentMetricValue = (metricName: string, defaultValue = 0) => {
-    const metric = systemMetrics.find(m => m.metric_name === metricName);
+    const metric = systemMetrics.find((m) => m.metric_name === metricName);
     return metric ? metric.metric_value : defaultValue;
   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical':
-        return 'bg-destructive/10 text-destructive border-destructive/20';
-      case 'high':
-        return 'bg-warning/10 text-warning border-warning/20';
-      case 'medium':
-        return 'bg-primary/10 text-primary border-primary/20';
-      case 'low':
-        return 'bg-secondary/10 text-secondary-foreground border-secondary/20';
+      case "critical":
+        return "bg-destructive/10 text-destructive border-destructive/20";
+      case "high":
+        return "bg-warning/10 text-warning border-warning/20";
+      case "medium":
+        return "bg-primary/10 text-primary border-primary/20";
+      case "low":
+        return "bg-secondary/10 text-secondary-foreground border-secondary/20";
       default:
-        return 'bg-muted/50 text-muted-foreground border-muted/20';
+        return "bg-muted/50 text-muted-foreground border-muted/20";
     }
   };
 
   const formatMetricValue = (value: number, unit: string) => {
-    if (unit === 'ms') {
+    if (unit === "ms") {
       return `${value.toFixed(1)}ms`;
-    } else if (unit === 'percentage') {
+    } else if (unit === "percentage") {
       return `${value.toFixed(1)}%`;
-    } else if (unit === 'requests_per_minute') {
+    } else if (unit === "requests_per_minute") {
       return `${value.toFixed(0)} req/min`;
     }
     return `${value.toFixed(1)} ${unit}`;
@@ -351,11 +391,21 @@ export default function ObservabilityPage() {
               size="sm"
               onClick={() => setAutoRefresh(!autoRefresh)}
             >
-              {autoRefresh ? <Eye className="w-4 h-4 mr-2" /> : <EyeOff className="w-4 h-4 mr-2" />}
-              Auto Refresh {autoRefresh ? 'On' : 'Off'}
+              {autoRefresh ? (
+                <Eye className="w-4 h-4 mr-2" />
+              ) : (
+                <EyeOff className="w-4 h-4 mr-2" />
+              )}
+              Auto Refresh {autoRefresh ? "On" : "Off"}
             </Button>
-            <Button variant="default" onClick={triggerMonitoring} disabled={loading}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <Button
+              variant="default"
+              onClick={triggerMonitoring}
+              disabled={loading}
+            >
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+              />
               Collect Metrics
             </Button>
           </div>
@@ -367,8 +417,15 @@ export default function ObservabilityPage() {
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               <div className="flex items-center justify-between">
-                <span>{alerts.length} active alert{alerts.length !== 1 ? 's' : ''} require attention</span>
-                <Button variant="outline" size="sm" onClick={() => setAlerts([])}>
+                <span>
+                  {alerts.length} active alert{alerts.length !== 1 ? "s" : ""}{" "}
+                  require attention
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAlerts([])}
+                >
                   View All Alerts
                 </Button>
               </div>
@@ -380,18 +437,26 @@ export default function ObservabilityPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Response Time</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Response Time
+              </CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatMetricValue(getCurrentMetricValue('response_time'), 'ms')}
+                {formatMetricValue(
+                  getCurrentMetricValue("response_time"),
+                  "ms",
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 API response time (avg)
               </p>
-              <Progress 
-                value={Math.min(getCurrentMetricValue('response_time') / 10, 100)} 
+              <Progress
+                value={Math.min(
+                  getCurrentMetricValue("response_time") / 10,
+                  100,
+                )}
                 className="mt-2"
               />
             </CardContent>
@@ -404,13 +469,14 @@ export default function ObservabilityPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatMetricValue(getCurrentMetricValue('error_rate'), 'percentage')}
+                {formatMetricValue(
+                  getCurrentMetricValue("error_rate"),
+                  "percentage",
+                )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                System error rate
-              </p>
-              <Progress 
-                value={getCurrentMetricValue('error_rate') * 2} 
+              <p className="text-xs text-muted-foreground">System error rate</p>
+              <Progress
+                value={getCurrentMetricValue("error_rate") * 2}
                 className="mt-2"
               />
             </CardContent>
@@ -423,13 +489,16 @@ export default function ObservabilityPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatMetricValue(getCurrentMetricValue('throughput'), 'requests_per_minute')}
+                {formatMetricValue(
+                  getCurrentMetricValue("throughput"),
+                  "requests_per_minute",
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 Requests per minute
               </p>
-              <Progress 
-                value={getCurrentMetricValue('throughput')} 
+              <Progress
+                value={getCurrentMetricValue("throughput")}
                 className="mt-2"
               />
             </CardContent>
@@ -437,18 +506,23 @@ export default function ObservabilityPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">DB Connections</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                DB Connections
+              </CardTitle>
               <Database className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatMetricValue(getCurrentMetricValue('connection_pool_usage'), 'percentage')}
+                {formatMetricValue(
+                  getCurrentMetricValue("connection_pool_usage"),
+                  "percentage",
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 Connection pool usage
               </p>
-              <Progress 
-                value={getCurrentMetricValue('connection_pool_usage')} 
+              <Progress
+                value={getCurrentMetricValue("connection_pool_usage")}
                 className="mt-2"
               />
             </CardContent>
@@ -468,22 +542,33 @@ export default function ObservabilityPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Response Time Trend</CardTitle>
-                  <CardDescription>API response times over time</CardDescription>
+                  <CardDescription>
+                    API response times over time
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={getMetricsByName('response_time')}>
+                    <LineChart data={getMetricsByName("response_time")}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="recorded_at" 
-                        tickFormatter={(value) => format(new Date(value), 'HH:mm')}
+                      <XAxis
+                        dataKey="recorded_at"
+                        tickFormatter={(value) =>
+                          format(new Date(value), "HH:mm")
+                        }
                       />
                       <YAxis />
-                      <Tooltip 
-                        labelFormatter={(value) => format(new Date(value), 'HH:mm:ss')}
-                        formatter={(value) => [`${value}ms`, 'Response Time']}
+                      <Tooltip
+                        labelFormatter={(value) =>
+                          format(new Date(value), "HH:mm:ss")
+                        }
+                        formatter={(value) => [`${value}ms`, "Response Time"]}
                       />
-                      <Line type="monotone" dataKey="metric_value" stroke="#8884d8" strokeWidth={2} />
+                      <Line
+                        type="monotone"
+                        dataKey="metric_value"
+                        stroke="#8884d8"
+                        strokeWidth={2}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -492,22 +577,33 @@ export default function ObservabilityPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Error Rate Trend</CardTitle>
-                  <CardDescription>System error rates over time</CardDescription>
+                  <CardDescription>
+                    System error rates over time
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={getMetricsByName('error_rate')}>
+                    <AreaChart data={getMetricsByName("error_rate")}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="recorded_at" 
-                        tickFormatter={(value) => format(new Date(value), 'HH:mm')}
+                      <XAxis
+                        dataKey="recorded_at"
+                        tickFormatter={(value) =>
+                          format(new Date(value), "HH:mm")
+                        }
                       />
                       <YAxis />
-                      <Tooltip 
-                        labelFormatter={(value) => format(new Date(value), 'HH:mm:ss')}
-                        formatter={(value) => [`${value}%`, 'Error Rate']}
+                      <Tooltip
+                        labelFormatter={(value) =>
+                          format(new Date(value), "HH:mm:ss")
+                        }
+                        formatter={(value) => [`${value}%`, "Error Rate"]}
                       />
-                      <Area type="monotone" dataKey="metric_value" stroke="#82ca9d" fill="#82ca9d" />
+                      <Area
+                        type="monotone"
+                        dataKey="metric_value"
+                        stroke="#82ca9d"
+                        fill="#82ca9d"
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -519,7 +615,9 @@ export default function ObservabilityPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Recent Error Logs</CardTitle>
-                <CardDescription>Unresolved errors from the last 24 hours</CardDescription>
+                <CardDescription>
+                  Unresolved errors from the last 24 hours
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -530,22 +628,31 @@ export default function ObservabilityPage() {
                     </div>
                   ) : (
                     errorLogs.map((error) => (
-                      <div key={error.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div
+                        key={error.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <Badge className={getSeverityColor(error.severity)}>
                               {error.severity}
                             </Badge>
-                            <span className="font-medium">{error.error_type}</span>
+                            <span className="font-medium">
+                              {error.error_type}
+                            </span>
                             {error.endpoint && (
                               <code className="text-sm bg-muted px-2 py-1 rounded">
                                 {error.method} {error.endpoint}
                               </code>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground">{error.message}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {error.message}
+                          </p>
                           <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(error.occurred_at), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(error.occurred_at), {
+                              addSuffix: true,
+                            })}
                           </p>
                         </div>
                         <Button
@@ -567,7 +674,9 @@ export default function ObservabilityPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Active Alerts</CardTitle>
-                <CardDescription>System alerts requiring attention</CardDescription>
+                <CardDescription>
+                  System alerts requiring attention
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -578,7 +687,10 @@ export default function ObservabilityPage() {
                     </div>
                   ) : (
                     alerts.map((alert) => (
-                      <div key={alert.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div
+                        key={alert.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <Badge className={getSeverityColor(alert.severity)}>
@@ -587,7 +699,10 @@ export default function ObservabilityPage() {
                             <span className="font-medium">{alert.message}</span>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Fired {formatDistanceToNow(new Date(alert.fired_at), { addSuffix: true })}
+                            Fired{" "}
+                            {formatDistanceToNow(new Date(alert.fired_at), {
+                              addSuffix: true,
+                            })}
                           </p>
                         </div>
                         <Button
@@ -609,7 +724,9 @@ export default function ObservabilityPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Performance Trends</CardTitle>
-                <CardDescription>Historical performance analysis</CardDescription>
+                <CardDescription>
+                  Historical performance analysis
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {performanceTrends.length === 0 ? (
@@ -625,12 +742,15 @@ export default function ObservabilityPage() {
                           <div>
                             <h4 className="font-medium">{trend.metric_name}</h4>
                             <p className="text-sm text-muted-foreground">
-                              Average: {trend.avg_value?.toFixed(2)} | 
-                              95th percentile: {trend.percentile_95?.toFixed(2)}
+                              Average: {trend.avg_value?.toFixed(2)} | 95th
+                              percentile: {trend.percentile_95?.toFixed(2)}
                             </p>
                           </div>
                           <Badge variant="outline">
-                            {format(new Date(trend.period_start), 'MMM d, HH:mm')}
+                            {format(
+                              new Date(trend.period_start),
+                              "MMM d, HH:mm",
+                            )}
                           </Badge>
                         </div>
                       </div>

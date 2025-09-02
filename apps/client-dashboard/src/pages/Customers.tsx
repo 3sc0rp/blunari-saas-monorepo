@@ -1,36 +1,41 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { useCustomerManagement } from '@/hooks/useCustomerManagement';
-import { useTenant } from '@/hooks/useTenant';
-import { 
-  Plus, 
-  Search, 
-  Users, 
-  Phone, 
-  Mail, 
-  Calendar, 
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { useCustomerManagement } from "@/hooks/useCustomerManagement";
+import { useTenant } from "@/hooks/useTenant";
+import {
+  Plus,
+  Search,
+  Users,
+  Phone,
+  Mail,
+  Calendar,
   Star,
   UserPlus,
   Filter,
   Download,
-  MoreHorizontal
-} from 'lucide-react';
+  MoreHorizontal,
+} from "lucide-react";
 
 const Customers: React.FC = () => {
   const { tenant } = useTenant();
-  const { customers, isLoading, addCustomer } = useCustomerManagement(tenant?.id);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState<'all' | 'vip' | 'regular' | 'new'>('all');
+  const { customers, isLoading, addCustomer } = useCustomerManagement(
+    tenant?.id,
+  );
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState<"all" | "vip" | "regular" | "new">(
+    "all",
+  );
 
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.phone?.includes(searchTerm);
-    
+  const filteredCustomers = customers.filter((customer) => {
+    const matchesSearch =
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.phone?.includes(searchTerm);
+
     return matchesSearch;
   });
 
@@ -51,12 +56,14 @@ const Customers: React.FC = () => {
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Customer Management</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            Customer Management
+          </h1>
           <p className="text-muted-foreground">
             Manage your customer database and relationships
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
@@ -80,33 +87,43 @@ const Customers: React.FC = () => {
           <CardContent className="pt-4">
             <div className="text-center">
               <div className="text-2xl font-bold">{customerStats.total}</div>
-              <div className="text-sm text-muted-foreground">Total Customers</div>
+              <div className="text-sm text-muted-foreground">
+                Total Customers
+              </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">{customerStats.vip}</div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {customerStats.vip}
+              </div>
               <div className="text-sm text-muted-foreground">VIP Customers</div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{customerStats.regular}</div>
-              <div className="text-sm text-muted-foreground">Regular Customers</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {customerStats.regular}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Regular Customers
+              </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{customerStats.new}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {customerStats.new}
+              </div>
               <div className="text-sm text-muted-foreground">New Customers</div>
             </div>
           </CardContent>
@@ -129,16 +146,18 @@ const Customers: React.FC = () => {
             className="pl-10"
           />
         </div>
-        
+
         <div className="flex gap-2">
-          {['all', 'vip', 'regular', 'new'].map((filterOption) => (
+          {["all", "vip", "regular", "new"].map((filterOption) => (
             <Button
               key={filterOption}
-              variant={filter === filterOption ? 'default' : 'outline'}
+              variant={filter === filterOption ? "default" : "outline"}
               size="sm"
               onClick={() => setFilter(filterOption as any)}
             >
-              {filterOption === 'all' ? 'All' : filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
+              {filterOption === "all"
+                ? "All"
+                : filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
             </Button>
           ))}
         </div>
@@ -168,12 +187,13 @@ const Customers: React.FC = () => {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Users className="h-16 w-16 text-muted-foreground mb-6" />
-              <h3 className="text-xl font-semibold text-foreground mb-3">No customers found</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-3">
+                No customers found
+              </h3>
               <p className="text-muted-foreground text-center max-w-md">
-                {searchTerm || filter !== 'all' 
-                  ? 'No customers match your current search criteria. Try adjusting your filters.'
-                  : 'Start building your customer database by adding your first customer.'
-                }
+                {searchTerm || filter !== "all"
+                  ? "No customers match your current search criteria. Try adjusting your filters."
+                  : "Start building your customer database by adding your first customer."}
               </p>
               <Button className="mt-6">
                 <Plus className="w-4 h-4 mr-2" />
@@ -198,39 +218,46 @@ const Customers: React.FC = () => {
                           <Users className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-foreground">{customer.name}</h3>
-                          <Badge variant="secondary">
-                            CUSTOMER
-                          </Badge>
+                          <h3 className="font-semibold text-foreground">
+                            {customer.name}
+                          </h3>
+                          <Badge variant="secondary">CUSTOMER</Badge>
                         </div>
                       </div>
                       <Button variant="ghost" size="sm">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </div>
-                    
+
                     <div className="space-y-2 text-sm">
                       {customer.email && (
                         <div className="flex items-center gap-2">
                           <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-muted-foreground truncate">{customer.email}</span>
+                          <span className="text-muted-foreground truncate">
+                            {customer.email}
+                          </span>
                         </div>
                       )}
-                      
+
                       {customer.phone && (
                         <div className="flex items-center gap-2">
                           <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">{customer.phone}</span>
+                          <span className="text-muted-foreground">
+                            {customer.phone}
+                          </span>
                         </div>
                       )}
-                      
+
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-muted-foreground">
-                          Last visit: {customer.last_visit ? new Date(customer.last_visit).toLocaleDateString() : 'Never'}
+                          Last visit:{" "}
+                          {customer.last_visit
+                            ? new Date(customer.last_visit).toLocaleDateString()
+                            : "Never"}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center gap-2">
                         <Star className="h-4 w-4 text-muted-foreground" />
                         <span className="text-muted-foreground">
@@ -238,7 +265,7 @@ const Customers: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="flex gap-2 mt-4 pt-4 border-t">
                       <Button size="sm" variant="outline" className="flex-1">
                         View Profile

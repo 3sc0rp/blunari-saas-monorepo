@@ -1,32 +1,38 @@
-import React from 'react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
-import { Button } from '@/components/ui/button'
-import { User, Mail, Eye, EyeOff } from 'lucide-react'
-import type { ProvisioningData } from '../ProvisioningWizard'
+import React from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { User, Mail, Eye, EyeOff } from "lucide-react";
+import type { ProvisioningData } from "../ProvisioningWizard";
 
 interface OwnerAccountStepProps {
-  data: ProvisioningData
-  updateData: (updates: Partial<ProvisioningData>) => void
+  data: ProvisioningData;
+  updateData: (updates: Partial<ProvisioningData>) => void;
 }
 
 export function OwnerAccountStep({ data, updateData }: OwnerAccountStepProps) {
-  const [showPassword, setShowPassword] = React.useState(false)
+  const [showPassword, setShowPassword] = React.useState(false);
 
   const generatePassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
-    let password = ''
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    let password = "";
     for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length))
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    updateData({ ownerPassword: password })
-  }
+    updateData({ ownerPassword: password });
+  };
 
   return (
     <div className="space-y-6">
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -34,7 +40,8 @@ export function OwnerAccountStep({ data, updateData }: OwnerAccountStepProps) {
             Admin Account Setup
           </CardTitle>
           <CardDescription>
-            This account will have full access to your restaurant's management system
+            This account will have full access to your restaurant's management
+            system
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -81,7 +88,9 @@ export function OwnerAccountStep({ data, updateData }: OwnerAccountStepProps) {
                 className="h-11 pl-10"
               />
             </div>
-            <p className="text-xs text-muted-foreground">This will be your login email for the dashboard</p>
+            <p className="text-xs text-muted-foreground">
+              This will be your login email for the dashboard
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -95,7 +104,9 @@ export function OwnerAccountStep({ data, updateData }: OwnerAccountStepProps) {
                   type={showPassword ? "text" : "password"}
                   placeholder="Create a strong password"
                   value={data.ownerPassword}
-                  onChange={(e) => updateData({ ownerPassword: e.target.value })}
+                  onChange={(e) =>
+                    updateData({ ownerPassword: e.target.value })
+                  }
                   className="h-11 pr-10"
                 />
                 <Button
@@ -121,10 +132,12 @@ export function OwnerAccountStep({ data, updateData }: OwnerAccountStepProps) {
                 Generate
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">Use at least 8 characters with letters, numbers, and symbols</p>
+            <p className="text-xs text-muted-foreground">
+              Use at least 8 characters with letters, numbers, and symbols
+            </p>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

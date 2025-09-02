@@ -1,6 +1,7 @@
 # Deployment Guide
 
 ## Overview
+
 This guide covers deployment strategies for all applications in the Blunari SAAS monorepo.
 
 ## Background-ops API (Production Ready)
@@ -10,6 +11,7 @@ This guide covers deployment strategies for all applications in the Blunari SAAS
 The background-ops API is currently configured for Fly.io deployment.
 
 #### Prerequisites
+
 ```bash
 # Install Fly CLI
 # Windows
@@ -20,6 +22,7 @@ fly auth login
 ```
 
 #### Deployment Process
+
 ```bash
 cd apps/background-ops
 
@@ -37,6 +40,7 @@ fly scale count 2
 ```
 
 #### Environment Variables
+
 ```bash
 # Set production environment variables (align with apps/background-ops/src/config.ts)
 fly secrets set NODE_ENV=production
@@ -51,6 +55,7 @@ fly secrets set RATE_LIMIT_MAX_REQUESTS=1000
 ```
 
 #### Production URLs
+
 - API Base: https://services.blunari.ai
 - Health Check: https://services.blunari.ai/health
 - WebSocket: wss://services.blunari.ai
@@ -58,6 +63,7 @@ fly secrets set RATE_LIMIT_MAX_REQUESTS=1000
 ### Alternative: Docker Deployment
 
 #### Build Docker Image
+
 ```bash
 cd apps/background-ops
 
@@ -72,6 +78,7 @@ docker run -p 3000:3000 \
 ```
 
 #### Deploy to Cloud Provider
+
 ```bash
 # Push to registry
 docker tag blunari/background-ops:latest your-registry/blunari/background-ops:latest
@@ -102,6 +109,7 @@ vercel --prod
 ```
 
 #### Alternative: Netlify
+
 ```bash
 # Build for production
 npm run build
@@ -132,6 +140,7 @@ npx netlify deploy --prod --dir=dist
 ### Production PostgreSQL
 
 #### Recommended: Supabase
+
 ```bash
 # Create project at https://supabase.com
 # Get connection string
@@ -140,6 +149,7 @@ fly secrets set DATABASE_URL="postgresql://postgres:[password]@[host]:5432/postg
 ```
 
 #### Alternative: AWS RDS
+
 ```bash
 # Create PostgreSQL RDS instance
 # Configure security groups
@@ -148,6 +158,7 @@ fly secrets set DATABASE_URL="postgresql://username:password@host:5432/database"
 ```
 
 #### Alternative: Self-hosted
+
 ```bash
 # Install PostgreSQL on server
 sudo apt update
@@ -181,7 +192,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: npm ci
       - run: npm run build
       - run: npm run test
@@ -235,6 +246,7 @@ jobs:
 ### Production Environment Variables
 
 #### Background-ops API
+
 ```bash
 NODE_ENV=production
 PORT=8080
@@ -248,6 +260,7 @@ CORS_ORIGINS=https://admin.blunari.ai,https://client.blunari.ai
 ```
 
 #### Admin Dashboard (Vite SPA)
+
 ```bash
 # Vite envs must be prefixed with VITE_
 # Background Ops
@@ -261,6 +274,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 #### Client Dashboard (Vite SPA)
+
 ```bash
 # Vite envs must be prefixed with VITE_
 VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -272,6 +286,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 ### Application Monitoring
 
 #### Fly.io Metrics (Background-ops)
+
 ```bash
 # View metrics
 fly dashboard
@@ -284,6 +299,7 @@ fly metrics
 ```
 
 #### Custom Monitoring
+
 - Health checks: `/health` endpoint
 - Metrics endpoint: `/api/v1/metrics`
 - WebSocket status monitoring
@@ -292,12 +308,15 @@ fly metrics
 ### Alerting
 
 #### Uptime Monitoring
+
 Configure services like:
+
 - UptimeRobot
 - Pingdom
 - StatusPage
 
 #### Log Aggregation
+
 ```bash
 # Forward logs to external service
 # Configure in apps/background-ops/src/utils/logger.ts
@@ -306,10 +325,12 @@ Configure services like:
 ## Security
 
 ### SSL/TLS
+
 - Fly.io provides automatic SSL certificates
 - Vercel/Netlify provide automatic HTTPS
 
 ### API Security
+
 ```bash
 # Rotate API keys regularly
 fly secrets set API_KEYS="new-key-1,new-key-2"
@@ -319,6 +340,7 @@ fly secrets set API_KEYS="new-key-1,new-key-2"
 ```
 
 ### Database Security
+
 ```bash
 # Use connection pooling
 # Enable SSL connections
@@ -329,6 +351,7 @@ fly secrets set API_KEYS="new-key-1,new-key-2"
 ## Backup Strategy
 
 ### Database Backups
+
 ```bash
 # Automated backups (Supabase/RDS handle this)
 # Manual backup
@@ -339,6 +362,7 @@ psql $DATABASE_URL < backup-20240101.sql
 ```
 
 ### Code Backups
+
 - Git repository (primary backup)
 - Regular pushes to main branch
 - Tag releases for rollback capability
@@ -346,6 +370,7 @@ psql $DATABASE_URL < backup-20240101.sql
 ## Rollback Procedures
 
 ### API Rollback (Fly.io)
+
 ```bash
 # View deployment history
 fly releases
@@ -355,6 +380,7 @@ fly rollback --version <version-number>
 ```
 
 ### Frontend Rollback
+
 ```bash
 # Vercel
 vercel --prod --rollback
@@ -368,18 +394,21 @@ vercel --prod
 ## Performance Optimization
 
 ### API Optimization
+
 - Enable response compression
 - Database connection pooling
 - Redis caching layer
 - CDN for static assets
 
 ### Frontend Optimization
+
 - Code splitting
 - Image optimization
 - Bundle analysis
 - PWA capabilities
 
 ### Database Optimization
+
 - Query optimization
 - Proper indexing
 - Connection pooling
@@ -388,6 +417,7 @@ vercel --prod
 ## Scaling Considerations
 
 ### Horizontal Scaling
+
 ```bash
 # Scale Fly.io instances
 fly scale count 3
@@ -397,6 +427,7 @@ fly scale count 3
 ```
 
 ### Vertical Scaling
+
 ```bash
 # Increase instance resources
 fly scale vm shared-cpu-2x

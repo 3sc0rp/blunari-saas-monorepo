@@ -1,16 +1,23 @@
-import React, { useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { FileUpload } from '@/components/ui/file-upload';
-import { Palette, Globe } from 'lucide-react';
-import { BrandingSettings as BrandingSettingsType } from '@/types/settings';
-import { useTenantBranding } from '@/contexts/TenantBrandingContext';
-import { useForm } from 'react-hook-form';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { toast } from '@/hooks/use-toast';
+import React, { useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { FileUpload } from "@/components/ui/file-upload";
+import { Palette, Globe } from "lucide-react";
+import { BrandingSettings as BrandingSettingsType } from "@/types/settings";
+import { useTenantBranding } from "@/contexts/TenantBrandingContext";
+import { useForm } from "react-hook-form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { toast } from "@/hooks/use-toast";
 
 interface BrandingSettingsProps {
   settings: BrandingSettingsType;
@@ -18,7 +25,11 @@ interface BrandingSettingsProps {
   isUpdating: boolean;
 }
 
-const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate, isUpdating }) => {
+const BrandingSettings: React.FC<BrandingSettingsProps> = ({
+  settings,
+  onUpdate,
+  isUpdating,
+}) => {
   const { updateBranding } = useTenantBranding();
   const form = useForm<BrandingSettingsType>({
     defaultValues: settings,
@@ -46,7 +57,13 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
     }, 100); // 100ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [watchedValues.logoUrl, watchedValues.restaurantName, watchedValues.primaryColor, watchedValues.accentColor, updateBranding]);
+  }, [
+    watchedValues.logoUrl,
+    watchedValues.restaurantName,
+    watchedValues.primaryColor,
+    watchedValues.accentColor,
+    updateBranding,
+  ]);
 
   const onSubmit = (data: BrandingSettingsType) => {
     onUpdate(data);
@@ -54,10 +71,14 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case 'verified': return 'default';
-      case 'pending': return 'secondary';
-      case 'failed': return 'destructive';
-      default: return 'outline';
+      case "verified":
+        return "default";
+      case "pending":
+        return "secondary";
+      case "failed":
+        return "destructive";
+      default:
+        return "outline";
     }
   };
 
@@ -87,7 +108,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="tagline"
@@ -95,7 +116,10 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
                   <FormItem>
                     <FormLabel>Tagline</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Your restaurant's tagline" />
+                      <Input
+                        {...field}
+                        placeholder="Your restaurant's tagline"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -115,16 +139,16 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
                       <FormLabel>Primary Color</FormLabel>
                       <div className="flex gap-2">
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            type="color" 
-                            className="w-16 h-10 p-1 border-2" 
+                          <Input
+                            {...field}
+                            type="color"
+                            className="w-16 h-10 p-1 border-2"
                           />
                         </FormControl>
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            placeholder="#1e3a8a" 
+                          <Input
+                            {...field}
+                            placeholder="#1e3a8a"
                             className="flex-1"
                           />
                         </FormControl>
@@ -142,16 +166,16 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
                       <FormLabel>Secondary Color</FormLabel>
                       <div className="flex gap-2">
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            type="color" 
-                            className="w-16 h-10 p-1 border-2" 
+                          <Input
+                            {...field}
+                            type="color"
+                            className="w-16 h-10 p-1 border-2"
                           />
                         </FormControl>
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            placeholder="#f59e0b" 
+                          <Input
+                            {...field}
+                            placeholder="#f59e0b"
                             className="flex-1"
                           />
                         </FormControl>
@@ -169,16 +193,16 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
                       <FormLabel>Accent Color</FormLabel>
                       <div className="flex gap-2">
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            type="color" 
-                            className="w-16 h-10 p-1 border-2" 
+                          <Input
+                            {...field}
+                            type="color"
+                            className="w-16 h-10 p-1 border-2"
                           />
                         </FormControl>
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            placeholder="#059669" 
+                          <Input
+                            {...field}
+                            placeholder="#059669"
                             className="flex-1"
                           />
                         </FormControl>
@@ -195,16 +219,16 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
               <Label className="text-sm font-medium">Logo & Assets</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FileUpload
-                  value={form.watch('logoUrl')}
-                  onChange={(url) => form.setValue('logoUrl', url)}
+                  value={form.watch("logoUrl")}
+                  onChange={(url) => form.setValue("logoUrl", url)}
                   label="Restaurant Logo"
                   description="Upload your restaurant logo (PNG, JPG, SVG)"
                   maxSize={2 * 1024 * 1024} // 2MB
                 />
 
                 <FileUpload
-                  value={form.watch('faviconUrl')}
-                  onChange={(url) => form.setValue('faviconUrl', url)}
+                  value={form.watch("faviconUrl")}
+                  onChange={(url) => form.setValue("faviconUrl", url)}
                   label="Favicon"
                   description="Upload favicon (32x32px recommended)"
                   maxSize={512 * 1024} // 512KB
@@ -227,13 +251,15 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
                           <Globe className="h-4 w-4 text-muted-foreground mr-2" />
                         </div>
                         <FormControl>
-                          <Input 
-                            {...field} 
-                            placeholder="yourdomain.com" 
+                          <Input
+                            {...field}
+                            placeholder="yourdomain.com"
                             className="flex-1"
                           />
                         </FormControl>
-                        <Badge variant={getStatusBadgeVariant(settings.domainStatus)}>
+                        <Badge
+                          variant={getStatusBadgeVariant(settings.domainStatus)}
+                        >
                           {settings.domainStatus}
                         </Badge>
                       </div>
@@ -241,11 +267,13 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
                     </FormItem>
                   )}
                 />
-                
+
                 {settings.customDomain && (
                   <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
-                    <strong>DNS Configuration:</strong><br />
-                    Add a CNAME record pointing to: <code>app.blunari.com</code><br />
+                    <strong>DNS Configuration:</strong>
+                    <br />
+                    Add a CNAME record pointing to: <code>app.blunari.com</code>
+                    <br />
                     Verification may take up to 24 hours.
                   </div>
                 )}
@@ -261,12 +289,15 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
                     <img src={settings.logoUrl} alt="Logo" className="h-8" />
                   ) : (
                     <div className="w-8 h-8 bg-primary rounded flex items-center justify-center text-primary-foreground text-xs font-bold">
-                      {settings.restaurantName?.charAt(0) || 'R'}
+                      {settings.restaurantName?.charAt(0) || "R"}
                     </div>
                   )}
                   <div>
-                    <div className="font-semibold" style={{ color: settings.primaryColor }}>
-                      {settings.restaurantName || 'Restaurant Name'}
+                    <div
+                      className="font-semibold"
+                      style={{ color: settings.primaryColor }}
+                    >
+                      {settings.restaurantName || "Restaurant Name"}
                     </div>
                     {settings.tagline && (
                       <div className="text-sm text-muted-foreground">
@@ -276,16 +307,16 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <div 
-                    className="w-4 h-4 rounded" 
+                  <div
+                    className="w-4 h-4 rounded"
                     style={{ backgroundColor: settings.primaryColor }}
                   />
-                  <div 
-                    className="w-4 h-4 rounded" 
+                  <div
+                    className="w-4 h-4 rounded"
                     style={{ backgroundColor: settings.secondaryColor }}
                   />
-                  <div 
-                    className="w-4 h-4 rounded" 
+                  <div
+                    className="w-4 h-4 rounded"
                     style={{ backgroundColor: settings.accentColor }}
                   />
                 </div>
@@ -294,7 +325,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({ settings, onUpdate,
 
             <div className="flex justify-end">
               <Button type="submit" disabled={isUpdating}>
-                {isUpdating ? 'Saving...' : 'Save Branding Settings'}
+                {isUpdating ? "Saving..." : "Save Branding Settings"}
               </Button>
             </div>
           </form>

@@ -1,13 +1,33 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useBookingAPI, type Booking } from '@/hooks/useBookingAPI';
-import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, Users, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useBookingAPI, type Booking } from "@/hooks/useBookingAPI";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Calendar,
+  Clock,
+  Users,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+} from "lucide-react";
 
 interface BookingActionsProps {
   booking?: Booking;
@@ -22,23 +42,26 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
 }) => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
-  const [availabilityDate, setAvailabilityDate] = useState('');
+  const [availabilityDate, setAvailabilityDate] = useState("");
   const [partySize, setPartySize] = useState(2);
-  const [availabilityResults, setAvailabilityResults] = useState<Array<{ time: string; available_tables: number }> | null>(null);
-  
-  const { 
-    loading, 
-    confirmBooking, 
-    cancelBooking, 
+  const [availabilityResults, setAvailabilityResults] = useState<Array<{
+    time: string;
+    available_tables: number;
+  }> | null>(null);
+
+  const {
+    loading,
+    confirmBooking,
+    cancelBooking,
     checkAvailability,
     createBooking,
   } = useBookingAPI();
-  
+
   const { toast } = useToast();
 
   const handleConfirmBooking = async () => {
     if (!booking) return;
-    
+
     try {
       const result = await confirmBooking(booking.id);
       toast({
@@ -47,13 +70,13 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
       });
       onBookingUpdate?.(result);
     } catch (error) {
-      console.error('Failed to confirm booking:', error);
+      console.error("Failed to confirm booking:", error);
     }
   };
 
   const handleCancelBooking = async () => {
     if (!booking) return;
-    
+
     try {
       await cancelBooking(booking.id);
       toast({
@@ -61,20 +84,20 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
         description: `Booking for ${booking.guest_name} has been cancelled.`,
         variant: "destructive",
       });
-      onBookingUpdate?.({ ...booking, status: 'cancelled' });
+      onBookingUpdate?.({ ...booking, status: "cancelled" });
     } catch (error) {
-      console.error('Failed to cancel booking:', error);
+      console.error("Failed to cancel booking:", error);
     }
   };
 
   const handleCheckAvailability = async () => {
     if (!availabilityDate) return;
-    
+
     try {
       const results = await checkAvailability(availabilityDate, partySize);
       setAvailabilityResults(results);
     } catch (error) {
-      console.error('Failed to check availability:', error);
+      console.error("Failed to check availability:", error);
     }
   };
 
@@ -94,7 +117,11 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
-              <Badge variant={booking.status === 'confirmed' ? 'default' : 'secondary'}>
+              <Badge
+                variant={
+                  booking.status === "confirmed" ? "default" : "secondary"
+                }
+              >
                 {booking.status}
               </Badge>
               <span className="text-sm text-muted-foreground">
@@ -104,10 +131,10 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
                 {new Date(booking.booking_time).toLocaleString()}
               </span>
             </div>
-            
+
             <div className="flex gap-2">
-              {booking.status === 'pending' && (
-                <Button 
+              {booking.status === "pending" && (
+                <Button
                   onClick={handleConfirmBooking}
                   disabled={loading}
                   size="sm"
@@ -117,9 +144,9 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
                   Confirm
                 </Button>
               )}
-              
-              {booking.status !== 'cancelled' && (
-                <Button 
+
+              {booking.status !== "cancelled" && (
+                <Button
                   onClick={handleCancelBooking}
                   disabled={loading}
                   variant="destructive"
@@ -142,9 +169,7 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
             <Calendar className="h-5 w-5" />
             Check Availability
           </CardTitle>
-          <CardDescription>
-            Real-time table availability lookup
-          </CardDescription>
+          <CardDescription>Real-time table availability lookup</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -155,7 +180,7 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
                 type="date"
                 value={availabilityDate}
                 onChange={(e) => setAvailabilityDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+                min={new Date().toISOString().split("T")[0]}
               />
             </div>
             <div>
@@ -170,14 +195,18 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
               />
             </div>
           </div>
-          
-          <Button 
+
+          <Button
             onClick={handleCheckAvailability}
             disabled={loading || !availabilityDate}
             className="flex items-center gap-2"
           >
             <Clock className="h-4 w-4" />
-            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Check Availability'}
+            {loading ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              "Check Availability"
+            )}
           </Button>
 
           {availabilityResults && (
@@ -192,7 +221,9 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No availability found for this date and party size.</p>
+                <p className="text-sm text-muted-foreground">
+                  No availability found for this date and party size.
+                </p>
               )}
             </div>
           )}
@@ -203,9 +234,7 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>
-            Common booking management tasks
-          </CardDescription>
+          <CardDescription>Common booking management tasks</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {showCreateNew && (
@@ -229,19 +258,16 @@ export const BookingActions: React.FC<BookingActionsProps> = ({
               </DialogContent>
             </Dialog>
           )}
-          
-          <Button 
-            variant="outline" 
+
+          <Button
+            variant="outline"
             className="w-full justify-start"
             onClick={() => setShowAvailabilityDialog(true)}
           >
             Bulk Availability Check
           </Button>
-          
-          <Button 
-            variant="outline" 
-            className="w-full justify-start"
-          >
+
+          <Button variant="outline" className="w-full justify-start">
             Export Bookings
           </Button>
         </CardContent>

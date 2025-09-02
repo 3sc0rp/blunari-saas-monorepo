@@ -14,10 +14,10 @@ interface SecurityContainerProps {
   };
 }
 
-export const SecurityContainer = ({ 
-  children, 
+export const SecurityContainer = ({
+  children,
   requireAuth = false,
-  rateLimit 
+  rateLimit,
 }: SecurityContainerProps) => {
   const { user } = useAuth();
   const { logSecurityEvent } = useAuditLogger();
@@ -26,20 +26,20 @@ export const SecurityContainer = ({
   useEffect(() => {
     // Initialize CSRF protection
     CSRFProtection.setToken();
-    
+
     // Log security container access
     if (user) {
       logSecurityEvent({
-        eventType: 'security_container_access',
-        severity: 'low',
+        eventType: "security_container_access",
+        severity: "low",
         eventData: {
           requireAuth,
           hasRateLimit: !!rateLimit,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
     }
-    
+
     setIsSecurityInit(true);
   }, [user, requireAuth, rateLimit, logSecurityEvent]);
 
@@ -50,18 +50,18 @@ export const SecurityContainer = ({
         identifier,
         rateLimit.action,
         rateLimit.limit,
-        rateLimit.windowMinutes
+        rateLimit.windowMinutes,
       );
-      
+
       if (isLimited) {
         logSecurityEvent({
-          eventType: 'rate_limit_exceeded',
-          severity: 'medium',
+          eventType: "rate_limit_exceeded",
+          severity: "medium",
           eventData: {
             action: rateLimit.action,
             limit: rateLimit.limit,
-            windowMinutes: rateLimit.windowMinutes
-          }
+            windowMinutes: rateLimit.windowMinutes,
+          },
         });
       }
     }
@@ -71,8 +71,12 @@ export const SecurityContainer = ({
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
         <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold text-foreground">Authentication Required</h2>
-          <p className="text-muted-foreground">You must be logged in to access this page.</p>
+          <h2 className="text-2xl font-bold text-foreground">
+            Authentication Required
+          </h2>
+          <p className="text-muted-foreground">
+            You must be logged in to access this page.
+          </p>
         </div>
       </div>
     );

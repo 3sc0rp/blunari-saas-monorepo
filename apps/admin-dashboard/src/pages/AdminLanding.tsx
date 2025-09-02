@@ -1,4 +1,10 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Shield, Database, BarChart3, Users } from "lucide-react";
@@ -9,8 +15,8 @@ const AdminLanding = () => {
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center space-y-4">
-          <img 
-            src="/logo_svg.svg" 
+          <img
+            src="/logo_svg.svg"
             alt="Blunari Admin"
             className="w-16 h-16 mx-auto rounded-lg"
           />

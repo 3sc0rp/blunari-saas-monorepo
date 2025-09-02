@@ -1,15 +1,15 @@
-import React from 'react';
-import { useParams, useLocation } from 'react-router-dom';
-import BookingWidget from '@/components/booking/BookingWidget';
-import CateringWidget from '@/components/catering/CateringWidget';
-import { Card, CardContent } from '@/components/ui/card';
+import React from "react";
+import { useParams, useLocation } from "react-router-dom";
+import BookingWidget from "@/components/booking/BookingWidget";
+import CateringWidget from "@/components/catering/CateringWidget";
+import { Card, CardContent } from "@/components/ui/card";
 
 const BookingPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
-  
+
   // Determine if this is a catering or booking widget based on the path
-  const isCateringWidget = location.pathname.startsWith('/catering');
+  const isCateringWidget = location.pathname.startsWith("/catering");
 
   if (!slug) {
     return (
@@ -17,10 +17,11 @@ const BookingPage: React.FC = () => {
         <Card>
           <CardContent className="p-6 text-center">
             <h1 className="text-xl font-semibold mb-2">
-              Invalid {isCateringWidget ? 'Catering' : 'Booking'} Link
+              Invalid {isCateringWidget ? "Catering" : "Booking"} Link
             </h1>
             <p className="text-muted-foreground">
-              The {isCateringWidget ? 'catering' : 'booking'} link you followed is not valid. Please check the URL and try again.
+              The {isCateringWidget ? "catering" : "booking"} link you followed
+              is not valid. Please check the URL and try again.
             </p>
           </CardContent>
         </Card>

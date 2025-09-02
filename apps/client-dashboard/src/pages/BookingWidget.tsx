@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTenant } from '@/hooks/useTenant';
-import { useToast } from '@/hooks/use-toast';
-import { 
-  Code, 
-  Eye, 
-  Copy, 
-  ExternalLink, 
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTenant } from "@/hooks/useTenant";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Code,
+  Eye,
+  Copy,
+  ExternalLink,
   Monitor,
   Tablet,
   Smartphone,
@@ -20,22 +26,24 @@ import {
   RefreshCw,
   Share,
   Calendar,
-  ChefHat
-} from 'lucide-react';
+  ChefHat,
+} from "lucide-react";
 
-type WidgetType = 'booking' | 'catering';
+type WidgetType = "booking" | "catering";
 
 const BookingWidgetPage: React.FC = () => {
   const { tenant, isLoading } = useTenant();
   const { toast } = useToast();
-  const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [widgetType, setWidgetType] = useState<WidgetType>('booking');
+  const [previewMode, setPreviewMode] = useState<
+    "desktop" | "tablet" | "mobile"
+  >("desktop");
+  const [widgetType, setWidgetType] = useState<WidgetType>("booking");
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const bookingUrl = `/book/${tenant?.slug || 'demo'}`;
-  const cateringUrl = `/catering/${tenant?.slug || 'demo'}`;
-  const currentUrl = widgetType === 'booking' ? bookingUrl : cateringUrl;
+  const bookingUrl = `/book/${tenant?.slug || "demo"}`;
+  const cateringUrl = `/catering/${tenant?.slug || "demo"}`;
+  const currentUrl = widgetType === "booking" ? bookingUrl : cateringUrl;
   const fullCurrentUrl = `${window.location.origin}${currentUrl}`;
 
   const embedCode = `<iframe 
@@ -44,13 +52,28 @@ const BookingWidgetPage: React.FC = () => {
   height="600" 
   frameborder="0"
   style="border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);"
-  title="${tenant?.name || 'Restaurant'} ${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget">
+  title="${tenant?.name || "Restaurant"} ${widgetType === "booking" ? "Booking" : "Catering"} Widget">
 </iframe>`;
 
   const deviceConfigs = {
-    desktop: { width: 'w-full max-w-5xl', height: 'h-[600px]', label: 'Desktop', icon: Monitor },
-    tablet: { width: 'w-full max-w-3xl', height: 'h-[550px]', label: 'Tablet', icon: Tablet },
-    mobile: { width: 'w-full max-w-sm', height: 'h-[600px]', label: 'Mobile', icon: Smartphone },
+    desktop: {
+      width: "w-full max-w-5xl",
+      height: "h-[600px]",
+      label: "Desktop",
+      icon: Monitor,
+    },
+    tablet: {
+      width: "w-full max-w-3xl",
+      height: "h-[550px]",
+      label: "Tablet",
+      icon: Tablet,
+    },
+    mobile: {
+      width: "w-full max-w-sm",
+      height: "h-[600px]",
+      label: "Mobile",
+      icon: Smartphone,
+    },
   };
 
   const copyToClipboard = async (text: string, label: string) => {
@@ -103,13 +126,19 @@ const BookingWidgetPage: React.FC = () => {
             Preview your booking and catering widgets across different devices
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={refreshPreview} disabled={refreshing}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          <Button
+            variant="outline"
+            onClick={refreshPreview}
+            disabled={refreshing}
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
-          
+
           <Button asChild>
             <a href={currentUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="w-4 h-4 mr-2" />
@@ -123,21 +152,23 @@ const BookingWidgetPage: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle>Widget Type</CardTitle>
-          <CardDescription>Choose which widget to preview and configure</CardDescription>
+          <CardDescription>
+            Choose which widget to preview and configure
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-3">
             <Button
-              variant={widgetType === 'booking' ? 'default' : 'outline'}
-              onClick={() => setWidgetType('booking')}
+              variant={widgetType === "booking" ? "default" : "outline"}
+              onClick={() => setWidgetType("booking")}
               className="flex items-center gap-2"
             >
               <Calendar className="w-4 h-4" />
               Booking Widget
             </Button>
             <Button
-              variant={widgetType === 'catering' ? 'default' : 'outline'}
-              onClick={() => setWidgetType('catering')}
+              variant={widgetType === "catering" ? "default" : "outline"}
+              onClick={() => setWidgetType("catering")}
               className="flex items-center gap-2"
             >
               <ChefHat className="w-4 h-4" />
@@ -159,7 +190,9 @@ const BookingWidgetPage: React.FC = () => {
                 <p className="text-sm font-medium">Status</p>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-muted-foreground">Live & Active</span>
+                  <span className="text-sm text-muted-foreground">
+                    Live & Active
+                  </span>
                 </div>
               </div>
             </div>
@@ -170,7 +203,7 @@ const BookingWidgetPage: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
-                {widgetType === 'booking' ? (
+                {widgetType === "booking" ? (
                   <Calendar className="w-4 h-4 text-blue-600" />
                 ) : (
                   <ChefHat className="w-4 h-4 text-blue-600" />
@@ -179,7 +212,9 @@ const BookingWidgetPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium">Widget Type</p>
                 <p className="text-sm text-muted-foreground">
-                  {widgetType === 'booking' ? 'Table Reservations' : 'Catering Orders'}
+                  {widgetType === "booking"
+                    ? "Table Reservations"
+                    : "Catering Orders"}
                 </p>
               </div>
             </div>
@@ -194,7 +229,9 @@ const BookingWidgetPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-medium">Widget URL</p>
-                <p className="text-sm text-muted-foreground truncate">{currentUrl}</p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {currentUrl}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -253,16 +290,18 @@ const BookingWidgetPage: React.FC = () => {
             transition={{ duration: 0.3 }}
             className="flex justify-center"
           >
-            <div className={`${deviceConfigs[previewMode].width} transition-all duration-300`}>
+            <div
+              className={`${deviceConfigs[previewMode].width} transition-all duration-300`}
+            >
               <Card className="overflow-hidden shadow-2xl">
                 <CardContent className="p-0">
                   <iframe
                     key={`${widgetType}-${refreshing.toString()}`}
                     src={currentUrl}
                     className={`w-full border-0 ${deviceConfigs[previewMode].height}`}
-                    title={`${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Preview`}
+                    title={`${widgetType === "booking" ? "Booking" : "Catering"} Widget Preview`}
                     onError={(e) => {
-                      console.error('Iframe loading error:', e);
+                      console.error("Iframe loading error:", e);
                       toast({
                         title: "Preview Error",
                         description: `Unable to load the ${widgetType} widget preview. The widget may still work when embedded.`,
@@ -282,10 +321,12 @@ const BookingWidgetPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Code className="w-5 h-5" />
-                {widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Embed Code
+                {widgetType === "booking" ? "Booking" : "Catering"} Widget Embed
+                Code
               </CardTitle>
               <CardDescription>
-                Copy this code and paste it into your website where you want the {widgetType} widget to appear
+                Copy this code and paste it into your website where you want the{" "}
+                {widgetType} widget to appear
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -294,28 +335,39 @@ const BookingWidgetPage: React.FC = () => {
                 readOnly
                 className="font-mono text-sm min-h-[120px]"
               />
-              
+
               <div className="flex gap-2">
                 <Button
                   onClick={() => copyToClipboard(embedCode, "Embed code")}
                   className="flex-1"
                 >
-                  {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                  {copied ? (
+                    <Check className="w-4 h-4 mr-2" />
+                  ) : (
+                    <Copy className="w-4 h-4 mr-2" />
+                  )}
                   {copied ? "Copied!" : "Copy Embed Code"}
                 </Button>
-                
-                <Button variant="outline" onClick={() => copyToClipboard(fullCurrentUrl, "Widget URL")}>
+
+                <Button
+                  variant="outline"
+                  onClick={() => copyToClipboard(fullCurrentUrl, "Widget URL")}
+                >
                   <Share className="w-4 h-4 mr-2" />
                   Share URL
                 </Button>
               </div>
 
               <div className="text-sm text-muted-foreground space-y-2">
-                <p><strong>Quick Start:</strong></p>
+                <p>
+                  <strong>Quick Start:</strong>
+                </p>
                 <ol className="list-decimal list-inside space-y-1 ml-2">
                   <li>Copy the embed code above</li>
                   <li>Paste it into your website's HTML</li>
-                  <li>The widget will automatically load and be ready for bookings</li>
+                  <li>
+                    The widget will automatically load and be ready for bookings
+                  </li>
                 </ol>
               </div>
             </CardContent>
@@ -332,12 +384,12 @@ const BookingWidgetPage: React.FC = () => {
                   <Smartphone className="w-4 h-4 text-green-600" />
                   <span className="text-sm font-medium">Mobile Ready</span>
                 </div>
-                
+
                 <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
                   <RefreshCw className="w-4 h-4 text-blue-600" />
                   <span className="text-sm font-medium">Real-time</span>
                 </div>
-                
+
                 <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
                   <Globe className="w-4 h-4 text-orange-600" />
                   <span className="text-sm font-medium">Universal</span>

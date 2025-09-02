@@ -1,9 +1,15 @@
-import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ExtensibilityManager } from '@/components/extensibility/ExtensibilityManager';
-import { Rocket, Zap, Puzzle, Smartphone, Globe, Code2 } from 'lucide-react';
+import React from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ExtensibilityManager } from "@/components/extensibility/ExtensibilityManager";
+import { Rocket, Zap, Puzzle, Smartphone, Globe, Code2 } from "lucide-react";
 
 const RoadmapPage: React.FC = () => {
   return (
@@ -11,13 +17,18 @@ const RoadmapPage: React.FC = () => {
       <div className="container mx-auto py-8 space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Future Roadmap & Extensibility</h1>
+            <h1 className="text-3xl font-bold">
+              Future Roadmap & Extensibility
+            </h1>
             <p className="text-muted-foreground">
               Explore upcoming features and extend your platform capabilities
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+            <Badge
+              variant="outline"
+              className="bg-primary/10 text-primary border-primary/20"
+            >
               <Rocket className="h-3 w-3 mr-1" />
               Innovation Hub
             </Badge>
@@ -35,7 +46,12 @@ const RoadmapPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Badge variant="default" className="bg-success/10 text-success border-success/20">Ready</Badge>
+                <Badge
+                  variant="default"
+                  className="bg-success/10 text-success border-success/20"
+                >
+                  Ready
+                </Badge>
                 <p className="text-sm text-muted-foreground">
                   Native iOS & Android app with Capacitor integration
                 </p>
@@ -52,7 +68,12 @@ const RoadmapPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Badge variant="default" className="bg-success/10 text-success border-success/20">Ready</Badge>
+                <Badge
+                  variant="default"
+                  className="bg-success/10 text-success border-success/20"
+                >
+                  Ready
+                </Badge>
                 <p className="text-sm text-muted-foreground">
                   WebSocket-powered live data and notifications
                 </p>
@@ -144,20 +165,67 @@ const RoadmapPage: React.FC = () => {
             <div className="p-4 bg-muted rounded-lg">
               <h4 className="font-medium mb-2">Setup Instructions:</h4>
               <ol className="list-decimal list-inside space-y-1 text-sm">
-                <li>Export your project to GitHub using the "Export to GitHub" button</li>
-                <li>Clone the repository locally and run <code className="bg-background px-1 rounded">npm install</code></li>
-                <li>Add mobile platforms: <code className="bg-background px-1 rounded">npx cap add ios</code> and/or <code className="bg-background px-1 rounded">npx cap add android</code></li>
-                <li>Update dependencies: <code className="bg-background px-1 rounded">npx cap update ios</code> or <code className="bg-background px-1 rounded">npx cap update android</code></li>
-                <li>Build the project: <code className="bg-background px-1 rounded">npm run build</code></li>
-                <li>Sync with native platforms: <code className="bg-background px-1 rounded">npx cap sync</code></li>
-                <li>Run on device/emulator: <code className="bg-background px-1 rounded">npx cap run ios</code> or <code className="bg-background px-1 rounded">npx cap run android</code></li>
+                <li>
+                  Export your project to GitHub using the "Export to GitHub"
+                  button
+                </li>
+                <li>
+                  Clone the repository locally and run{" "}
+                  <code className="bg-background px-1 rounded">
+                    npm install
+                  </code>
+                </li>
+                <li>
+                  Add mobile platforms:{" "}
+                  <code className="bg-background px-1 rounded">
+                    npx cap add ios
+                  </code>{" "}
+                  and/or{" "}
+                  <code className="bg-background px-1 rounded">
+                    npx cap add android
+                  </code>
+                </li>
+                <li>
+                  Update dependencies:{" "}
+                  <code className="bg-background px-1 rounded">
+                    npx cap update ios
+                  </code>{" "}
+                  or{" "}
+                  <code className="bg-background px-1 rounded">
+                    npx cap update android
+                  </code>
+                </li>
+                <li>
+                  Build the project:{" "}
+                  <code className="bg-background px-1 rounded">
+                    npm run build
+                  </code>
+                </li>
+                <li>
+                  Sync with native platforms:{" "}
+                  <code className="bg-background px-1 rounded">
+                    npx cap sync
+                  </code>
+                </li>
+                <li>
+                  Run on device/emulator:{" "}
+                  <code className="bg-background px-1 rounded">
+                    npx cap run ios
+                  </code>{" "}
+                  or{" "}
+                  <code className="bg-background px-1 rounded">
+                    npx cap run android
+                  </code>
+                </li>
               </ol>
             </div>
-            
+
             <div className="p-4 bg-primary/5 rounded-lg">
               <p className="text-sm text-primary">
-                📱 <strong>Requirements:</strong> iOS development requires macOS with Xcode. Android development requires Android Studio.
-                For more detailed instructions, visit our comprehensive mobile development guide.
+                📱 <strong>Requirements:</strong> iOS development requires macOS
+                with Xcode. Android development requires Android Studio. For
+                more detailed instructions, visit our comprehensive mobile
+                development guide.
               </p>
             </div>
           </CardContent>

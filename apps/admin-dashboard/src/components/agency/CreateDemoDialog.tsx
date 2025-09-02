@@ -1,14 +1,26 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DemoTemplateCard } from './DemoTemplateCard';
-import { mockDemoTemplates, mockPartners } from '@/data/mockAgencyData';
-import { RestaurantTemplate } from '@/types/agency';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DemoTemplateCard } from "./DemoTemplateCard";
+import { mockDemoTemplates, mockPartners } from "@/data/mockAgencyData";
+import { RestaurantTemplate } from "@/types/agency";
+import { useToast } from "@/hooks/use-toast";
 
 interface CreateDemoDialogProps {
   open: boolean;
@@ -16,15 +28,20 @@ interface CreateDemoDialogProps {
   onSuccess?: () => void;
 }
 
-export function CreateDemoDialog({ open, onOpenChange, onSuccess }: CreateDemoDialogProps) {
+export function CreateDemoDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+}: CreateDemoDialogProps) {
   const [step, setStep] = useState(1);
-  const [selectedTemplate, setSelectedTemplate] = useState<RestaurantTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<RestaurantTemplate | null>(null);
   const [formData, setFormData] = useState({
-    restaurantName: '',
-    partnerId: '',
-    clientEmail: '',
-    notes: '',
-    expirationDays: '7'
+    restaurantName: "",
+    partnerId: "",
+    clientEmail: "",
+    notes: "",
+    expirationDays: "7",
   });
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
@@ -38,7 +55,7 @@ export function CreateDemoDialog({ open, onOpenChange, onSuccess }: CreateDemoDi
       toast({
         title: "Template Required",
         description: "Please select a template to continue.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -54,17 +71,17 @@ export function CreateDemoDialog({ open, onOpenChange, onSuccess }: CreateDemoDi
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsCreating(true);
-    
+
     // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       toast({
         title: "Demo Created Successfully!",
         description: `${formData.restaurantName} demo is now live and ready for presentation.`,
@@ -74,44 +91,47 @@ export function CreateDemoDialog({ open, onOpenChange, onSuccess }: CreateDemoDi
       setStep(1);
       setSelectedTemplate(null);
       setFormData({
-        restaurantName: '',
-        partnerId: '',
-        clientEmail: '',
-        notes: '',
-        expirationDays: '7'
+        restaurantName: "",
+        partnerId: "",
+        clientEmail: "",
+        notes: "",
+        expirationDays: "7",
       });
-      
+
       onSuccess?.();
       onOpenChange(false);
     } catch (error) {
       toast({
         title: "Error Creating Demo",
         description: "Something went wrong. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsCreating(false);
     }
   };
 
-  const selectedTemplateData = mockDemoTemplates.find(t => t.id === selectedTemplate);
+  const selectedTemplateData = mockDemoTemplates.find(
+    (t) => t.id === selectedTemplate,
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            Create Demo Tenant - Step {step} of 2
-          </DialogTitle>
+          <DialogTitle>Create Demo Tenant - Step {step} of 2</DialogTitle>
         </DialogHeader>
 
         {step === 1 ? (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-3">Choose Restaurant Template</h3>
+              <h3 className="text-lg font-semibold mb-3">
+                Choose Restaurant Template
+              </h3>
               <p className="text-sm text-muted-foreground mb-6">
-                Select a pre-configured template that matches your client's restaurant type. 
-                Each template includes optimized settings and sample content.
+                Select a pre-configured template that matches your client's
+                restaurant type. Each template includes optimized settings and
+                sample content.
               </p>
             </div>
 
@@ -131,21 +151,24 @@ export function CreateDemoDialog({ open, onOpenChange, onSuccess }: CreateDemoDi
             <div>
               <h3 className="text-lg font-semibold mb-3">Demo Configuration</h3>
               <p className="text-sm text-muted-foreground mb-6">
-                Configure your demo tenant with specific details for your client presentation.
+                Configure your demo tenant with specific details for your client
+                presentation.
               </p>
             </div>
 
             {selectedTemplateData && (
               <div className="bg-muted/50 p-4 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <img 
-                    src={selectedTemplateData.previewImage} 
+                  <img
+                    src={selectedTemplateData.previewImage}
                     alt={selectedTemplateData.name}
                     className="w-16 h-12 rounded object-cover"
                   />
                   <div>
                     <h4 className="font-medium">{selectedTemplateData.name}</h4>
-                    <p className="text-sm text-muted-foreground">{selectedTemplateData.category}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedTemplateData.category}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -158,16 +181,23 @@ export function CreateDemoDialog({ open, onOpenChange, onSuccess }: CreateDemoDi
                   <Input
                     id="restaurantName"
                     value={formData.restaurantName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, restaurantName: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        restaurantName: e.target.value,
+                      }))
+                    }
                     placeholder="e.g., Bella Vista Ristorante"
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="partnerId">Assign to Partner *</Label>
-                  <Select 
-                    value={formData.partnerId} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, partnerId: value }))}
+                  <Select
+                    value={formData.partnerId}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, partnerId: value }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select partner" />
@@ -184,9 +214,14 @@ export function CreateDemoDialog({ open, onOpenChange, onSuccess }: CreateDemoDi
 
                 <div>
                   <Label htmlFor="expirationDays">Expiration Period</Label>
-                  <Select 
-                    value={formData.expirationDays} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, expirationDays: value }))}
+                  <Select
+                    value={formData.expirationDays}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        expirationDays: value,
+                      }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -208,7 +243,12 @@ export function CreateDemoDialog({ open, onOpenChange, onSuccess }: CreateDemoDi
                     id="clientEmail"
                     type="email"
                     value={formData.clientEmail}
-                    onChange={(e) => setFormData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        clientEmail: e.target.value,
+                      }))
+                    }
                     placeholder="client@restaurant.com"
                   />
                 </div>
@@ -218,7 +258,12 @@ export function CreateDemoDialog({ open, onOpenChange, onSuccess }: CreateDemoDi
                   <Textarea
                     id="notes"
                     value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        notes: e.target.value,
+                      }))
+                    }
                     placeholder="Add any special notes or requirements..."
                     rows={4}
                   />
@@ -247,7 +292,7 @@ export function CreateDemoDialog({ open, onOpenChange, onSuccess }: CreateDemoDi
                 Cancel
               </Button>
               <Button onClick={handleSubmit} disabled={isCreating}>
-                {isCreating ? 'Creating Demo...' : 'Create Demo Tenant'}
+                {isCreating ? "Creating Demo..." : "Create Demo Tenant"}
               </Button>
             </div>
           )}

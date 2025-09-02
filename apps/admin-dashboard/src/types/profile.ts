@@ -34,7 +34,7 @@ export interface SecuritySettings {
 export interface TrustedDevice {
   id: string;
   name: string;
-  deviceType: 'desktop' | 'mobile' | 'tablet';
+  deviceType: "desktop" | "mobile" | "tablet";
   browser?: string;
   os?: string;
   location?: string;
@@ -67,7 +67,7 @@ export interface NotificationPreferences {
     soundEnabled: boolean;
     desktopNotifications: boolean;
   };
-  frequency: 'immediate' | 'hourly' | 'daily' | 'weekly';
+  frequency: "immediate" | "hourly" | "daily" | "weekly";
   quietHours: {
     enabled: boolean;
     startTime: string;
@@ -105,7 +105,7 @@ export interface ActivityLog {
   id: string;
   userId: string;
   action: string;
-  actionType: 'authentication' | 'profile' | 'security' | 'data' | 'system';
+  actionType: "authentication" | "profile" | "security" | "data" | "system";
   description: string;
   ipAddress: string;
   userAgent: string;
@@ -119,11 +119,11 @@ export interface ActivityLog {
 export interface ThemePreferences {
   id: string;
   userId: string;
-  theme: 'light' | 'dark' | 'system';
+  theme: "light" | "dark" | "system";
   accentColor: string;
   compactMode: boolean;
   sidebarCollapsed: boolean;
-  fontSize: 'small' | 'medium' | 'large';
+  fontSize: "small" | "medium" | "large";
   animationsEnabled: boolean;
   highContrast: boolean;
   reducedMotion: boolean;

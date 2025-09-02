@@ -7,13 +7,18 @@ declare const Deno: {
 };
 
 declare module "https://deno.land/std@0.168.0/http/server.ts" {
-  export function serve(handler: (req: Request) => Response | Promise<Response>): void;
+  export function serve(
+    handler: (req: Request) => Response | Promise<Response>,
+  ): void;
 }
 
 declare module "https://esm.sh/@supabase/supabase-js@2" {
   export interface SupabaseClient {
     from(table: string): any;
-    rpc(functionName: string, params?: Record<string, any>): Promise<{ data: any; error: any }>;
+    rpc(
+      functionName: string,
+      params?: Record<string, any>,
+    ): Promise<{ data: any; error: any }>;
     auth: {
       getUser(token: string): Promise<{ data: { user: any }; error: any }>;
     };
@@ -21,11 +26,11 @@ declare module "https://esm.sh/@supabase/supabase-js@2" {
       invoke(functionName: string, options?: { body?: any }): Promise<any>;
     };
   }
-  
+
   export function createClient(
     supabaseUrl: string,
     supabaseKey: string,
-    options?: any
+    options?: any,
   ): SupabaseClient;
 }
 
@@ -41,7 +46,9 @@ declare module "https://deno.land/x/zod@v3.22.4/mod.ts" {
   }
 
   export interface ZodType<T = any> {
-    safeParse(data: unknown): { success: true; data: T } | { success: false; error: ZodError };
+    safeParse(
+      data: unknown,
+    ): { success: true; data: T } | { success: false; error: ZodError };
     optional(): ZodType<T | undefined>;
   }
 
@@ -77,9 +84,13 @@ declare global {
         keyData: ArrayBuffer,
         algorithm: { name: string; hash: string },
         extractable: boolean,
-        keyUsages: string[]
+        keyUsages: string[],
       ): Promise<CryptoKey>;
-      sign(algorithm: string, key: CryptoKey, data: ArrayBuffer): Promise<ArrayBuffer>;
+      sign(
+        algorithm: string,
+        key: CryptoKey,
+        data: ArrayBuffer,
+      ): Promise<ArrayBuffer>;
       digest(algorithm: string, data: ArrayBuffer): Promise<ArrayBuffer>;
     };
   };

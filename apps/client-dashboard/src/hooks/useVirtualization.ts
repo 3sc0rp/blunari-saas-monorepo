@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback } from "react";
 
 interface VirtualizationOptions {
   itemHeight: number;
@@ -8,7 +8,7 @@ interface VirtualizationOptions {
 
 export function useVirtualization<T>(
   items: T[],
-  options: VirtualizationOptions
+  options: VirtualizationOptions,
 ) {
   const { itemHeight, containerHeight, overscan = 5 } = options;
   const [scrollTop, setScrollTop] = useState(0);
@@ -17,7 +17,7 @@ export function useVirtualization<T>(
     const startIndex = Math.floor(scrollTop / itemHeight);
     const endIndex = Math.min(
       startIndex + Math.ceil(containerHeight / itemHeight),
-      items.length - 1
+      items.length - 1,
     );
 
     return {
@@ -27,10 +27,12 @@ export function useVirtualization<T>(
   }, [scrollTop, itemHeight, containerHeight, overscan, items.length]);
 
   const visibleItems = useMemo(() => {
-    return items.slice(visibleRange.start, visibleRange.end + 1).map((item, index) => ({
-      item,
-      index: visibleRange.start + index,
-    }));
+    return items
+      .slice(visibleRange.start, visibleRange.end + 1)
+      .map((item, index) => ({
+        item,
+        index: visibleRange.start + index,
+      }));
   }, [items, visibleRange]);
 
   const totalHeight = items.length * itemHeight;
@@ -54,14 +56,14 @@ export function useInfiniteScroll<T>(
   items: T[],
   loadMore: () => Promise<void>,
   hasMore: boolean,
-  threshold = 200
+  threshold = 200,
 ) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleScroll = useCallback(
     async (event: React.UIEvent<HTMLDivElement>) => {
       const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
-      
+
       if (
         scrollHeight - scrollTop - clientHeight < threshold &&
         hasMore &&
@@ -75,7 +77,7 @@ export function useInfiniteScroll<T>(
         }
       }
     },
-    [hasMore, isLoading, loadMore, threshold]
+    [hasMore, isLoading, loadMore, threshold],
   );
 
   return { handleScroll, isLoading };

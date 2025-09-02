@@ -17,7 +17,7 @@ import Bookings from "./pages/Bookings";
 import Customers from "./pages/Customers";
 import BookingWidget from "./pages/BookingWidget";
 import WidgetManagement from "./pages/WidgetManagement";
-import { ResponsiveDashboardSidebar } from './components/dashboard/ResponsiveDashboardSidebar';
+import { ResponsiveDashboardSidebar } from "./components/dashboard/ResponsiveDashboardSidebar";
 import POSIntegration from "./pages/POSIntegration";
 import Waitlist from "./pages/Waitlist";
 import Staff from "./pages/Staff";
@@ -47,44 +47,65 @@ const App = () => (
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/staff-invitation" element={<StaffInvitation />} />
-            
-            {/* Public booking widget routes */}
-            <Route path="/book/:slug" element={<BookingPage />} />
-            <Route path="/catering/:slug" element={<BookingPage />} />
-            
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<Dashboard />} />
-              <Route path="bookings" element={<Bookings />} />
-              <Route path="tables" element={
-                <Suspense fallback={<SkeletonPage />}>
-                  <Tables />
-                </Suspense>
-              } />
-              <Route path="customers" element={<Customers />} />
-              <Route path="widget-preview" element={<BookingWidget />} />
-              <Route path="widget-management" element={<WidgetManagement />} />
-              <Route path="pos-integrations" element={<POSIntegration />} />
-              <Route path="waitlist" element={<Waitlist />} />
-              <Route path="staff" element={<Staff />} />
-              <Route path="messages" element={<Messages />} />
-              <Route path="analytics" element={
-                <Suspense fallback={<SkeletonPage />}>
-                  <Analytics />
-                </Suspense>
-              } />
-              <Route path="catering" element={<Catering />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route
+                      path="/staff-invitation"
+                      element={<StaffInvitation />}
+                    />
+
+                    {/* Public booking widget routes */}
+                    <Route path="/book/:slug" element={<BookingPage />} />
+                    <Route path="/catering/:slug" element={<BookingPage />} />
+
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <DashboardLayout />
+                        </ProtectedRoute>
+                      }
+                    >
+                      <Route index element={<Dashboard />} />
+                      <Route path="bookings" element={<Bookings />} />
+                      <Route
+                        path="tables"
+                        element={
+                          <Suspense fallback={<SkeletonPage />}>
+                            <Tables />
+                          </Suspense>
+                        }
+                      />
+                      <Route path="customers" element={<Customers />} />
+                      <Route
+                        path="widget-preview"
+                        element={<BookingWidget />}
+                      />
+                      <Route
+                        path="widget-management"
+                        element={<WidgetManagement />}
+                      />
+                      <Route
+                        path="pos-integrations"
+                        element={<POSIntegration />}
+                      />
+                      <Route path="waitlist" element={<Waitlist />} />
+                      <Route path="staff" element={<Staff />} />
+                      <Route path="messages" element={<Messages />} />
+                      <Route
+                        path="analytics"
+                        element={
+                          <Suspense fallback={<SkeletonPage />}>
+                            <Analytics />
+                          </Suspense>
+                        }
+                      />
+                      <Route path="catering" element={<Catering />} />
+                      <Route path="settings" element={<Settings />} />
+                    </Route>
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
                   </Routes>
                 </BrowserRouter>
               </DesignQAProvider>

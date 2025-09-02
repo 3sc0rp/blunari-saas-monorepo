@@ -24,8 +24,8 @@ export interface FeatureFlag {
   enabled: boolean;
   rolloutPercentage: number;
   targetTenants?: string[];
-  environments: ('development' | 'staging' | 'production')[];
-  category: 'booking' | 'analytics' | 'integrations' | 'ui' | 'experimental';
+  environments: ("development" | "staging" | "production")[];
+  category: "booking" | "analytics" | "integrations" | "ui" | "experimental";
   dependsOn?: string[];
   createdAt: string;
   updatedAt: string;
@@ -33,12 +33,12 @@ export interface FeatureFlag {
 
 export interface EmailConfiguration {
   id: string;
-  provider: 'smtp' | 'resend' | 'sendgrid' | 'ses';
+  provider: "smtp" | "resend" | "sendgrid" | "ses";
   smtpHost?: string;
   smtpPort?: number;
   smtpUsername?: string;
   smtpPassword?: string;
-  smtpEncryption: 'none' | 'tls' | 'ssl';
+  smtpEncryption: "none" | "tls" | "ssl";
   fromEmail: string;
   fromName: string;
   replyToEmail?: string;
@@ -71,7 +71,7 @@ export interface EmailTemplate {
     required: boolean;
     defaultValue?: string;
   }>;
-  category: 'booking' | 'authentication' | 'notifications' | 'marketing';
+  category: "booking" | "authentication" | "notifications" | "marketing";
   enabled: boolean;
   version: string;
   createdAt: string;
@@ -80,7 +80,7 @@ export interface EmailTemplate {
 
 export interface SMSConfiguration {
   id: string;
-  provider: 'twilio' | 'aws_sns' | 'nexmo';
+  provider: "twilio" | "aws_sns" | "nexmo";
   accountSid?: string;
   authToken?: string;
   fromNumber?: string;
@@ -150,7 +150,7 @@ export interface BackupConfiguration {
   id: string;
   automated: {
     enabled: boolean;
-    frequency: 'hourly' | 'daily' | 'weekly' | 'monthly';
+    frequency: "hourly" | "daily" | "weekly" | "monthly";
     time: string; // HH:MM format
     daysOfWeek?: number[]; // For weekly backups
     dayOfMonth?: number; // For monthly backups
@@ -162,7 +162,7 @@ export interface BackupConfiguration {
     keepYearly: number;
   };
   storage: {
-    provider: 's3' | 'gcs' | 'azure' | 'local';
+    provider: "s3" | "gcs" | "azure" | "local";
     bucket?: string;
     region?: string;
     accessKeyId?: string;
@@ -171,13 +171,13 @@ export interface BackupConfiguration {
   };
   encryption: {
     enabled: boolean;
-    algorithm: 'AES-256' | 'AES-128';
+    algorithm: "AES-256" | "AES-128";
     keyRotationDays: number;
   };
   verification: {
     enableIntegrityCheck: boolean;
     enableTestRestore: boolean;
-    testRestoreFrequency: 'weekly' | 'monthly';
+    testRestoreFrequency: "weekly" | "monthly";
   };
   notifications: {
     enableSuccessNotifications: boolean;
@@ -196,13 +196,13 @@ export interface MaintenanceWindow {
   scheduledEnd: string;
   actualStart?: string;
   actualEnd?: string;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-  impact: 'none' | 'minimal' | 'partial' | 'full';
+  status: "scheduled" | "in_progress" | "completed" | "cancelled";
+  impact: "none" | "minimal" | "partial" | "full";
   affectedServices: string[];
   notifications: {
     enableAdvanceNotification: boolean;
     advanceNoticeDays: number;
-    notificationChannels: ('email' | 'sms' | 'dashboard' | 'webhook')[];
+    notificationChannels: ("email" | "sms" | "dashboard" | "webhook")[];
   };
   rollbackPlan?: string;
   contactPerson: string;
@@ -211,10 +211,10 @@ export interface MaintenanceWindow {
 }
 
 export interface SystemHealth {
-  overall: 'healthy' | 'degraded' | 'critical';
+  overall: "healthy" | "degraded" | "critical";
   components: Array<{
     name: string;
-    status: 'operational' | 'degraded' | 'outage';
+    status: "operational" | "degraded" | "outage";
     responseTime?: number;
     uptime: number;
     lastCheck: string;
@@ -228,7 +228,7 @@ export interface SystemHealth {
   };
   alerts: Array<{
     id: string;
-    severity: 'info' | 'warning' | 'error' | 'critical';
+    severity: "info" | "warning" | "error" | "critical";
     message: string;
     timestamp: string;
     resolved: boolean;

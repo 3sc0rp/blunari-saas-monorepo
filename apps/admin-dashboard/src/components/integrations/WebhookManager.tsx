@@ -1,12 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -14,7 +26,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -23,13 +35,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { 
-  Webhook, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Play, 
+} from "@/components/ui/dialog";
+import {
+  Webhook,
+  Plus,
+  Edit,
+  Trash2,
+  Play,
   Pause,
   Copy,
   Eye,
@@ -41,9 +53,9 @@ import {
   Settings,
   Send,
   Activity,
-  Shield
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+  Shield,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface WebhookEndpoint {
   id: string;
@@ -61,7 +73,7 @@ interface WebhookEndpoint {
   };
   retryPolicy: {
     maxRetries: number;
-    backoffStrategy: 'linear' | 'exponential';
+    backoffStrategy: "linear" | "exponential";
   };
 }
 
@@ -70,7 +82,7 @@ interface WebhookDelivery {
   webhookId: string;
   event: string;
   payload: any;
-  status: 'pending' | 'success' | 'failed' | 'retrying';
+  status: "pending" | "success" | "failed" | "retrying";
   statusCode?: number;
   responseTime?: number;
   attemptCount: number;
@@ -81,98 +93,99 @@ interface WebhookDelivery {
 
 const mockWebhooks: WebhookEndpoint[] = [
   {
-    id: '1',
-    name: 'Stripe Payment Notifications',
-    url: 'https://api.example.com/webhooks/stripe',
-    events: ['payment.succeeded', 'payment.failed', 'subscription.created'],
-    secret: 'whsec_1234567890abcdef',
+    id: "1",
+    name: "Stripe Payment Notifications",
+    url: "https://api.example.com/webhooks/stripe",
+    events: ["payment.succeeded", "payment.failed", "subscription.created"],
+    secret: "whsec_1234567890abcdef",
     isActive: true,
     createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     lastTriggered: new Date(Date.now() - 2 * 60 * 60 * 1000),
     deliveryAttempts: { total: 2847, successful: 2834, failed: 13 },
-    retryPolicy: { maxRetries: 3, backoffStrategy: 'exponential' }
+    retryPolicy: { maxRetries: 3, backoffStrategy: "exponential" },
   },
   {
-    id: '2',
-    name: 'Booking Updates',
-    url: 'https://api.restaurant-system.com/notifications',
-    events: ['booking.created', 'booking.cancelled', 'booking.confirmed'],
-    secret: 'whsec_abcdef1234567890',
+    id: "2",
+    name: "Booking Updates",
+    url: "https://api.restaurant-system.com/notifications",
+    events: ["booking.created", "booking.cancelled", "booking.confirmed"],
+    secret: "whsec_abcdef1234567890",
     isActive: true,
     createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
     lastTriggered: new Date(Date.now() - 30 * 60 * 1000),
     deliveryAttempts: { total: 1523, successful: 1518, failed: 5 },
-    retryPolicy: { maxRetries: 5, backoffStrategy: 'linear' }
+    retryPolicy: { maxRetries: 5, backoffStrategy: "linear" },
   },
   {
-    id: '3',
-    name: 'Analytics Sync',
-    url: 'https://analytics.example.com/webhook',
-    events: ['user.created', 'user.updated', 'event.tracked'],
-    secret: 'whsec_analytics_secret',
+    id: "3",
+    name: "Analytics Sync",
+    url: "https://analytics.example.com/webhook",
+    events: ["user.created", "user.updated", "event.tracked"],
+    secret: "whsec_analytics_secret",
     isActive: false,
     createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     lastTriggered: new Date(Date.now() - 24 * 60 * 60 * 1000),
     deliveryAttempts: { total: 456, successful: 445, failed: 11 },
-    retryPolicy: { maxRetries: 3, backoffStrategy: 'exponential' }
-  }
+    retryPolicy: { maxRetries: 3, backoffStrategy: "exponential" },
+  },
 ];
 
 const mockDeliveries: WebhookDelivery[] = [
   {
-    id: '1',
-    webhookId: '1',
-    event: 'payment.succeeded',
-    payload: { amount: 4999, currency: 'usd', customer: 'cus_123' },
-    status: 'success',
+    id: "1",
+    webhookId: "1",
+    event: "payment.succeeded",
+    payload: { amount: 4999, currency: "usd", customer: "cus_123" },
+    status: "success",
     statusCode: 200,
     responseTime: 145,
     attemptCount: 1,
     scheduledAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    deliveredAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
+    deliveredAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
   },
   {
-    id: '2',
-    webhookId: '2',
-    event: 'booking.created',
-    payload: { bookingId: 'book_456', restaurantId: 'rest_789' },
-    status: 'failed',
+    id: "2",
+    webhookId: "2",
+    event: "booking.created",
+    payload: { bookingId: "book_456", restaurantId: "rest_789" },
+    status: "failed",
     statusCode: 500,
     attemptCount: 3,
     scheduledAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
-    error: 'Internal server error'
+    error: "Internal server error",
   },
   {
-    id: '3',
-    webhookId: '1',
-    event: 'subscription.created',
-    payload: { subscriptionId: 'sub_789', customerId: 'cus_456' },
-    status: 'retrying',
+    id: "3",
+    webhookId: "1",
+    event: "subscription.created",
+    payload: { subscriptionId: "sub_789", customerId: "cus_456" },
+    status: "retrying",
     statusCode: 503,
     attemptCount: 2,
-    scheduledAt: new Date(Date.now() - 30 * 60 * 1000)
-  }
+    scheduledAt: new Date(Date.now() - 30 * 60 * 1000),
+  },
 ];
 
 const availableEvents = [
-  'payment.succeeded',
-  'payment.failed',
-  'subscription.created',
-  'subscription.cancelled',
-  'booking.created',
-  'booking.confirmed',
-  'booking.cancelled',
-  'user.created',
-  'user.updated',
-  'event.tracked',
-  'tenant.created',
-  'tenant.updated'
+  "payment.succeeded",
+  "payment.failed",
+  "subscription.created",
+  "subscription.cancelled",
+  "booking.created",
+  "booking.confirmed",
+  "booking.cancelled",
+  "user.created",
+  "user.updated",
+  "event.tracked",
+  "tenant.created",
+  "tenant.updated",
 ];
 
 export const WebhookManager: React.FC = () => {
   const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>(mockWebhooks);
   const [deliveries] = useState<WebhookDelivery[]>(mockDeliveries);
-  const [selectedWebhook, setSelectedWebhook] = useState<WebhookEndpoint | null>(null);
+  const [selectedWebhook, setSelectedWebhook] =
+    useState<WebhookEndpoint | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
@@ -181,27 +194,28 @@ export const WebhookManager: React.FC = () => {
     url: string;
     events: string[];
     maxRetries: number;
-    backoffStrategy: 'linear' | 'exponential';
+    backoffStrategy: "linear" | "exponential";
   }>({
-    name: '',
-    url: '',
+    name: "",
+    url: "",
     events: [],
     maxRetries: 3,
-    backoffStrategy: 'exponential'
+    backoffStrategy: "exponential",
   });
   const { toast } = useToast();
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      success: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      failed: { color: 'bg-red-100 text-red-800', icon: XCircle },
-      pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      retrying: { color: 'bg-blue-100 text-blue-800', icon: RefreshCw }
+      success: { color: "bg-green-100 text-green-800", icon: CheckCircle },
+      failed: { color: "bg-red-100 text-red-800", icon: XCircle },
+      pending: { color: "bg-yellow-100 text-yellow-800", icon: Clock },
+      retrying: { color: "bg-blue-100 text-blue-800", icon: RefreshCw },
     };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     const Icon = config.icon;
-    
+
     return (
       <Badge className={config.color}>
         <Icon className="h-3 w-3 mr-1" />
@@ -210,7 +224,9 @@ export const WebhookManager: React.FC = () => {
     );
   };
 
-  const calculateSuccessRate = (attempts: WebhookEndpoint['deliveryAttempts']) => {
+  const calculateSuccessRate = (
+    attempts: WebhookEndpoint["deliveryAttempts"],
+  ) => {
     if (attempts.total === 0) return 100;
     return Math.round((attempts.successful / attempts.total) * 100);
   };
@@ -227,14 +243,20 @@ export const WebhookManager: React.FC = () => {
       deliveryAttempts: { total: 0, successful: 0, failed: 0 },
       retryPolicy: {
         maxRetries: newWebhook.maxRetries,
-        backoffStrategy: newWebhook.backoffStrategy
-      }
+        backoffStrategy: newWebhook.backoffStrategy,
+      },
     };
 
-    setWebhooks(prev => [...prev, webhook]);
-    setNewWebhook({ name: '', url: '', events: [], maxRetries: 3, backoffStrategy: 'exponential' });
+    setWebhooks((prev) => [...prev, webhook]);
+    setNewWebhook({
+      name: "",
+      url: "",
+      events: [],
+      maxRetries: 3,
+      backoffStrategy: "exponential",
+    });
     setIsCreateDialogOpen(false);
-    
+
     toast({
       title: "Webhook Created",
       description: "New webhook endpoint has been created successfully",
@@ -242,21 +264,23 @@ export const WebhookManager: React.FC = () => {
   };
 
   const toggleWebhook = (webhookId: string) => {
-    setWebhooks(prev => prev.map(webhook =>
-      webhook.id === webhookId 
-        ? { ...webhook, isActive: !webhook.isActive }
-        : webhook
-    ));
-    
-    const webhook = webhooks.find(w => w.id === webhookId);
+    setWebhooks((prev) =>
+      prev.map((webhook) =>
+        webhook.id === webhookId
+          ? { ...webhook, isActive: !webhook.isActive }
+          : webhook,
+      ),
+    );
+
+    const webhook = webhooks.find((w) => w.id === webhookId);
     toast({
-      title: `Webhook ${webhook?.isActive ? 'Disabled' : 'Enabled'}`,
-      description: `${webhook?.name} has been ${webhook?.isActive ? 'disabled' : 'enabled'}`,
+      title: `Webhook ${webhook?.isActive ? "Disabled" : "Enabled"}`,
+      description: `${webhook?.name} has been ${webhook?.isActive ? "disabled" : "enabled"}`,
     });
   };
 
   const deleteWebhook = (webhookId: string) => {
-    setWebhooks(prev => prev.filter(webhook => webhook.id !== webhookId));
+    setWebhooks((prev) => prev.filter((webhook) => webhook.id !== webhookId));
     toast({
       title: "Webhook Deleted",
       description: "Webhook endpoint has been removed",
@@ -275,8 +299,8 @@ export const WebhookManager: React.FC = () => {
       const success = Math.random() > 0.3;
       toast({
         title: success ? "Test Successful" : "Test Failed",
-        description: success 
-          ? "Webhook endpoint responded successfully" 
+        description: success
+          ? "Webhook endpoint responded successfully"
           : "Failed to deliver test payload",
         variant: success ? "default" : "destructive",
       });
@@ -329,7 +353,12 @@ export const WebhookManager: React.FC = () => {
                     id="webhook-name"
                     placeholder="e.g., Payment Notifications"
                     value={newWebhook.name}
-                    onChange={(e) => setNewWebhook(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) =>
+                      setNewWebhook((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -338,26 +367,37 @@ export const WebhookManager: React.FC = () => {
                     id="webhook-url"
                     placeholder="https://api.example.com/webhooks"
                     value={newWebhook.url}
-                    onChange={(e) => setNewWebhook(prev => ({ ...prev, url: e.target.value }))}
+                    onChange={(e) =>
+                      setNewWebhook((prev) => ({
+                        ...prev,
+                        url: e.target.value,
+                      }))
+                    }
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Events to Subscribe</Label>
                 <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto border rounded p-2">
                   {availableEvents.map((event) => (
-                    <label key={event} className="flex items-center space-x-2 text-sm">
+                    <label
+                      key={event}
+                      className="flex items-center space-x-2 text-sm"
+                    >
                       <input
                         type="checkbox"
                         checked={newWebhook.events.includes(event)}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setNewWebhook(prev => ({ ...prev, events: [...prev.events, event] }));
+                            setNewWebhook((prev) => ({
+                              ...prev,
+                              events: [...prev.events, event],
+                            }));
                           } else {
-                            setNewWebhook(prev => ({ 
-                              ...prev, 
-                              events: prev.events.filter(e => e !== event) 
+                            setNewWebhook((prev) => ({
+                              ...prev,
+                              events: prev.events.filter((e) => e !== event),
                             }));
                           }
                         }}
@@ -367,13 +407,18 @@ export const WebhookManager: React.FC = () => {
                   ))}
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Max Retries</Label>
                   <Select
                     value={newWebhook.maxRetries.toString()}
-                    onValueChange={(value) => setNewWebhook(prev => ({ ...prev, maxRetries: parseInt(value) }))}
+                    onValueChange={(value) =>
+                      setNewWebhook((prev) => ({
+                        ...prev,
+                        maxRetries: parseInt(value),
+                      }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -390,10 +435,12 @@ export const WebhookManager: React.FC = () => {
                   <Label>Backoff Strategy</Label>
                   <Select
                     value={newWebhook.backoffStrategy}
-                    onValueChange={(value) => setNewWebhook(prev => ({ 
-                      ...prev, 
-                      backoffStrategy: value as 'linear' | 'exponential' 
-                    }))}
+                    onValueChange={(value) =>
+                      setNewWebhook((prev) => ({
+                        ...prev,
+                        backoffStrategy: value as "linear" | "exponential",
+                      }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -407,12 +454,19 @@ export const WebhookManager: React.FC = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={createWebhook}
-                disabled={!newWebhook.name || !newWebhook.url || newWebhook.events.length === 0}
+                disabled={
+                  !newWebhook.name ||
+                  !newWebhook.url ||
+                  newWebhook.events.length === 0
+                }
               >
                 Create Webhook
               </Button>
@@ -473,8 +527,8 @@ export const WebhookManager: React.FC = () => {
                     <div className="text-sm">
                       {webhook.events.length} events
                       <div className="text-xs text-muted-foreground">
-                        {webhook.events.slice(0, 2).join(', ')}
-                        {webhook.events.length > 2 && '...'}
+                        {webhook.events.slice(0, 2).join(", ")}
+                        {webhook.events.length > 2 && "..."}
                       </div>
                     </div>
                   </TableCell>
@@ -484,7 +538,8 @@ export const WebhookManager: React.FC = () => {
                         {calculateSuccessRate(webhook.deliveryAttempts)}%
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {webhook.deliveryAttempts.successful}/{webhook.deliveryAttempts.total} successful
+                        {webhook.deliveryAttempts.successful}/
+                        {webhook.deliveryAttempts.total} successful
                       </div>
                     </div>
                   </TableCell>
@@ -495,7 +550,7 @@ export const WebhookManager: React.FC = () => {
                         onCheckedChange={() => toggleWebhook(webhook.id)}
                       />
                       <span className="text-sm">
-                        {webhook.isActive ? 'Active' : 'Inactive'}
+                        {webhook.isActive ? "Active" : "Inactive"}
                       </span>
                     </div>
                   </TableCell>
@@ -561,7 +616,9 @@ export const WebhookManager: React.FC = () => {
             </TableHeader>
             <TableBody>
               {deliveries.map((delivery) => {
-                const webhook = webhooks.find(w => w.id === delivery.webhookId);
+                const webhook = webhooks.find(
+                  (w) => w.id === delivery.webhookId,
+                );
                 return (
                   <TableRow key={delivery.id}>
                     <TableCell>
@@ -581,12 +638,15 @@ export const WebhookManager: React.FC = () => {
                         </div>
                       )}
                       {delivery.error && (
-                        <div className="text-sm text-red-600">{delivery.error}</div>
+                        <div className="text-sm text-red-600">
+                          {delivery.error}
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {delivery.attemptCount} / {webhook?.retryPolicy.maxRetries || 3}
+                        {delivery.attemptCount} /{" "}
+                        {webhook?.retryPolicy.maxRetries || 3}
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -603,7 +663,7 @@ export const WebhookManager: React.FC = () => {
                         >
                           <Eye className="h-3 w-3" />
                         </Button>
-                        {delivery.status === 'failed' && (
+                        {delivery.status === "failed" && (
                           <Button
                             variant="outline"
                             size="sm"

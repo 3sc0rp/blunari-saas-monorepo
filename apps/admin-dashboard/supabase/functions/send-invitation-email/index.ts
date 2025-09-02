@@ -15,7 +15,8 @@ const smtp = new SMTPClient({
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 interface InvitationEmailRequest {
@@ -34,20 +35,24 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { 
-      email, 
-      inviterName, 
-      role, 
-      invitationToken, 
+    const {
+      email,
+      inviterName,
+      role,
+      invitationToken,
       companyName = "Blunari Admin",
-      acceptUrl 
+      acceptUrl,
     }: InvitationEmailRequest = await req.json();
 
     const defaultAcceptUrl = "https://your-app-domain.com/auth";
-    const finalAcceptUrl = acceptUrl || `${defaultAcceptUrl}?invitation=${invitationToken}`;
+    const finalAcceptUrl =
+      acceptUrl || `${defaultAcceptUrl}?invitation=${invitationToken}`;
 
     // Format role for display
-    const displayRole = role.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const displayRole = role
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
 
     const emailResponse = await smtp.send({
       from: "no-reply@blunari.ai",
@@ -132,13 +137,10 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: any) {
     console.error("Error in send-invitation-email function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 

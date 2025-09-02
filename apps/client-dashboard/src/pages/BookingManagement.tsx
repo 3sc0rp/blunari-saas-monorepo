@@ -1,21 +1,31 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Separator } from '@/components/ui/separator';
-import { useTenant } from '@/hooks/useTenant';
-import { useAdvancedBookings } from '@/hooks/useAdvancedBookings';
-import BookingCard from '@/components/dashboard/BookingCard';
-import AdvancedBookingStatusOverview from '@/components/booking/AdvancedBookingStatusOverview';
-import SmartBookingWizard from '@/components/booking/SmartBookingWizard';
-import EnhancedFilters from '@/components/booking/EnhancedFilters';
-import OptimizedBookingsTable from '@/components/booking/VirtualizedBookingsTable';
-import { 
-  Plus, 
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
+import { useTenant } from "@/hooks/useTenant";
+import { useAdvancedBookings } from "@/hooks/useAdvancedBookings";
+import BookingCard from "@/components/dashboard/BookingCard";
+import AdvancedBookingStatusOverview from "@/components/booking/AdvancedBookingStatusOverview";
+import SmartBookingWizard from "@/components/booking/SmartBookingWizard";
+import EnhancedFilters from "@/components/booking/EnhancedFilters";
+import OptimizedBookingsTable from "@/components/booking/VirtualizedBookingsTable";
+import {
+  Plus,
   CalendarIcon,
   Calendar,
   CheckSquare,
@@ -30,8 +40,8 @@ import {
   Users,
   TrendingUp,
   AlertCircle,
-  Loader2
-} from 'lucide-react';
+  Loader2,
+} from "lucide-react";
 
 const BookingManagement: React.FC = () => {
   const { tenant, isLoading: tenantLoading } = useTenant();
@@ -44,26 +54,29 @@ const BookingManagement: React.FC = () => {
     setSelectedBookings,
     bulkOperation,
     isBulkOperationPending,
-    updateBooking
+    updateBooking,
   } = useAdvancedBookings(tenant?.id);
 
   const [showWizard, setShowWizard] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
   // Group bookings by status
   const bookingsByStatus = React.useMemo(() => {
     const groups = {
-      confirmed: bookings.filter(b => b.status === 'confirmed'),
-      pending: bookings.filter(b => b.status === 'pending'),
-      seated: bookings.filter(b => b.status === 'seated'),
-      completed: bookings.filter(b => b.status === 'completed'),
-      cancelled: bookings.filter(b => b.status === 'cancelled'),
-      noshow: bookings.filter(b => b.status === 'noshow'),
+      confirmed: bookings.filter((b) => b.status === "confirmed"),
+      pending: bookings.filter((b) => b.status === "pending"),
+      seated: bookings.filter((b) => b.status === "seated"),
+      completed: bookings.filter((b) => b.status === "completed"),
+      cancelled: bookings.filter((b) => b.status === "cancelled"),
+      noshow: bookings.filter((b) => b.status === "noshow"),
     };
     return groups;
   }, [bookings]);
 
-  const currentBookings = selectedStatus === 'all' ? bookings : bookingsByStatus[selectedStatus as keyof typeof bookingsByStatus] || [];
+  const currentBookings =
+    selectedStatus === "all"
+      ? bookings
+      : bookingsByStatus[selectedStatus as keyof typeof bookingsByStatus] || [];
 
   const statusCounts = {
     all: bookings.length,
@@ -76,7 +89,7 @@ const BookingManagement: React.FC = () => {
   };
 
   // Calculate key metrics
-  const todaysBookings = bookings.filter(b => {
+  const todaysBookings = bookings.filter((b) => {
     const bookingDate = new Date(b.booking_time).toDateString();
     const today = new Date().toDateString();
     return bookingDate === today;
@@ -84,8 +97,9 @@ const BookingManagement: React.FC = () => {
 
   const metrics = {
     totalToday: todaysBookings.length,
-    pendingToday: todaysBookings.filter(b => b.status === 'pending').length,
-    confirmedToday: todaysBookings.filter(b => b.status === 'confirmed').length,
+    pendingToday: todaysBookings.filter((b) => b.status === "pending").length,
+    confirmedToday: todaysBookings.filter((b) => b.status === "confirmed")
+      .length,
     totalGuests: todaysBookings.reduce((sum, b) => sum + b.party_size, 0),
   };
 
@@ -93,57 +107,58 @@ const BookingManagement: React.FC = () => {
     if (selectedBookings.length === currentBookings.length) {
       setSelectedBookings([]);
     } else {
-      setSelectedBookings(currentBookings.map(b => b.id));
+      setSelectedBookings(currentBookings.map((b) => b.id));
     }
   };
 
   const handleSelectBooking = (bookingId: string) => {
-    setSelectedBookings(prev => 
-      prev.includes(bookingId) 
-        ? prev.filter(id => id !== bookingId)
-        : [...prev, bookingId]
+    setSelectedBookings((prev) =>
+      prev.includes(bookingId)
+        ? prev.filter((id) => id !== bookingId)
+        : [...prev, bookingId],
     );
   };
 
   const handleBulkStatusUpdate = (status: string) => {
     bulkOperation({
-      type: 'status_update',
+      type: "status_update",
       bookingIds: selectedBookings,
-      data: { status }
+      data: { status },
     });
     setSelectedBookings([]); // Clear selection after bulk operation
   };
 
   const handleBulkNotification = () => {
     bulkOperation({
-      type: 'send_notification',
+      type: "send_notification",
       bookingIds: selectedBookings,
-      data: { 
-        type: 'reminder',
-        template: 'booking_reminder' 
-      }
+      data: {
+        type: "reminder",
+        template: "booking_reminder",
+      },
     });
     setSelectedBookings([]); // Clear selection after bulk operation
   };
 
   const handleBulkDelete = () => {
     bulkOperation({
-      type: 'delete',
+      type: "delete",
       bookingIds: selectedBookings,
-      data: {}
+      data: {},
     });
     setSelectedBookings([]); // Clear selection after bulk operation
   };
 
   const handleExportCSV = () => {
-    const bookingsToExport = selectedBookings.length > 0 
-      ? currentBookings.filter(b => selectedBookings.includes(b.id))
-      : currentBookings;
-    
+    const bookingsToExport =
+      selectedBookings.length > 0
+        ? currentBookings.filter((b) => selectedBookings.includes(b.id))
+        : currentBookings;
+
     bulkOperation({
-      type: 'export',
-      bookingIds: bookingsToExport.map(b => b.id),
-      data: {}
+      type: "export",
+      bookingIds: bookingsToExport.map((b) => b.id),
+      data: {},
     });
   };
 
@@ -190,9 +205,12 @@ const BookingManagement: React.FC = () => {
               Comprehensive booking lifecycle management with smart features
             </p>
           </div>
-          
+
           <div className="flex items-center gap-3">
-            <Badge variant="outline" className="flex items-center gap-2 px-3 py-1 bg-surface-2 border-surface-3">
+            <Badge
+              variant="outline"
+              className="flex items-center gap-2 px-3 py-1 bg-surface-2 border-surface-3"
+            >
               <Activity className="h-4 w-4" />
               Real-time Updates
             </Badge>
@@ -208,8 +226,12 @@ const BookingManagement: React.FC = () => {
                   <Calendar className="w-5 h-5 text-brand" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-text-muted">Today's Bookings</p>
-                  <p className="text-h3 font-bold text-text font-tabular">{metrics.totalToday}</p>
+                  <p className="text-sm font-medium text-text-muted">
+                    Today's Bookings
+                  </p>
+                  <p className="text-h3 font-bold text-text font-tabular">
+                    {metrics.totalToday}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -223,7 +245,9 @@ const BookingManagement: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-text-muted">Pending</p>
-                  <p className="text-h3 font-bold text-text font-tabular">{metrics.pendingToday}</p>
+                  <p className="text-h3 font-bold text-text font-tabular">
+                    {metrics.pendingToday}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -236,8 +260,12 @@ const BookingManagement: React.FC = () => {
                   <CheckSquare className="w-5 h-5 text-success" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-text-muted">Confirmed</p>
-                  <p className="text-h3 font-bold text-text font-tabular">{metrics.confirmedToday}</p>
+                  <p className="text-sm font-medium text-text-muted">
+                    Confirmed
+                  </p>
+                  <p className="text-h3 font-bold text-text font-tabular">
+                    {metrics.confirmedToday}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -250,8 +278,12 @@ const BookingManagement: React.FC = () => {
                   <Users className="w-5 h-5 text-secondary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-text-muted">Total Guests</p>
-                  <p className="text-h3 font-bold text-text font-tabular">{metrics.totalGuests}</p>
+                  <p className="text-sm font-medium text-text-muted">
+                    Total Guests
+                  </p>
+                  <p className="text-h3 font-bold text-text font-tabular">
+                    {metrics.totalGuests}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -290,18 +322,22 @@ const BookingManagement: React.FC = () => {
                     onCheckedChange={handleSelectAll}
                   />
                   <span className="font-semibold text-lg text-text">
-                    {selectedBookings.length} of {currentBookings.length} selected
+                    {selectedBookings.length} of {currentBookings.length}{" "}
+                    selected
                   </span>
-                  <Badge variant="secondary" className="bg-brand/10 text-brand border-brand/20">
+                  <Badge
+                    variant="secondary"
+                    className="bg-brand/10 text-brand border-brand/20"
+                  >
                     Bulk Actions Available
                   </Badge>
                 </div>
-                
+
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleBulkStatusUpdate('confirmed')}
+                    onClick={() => handleBulkStatusUpdate("confirmed")}
                     disabled={isBulkOperationPending}
                     className="shadow-sm"
                   >
@@ -315,7 +351,7 @@ const BookingManagement: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleBulkStatusUpdate('seated')}
+                    onClick={() => handleBulkStatusUpdate("seated")}
                     disabled={isBulkOperationPending}
                     className="shadow-sm"
                   >
@@ -346,15 +382,19 @@ const BookingManagement: React.FC = () => {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Selected Bookings</AlertDialogTitle>
+                        <AlertDialogTitle>
+                          Delete Selected Bookings
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to delete {selectedBookings.length} booking(s)? 
-                          This action cannot be undone and will permanently remove all booking data.
+                          Are you sure you want to delete{" "}
+                          {selectedBookings.length} booking(s)? This action
+                          cannot be undone and will permanently remove all
+                          booking data.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction
                           onClick={handleBulkDelete}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
@@ -395,35 +435,34 @@ const BookingManagement: React.FC = () => {
           selectedBookings={selectedBookings}
           onSelectBooking={handleSelectBooking}
           onSelectAll={handleSelectAll}
-          onBookingClick={(booking) => console.log('Booking clicked:', booking)}
-          onStatusUpdate={(id, status) => updateBooking({ id, updates: { status } })}
+          onBookingClick={(booking) => console.log("Booking clicked:", booking)}
+          onStatusUpdate={(id, status) =>
+            updateBooking({ id, updates: { status } })
+          }
           isLoading={isLoading}
           height={600}
         />
       </motion.div>
 
       {/* Smart Booking Wizard */}
-      <SmartBookingWizard 
-        open={showWizard}
-        onOpenChange={setShowWizard}
-      />
+      <SmartBookingWizard open={showWizard} onOpenChange={setShowWizard} />
     </div>
   );
 };
 
 // Enhanced Bookings List Component
-const BookingsList: React.FC<{ 
-  bookings: any[]; 
+const BookingsList: React.FC<{
+  bookings: any[];
   isLoading: boolean;
   selectedBookings: string[];
   onSelectBooking: (id: string) => void;
   onUpdateBooking: (data: { id: string; updates: any }) => void;
-}> = ({ 
-  bookings, 
-  isLoading, 
+}> = ({
+  bookings,
+  isLoading,
   selectedBookings,
   onSelectBooking,
-  onUpdateBooking
+  onUpdateBooking,
 }) => {
   if (isLoading) {
     return (
@@ -452,9 +491,12 @@ const BookingsList: React.FC<{
       <Card className="shadow-lg">
         <CardContent className="flex flex-col items-center justify-center py-16">
           <CalendarIcon className="h-16 w-16 text-muted-foreground mb-6" />
-          <h3 className="text-xl font-semibold text-foreground mb-3">No bookings found</h3>
+          <h3 className="text-xl font-semibold text-foreground mb-3">
+            No bookings found
+          </h3>
           <p className="text-muted-foreground text-center max-w-md">
-            No bookings match your current search criteria. Try adjusting your filters, search terms, or date range.
+            No bookings match your current search criteria. Try adjusting your
+            filters, search terms, or date range.
           </p>
           <Button variant="outline" className="mt-6">
             <Plus className="w-4 h-4 mr-2" />
@@ -483,9 +525,11 @@ const BookingsList: React.FC<{
             />
           </div>
           <div className="transform transition-transform group-hover:scale-[1.02]">
-            <BookingCard 
-              booking={booking} 
-              onUpdate={(updates) => onUpdateBooking({ id: booking.id, updates })}
+            <BookingCard
+              booking={booking}
+              onUpdate={(updates) =>
+                onUpdateBooking({ id: booking.id, updates })
+              }
             />
           </div>
         </motion.div>

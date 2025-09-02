@@ -1,38 +1,89 @@
-import React from 'react'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
-import { Clock, Users } from 'lucide-react'
-import type { ProvisioningData } from '../ProvisioningWizard'
+import React from "react";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Clock, Users } from "lucide-react";
+import type { ProvisioningData } from "../ProvisioningWizard";
 
 interface BusinessConfigurationStepProps {
-  data: ProvisioningData
-  updateData: (updates: Partial<ProvisioningData>) => void
+  data: ProvisioningData;
+  updateData: (updates: Partial<ProvisioningData>) => void;
 }
 
 const timeOptions = [
-  '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
-  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
-  '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30',
-  '22:00', '22:30', '23:00', '23:30'
-]
+  "06:00",
+  "06:30",
+  "07:00",
+  "07:30",
+  "08:00",
+  "08:30",
+  "09:00",
+  "09:30",
+  "10:00",
+  "10:30",
+  "11:00",
+  "11:30",
+  "12:00",
+  "12:30",
+  "13:00",
+  "13:30",
+  "14:00",
+  "14:30",
+  "15:00",
+  "15:30",
+  "16:00",
+  "16:30",
+  "17:00",
+  "17:30",
+  "18:00",
+  "18:30",
+  "19:00",
+  "19:30",
+  "20:00",
+  "20:30",
+  "21:00",
+  "21:30",
+  "22:00",
+  "22:30",
+  "23:00",
+  "23:30",
+];
 
 const weekDays = [
-  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
-]
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
-export function BusinessConfigurationStep({ data, updateData }: BusinessConfigurationStepProps) {
+export function BusinessConfigurationStep({
+  data,
+  updateData,
+}: BusinessConfigurationStepProps) {
   const updateBusinessHours = (dayIndex: number, field: string, value: any) => {
-    const newHours = [...data.businessHours]
-    newHours[dayIndex] = { ...newHours[dayIndex], [field]: value }
-    updateData({ businessHours: newHours })
-  }
+    const newHours = [...data.businessHours];
+    newHours[dayIndex] = { ...newHours[dayIndex], [field]: value };
+    updateData({ businessHours: newHours });
+  };
 
   return (
     <div className="space-y-6">
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -45,51 +96,64 @@ export function BusinessConfigurationStep({ data, updateData }: BusinessConfigur
         </CardHeader>
         <CardContent className="space-y-4">
           {weekDays.map((day, index) => (
-            <div key={day} className="flex items-center justify-between p-4 border rounded-lg">
+            <div
+              key={day}
+              className="flex items-center justify-between p-4 border rounded-lg"
+            >
               <div className="flex items-center gap-4 min-w-0">
                 <div className="w-20 text-sm font-medium text-foreground">
                   {day}
                 </div>
                 <Switch
                   checked={data.businessHours[index]?.isOpen || false}
-                  onCheckedChange={(checked) => updateBusinessHours(index, 'isOpen', checked)}
+                  onCheckedChange={(checked) =>
+                    updateBusinessHours(index, "isOpen", checked)
+                  }
                 />
               </div>
-              
+
               {data.businessHours[index]?.isOpen && (
                 <div className="flex items-center gap-2">
                   <Select
-                    value={data.businessHours[index]?.openTime || '09:00'}
-                    onValueChange={(value) => updateBusinessHours(index, 'openTime', value)}
+                    value={data.businessHours[index]?.openTime || "09:00"}
+                    onValueChange={(value) =>
+                      updateBusinessHours(index, "openTime", value)
+                    }
                   >
                     <SelectTrigger className="w-24 h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {timeOptions.map(time => (
-                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      {timeOptions.map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  
+
                   <span className="text-sm text-muted-foreground">to</span>
-                  
+
                   <Select
-                    value={data.businessHours[index]?.closeTime || '22:00'}
-                    onValueChange={(value) => updateBusinessHours(index, 'closeTime', value)}
+                    value={data.businessHours[index]?.closeTime || "22:00"}
+                    onValueChange={(value) =>
+                      updateBusinessHours(index, "closeTime", value)
+                    }
                   >
                     <SelectTrigger className="w-24 h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {timeOptions.map(time => (
-                        <SelectItem key={time} value={time}>{time}</SelectItem>
+                      {timeOptions.map((time) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               )}
-              
+
               {!data.businessHours[index]?.isOpen && (
                 <span className="text-sm text-muted-foreground">Closed</span>
               )}
@@ -116,19 +180,23 @@ export function BusinessConfigurationStep({ data, updateData }: BusinessConfigur
               </Label>
               <Select
                 value={data.partySizeConfig.minPartySize.toString()}
-                onValueChange={(value) => updateData({
-                  partySizeConfig: { 
-                    ...data.partySizeConfig, 
-                    minPartySize: parseInt(value) 
-                  }
-                })}
+                onValueChange={(value) =>
+                  updateData({
+                    partySizeConfig: {
+                      ...data.partySizeConfig,
+                      minPartySize: parseInt(value),
+                    },
+                  })
+                }
               >
                 <SelectTrigger className="h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[1, 2, 3, 4].map(size => (
-                    <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
+                  {[1, 2, 3, 4].map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -140,19 +208,23 @@ export function BusinessConfigurationStep({ data, updateData }: BusinessConfigur
               </Label>
               <Select
                 value={data.partySizeConfig.maxPartySize.toString()}
-                onValueChange={(value) => updateData({
-                  partySizeConfig: { 
-                    ...data.partySizeConfig, 
-                    maxPartySize: parseInt(value) 
-                  }
-                })}
+                onValueChange={(value) =>
+                  updateData({
+                    partySizeConfig: {
+                      ...data.partySizeConfig,
+                      maxPartySize: parseInt(value),
+                    },
+                  })
+                }
               >
                 <SelectTrigger className="h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[4, 6, 8, 10, 12, 15, 20].map(size => (
-                    <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
+                  {[4, 6, 8, 10, 12, 15, 20].map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -164,19 +236,23 @@ export function BusinessConfigurationStep({ data, updateData }: BusinessConfigur
               </Label>
               <Select
                 value={data.partySizeConfig.defaultPartySize.toString()}
-                onValueChange={(value) => updateData({
-                  partySizeConfig: { 
-                    ...data.partySizeConfig, 
-                    defaultPartySize: parseInt(value) 
-                  }
-                })}
+                onValueChange={(value) =>
+                  updateData({
+                    partySizeConfig: {
+                      ...data.partySizeConfig,
+                      defaultPartySize: parseInt(value),
+                    },
+                  })
+                }
               >
                 <SelectTrigger className="h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[1, 2, 3, 4, 5, 6].map(size => (
-                    <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
+                  {[1, 2, 3, 4, 5, 6].map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -187,21 +263,24 @@ export function BusinessConfigurationStep({ data, updateData }: BusinessConfigur
             <div className="space-y-1">
               <Label className="text-sm font-medium">Allow Large Parties</Label>
               <p className="text-xs text-muted-foreground">
-                Enable reservations for parties larger than {data.partySizeConfig.largePartyThreshold} people
+                Enable reservations for parties larger than{" "}
+                {data.partySizeConfig.largePartyThreshold} people
               </p>
             </div>
             <Switch
               checked={data.partySizeConfig.allowLargeParties}
-              onCheckedChange={(checked) => updateData({
-                partySizeConfig: { 
-                  ...data.partySizeConfig, 
-                  allowLargeParties: checked 
-                }
-              })}
+              onCheckedChange={(checked) =>
+                updateData({
+                  partySizeConfig: {
+                    ...data.partySizeConfig,
+                    allowLargeParties: checked,
+                  },
+                })
+              }
             />
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

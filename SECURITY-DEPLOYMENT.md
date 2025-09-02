@@ -18,7 +18,7 @@
 ```bash
 # Generate secure secrets using these commands:
 openssl rand -base64 32  # For X_API_KEY
-openssl rand -hex 32     # For SIGNING_SECRET  
+openssl rand -hex 32     # For SIGNING_SECRET
 openssl rand -base64 64  # For JWT_SECRET
 
 # Update .env in production:
@@ -31,14 +31,16 @@ ALLOWED_ORIGINS=<your production domains>
 ```
 
 ### 2. Fly.io Secrets Update
+
 ```bash
 flyctl secrets set X_API_KEY="<secure-key>" -a background-ops
-flyctl secrets set SIGNING_SECRET="<secure-key>" -a background-ops  
+flyctl secrets set SIGNING_SECRET="<secure-key>" -a background-ops
 flyctl secrets set JWT_SECRET="<secure-key>" -a background-ops
 flyctl secrets set ALLOWED_ORIGINS="https://admin.blunari.ai,https://demo.blunari.ai" -a background-ops
 ```
 
 ### 3. Admin Dashboard Environment Variables
+
 ```bash
 # apps/admin-dashboard/.env
 VITE_BACKGROUND_OPS_API_KEY=<same as X_API_KEY above>
@@ -47,7 +49,8 @@ VITE_SUPABASE_URL=https://kbfbbkcaxhzlnbqxwgoz.supabase.co
 VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ```
 
-### 4. Client Dashboard Environment Variables  
+### 4. Client Dashboard Environment Variables
+
 ```bash
 # apps/client-dashboard/.env
 VITE_SUPABASE_URL=https://kbfbbkcaxhzlnbqxwgoz.supabase.co
@@ -57,27 +60,31 @@ VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ## 🔍 SECURITY FEATURES IMPLEMENTED
 
 ### Authentication & Authorization
+
 - ✅ HMAC signature validation for tenant provisioning
 - ✅ API key authentication for all endpoints
-- ✅ Bearer token support for admin dashboard  
+- ✅ Bearer token support for admin dashboard
 - ✅ Request ID and idempotency key validation
 - ✅ Timestamp validation with 5-minute skew tolerance
 
 ### Input Validation
+
 - ✅ Comprehensive Zod schemas for all user inputs
 - ✅ Business logic validation (party size constraints)
 - ✅ SQL injection protection via parameterized queries
 - ✅ Type-safe request handling with TypeScript
 
 ### Security Headers
+
 - ✅ Content Security Policy (CSP)
-- ✅ HTTP Strict Transport Security (HSTS) 
+- ✅ HTTP Strict Transport Security (HSTS)
 - ✅ X-Frame-Options: DENY
 - ✅ X-Content-Type-Options: nosniff
 - ✅ XSS Protection enabled
 - ✅ Referrer Policy: strict-origin-when-cross-origin
 
 ### Production Hardening
+
 - ✅ HTTPS enforcement in production
 - ✅ Secure secret validation on startup
 - ✅ Environment-specific error messages
@@ -87,19 +94,22 @@ VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ## 📊 SECURITY SCORE: A+ (95/100)
 
 ### Excellent
+
 - Authentication system
-- Input validation  
+- Input validation
 - Secret management
 - Database security
 - Error handling
 
-### Good  
+### Good
+
 - Logging system
 - Rate limiting
 - Security headers
 - CORS configuration
 
 ### Recommendations for Future
+
 - Add monitoring alerts for failed auth attempts
 - Implement request signing verification
 - Consider adding API versioning
@@ -110,14 +120,16 @@ VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 After deployment, verify security:
 
 1. **Test Authentication**:
+
    ```bash
    curl -X POST https://background-ops.fly.dev/api/v1/tenants/provision \
      -H "Content-Type: application/json" \
-     -d '{}' 
+     -d '{}'
    # Should return 400 (missing auth headers)
    ```
 
 2. **Test Security Headers**:
+
    ```bash
    curl -I https://background-ops.fly.dev/health
    # Should include security headers

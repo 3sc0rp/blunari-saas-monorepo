@@ -3,7 +3,7 @@ export interface MessageTemplate {
   name: string;
   subject: string;
   content: string;
-  category: 'confirmation' | 'reminder' | 'promotion' | 'update' | 'custom';
+  category: "confirmation" | "reminder" | "promotion" | "update" | "custom";
   variables: string[];
 }
 
@@ -11,13 +11,13 @@ export interface Message {
   id: string;
   conversation_id: string;
   sender_id: string;
-  sender_type: 'staff' | 'customer' | 'system';
+  sender_type: "staff" | "customer" | "system";
   sender_name: string;
   sender_avatar?: string;
   content: string;
-  message_type: 'text' | 'template';
+  message_type: "text" | "template";
   template_id?: string;
-  status: 'sent' | 'delivered' | 'read' | 'failed';
+  status: "sent" | "delivered" | "read" | "failed";
   created_at: string;
   read_at?: string;
 }
@@ -33,11 +33,11 @@ export interface Conversation {
   last_message: string;
   last_message_at: string;
   unread_count: number;
-  status: 'active' | 'archived' | 'draft';
+  status: "active" | "archived" | "draft";
   participants: {
     id: string;
     name: string;
-    type: 'staff' | 'customer';
+    type: "staff" | "customer";
     avatar?: string;
   }[];
   created_at: string;

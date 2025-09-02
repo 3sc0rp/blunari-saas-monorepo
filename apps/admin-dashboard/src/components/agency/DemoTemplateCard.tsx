@@ -1,24 +1,31 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { DemoTemplate } from '@/types/agency';
-import { Clock, Star, Zap } from 'lucide-react';
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DemoTemplate } from "@/types/agency";
+import { Clock, Star, Zap } from "lucide-react";
 
 interface DemoTemplateCardProps {
   template: DemoTemplate;
-  onSelect: (templateId: DemoTemplate['id']) => void;
+  onSelect: (templateId: DemoTemplate["id"]) => void;
   isSelected?: boolean;
 }
 
-export function DemoTemplateCard({ template, onSelect, isSelected }: DemoTemplateCardProps) {
+export function DemoTemplateCard({
+  template,
+  onSelect,
+  isSelected,
+}: DemoTemplateCardProps) {
   return (
-    <Card className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
-      isSelected ? 'ring-2 ring-primary shadow-lg' : ''
-    }`} onClick={() => onSelect(template.id)}>
+    <Card
+      className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+        isSelected ? "ring-2 ring-primary shadow-lg" : ""
+      }`}
+      onClick={() => onSelect(template.id)}
+    >
       <CardHeader className="pb-3">
         <div className="aspect-video w-full rounded-lg overflow-hidden bg-gradient-to-br from-muted/50 to-muted">
-          <img 
-            src={template.previewImage} 
+          <img
+            src={template.previewImage}
             alt={template.name}
             className="w-full h-full object-cover"
           />
@@ -30,7 +37,9 @@ export function DemoTemplateCard({ template, onSelect, isSelected }: DemoTemplat
           </div>
           <div className="flex items-center gap-1">
             <Star className="h-4 w-4 text-yellow-500 fill-current" />
-            <span className="text-sm font-medium">{template.popularityScore}</span>
+            <span className="text-sm font-medium">
+              {template.popularityScore}
+            </span>
           </div>
         </div>
       </CardHeader>
@@ -53,7 +62,10 @@ export function DemoTemplateCard({ template, onSelect, isSelected }: DemoTemplat
           <h4 className="text-sm font-medium">Key Features:</h4>
           <div className="grid grid-cols-1 gap-1">
             {template.features.slice(0, 3).map((feature, index) => (
-              <div key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div
+                key={index}
+                className="flex items-center gap-2 text-sm text-muted-foreground"
+              >
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                 <span>{feature}</span>
               </div>
@@ -66,15 +78,15 @@ export function DemoTemplateCard({ template, onSelect, isSelected }: DemoTemplat
           </div>
         </div>
 
-        <Button 
-          className="w-full" 
+        <Button
+          className="w-full"
           variant={isSelected ? "default" : "outline"}
           onClick={(e) => {
             e.stopPropagation();
             onSelect(template.id);
           }}
         >
-          {isSelected ? 'Selected' : 'Select Template'}
+          {isSelected ? "Selected" : "Select Template"}
         </Button>
       </CardContent>
     </Card>

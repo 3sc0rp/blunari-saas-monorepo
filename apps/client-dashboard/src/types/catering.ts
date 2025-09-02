@@ -1,7 +1,25 @@
 // Comprehensive Catering system types for client dashboard
-export type CateringServiceType = 'pickup' | 'delivery' | 'drop_off' | 'full_service';
-export type CateringOrderStatus = 'inquiry' | 'quoted' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
-export type DietaryRestriction = 'vegetarian' | 'vegan' | 'gluten_free' | 'dairy_free' | 'kosher' | 'halal' | 'keto' | 'paleo';
+export type CateringServiceType =
+  | "pickup"
+  | "delivery"
+  | "drop_off"
+  | "full_service";
+export type CateringOrderStatus =
+  | "inquiry"
+  | "quoted"
+  | "confirmed"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+export type DietaryRestriction =
+  | "vegetarian"
+  | "vegan"
+  | "gluten_free"
+  | "dairy_free"
+  | "kosher"
+  | "halal"
+  | "keto"
+  | "paleo";
 export type CateringDietaryAccommodation = DietaryRestriction;
 
 // Core interfaces
@@ -119,7 +137,7 @@ export interface CateringOrder {
   notes?: string;
   created_at: string;
   updated_at: string;
-  
+
   // Relations
   catering_packages?: CateringPackage;
   catering_feedback?: CateringFeedback[];
@@ -363,29 +381,33 @@ export interface CateringPackageMetric {
 }
 
 // Constants
-export const CATERING_SERVICE_TYPE_LABELS: Record<CateringServiceType, string> = {
-  pickup: 'Customer Pickup',
-  delivery: 'Delivery Only',
-  drop_off: 'Drop-off Service',
-  full_service: 'Full Service with Staff'
-};
+export const CATERING_SERVICE_TYPE_LABELS: Record<CateringServiceType, string> =
+  {
+    pickup: "Customer Pickup",
+    delivery: "Delivery Only",
+    drop_off: "Drop-off Service",
+    full_service: "Full Service with Staff",
+  };
 
 export const CATERING_STATUS_COLORS: Record<CateringOrderStatus, string> = {
-  inquiry: 'bg-blue-100 text-blue-800',
-  quoted: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-green-100 text-green-800',
-  in_progress: 'bg-purple-100 text-purple-800',
-  completed: 'bg-gray-100 text-gray-800',
-  cancelled: 'bg-red-100 text-red-800'
+  inquiry: "bg-blue-100 text-blue-800",
+  quoted: "bg-yellow-100 text-yellow-800",
+  confirmed: "bg-green-100 text-green-800",
+  in_progress: "bg-purple-100 text-purple-800",
+  completed: "bg-gray-100 text-gray-800",
+  cancelled: "bg-red-100 text-red-800",
 };
 
-export const DIETARY_ACCOMMODATIONS: { value: DietaryRestriction; label: string }[] = [
-  { value: 'vegetarian', label: 'Vegetarian' },
-  { value: 'vegan', label: 'Vegan' },
-  { value: 'gluten_free', label: 'Gluten-Free' },
-  { value: 'dairy_free', label: 'Dairy-Free' },
-  { value: 'kosher', label: 'Kosher' },
-  { value: 'halal', label: 'Halal' },
-  { value: 'keto', label: 'Keto' },
-  { value: 'paleo', label: 'Paleo' }
+export const DIETARY_ACCOMMODATIONS: {
+  value: DietaryRestriction;
+  label: string;
+}[] = [
+  { value: "vegetarian", label: "Vegetarian" },
+  { value: "vegan", label: "Vegan" },
+  { value: "gluten_free", label: "Gluten-Free" },
+  { value: "dairy_free", label: "Dairy-Free" },
+  { value: "kosher", label: "Kosher" },
+  { value: "halal", label: "Halal" },
+  { value: "keto", label: "Keto" },
+  { value: "paleo", label: "Paleo" },
 ];

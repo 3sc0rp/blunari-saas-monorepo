@@ -1,19 +1,27 @@
-import React from 'react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Phone, Mail, Globe } from 'lucide-react'
-import type { ProvisioningData } from '../ProvisioningWizard'
+import React from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Phone, Mail, Globe } from "lucide-react";
+import type { ProvisioningData } from "../ProvisioningWizard";
 
 interface ContactInformationStepProps {
-  data: ProvisioningData
-  updateData: (updates: Partial<ProvisioningData>) => void
+  data: ProvisioningData;
+  updateData: (updates: Partial<ProvisioningData>) => void;
 }
 
-export function ContactInformationStep({ data, updateData }: ContactInformationStepProps) {
+export function ContactInformationStep({
+  data,
+  updateData,
+}: ContactInformationStepProps) {
   return (
     <div className="space-y-6">
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -21,7 +29,8 @@ export function ContactInformationStep({ data, updateData }: ContactInformationS
             Contact Details
           </CardTitle>
           <CardDescription>
-            Communication channels for customer inquiries and business operations
+            Communication channels for customer inquiries and business
+            operations
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -41,7 +50,9 @@ export function ContactInformationStep({ data, updateData }: ContactInformationS
                   className="h-11 pl-10"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">Primary contact email for reservations and inquiries</p>
+              <p className="text-xs text-muted-foreground">
+                Primary contact email for reservations and inquiries
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -59,7 +70,9 @@ export function ContactInformationStep({ data, updateData }: ContactInformationS
                   className="h-11 pl-10"
                 />
               </div>
-              <p className="text-xs text-muted-foreground">Optional: For customer calls and verification</p>
+              <p className="text-xs text-muted-foreground">
+                Optional: For customer calls and verification
+              </p>
             </div>
           </div>
 
@@ -78,10 +91,12 @@ export function ContactInformationStep({ data, updateData }: ContactInformationS
                 className="h-11 pl-10"
               />
             </div>
-            <p className="text-xs text-muted-foreground">Optional: Your restaurant's website or social media page</p>
+            <p className="text-xs text-muted-foreground">
+              Optional: Your restaurant's website or social media page
+            </p>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

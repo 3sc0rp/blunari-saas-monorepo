@@ -1,5 +1,5 @@
-import client from 'prom-client';
-import { logger } from '../utils/logger';
+import client from "prom-client";
+import { logger } from "../utils/logger";
 
 // Create a Registry to hold all metrics
 const register = new client.Registry();
@@ -11,108 +11,108 @@ client.collectDefaultMetrics({ register });
 
 // Job-related metrics
 const jobEnqueueLatency = new client.Histogram({
-  name: 'bg_ops_job_enqueue_duration_ms',
-  help: 'Duration of job enqueue operations in milliseconds',
-  labelNames: ['job_type', 'tenant_id'],
-  buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+  name: "bg_ops_job_enqueue_duration_ms",
+  help: "Duration of job enqueue operations in milliseconds",
+  labelNames: ["job_type", "tenant_id"],
+  buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000],
 });
 
 const jobRunLatency = new client.Histogram({
-  name: 'bg_ops_job_run_duration_ms',
-  help: 'Duration of job execution in milliseconds',
-  labelNames: ['job_type', 'status'],
-  buckets: [100, 500, 1000, 5000, 10000, 30000, 60000, 300000]
+  name: "bg_ops_job_run_duration_ms",
+  help: "Duration of job execution in milliseconds",
+  labelNames: ["job_type", "status"],
+  buckets: [100, 500, 1000, 5000, 10000, 30000, 60000, 300000],
 });
 
 const jobsTotal = new client.Counter({
-  name: 'bg_ops_jobs_total',
-  help: 'Total number of jobs processed',
-  labelNames: ['job_type', 'status', 'tenant_id']
+  name: "bg_ops_jobs_total",
+  help: "Total number of jobs processed",
+  labelNames: ["job_type", "status", "tenant_id"],
 });
 
 const jobsActive = new client.Gauge({
-  name: 'bg_ops_jobs_active',
-  help: 'Number of currently active jobs',
-  labelNames: ['job_type']
+  name: "bg_ops_jobs_active",
+  help: "Number of currently active jobs",
+  labelNames: ["job_type"],
 });
 
 const jobQueueSize = new client.Gauge({
-  name: 'bg_ops_job_queue_size',
-  help: 'Number of jobs waiting in queue',
-  labelNames: ['status']
+  name: "bg_ops_job_queue_size",
+  help: "Number of jobs waiting in queue",
+  labelNames: ["status"],
 });
 
 // Hold expiration sweeper metrics
 const holdSweeperLag = new client.Histogram({
-  name: 'bg_ops_hold_sweeper_lag_ms',
-  help: 'Lag time for hold expiration sweeper in milliseconds',
-  buckets: [100, 500, 1000, 2000, 5000, 10000, 30000]
+  name: "bg_ops_hold_sweeper_lag_ms",
+  help: "Lag time for hold expiration sweeper in milliseconds",
+  buckets: [100, 500, 1000, 2000, 5000, 10000, 30000],
 });
 
 const holdsExpired = new client.Counter({
-  name: 'bg_ops_holds_expired_total',
-  help: 'Total number of holds expired'
+  name: "bg_ops_holds_expired_total",
+  help: "Total number of holds expired",
 });
 
 // Email provider metrics
 const emailSendLatency = new client.Histogram({
-  name: 'bg_ops_email_send_duration_ms',
-  help: 'Duration of email send operations in milliseconds',
-  labelNames: ['provider', 'template'],
-  buckets: [100, 250, 500, 1000, 2000, 5000, 10000]
+  name: "bg_ops_email_send_duration_ms",
+  help: "Duration of email send operations in milliseconds",
+  labelNames: ["provider", "template"],
+  buckets: [100, 250, 500, 1000, 2000, 5000, 10000],
 });
 
 const emailsTotal = new client.Counter({
-  name: 'bg_ops_emails_total',
-  help: 'Total number of emails sent',
-  labelNames: ['provider', 'template', 'status']
+  name: "bg_ops_emails_total",
+  help: "Total number of emails sent",
+  labelNames: ["provider", "template", "status"],
 });
 
 // SMS metrics (optional)
 const smsSendLatency = new client.Histogram({
-  name: 'bg_ops_sms_send_duration_ms',
-  help: 'Duration of SMS send operations in milliseconds',
-  buckets: [100, 250, 500, 1000, 2000, 5000]
+  name: "bg_ops_sms_send_duration_ms",
+  help: "Duration of SMS send operations in milliseconds",
+  buckets: [100, 250, 500, 1000, 2000, 5000],
 });
 
 const smsTotal = new client.Counter({
-  name: 'bg_ops_sms_total',
-  help: 'Total number of SMS messages sent',
-  labelNames: ['status']
+  name: "bg_ops_sms_total",
+  help: "Total number of SMS messages sent",
+  labelNames: ["status"],
 });
 
 // DLQ metrics
 const dlqSize = new client.Gauge({
-  name: 'bg_ops_dlq_size',
-  help: 'Number of messages in dead letter queue',
-  labelNames: ['job_type']
+  name: "bg_ops_dlq_size",
+  help: "Number of messages in dead letter queue",
+  labelNames: ["job_type"],
 });
 
 // API metrics
 const httpRequestsTotal = new client.Counter({
-  name: 'bg_ops_http_requests_total',
-  help: 'Total number of HTTP requests',
-  labelNames: ['method', 'route', 'status_code', 'tenant_id']
+  name: "bg_ops_http_requests_total",
+  help: "Total number of HTTP requests",
+  labelNames: ["method", "route", "status_code", "tenant_id"],
 });
 
 const httpRequestDuration = new client.Histogram({
-  name: 'bg_ops_http_request_duration_ms',
-  help: 'Duration of HTTP requests in milliseconds',
-  labelNames: ['method', 'route'],
-  buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+  name: "bg_ops_http_request_duration_ms",
+  help: "Duration of HTTP requests in milliseconds",
+  labelNames: ["method", "route"],
+  buckets: [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000],
 });
 
 // Authentication metrics
 const authenticationAttempts = new client.Counter({
-  name: 'bg_ops_auth_attempts_total',
-  help: 'Total number of authentication attempts',
-  labelNames: ['result', 'reason']
+  name: "bg_ops_auth_attempts_total",
+  help: "Total number of authentication attempts",
+  labelNames: ["result", "reason"],
 });
 
 const idempotencyHits = new client.Counter({
-  name: 'bg_ops_idempotency_hits_total',
-  help: 'Total number of idempotency cache hits',
-  labelNames: ['tenant_id']
+  name: "bg_ops_idempotency_hits_total",
+  help: "Total number of idempotency cache hits",
+  labelNames: ["tenant_id"],
 });
 
 // Register all custom metrics
@@ -135,8 +135,15 @@ register.registerMetric(idempotencyHits);
 
 class MetricsService {
   // Job metrics
-  recordJobEnqueue(jobType: string, tenantId: string, durationMs: number): void {
-    jobEnqueueLatency.observe({ job_type: jobType, tenant_id: tenantId }, durationMs);
+  recordJobEnqueue(
+    jobType: string,
+    tenantId: string,
+    durationMs: number,
+  ): void {
+    jobEnqueueLatency.observe(
+      { job_type: jobType, tenant_id: tenantId },
+      durationMs,
+    );
   }
 
   recordJobRun(jobType: string, status: string, durationMs: number): void {
@@ -165,7 +172,12 @@ class MetricsService {
   }
 
   // Email metrics
-  recordEmailSend(provider: string, template: string, durationMs: number, status: string): void {
+  recordEmailSend(
+    provider: string,
+    template: string,
+    durationMs: number,
+    status: string,
+  ): void {
     emailSendLatency.observe({ provider, template }, durationMs);
     emailsTotal.inc({ provider, template, status });
   }
@@ -182,19 +194,25 @@ class MetricsService {
   }
 
   // HTTP metrics
-  recordHttpRequest(method: string, route: string, statusCode: number, tenantId: string, durationMs: number): void {
-    httpRequestsTotal.inc({ 
-      method, 
-      route, 
-      status_code: statusCode.toString(), 
-      tenant_id: tenantId 
+  recordHttpRequest(
+    method: string,
+    route: string,
+    statusCode: number,
+    tenantId: string,
+    durationMs: number,
+  ): void {
+    httpRequestsTotal.inc({
+      method,
+      route,
+      status_code: statusCode.toString(),
+      tenant_id: tenantId,
     });
     httpRequestDuration.observe({ method, route }, durationMs);
   }
 
   // Authentication metrics
-  recordAuthAttempt(result: 'success' | 'failure', reason?: string): void {
-    authenticationAttempts.inc({ result, reason: reason || 'none' });
+  recordAuthAttempt(result: "success" | "failure", reason?: string): void {
+    authenticationAttempts.inc({ result, reason: reason || "none" });
   }
 
   recordIdempotencyHit(tenantId: string): void {
@@ -215,14 +233,14 @@ class MetricsService {
   // Update queue metrics periodically
   async updateQueueMetrics(queueStats: any): Promise<void> {
     try {
-      this.setQueueSize('waiting', queueStats.waiting || 0);
-      this.setQueueSize('active', queueStats.active || 0);
-      this.setQueueSize('completed', queueStats.completed || 0);
-      this.setQueueSize('failed', queueStats.failed || 0);
-      this.setQueueSize('delayed', queueStats.delayed || 0);
+      this.setQueueSize("waiting", queueStats.waiting || 0);
+      this.setQueueSize("active", queueStats.active || 0);
+      this.setQueueSize("completed", queueStats.completed || 0);
+      this.setQueueSize("failed", queueStats.failed || 0);
+      this.setQueueSize("delayed", queueStats.delayed || 0);
     } catch (error) {
-      logger.error('Failed to update queue metrics', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+      logger.error("Failed to update queue metrics", {
+        error: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }
@@ -233,17 +251,17 @@ class MetricsService {
       return {
         healthy: true,
         checks: {
-          prometheus_registry: register ? 'ok' : 'error',
-          metrics_count: 'available'
-        }
+          prometheus_registry: register ? "ok" : "error",
+          metrics_count: "available",
+        },
       };
     } catch (error) {
       return {
         healthy: false,
         checks: {
-          prometheus_registry: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }
+          prometheus_registry: "error",
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       };
     }
   }
@@ -256,46 +274,53 @@ class MetricsService {
         name: m.name,
         value: m.values?.[0]?.value || 0,
         labels: m.values?.[0]?.labels || {},
-        recorded_at: new Date()
+        recorded_at: new Date(),
       })),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
-  async recordMetric(data: { name: string; value: number; unit: string; tags?: Record<string, string> }) {
+  async recordMetric(data: {
+    name: string;
+    value: number;
+    unit: string;
+    tags?: Record<string, string>;
+  }) {
     // For legacy compatibility - records as a generic counter
     const counter = new client.Counter({
       name: `bg_ops_legacy_${data.name}`,
       help: `Legacy metric: ${data.name}`,
-      labelNames: ['unit', ...(data.tags ? Object.keys(data.tags) : [])]
+      labelNames: ["unit", ...(data.tags ? Object.keys(data.tags) : [])],
     });
-    
+
     register.registerMetric(counter);
     counter.inc({ unit: data.unit, ...(data.tags || {}) }, data.value);
-    
-    logger.info(`Recorded legacy metric: ${data.name} = ${data.value} ${data.unit}`);
+
+    logger.info(
+      `Recorded legacy metric: ${data.name} = ${data.value} ${data.unit}`,
+    );
   }
 
   async recordSystemSnapshot() {
     try {
       const memUsage = process.memoryUsage();
-      
+
       // These will be captured by default metrics, but we can add custom ones too
       const memPercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
-      
+
       await this.recordMetric({
-        name: 'memory_usage_percent',
+        name: "memory_usage_percent",
         value: memPercent,
-        unit: 'percent'
+        unit: "percent",
       });
-      
-      logger.debug('System snapshot recorded', { 
+
+      logger.debug("System snapshot recorded", {
         memoryPercent: memPercent.toFixed(1),
-        uptime: process.uptime()
+        uptime: process.uptime(),
       });
     } catch (error) {
-      logger.error('Error recording system snapshot:', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+      logger.error("Error recording system snapshot:", {
+        error: error instanceof Error ? error.message : "Unknown error",
       });
       throw error;
     }
@@ -309,45 +334,53 @@ class MetricsService {
         name: m.name,
         value: m.values?.[0]?.value || 0,
         labels: m.values?.[0]?.labels || {},
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       })),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
-  async getAggregatedMetrics(metricName: string, timeRange: string): Promise<any> {
+  async getAggregatedMetrics(
+    metricName: string,
+    timeRange: string,
+  ): Promise<any> {
     // For Prometheus, we return the current metric values
     // In a real implementation, you'd query your TSDB
     const metrics = await this.getMetricsJson();
     const metric = metrics.find((m: any) => m.name === metricName);
-    
+
     if (!metric) {
       return { aggregations: [] };
     }
 
     return {
-      aggregations: metric.values?.map((v: any) => ({
-        sample_count: 1,
-        avg_value: v.value || 0,
-        sum_value: v.value || 0,
-        labels: v.labels || {}
-      })) || []
+      aggregations:
+        metric.values?.map((v: any) => ({
+          sample_count: 1,
+          avg_value: v.value || 0,
+          sum_value: v.value || 0,
+          labels: v.labels || {},
+        })) || [],
     };
   }
 
   async getMetricsByTags(tags: Record<string, string>): Promise<any> {
     const metrics = await this.getMetricsJson();
     return {
-      aggregations: metrics.filter((m: any) => {
-        return m.values?.some((v: any) => {
-          const labels = v.labels || {};
-          return Object.entries(tags).every(([key, value]) => labels[key] === value);
-        });
-      }).map((m: any) => ({
-        name: m.name,
-        sample_count: m.values?.length || 0,
-        avg_value: m.values?.[0]?.value || 0
-      }))
+      aggregations: metrics
+        .filter((m: any) => {
+          return m.values?.some((v: any) => {
+            const labels = v.labels || {};
+            return Object.entries(tags).every(
+              ([key, value]) => labels[key] === value,
+            );
+          });
+        })
+        .map((m: any) => ({
+          name: m.name,
+          sample_count: m.values?.length || 0,
+          avg_value: m.values?.[0]?.value || 0,
+        })),
     };
   }
 

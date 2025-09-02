@@ -1,10 +1,18 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { motion } from 'framer-motion';
-import { Clock, Users, Target, AlertTriangle, Star, TrendingUp, TrendingDown } from 'lucide-react';
-import { OperationalMetrics as OperationalMetricsType } from '@/types/analytics';
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
+import {
+  Clock,
+  Users,
+  Target,
+  AlertTriangle,
+  Star,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
+import { OperationalMetrics as OperationalMetricsType } from "@/types/analytics";
 
 interface OperationalMetricsProps {
   data: OperationalMetricsType;
@@ -18,16 +26,16 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
   };
 
   const getUtilizationColor = (rate: number) => {
-    if (rate >= 80) return 'text-success';
-    if (rate >= 60) return 'text-warning';
-    return 'text-destructive';
+    if (rate >= 80) return "text-success";
+    if (rate >= 60) return "text-warning";
+    return "text-destructive";
   };
 
   const getEfficiencyBadge = (score: number) => {
-    if (score >= 90) return { label: 'Excellent', variant: 'default' as const };
-    if (score >= 75) return { label: 'Good', variant: 'secondary' as const };
-    if (score >= 60) return { label: 'Average', variant: 'outline' as const };
-    return { label: 'Needs Improvement', variant: 'destructive' as const };
+    if (score >= 90) return { label: "Excellent", variant: "default" as const };
+    if (score >= 75) return { label: "Good", variant: "secondary" as const };
+    if (score >= 60) return { label: "Average", variant: "outline" as const };
+    return { label: "Needs Improvement", variant: "destructive" as const };
   };
 
   const efficiencyBadge = getEfficiencyBadge(data.serviceTimes.efficiencyScore);
@@ -48,7 +56,9 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
               <div className="text-2xl font-bold text-foreground">
                 {formatTime(data.serviceTimes.averageSeatingTime)}
               </div>
-              <div className="text-sm text-muted-foreground">Avg Seating Time</div>
+              <div className="text-sm text-muted-foreground">
+                Avg Seating Time
+              </div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-foreground">
@@ -57,13 +67,18 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
               <div className="text-sm text-muted-foreground">Turnover Time</div>
             </div>
           </div>
-          
+
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Efficiency Score</span>
-              <Badge variant={efficiencyBadge.variant}>{efficiencyBadge.label}</Badge>
+              <Badge variant={efficiencyBadge.variant}>
+                {efficiencyBadge.label}
+              </Badge>
             </div>
-            <Progress value={data.serviceTimes.efficiencyScore} className="h-2" />
+            <Progress
+              value={data.serviceTimes.efficiencyScore}
+              className="h-2"
+            />
             <div className="text-center text-xs text-muted-foreground">
               {data.serviceTimes.efficiencyScore}% efficiency
             </div>
@@ -72,7 +87,9 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
           <div className="pt-2 border-t">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Peak Service Time</span>
-              <span className="font-medium">{formatTime(data.serviceTimes.peakServiceTime)}</span>
+              <span className="font-medium">
+                {formatTime(data.serviceTimes.peakServiceTime)}
+              </span>
             </div>
           </div>
         </CardContent>
@@ -92,7 +109,9 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
               <div className="text-2xl font-bold text-foreground">
                 {data.staffEfficiency.bookingsPerStaff.toFixed(1)}
               </div>
-              <div className="text-sm text-muted-foreground">Bookings/Staff</div>
+              <div className="text-sm text-muted-foreground">
+                Bookings/Staff
+              </div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-foreground">
@@ -107,10 +126,15 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
               <span className="text-sm font-medium">Customer Satisfaction</span>
               <div className="flex items-center gap-1">
                 <Star className="h-4 w-4 fill-warning text-warning" />
-                <span className="font-medium">{data.staffEfficiency.customerSatisfaction}</span>
+                <span className="font-medium">
+                  {data.staffEfficiency.customerSatisfaction}
+                </span>
               </div>
             </div>
-            <Progress value={data.staffEfficiency.customerSatisfaction * 20} className="h-2" />
+            <Progress
+              value={data.staffEfficiency.customerSatisfaction * 20}
+              className="h-2"
+            />
             <div className="text-center text-xs text-muted-foreground">
               Based on customer feedback
             </div>
@@ -138,8 +162,12 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
               >
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium">{table.tableName}</span>
-                    <span className={`text-sm font-medium ${getUtilizationColor(table.utilizationRate)}`}>
+                    <span className="text-sm font-medium">
+                      {table.tableName}
+                    </span>
+                    <span
+                      className={`text-sm font-medium ${getUtilizationColor(table.utilizationRate)}`}
+                    >
                       {table.utilizationRate.toFixed(1)}%
                     </span>
                   </div>
@@ -174,7 +202,9 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
               <div className="text-2xl font-bold text-success">
                 {data.noshowAnalysis.preventionRate}%
               </div>
-              <div className="text-sm text-muted-foreground">Prevention Rate</div>
+              <div className="text-sm text-muted-foreground">
+                Prevention Rate
+              </div>
             </div>
           </div>
 
@@ -187,9 +217,13 @@ const OperationalMetrics: React.FC<OperationalMetricsProps> = ({ data }) => {
                 ) : (
                   <TrendingUp className="h-4 w-4 text-destructive" />
                 )}
-                <span className={`text-sm font-medium ${
-                  data.noshowAnalysis.trend < 0 ? 'text-success' : 'text-destructive'
-                }`}>
+                <span
+                  className={`text-sm font-medium ${
+                    data.noshowAnalysis.trend < 0
+                      ? "text-success"
+                      : "text-destructive"
+                  }`}
+                >
                   {Math.abs(data.noshowAnalysis.trend)}%
                 </span>
               </div>

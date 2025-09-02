@@ -1,18 +1,32 @@
-import React, { useState, useEffect, memo, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useTenant } from '@/hooks/useTenant';
-import { useAdvancedBookings } from '@/hooks/useAdvancedBookings';
-import BookingsTable from '@/components/booking/BookingsTable';
-import ReservationDrawer from '@/components/booking/ReservationDrawer';
-import SmartBookingWizard from '@/components/booking/SmartBookingWizard';
-import AdvancedFilters from '@/components/booking/AdvancedFilters';
-import { ExtendedBooking, BookingStatus, BookingFilters } from '@/types/booking';
-import { 
-  Plus, 
+import React, { useState, useEffect, memo, useMemo, useCallback } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useTenant } from "@/hooks/useTenant";
+import { useAdvancedBookings } from "@/hooks/useAdvancedBookings";
+import BookingsTable from "@/components/booking/BookingsTable";
+import ReservationDrawer from "@/components/booking/ReservationDrawer";
+import SmartBookingWizard from "@/components/booking/SmartBookingWizard";
+import AdvancedFilters from "@/components/booking/AdvancedFilters";
+import {
+  ExtendedBooking,
+  BookingStatus,
+  BookingFilters,
+} from "@/types/booking";
+import {
+  Plus,
   Calendar,
   CheckSquare,
   Trash2,
@@ -20,8 +34,8 @@ import {
   Activity,
   Clock,
   Users,
-  Loader2
-} from 'lucide-react';
+  Loader2,
+} from "lucide-react";
 
 const Bookings: React.FC = () => {
   const { tenant, isLoading: tenantLoading } = useTenant();
@@ -34,11 +48,12 @@ const Bookings: React.FC = () => {
     setSelectedBookings,
     bulkOperation,
     isBulkOperationPending,
-    updateBooking
+    updateBooking,
   } = useAdvancedBookings(tenant?.id);
 
   const [showWizard, setShowWizard] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<ExtendedBooking | null>(null);
+  const [selectedBooking, setSelectedBooking] =
+    useState<ExtendedBooking | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // URL State Management for Filters
@@ -46,50 +61,50 @@ const Bookings: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     const urlFilters: Partial<BookingFilters> = {};
 
-    if (params.get('status')) {
-      urlFilters.status = params.get('status')!.split(',') as BookingStatus[];
+    if (params.get("status")) {
+      urlFilters.status = params.get("status")!.split(",") as BookingStatus[];
     }
-    if (params.get('startDate') && params.get('endDate')) {
+    if (params.get("startDate") && params.get("endDate")) {
       urlFilters.dateRange = {
-        start: params.get('startDate')!,
-        end: params.get('endDate')!
+        start: params.get("startDate")!,
+        end: params.get("endDate")!,
       };
     }
-    if (params.get('sources')) {
-      urlFilters.sources = params.get('sources')!.split(',') as any[];
+    if (params.get("sources")) {
+      urlFilters.sources = params.get("sources")!.split(",") as any[];
     }
-    if (params.get('search')) {
-      urlFilters.search = params.get('search')!;
+    if (params.get("search")) {
+      urlFilters.search = params.get("search")!;
     }
 
     if (Object.keys(urlFilters).length > 0) {
-      setFilters(prev => ({ ...prev, ...urlFilters }));
+      setFilters((prev) => ({ ...prev, ...urlFilters }));
     }
   }, [setFilters]);
 
   useEffect(() => {
     const params = new URLSearchParams();
-    
+
     if (filters.status.length > 0) {
-      params.set('status', filters.status.join(','));
+      params.set("status", filters.status.join(","));
     }
     if (filters.dateRange.start && filters.dateRange.end) {
-      params.set('startDate', filters.dateRange.start);
-      params.set('endDate', filters.dateRange.end);
+      params.set("startDate", filters.dateRange.start);
+      params.set("endDate", filters.dateRange.end);
     }
     if (filters.sources.length > 0) {
-      params.set('sources', filters.sources.join(','));
+      params.set("sources", filters.sources.join(","));
     }
     if (filters.search) {
-      params.set('search', filters.search);
+      params.set("search", filters.search);
     }
 
-    const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
-    window.history.replaceState({}, '', newUrl);
+    const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+    window.history.replaceState({}, "", newUrl);
   }, [filters]);
 
   // Calculate key metrics
-  const todaysBookings = bookings.filter(b => {
+  const todaysBookings = bookings.filter((b) => {
     const bookingDate = new Date(b.booking_time).toDateString();
     const today = new Date().toDateString();
     return bookingDate === today;
@@ -97,8 +112,9 @@ const Bookings: React.FC = () => {
 
   const metrics = {
     totalToday: todaysBookings.length,
-    pendingToday: todaysBookings.filter(b => b.status === 'pending').length,
-    confirmedToday: todaysBookings.filter(b => b.status === 'confirmed').length,
+    pendingToday: todaysBookings.filter((b) => b.status === "pending").length,
+    confirmedToday: todaysBookings.filter((b) => b.status === "confirmed")
+      .length,
     totalGuests: todaysBookings.reduce((sum, b) => sum + b.party_size, 0),
   };
 
@@ -106,15 +122,15 @@ const Bookings: React.FC = () => {
     if (selectedBookings.length === bookings.length) {
       setSelectedBookings([]);
     } else {
-      setSelectedBookings(bookings.map(b => b.id));
+      setSelectedBookings(bookings.map((b) => b.id));
     }
   };
 
   const handleSelectBooking = (bookingId: string) => {
-    setSelectedBookings(prev => 
-      prev.includes(bookingId) 
-        ? prev.filter(id => id !== bookingId)
-        : [...prev, bookingId]
+    setSelectedBookings((prev) =>
+      prev.includes(bookingId)
+        ? prev.filter((id) => id !== bookingId)
+        : [...prev, bookingId],
     );
   };
 
@@ -127,49 +143,53 @@ const Bookings: React.FC = () => {
     updateBooking({ id: bookingId, updates: { status } });
   };
 
-  const handleUpdateBooking = (bookingId: string, updates: Partial<ExtendedBooking>) => {
+  const handleUpdateBooking = (
+    bookingId: string,
+    updates: Partial<ExtendedBooking>,
+  ) => {
     updateBooking({ id: bookingId, updates });
   };
 
   const handleBulkStatusUpdate = (status: string) => {
     bulkOperation({
-      type: 'status_update',
+      type: "status_update",
       bookingIds: selectedBookings,
-      data: { status }
+      data: { status },
     });
     setSelectedBookings([]);
   };
 
   const handleBulkNotification = () => {
     bulkOperation({
-      type: 'send_notification',
+      type: "send_notification",
       bookingIds: selectedBookings,
-      data: { 
-        type: 'reminder',
-        template: 'booking_reminder' 
-      }
+      data: {
+        type: "reminder",
+        template: "booking_reminder",
+      },
     });
     setSelectedBookings([]);
   };
 
   const handleBulkDelete = () => {
     bulkOperation({
-      type: 'delete',
+      type: "delete",
       bookingIds: selectedBookings,
-      data: {}
+      data: {},
     });
     setSelectedBookings([]);
   };
 
   const handleExportCSV = () => {
-    const bookingsToExport = selectedBookings.length > 0 
-      ? bookings.filter(b => selectedBookings.includes(b.id))
-      : bookings;
-    
+    const bookingsToExport =
+      selectedBookings.length > 0
+        ? bookings.filter((b) => selectedBookings.includes(b.id))
+        : bookings;
+
     bulkOperation({
-      type: 'export',
-      bookingIds: bookingsToExport.map(b => b.id),
-      data: {}
+      type: "export",
+      bookingIds: bookingsToExport.map((b) => b.id),
+      data: {},
     });
   };
 
@@ -180,7 +200,9 @@ const Bookings: React.FC = () => {
           <div className="text-center">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
             <p className="text-muted-foreground">
-              {tenantLoading ? 'Loading restaurant data...' : 'No restaurant found'}
+              {tenantLoading
+                ? "Loading restaurant data..."
+                : "No restaurant found"}
             </p>
           </div>
         </div>
@@ -197,7 +219,8 @@ const Bookings: React.FC = () => {
             Booking Management
           </h1>
           <p className="text-muted-foreground mt-2 max-w-3xl">
-            Comprehensive reservation management with advanced filtering and real-time updates
+            Comprehensive reservation management with advanced filtering and
+            real-time updates
           </p>
         </div>
 
@@ -222,7 +245,9 @@ const Bookings: React.FC = () => {
                 <Calendar className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Today's Bookings</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Today's Bookings
+                </p>
                 <p className="text-2xl font-bold">{metrics.totalToday}</p>
               </div>
             </div>
@@ -236,7 +261,9 @@ const Bookings: React.FC = () => {
                 <Clock className="w-5 h-5 text-orange-500" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Pending</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Pending
+                </p>
                 <p className="text-2xl font-bold">{metrics.pendingToday}</p>
               </div>
             </div>
@@ -250,7 +277,9 @@ const Bookings: React.FC = () => {
                 <CheckSquare className="w-5 h-5 text-green-500" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Confirmed</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Confirmed
+                </p>
                 <p className="text-2xl font-bold">{metrics.confirmedToday}</p>
               </div>
             </div>
@@ -264,7 +293,9 @@ const Bookings: React.FC = () => {
                 <Users className="w-5 h-5 text-purple-500" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Guests</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Total Guests
+                </p>
                 <p className="text-2xl font-bold">{metrics.totalGuests}</p>
               </div>
             </div>
@@ -291,12 +322,12 @@ const Bookings: React.FC = () => {
                 </span>
                 <Badge variant="secondary">Bulk Actions Available</Badge>
               </div>
-              
+
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleBulkStatusUpdate('confirmed')}
+                  onClick={() => handleBulkStatusUpdate("confirmed")}
                   disabled={isBulkOperationPending}
                 >
                   {isBulkOperationPending ? (
@@ -329,15 +360,18 @@ const Bookings: React.FC = () => {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Selected Bookings</AlertDialogTitle>
+                      <AlertDialogTitle>
+                        Delete Selected Bookings
+                      </AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete {selectedBookings.length} booking(s)? 
-                        This action cannot be undone.
+                        Are you sure you want to delete{" "}
+                        {selectedBookings.length} booking(s)? This action cannot
+                        be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
+                      <AlertDialogAction
                         onClick={handleBulkDelete}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
@@ -373,10 +407,7 @@ const Bookings: React.FC = () => {
       />
 
       {/* Smart Booking Wizard */}
-      <SmartBookingWizard 
-        open={showWizard}
-        onOpenChange={setShowWizard}
-      />
+      <SmartBookingWizard open={showWizard} onOpenChange={setShowWizard} />
     </div>
   );
 };

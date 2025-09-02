@@ -1,14 +1,20 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { UserProfile } from '@/types/profile';
-import { Camera, Save, Upload } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { UserProfile } from "@/types/profile";
+import { Camera, Save, Upload } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface PersonalInfoTabProps {
   profile: UserProfile;
@@ -26,7 +32,7 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
       onUpdate(editedProfile);
       toast({
         title: "Profile Updated",
@@ -36,7 +42,7 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
       toast({
         title: "Update Failed",
         description: "Failed to save profile changes.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -47,9 +53,10 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
     setIsUploadingAvatar(true);
     try {
       // Simulate file upload
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const newAvatarUrl = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face';
-      setEditedProfile(prev => ({ ...prev, avatar: newAvatarUrl }));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const newAvatarUrl =
+        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face";
+      setEditedProfile((prev) => ({ ...prev, avatar: newAvatarUrl }));
       toast({
         title: "Avatar Updated",
         description: "Your profile picture has been updated.",
@@ -58,7 +65,7 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
       toast({
         title: "Upload Failed",
         description: "Failed to upload avatar.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsUploadingAvatar(false);
@@ -81,9 +88,13 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
           <div className="flex items-center gap-6">
             <div className="relative">
               <Avatar className="h-24 w-24">
-                <AvatarImage src={editedProfile.avatar} alt={`${editedProfile.firstName} ${editedProfile.lastName}`} />
+                <AvatarImage
+                  src={editedProfile.avatar}
+                  alt={`${editedProfile.firstName} ${editedProfile.lastName}`}
+                />
                 <AvatarFallback className="text-lg">
-                  {editedProfile.firstName[0]}{editedProfile.lastName[0]}
+                  {editedProfile.firstName[0]}
+                  {editedProfile.lastName[0]}
                 </AvatarFallback>
               </Avatar>
               <Button
@@ -101,9 +112,15 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
               </Button>
             </div>
             <div>
-              <h3 className="font-medium">{editedProfile.firstName} {editedProfile.lastName}</h3>
-              <p className="text-sm text-muted-foreground">{editedProfile.jobTitle}</p>
-              <p className="text-sm text-muted-foreground">{editedProfile.email}</p>
+              <h3 className="font-medium">
+                {editedProfile.firstName} {editedProfile.lastName}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {editedProfile.jobTitle}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {editedProfile.email}
+              </p>
             </div>
           </div>
         </CardContent>
@@ -125,16 +142,26 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
                 <Input
                   id="firstName"
                   value={editedProfile.firstName}
-                  onChange={(e) => setEditedProfile(prev => ({ ...prev, firstName: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedProfile((prev) => ({
+                      ...prev,
+                      firstName: e.target.value,
+                    }))
+                  }
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="lastName">Last Name</Label>
                 <Input
                   id="lastName"
                   value={editedProfile.lastName}
-                  onChange={(e) => setEditedProfile(prev => ({ ...prev, lastName: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedProfile((prev) => ({
+                      ...prev,
+                      lastName: e.target.value,
+                    }))
+                  }
                 />
               </div>
 
@@ -144,7 +171,12 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
                   id="email"
                   type="email"
                   value={editedProfile.email}
-                  onChange={(e) => setEditedProfile(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedProfile((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }))
+                  }
                 />
               </div>
 
@@ -153,8 +185,13 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
                 <Input
                   id="phone"
                   type="tel"
-                  value={editedProfile.phone || ''}
-                  onChange={(e) => setEditedProfile(prev => ({ ...prev, phone: e.target.value }))}
+                  value={editedProfile.phone || ""}
+                  onChange={(e) =>
+                    setEditedProfile((prev) => ({
+                      ...prev,
+                      phone: e.target.value,
+                    }))
+                  }
                   placeholder="+1 (555) 123-4567"
                 />
               </div>
@@ -165,8 +202,13 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
                 <Label htmlFor="jobTitle">Job Title</Label>
                 <Input
                   id="jobTitle"
-                  value={editedProfile.jobTitle || ''}
-                  onChange={(e) => setEditedProfile(prev => ({ ...prev, jobTitle: e.target.value }))}
+                  value={editedProfile.jobTitle || ""}
+                  onChange={(e) =>
+                    setEditedProfile((prev) => ({
+                      ...prev,
+                      jobTitle: e.target.value,
+                    }))
+                  }
                   placeholder="e.g., Senior Product Manager"
                 />
               </div>
@@ -175,8 +217,13 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
                 <Label htmlFor="department">Department</Label>
                 <Input
                   id="department"
-                  value={editedProfile.department || ''}
-                  onChange={(e) => setEditedProfile(prev => ({ ...prev, department: e.target.value }))}
+                  value={editedProfile.department || ""}
+                  onChange={(e) =>
+                    setEditedProfile((prev) => ({
+                      ...prev,
+                      department: e.target.value,
+                    }))
+                  }
                   placeholder="e.g., Product, Engineering, Sales"
                 />
               </div>
@@ -186,15 +233,24 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
                 <select
                   id="timezone"
                   value={editedProfile.timezone}
-                  onChange={(e) => setEditedProfile(prev => ({ ...prev, timezone: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedProfile((prev) => ({
+                      ...prev,
+                      timezone: e.target.value,
+                    }))
+                  }
                   className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md"
                 >
                   <option value="America/New_York">Eastern Time (ET)</option>
                   <option value="America/Chicago">Central Time (CT)</option>
                   <option value="America/Denver">Mountain Time (MT)</option>
                   <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                  <option value="Europe/London">Greenwich Mean Time (GMT)</option>
-                  <option value="Europe/Paris">Central European Time (CET)</option>
+                  <option value="Europe/London">
+                    Greenwich Mean Time (GMT)
+                  </option>
+                  <option value="Europe/Paris">
+                    Central European Time (CET)
+                  </option>
                   <option value="Asia/Tokyo">Japan Standard Time (JST)</option>
                 </select>
               </div>
@@ -204,7 +260,12 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
                 <select
                   id="language"
                   value={editedProfile.language}
-                  onChange={(e) => setEditedProfile(prev => ({ ...prev, language: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedProfile((prev) => ({
+                      ...prev,
+                      language: e.target.value,
+                    }))
+                  }
                   className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md"
                 >
                   <option value="en">English</option>
@@ -222,8 +283,10 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
             <Label htmlFor="bio">Bio</Label>
             <Textarea
               id="bio"
-              value={editedProfile.bio || ''}
-              onChange={(e) => setEditedProfile(prev => ({ ...prev, bio: e.target.value }))}
+              value={editedProfile.bio || ""}
+              onChange={(e) =>
+                setEditedProfile((prev) => ({ ...prev, bio: e.target.value }))
+              }
               placeholder="Tell us a bit about yourself..."
               rows={4}
             />
@@ -290,7 +353,7 @@ export function PersonalInfoTab({ profile, onUpdate }: PersonalInfoTabProps) {
         <div className="flex justify-end">
           <Button onClick={handleSave} disabled={isSaving}>
             <Save className="h-4 w-4 mr-2" />
-            {isSaving ? 'Saving...' : 'Save Changes'}
+            {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       )}

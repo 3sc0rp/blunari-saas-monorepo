@@ -1,14 +1,18 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { User, ArrowLeft } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { GuestDetails, GuestDetailsSchema, TenantInfo } from '@/types/booking-api';
+import React from "react";
+import { motion } from "framer-motion";
+import { User, ArrowLeft } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  GuestDetails,
+  GuestDetailsSchema,
+  TenantInfo,
+} from "@/types/booking-api";
 
 interface GuestDetailsStepProps {
   tenant: TenantInfo;
@@ -17,11 +21,11 @@ interface GuestDetailsStepProps {
   loading: boolean;
 }
 
-const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({ 
-  tenant, 
-  onComplete, 
-  onBack, 
-  loading 
+const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
+  tenant,
+  onComplete,
+  onBack,
+  loading,
 }) => {
   const {
     register,
@@ -29,7 +33,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
     formState: { errors, isValid },
   } = useForm<GuestDetails>({
     resolver: zodResolver(GuestDetailsSchema),
-    mode: 'onChange',
+    mode: "onChange",
   });
 
   const onSubmit = (data: GuestDetails) => {
@@ -56,7 +60,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                 <Label htmlFor="first_name">First Name *</Label>
                 <Input
                   id="first_name"
-                  {...register('first_name')}
+                  {...register("first_name")}
                   placeholder="John"
                   disabled={loading}
                 />
@@ -70,7 +74,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                 <Label htmlFor="last_name">Last Name *</Label>
                 <Input
                   id="last_name"
-                  {...register('last_name')}
+                  {...register("last_name")}
                   placeholder="Doe"
                   disabled={loading}
                 />
@@ -88,7 +92,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
               <Input
                 id="email"
                 type="email"
-                {...register('email')}
+                {...register("email")}
                 placeholder="john@example.com"
                 disabled={loading}
               />
@@ -104,7 +108,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
               <Input
                 id="phone"
                 type="tel"
-                {...register('phone')}
+                {...register("phone")}
                 placeholder="+1 (555) 123-4567"
                 disabled={loading}
               />
@@ -117,10 +121,12 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
 
             {/* Special requests */}
             <div className="space-y-2">
-              <Label htmlFor="special_requests">Special Requests (Optional)</Label>
+              <Label htmlFor="special_requests">
+                Special Requests (Optional)
+              </Label>
               <Textarea
                 id="special_requests"
-                {...register('special_requests')}
+                {...register("special_requests")}
                 placeholder="Allergies, accessibility needs, celebration notes..."
                 rows={3}
                 disabled={loading}
@@ -144,7 +150,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                 disabled={!isValid || loading}
                 style={{ backgroundColor: tenant.branding?.primary_color }}
               >
-                {loading ? 'Processing...' : 'Continue to Confirmation'}
+                {loading ? "Processing..." : "Continue to Confirmation"}
               </Button>
             </motion.div>
           </form>

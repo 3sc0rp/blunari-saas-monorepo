@@ -1,9 +1,15 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ReportsManager } from '@/components/analytics/ReportsManager';
-import { HistoricalAnalysis } from '@/components/analytics/HistoricalAnalysis';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, TrendingUp, PieChart, Activity } from 'lucide-react';
+import React from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ReportsManager } from "@/components/analytics/ReportsManager";
+import { HistoricalAnalysis } from "@/components/analytics/HistoricalAnalysis";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BarChart3, TrendingUp, PieChart, Activity } from "lucide-react";
 
 export const AnalyticsPage: React.FC = () => {
   return (
@@ -60,31 +66,47 @@ export const AnalyticsPage: React.FC = () => {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Revenue Growth</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      Revenue Growth
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-green-600">+24%</div>
-                    <p className="text-xs text-muted-foreground">vs last month</p>
+                    <div className="text-2xl font-bold text-green-600">
+                      +24%
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      vs last month
+                    </p>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Customer Retention</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      Customer Retention
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-blue-600">87%</div>
-                    <p className="text-xs text-muted-foreground">30-day retention rate</p>
+                    <p className="text-xs text-muted-foreground">
+                      30-day retention rate
+                    </p>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Avg. Order Value</CardTitle>
+                    <CardTitle className="text-sm font-medium">
+                      Avg. Order Value
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-purple-600">$47.20</div>
-                    <p className="text-xs text-muted-foreground">+$3.50 from last week</p>
+                    <div className="text-2xl font-bold text-purple-600">
+                      $47.20
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      +$3.50 from last week
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -109,20 +131,28 @@ export const AnalyticsPage: React.FC = () => {
                   <div className="text-2xl font-bold text-green-600">99.9%</div>
                   <div className="text-sm text-muted-foreground">Uptime</div>
                 </div>
-                
+
                 <div className="text-center p-4 border rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">145ms</div>
-                  <div className="text-sm text-muted-foreground">Avg Response</div>
+                  <div className="text-sm text-muted-foreground">
+                    Avg Response
+                  </div>
                 </div>
-                
+
                 <div className="text-center p-4 border rounded-lg">
                   <div className="text-2xl font-bold text-purple-600">2.3K</div>
-                  <div className="text-sm text-muted-foreground">Requests/min</div>
+                  <div className="text-sm text-muted-foreground">
+                    Requests/min
+                  </div>
                 </div>
-                
+
                 <div className="text-center p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-orange-600">0.02%</div>
-                  <div className="text-sm text-muted-foreground">Error Rate</div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    0.02%
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Error Rate
+                  </div>
                 </div>
               </div>
             </CardContent>

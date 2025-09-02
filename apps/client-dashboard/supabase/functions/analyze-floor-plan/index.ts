@@ -3,43 +3,44 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req: Request) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      throw new Error("OpenAI API key not configured");
     }
 
     const { imageBase64 } = await req.json();
 
     if (!imageBase64) {
-      throw new Error('No image provided');
+      throw new Error("No image provided");
     }
 
-    console.log('Analyzing floor plan with GPT-4 Vision...');
+    console.log("Analyzing floor plan with GPT-4 Vision...");
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${openAIApiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: "gpt-4o",
         messages: [
           {
-            role: 'system',
+            role: "system",
             content: `You are a CONSERVATIVE restaurant floor plan analyzer. Your goal is to identify ONLY clearly visible dining tables and seating - DO NOT speculate or detect uncertain objects.
 
 STRICT DETECTION RULES:
@@ -92,13 +93,13 @@ Return JSON format:
   "confidence": 0.0-1.0,
   "recommendations": ["specific observations"],
   "analysis": "Detailed explanation of what dining furniture you clearly identified"
-}`
+}`,
           },
           {
-            role: 'user',
+            role: "user",
             content: [
               {
-                type: 'text',
+                type: "text",
                 text: `Analyze this restaurant floor plan image with CONSERVATIVE accuracy. Only identify dining tables and seating that you can see clearly and confidently.
 
 CRITICAL: Only detect objects that are CLEARLY dining tables:
@@ -107,49 +108,53 @@ CRITICAL: Only detect objects that are CLEARLY dining tables:
 - Only include tables with 80%+ confidence
 - Focus on customer dining areas, not service/kitchen areas
 
-Be very careful and precise - it's better to miss a table than to incorrectly identify something that isn't a dining table.`
+Be very careful and precise - it's better to miss a table than to incorrectly identify something that isn't a dining table.`,
               },
               {
-                type: 'image_url',
+                type: "image_url",
                 image_url: {
-                  url: imageBase64
-                }
-              }
-            ]
-          }
+                  url: imageBase64,
+                },
+              },
+            ],
+          },
         ],
         max_tokens: 1500,
-        temperature: 0.1
+        temperature: 0.1,
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('OpenAI API error details:', {
+      console.error("OpenAI API error details:", {
         status: response.status,
         statusText: response.statusText,
         headers: Object.fromEntries(response.headers.entries()),
-        body: errorData
+        body: errorData,
       });
-      throw new Error(`OpenAI API error: ${response.status} - ${response.statusText}`);
+      throw new Error(
+        `OpenAI API error: ${response.status} - ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
-    console.log('GPT-4 Vision analysis complete');
-    
+    console.log("GPT-4 Vision analysis complete");
+
     const content = data.choices[0].message.content;
-    
+
     // Try to parse the JSON response
     let analysisResult;
     try {
       // Extract JSON from the response (in case it's wrapped in markdown)
-      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/\{[\s\S]*\}/);
-      const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
+      const jsonMatch =
+        content.match(/```json\n([\s\S]*?)\n```/) ||
+        content.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
       analysisResult = JSON.parse(jsonString);
     } catch (parseError) {
-      console.error('Failed to parse JSON response:', parseError);
-      console.log('Raw response:', content);
-      
+      console.error("Failed to parse JSON response:", parseError);
+      console.log("Raw response:", content);
+
       // Fallback response if JSON parsing fails
       analysisResult = {
         tableCount: 0,
@@ -160,49 +165,51 @@ Be very careful and precise - it's better to miss a table than to incorrectly id
           "The image may contain tables that weren't clearly identified",
           "Try uploading a higher contrast image with better lighting",
           "Consider manually positioning tables using the Floor Plan view",
-          "Ensure the floor plan shows clear table and seating arrangements"
+          "Ensure the floor plan shows clear table and seating arrangements",
         ],
-        analysis: "Analysis completed but encountered parsing difficulties - tables may be present"
+        analysis:
+          "Analysis completed but encountered parsing difficulties - tables may be present",
       };
     }
 
     return new Response(JSON.stringify(analysisResult), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error('Error in analyze-floor-plan function:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
+    console.error("Error in analyze-floor-plan function:", {
+      message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
-      type: error instanceof Error ? error.constructor.name : typeof error
+      type: error instanceof Error ? error.constructor.name : typeof error,
     });
-    
+
     // Handle specific OpenAI errors
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     let recommendations = [
       `Analysis failed: ${errorMessage}`,
       "This could be due to:",
       "• API rate limits (OpenAI usage exceeded)",
-      "• Network connectivity issues", 
+      "• Network connectivity issues",
       "• API key configuration problems",
       "• Floor plan image too complex or unclear",
-      "You can manually position tables using the Floor Plan view for now"
+      "You can manually position tables using the Floor Plan view for now",
     ];
 
     // Check for specific error types
-    if (errorMessage.includes('429')) {
+    if (errorMessage.includes("429")) {
       recommendations = [
         "OpenAI API rate limit exceeded",
         "• Please wait a few minutes before trying again",
         "• The free tier has usage limits",
         "• You can manually position tables using the Floor Plan view",
-        "• Consider upgrading your OpenAI plan for higher limits"
+        "• Consider upgrading your OpenAI plan for higher limits",
       ];
-    } else if (errorMessage.includes('401')) {
+    } else if (errorMessage.includes("401")) {
       recommendations = [
         "OpenAI API authentication failed",
         "• Check if your OpenAI API key is valid",
         "• Ensure the API key has proper permissions",
-        "• You can manually position tables for now"
+        "• You can manually position tables for now",
       ];
     }
 
@@ -211,12 +218,13 @@ Be very careful and precise - it's better to miss a table than to incorrectly id
       detectedTables: [],
       confidence: 0,
       recommendations,
-      analysis: "Analysis failed due to technical error - manual table placement available"
+      analysis:
+        "Analysis failed due to technical error - manual table placement available",
     };
 
     return new Response(JSON.stringify(errorResponse), {
       status: 200, // Return 200 so the frontend can handle the error gracefully
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

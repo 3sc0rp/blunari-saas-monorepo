@@ -1,18 +1,18 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { AlertNotification } from '@/types/dashboard';
-import { 
-  AlertCircle, 
-  AlertTriangle, 
-  Info, 
-  CheckCircle, 
-  X, 
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertNotification } from "@/types/dashboard";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  CheckCircle,
+  X,
   ExternalLink,
-  Clock
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+  Clock,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface AlertSystemProps {
   alerts: AlertNotification[];
@@ -20,57 +20,57 @@ interface AlertSystemProps {
   onClearAll: () => void;
 }
 
-const AlertSystem: React.FC<AlertSystemProps> = ({ 
-  alerts, 
-  onDismiss, 
-  onClearAll 
+const AlertSystem: React.FC<AlertSystemProps> = ({
+  alerts,
+  onDismiss,
+  onClearAll,
 }) => {
-  const getAlertIcon = (type: AlertNotification['type']) => {
+  const getAlertIcon = (type: AlertNotification["type"]) => {
     switch (type) {
-      case 'critical':
+      case "critical":
         return AlertCircle;
-      case 'warning':
+      case "warning":
         return AlertTriangle;
-      case 'info':
+      case "info":
         return Info;
-      case 'success':
+      case "success":
         return CheckCircle;
       default:
         return Info;
     }
   };
 
-  const getAlertStyles = (type: AlertNotification['type']) => {
+  const getAlertStyles = (type: AlertNotification["type"]) => {
     switch (type) {
-      case 'critical':
+      case "critical":
         return {
-          iconColor: 'text-destructive',
-          bgColor: 'bg-destructive/10',
-          borderColor: 'border-destructive/20'
+          iconColor: "text-destructive",
+          bgColor: "bg-destructive/10",
+          borderColor: "border-destructive/20",
         };
-      case 'warning':
+      case "warning":
         return {
-          iconColor: 'text-warning',
-          bgColor: 'bg-warning/10',
-          borderColor: 'border-warning/20'
+          iconColor: "text-warning",
+          bgColor: "bg-warning/10",
+          borderColor: "border-warning/20",
         };
-      case 'info':
+      case "info":
         return {
-          iconColor: 'text-primary',
-          bgColor: 'bg-primary/10',
-          borderColor: 'border-primary/20'
+          iconColor: "text-primary",
+          bgColor: "bg-primary/10",
+          borderColor: "border-primary/20",
         };
-      case 'success':
+      case "success":
         return {
-          iconColor: 'text-success',
-          bgColor: 'bg-success/10',
-          borderColor: 'border-success/20'
+          iconColor: "text-success",
+          bgColor: "bg-success/10",
+          borderColor: "border-success/20",
         };
       default:
         return {
-          iconColor: 'text-muted-foreground',
-          bgColor: 'bg-muted/10',
-          borderColor: 'border-muted/20'
+          iconColor: "text-muted-foreground",
+          bgColor: "bg-muted/10",
+          borderColor: "border-muted/20",
         };
     }
   };
@@ -113,9 +113,9 @@ const AlertSystem: React.FC<AlertSystemProps> = ({
             </Badge>
           </CardTitle>
           {alerts.length > 1 && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={onClearAll}
               className="text-xs"
             >
@@ -130,7 +130,7 @@ const AlertSystem: React.FC<AlertSystemProps> = ({
             {alerts.map((alert) => {
               const Icon = getAlertIcon(alert.type);
               const styles = getAlertStyles(alert.type);
-              
+
               return (
                 <motion.div
                   key={alert.id}
@@ -147,8 +147,8 @@ const AlertSystem: React.FC<AlertSystemProps> = ({
                         <h4 className="text-sm font-semibold text-foreground">
                           {alert.title}
                         </h4>
-                        <Badge 
-                          variant="outline" 
+                        <Badge
+                          variant="outline"
                           className={`text-xs ${styles.iconColor} border-current`}
                         >
                           {alert.type.toUpperCase()}

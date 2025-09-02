@@ -1,32 +1,47 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Building2, 
-  User, 
-  CreditCard, 
-  Settings, 
-  MessageSquare, 
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import {
+  Building2,
+  User,
+  CreditCard,
+  Settings,
+  MessageSquare,
   Mail,
   Phone,
   Globe,
   Eye,
   ArrowLeft,
-  Loader2
-} from 'lucide-react';
-import { useAdminAPI } from '@/hooks/useAdminAPI';
-import { useToast } from '@/hooks/use-toast';
-import type { ProvisioningRequestData, ProvisioningResponse } from '@/types/admin';
-import { ProvisioningRequestSchema } from '@/types/admin';
-import { z } from 'zod';
+  Loader2,
+} from "lucide-react";
+import { useAdminAPI } from "@/hooks/useAdminAPI";
+import { useToast } from "@/hooks/use-toast";
+import type {
+  ProvisioningRequestData,
+  ProvisioningResponse,
+} from "@/types/admin";
+import { ProvisioningRequestSchema } from "@/types/admin";
+import { z } from "zod";
 
 interface ExtendedBasics {
   name: string;
@@ -46,7 +61,8 @@ interface ExtendedBasics {
   };
 }
 
-interface ExtendedProvisioningRequestData extends Omit<ProvisioningRequestData, 'basics'> {
+interface ExtendedProvisioningRequestData
+  extends Omit<ProvisioningRequestData, "basics"> {
   basics: ExtendedBasics;
 }
 
@@ -55,7 +71,10 @@ interface ProvisioningWizardProps {
   onCancel?: () => void;
 }
 
-export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningWizardProps) {
+export function TenantProvisioningWizard({
+  onComplete,
+  onCancel,
+}: ProvisioningWizardProps) {
   const [loading, setLoading] = useState(false);
   const [idempotencyKey] = useState(crypto.randomUUID());
   const navigate = useNavigate();
@@ -64,26 +83,26 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
 
   const [formData, setFormData] = useState<ExtendedProvisioningRequestData>({
     basics: {
-      name: '',
-      timezone: 'America/New_York',
-      currency: 'USD',
-      slug: '',
+      name: "",
+      timezone: "America/New_York",
+      currency: "USD",
+      slug: "",
     },
     owner: {
-      email: '',
+      email: "",
       sendInvite: true,
     },
     access: {
-      mode: 'standard',
+      mode: "standard",
     },
     seed: {
-      seatingPreset: 'standard',
+      seatingPreset: "standard",
       enablePacing: false,
       enableDepositPolicy: false,
     },
     billing: {
       createSubscription: false,
-      plan: 'basic',
+      plan: "basic",
     },
     sms: {
       startRegistration: false,
@@ -93,8 +112,12 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
 
   const [result, setResult] = useState<ProvisioningResponse | null>(null);
 
-  const handleInputChange = (section: keyof ExtendedProvisioningRequestData, field: string, value: unknown) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    section: keyof ExtendedProvisioningRequestData,
+    field: string,
+    value: unknown,
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       [section]: {
         ...(prev[section] as Record<string, unknown>),
@@ -108,46 +131,51 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
     if (formData.basics.name && !formData.basics.slug) {
       const slug = formData.basics.name
         .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-+|-+$/g, '');
-      
-      handleInputChange('basics', 'slug', slug);
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      handleInputChange("basics", "slug", slug);
     }
   }, [formData.basics.name]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setLoading(true);
-      
+
       // Validate form data
       const validatedData = ProvisioningRequestSchema.parse(formData);
-      
+
       // Submit provisioning request
       const apiResponse = await provisionTenant(validatedData);
-      
+
       if (apiResponse.success) {
         const provisioningResult = apiResponse.data!;
         setResult(provisioningResult);
         toast({
           title: "Tenant Provisioned Successfully! 🎉",
-          description: provisioningResult.message || "Tenant has been created and configured.",
+          description:
+            provisioningResult.message ||
+            "Tenant has been created and configured.",
         });
-        
+
         if (onComplete) {
           onComplete(provisioningResult);
         }
       } else {
-        throw new Error(apiResponse.error?.message || 'Provisioning failed');
+        throw new Error(apiResponse.error?.message || "Provisioning failed");
       }
     } catch (error: unknown) {
-      console.error('Provisioning error:', error);
+      console.error("Provisioning error:", error);
 
       const errorObj = error as Error & { errors?: Array<{ message: string }> };
-      const msg = errorObj?.errors?.[0]?.message || errorObj?.message || 'Provisioning failed';
+      const msg =
+        errorObj?.errors?.[0]?.message ||
+        errorObj?.message ||
+        "Provisioning failed";
 
       toast({
         title: "Provisioning Failed",
@@ -163,7 +191,7 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
     if (onCancel) {
       onCancel();
     } else {
-      navigate('/admin/tenants');
+      navigate("/admin/tenants");
     }
   };
 
@@ -178,39 +206,48 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
               Tenant Provisioned Successfully
             </CardTitle>
             <CardDescription>
-              {formData.basics.name} has been successfully created and configured.
+              {formData.basics.name} has been successfully created and
+              configured.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               {result.runId && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Run ID</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Run ID
+                  </Label>
                   <p className="font-mono text-sm">{result.runId}</p>
                 </div>
               )}
               {result.tenantId && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Tenant ID</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Tenant ID
+                  </Label>
                   <p className="font-mono text-sm">{result.tenantId}</p>
                 </div>
               )}
               {result.slug && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Slug</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Slug
+                  </Label>
                   <p className="font-mono text-sm">/{result.slug}</p>
                 </div>
               )}
               {result.primaryUrl && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Primary URL</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Primary URL
+                  </Label>
                   <p className="font-mono text-sm">{result.primaryUrl}</p>
                 </div>
               )}
             </div>
-            
+
             <Separator />
-            
+
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => navigate(`/admin/tenants/${result.tenantId}`)}
@@ -219,19 +256,19 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 <Eye className="h-4 w-4 mr-2" />
                 Go to Tenant
               </Button>
-              
+
               {result.primaryUrl && (
                 <Button
-                  onClick={() => window.open(result.primaryUrl, '_blank')}
+                  onClick={() => window.open(result.primaryUrl, "_blank")}
                   variant="outline"
                 >
                   <Globe className="h-4 w-4 mr-2" />
                   Open Client Dashboard
                 </Button>
               )}
-              
+
               <Button
-                onClick={() => navigate('/admin/operations')}
+                onClick={() => navigate("/admin/operations")}
                 variant="ghost"
               >
                 <Settings className="h-4 w-4 mr-2" />
@@ -249,7 +286,9 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Tenant Provisioning</h1>
-          <p className="text-muted-foreground">Create and configure a new restaurant tenant</p>
+          <p className="text-muted-foreground">
+            Create and configure a new restaurant tenant
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={handleCancel}>
@@ -275,7 +314,9 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 <Input
                   id="name"
                   value={formData.basics.name}
-                  onChange={(e) => handleInputChange('basics', 'name', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("basics", "name", e.target.value)
+                  }
                   placeholder="Amazing Restaurant"
                   required
                 />
@@ -285,28 +326,40 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 <Input
                   id="slug"
                   value={formData.basics.slug}
-                  onChange={(e) => handleInputChange('basics', 'slug', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("basics", "slug", e.target.value)
+                  }
                   placeholder="amazing-restaurant"
                   required
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="timezone">Timezone</Label>
                 <Select
                   value={formData.basics.timezone}
-                  onValueChange={(value) => handleInputChange('basics', 'timezone', value)}
+                  onValueChange={(value) =>
+                    handleInputChange("basics", "timezone", value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                    <SelectItem value="America/Chicago">Central Time</SelectItem>
-                    <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                    <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+                    <SelectItem value="America/New_York">
+                      Eastern Time
+                    </SelectItem>
+                    <SelectItem value="America/Chicago">
+                      Central Time
+                    </SelectItem>
+                    <SelectItem value="America/Denver">
+                      Mountain Time
+                    </SelectItem>
+                    <SelectItem value="America/Los_Angeles">
+                      Pacific Time
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -314,7 +367,9 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 <Label htmlFor="currency">Currency</Label>
                 <Select
                   value={formData.basics.currency}
-                  onValueChange={(value) => handleInputChange('basics', 'currency', value)}
+                  onValueChange={(value) =>
+                    handleInputChange("basics", "currency", value)
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -333,20 +388,24 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={formData.basics.description || ''}
-                onChange={(e) => handleInputChange('basics', 'description', e.target.value)}
+                value={formData.basics.description || ""}
+                onChange={(e) =>
+                  handleInputChange("basics", "description", e.target.value)
+                }
                 placeholder="A demo restaurant for testing"
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="email">Business Email</Label>
                 <Input
                   id="email"
                   type="email"
-                  value={(formData.basics as { email?: string }).email || ''}
-                  onChange={(e) => handleInputChange('basics', 'email', e.target.value)}
+                  value={(formData.basics as { email?: string }).email || ""}
+                  onChange={(e) =>
+                    handleInputChange("basics", "email", e.target.value)
+                  }
                   placeholder="contact@restaurant.com"
                 />
               </div>
@@ -354,8 +413,10 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
-                  value={(formData.basics as { phone?: string }).phone || ''}
-                  onChange={(e) => handleInputChange('basics', 'phone', e.target.value)}
+                  value={(formData.basics as { phone?: string }).phone || ""}
+                  onChange={(e) =>
+                    handleInputChange("basics", "phone", e.target.value)
+                  }
                   placeholder="+1 555 123 4567"
                 />
               </div>
@@ -378,12 +439,14 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 id="owner-email"
                 type="email"
                 value={formData.owner.email}
-                onChange={(e) => handleInputChange('owner', 'email', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("owner", "email", e.target.value)
+                }
                 placeholder="owner@restaurant.com"
                 required
               />
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <Label>Send Welcome Email</Label>
@@ -393,7 +456,9 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
               </div>
               <Switch
                 checked={formData.owner.sendInvite}
-                onCheckedChange={(checked) => handleInputChange('owner', 'sendInvite', checked)}
+                onCheckedChange={(checked) =>
+                  handleInputChange("owner", "sendInvite", checked)
+                }
               />
             </div>
           </CardContent>
@@ -411,31 +476,79 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="street">Street</Label>
-                <Input id="street" value={formData.basics.address?.street || ''} onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  basics: { ...prev.basics, address: { ...(prev.basics.address || {}), street: e.target.value } }
-                }))} />
+                <Input
+                  id="street"
+                  value={formData.basics.address?.street || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      basics: {
+                        ...prev.basics,
+                        address: {
+                          ...(prev.basics.address || {}),
+                          street: e.target.value,
+                        },
+                      },
+                    }))
+                  }
+                />
               </div>
               <div>
                 <Label htmlFor="city">City</Label>
-                <Input id="city" value={formData.basics.address?.city || ''} onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  basics: { ...prev.basics, address: { ...(prev.basics.address || {}), city: e.target.value } }
-                }))} />
+                <Input
+                  id="city"
+                  value={formData.basics.address?.city || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      basics: {
+                        ...prev.basics,
+                        address: {
+                          ...(prev.basics.address || {}),
+                          city: e.target.value,
+                        },
+                      },
+                    }))
+                  }
+                />
               </div>
               <div>
                 <Label htmlFor="state">State</Label>
-                <Input id="state" value={formData.basics.address?.state || ''} onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  basics: { ...prev.basics, address: { ...(prev.basics.address || {}), state: e.target.value } }
-                }))} />
+                <Input
+                  id="state"
+                  value={formData.basics.address?.state || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      basics: {
+                        ...prev.basics,
+                        address: {
+                          ...(prev.basics.address || {}),
+                          state: e.target.value,
+                        },
+                      },
+                    }))
+                  }
+                />
               </div>
               <div>
                 <Label htmlFor="zip">ZIP</Label>
-                <Input id="zip" value={formData.basics.address?.zipCode || ''} onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  basics: { ...prev.basics, address: { ...(prev.basics.address || {}), zipCode: e.target.value } }
-                }))} />
+                <Input
+                  id="zip"
+                  value={formData.basics.address?.zipCode || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      basics: {
+                        ...prev.basics,
+                        address: {
+                          ...(prev.basics.address || {}),
+                          zipCode: e.target.value,
+                        },
+                      },
+                    }))
+                  }
+                />
               </div>
             </div>
           </CardContent>
@@ -455,16 +568,22 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
               <div className="grid grid-cols-2 gap-2 mt-2">
                 <Button
                   type="button"
-                  variant={formData.access.mode === 'standard' ? 'default' : 'outline'}
-                  onClick={() => handleInputChange('access', 'mode', 'standard')}
+                  variant={
+                    formData.access.mode === "standard" ? "default" : "outline"
+                  }
+                  onClick={() =>
+                    handleInputChange("access", "mode", "standard")
+                  }
                   className="justify-start"
                 >
                   Standard
                 </Button>
                 <Button
                   type="button"
-                  variant={formData.access.mode === 'premium' ? 'default' : 'outline'}
-                  onClick={() => handleInputChange('access', 'mode', 'premium')}
+                  variant={
+                    formData.access.mode === "premium" ? "default" : "outline"
+                  }
+                  onClick={() => handleInputChange("access", "mode", "premium")}
                   className="justify-start"
                 >
                   Premium
@@ -484,7 +603,9 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 </div>
                 <Switch
                   checked={formData.seed.enableDepositPolicy}
-                  onCheckedChange={(checked) => handleInputChange('seed', 'enableDepositPolicy', checked)}
+                  onCheckedChange={(checked) =>
+                    handleInputChange("seed", "enableDepositPolicy", checked)
+                  }
                 />
               </div>
 
@@ -497,7 +618,9 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 </div>
                 <Switch
                   checked={formData.seed.enablePacing}
-                  onCheckedChange={(checked) => handleInputChange('seed', 'enablePacing', checked)}
+                  onCheckedChange={(checked) =>
+                    handleInputChange("seed", "enablePacing", checked)
+                  }
                 />
               </div>
             </div>
@@ -517,14 +640,18 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
               <Label>Plan</Label>
               <Select
                 value={formData.billing.plan}
-                onValueChange={(value) => handleInputChange('billing', 'plan', value)}
+                onValueChange={(value) =>
+                  handleInputChange("billing", "plan", value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="basic">Basic Plan</SelectItem>
-                  <SelectItem value="professional">Professional Plan</SelectItem>
+                  <SelectItem value="professional">
+                    Professional Plan
+                  </SelectItem>
                   <SelectItem value="enterprise">Enterprise Plan</SelectItem>
                 </SelectContent>
               </Select>
@@ -539,7 +666,9 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
               </div>
               <Switch
                 checked={formData.billing.createSubscription}
-                onCheckedChange={(checked) => handleInputChange('billing', 'createSubscription', checked)}
+                onCheckedChange={(checked) =>
+                  handleInputChange("billing", "createSubscription", checked)
+                }
               />
             </div>
           </CardContent>
@@ -563,7 +692,9 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
               </div>
               <Switch
                 checked={formData.sms.startRegistration}
-                onCheckedChange={(checked) => handleInputChange('sms', 'startRegistration', checked)}
+                onCheckedChange={(checked) =>
+                  handleInputChange("sms", "startRegistration", checked)
+                }
               />
             </div>
           </CardContent>
@@ -575,7 +706,9 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
             <div className="flex items-center justify-between">
               <div>
                 <Label className="text-sm font-medium">Idempotency Key</Label>
-                <p className="text-xs text-muted-foreground font-mono">{idempotencyKey}</p>
+                <p className="text-xs text-muted-foreground font-mono">
+                  {idempotencyKey}
+                </p>
               </div>
               <Badge variant="outline">Unique Request</Badge>
             </div>
@@ -594,7 +727,7 @@ export function TenantProvisioningWizard({ onComplete, onCancel }: ProvisioningW
                 Provisioning...
               </>
             ) : (
-              'Create Tenant'
+              "Create Tenant"
             )}
           </Button>
         </div>

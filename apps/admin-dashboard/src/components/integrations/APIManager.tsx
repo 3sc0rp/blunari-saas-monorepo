@@ -1,11 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -13,7 +25,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -22,14 +34,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { 
-  Key, 
-  Eye, 
-  EyeOff, 
-  Copy, 
-  Plus, 
-  Trash2, 
+} from "@/components/ui/dialog";
+import {
+  Key,
+  Eye,
+  EyeOff,
+  Copy,
+  Plus,
+  Trash2,
   RefreshCw,
   AlertTriangle,
   Activity,
@@ -38,10 +50,10 @@ import {
   Shield,
   Code,
   BookOpen,
-  ExternalLink
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Progress } from '@/components/ui/progress';
+  ExternalLink,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Progress } from "@/components/ui/progress";
 
 interface APIKey {
   id: string;
@@ -56,19 +68,19 @@ interface APIKey {
     today: number;
     limit: number;
   };
-  status: 'active' | 'revoked' | 'expired';
+  status: "active" | "revoked" | "expired";
 }
 
 interface APIEndpoint {
   id: string;
   path: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   description: string;
   category: string;
   requiresAuth: boolean;
   rateLimit: number;
   usage: number;
-  status: 'active' | 'deprecated' | 'beta';
+  status: "active" | "deprecated" | "beta";
 }
 
 interface RateLimit {
@@ -82,121 +94,121 @@ interface RateLimit {
 
 const mockAPIKeys: APIKey[] = [
   {
-    id: '1',
-    name: 'Production API Key',
-    key: 'pk_live_51H7...',
-    permissions: ['read', 'write', 'admin'],
+    id: "1",
+    name: "Production API Key",
+    key: "pk_live_51H7...",
+    permissions: ["read", "write", "admin"],
     createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     lastUsed: new Date(Date.now() - 2 * 60 * 60 * 1000),
     usage: { total: 15420, today: 234, limit: 10000 },
-    status: 'active'
+    status: "active",
   },
   {
-    id: '2', 
-    name: 'Development API Key',
-    key: 'pk_test_51H7...',
-    permissions: ['read', 'write'],
+    id: "2",
+    name: "Development API Key",
+    key: "pk_test_51H7...",
+    permissions: ["read", "write"],
     createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     lastUsed: new Date(Date.now() - 30 * 60 * 1000),
     usage: { total: 892, today: 45, limit: 1000 },
-    status: 'active'
+    status: "active",
   },
   {
-    id: '3',
-    name: 'Mobile App Key',
-    key: 'pk_live_mobile...',
-    permissions: ['read'],
+    id: "3",
+    name: "Mobile App Key",
+    key: "pk_live_mobile...",
+    permissions: ["read"],
     createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
     lastUsed: new Date(Date.now() - 24 * 60 * 60 * 1000),
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     usage: { total: 5234, today: 78, limit: 5000 },
-    status: 'active'
-  }
+    status: "active",
+  },
 ];
 
 const mockEndpoints: APIEndpoint[] = [
   {
-    id: '1',
-    path: '/api/v1/tenants',
-    method: 'GET',
-    description: 'List all tenants',
-    category: 'Tenants',
+    id: "1",
+    path: "/api/v1/tenants",
+    method: "GET",
+    description: "List all tenants",
+    category: "Tenants",
     requiresAuth: true,
     rateLimit: 100,
     usage: 1234,
-    status: 'active'
+    status: "active",
   },
   {
-    id: '2',
-    path: '/api/v1/tenants',
-    method: 'POST',
-    description: 'Create a new tenant',
-    category: 'Tenants',
+    id: "2",
+    path: "/api/v1/tenants",
+    method: "POST",
+    description: "Create a new tenant",
+    category: "Tenants",
     requiresAuth: true,
     rateLimit: 50,
     usage: 456,
-    status: 'active'
+    status: "active",
   },
   {
-    id: '3',
-    path: '/api/v1/bookings',
-    method: 'GET',
-    description: 'List bookings',
-    category: 'Bookings',
+    id: "3",
+    path: "/api/v1/bookings",
+    method: "GET",
+    description: "List bookings",
+    category: "Bookings",
     requiresAuth: true,
     rateLimit: 200,
     usage: 2345,
-    status: 'active'
+    status: "active",
   },
   {
-    id: '4',
-    path: '/api/v1/analytics/metrics',
-    method: 'GET',
-    description: 'Get analytics metrics',
-    category: 'Analytics',
+    id: "4",
+    path: "/api/v1/analytics/metrics",
+    method: "GET",
+    description: "Get analytics metrics",
+    category: "Analytics",
     requiresAuth: true,
     rateLimit: 100,
     usage: 567,
-    status: 'beta'
+    status: "beta",
   },
   {
-    id: '5',
-    path: '/api/v1/webhooks',
-    method: 'POST',
-    description: 'Register webhook endpoint',
-    category: 'Webhooks',
+    id: "5",
+    path: "/api/v1/webhooks",
+    method: "POST",
+    description: "Register webhook endpoint",
+    category: "Webhooks",
     requiresAuth: true,
     rateLimit: 10,
     usage: 89,
-    status: 'active'
-  }
+    status: "active",
+  },
 ];
 
 const mockRateLimits: RateLimit[] = [
   {
-    id: '1',
-    endpoint: '/api/v1/tenants',
+    id: "1",
+    endpoint: "/api/v1/tenants",
     limit: 100,
-    window: '1 hour',
+    window: "1 hour",
     current: 67,
-    resetTime: new Date(Date.now() + 33 * 60 * 1000)
+    resetTime: new Date(Date.now() + 33 * 60 * 1000),
   },
   {
-    id: '2',
-    endpoint: '/api/v1/bookings',
+    id: "2",
+    endpoint: "/api/v1/bookings",
     limit: 200,
-    window: '1 hour',
+    window: "1 hour",
     current: 145,
-    resetTime: new Date(Date.now() + 15 * 60 * 1000)
+    resetTime: new Date(Date.now() + 15 * 60 * 1000),
   },
   {
-    id: '3',
-    endpoint: '/api/v1/analytics/*',
+    id: "3",
+    endpoint: "/api/v1/analytics/*",
     limit: 50,
-    window: '1 hour',
+    window: "1 hour",
     current: 23,
-    resetTime: new Date(Date.now() + 45 * 60 * 1000)
-  }
+    resetTime: new Date(Date.now() + 45 * 60 * 1000),
+  },
 ];
 
 export const APIManager: React.FC = () => {
@@ -204,7 +216,7 @@ export const APIManager: React.FC = () => {
   const [endpoints] = useState<APIEndpoint[]>(mockEndpoints);
   const [rateLimits] = useState<RateLimit[]>(mockRateLimits);
   const [showKey, setShowKey] = useState<Record<string, boolean>>({});
-  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyName, setNewKeyName] = useState("");
   const [newKeyPermissions, setNewKeyPermissions] = useState<string[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -218,7 +230,7 @@ export const APIManager: React.FC = () => {
   };
 
   const toggleKeyVisibility = (keyId: string) => {
-    setShowKey(prev => ({ ...prev, [keyId]: !prev[keyId] }));
+    setShowKey((prev) => ({ ...prev, [keyId]: !prev[keyId] }));
   };
 
   const createAPIKey = () => {
@@ -229,14 +241,14 @@ export const APIManager: React.FC = () => {
       permissions: newKeyPermissions,
       createdAt: new Date(),
       usage: { total: 0, today: 0, limit: 1000 },
-      status: 'active'
+      status: "active",
     };
 
-    setApiKeys(prev => [...prev, newKey]);
-    setNewKeyName('');
+    setApiKeys((prev) => [...prev, newKey]);
+    setNewKeyName("");
     setNewKeyPermissions([]);
     setIsCreateDialogOpen(false);
-    
+
     toast({
       title: "API Key Created",
       description: "New API key has been generated successfully",
@@ -244,10 +256,12 @@ export const APIManager: React.FC = () => {
   };
 
   const revokeAPIKey = (keyId: string) => {
-    setApiKeys(prev => prev.map(key =>
-      key.id === keyId ? { ...key, status: 'revoked' as const } : key
-    ));
-    
+    setApiKeys((prev) =>
+      prev.map((key) =>
+        key.id === keyId ? { ...key, status: "revoked" as const } : key,
+      ),
+    );
+
     toast({
       title: "API Key Revoked",
       description: "The API key has been revoked and is no longer valid",
@@ -257,28 +271,37 @@ export const APIManager: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { color: 'bg-green-100 text-green-800', text: 'Active' },
-      revoked: { color: 'bg-red-100 text-red-800', text: 'Revoked' },
-      expired: { color: 'bg-gray-100 text-gray-800', text: 'Expired' },
-      beta: { color: 'bg-blue-100 text-blue-800', text: 'Beta' },
-      deprecated: { color: 'bg-yellow-100 text-yellow-800', text: 'Deprecated' }
+      active: { color: "bg-green-100 text-green-800", text: "Active" },
+      revoked: { color: "bg-red-100 text-red-800", text: "Revoked" },
+      expired: { color: "bg-gray-100 text-gray-800", text: "Expired" },
+      beta: { color: "bg-blue-100 text-blue-800", text: "Beta" },
+      deprecated: {
+        color: "bg-yellow-100 text-yellow-800",
+        text: "Deprecated",
+      },
     };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
+
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
     return <Badge className={config.color}>{config.text}</Badge>;
   };
 
   const getMethodBadge = (method: string) => {
     const methodColors = {
-      GET: 'bg-green-100 text-green-800',
-      POST: 'bg-blue-100 text-blue-800',
-      PUT: 'bg-yellow-100 text-yellow-800',
-      DELETE: 'bg-red-100 text-red-800',
-      PATCH: 'bg-purple-100 text-purple-800'
+      GET: "bg-green-100 text-green-800",
+      POST: "bg-blue-100 text-blue-800",
+      PUT: "bg-yellow-100 text-yellow-800",
+      DELETE: "bg-red-100 text-red-800",
+      PATCH: "bg-purple-100 text-purple-800",
     };
-    
+
     return (
-      <Badge className={methodColors[method as keyof typeof methodColors] || 'bg-gray-100 text-gray-800'}>
+      <Badge
+        className={
+          methodColors[method as keyof typeof methodColors] ||
+          "bg-gray-100 text-gray-800"
+        }
+      >
         {method}
       </Badge>
     );
@@ -288,11 +311,14 @@ export const APIManager: React.FC = () => {
     return Math.min((current / limit) * 100, 100);
   };
 
-  const endpointsByCategory = endpoints.reduce((acc, endpoint) => {
-    if (!acc[endpoint.category]) acc[endpoint.category] = [];
-    acc[endpoint.category].push(endpoint);
-    return acc;
-  }, {} as Record<string, APIEndpoint[]>);
+  const endpointsByCategory = endpoints.reduce(
+    (acc, endpoint) => {
+      if (!acc[endpoint.category]) acc[endpoint.category] = [];
+      acc[endpoint.category].push(endpoint);
+      return acc;
+    },
+    {} as Record<string, APIEndpoint[]>,
+  );
 
   return (
     <div className="space-y-6">
@@ -323,7 +349,10 @@ export const APIManager: React.FC = () => {
         <TabsContent value="keys" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-medium">API Keys</h3>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <Dialog
+              open={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+            >
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
@@ -350,30 +379,48 @@ export const APIManager: React.FC = () => {
                   <div className="space-y-2">
                     <Label>Permissions</Label>
                     <div className="grid grid-cols-2 gap-2">
-                      {['read', 'write', 'admin', 'webhooks'].map((permission) => (
-                        <label key={permission} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={newKeyPermissions.includes(permission)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setNewKeyPermissions(prev => [...prev, permission]);
-                              } else {
-                                setNewKeyPermissions(prev => prev.filter(p => p !== permission));
-                              }
-                            }}
-                          />
-                          <span className="text-sm capitalize">{permission}</span>
-                        </label>
-                      ))}
+                      {["read", "write", "admin", "webhooks"].map(
+                        (permission) => (
+                          <label
+                            key={permission}
+                            className="flex items-center space-x-2"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={newKeyPermissions.includes(permission)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setNewKeyPermissions((prev) => [
+                                    ...prev,
+                                    permission,
+                                  ]);
+                                } else {
+                                  setNewKeyPermissions((prev) =>
+                                    prev.filter((p) => p !== permission),
+                                  );
+                                }
+                              }}
+                            />
+                            <span className="text-sm capitalize">
+                              {permission}
+                            </span>
+                          </label>
+                        ),
+                      )}
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCreateDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
-                  <Button onClick={createAPIKey} disabled={!newKeyName || newKeyPermissions.length === 0}>
+                  <Button
+                    onClick={createAPIKey}
+                    disabled={!newKeyName || newKeyPermissions.length === 0}
+                  >
                     Create Key
                   </Button>
                 </DialogFooter>
@@ -392,7 +439,8 @@ export const APIManager: React.FC = () => {
                         <CardTitle className="text-lg">{apiKey.name}</CardTitle>
                         <CardDescription>
                           Created {apiKey.createdAt.toLocaleDateString()}
-                          {apiKey.lastUsed && ` • Last used ${apiKey.lastUsed.toLocaleString()}`}
+                          {apiKey.lastUsed &&
+                            ` • Last used ${apiKey.lastUsed.toLocaleString()}`}
                         </CardDescription>
                       </div>
                     </div>
@@ -404,7 +452,7 @@ export const APIManager: React.FC = () => {
                     <Label>API Key</Label>
                     <div className="flex items-center gap-2">
                       <Input
-                        type={showKey[apiKey.id] ? 'text' : 'password'}
+                        type={showKey[apiKey.id] ? "text" : "password"}
                         value={apiKey.key}
                         readOnly
                         className="font-mono"
@@ -435,7 +483,11 @@ export const APIManager: React.FC = () => {
                       <Label className="text-sm">Permissions</Label>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {apiKey.permissions.map((permission) => (
-                          <Badge key={permission} variant="outline" className="capitalize">
+                          <Badge
+                            key={permission}
+                            variant="outline"
+                            className="capitalize"
+                          >
                             {permission}
                           </Badge>
                         ))}
@@ -448,8 +500,11 @@ export const APIManager: React.FC = () => {
                           <span>Today: {apiKey.usage.today}</span>
                           <span>Total: {apiKey.usage.total}</span>
                         </div>
-                        <Progress 
-                          value={calculateUsagePercentage(apiKey.usage.today, apiKey.usage.limit)} 
+                        <Progress
+                          value={calculateUsagePercentage(
+                            apiKey.usage.today,
+                            apiKey.usage.limit,
+                          )}
                           className="h-2"
                         />
                       </div>
@@ -467,11 +522,11 @@ export const APIManager: React.FC = () => {
                     <Button variant="outline" size="sm">
                       Edit
                     </Button>
-                    <Button 
-                      variant="destructive" 
+                    <Button
+                      variant="destructive"
                       size="sm"
                       onClick={() => revokeAPIKey(apiKey.id)}
-                      disabled={apiKey.status === 'revoked'}
+                      disabled={apiKey.status === "revoked"}
                     >
                       <Trash2 className="h-3 w-3 mr-1" />
                       Revoke
@@ -493,38 +548,51 @@ export const APIManager: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {Object.entries(endpointsByCategory).map(([category, categoryEndpoints]) => (
-                  <div key={category}>
-                    <h4 className="font-medium mb-3">{category}</h4>
-                    <div className="space-y-2">
-                      {categoryEndpoints.map((endpoint) => (
-                        <div key={endpoint.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            {getMethodBadge(endpoint.method)}
-                            <div>
-                              <div className="font-mono text-sm">{endpoint.path}</div>
-                              <div className="text-xs text-muted-foreground">{endpoint.description}</div>
+                {Object.entries(endpointsByCategory).map(
+                  ([category, categoryEndpoints]) => (
+                    <div key={category}>
+                      <h4 className="font-medium mb-3">{category}</h4>
+                      <div className="space-y-2">
+                        {categoryEndpoints.map((endpoint) => (
+                          <div
+                            key={endpoint.id}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              {getMethodBadge(endpoint.method)}
+                              <div>
+                                <div className="font-mono text-sm">
+                                  {endpoint.path}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {endpoint.description}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <div className="text-sm font-medium">
+                                  {endpoint.usage}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  requests
+                                </div>
+                              </div>
+                              {endpoint.requiresAuth && (
+                                <Shield className="h-4 w-4 text-green-600" />
+                              )}
+                              {getStatusBadge(endpoint.status)}
+                              <Button variant="outline" size="sm">
+                                <Code className="h-3 w-3 mr-1" />
+                                Docs
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <div className="text-sm font-medium">{endpoint.usage}</div>
-                              <div className="text-xs text-muted-foreground">requests</div>
-                            </div>
-                            {endpoint.requiresAuth && (
-                              <Shield className="h-4 w-4 text-green-600" />
-                            )}
-                            {getStatusBadge(endpoint.status)}
-                            <Button variant="outline" size="sm">
-                              <Code className="h-3 w-3 mr-1" />
-                              Docs
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ),
+                )}
               </div>
             </CardContent>
           </Card>
@@ -552,12 +620,17 @@ export const APIManager: React.FC = () => {
                 </TableHeader>
                 <TableBody>
                   {rateLimits.map((limit) => {
-                    const percentage = calculateUsagePercentage(limit.current, limit.limit);
+                    const percentage = calculateUsagePercentage(
+                      limit.current,
+                      limit.limit,
+                    );
                     const isNearLimit = percentage > 80;
-                    
+
                     return (
                       <TableRow key={limit.id}>
-                        <TableCell className="font-mono">{limit.endpoint}</TableCell>
+                        <TableCell className="font-mono">
+                          {limit.endpoint}
+                        </TableCell>
                         <TableCell>{limit.limit}</TableCell>
                         <TableCell>{limit.window}</TableCell>
                         <TableCell>
@@ -568,9 +641,9 @@ export const APIManager: React.FC = () => {
                                 {percentage.toFixed(0)}%
                               </span>
                             </div>
-                            <Progress 
-                              value={percentage} 
-                              className={`h-2 ${isNearLimit ? 'bg-red-100' : ''}`}
+                            <Progress
+                              value={percentage}
+                              className={`h-2 ${isNearLimit ? "bg-red-100" : ""}`}
                             />
                           </div>
                         </TableCell>
@@ -623,7 +696,7 @@ export const APIManager: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {apiKeys.filter(key => key.status === 'active').length}
+                  {apiKeys.filter((key) => key.status === "active").length}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   of {apiKeys.length} total keys
@@ -670,7 +743,10 @@ export const APIManager: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 {endpoints.slice(0, 5).map((endpoint) => (
-                  <div key={endpoint.id} className="flex items-center justify-between">
+                  <div
+                    key={endpoint.id}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-3">
                       {getMethodBadge(endpoint.method)}
                       <span className="font-mono text-sm">{endpoint.path}</span>
@@ -678,10 +754,15 @@ export const APIManager: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <div className="font-medium">{endpoint.usage}</div>
-                        <div className="text-xs text-muted-foreground">requests</div>
+                        <div className="text-xs text-muted-foreground">
+                          requests
+                        </div>
                       </div>
                       <div className="w-20">
-                        <Progress value={(endpoint.usage / 2500) * 100} className="h-2" />
+                        <Progress
+                          value={(endpoint.usage / 2500) * 100}
+                          className="h-2"
+                        />
                       </div>
                     </div>
                   </div>

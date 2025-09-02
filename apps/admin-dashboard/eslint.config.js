@@ -27,5 +27,5 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "warn", // Change from error to warning
       "react-hooks/exhaustive-deps": "warn", // Ensure this is warning, not error
     },
-  }
+  },
 );

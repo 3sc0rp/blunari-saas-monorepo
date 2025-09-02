@@ -1,14 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
   Plus,
   Settings,
   Activity,
@@ -24,10 +30,10 @@ import {
   ExternalLink,
   Play,
   Pause,
-  RotateCcw
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+  RotateCcw,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface POSProvider {
   id: string;
@@ -81,15 +87,19 @@ export default function POSSystemsPage() {
   const [events, setEvents] = useState<POSEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [healthChecking, setHealthChecking] = useState(false);
-  const [individualHealthChecks, setIndividualHealthChecks] = useState<Set<string>>(new Set());
-  const [selectedProvider, setSelectedProvider] = useState<POSProvider | null>(null);
+  const [individualHealthChecks, setIndividualHealthChecks] = useState<
+    Set<string>
+  >(new Set());
+  const [selectedProvider, setSelectedProvider] = useState<POSProvider | null>(
+    null,
+  );
   const [showAddIntegration, setShowAddIntegration] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadPOSData();
     const cleanup = setupRealtimeSubscriptions();
-    
+
     return () => {
       if (cleanup) cleanup();
     };
@@ -101,42 +111,50 @@ export default function POSSystemsPage() {
 
       // Load providers
       const { data: providersData, error: providersError } = await supabase
-        .from('pos_providers')
-        .select('*')
-        .eq('status', 'active')
-        .order('name');
+        .from("pos_providers")
+        .select("*")
+        .eq("status", "active")
+        .order("name");
 
       if (providersError) throw providersError;
 
       // Transform providers data to match our interface
-      const transformedProviders: POSProvider[] = (providersData || []).map(provider => ({
-        id: provider.id,
-        name: provider.name,
-        slug: provider.slug,
-        description: provider.description,
-        logo_url: provider.logo_url,
-        status: provider.status,
-        event_types: Array.isArray(provider.event_types) 
-          ? (provider.event_types as string[])
-          : typeof provider.event_types === 'string' 
-            ? [provider.event_types] 
-            : [],
-        configuration_schema: (provider.configuration_schema as Record<string, unknown>) || {}
-      }));
+      const transformedProviders: POSProvider[] = (providersData || []).map(
+        (provider) => ({
+          id: provider.id,
+          name: provider.name,
+          slug: provider.slug,
+          description: provider.description,
+          logo_url: provider.logo_url,
+          status: provider.status,
+          event_types: Array.isArray(provider.event_types)
+            ? (provider.event_types as string[])
+            : typeof provider.event_types === "string"
+              ? [provider.event_types]
+              : [],
+          configuration_schema:
+            (provider.configuration_schema as Record<string, unknown>) || {},
+        }),
+      );
 
       // Load integrations
-      const { data: integrationsData, error: integrationsError } = await supabase
-        .from('pos_integrations')
-        .select(`
+      const { data: integrationsData, error: integrationsError } =
+        await supabase
+          .from("pos_integrations")
+          .select(
+            `
           *,
           pos_providers!inner(*)
-        `)
-        .order('created_at', { ascending: false });
+        `,
+          )
+          .order("created_at", { ascending: false });
 
       if (integrationsError) throw integrationsError;
 
       // Transform integrations data to match our interface
-      const transformedIntegrations: POSIntegration[] = (integrationsData || []).map(integration => ({
+      const transformedIntegrations: POSIntegration[] = (
+        integrationsData || []
+      ).map((integration) => ({
         id: integration.id,
         tenant_id: integration.tenant_id,
         provider_id: integration.provider_id,
@@ -148,26 +166,32 @@ export default function POSSystemsPage() {
         error_message: integration.error_message,
         pos_providers: {
           ...integration.pos_providers,
-          event_types: Array.isArray(integration.pos_providers.event_types) 
+          event_types: Array.isArray(integration.pos_providers.event_types)
             ? (integration.pos_providers.event_types as string[])
-            : typeof integration.pos_providers.event_types === 'string' 
-              ? [integration.pos_providers.event_types] 
+            : typeof integration.pos_providers.event_types === "string"
+              ? [integration.pos_providers.event_types]
               : [],
-          configuration_schema: (integration.pos_providers.configuration_schema as Record<string, unknown>) || {}
-        }
+          configuration_schema:
+            (integration.pos_providers.configuration_schema as Record<
+              string,
+              unknown
+            >) || {},
+        },
       }));
 
       // Load recent events
       const { data: eventsData, error: eventsError } = await supabase
-        .from('pos_events')
-        .select(`
+        .from("pos_events")
+        .select(
+          `
           *,
           pos_integrations!inner(
             integration_name,
             pos_providers!inner(name)
           )
-        `)
-        .order('created_at', { ascending: false })
+        `,
+        )
+        .order("created_at", { ascending: false })
         .limit(50);
 
       if (eventsError) throw eventsError;
@@ -175,13 +199,12 @@ export default function POSSystemsPage() {
       setProviders(transformedProviders);
       setIntegrations(transformedIntegrations);
       setEvents(eventsData || []);
-
     } catch (error: unknown) {
-      console.error('Error loading POS data:', error);
+      console.error("Error loading POS data:", error);
       toast({
         title: "Error",
         description: "Failed to load POS systems data",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -190,30 +213,32 @@ export default function POSSystemsPage() {
 
   const setupRealtimeSubscriptions = () => {
     const integrationsChannel = supabase
-      .channel('pos-integrations-changes')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'pos_integrations' },
+      .channel("pos-integrations-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pos_integrations" },
         () => {
           loadPOSData();
           toast({
             title: "Live Update",
             description: "POS integration status updated",
           });
-        }
+        },
       )
       .subscribe();
 
     const eventsChannel = supabase
-      .channel('pos-events-changes')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'pos_events' },
+      .channel("pos-events-changes")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "pos_events" },
         () => {
           loadPOSData();
           toast({
             title: "New POS Event",
             description: "A new POS event has been received",
           });
-        }
+        },
       )
       .subscribe();
 
@@ -226,50 +251,55 @@ export default function POSSystemsPage() {
   const runHealthCheck = async (integrationId?: string) => {
     try {
       if (integrationId) {
-        setIndividualHealthChecks(prev => new Set([...prev, integrationId]));
+        setIndividualHealthChecks((prev) => new Set([...prev, integrationId]));
       } else {
         setHealthChecking(true);
       }
-      
-      const { data, error } = await supabase.functions.invoke('pos-health-monitor', {
-        body: {
-          integration_id: integrationId,
-          check_all: !integrationId
-        }
-      });
+
+      const { data, error } = await supabase.functions.invoke(
+        "pos-health-monitor",
+        {
+          body: {
+            integration_id: integrationId,
+            check_all: !integrationId,
+          },
+        },
+      );
 
       if (error) {
-        throw new Error(error.message || 'Health check failed');
+        throw new Error(error.message || "Health check failed");
       }
 
       if (data?.success) {
         toast({
           title: "Health Check Complete",
-          description: integrationId 
+          description: integrationId
             ? "Integration health check completed successfully"
             : `Successfully checked ${data.results?.length || 0} integrations`,
         });
-        
+
         // Refresh data to show updated health status
         await loadPOSData();
       } else {
-        throw new Error(data?.message || 'Health check returned unsuccessful result');
+        throw new Error(
+          data?.message || "Health check returned unsuccessful result",
+        );
       }
-
     } catch (error: unknown) {
-      console.error('Health check error:', error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'An unexpected error occurred during health check';
-        
+      console.error("Health check error:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred during health check";
+
       toast({
         title: "Health Check Failed",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       if (integrationId) {
-        setIndividualHealthChecks(prev => {
+        setIndividualHealthChecks((prev) => {
           const newSet = new Set(prev);
           newSet.delete(integrationId);
           return newSet;
@@ -282,23 +312,24 @@ export default function POSSystemsPage() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      connected: { variant: 'default' as const, label: 'Connected' },
-      pending: { variant: 'secondary' as const, label: 'Pending' },
-      error: { variant: 'destructive' as const, label: 'Error' },
-      disabled: { variant: 'outline' as const, label: 'Disabled' }
+      connected: { variant: "default" as const, label: "Connected" },
+      pending: { variant: "secondary" as const, label: "Pending" },
+      error: { variant: "destructive" as const, label: "Error" },
+      disabled: { variant: "outline" as const, label: "Disabled" },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    const config =
+      statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   const getHealthIcon = (healthStatus: string) => {
     switch (healthStatus) {
-      case 'healthy':
+      case "healthy":
         return <CheckCircle className="h-4 w-4 text-success" />;
-      case 'degraded':
+      case "degraded":
         return <AlertTriangle className="h-4 w-4 text-warning" />;
-      case 'unhealthy':
+      case "unhealthy":
         return <WifiOff className="h-4 w-4 text-destructive" />;
       default:
         return <Wifi className="h-4 w-4 text-muted-foreground" />;
@@ -308,14 +339,14 @@ export default function POSSystemsPage() {
   const getProviderLogo = (provider: POSProvider): string => {
     // In a real app, these would be actual logos
     const logos: Record<string, string> = {
-      'toast': '🍞',
-      'square': '�',
-      'clover': '🍀',
-      'resy': '🎯',
-      'opentable': '📋',
-      'custom': '⚙️'
+      toast: "🍞",
+      square: "�",
+      clover: "🍀",
+      resy: "🎯",
+      opentable: "📋",
+      custom: "⚙️",
     };
-    return logos[provider.slug] || '📱';
+    return logos[provider.slug] || "📱";
   };
 
   if (loading) {
@@ -324,7 +355,9 @@ export default function POSSystemsPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">POS Systems</h1>
-            <p className="text-muted-foreground">Manage point-of-sale integrations</p>
+            <p className="text-muted-foreground">
+              Manage point-of-sale integrations
+            </p>
           </div>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -368,7 +401,10 @@ export default function POSSystemsPage() {
               )}
               Check All Health
             </Button>
-            <Button variant="default" onClick={() => setShowAddIntegration(true)}>
+            <Button
+              variant="default"
+              onClick={() => setShowAddIntegration(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Integration
             </Button>
@@ -379,7 +415,9 @@ export default function POSSystemsPage() {
         <div className="grid gap-6 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Integrations</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Integrations
+              </CardTitle>
               <Database className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -393,7 +431,7 @@ export default function POSSystemsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {integrations.filter(i => i.status === 'connected').length}
+                {integrations.filter((i) => i.status === "connected").length}
               </div>
             </CardContent>
           </Card>
@@ -404,21 +442,28 @@ export default function POSSystemsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {integrations.filter(i => i.health_status === 'healthy').length}
+                {
+                  integrations.filter((i) => i.health_status === "healthy")
+                    .length
+                }
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Events Today</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Events Today
+              </CardTitle>
               <Zap className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {events.filter(e => {
-                  const today = new Date().toDateString();
-                  return new Date(e.created_at).toDateString() === today;
-                }).length}
+                {
+                  events.filter((e) => {
+                    const today = new Date().toDateString();
+                    return new Date(e.created_at).toDateString() === today;
+                  }).length
+                }
               </div>
             </CardContent>
           </Card>
@@ -438,9 +483,12 @@ export default function POSSystemsPage() {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Monitor className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No POS Integrations</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    No POS Integrations
+                  </h3>
                   <p className="text-muted-foreground text-center mb-4">
-                    Connect your first POS system to start receiving events and managing orders.
+                    Connect your first POS system to start receiving events and
+                    managing orders.
                   </p>
                   <Button onClick={() => setShowAddIntegration(true)}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -472,15 +520,21 @@ export default function POSSystemsPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Status</span>
+                        <span className="text-sm text-muted-foreground">
+                          Status
+                        </span>
                         {getStatusBadge(integration.status)}
                       </div>
-                      
+
                       {integration.last_sync_at && (
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Last Sync</span>
+                          <span className="text-sm text-muted-foreground">
+                            Last Sync
+                          </span>
                           <span className="text-sm">
-                            {new Date(integration.last_sync_at).toLocaleString()}
+                            {new Date(
+                              integration.last_sync_at,
+                            ).toLocaleString()}
                           </span>
                         </div>
                       )}
@@ -524,10 +578,15 @@ export default function POSSystemsPage() {
           <TabsContent value="providers" className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {providers.map((provider) => (
-                <Card key={provider.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                <Card
+                  key={provider.id}
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                >
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <span className="text-3xl">{getProviderLogo(provider)}</span>
+                      <span className="text-3xl">
+                        {getProviderLogo(provider)}
+                      </span>
                       <div>
                         <CardTitle>{provider.name}</CardTitle>
                         <CardDescription className="line-clamp-2">
@@ -538,19 +597,25 @@ export default function POSSystemsPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex flex-wrap gap-1">
-                      {provider.event_types.slice(0, 3).map((eventType: string) => (
-                        <Badge key={eventType} variant="secondary" className="text-xs">
-                          {eventType.replace(/_/g, ' ')}
-                        </Badge>
-                      ))}
+                      {provider.event_types
+                        .slice(0, 3)
+                        .map((eventType: string) => (
+                          <Badge
+                            key={eventType}
+                            variant="secondary"
+                            className="text-xs"
+                          >
+                            {eventType.replace(/_/g, " ")}
+                          </Badge>
+                        ))}
                       {provider.event_types.length > 3 && (
                         <Badge variant="outline" className="text-xs">
                           +{provider.event_types.length - 3} more
                         </Badge>
                       )}
                     </div>
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       onClick={() => {
                         setSelectedProvider(provider);
                         setShowAddIntegration(true);
@@ -577,17 +642,25 @@ export default function POSSystemsPage() {
                 <ScrollArea className="h-96">
                   <div className="space-y-4">
                     {events.map((event) => (
-                      <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div
+                        key={event.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
                         <div className="flex items-center gap-3">
-                          <div className={`w-2 h-2 rounded-full ${
-                            event.processed ? 'bg-success' : 'bg-warning'
-                          }`} />
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              event.processed ? "bg-success" : "bg-warning"
+                            }`}
+                          />
                           <div>
                             <div className="font-medium text-sm">
-                              {event.event_type.replace(/_/g, ' ').toUpperCase()}
+                              {event.event_type
+                                .replace(/_/g, " ")
+                                .toUpperCase()}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {event.pos_integrations.pos_providers.name} • {event.pos_integrations.integration_name}
+                              {event.pos_integrations.pos_providers.name} •{" "}
+                              {event.pos_integrations.integration_name}
                             </div>
                             {event.error_message && (
                               <div className="text-xs text-destructive mt-1">
@@ -600,7 +673,10 @@ export default function POSSystemsPage() {
                           <div className="text-sm text-muted-foreground">
                             {new Date(event.created_at).toLocaleString()}
                           </div>
-                          <Badge variant={event.processed ? "default" : "secondary"} className="text-xs">
+                          <Badge
+                            variant={event.processed ? "default" : "secondary"}
+                            className="text-xs"
+                          >
                             {event.processed ? "Processed" : "Pending"}
                           </Badge>
                         </div>
@@ -611,7 +687,8 @@ export default function POSSystemsPage() {
                         <Zap className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <h3 className="font-medium mb-2">No Events Yet</h3>
                         <p className="text-sm">
-                          Events will appear here once your POS integrations start sending data
+                          Events will appear here once your POS integrations
+                          start sending data
                         </p>
                       </div>
                     )}
@@ -631,8 +708,8 @@ export default function POSSystemsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Button 
-                    className="w-full" 
+                  <Button
+                    className="w-full"
                     variant="outline"
                     onClick={() => runHealthCheck()}
                     disabled={healthChecking}

@@ -1,29 +1,40 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { AnalyticsDashboardData, ROIMetrics, RevenueAnalytics, BookingPatterns, OperationalMetrics } from '@/types/analytics';
-import { useTodaysBookings } from './useRealtimeBookings';
+import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  AnalyticsDashboardData,
+  ROIMetrics,
+  RevenueAnalytics,
+  BookingPatterns,
+  OperationalMetrics,
+} from "@/types/analytics";
+import { useTodaysBookings } from "./useRealtimeBookings";
 
-export const useAnalytics = (tenantId?: string, dateRange?: { start: string; end: string }) => {
+export const useAnalytics = (
+  tenantId?: string,
+  dateRange?: { start: string; end: string },
+) => {
   const { bookings } = useTodaysBookings(tenantId);
 
   // Fetch historical booking data
   const { data: historicalBookings, isLoading } = useQuery({
-    queryKey: ['analytics-bookings', tenantId, dateRange],
+    queryKey: ["analytics-bookings", tenantId, dateRange],
     queryFn: async () => {
       if (!tenantId) return [];
-      
-      const startDate = dateRange?.start || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const startDate =
+        dateRange?.start ||
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const endDate = dateRange?.end || new Date().toISOString();
-      
+
       const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .gte('booking_time', startDate)
-        .lte('booking_time', endDate)
-        .order('booking_time', { ascending: true });
-      
+        .from("bookings")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .gte("booking_time", startDate)
+        .lte("booking_time", endDate)
+        .order("booking_time", { ascending: true });
+
       if (error) throw error;
       return data || [];
     },
@@ -34,10 +45,14 @@ export const useAnalytics = (tenantId?: string, dateRange?: { start: string; end
   const roiMetrics: ROIMetrics = useMemo(() => {
     if (!historicalBookings) return getDefaultROIMetrics();
 
-    const completedBookings = historicalBookings.filter(b => b.status === 'completed');
-    const noshowBookings = historicalBookings.filter(b => b.status === 'no_show');
+    const completedBookings = historicalBookings.filter(
+      (b) => b.status === "completed",
+    );
+    const noshowBookings = historicalBookings.filter(
+      (b) => b.status === "no_show",
+    );
     const totalRevenue = completedBookings.length * 85; // Average revenue estimate
-    
+
     return {
       feesAvoided: {
         amount: noshowBookings.length * 25 + completedBookings.length * 3.5, // Saved fees
@@ -70,9 +85,14 @@ export const useAnalytics = (tenantId?: string, dateRange?: { start: string; end
   const revenueAnalytics: RevenueAnalytics = useMemo(() => {
     if (!historicalBookings) return getDefaultRevenueAnalytics();
 
-    const completedBookings = historicalBookings.filter(b => b.status === 'completed');
+    const completedBookings = historicalBookings.filter(
+      (b) => b.status === "completed",
+    );
     const totalRevenue = completedBookings.length * 85;
-    const totalCovers = completedBookings.reduce((sum, b) => sum + b.party_size, 0);
+    const totalCovers = completedBookings.reduce(
+      (sum, b) => sum + b.party_size,
+      0,
+    );
 
     // Group by day for daily analytics
     const dailyData = groupBookingsByDay(completedBookings);
@@ -110,10 +130,15 @@ export const useAnalytics = (tenantId?: string, dateRange?: { start: string; end
   const operationalMetrics: OperationalMetrics = useMemo(() => {
     if (!historicalBookings) return getDefaultOperationalMetrics();
 
-    const completedBookings = historicalBookings.filter(b => b.status === 'completed');
-    const noshowRate = historicalBookings.length > 0 
-      ? (historicalBookings.filter(b => b.status === 'no_show').length / historicalBookings.length) * 100 
-      : 0;
+    const completedBookings = historicalBookings.filter(
+      (b) => b.status === "completed",
+    );
+    const noshowRate =
+      historicalBookings.length > 0
+        ? (historicalBookings.filter((b) => b.status === "no_show").length /
+            historicalBookings.length) *
+          100
+        : 0;
 
     return {
       tableUtilization: calculateTableUtilization(completedBookings),
@@ -132,7 +157,8 @@ export const useAnalytics = (tenantId?: string, dateRange?: { start: string; end
         rate: noshowRate,
         trend: -2.3, // Improvement trend
         preventionRate: 65, // Prevention success rate
-        lostRevenue: historicalBookings.filter(b => b.status === 'no_show').length * 85,
+        lostRevenue:
+          historicalBookings.filter((b) => b.status === "no_show").length * 85,
       },
     };
   }, [historicalBookings]);
@@ -162,23 +188,46 @@ export const useAnalytics = (tenantId?: string, dateRange?: { start: string; end
 // Helper functions
 function getDefaultROIMetrics(): ROIMetrics {
   return {
-    feesAvoided: { amount: 0, noshowFeesAvoided: 0, overdraftFeesAvoided: 0, chargebackFeesAvoided: 0 },
-    extraCovers: { count: 0, revenue: 0, optimizedSeating: 0, revenuePerCover: 0 },
-    noshowsPrevented: { count: 0, savedRevenue: 0, depositHolds: 0, smsReminders: 0 },
+    feesAvoided: {
+      amount: 0,
+      noshowFeesAvoided: 0,
+      overdraftFeesAvoided: 0,
+      chargebackFeesAvoided: 0,
+    },
+    extraCovers: {
+      count: 0,
+      revenue: 0,
+      optimizedSeating: 0,
+      revenuePerCover: 0,
+    },
+    noshowsPrevented: {
+      count: 0,
+      savedRevenue: 0,
+      depositHolds: 0,
+      smsReminders: 0,
+    },
     revpashUplift: { current: 0, baseline: 0, uplift: 0, seatUtilization: 0 },
   };
 }
 
 function getDefaultRevenueAnalytics(): RevenueAnalytics {
   return {
-    daily: [], weekly: [], monthly: [],
-    averageSpendPerCover: 0, totalRevenue: 0, totalCovers: 0, revenueGrowth: 0,
+    daily: [],
+    weekly: [],
+    monthly: [],
+    averageSpendPerCover: 0,
+    totalRevenue: 0,
+    totalCovers: 0,
+    revenueGrowth: 0,
   };
 }
 
 function getDefaultBookingPatterns(): BookingPatterns {
   return {
-    peakHours: [], dayOfWeek: [], sourcePerformance: [], seasonalTrends: [],
+    peakHours: [],
+    dayOfWeek: [],
+    sourcePerformance: [],
+    seasonalTrends: [],
   };
 }
 
@@ -189,27 +238,44 @@ function calculateRevenueGrowth(bookings: BookingData[]): number {
   const currentYear = now.getFullYear();
   const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-  const currentMonthBookings = bookings.filter(booking => {
+  const currentMonthBookings = bookings.filter((booking) => {
     const bookingDate = new Date(booking.booking_time || booking.created_at);
-    return bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear;
+    return (
+      bookingDate.getMonth() === currentMonth &&
+      bookingDate.getFullYear() === currentYear
+    );
   });
 
-  const lastMonthBookings = bookings.filter(booking => {
+  const lastMonthBookings = bookings.filter((booking) => {
     const bookingDate = new Date(booking.booking_time || booking.created_at);
-    return bookingDate.getMonth() === lastMonth && bookingDate.getFullYear() === lastMonthYear;
+    return (
+      bookingDate.getMonth() === lastMonth &&
+      bookingDate.getFullYear() === lastMonthYear
+    );
   });
 
   const currentRevenue = currentMonthBookings.length * 85; // Estimated revenue
   const lastRevenue = lastMonthBookings.length * 85;
 
-  return lastRevenue > 0 ? ((currentRevenue - lastRevenue) / lastRevenue) * 100 : 0;
+  return lastRevenue > 0
+    ? ((currentRevenue - lastRevenue) / lastRevenue) * 100
+    : 0;
 }
 
 function getDefaultOperationalMetrics(): OperationalMetrics {
   return {
     tableUtilization: [],
-    serviceTimes: { averageSeatingTime: 0, averageTurnoverTime: 0, peakServiceTime: 0, efficiencyScore: 0 },
-    staffEfficiency: { bookingsPerStaff: 0, revenuePerStaff: 0, customerSatisfaction: 0 },
+    serviceTimes: {
+      averageSeatingTime: 0,
+      averageTurnoverTime: 0,
+      peakServiceTime: 0,
+      efficiencyScore: 0,
+    },
+    staffEfficiency: {
+      bookingsPerStaff: 0,
+      revenuePerStaff: 0,
+      customerSatisfaction: 0,
+    },
     noshowAnalysis: { rate: 0, trend: 0, preventionRate: 0, lostRevenue: 0 },
   };
 }
@@ -224,15 +290,15 @@ interface BookingData {
 
 function groupBookingsByDay(bookings: BookingData[]) {
   const groups: { [key: string]: BookingData[] } = {};
-  
-  bookings.forEach(booking => {
+
+  bookings.forEach((booking) => {
     const date = new Date(booking.booking_time || booking.created_at);
-    const key = date.toISOString().split('T')[0];
-    
+    const key = date.toISOString().split("T")[0];
+
     if (!groups[key]) groups[key] = [];
     groups[key].push(booking);
   });
-  
+
   return Object.entries(groups).map(([date, bookings]) => ({
     date,
     revenue: bookings.length * 85,
@@ -242,16 +308,16 @@ function groupBookingsByDay(bookings: BookingData[]) {
 
 function groupBookingsByWeek(bookings: BookingData[]) {
   const groups: { [key: string]: BookingData[] } = {};
-  
-  bookings.forEach(booking => {
+
+  bookings.forEach((booking) => {
     const date = new Date(booking.booking_time || booking.created_at);
     const week = getWeekNumber(date);
     const key = `${date.getFullYear()}-W${week}`;
-    
+
     if (!groups[key]) groups[key] = [];
     groups[key].push(booking);
   });
-  
+
   return Object.entries(groups).map(([week, bookings]) => ({
     week,
     revenue: bookings.length * 85,
@@ -261,15 +327,15 @@ function groupBookingsByWeek(bookings: BookingData[]) {
 
 function groupBookingsByMonth(bookings: BookingData[]) {
   const groups: { [key: string]: BookingData[] } = {};
-  
-  bookings.forEach(booking => {
+
+  bookings.forEach((booking) => {
     const date = new Date(booking.booking_time || booking.created_at);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
     if (!groups[key]) groups[key] = [];
     groups[key].push(booking);
   });
-  
+
   return Object.entries(groups).map(([month, bookings]) => ({
     month,
     revenue: bookings.length * 85,
@@ -279,12 +345,14 @@ function groupBookingsByMonth(bookings: BookingData[]) {
 
 function calculatePeakHours(bookings: BookingData[]) {
   const hourCounts: { [hour: number]: number } = {};
-  
-  bookings.forEach(booking => {
-    const hour = new Date(booking.booking_time || booking.created_at).getHours();
+
+  bookings.forEach((booking) => {
+    const hour = new Date(
+      booking.booking_time || booking.created_at,
+    ).getHours();
     hourCounts[hour] = (hourCounts[hour] || 0) + 1;
   });
-  
+
   return Object.entries(hourCounts).map(([hour, count]) => ({
     hour: parseInt(hour),
     bookings: count,
@@ -293,16 +361,25 @@ function calculatePeakHours(bookings: BookingData[]) {
 }
 
 function calculateDayOfWeekPatterns(bookings: BookingData[]) {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const dayCounts: { [day: number]: { bookings: number; revenue: number } } = {};
-  
-  bookings.forEach(booking => {
+  const dayNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  const dayCounts: { [day: number]: { bookings: number; revenue: number } } =
+    {};
+
+  bookings.forEach((booking) => {
     const day = new Date(booking.booking_time || booking.created_at).getDay();
     if (!dayCounts[day]) dayCounts[day] = { bookings: 0, revenue: 0 };
     dayCounts[day].bookings += 1;
-    dayCounts[day].revenue += (booking.status === 'completed' ? 85 : 0);
+    dayCounts[day].revenue += booking.status === "completed" ? 85 : 0;
   });
-  
+
   return Object.entries(dayCounts).map(([day, data]) => ({
     day: dayNames[parseInt(day)],
     bookings: data.bookings,
@@ -311,34 +388,40 @@ function calculateDayOfWeekPatterns(bookings: BookingData[]) {
 }
 
 function calculateSourcePerformance(bookings: BookingData[]) {
-  const sources = ['phone', 'website', 'walk_in', 'social', 'partner'];
-  const sourceData: { [source: string]: { bookings: number; revenue: number } } = {};
-  
-  bookings.forEach(booking => {
-    const source = 'website'; // Default since we don't have source data
+  const sources = ["phone", "website", "walk_in", "social", "partner"];
+  const sourceData: {
+    [source: string]: { bookings: number; revenue: number };
+  } = {};
+
+  bookings.forEach((booking) => {
+    const source = "website"; // Default since we don't have source data
     if (!sourceData[source]) sourceData[source] = { bookings: 0, revenue: 0 };
     sourceData[source].bookings += 1;
-    sourceData[source].revenue += (booking.status === 'completed' ? 85 : 0);
+    sourceData[source].revenue += booking.status === "completed" ? 85 : 0;
   });
-  
+
   return Object.entries(sourceData).map(([source, data]) => ({
     source,
     bookings: data.bookings,
     revenue: data.revenue,
-    conversionRate: data.bookings > 0 ? Math.min(95, 70 + Math.random() * 25) : 0, // Calculate based on completed vs total
+    conversionRate:
+      data.bookings > 0 ? Math.min(95, 70 + Math.random() * 25) : 0, // Calculate based on completed vs total
   }));
 }
 
 function calculateTableUtilization(bookings: BookingData[]) {
-  const tableData: { [tableId: string]: { bookings: number; revenue: number } } = {};
-  
-  bookings.forEach(booking => {
-    const tableId = (booking as BookingData & { table_id?: string }).table_id || 'unassigned';
+  const tableData: {
+    [tableId: string]: { bookings: number; revenue: number };
+  } = {};
+
+  bookings.forEach((booking) => {
+    const tableId =
+      (booking as BookingData & { table_id?: string }).table_id || "unassigned";
     if (!tableData[tableId]) tableData[tableId] = { bookings: 0, revenue: 0 };
     tableData[tableId].bookings += 1;
     tableData[tableId].revenue += 85;
   });
-  
+
   return Object.entries(tableData).map(([tableId, data]) => ({
     tableId,
     tableName: `Table ${tableId.slice(-1)}`,

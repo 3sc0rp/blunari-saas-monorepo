@@ -1,19 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useRef, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { MessageTemplate } from '@/types/messages';
-import { Send, FileText, X, Type, Clock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+} from "@/components/ui/select";
+import { MessageTemplate } from "@/types/messages";
+import { Send, FileText, X, Type, Clock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MessageComposerProps {
   templates?: MessageTemplate[];
@@ -34,8 +34,8 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   maxLength = 1000,
   showTemplates = false,
 }) => {
-  const [content, setContent] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [content, setContent] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [isScheduled, setIsScheduled] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -52,22 +52,22 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
   const handleSend = () => {
     if (!canSend) return;
-    
+
     onSendMessage(content.trim(), selectedTemplate || undefined);
-    setContent('');
-    setSelectedTemplate('');
+    setContent("");
+    setSelectedTemplate("");
     setShowTemplateSelector(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
   const handleTemplateSelect = (templateId: string) => {
-    const template = templates.find(t => t.id === templateId);
+    const template = templates.find((t) => t.id === templateId);
     if (template) {
       setContent(template.content);
       setSelectedTemplate(templateId);
@@ -76,8 +76,8 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   };
 
   const clearTemplate = () => {
-    setSelectedTemplate('');
-    setContent('');
+    setSelectedTemplate("");
+    setContent("");
   };
 
   return (
@@ -89,7 +89,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             {showTemplateSelector && templates.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
+                animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
@@ -103,13 +103,15 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                     </SelectTrigger>
                     <SelectContent className="bg-surface border-surface-2 z-50">
                       {templates.map((template) => (
-                        <SelectItem 
-                          key={template.id} 
+                        <SelectItem
+                          key={template.id}
                           value={template.id}
                           className="cursor-pointer hover:bg-surface-2"
                         >
                           <div className="flex flex-col items-start">
-                            <span className="font-medium text-body-sm">{template.name}</span>
+                            <span className="font-medium text-body-sm">
+                              {template.name}
+                            </span>
                             <span className="text-xs text-text-muted capitalize">
                               {template.category}
                             </span>
@@ -132,7 +134,8 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
             >
               <Badge variant="outline" className="text-xs">
                 <FileText className="h-3 w-3 mr-1" />
-                Template: {templates.find(t => t.id === selectedTemplate)?.name}
+                Template:{" "}
+                {templates.find((t) => t.id === selectedTemplate)?.name}
               </Badge>
               <Button
                 variant="ghost"
@@ -155,16 +158,18 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               placeholder={placeholder}
               disabled={disabled}
               className={`min-h-[80px] resize-none pr-12 ${
-                isOverLimit ? 'border-danger focus-visible:ring-danger' : ''
+                isOverLimit ? "border-danger focus-visible:ring-danger" : ""
               }`}
               aria-label="Message content"
             />
-            
+
             {/* Character Count */}
             <div className="absolute bottom-2 right-2 flex items-center gap-2">
-              <span className={`text-xs font-tabular ${
-                isOverLimit ? 'text-danger' : 'text-text-muted'
-              }`}>
+              <span
+                className={`text-xs font-tabular ${
+                  isOverLimit ? "text-danger" : "text-text-muted"
+                }`}
+              >
                 {characterCount}/{maxLength}
               </span>
             </div>
@@ -176,7 +181,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               {/* Template Toggle */}
               {showTemplates && templates.length > 0 && (
                 <Button
-                  variant={showTemplateSelector ? 'default' : 'outline'}
+                  variant={showTemplateSelector ? "default" : "outline"}
                   size="sm"
                   onClick={() => setShowTemplateSelector(!showTemplateSelector)}
                   className="text-xs"
@@ -188,7 +193,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
               {/* Schedule Toggle */}
               <Button
-                variant={isScheduled ? 'default' : 'outline'}
+                variant={isScheduled ? "default" : "outline"}
                 size="sm"
                 onClick={() => setIsScheduled(!isScheduled)}
                 className="text-xs"
@@ -215,7 +220,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
                   Cancel
                 </Button>
               )}
-              
+
               <Button
                 size="sm"
                 onClick={handleSend}
@@ -235,7 +240,8 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               animate={{ opacity: 1 }}
               className="text-xs text-danger"
             >
-              Message exceeds maximum length by {characterCount - maxLength} characters
+              Message exceeds maximum length by {characterCount - maxLength}{" "}
+              characters
             </motion.p>
           )}
         </div>

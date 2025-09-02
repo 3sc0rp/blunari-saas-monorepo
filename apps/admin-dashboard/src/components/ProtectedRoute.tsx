@@ -7,14 +7,17 @@ interface ProtectedRouteProps {
   requireTenant?: boolean;
 }
 
-export const ProtectedRoute = ({ children, requireTenant = false }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({
+  children,
+  requireTenant = false,
+}: ProtectedRouteProps) => {
   const { user, tenant, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!loading) {
       if (!user) {
-        navigate('/');
+        navigate("/");
       }
       // For internal staff app - no tenant requirement, go directly to dashboard
     }

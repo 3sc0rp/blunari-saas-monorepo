@@ -2,8 +2,8 @@
 
 // Preload critical resources
 export const preloadResource = (href: string, as: string, type?: string) => {
-  const link = document.createElement('link');
-  link.rel = 'preload';
+  const link = document.createElement("link");
+  link.rel = "preload";
   link.href = href;
   link.as = as;
   if (type) link.type = type;
@@ -22,12 +22,12 @@ export const preloadImage = (src: string): Promise<void> => {
 
 // Check if user prefers reduced motion
 export const prefersReducedMotion = (): boolean => {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 };
 
 // Measure performance metrics
 export const measurePerformance = (name: string, fn: () => void) => {
-  if ('performance' in window) {
+  if ("performance" in window) {
     performance.mark(`${name}-start`);
     fn();
     performance.mark(`${name}-end`);
@@ -40,14 +40,15 @@ export const measurePerformance = (name: string, fn: () => void) => {
 // Optimize for first contentful paint
 export const optimizeFCP = () => {
   // Preload critical fonts
-  preloadResource('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap', 'style');
-  
+  preloadResource(
+    "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+    "style",
+  );
+
   // Preload critical images if any
-  const criticalImages = [
-    '/placeholder.svg'
-  ];
-  
-  criticalImages.forEach(src => {
+  const criticalImages = ["/placeholder.svg"];
+
+  criticalImages.forEach((src) => {
     preloadImage(src).catch(() => {
       // Silent fail for image preloading
     });
@@ -56,7 +57,7 @@ export const optimizeFCP = () => {
 
 // Defer non-critical resources
 export const deferResource = (callback: () => void, delay = 100) => {
-  if ('requestIdleCallback' in window) {
+  if ("requestIdleCallback" in window) {
     requestIdleCallback(callback);
   } else {
     setTimeout(callback, delay);
@@ -103,7 +104,8 @@ class SimpleCache<T> {
   }
 }
 
-export const createCache = <T>(ttlMinutes?: number) => new SimpleCache<T>(ttlMinutes);
+export const createCache = <T>(ttlMinutes?: number) =>
+  new SimpleCache<T>(ttlMinutes);
 
 // Run performance optimizations on page load
 export const initializePerformance = () => {
@@ -111,28 +113,28 @@ export const initializePerformance = () => {
   optimizeFCP();
 
   // Set up intersection observer for lazy loading
-  if ('IntersectionObserver' in window) {
-    const lazyImages = document.querySelectorAll('img[data-lazy]');
+  if ("IntersectionObserver" in window) {
+    const lazyImages = document.querySelectorAll("img[data-lazy]");
     const imageObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
+      entries.forEach((entry) => {
         if (entry.isIntersecting) {
           const img = entry.target as HTMLImageElement;
-          img.src = img.dataset.lazy || '';
-          img.classList.remove('lazy');
+          img.src = img.dataset.lazy || "";
+          img.classList.remove("lazy");
           imageObserver.unobserve(img);
         }
       });
     });
 
-    lazyImages.forEach(img => imageObserver.observe(img));
+    lazyImages.forEach((img) => imageObserver.observe(img));
   }
 
   // Prefetch likely next pages
   deferResource(() => {
-    const criticalRoutes = ['/dashboard/bookings', '/dashboard/analytics'];
-    criticalRoutes.forEach(route => {
-      const link = document.createElement('link');
-      link.rel = 'prefetch';
+    const criticalRoutes = ["/dashboard/bookings", "/dashboard/analytics"];
+    criticalRoutes.forEach((route) => {
+      const link = document.createElement("link");
+      link.rel = "prefetch";
       link.href = route;
       document.head.appendChild(link);
     });

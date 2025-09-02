@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Users, ArrowRight } from 'lucide-react';
-import { TenantInfo } from '@/types/booking-api';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Users, ArrowRight } from "lucide-react";
+import { TenantInfo } from "@/types/booking-api";
 
 interface PartySizeStepProps {
   tenant: TenantInfo;
@@ -14,7 +14,7 @@ interface PartySizeStepProps {
 const PartySizeStep: React.FC<PartySizeStepProps> = ({
   tenant,
   onComplete,
-  loading = false
+  loading = false,
 }) => {
   const [selectedSize, setSelectedSize] = useState<number | null>(null);
 
@@ -30,11 +30,11 @@ const PartySizeStep: React.FC<PartySizeStepProps> = ({
   };
 
   const getSizeIcon = (size: number) => {
-    if (size === 1) return '👤';
-    if (size === 2) return '👥';
-    if (size <= 4) return '👨‍👩‍👦';
-    if (size <= 6) return '👨‍👩‍👦‍👦';
-    return '👥+';
+    if (size === 1) return "👤";
+    if (size === 2) return "👥";
+    if (size <= 4) return "👨‍👩‍👦";
+    if (size <= 6) return "👨‍👩‍👦‍👦";
+    return "👥+";
   };
 
   return (
@@ -53,7 +53,7 @@ const PartySizeStep: React.FC<PartySizeStepProps> = ({
             How many guests will be dining with us?
           </p>
         </CardHeader>
-        
+
         <CardContent className="px-8 pb-8">
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
             {partySizeOptions.map((size) => (
@@ -67,51 +67,56 @@ const PartySizeStep: React.FC<PartySizeStepProps> = ({
                   active:scale-[0.95] active:shadow-inner
                   focus:outline-none focus:ring-4 focus:ring-brand/30 focus:ring-offset-2
                   disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
-                  ${selectedSize === size 
-                    ? 'border-brand bg-gradient-to-br from-brand/10 to-accent/10 text-brand shadow-lg shadow-brand/20 scale-[1.05] ring-4 ring-brand/20' 
-                    : 'border-surface-3 bg-surface hover:border-brand/50 hover:bg-surface-2'
+                  ${
+                    selectedSize === size
+                      ? "border-brand bg-gradient-to-br from-brand/10 to-accent/10 text-brand shadow-lg shadow-brand/20 scale-[1.05] ring-4 ring-brand/20"
+                      : "border-surface-3 bg-surface hover:border-brand/50 hover:bg-surface-2"
                   }
                 `}
-                whileHover={{ 
+                whileHover={{
                   scale: selectedSize === size ? 1.08 : 1.05,
-                  rotateY: 5
+                  rotateY: 5,
                 }}
                 whileTap={{ scale: 0.95 }}
                 initial={{ opacity: 0, scale: 0.8, rotateY: -10 }}
-                animate={{ 
-                  opacity: 1, 
+                animate={{
+                  opacity: 1,
                   scale: selectedSize === size ? 1.05 : 1,
-                  rotateY: 0
+                  rotateY: 0,
                 }}
-                transition={{ 
-                  delay: size * 0.05, 
+                transition={{
+                  delay: size * 0.05,
                   duration: 0.4,
                   type: "spring",
-                  stiffness: 200
+                  stiffness: 200,
                 }}
               >
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <motion.div 
+                  <motion.div
                     className="text-2xl mb-1"
-                    animate={{ 
-                      scale: selectedSize === size ? [1, 1.2, 1] : 1 
+                    animate={{
+                      scale: selectedSize === size ? [1, 1.2, 1] : 1,
                     }}
-                    transition={{ 
+                    transition={{
                       duration: 0.6,
-                      ease: "easeInOut"
+                      ease: "easeInOut",
                     }}
                   >
                     {getSizeIcon(size)}
                   </motion.div>
-                  <div className={`text-2xl font-bold mb-1 transition-colors duration-300 ${
-                    selectedSize === size ? 'text-brand' : 'text-text'
-                  }`}>
+                  <div
+                    className={`text-2xl font-bold mb-1 transition-colors duration-300 ${
+                      selectedSize === size ? "text-brand" : "text-text"
+                    }`}
+                  >
                     {size}
                   </div>
-                  <div className={`text-xs font-medium transition-colors duration-300 ${
-                    selectedSize === size ? 'text-brand' : 'text-text-muted'
-                  }`}>
-                    {size === 1 ? 'guest' : 'guests'}
+                  <div
+                    className={`text-xs font-medium transition-colors duration-300 ${
+                      selectedSize === size ? "text-brand" : "text-text-muted"
+                    }`}
+                  >
+                    {size === 1 ? "guest" : "guests"}
                   </div>
                 </div>
 
@@ -127,16 +132,16 @@ const PartySizeStep: React.FC<PartySizeStepProps> = ({
                     <motion.div
                       className="absolute inset-0 rounded-xl"
                       initial={{ scale: 1 }}
-                      animate={{ 
+                      animate={{
                         boxShadow: [
                           "0 0 0 0 rgba(var(--brand), 0.3)",
                           "0 0 0 8px rgba(var(--brand), 0)",
-                        ]
+                        ],
                       }}
-                      transition={{ 
-                        duration: 1.5, 
+                      transition={{
+                        duration: 1.5,
                         repeat: Infinity,
-                        ease: "easeInOut"
+                        ease: "easeInOut",
                       }}
                     />
                   </>
@@ -162,7 +167,7 @@ const PartySizeStep: React.FC<PartySizeStepProps> = ({
             <Button
               variant="outline"
               onClick={() => {
-                const customSize = prompt('Enter party size (13+ guests):');
+                const customSize = prompt("Enter party size (13+ guests):");
                 if (customSize && parseInt(customSize) >= 13) {
                   handleSizeSelect(parseInt(customSize));
                 }

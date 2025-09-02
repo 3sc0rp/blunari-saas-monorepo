@@ -15,7 +15,8 @@ const smtp = new SMTPClient({
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 interface WelcomePackRequest {
@@ -35,42 +36,53 @@ const handler = async (req: Request): Promise<Response> => {
     const { ownerName, ownerEmail, restaurantName, loginUrl } = requestData;
 
     if (!ownerName || !ownerEmail || !restaurantName) {
-      return new Response(JSON.stringify({ 
-        error: "Missing required fields: ownerName, ownerEmail, and restaurantName are required",
-        success: false 
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(
+        JSON.stringify({
+          error:
+            "Missing required fields: ownerName, ownerEmail, and restaurantName are required",
+          success: false,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(ownerEmail)) {
-      return new Response(JSON.stringify({ 
-        error: "Invalid email format",
-        success: false 
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Invalid email format",
+          success: false,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     const defaultLoginUrl = "https://app.blunari.ai/auth";
     const finalLoginUrl = loginUrl || defaultLoginUrl;
 
-    const brandLogoUrl = Deno.env.get("BRAND_LOGO_URL") || Deno.env.get("ADMIN_LOGO_URL");
+    const brandLogoUrl =
+      Deno.env.get("BRAND_LOGO_URL") || Deno.env.get("ADMIN_LOGO_URL");
 
     const smtpUsername = Deno.env.get("FASTMAIL_SMTP_USERNAME");
     const smtpPassword = Deno.env.get("FASTMAIL_SMTP_PASSWORD");
-    
+
     if (!smtpUsername || !smtpPassword) {
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: "SMTP credentials not configured"
-      }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "SMTP credentials not configured",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     await smtp.send({
@@ -144,27 +156,33 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Welcome pack email sent successfully"
-    }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Welcome pack email sent successfully",
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
       },
-    });
+    );
   } catch (error: any) {
     console.error("Error in send-welcome-pack function:", error);
-    
-    return new Response(JSON.stringify({ 
-      success: false,
-      error: "Failed to send welcome pack email",
-      details: error.message 
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Failed to send welcome pack email",
+        details: error.message,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
   }
 };
 

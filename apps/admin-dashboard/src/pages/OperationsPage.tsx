@@ -1,18 +1,33 @@
-import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { DeploymentManager } from '@/components/operations/DeploymentManager';
-import { LoggingManager } from '@/components/operations/LoggingManager';
-import { BackupManager } from '@/components/operations/BackupManager';
-import { EnhancedBackgroundJobsManager } from '@/components/operations/EnhancedBackgroundJobsManager';
-import { SystemHealthCard } from '@/components/settings/SystemHealthCard';
-import { Activity, Server, Database, Shield, Rocket, FileText, Settings, Cpu } from 'lucide-react';
+import React from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { DeploymentManager } from "@/components/operations/DeploymentManager";
+import { LoggingManager } from "@/components/operations/LoggingManager";
+import { BackupManager } from "@/components/operations/BackupManager";
+import { EnhancedBackgroundJobsManager } from "@/components/operations/EnhancedBackgroundJobsManager";
+import { SystemHealthCard } from "@/components/settings/SystemHealthCard";
+import {
+  Activity,
+  Server,
+  Database,
+  Shield,
+  Rocket,
+  FileText,
+  Settings,
+  Cpu,
+} from "lucide-react";
 
 // Mock system health data
 const mockSystemHealth = {
-  overall: 'healthy' as const,
-  status: 'healthy' as const,
+  overall: "healthy" as const,
+  status: "healthy" as const,
   uptime: 99.9,
   responseTime: 245,
   lastUpdate: new Date().toISOString(),
@@ -21,47 +36,47 @@ const mockSystemHealth = {
     memoryUsage: 67,
     diskUsage: 23,
     databaseConnections: 156,
-    activeUsers: 1247
+    activeUsers: 1247,
   },
   components: [
     {
-      name: 'API Server',
-      status: 'operational' as const,
+      name: "API Server",
+      status: "operational" as const,
       responseTime: 120,
       uptime: 99.9,
-      lastCheck: new Date(Date.now() - 60000).toISOString()
+      lastCheck: new Date(Date.now() - 60000).toISOString(),
     },
     {
-      name: 'Database',
-      status: 'operational' as const,
+      name: "Database",
+      status: "operational" as const,
       responseTime: 15,
       uptime: 99.95,
-      lastCheck: new Date(Date.now() - 30000).toISOString()
+      lastCheck: new Date(Date.now() - 30000).toISOString(),
     },
     {
-      name: 'Cache Service',
-      status: 'degraded' as const,
+      name: "Cache Service",
+      status: "degraded" as const,
       responseTime: 45,
       uptime: 98.7,
-      lastCheck: new Date(Date.now() - 45000).toISOString()
+      lastCheck: new Date(Date.now() - 45000).toISOString(),
     },
     {
-      name: 'File Storage',
-      status: 'operational' as const,
+      name: "File Storage",
+      status: "operational" as const,
       responseTime: 89,
       uptime: 99.8,
-      lastCheck: new Date(Date.now() - 90000).toISOString()
-    }
+      lastCheck: new Date(Date.now() - 90000).toISOString(),
+    },
   ],
   alerts: [
     {
-      id: '1',
-      severity: 'warning' as const,
-      message: 'Cache service response time above threshold',
+      id: "1",
+      severity: "warning" as const,
+      message: "Cache service response time above threshold",
       timestamp: new Date(Date.now() - 300000).toISOString(),
-      resolved: false
-    }
-  ]
+      resolved: false,
+    },
+  ],
 };
 
 const OperationsPage: React.FC = () => {
@@ -72,11 +87,15 @@ const OperationsPage: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold">Operations & Deployment</h1>
             <p className="text-muted-foreground">
-              Monitor and manage your application's deployment and operational health
+              Monitor and manage your application's deployment and operational
+              health
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Badge variant="secondary" className="bg-success/10 text-success border-success/20">
+            <Badge
+              variant="secondary"
+              className="bg-success/10 text-success border-success/20"
+            >
               <Activity className="h-3 w-3 mr-1" />
               All Systems Operational
             </Badge>
@@ -149,7 +168,10 @@ const OperationsPage: React.FC = () => {
               <Cpu className="h-4 w-4" />
               <span>Background Jobs</span>
             </TabsTrigger>
-            <TabsTrigger value="deployments" className="flex items-center space-x-2">
+            <TabsTrigger
+              value="deployments"
+              className="flex items-center space-x-2"
+            >
               <Rocket className="h-4 w-4" />
               <span>Deployments</span>
             </TabsTrigger>
@@ -157,20 +179,26 @@ const OperationsPage: React.FC = () => {
               <FileText className="h-4 w-4" />
               <span>Logs</span>
             </TabsTrigger>
-            <TabsTrigger value="backups" className="flex items-center space-x-2">
+            <TabsTrigger
+              value="backups"
+              className="flex items-center space-x-2"
+            >
               <Shield className="h-4 w-4" />
               <span>Backups</span>
             </TabsTrigger>
-            <TabsTrigger value="scaling" className="flex items-center space-x-2">
+            <TabsTrigger
+              value="scaling"
+              className="flex items-center space-x-2"
+            >
               <Settings className="h-4 w-4" />
               <span>Scaling</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="health">
-            <SystemHealthCard 
+            <SystemHealthCard
               health={mockSystemHealth}
-              onRefresh={() => console.log('Refreshing health data...')}
+              onRefresh={() => console.log("Refreshing health data...")}
             />
           </TabsContent>
 
@@ -203,7 +231,9 @@ const OperationsPage: React.FC = () => {
                   <div className="grid gap-4 md:grid-cols-2">
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-base">Current Capacity</CardTitle>
+                        <CardTitle className="text-base">
+                          Current Capacity
+                        </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
@@ -229,7 +259,9 @@ const OperationsPage: React.FC = () => {
 
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-base">Scaling Policies</CardTitle>
+                        <CardTitle className="text-base">
+                          Scaling Policies
+                        </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
@@ -256,21 +288,31 @@ const OperationsPage: React.FC = () => {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Load Balancer Status</CardTitle>
+                      <CardTitle className="text-base">
+                        Load Balancer Status
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid gap-4 md:grid-cols-3">
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">99.9%</div>
-                          <p className="text-sm text-muted-foreground">Uptime</p>
+                          <div className="text-2xl font-bold text-green-600">
+                            99.9%
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Uptime
+                          </p>
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold">1,247</div>
-                          <p className="text-sm text-muted-foreground">Active Connections</p>
+                          <p className="text-sm text-muted-foreground">
+                            Active Connections
+                          </p>
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold">245ms</div>
-                          <p className="text-sm text-muted-foreground">Avg Response Time</p>
+                          <p className="text-sm text-muted-foreground">
+                            Avg Response Time
+                          </p>
                         </div>
                       </div>
                     </CardContent>

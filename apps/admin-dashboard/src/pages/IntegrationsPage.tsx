@@ -1,8 +1,8 @@
-import React from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { IntegrationsManager } from '@/components/integrations/IntegrationsManager';
-import { APIManager } from '@/components/integrations/APIManager';
-import { WebhookManager } from '@/components/integrations/WebhookManager';
+import React from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { IntegrationsManager } from "@/components/integrations/IntegrationsManager";
+import { APIManager } from "@/components/integrations/APIManager";
+import { WebhookManager } from "@/components/integrations/WebhookManager";
 
 export const IntegrationsPage: React.FC = () => {
   return (
@@ -11,13 +11,16 @@ export const IntegrationsPage: React.FC = () => {
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold">Platform Integrations</h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Connect with external services, manage APIs, and configure webhooks for real-time notifications
+            Connect with external services, manage APIs, and configure webhooks
+            for real-time notifications
           </p>
         </div>
 
         <Tabs defaultValue="integrations" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="integrations">External Integrations</TabsTrigger>
+            <TabsTrigger value="integrations">
+              External Integrations
+            </TabsTrigger>
             <TabsTrigger value="api">API Management</TabsTrigger>
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
           </TabsList>

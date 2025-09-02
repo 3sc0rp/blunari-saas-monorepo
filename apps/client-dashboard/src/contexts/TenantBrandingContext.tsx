@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useTenant } from '@/hooks/useTenant';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useTenant } from "@/hooks/useTenant";
 
 interface TenantBranding {
   logoUrl: string;
@@ -16,13 +16,15 @@ interface TenantBrandingContextType {
   updateBranding: (branding: Partial<TenantBranding>) => void;
 }
 
-const TenantBrandingContext = createContext<TenantBrandingContextType | undefined>(undefined);
+const TenantBrandingContext = createContext<
+  TenantBrandingContextType | undefined
+>(undefined);
 
 // Helper function to convert hex to HSL
 const hexToHsl = (hex: string): string => {
   // Remove the hash if present
-  hex = hex.replace('#', '');
-  
+  hex = hex.replace("#", "");
+
   // Convert to RGB
   const r = parseInt(hex.substr(0, 2), 16) / 255;
   const g = parseInt(hex.substr(2, 2), 16) / 255;
@@ -30,7 +32,8 @@ const hexToHsl = (hex: string): string => {
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0, s = 0;
+  let h = 0,
+    s = 0;
   const l = (max + min) / 2;
 
   if (max !== min) {
@@ -38,9 +41,15 @@ const hexToHsl = (hex: string): string => {
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 
     switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
     }
     h /= 6;
   }
@@ -48,19 +57,21 @@ const hexToHsl = (hex: string): string => {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 };
 
-export const TenantBrandingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const TenantBrandingProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const { tenant } = useTenant();
   const [branding, setBranding] = useState<TenantBranding>({
-    logoUrl: '/logo.png',
-    restaurantName: 'Blunari',
+    logoUrl: "/logo.png",
+    restaurantName: "Blunari",
   });
 
   // Update branding when tenant data changes
   useEffect(() => {
     if (tenant) {
       const newBranding: TenantBranding = {
-        logoUrl: tenant.logo_url || '/logo.png',
-        restaurantName: tenant.name || 'Blunari',
+        logoUrl: tenant.logo_url || "/logo.png",
+        restaurantName: tenant.name || "Blunari",
         // Note: tenant.settings structure needs to be defined in types
         // For now, using fallback values
         primaryColor: undefined,
@@ -68,7 +79,7 @@ export const TenantBrandingProvider: React.FC<{ children: React.ReactNode }> = (
         fontFamily: undefined,
         borderRadius: undefined,
       };
-      
+
       setBranding(newBranding);
       applyBrandingToCSS(newBranding);
     }
@@ -82,15 +93,18 @@ export const TenantBrandingProvider: React.FC<{ children: React.ReactNode }> = (
     if (brandingData.primaryColor) {
       try {
         const hslColor = hexToHsl(brandingData.primaryColor);
-        root.style.setProperty('--brand', hslColor);
-        root.style.setProperty('--ring', hslColor);
-        
+        root.style.setProperty("--brand", hslColor);
+        root.style.setProperty("--ring", hslColor);
+
         // Create a lighter variant for foreground
-        const [h, s, l] = hslColor.split(' ');
-        const lighterL = Math.min(parseInt(l.replace('%', '')) + 20, 90);
-        root.style.setProperty('--brand-foreground', `${h} ${s} ${lighterL}%`);
+        const [h, s, l] = hslColor.split(" ");
+        const lighterL = Math.min(parseInt(l.replace("%", "")) + 20, 90);
+        root.style.setProperty("--brand-foreground", `${h} ${s} ${lighterL}%`);
       } catch (error) {
-        console.warn('Invalid primary color format:', brandingData.primaryColor);
+        console.warn(
+          "Invalid primary color format:",
+          brandingData.primaryColor,
+        );
       }
     }
 
@@ -98,25 +112,25 @@ export const TenantBrandingProvider: React.FC<{ children: React.ReactNode }> = (
     if (brandingData.accentColor) {
       try {
         const hslColor = hexToHsl(brandingData.accentColor);
-        root.style.setProperty('--accent', hslColor);
-        
+        root.style.setProperty("--accent", hslColor);
+
         // Create foreground variant
-        const [h, s, l] = hslColor.split(' ');
-        const lighterL = Math.min(parseInt(l.replace('%', '')) + 20, 90);
-        root.style.setProperty('--accent-foreground', `${h} ${s} ${lighterL}%`);
+        const [h, s, l] = hslColor.split(" ");
+        const lighterL = Math.min(parseInt(l.replace("%", "")) + 20, 90);
+        root.style.setProperty("--accent-foreground", `${h} ${s} ${lighterL}%`);
       } catch (error) {
-        console.warn('Invalid accent color format:', brandingData.accentColor);
+        console.warn("Invalid accent color format:", brandingData.accentColor);
       }
     }
 
     // Apply border radius if provided
     if (brandingData.borderRadius) {
-      root.style.setProperty('--radius', brandingData.borderRadius);
+      root.style.setProperty("--radius", brandingData.borderRadius);
     }
 
     // Apply font family if provided
     if (brandingData.fontFamily) {
-      root.style.setProperty('font-family', brandingData.fontFamily);
+      root.style.setProperty("font-family", brandingData.fontFamily);
     }
   };
 
@@ -142,7 +156,9 @@ export const TenantBrandingProvider: React.FC<{ children: React.ReactNode }> = (
 export const useTenantBranding = () => {
   const context = useContext(TenantBrandingContext);
   if (context === undefined) {
-    throw new Error('useTenantBranding must be used within a TenantBrandingProvider');
+    throw new Error(
+      "useTenantBranding must be used within a TenantBrandingProvider",
+    );
   }
   return context;
 };

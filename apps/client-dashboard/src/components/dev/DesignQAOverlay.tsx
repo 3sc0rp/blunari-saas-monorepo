@@ -1,22 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Grid3X3, 
-  Ruler, 
-  Eye, 
-  Palette, 
-  Type, 
+import React, { useState, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import {
+  Grid3X3,
+  Ruler,
+  Eye,
+  Palette,
+  Type,
   Monitor,
   X,
   Settings,
-  Info
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+  Info,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface DesignQAOverlayProps {
   isOpen: boolean;
@@ -35,26 +35,29 @@ const getComputedStyleValue = (element: Element, property: string): string => {
   return window.getComputedStyle(element).getPropertyValue(property);
 };
 
-export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onToggle }) => {
+export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({
+  isOpen,
+  onToggle,
+}) => {
   const [activeTools, setActiveTools] = useState({
     grid: false,
     baseline: false,
     spacing: false,
     contrast: false,
     typography: false,
-    focus: false
+    focus: false,
   });
 
   const [qaData, setQaData] = useState({
     contrastIssues: 0,
     spacingInconsistencies: 0,
     typographyIssues: 0,
-    focusIssues: 0
+    focusIssues: 0,
   });
 
   // Toggle tools
   const toggleTool = useCallback((tool: keyof typeof activeTools) => {
-    setActiveTools(prev => ({ ...prev, [tool]: !prev[tool] }));
+    setActiveTools((prev) => ({ ...prev, [tool]: !prev[tool] }));
   }, []);
 
   // Run QA checks
@@ -63,15 +66,15 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onTogg
       contrastIssues: 0,
       spacingInconsistencies: 0,
       typographyIssues: 0,
-      focusIssues: 0
+      focusIssues: 0,
     };
 
     // Check all text elements for contrast
-    document.querySelectorAll('*').forEach(el => {
+    document.querySelectorAll("*").forEach((el) => {
       const styles = window.getComputedStyle(el);
       const color = styles.color;
       const backgroundColor = styles.backgroundColor;
-      
+
       if (color && backgroundColor && el.textContent?.trim()) {
         const ratio = getContrastRatio(color, backgroundColor);
         if (ratio < 4.5) issues.contrastIssues++;
@@ -79,37 +82,40 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onTogg
     });
 
     // Check for focusable elements without focus styles
-    document.querySelectorAll('button, a, input, textarea, select, [tabindex]').forEach(el => {
-      const focusStyles = window.getComputedStyle(el, ':focus-visible');
-      if (!focusStyles.outline && !focusStyles.boxShadow.includes('ring')) {
-        issues.focusIssues++;
-      }
-    });
+    document
+      .querySelectorAll("button, a, input, textarea, select, [tabindex]")
+      .forEach((el) => {
+        const focusStyles = window.getComputedStyle(el, ":focus-visible");
+        if (!focusStyles.outline && !focusStyles.boxShadow.includes("ring")) {
+          issues.focusIssues++;
+        }
+      });
 
     setQaData(issues);
   }, []);
 
   // Grid overlay component
   const GridOverlay = () => (
-    <div 
-      className="fixed inset-0 pointer-events-none z-[9998]" 
+    <div
+      className="fixed inset-0 pointer-events-none z-[9998]"
       style={{
         backgroundImage: `
           linear-gradient(to right, rgba(59, 130, 246, 0.1) 1px, transparent 1px),
           linear-gradient(to bottom, rgba(59, 130, 246, 0.1) 1px, transparent 1px)
         `,
-        backgroundSize: '24px 24px'
+        backgroundSize: "24px 24px",
       }}
     />
   );
 
   // Baseline overlay component
   const BaselineOverlay = () => (
-    <div 
+    <div
       className="fixed inset-0 pointer-events-none z-[9998]"
       style={{
-        backgroundImage: 'linear-gradient(to bottom, rgba(220, 38, 127, 0.2) 1px, transparent 1px)',
-        backgroundSize: '1px 24px'
+        backgroundImage:
+          "linear-gradient(to bottom, rgba(220, 38, 127, 0.2) 1px, transparent 1px)",
+        backgroundSize: "1px 24px",
       }}
     />
   );
@@ -117,24 +123,25 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onTogg
   // Spacing highlighter
   const SpacingHighlighter = () => {
     useEffect(() => {
-      const elements = document.querySelectorAll('*');
-      elements.forEach(el => {
-        if (el.classList.contains('qa-spacing-highlight')) return;
-        
+      const elements = document.querySelectorAll("*");
+      elements.forEach((el) => {
+        if (el.classList.contains("qa-spacing-highlight")) return;
+
         const styles = window.getComputedStyle(el);
         const margin = styles.margin;
         const padding = styles.padding;
-        
-        if (margin !== '0px' || padding !== '0px') {
-          el.classList.add('qa-spacing-highlight');
-          (el as HTMLElement).style.outline = '1px dashed rgba(34, 197, 94, 0.5)';
+
+        if (margin !== "0px" || padding !== "0px") {
+          el.classList.add("qa-spacing-highlight");
+          (el as HTMLElement).style.outline =
+            "1px dashed rgba(34, 197, 94, 0.5)";
         }
       });
 
       return () => {
-        elements.forEach(el => {
-          el.classList.remove('qa-spacing-highlight');
-          (el as HTMLElement).style.outline = '';
+        elements.forEach((el) => {
+          el.classList.remove("qa-spacing-highlight");
+          (el as HTMLElement).style.outline = "";
         });
       };
     }, []);
@@ -145,23 +152,26 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onTogg
   // Typography checker
   const TypographyChecker = () => {
     useEffect(() => {
-      const textElements = document.querySelectorAll('h1, h2, h3, h4, h5, h6, p, span, div');
-      textElements.forEach(el => {
+      const textElements = document.querySelectorAll(
+        "h1, h2, h3, h4, h5, h6, p, span, div",
+      );
+      textElements.forEach((el) => {
         const styles = window.getComputedStyle(el);
         const fontSize = parseInt(styles.fontSize);
         const lineHeight = parseInt(styles.lineHeight);
-        
+
         // Check for proper line height ratios
         if (lineHeight / fontSize < 1.2 || lineHeight / fontSize > 1.6) {
-          (el as HTMLElement).style.outline = '2px dashed rgba(239, 68, 68, 0.5)';
-          el.setAttribute('data-qa-issue', 'line-height');
+          (el as HTMLElement).style.outline =
+            "2px dashed rgba(239, 68, 68, 0.5)";
+          el.setAttribute("data-qa-issue", "line-height");
         }
       });
 
       return () => {
-        textElements.forEach(el => {
-          (el as HTMLElement).style.outline = '';
-          el.removeAttribute('data-qa-issue');
+        textElements.forEach((el) => {
+          (el as HTMLElement).style.outline = "";
+          el.removeAttribute("data-qa-issue");
         });
       };
     }, []);
@@ -172,27 +182,28 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onTogg
   // Contrast highlighter
   const ContrastHighlighter = () => {
     useEffect(() => {
-      const textElements = document.querySelectorAll('*');
-      textElements.forEach(el => {
+      const textElements = document.querySelectorAll("*");
+      textElements.forEach((el) => {
         if (!el.textContent?.trim()) return;
-        
+
         const styles = window.getComputedStyle(el);
         const color = styles.color;
         const backgroundColor = styles.backgroundColor;
-        
+
         if (color && backgroundColor) {
           const ratio = getContrastRatio(color, backgroundColor);
           if (ratio < 4.5) {
-            (el as HTMLElement).style.outline = '2px solid rgba(239, 68, 68, 0.8)';
-            el.setAttribute('data-qa-contrast', ratio.toString());
+            (el as HTMLElement).style.outline =
+              "2px solid rgba(239, 68, 68, 0.8)";
+            el.setAttribute("data-qa-contrast", ratio.toString());
           }
         }
       });
 
       return () => {
-        textElements.forEach(el => {
-          (el as HTMLElement).style.outline = '';
-          el.removeAttribute('data-qa-contrast');
+        textElements.forEach((el) => {
+          (el as HTMLElement).style.outline = "";
+          el.removeAttribute("data-qa-contrast");
         });
       };
     }, []);
@@ -203,22 +214,26 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onTogg
   // Focus highlighter
   const FocusHighlighter = () => {
     useEffect(() => {
-      const focusableElements = document.querySelectorAll('button, a, input, textarea, select, [tabindex]');
-      focusableElements.forEach(el => {
-        const hasProperFocus = el.classList.contains('focus-visible:ring-2') || 
-                               el.classList.contains('focus:ring-2') ||
-                               el.classList.contains('focus-visible:outline-none');
-        
+      const focusableElements = document.querySelectorAll(
+        "button, a, input, textarea, select, [tabindex]",
+      );
+      focusableElements.forEach((el) => {
+        const hasProperFocus =
+          el.classList.contains("focus-visible:ring-2") ||
+          el.classList.contains("focus:ring-2") ||
+          el.classList.contains("focus-visible:outline-none");
+
         if (!hasProperFocus) {
-          (el as HTMLElement).style.outline = '2px dashed rgba(245, 158, 11, 0.8)';
-          el.setAttribute('data-qa-focus', 'missing-focus-styles');
+          (el as HTMLElement).style.outline =
+            "2px dashed rgba(245, 158, 11, 0.8)";
+          el.setAttribute("data-qa-focus", "missing-focus-styles");
         }
       });
 
       return () => {
-        focusableElements.forEach(el => {
-          (el as HTMLElement).style.outline = '';
-          el.removeAttribute('data-qa-focus');
+        focusableElements.forEach((el) => {
+          (el as HTMLElement).style.outline = "";
+          el.removeAttribute("data-qa-focus");
         });
       };
     }, []);
@@ -263,7 +278,9 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onTogg
               </Button>
             </div>
             <div className="flex items-center gap-2 text-body-sm text-text-muted">
-              <Badge variant="secondary" className="text-xs">DEV ONLY</Badge>
+              <Badge variant="secondary" className="text-xs">
+                DEV ONLY
+              </Badge>
               <span>Visual Quality Assistant</span>
             </div>
           </CardHeader>
@@ -282,29 +299,29 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onTogg
                     <Grid3X3 className="h-4 w-4" />
                     Layout & Spacing
                   </h4>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-body-sm">Grid Overlay</span>
                       <Switch
                         checked={activeTools.grid}
-                        onCheckedChange={() => toggleTool('grid')}
+                        onCheckedChange={() => toggleTool("grid")}
                       />
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <span className="text-body-sm">Baseline Grid</span>
                       <Switch
                         checked={activeTools.baseline}
-                        onCheckedChange={() => toggleTool('baseline')}
+                        onCheckedChange={() => toggleTool("baseline")}
                       />
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <span className="text-body-sm">Spacing Guide</span>
                       <Switch
                         checked={activeTools.spacing}
-                        onCheckedChange={() => toggleTool('spacing')}
+                        onCheckedChange={() => toggleTool("spacing")}
                       />
                     </div>
                   </div>
@@ -318,21 +335,21 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onTogg
                     <Eye className="h-4 w-4" />
                     Accessibility
                   </h4>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-body-sm">Contrast Check</span>
                       <Switch
                         checked={activeTools.contrast}
-                        onCheckedChange={() => toggleTool('contrast')}
+                        onCheckedChange={() => toggleTool("contrast")}
                       />
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <span className="text-body-sm">Focus Indicators</span>
                       <Switch
                         checked={activeTools.focus}
-                        onCheckedChange={() => toggleTool('focus')}
+                        onCheckedChange={() => toggleTool("focus")}
                       />
                     </div>
                   </div>
@@ -346,23 +363,19 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onTogg
                     <Type className="h-4 w-4" />
                     Typography
                   </h4>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-body-sm">Line Height Check</span>
                       <Switch
                         checked={activeTools.typography}
-                        onCheckedChange={() => toggleTool('typography')}
+                        onCheckedChange={() => toggleTool("typography")}
                       />
                     </div>
                   </div>
                 </div>
 
-                <Button
-                  onClick={runQAChecks}
-                  className="w-full"
-                  size="sm"
-                >
+                <Button onClick={runQAChecks} className="w-full" size="sm">
                   <Monitor className="h-4 w-4 mr-2" />
                   Scan Page
                 </Button>
@@ -371,25 +384,41 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({ isOpen, onTogg
               <TabsContent value="issues" className="space-y-4">
                 <div className="space-y-3">
                   <h4 className="font-semibold text-body-sm">Quality Issues</h4>
-                  
+
                   <div className="space-y-2">
                     <div className="flex items-center justify-between p-2 rounded-md bg-destructive/5">
                       <span className="text-body-sm">Contrast Issues</span>
-                      <Badge variant={qaData.contrastIssues > 0 ? "destructive" : "secondary"}>
+                      <Badge
+                        variant={
+                          qaData.contrastIssues > 0
+                            ? "destructive"
+                            : "secondary"
+                        }
+                      >
                         {qaData.contrastIssues}
                       </Badge>
                     </div>
-                    
+
                     <div className="flex items-center justify-between p-2 rounded-md bg-warning/5">
                       <span className="text-body-sm">Focus Issues</span>
-                      <Badge variant={qaData.focusIssues > 0 ? "destructive" : "secondary"}>
+                      <Badge
+                        variant={
+                          qaData.focusIssues > 0 ? "destructive" : "secondary"
+                        }
+                      >
                         {qaData.focusIssues}
                       </Badge>
                     </div>
-                    
+
                     <div className="flex items-center justify-between p-2 rounded-md bg-surface-2">
                       <span className="text-body-sm">Typography Issues</span>
-                      <Badge variant={qaData.typographyIssues > 0 ? "destructive" : "secondary"}>
+                      <Badge
+                        variant={
+                          qaData.typographyIssues > 0
+                            ? "destructive"
+                            : "secondary"
+                        }
+                      >
                         {qaData.typographyIssues}
                       </Badge>
                     </div>

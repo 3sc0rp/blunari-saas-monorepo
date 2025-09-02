@@ -1,34 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { 
-  Play, 
-  Square, 
-  RotateCcw, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Play,
+  Square,
+  RotateCcw,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   Loader2,
-  Plus
-} from 'lucide-react';
-import { useEnhancedBackgroundOpsAPI } from '@/hooks/useEnhancedBackgroundOpsAPI';
-import { useToast } from '@/hooks/use-toast';
-import type { BackgroundJob } from '@/types/admin';
-import { JobEnqueueSchema, type JobEnqueueData } from '@/types/admin';
+  Plus,
+} from "lucide-react";
+import { useEnhancedBackgroundOpsAPI } from "@/hooks/useEnhancedBackgroundOpsAPI";
+import { useToast } from "@/hooks/use-toast";
+import type { BackgroundJob } from "@/types/admin";
+import { JobEnqueueSchema, type JobEnqueueData } from "@/types/admin";
 
 interface BackgroundJobsPanelProps {
   tenantId?: string;
@@ -40,15 +52,16 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showCreateJob, setShowCreateJob] = useState(false);
   const [filters, setFilters] = useState({
-    status: 'all',
-    type: 'all',
+    status: "all",
+    type: "all",
   });
-  
-  const { getJobs, cancelJob, retryJob, createJob } = useEnhancedBackgroundOpsAPI();
+
+  const { getJobs, cancelJob, retryJob, createJob } =
+    useEnhancedBackgroundOpsAPI();
   const { toast } = useToast();
 
   const [newJob, setNewJob] = useState<Partial<JobEnqueueData>>({
-    type: 'WELCOME_EMAIL',
+    type: "WELCOME_EMAIL",
     payload: {},
     priority: 5,
   });
@@ -61,17 +74,17 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
     try {
       setLoading(true);
       const response = await getJobs({
-        status: filters.status !== 'all' ? filters.status : undefined,
-        type: filters.type !== 'all' ? filters.type : undefined,
+        status: filters.status !== "all" ? filters.status : undefined,
+        type: filters.type !== "all" ? filters.type : undefined,
         limit: 50,
       });
       setJobs(response.jobs as any);
     } catch (error) {
-      console.error('Error loading jobs:', error);
+      console.error("Error loading jobs:", error);
       toast({
         title: "Error",
         description: "Failed to load background jobs",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -83,13 +96,13 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
       setActionLoading(jobId);
       await cancelJob(jobId);
       await loadJobs(); // Refresh
-      
+
       toast({
         title: "Job Cancelled",
         description: "Background job has been cancelled successfully.",
       });
     } catch (error) {
-      console.error('Error cancelling job:', error);
+      console.error("Error cancelling job:", error);
     } finally {
       setActionLoading(null);
     }
@@ -100,13 +113,13 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
       setActionLoading(jobId);
       await retryJob(jobId);
       await loadJobs(); // Refresh
-      
+
       toast({
         title: "Job Retried",
         description: "Background job has been queued for retry.",
       });
     } catch (error) {
-      console.error('Error retrying job:', error);
+      console.error("Error retrying job:", error);
     } finally {
       setActionLoading(null);
     }
@@ -120,7 +133,7 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
         tenant_id: tenantId,
         idempotency_key: crypto.randomUUID(),
       });
-      
+
       await createJob({
         type: validatedJob.type!,
         payload: validatedJob.payload!,
@@ -129,51 +142,79 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
       });
       await loadJobs(); // Refresh
       setShowCreateJob(false);
-      
+
       // Reset form
       setNewJob({
-        type: 'WELCOME_EMAIL',
+        type: "WELCOME_EMAIL",
         payload: {},
         priority: 5,
       });
-      
+
       toast({
         title: "Job Created",
         description: "Background job has been enqueued successfully.",
       });
     } catch (error) {
-      console.error('Error creating job:', error);
+      console.error("Error creating job:", error);
       toast({
         title: "Error",
         description: "Failed to create background job",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
-        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
-      case 'running':
-        return <Badge variant="default"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Running</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="text-success border-success/20"><CheckCircle className="h-3 w-3 mr-1" />Completed</Badge>;
-      case 'failed':
-        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Failed</Badge>;
-      case 'cancelled':
-        return <Badge variant="secondary"><Square className="h-3 w-3 mr-1" />Cancelled</Badge>;
+      case "pending":
+        return (
+          <Badge variant="secondary">
+            <Clock className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
+      case "running":
+        return (
+          <Badge variant="default">
+            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            Running
+          </Badge>
+        );
+      case "completed":
+        return (
+          <Badge variant="outline" className="text-success border-success/20">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Completed
+          </Badge>
+        );
+      case "failed":
+        return (
+          <Badge variant="destructive">
+            <XCircle className="h-3 w-3 mr-1" />
+            Failed
+          </Badge>
+        );
+      case "cancelled":
+        return (
+          <Badge variant="secondary">
+            <Square className="h-3 w-3 mr-1" />
+            Cancelled
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   const canCancel = (job: BackgroundJob) => {
-    return ['pending', 'running'].includes(job.status);
+    return ["pending", "running"].includes(job.status);
   };
 
   const canRetry = (job: BackgroundJob) => {
-    return ['failed', 'cancelled'].includes(job.status) && job.attempts < job.max_retries;
+    return (
+      ["failed", "cancelled"].includes(job.status) &&
+      job.attempts < job.max_retries
+    );
   };
 
   return (
@@ -186,7 +227,7 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
             Manage background job execution and monitoring
           </p>
         </div>
-        
+
         <Button onClick={() => setShowCreateJob(!showCreateJob)}>
           <Plus className="h-4 w-4 mr-2" />
           Enqueue Job
@@ -208,19 +249,25 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
                 <Label>Job Type</Label>
                 <Select
                   value={newJob.type}
-                  onValueChange={(value) => setNewJob(prev => ({ ...prev, type: value as any }))}
+                  onValueChange={(value) =>
+                    setNewJob((prev) => ({ ...prev, type: value as any }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="WELCOME_EMAIL">Welcome Email</SelectItem>
-                    <SelectItem value="RESERVATION_EMAIL">Reservation Email</SelectItem>
-                    <SelectItem value="ANALYTICS_AGGREGATE">Analytics Aggregate</SelectItem>
+                    <SelectItem value="RESERVATION_EMAIL">
+                      Reservation Email
+                    </SelectItem>
+                    <SelectItem value="ANALYTICS_AGGREGATE">
+                      Analytics Aggregate
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label>Priority (0-10)</Label>
                 <Input
@@ -228,11 +275,16 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
                   min="0"
                   max="10"
                   value={newJob.priority}
-                  onChange={(e) => setNewJob(prev => ({ ...prev, priority: parseInt(e.target.value) }))}
+                  onChange={(e) =>
+                    setNewJob((prev) => ({
+                      ...prev,
+                      priority: parseInt(e.target.value),
+                    }))
+                  }
                 />
               </div>
             </div>
-            
+
             <div>
               <Label>Payload (JSON)</Label>
               <Input
@@ -240,22 +292,20 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
                 value={JSON.stringify(newJob.payload)}
                 onChange={(e) => {
                   try {
-                    const payload = JSON.parse(e.target.value || '{}');
-                    setNewJob(prev => ({ ...prev, payload }));
+                    const payload = JSON.parse(e.target.value || "{}");
+                    setNewJob((prev) => ({ ...prev, payload }));
                   } catch {
                     // Invalid JSON, ignore
                   }
                 }}
               />
             </div>
-            
+
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowCreateJob(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateJob}>
-                Enqueue Job
-              </Button>
+              <Button onClick={handleCreateJob}>Enqueue Job</Button>
             </div>
           </CardContent>
         </Card>
@@ -269,7 +319,9 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
               <Label>Status Filter</Label>
               <Select
                 value={filters.status}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+                onValueChange={(value) =>
+                  setFilters((prev) => ({ ...prev, status: value }))
+                }
               >
                 <SelectTrigger className="w-40">
                   <SelectValue />
@@ -284,12 +336,14 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label>Type Filter</Label>
               <Select
                 value={filters.type}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, type: value }))}
+                onValueChange={(value) =>
+                  setFilters((prev) => ({ ...prev, type: value }))
+                }
               >
                 <SelectTrigger className="w-40">
                   <SelectValue />
@@ -297,12 +351,16 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="WELCOME_EMAIL">Welcome Email</SelectItem>
-                  <SelectItem value="RESERVATION_EMAIL">Reservation Email</SelectItem>
-                  <SelectItem value="ANALYTICS_AGGREGATE">Analytics Aggregate</SelectItem>
+                  <SelectItem value="RESERVATION_EMAIL">
+                    Reservation Email
+                  </SelectItem>
+                  <SelectItem value="ANALYTICS_AGGREGATE">
+                    Analytics Aggregate
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="flex items-end">
               <Button variant="outline" onClick={loadJobs}>
                 <RotateCcw className="h-4 w-4 mr-2" />
@@ -318,7 +376,7 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
         <CardHeader>
           <CardTitle>Job Queue</CardTitle>
           <CardDescription>
-            {jobs.length} job{jobs.length !== 1 ? 's' : ''} found
+            {jobs.length} job{jobs.length !== 1 ? "s" : ""} found
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -368,7 +426,13 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
                       <TableCell>{job.type}</TableCell>
                       <TableCell>{getStatusBadge(job.status)}</TableCell>
                       <TableCell>
-                        <span className={job.attempts >= job.max_retries ? 'text-destructive' : ''}>
+                        <span
+                          className={
+                            job.attempts >= job.max_retries
+                              ? "text-destructive"
+                              : ""
+                          }
+                        >
                           {job.attempts}/{job.max_retries}
                         </span>
                       </TableCell>
@@ -391,7 +455,7 @@ export function BackgroundJobsPanel({ tenantId }: BackgroundJobsPanelProps) {
                               )}
                             </Button>
                           )}
-                          
+
                           {canRetry(job) && (
                             <Button
                               size="sm"

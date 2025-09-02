@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import React from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 interface SkeletonProps {
   className?: string;
@@ -47,21 +47,28 @@ const Skeleton: React.FC<SkeletonProps> = ({ className = "" }) => (
 );
 
 // Skeleton line component
-const SkeletonLine: React.FC<SkeletonLineProps> = ({ width = "100%", className = "" }) => (
-  <div className={`animate-pulse bg-surface-2 rounded h-4 ${className}`} style={{ width }} />
+const SkeletonLine: React.FC<SkeletonLineProps> = ({
+  width = "100%",
+  className = "",
+}) => (
+  <div
+    className={`animate-pulse bg-surface-2 rounded h-4 ${className}`}
+    style={{ width }}
+  />
 );
 
 // Skeleton circle component
-const SkeletonCircle: React.FC<SkeletonCircleProps> = ({ size = "h-10 w-10", className = "" }) => (
-  <Skeleton className={`${size} rounded-full ${className}`} />
-);
+const SkeletonCircle: React.FC<SkeletonCircleProps> = ({
+  size = "h-10 w-10",
+  className = "",
+}) => <Skeleton className={`${size} rounded-full ${className}`} />;
 
 // Skeleton card component
-const SkeletonCard: React.FC<SkeletonCardProps> = ({ 
-  lines = 3, 
-  showAvatar = false, 
+const SkeletonCard: React.FC<SkeletonCardProps> = ({
+  lines = 3,
+  showAvatar = false,
   showActions = false,
-  className = ""
+  className = "",
 }) => (
   <Card className={`${className}`}>
     <CardHeader className="space-y-3">
@@ -75,10 +82,7 @@ const SkeletonCard: React.FC<SkeletonCardProps> = ({
     </CardHeader>
     <CardContent className="space-y-3">
       {Array.from({ length: lines }).map((_, i) => (
-        <SkeletonLine 
-          key={i} 
-          width={i === lines - 1 ? "70%" : "100%"}
-        />
+        <SkeletonLine key={i} width={i === lines - 1 ? "70%" : "100%"} />
       ))}
       {showActions && (
         <div className="flex space-x-2 pt-4">
@@ -91,18 +95,21 @@ const SkeletonCard: React.FC<SkeletonCardProps> = ({
 );
 
 // Skeleton table component
-const SkeletonTable: React.FC<SkeletonTableProps> = ({ 
-  rows = 5, 
-  columns = 4, 
+const SkeletonTable: React.FC<SkeletonTableProps> = ({
+  rows = 5,
+  columns = 4,
   showHeader = true,
-  className = ""
+  className = "",
 }) => (
   <Card className={className}>
     <CardContent className="p-0">
       <div className="w-full">
         {showHeader && (
           <div className="border-b border-border p-4">
-            <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+            <div
+              className="grid gap-4"
+              style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+            >
               {Array.from({ length: columns }).map((_, i) => (
                 <SkeletonLine key={i} width="80%" />
               ))}
@@ -112,11 +119,16 @@ const SkeletonTable: React.FC<SkeletonTableProps> = ({
         <div className="divide-y divide-border">
           {Array.from({ length: rows }).map((_, rowIndex) => (
             <div key={rowIndex} className="p-4">
-              <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+              <div
+                className="grid gap-4"
+                style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+              >
                 {Array.from({ length: columns }).map((_, colIndex) => (
-                  <SkeletonLine 
-                    key={colIndex} 
-                    width={colIndex === 0 ? "90%" : `${60 + Math.random() * 30}%`}
+                  <SkeletonLine
+                    key={colIndex}
+                    width={
+                      colIndex === 0 ? "90%" : `${60 + Math.random() * 30}%`
+                    }
                   />
                 ))}
               </div>
@@ -129,10 +141,10 @@ const SkeletonTable: React.FC<SkeletonTableProps> = ({
 );
 
 // Skeleton chart component
-const SkeletonChart: React.FC<SkeletonChartProps> = ({ 
-  height = "h-64", 
+const SkeletonChart: React.FC<SkeletonChartProps> = ({
+  height = "h-64",
   showLegend = true,
-  className = ""
+  className = "",
 }) => (
   <Card className={className}>
     <CardHeader>
@@ -161,10 +173,10 @@ const SkeletonChart: React.FC<SkeletonChartProps> = ({
 );
 
 // Skeleton form component
-const SkeletonForm: React.FC<SkeletonFormProps> = ({ 
-  fields = 4, 
+const SkeletonForm: React.FC<SkeletonFormProps> = ({
+  fields = 4,
   showButtons = true,
-  className = ""
+  className = "",
 }) => (
   <Card className={className}>
     <CardHeader>
@@ -189,14 +201,17 @@ const SkeletonForm: React.FC<SkeletonFormProps> = ({
 );
 
 // Skeleton list component
-const SkeletonList: React.FC<{ items?: number; showAvatars?: boolean; className?: string }> = ({ 
-  items = 6, 
-  showAvatars = false,
-  className = ""
-}) => (
+const SkeletonList: React.FC<{
+  items?: number;
+  showAvatars?: boolean;
+  className?: string;
+}> = ({ items = 6, showAvatars = false, className = "" }) => (
   <div className={`space-y-3 ${className}`}>
     {Array.from({ length: items }).map((_, i) => (
-      <div key={i} className="flex items-center space-x-3 p-3 border border-border rounded-lg">
+      <div
+        key={i}
+        className="flex items-center space-x-3 p-3 border border-border rounded-lg"
+      >
         {showAvatars && <SkeletonCircle size="h-10 w-10" />}
         <div className="space-y-2 flex-1">
           <SkeletonLine width="60%" />
@@ -209,11 +224,13 @@ const SkeletonList: React.FC<{ items?: number; showAvatars?: boolean; className?
 );
 
 // Skeleton metrics component
-const SkeletonMetrics: React.FC<{ count?: number; className?: string }> = ({ 
+const SkeletonMetrics: React.FC<{ count?: number; className?: string }> = ({
   count = 4,
-  className = ""
+  className = "",
 }) => (
-  <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ${className}`}>
+  <div
+    className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 ${className}`}
+  >
     {Array.from({ length: count }).map((_, i) => (
       <Card key={i}>
         <CardContent className="p-6">
@@ -242,5 +259,5 @@ export {
   SkeletonChart,
   SkeletonForm,
   SkeletonList,
-  SkeletonMetrics
+  SkeletonMetrics,
 };

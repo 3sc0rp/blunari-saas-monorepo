@@ -1,22 +1,28 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { 
-  Clock, 
-  Shield, 
-  User, 
-  Building, 
-  Play, 
-  Square, 
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Clock,
+  Shield,
+  User,
+  Building,
+  Play,
+  Square,
   AlertTriangle,
   ExternalLink,
   Eye,
-  Settings
-} from 'lucide-react';
-import { ImpersonationSession } from '@/types/impersonation';
-import { useToast } from '@/hooks/use-toast';
+  Settings,
+} from "lucide-react";
+import { ImpersonationSession } from "@/types/impersonation";
+import { useToast } from "@/hooks/use-toast";
 
 interface ImpersonationCardProps {
   session: ImpersonationSession;
@@ -24,14 +30,18 @@ interface ImpersonationCardProps {
   onViewDetails?: (sessionId: string) => void;
 }
 
-export function ImpersonationCard({ session, onEnd, onViewDetails }: ImpersonationCardProps) {
+export function ImpersonationCard({
+  session,
+  onEnd,
+  onViewDetails,
+}: ImpersonationCardProps) {
   const [isEnding, setIsEnding] = useState(false);
   const { toast } = useToast();
 
   const handleEndSession = async () => {
     setIsEnding(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
       onEnd?.(session.id);
       toast({
         title: "Session Ended",
@@ -41,7 +51,7 @@ export function ImpersonationCard({ session, onEnd, onViewDetails }: Impersonati
       toast({
         title: "Error",
         description: "Failed to end session.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsEnding(false);
@@ -50,36 +60,49 @@ export function ImpersonationCard({ session, onEnd, onViewDetails }: Impersonati
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'expired': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
-      case 'terminated': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
-      case 'completed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+      case "active":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "expired":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+      case "terminated":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
+      case "completed":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'SUPER_ADMIN': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
-      case 'ADMIN': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'SUPPORT': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+      case "SUPER_ADMIN":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400";
+      case "ADMIN":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "SUPPORT":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
   const formatDuration = () => {
     const start = new Date(session.startedAt);
     const end = session.endedAt ? new Date(session.endedAt) : new Date();
-    const duration = Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
+    const duration = Math.floor(
+      (end.getTime() - start.getTime()) / (1000 * 60),
+    );
     return `${duration}m`;
   };
 
   const getTimeRemaining = () => {
-    if (session.status !== 'active') return null;
+    if (session.status !== "active") return null;
     const now = new Date();
     const expires = new Date(session.expiresAt);
-    const remaining = Math.floor((expires.getTime() - now.getTime()) / (1000 * 60));
-    return remaining > 0 ? `${remaining}m remaining` : 'Expired';
+    const remaining = Math.floor(
+      (expires.getTime() - now.getTime()) / (1000 * 60),
+    );
+    return remaining > 0 ? `${remaining}m remaining` : "Expired";
   };
 
   return (
@@ -112,7 +135,7 @@ export function ImpersonationCard({ session, onEnd, onViewDetails }: Impersonati
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span>Duration: {formatDuration()}</span>
           </div>
-          {session.status === 'active' && (
+          {session.status === "active" && (
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-500" />
               <span className="text-orange-600">{getTimeRemaining()}</span>
@@ -139,10 +162,10 @@ export function ImpersonationCard({ session, onEnd, onViewDetails }: Impersonati
           </div>
           <div className="flex gap-1">
             <Badge variant="outline" className="text-xs">
-              {session.permissions.filter(p => p.allowed).length} allowed
+              {session.permissions.filter((p) => p.allowed).length} allowed
             </Badge>
             <Badge variant="destructive" className="text-xs">
-              {session.permissions.filter(p => !p.allowed).length} restricted
+              {session.permissions.filter((p) => !p.allowed).length} restricted
             </Badge>
           </div>
         </div>
@@ -158,8 +181,8 @@ export function ImpersonationCard({ session, onEnd, onViewDetails }: Impersonati
             <Eye className="h-4 w-4 mr-2" />
             View Details
           </Button>
-          
-          {session.status === 'active' && (
+
+          {session.status === "active" && (
             <Button
               variant="destructive"
               size="sm"
@@ -168,15 +191,12 @@ export function ImpersonationCard({ session, onEnd, onViewDetails }: Impersonati
               className="flex-1"
             >
               <Square className="h-4 w-4 mr-2" />
-              {isEnding ? 'Ending...' : 'End Session'}
+              {isEnding ? "Ending..." : "End Session"}
             </Button>
           )}
-          
-          {session.status === 'active' && (
-            <Button
-              size="sm"
-              className="flex-1"
-            >
+
+          {session.status === "active" && (
+            <Button size="sm" className="flex-1">
               <ExternalLink className="h-4 w-4 mr-2" />
               Access Tenant
             </Button>

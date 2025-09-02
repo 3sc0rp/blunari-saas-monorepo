@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Tenant {
   id: string;
@@ -30,33 +30,36 @@ interface Tenant {
 
 // Extract tenant slug from subdomain or domain
 const getTenantSlugFromDomain = (): string | null => {
-  if (typeof window === 'undefined') return null;
-  
+  if (typeof window === "undefined") return null;
+
   const hostname = window.location.hostname;
-  
+
   // Handle different domain patterns
-  if (hostname === 'localhost' || hostname.startsWith('127.0.0.1')) {
+  if (hostname === "localhost" || hostname.startsWith("127.0.0.1")) {
     // For local development, check for ?tenant= parameter first
     const urlParams = new URLSearchParams(window.location.search);
-    const tenantParam = urlParams.get('tenant');
+    const tenantParam = urlParams.get("tenant");
     if (tenantParam) return tenantParam;
-    
+
     // Fallback to Demo Restaurant for development
-    return 'demo-restaurant';
+    return "demo-restaurant";
   }
-  
+
   // Production patterns:
   // restaurant-slug.blunari.ai -> extract "restaurant-slug"
   // restaurant-slug.blunari.app -> extract "restaurant-slug"
   // custom-domain.com -> lookup by domain
-  
-  const parts = hostname.split('.');
-  
-  if (parts.length >= 3 && (parts[1] === 'blunari' || parts.includes('blunari'))) {
+
+  const parts = hostname.split(".");
+
+  if (
+    parts.length >= 3 &&
+    (parts[1] === "blunari" || parts.includes("blunari"))
+  ) {
     // Subdomain pattern: restaurant-slug.blunari.ai
     return parts[0];
   }
-  
+
   // Custom domain - return hostname to lookup in database
   return hostname;
 };
@@ -67,41 +70,43 @@ export const useTenant = () => {
 
   // First, try to get tenant by subdomain/domain
   const { data: tenantByDomain, isLoading: isLoadingDomain } = useQuery({
-    queryKey: ['tenant-by-domain', tenantSlug],
+    queryKey: ["tenant-by-domain", tenantSlug],
     queryFn: async () => {
       if (!tenantSlug) return null;
 
       // Use the secure public tenant info view for public access
       let data;
       const { data: initialData, error: tenantError } = await supabase
-        .from('tenant_public_info')
-        .select('*')
-        .eq('slug', tenantSlug)
+        .from("tenant_public_info")
+        .select("*")
+        .eq("slug", tenantSlug)
         .single();
 
       data = initialData;
 
-      if (tenantError && tenantError.code === 'PGRST116') {
+      if (tenantError && tenantError.code === "PGRST116") {
         // Not found by slug, try by custom domain
         const { data: domainData, error: domainError } = await supabase
-          .from('domains')
-          .select(`
+          .from("domains")
+          .select(
+            `
             tenant_id,
             tenants (
               id, name, slug, status, timezone, currency, description,
               phone, email, website, address, cuisine_type_id, logo_url,
               primary_color, secondary_color, created_at, updated_at
             )
-          `)
-          .eq('domain', tenantSlug)
-          .eq('status', 'active')
+          `,
+          )
+          .eq("domain", tenantSlug)
+          .eq("status", "active")
           .single();
 
         if (domainError) return null;
         data = domainData?.tenants as Tenant;
       }
 
-      if (tenantError && tenantError.code !== 'PGRST116') throw tenantError;
+      if (tenantError && tenantError.code !== "PGRST116") throw tenantError;
       return data as Tenant | null;
     },
     enabled: !!tenantSlug,
@@ -109,17 +114,18 @@ export const useTenant = () => {
 
   // Fallback: get tenant by user (for admin access or development)
   const { data: tenantByUser, isLoading: isLoadingUser } = useQuery({
-    queryKey: ['tenant-by-user', user?.id],
+    queryKey: ["tenant-by-user", user?.id],
     queryFn: async () => {
       if (!user) return null;
 
-      const { data, error } = await supabase
-        .rpc('get_user_tenant', { p_user_id: user.id });
+      const { data, error } = await supabase.rpc("get_user_tenant", {
+        p_user_id: user.id,
+      });
 
       if (error) throw error;
-      
+
       if (!data || data.length === 0) return null;
-      
+
       return data[0] as {
         tenant_id: string;
         tenant_name: string;
@@ -133,14 +139,14 @@ export const useTenant = () => {
 
   // Get full tenant details for user-based lookup
   const { data: tenantDetails, isLoading: isLoadingDetails } = useQuery({
-    queryKey: ['tenant-details', tenantByUser?.tenant_id],
+    queryKey: ["tenant-details", tenantByUser?.tenant_id],
     queryFn: async () => {
       if (!tenantByUser?.tenant_id) return null;
 
       const { data, error } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('id', tenantByUser.tenant_id)
+        .from("tenants")
+        .select("*")
+        .eq("id", tenantByUser.tenant_id)
         .single();
 
       if (error) throw error;
@@ -152,8 +158,8 @@ export const useTenant = () => {
   // Determine the final tenant and access type
   const tenant = tenantByDomain || tenantDetails;
   const tenantInfo = tenantByDomain ? null : tenantByUser;
-  const accessType = tenantByDomain ? 'domain' : 'user';
-  
+  const accessType = tenantByDomain ? "domain" : "user";
+
   const isLoading = isLoadingDomain || isLoadingUser || isLoadingDetails;
 
   return {

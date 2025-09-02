@@ -1,14 +1,27 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bell, Mail, MessageSquare, Users } from 'lucide-react';
-import { NotificationSettings as NotificationSettingsType } from '@/types/settings';
-import { useForm } from 'react-hook-form';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Bell, Mail, MessageSquare, Users } from "lucide-react";
+import { NotificationSettings as NotificationSettingsType } from "@/types/settings";
+import { useForm } from "react-hook-form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 interface NotificationSettingsProps {
   settings: NotificationSettingsType;
@@ -16,10 +29,10 @@ interface NotificationSettingsProps {
   isUpdating: boolean;
 }
 
-const NotificationSettings: React.FC<NotificationSettingsProps> = ({ 
-  settings, 
-  onUpdate, 
-  isUpdating 
+const NotificationSettings: React.FC<NotificationSettingsProps> = ({
+  settings,
+  onUpdate,
+  isUpdating,
 }) => {
   const form = useForm<NotificationSettingsType>({
     defaultValues: settings,
@@ -54,7 +67,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -72,7 +88,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -90,7 +109,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -108,21 +130,27 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
               />
             </div>
 
-            {form.watch('email.reminders') && (
+            {form.watch("email.reminders") && (
               <FormField
                 control={form.control}
                 name="email.reminderHours"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Reminder Timing</FormLabel>
-                    <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                    <Select
+                      onValueChange={(value) => field.onChange(Number(value))}
+                      value={field.value?.toString()}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select reminder timing" />
@@ -166,7 +194,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -184,7 +215,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -202,21 +236,27 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
               />
             </div>
 
-            {form.watch('sms.reminders') && (
+            {form.watch("sms.reminders") && (
               <FormField
                 control={form.control}
                 name="sms.reminderHours"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>SMS Reminder Timing</FormLabel>
-                    <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString()}>
+                    <Select
+                      onValueChange={(value) => field.onChange(Number(value))}
+                      value={field.value?.toString()}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select SMS reminder timing" />
@@ -258,7 +298,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -276,7 +319,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -294,7 +340,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -312,14 +361,17 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
               />
             </div>
 
-            {form.watch('staff.dailySummary') && (
+            {form.watch("staff.dailySummary") && (
               <FormField
                 control={form.control}
                 name="staff.summaryTime"
@@ -359,7 +411,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -377,7 +432,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -395,7 +453,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       </div>
                     </div>
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -406,7 +467,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isUpdating}>
-            {isUpdating ? 'Saving...' : 'Save Notification Settings'}
+            {isUpdating ? "Saving..." : "Save Notification Settings"}
           </Button>
         </div>
       </form>

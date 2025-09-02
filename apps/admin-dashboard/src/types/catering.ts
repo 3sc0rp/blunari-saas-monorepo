@@ -1,10 +1,34 @@
 // Comprehensive TypeScript types for Blunari Catering System
 
 // Database enums
-export type CateringStatus = 'inquiry' | 'quoted' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
-export type CateringServiceType = 'pickup' | 'delivery' | 'full_service' | 'drop_off';
-export type MenuItemCategory = 'appetizers' | 'mains' | 'desserts' | 'beverages' | 'salads' | 'sides' | 'packages';
-export type DietaryRestriction = 'vegetarian' | 'vegan' | 'gluten_free' | 'dairy_free' | 'nut_free' | 'kosher' | 'halal';
+export type CateringStatus =
+  | "inquiry"
+  | "quoted"
+  | "confirmed"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+export type CateringServiceType =
+  | "pickup"
+  | "delivery"
+  | "full_service"
+  | "drop_off";
+export type MenuItemCategory =
+  | "appetizers"
+  | "mains"
+  | "desserts"
+  | "beverages"
+  | "salads"
+  | "sides"
+  | "packages";
+export type DietaryRestriction =
+  | "vegetarian"
+  | "vegan"
+  | "gluten_free"
+  | "dairy_free"
+  | "nut_free"
+  | "kosher"
+  | "halal";
 
 // Core catering interfaces
 export interface CateringEventType {
@@ -95,7 +119,7 @@ export interface CateringOrder {
   event_type_id?: string;
   package_id?: string;
   customer_id?: string;
-  
+
   // Event details
   event_name: string;
   event_date: string;
@@ -103,13 +127,13 @@ export interface CateringOrder {
   event_end_time?: string;
   event_duration_hours: number;
   guest_count: number;
-  
+
   // Customer information
   contact_name: string;
   contact_email: string;
   contact_phone: string;
   company_name?: string;
-  
+
   // Event location
   venue_name?: string;
   venue_address: {
@@ -122,13 +146,13 @@ export interface CateringOrder {
     longitude?: number;
   };
   delivery_instructions?: string;
-  
+
   // Service details
   service_type: CateringServiceType;
   setup_required: boolean;
   service_staff_required: number;
   equipment_needed: string[];
-  
+
   // Pricing
   subtotal: number; // in cents
   tax_amount: number;
@@ -138,19 +162,19 @@ export interface CateringOrder {
   deposit_amount: number;
   deposit_paid: boolean;
   deposit_paid_at?: string;
-  
+
   // Order status and tracking
   status: CateringStatus;
   quoted_at?: string;
   confirmed_at?: string;
-  
+
   // Additional information
   special_instructions?: string;
   dietary_requirements?: string;
   occasion?: string;
   referral_source?: string;
   marketing_consent: boolean;
-  
+
   // Internal notes and tracking
   internal_notes?: string;
   assigned_chef_id?: string;
@@ -158,10 +182,10 @@ export interface CateringOrder {
   ready_time?: string;
   delivered_at?: string;
   completed_at?: string;
-  
+
   created_at: string;
   updated_at: string;
-  
+
   // Relations
   event_type?: CateringEventType;
   package?: CateringPackage;
@@ -295,7 +319,7 @@ export interface CreateCateringOrderRequest {
   contact_phone: string;
   company_name?: string;
   venue_name?: string;
-  venue_address: CateringOrder['venue_address'];
+  venue_address: CateringOrder["venue_address"];
   service_type: CateringServiceType;
   special_instructions?: string;
   dietary_requirements?: string;
@@ -319,7 +343,7 @@ export interface UpdateCateringOrderRequest {
   contact_phone?: string;
   company_name?: string;
   venue_name?: string;
-  venue_address?: Partial<CateringOrder['venue_address']>;
+  venue_address?: Partial<CateringOrder["venue_address"]>;
   service_type?: CateringServiceType;
   special_instructions?: string;
   dietary_requirements?: string;
@@ -446,37 +470,37 @@ export type DietaryRestrictionLabel = {
 
 // Constants
 export const CATERING_STATUS_COLORS: CateringStatusColor = {
-  inquiry: 'text-blue-600 bg-blue-50',
-  quoted: 'text-amber-600 bg-amber-50',
-  confirmed: 'text-green-600 bg-green-50',
-  in_progress: 'text-purple-600 bg-purple-50',
-  completed: 'text-gray-600 bg-gray-50',
-  cancelled: 'text-red-600 bg-red-50',
+  inquiry: "text-blue-600 bg-blue-50",
+  quoted: "text-amber-600 bg-amber-50",
+  confirmed: "text-green-600 bg-green-50",
+  in_progress: "text-purple-600 bg-purple-50",
+  completed: "text-gray-600 bg-gray-50",
+  cancelled: "text-red-600 bg-red-50",
 };
 
 export const CATERING_SERVICE_TYPE_LABELS: CateringServiceTypeLabel = {
-  pickup: 'Customer Pickup',
-  delivery: 'Delivery Only',
-  drop_off: 'Drop-off Service',
-  full_service: 'Full Service',
+  pickup: "Customer Pickup",
+  delivery: "Delivery Only",
+  drop_off: "Drop-off Service",
+  full_service: "Full Service",
 };
 
 export const MENU_ITEM_CATEGORY_LABELS: MenuItemCategoryLabel = {
-  appetizers: 'Appetizers & Hors d\'oeuvres',
-  mains: 'Main Courses',
-  salads: 'Salads & Fresh Options',
-  sides: 'Side Dishes',
-  desserts: 'Desserts',
-  beverages: 'Beverages',
-  packages: 'Complete Packages',
+  appetizers: "Appetizers & Hors d'oeuvres",
+  mains: "Main Courses",
+  salads: "Salads & Fresh Options",
+  sides: "Side Dishes",
+  desserts: "Desserts",
+  beverages: "Beverages",
+  packages: "Complete Packages",
 };
 
 export const DIETARY_RESTRICTION_LABELS: DietaryRestrictionLabel = {
-  vegetarian: 'Vegetarian',
-  vegan: 'Vegan',
-  gluten_free: 'Gluten Free',
-  dairy_free: 'Dairy Free',
-  nut_free: 'Nut Free',
-  kosher: 'Kosher',
-  halal: 'Halal',
+  vegetarian: "Vegetarian",
+  vegan: "Vegan",
+  gluten_free: "Gluten Free",
+  dairy_free: "Dairy Free",
+  nut_free: "Nut Free",
+  kosher: "Kosher",
+  halal: "Halal",
 };

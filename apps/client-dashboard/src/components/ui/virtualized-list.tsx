@@ -1,6 +1,6 @@
-import React, { memo, useMemo } from 'react';
-import { useVirtualization } from '@/hooks/useVirtualization';
-import { cn } from '@/lib/utils';
+import React, { memo, useMemo } from "react";
+import { useVirtualization } from "@/hooks/useVirtualization";
+import { cn } from "@/lib/utils";
 
 interface VirtualizedListProps<T> {
   items: T[];
@@ -21,28 +21,24 @@ export function VirtualizedList<T>({
   className,
   overscan = 5,
 }: VirtualizedListProps<T>) {
-  const {
-    visibleItems,
-    totalHeight,
-    offsetY,
-    handleScroll,
-  } = useVirtualization(items, {
-    itemHeight,
-    containerHeight: height,
-    overscan,
-  });
+  const { visibleItems, totalHeight, offsetY, handleScroll } =
+    useVirtualization(items, {
+      itemHeight,
+      containerHeight: height,
+      overscan,
+    });
 
   return (
     <div
-      className={cn('overflow-auto', className)}
+      className={cn("overflow-auto", className)}
       style={{ height }}
       onScroll={handleScroll}
     >
-      <div style={{ height: totalHeight, position: 'relative' }}>
+      <div style={{ height: totalHeight, position: "relative" }}>
         <div
           style={{
             transform: `translateY(${offsetY}px)`,
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
             right: 0,
@@ -67,13 +63,9 @@ export function VirtualizedList<T>({
 export const MemoizedListItem = memo<{
   children: React.ReactNode;
   className?: string;
-}>(({ children, className }) => (
-  <div className={className}>
-    {children}
-  </div>
-));
+}>(({ children, className }) => <div className={className}>{children}</div>);
 
-MemoizedListItem.displayName = 'MemoizedListItem';
+MemoizedListItem.displayName = "MemoizedListItem";
 
 // Grid virtualization for table-like data
 interface VirtualizedGridProps<T> {
@@ -101,24 +93,20 @@ export function VirtualizedGrid<T>({
   headerHeight = 40,
   overscan = 5,
 }: VirtualizedGridProps<T>) {
-  const {
-    visibleItems,
-    totalHeight,
-    offsetY,
-    handleScroll,
-  } = useVirtualization(items, {
-    itemHeight: rowHeight,
-    containerHeight: height - headerHeight,
-    overscan,
-  });
+  const { visibleItems, totalHeight, offsetY, handleScroll } =
+    useVirtualization(items, {
+      itemHeight: rowHeight,
+      containerHeight: height - headerHeight,
+      overscan,
+    });
 
-  const totalWidth = useMemo(() => 
-    columns.reduce((sum, col) => sum + col.width, 0),
-    [columns]
+  const totalWidth = useMemo(
+    () => columns.reduce((sum, col) => sum + col.width, 0),
+    [columns],
   );
 
   return (
-    <div className={cn('border rounded-lg overflow-hidden', className)}>
+    <div className={cn("border rounded-lg overflow-hidden", className)}>
       {/* Header */}
       <div
         className="bg-muted/50 border-b flex"
@@ -141,11 +129,11 @@ export function VirtualizedGrid<T>({
         style={{ height: height - headerHeight }}
         onScroll={handleScroll}
       >
-        <div style={{ height: totalHeight, position: 'relative' }}>
+        <div style={{ height: totalHeight, position: "relative" }}>
           <div
             style={{
               transform: `translateY(${offsetY}px)`,
-              position: 'absolute',
+              position: "absolute",
               top: 0,
               left: 0,
               right: 0,

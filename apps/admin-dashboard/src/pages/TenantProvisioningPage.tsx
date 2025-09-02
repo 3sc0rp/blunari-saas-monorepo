@@ -1,5 +1,5 @@
-import { TenantProvisioningWizard } from '@/components/admin/TenantProvisioningWizard';
-import { useNavigate } from 'react-router-dom';
+import { TenantProvisioningWizard } from "@/components/admin/TenantProvisioningWizard";
+import { useNavigate } from "react-router-dom";
 
 export default function TenantProvisioningPage() {
   const navigate = useNavigate();
@@ -9,17 +9,17 @@ export default function TenantProvisioningPage() {
     if (result.tenantId) {
       navigate(`/admin/tenants/${result.tenantId}`);
     } else {
-      navigate('/admin/tenants');
+      navigate("/admin/tenants");
     }
   };
 
   const handleCancel = () => {
-    navigate('/admin/tenants');
+    navigate("/admin/tenants");
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <TenantProvisioningWizard 
+      <TenantProvisioningWizard
         onComplete={handleProvisioningComplete}
         onCancel={handleCancel}
       />

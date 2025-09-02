@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Customer {
   id: string;
@@ -11,7 +11,7 @@ export interface Customer {
   total_spent: number;
   last_visit: string;
   average_party_size: number;
-  customer_type: 'regular' | 'vip' | 'new' | 'inactive';
+  customer_type: "regular" | "vip" | "new" | "inactive";
   preferences: string[];
   allergies: string[];
   special_occasions: Array<{
@@ -33,34 +33,41 @@ export const useCustomerManagement = (tenantId?: string) => {
   const { toast } = useToast();
 
   // Fetch customers with their booking history
-  const { data: customers = [], isLoading, error } = useQuery({
-    queryKey: ['customers', tenantId],
+  const {
+    data: customers = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["customers", tenantId],
     queryFn: async () => {
       if (!tenantId) return [];
-      
+
       // Get all bookings for this tenant to derive customer data
       const { data: bookingsData, error: bookingsError } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('booking_time', { ascending: false });
+        .from("bookings")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("booking_time", { ascending: false });
 
       if (bookingsError) throw bookingsError;
 
       // Group bookings by customer email
-      const customerMap = new Map<string, {
-        id: string;
-        name: string;
-        email: string;
-        phone: string | null;
-        bookings: Array<typeof bookingsData[0]>;
-        total_spent: number;
-        total_visits: number;
-        party_sizes: number[];
-        lastVisit: string;
-      }>();
+      const customerMap = new Map<
+        string,
+        {
+          id: string;
+          name: string;
+          email: string;
+          phone: string | null;
+          bookings: Array<(typeof bookingsData)[0]>;
+          total_spent: number;
+          total_visits: number;
+          party_sizes: number[];
+          lastVisit: string;
+        }
+      >();
 
-      bookingsData.forEach(booking => {
+      bookingsData.forEach((booking) => {
         const key = booking.guest_email;
         if (!customerMap.has(key)) {
           customerMap.set(key, {
@@ -72,7 +79,7 @@ export const useCustomerManagement = (tenantId?: string) => {
             total_spent: 0,
             total_visits: 0,
             party_sizes: [],
-            lastVisit: booking.booking_time
+            lastVisit: booking.booking_time,
           });
         }
 
@@ -80,9 +87,9 @@ export const useCustomerManagement = (tenantId?: string) => {
         customer.bookings.push(booking);
         customer.total_visits++;
         customer.party_sizes.push(booking.party_size);
-        
+
         // Calculate estimated spend from actual booking data
-        if (booking.status === 'completed') {
+        if (booking.status === "completed") {
           customer.total_spent += booking.party_size * 45; // Estimated $45 per person
         }
 
@@ -93,39 +100,50 @@ export const useCustomerManagement = (tenantId?: string) => {
       });
 
       // Convert to Customer format
-      const customersArray: Customer[] = Array.from(customerMap.values()).map(customerData => {
-        const avgPartySize = customerData.party_sizes.length > 0 
-          ? customerData.party_sizes.reduce((sum: number, size: number) => sum + size, 0) / customerData.party_sizes.length 
-          : 0;
+      const customersArray: Customer[] = Array.from(customerMap.values()).map(
+        (customerData) => {
+          const avgPartySize =
+            customerData.party_sizes.length > 0
+              ? customerData.party_sizes.reduce(
+                  (sum: number, size: number) => sum + size,
+                  0,
+                ) / customerData.party_sizes.length
+              : 0;
 
-        // Determine customer type based on visit frequency and recency
-        let customerType: Customer['customer_type'] = 'new';
-        const daysSinceLastVisit = (Date.now() - new Date(customerData.lastVisit).getTime()) / (1000 * 60 * 60 * 24);
-        
-        if (customerData.total_visits >= 10 || customerData.total_spent >= 1000) {
-          customerType = 'vip';
-        } else if (customerData.total_visits >= 3) {
-          customerType = 'regular';
-        } else if (daysSinceLastVisit > 90) {
-          customerType = 'inactive';
-        }
+          // Determine customer type based on visit frequency and recency
+          let customerType: Customer["customer_type"] = "new";
+          const daysSinceLastVisit =
+            (Date.now() - new Date(customerData.lastVisit).getTime()) /
+            (1000 * 60 * 60 * 24);
 
-        return {
-          id: customerData.id,
-          name: customerData.name,
-          email: customerData.email,
-          phone: customerData.phone,
-          total_visits: customerData.total_visits,
-          total_spent: customerData.total_spent,
-          last_visit: customerData.lastVisit,
-          average_party_size: Math.round(avgPartySize * 10) / 10,
-          customer_type: customerType,
-          preferences: [], // Could be expanded with customer preferences table
-          allergies: [], // Could be expanded with dietary restrictions table
-          special_occasions: [], // Could be expanded with customer occasions table
-          loyalty_points: Math.floor(customerData.total_spent / 10), // 1 point per $10 spent
-        };
-      });
+          if (
+            customerData.total_visits >= 10 ||
+            customerData.total_spent >= 1000
+          ) {
+            customerType = "vip";
+          } else if (customerData.total_visits >= 3) {
+            customerType = "regular";
+          } else if (daysSinceLastVisit > 90) {
+            customerType = "inactive";
+          }
+
+          return {
+            id: customerData.id,
+            name: customerData.name,
+            email: customerData.email,
+            phone: customerData.phone,
+            total_visits: customerData.total_visits,
+            total_spent: customerData.total_spent,
+            last_visit: customerData.lastVisit,
+            average_party_size: Math.round(avgPartySize * 10) / 10,
+            customer_type: customerType,
+            preferences: [], // Could be expanded with customer preferences table
+            allergies: [], // Could be expanded with dietary restrictions table
+            special_occasions: [], // Could be expanded with customer occasions table
+            loyalty_points: Math.floor(customerData.total_spent / 10), // 1 point per $10 spent
+          };
+        },
+      );
 
       return customersArray.sort((a, b) => b.total_visits - a.total_visits);
     },
@@ -137,15 +155,17 @@ export const useCustomerManagement = (tenantId?: string) => {
     mutationFn: async (customerData: Partial<Customer>) => {
       // This would create a customer profile
       // For now, customers are created through bookings
-      throw new Error('Customer creation is handled through the booking system');
+      throw new Error(
+        "Customer creation is handled through the booking system",
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["customers", tenantId] });
       toast({
-        title: 'Customer Added',
-        description: 'Customer has been successfully added.'
+        title: "Customer Added",
+        description: "Customer has been successfully added.",
       });
-    }
+    },
   });
 
   return {
@@ -153,6 +173,6 @@ export const useCustomerManagement = (tenantId?: string) => {
     isLoading,
     error,
     addCustomer: addCustomerMutation.mutate,
-    isAdding: addCustomerMutation.isPending
+    isAdding: addCustomerMutation.isPending,
   };
 };

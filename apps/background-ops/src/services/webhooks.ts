@@ -1,8 +1,8 @@
-import { logger } from '../utils/logger';
-import { db } from '../database';
-import { activityService } from './activity';
-import { servicesService } from './services';
-import { jobsService } from './jobs';
+import { logger } from "../utils/logger";
+import { db } from "../database";
+import { activityService } from "./activity";
+import { servicesService } from "./services";
+import { jobsService } from "./jobs";
 
 export interface WebhookData {
   source: string;
@@ -40,28 +40,30 @@ class WebhookService {
     try {
       // Log the webhook
       await this.logWebhook(webhookData);
-      
+
       // Process based on source and event type
       switch (webhookData.source) {
-        case 'github':
+        case "github":
           await this.processGitHubWebhook(webhookData);
           break;
-        case 'stripe':
+        case "stripe":
           await this.processStripeWebhook(webhookData);
           break;
-        case 'slack':
+        case "slack":
           await this.processSlackWebhook(webhookData);
           break;
-        case 'monitoring':
+        case "monitoring":
           await this.processMonitoringWebhook(webhookData);
           break;
         default:
           await this.processGenericWebhook(webhookData);
       }
-      
-      logger.info(`Processed webhook from ${webhookData.source}: ${webhookData.event_type}`);
+
+      logger.info(
+        `Processed webhook from ${webhookData.source}: ${webhookData.event_type}`,
+      );
     } catch (error) {
-      logger.error('Error processing webhook:', error);
+      logger.error("Error processing webhook:", error);
       throw error;
     }
   }
@@ -70,26 +72,36 @@ class WebhookService {
     try {
       // Update service health status
       await servicesService.updateServiceStatus(serviceId, {
-        status: healthData.status === 'healthy' ? 'online' : 
-               healthData.status === 'degraded' ? 'warning' : 'error'
+        status:
+          healthData.status === "healthy"
+            ? "online"
+            : healthData.status === "degraded"
+              ? "warning"
+              : "error",
       });
-      
+
       // Log activity
       await activityService.logActivity({
-        type: 'health_check',
+        type: "health_check",
         service: serviceId,
         message: `Health check result: ${healthData.status} (${healthData.response_time}ms)`,
-        status: healthData.status === 'healthy' ? 'success' : 
-               healthData.status === 'degraded' ? 'warning' : 'error',
+        status:
+          healthData.status === "healthy"
+            ? "success"
+            : healthData.status === "degraded"
+              ? "warning"
+              : "error",
         details: {
           response_time: healthData.response_time,
-          ...healthData.details
-        }
+          ...healthData.details,
+        },
       });
-      
-      logger.info(`Processed health webhook for service ${serviceId}: ${healthData.status}`);
+
+      logger.info(
+        `Processed health webhook for service ${serviceId}: ${healthData.status}`,
+      );
     } catch (error) {
-      logger.error('Error processing health webhook:', error);
+      logger.error("Error processing health webhook:", error);
       throw error;
     }
   }
@@ -98,28 +110,32 @@ class WebhookService {
     try {
       // Create background job for payment processing
       await jobsService.createJob({
-        type: 'process_payment',
+        type: "process_payment",
         data: paymentData,
-        priority: 8 // High priority for payments
+        priority: 8, // High priority for payments
       });
-      
+
       // Log activity
       await activityService.logActivity({
-        type: 'payment_event',
-        service: 'payments',
+        type: "payment_event",
+        service: "payments",
         message: `Payment ${paymentData.event_type}: $${paymentData.amount} - ${paymentData.status}`,
-        status: paymentData.status === 'succeeded' ? 'success' : 
-               paymentData.status === 'failed' ? 'error' : 'info',
+        status:
+          paymentData.status === "succeeded"
+            ? "success"
+            : paymentData.status === "failed"
+              ? "error"
+              : "info",
         details: {
           customer_id: paymentData.customer_id,
           amount: paymentData.amount,
-          event_type: paymentData.event_type
-        }
+          event_type: paymentData.event_type,
+        },
       });
-      
+
       logger.info(`Processed payment webhook: ${paymentData.event_type}`);
     } catch (error) {
-      logger.error('Error processing payment webhook:', error);
+      logger.error("Error processing payment webhook:", error);
       throw error;
     }
   }
@@ -128,69 +144,75 @@ class WebhookService {
     try {
       // Log deployment activity
       await activityService.logActivity({
-        type: 'deployment',
+        type: "deployment",
         service: deploymentData.service,
         message: `Deployment ${deploymentData.status}: ${deploymentData.version} to ${deploymentData.environment}`,
-        status: deploymentData.status === 'success' ? 'success' : 
-               deploymentData.status === 'failed' ? 'error' : 'info',
+        status:
+          deploymentData.status === "success"
+            ? "success"
+            : deploymentData.status === "failed"
+              ? "error"
+              : "info",
         details: {
           version: deploymentData.version,
           environment: deploymentData.environment,
-          status: deploymentData.status
-        }
+          status: deploymentData.status,
+        },
       });
-      
+
       // If deployment is successful, trigger health checks
-      if (deploymentData.status === 'success') {
+      if (deploymentData.status === "success") {
         await jobsService.createJob({
-          type: 'health_check_after_deployment',
+          type: "health_check_after_deployment",
           data: {
             service: deploymentData.service,
             version: deploymentData.version,
-            environment: deploymentData.environment
+            environment: deploymentData.environment,
           },
-          delay: 60 // Wait 60 seconds after deployment
+          delay: 60, // Wait 60 seconds after deployment
         });
       }
-      
-      logger.info(`Processed deployment webhook for ${deploymentData.service}: ${deploymentData.status}`);
+
+      logger.info(
+        `Processed deployment webhook for ${deploymentData.service}: ${deploymentData.status}`,
+      );
     } catch (error) {
-      logger.error('Error processing deployment webhook:', error);
+      logger.error("Error processing deployment webhook:", error);
       throw error;
     }
   }
 
   private async processGitHubWebhook(webhookData: WebhookData) {
     const { event_type, data } = webhookData;
-    
+
     switch (event_type) {
-      case 'push':
+      case "push":
         await activityService.logActivity({
-          type: 'code_push',
-          service: 'github',
+          type: "code_push",
+          service: "github",
           message: `Code pushed to ${data.repository?.name}: ${data.head_commit?.message}`,
-          status: 'info',
+          status: "info",
           details: {
             repository: data.repository?.name,
-            branch: data.ref?.replace('refs/heads/', ''),
+            branch: data.ref?.replace("refs/heads/", ""),
             commits: data.commits?.length || 0,
-            author: data.head_commit?.author?.name
-          }
+            author: data.head_commit?.author?.name,
+          },
         });
         break;
-      
-      case 'pull_request':
+
+      case "pull_request":
         await activityService.logActivity({
-          type: 'pull_request',
-          service: 'github',
+          type: "pull_request",
+          service: "github",
           message: `Pull request ${data.action}: ${data.pull_request?.title}`,
-          status: 'info',
+          status: "info",
           details: {
             action: data.action,
             repository: data.repository?.name,
             number: data.pull_request?.number,
-            author: data.pull_request?.user?.login
-          }
+            author: data.pull_request?.user?.login,
+          },
         });
         break;
     }
@@ -198,76 +220,76 @@ class WebhookService {
 
   private async processStripeWebhook(webhookData: WebhookData) {
     const { event_type, data } = webhookData;
-    
+
     await activityService.logActivity({
-      type: 'stripe_event',
-      service: 'payments',
+      type: "stripe_event",
+      service: "payments",
       message: `Stripe event: ${event_type}`,
-      status: event_type.includes('failed') ? 'error' : 'info',
+      status: event_type.includes("failed") ? "error" : "info",
       details: {
         event_type,
         object_id: data.object?.id,
         amount: data.object?.amount,
-        currency: data.object?.currency
-      }
+        currency: data.object?.currency,
+      },
     });
   }
 
   private async processSlackWebhook(webhookData: WebhookData) {
     const { data } = webhookData;
-    
+
     await activityService.logActivity({
-      type: 'slack_message',
-      service: 'communications',
+      type: "slack_message",
+      service: "communications",
       message: `Slack message received: ${data.text?.substring(0, 100)}...`,
-      status: 'info',
+      status: "info",
       details: {
         channel: data.channel,
         user: data.user_name,
-        timestamp: data.timestamp
-      }
+        timestamp: data.timestamp,
+      },
     });
   }
 
   private async processMonitoringWebhook(webhookData: WebhookData) {
     const { event_type, data } = webhookData;
-    
-    let status: 'success' | 'warning' | 'error' | 'info' = 'info';
-    
-    if (event_type.includes('alert') || event_type.includes('error')) {
-      status = 'error';
-    } else if (event_type.includes('warning')) {
-      status = 'warning';
-    } else if (event_type.includes('resolved') || event_type.includes('ok')) {
-      status = 'success';
+
+    let status: "success" | "warning" | "error" | "info" = "info";
+
+    if (event_type.includes("alert") || event_type.includes("error")) {
+      status = "error";
+    } else if (event_type.includes("warning")) {
+      status = "warning";
+    } else if (event_type.includes("resolved") || event_type.includes("ok")) {
+      status = "success";
     }
-    
+
     await activityService.logActivity({
-      type: 'monitoring_alert',
-      service: data.service || 'monitoring',
-      message: `Monitoring event: ${event_type} - ${data.message || 'No message'}`,
+      type: "monitoring_alert",
+      service: data.service || "monitoring",
+      message: `Monitoring event: ${event_type} - ${data.message || "No message"}`,
       status,
       details: {
         alert_id: data.alert_id,
         severity: data.severity,
         metric: data.metric,
         value: data.value,
-        threshold: data.threshold
-      }
+        threshold: data.threshold,
+      },
     });
   }
 
   private async processGenericWebhook(webhookData: WebhookData) {
     await activityService.logActivity({
-      type: 'webhook_received',
+      type: "webhook_received",
       service: webhookData.source,
       message: `Webhook received: ${webhookData.event_type}`,
-      status: 'info',
+      status: "info",
       details: {
         source: webhookData.source,
         event_type: webhookData.event_type,
-        data_keys: Object.keys(webhookData.data)
-      }
+        data_keys: Object.keys(webhookData.data),
+      },
     });
   }
 
@@ -278,16 +300,16 @@ class WebhookService {
           source, event_type, data, signature, timestamp
         ) VALUES ($1, $2, $3, $4, $5)
       `;
-      
+
       await db.query(query, [
         webhookData.source,
         webhookData.event_type,
         JSON.stringify(webhookData.data),
         webhookData.signature,
-        webhookData.timestamp
+        webhookData.timestamp,
       ]);
     } catch (error) {
-      logger.error('Error logging webhook:', error);
+      logger.error("Error logging webhook:", error);
     }
   }
 }

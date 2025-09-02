@@ -9,7 +9,11 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "echo \"No lint configured for utils package\"",
+    "lint:fix": "echo \"No lint configured for utils package\"",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\""
   },
   "dependencies": {
     "date-fns": "^2.30.0"

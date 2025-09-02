@@ -1,7 +1,15 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-export const EntityTypeSchema = z.enum(['TABLE','CHAIR','WALL','DOOR','BAR','OBSTACLE','ZONE']);
-export const TableShapeSchema = z.enum(['ROUND','RECT','POLYGON']);
+export const EntityTypeSchema = z.enum([
+  "TABLE",
+  "CHAIR",
+  "WALL",
+  "DOOR",
+  "BAR",
+  "OBSTACLE",
+  "ZONE",
+]);
+export const TableShapeSchema = z.enum(["ROUND", "RECT", "POLYGON"]);
 
 export const DetectedEntitySchema = z.object({
   id: z.string().uuid().optional(),
@@ -21,10 +29,15 @@ export const DetectedEntitySchema = z.object({
 
 export const AnalyzeRequestSchema = z.object({
   idempotencyKey: z.string().uuid(),
-  calibration: z.object({
-    mode: z.enum(['AUTO','MANUAL']).default('AUTO'),
-    anchors: z.array(z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)])).length(4).optional(),
-  }).default({ mode: 'AUTO' }),
+  calibration: z
+    .object({
+      mode: z.enum(["AUTO", "MANUAL"]).default("AUTO"),
+      anchors: z
+        .array(z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]))
+        .length(4)
+        .optional(),
+    })
+    .default({ mode: "AUTO" }),
 });
 
 export const AnalyzeResponseSchema = z.object({
@@ -38,7 +51,7 @@ export const AnalyzeResponseSchema = z.object({
     imgHeight: z.number().int().positive(),
     worldWidth: z.number().min(0).max(10).default(10),
     worldHeight: z.number().min(0).max(10).default(10),
-  })
+  }),
 });
 
 export type DetectedEntity = z.infer<typeof DetectedEntitySchema>;

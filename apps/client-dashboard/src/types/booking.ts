@@ -1,5 +1,16 @@
-export type BookingStatus = 'confirmed' | 'pending' | 'seated' | 'completed' | 'cancelled' | 'noshow';
-export type BookingSource = 'phone' | 'walk_in' | 'website' | 'social' | 'partner';
+export type BookingStatus =
+  | "confirmed"
+  | "pending"
+  | "seated"
+  | "completed"
+  | "cancelled"
+  | "noshow";
+export type BookingSource =
+  | "phone"
+  | "walk_in"
+  | "website"
+  | "social"
+  | "partner";
 
 export interface BookingFormData {
   customerName: string;
@@ -57,7 +68,7 @@ export interface TableOptimization {
 }
 
 export interface BulkOperation {
-  type: 'status_update' | 'send_notification' | 'export' | 'delete';
+  type: "status_update" | "send_notification" | "export" | "delete";
   bookingIds: string[];
   data?: any;
 }

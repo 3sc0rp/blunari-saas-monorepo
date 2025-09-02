@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useRef } from 'react';
-import { toast } from 'sonner';
-import { useFloorPlanStore } from '@/state/useFloorPlanStore';
-import { WORLD_W, WORLD_H } from '@/lib/floorplan/normalize';
-import { FloorPlanAI } from '@/services/FloorPlanAI';
-import type { DetectedEntity } from '@/lib/floorplan/schema';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Spinner } from '@/components/ui/spinner';
-import { Progress } from '@/components/ui/progress';
-import { 
-  Upload, 
-  Brain, 
-  RotateCcw, 
-  CheckCircle2, 
-  Camera, 
-  Zap, 
+import { useState, useCallback, useRef } from "react";
+import { toast } from "sonner";
+import { useFloorPlanStore } from "@/state/useFloorPlanStore";
+import { WORLD_W, WORLD_H } from "@/lib/floorplan/normalize";
+import { FloorPlanAI } from "@/services/FloorPlanAI";
+import type { DetectedEntity } from "@/lib/floorplan/schema";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
+import { Progress } from "@/components/ui/progress";
+import {
+  Upload,
+  Brain,
+  RotateCcw,
+  CheckCircle2,
+  Camera,
+  Zap,
   FileImage,
   Sparkles,
   Target,
@@ -27,24 +27,24 @@ import {
   Settings,
   Download,
   Share,
-  Users
-} from 'lucide-react';
+  Users,
+} from "lucide-react";
 
 export default function FloorPlanManager() {
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const { 
-    entities, 
-    runId, 
-    isAnalyzing, 
+
+  const {
+    entities,
+    runId,
+    isAnalyzing,
     uploadedImage,
-    setRun, 
-    setAnalyzing, 
+    setRun,
+    setAnalyzing,
     setUploadedImage,
-    reset 
+    reset,
   } = useFloorPlanStore();
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -61,96 +61,106 @@ export default function FloorPlanManager() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFile(e.dataTransfer.files[0]);
     }
   }, []);
 
-  const handleFile = useCallback((selectedFile: File) => {
-    if (!selectedFile.type.startsWith('image/')) {
-      toast.error('Please upload an image file (JPG, PNG, etc.)');
-      return;
-    }
+  const handleFile = useCallback(
+    (selectedFile: File) => {
+      if (!selectedFile.type.startsWith("image/")) {
+        toast.error("Please upload an image file (JPG, PNG, etc.)");
+        return;
+      }
 
-    if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
-      toast.error('Image size should be less than 10MB');
-      return;
-    }
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        // 10MB limit
+        toast.error("Image size should be less than 10MB");
+        return;
+      }
 
-    setFile(selectedFile);
-    
-    // Create preview URL
-    const imageUrl = URL.createObjectURL(selectedFile);
-    setUploadedImage(imageUrl);
-    
-    toast.success('✨ Image uploaded successfully! Ready for AI analysis');
-  }, [setUploadedImage]);
+      setFile(selectedFile);
 
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      handleFile(selectedFile);
-    }
-  }, [handleFile]);
+      // Create preview URL
+      const imageUrl = URL.createObjectURL(selectedFile);
+      setUploadedImage(imageUrl);
+
+      toast.success("✨ Image uploaded successfully! Ready for AI analysis");
+    },
+    [setUploadedImage],
+  );
+
+  const handleFileUpload = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = event.target.files?.[0];
+      if (selectedFile) {
+        handleFile(selectedFile);
+      }
+    },
+    [handleFile],
+  );
 
   const analyzeFloorPlan = useCallback(async () => {
     if (!file || !uploadedImage) {
-      toast.error('Please upload an image first');
+      toast.error("Please upload an image first");
       return;
     }
 
-    console.log('[FloorPlanManager] Starting enhanced analysis...');
+    console.log("[FloorPlanManager] Starting enhanced analysis...");
     setAnalyzing(true);
     setAnalysisProgress(0);
-    
+
     try {
       // Simulate progress for better UX
       const progressInterval = setInterval(() => {
-        setAnalysisProgress(prev => Math.min(prev + 15, 85));
+        setAnalysisProgress((prev) => Math.min(prev + 15, 85));
       }, 500);
 
       // Create image element for AI analysis
       const img = new Image();
-      img.crossOrigin = 'anonymous';
+      img.crossOrigin = "anonymous";
       img.src = uploadedImage;
-      
+
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
-        img.onerror = () => reject(new Error('Failed to load image'));
+        img.onerror = () => reject(new Error("Failed to load image"));
       });
 
       setAnalysisProgress(90);
-      
+
       // Use existing FloorPlanAI service
       const analysisResult = await FloorPlanAI.analyzeFloorPlan(img);
-      
+
       clearInterval(progressInterval);
       setAnalysisProgress(100);
-      
+
       // Convert to our schema format with enhanced distribution
-      const runId = Math.random().toString(36).substring(2) + Date.now().toString(36);
-      
+      const runId =
+        Math.random().toString(36).substring(2) + Date.now().toString(36);
+
       // Enhanced table positioning and sizing algorithm with better AI integration
       const entities = analysisResult.detectedTables.map((table, index) => {
         console.log(`Processing table ${index + 1}:`, table);
-        
+
         // Use AI positioning with smart fallbacks
         let x = table.position?.x || 0;
         let y = table.position?.y || 0;
-        
+
         // Validate and adjust AI coordinates (0-10 range)
         if (x < 0 || x > 10 || y < 0 || y > 10) {
-          console.warn(`Invalid AI coordinates for table ${index + 1}: (${x}, ${y}), using fallback`);
+          console.warn(
+            `Invalid AI coordinates for table ${index + 1}: (${x}, ${y}), using fallback`,
+          );
           // Fallback to grid positioning if AI coordinates are invalid
           const gridSize = Math.ceil(Math.sqrt(analysisResult.tableCount));
           const spacing = 8 / Math.max(gridSize, 1);
           const margin = (10 - 8) / 2;
-          
+
           x = margin + (index % gridSize) * spacing + 1;
           y = margin + Math.floor(index / gridSize) * spacing + 1;
         }
-        
+
         // Smart distribution for multiple tables to avoid clustering
         if (analysisResult.tableCount > 1) {
           // Add slight randomization to prevent perfect grid alignment
@@ -160,28 +170,36 @@ export default function FloorPlanManager() {
         }
 
         // Enhanced table sizing based on AI analysis and capacity
-        const capacity = Math.max(2, Math.min(12, table.estimatedCapacity || 4));
-        const tableType = (table as { tableType?: string }).tableType || 'round';
-        
+        const capacity = Math.max(
+          2,
+          Math.min(12, table.estimatedCapacity || 4),
+        );
+        const tableType =
+          (table as { tableType?: string }).tableType || "round";
+
         // Determine shape based on AI analysis or capacity
-        let shape: 'ROUND' | 'RECT';
-        if (tableType === 'rectangular' || tableType === 'booth' || capacity > 6) {
-          shape = 'RECT';
+        let shape: "ROUND" | "RECT";
+        if (
+          tableType === "rectangular" ||
+          tableType === "booth" ||
+          capacity > 6
+        ) {
+          shape = "RECT";
         } else {
-          shape = 'ROUND';
+          shape = "ROUND";
         }
-        
+
         // Calculate appropriate dimensions
         let radius: number | undefined;
         let width: number | undefined;
         let height: number | undefined;
-        
-        if (shape === 'ROUND') {
+
+        if (shape === "ROUND") {
           // Round table sizing: base 0.4 + capacity scaling
           radius = Math.max(0.3, Math.min(1.2, 0.4 + capacity * 0.08));
         } else {
           // Rectangular table sizing
-          if (tableType === 'booth') {
+          if (tableType === "booth") {
             // Booths are typically longer and narrower
             width = Math.max(1.2, Math.min(3.0, capacity * 0.25 + 0.8));
             height = Math.max(0.6, Math.min(1.2, capacity * 0.1 + 0.5));
@@ -191,10 +209,10 @@ export default function FloorPlanManager() {
             height = Math.max(0.8, Math.min(2.0, capacity * 0.15 + 0.6));
           }
         }
-        
+
         const entity: DetectedEntity = {
           id: `table_${runId}_${index}`,
-          type: 'TABLE' as const,
+          type: "TABLE" as const,
           shape,
           x: Math.max(0.8, Math.min(9.2, x)),
           y: Math.max(0.8, Math.min(9.2, y)),
@@ -210,10 +228,12 @@ export default function FloorPlanManager() {
             tableType,
             originalPosition: table.position,
             detectionIndex: index,
-            description: (table as { description?: string }).description || 'AI detected table'
-          }
+            description:
+              (table as { description?: string }).description ||
+              "AI detected table",
+          },
         };
-        
+
         console.log(`Created entity for table ${index + 1}:`, entity);
         return entity;
       });
@@ -222,32 +242,40 @@ export default function FloorPlanManager() {
         imgWidth: img.naturalWidth,
         imgHeight: img.naturalHeight,
         worldWidth: WORLD_W,
-        worldHeight: WORLD_H
+        worldHeight: WORLD_H,
       };
 
       setTimeout(() => {
-        console.log('Setting floor plan run with entities:', entities);
+        console.log("Setting floor plan run with entities:", entities);
         setRun(runId, entities, preview);
-        
+
         if (analysisResult.tableCount > 0) {
           const totalCapacity = entities.reduce((sum, e) => sum + e.seats, 0);
-          toast.success(`🎯 Analysis complete! Detected ${analysisResult.tableCount} tables (${totalCapacity} seats) with intelligent positioning`);
+          toast.success(
+            `🎯 Analysis complete! Detected ${analysisResult.tableCount} tables (${totalCapacity} seats) with intelligent positioning`,
+          );
         } else {
           // Show specific error if it's a rate limit issue
-          const isRateLimit = analysisResult.recommendations?.some(r => r.includes('rate limit') || r.includes('429'));
+          const isRateLimit = analysisResult.recommendations?.some(
+            (r) => r.includes("rate limit") || r.includes("429"),
+          );
           if (isRateLimit) {
-            toast.error('⏱️ OpenAI rate limit exceeded. Please wait a few minutes and try again.');
+            toast.error(
+              "⏱️ OpenAI rate limit exceeded. Please wait a few minutes and try again.",
+            );
           } else {
-            toast('🤖 No tables detected in this image', {
-              description: 'Try uploading a clearer floor plan or manually position tables below'
+            toast("🤖 No tables detected in this image", {
+              description:
+                "Try uploading a clearer floor plan or manually position tables below",
             });
           }
         }
       }, 300);
-      
     } catch (error) {
-      console.error('Enhanced analysis failed:', error);
-      toast.error('Analysis failed. Please try again or position tables manually.');
+      console.error("Enhanced analysis failed:", error);
+      toast.error(
+        "Analysis failed. Please try again or position tables manually.",
+      );
     } finally {
       setTimeout(() => {
         setAnalyzing(false);
@@ -263,16 +291,18 @@ export default function FloorPlanManager() {
     setFile(null);
     reset();
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
-    toast('🗑️ Floor plan cleared');
+    toast("🗑️ Floor plan cleared");
   }, [uploadedImage, reset]);
 
   const hasAnalysis = runId && entities.length > 0;
   const totalCapacity = entities.reduce((sum, e) => sum + e.seats, 0);
-  const avgConfidence = entities.length > 0 
-    ? entities.reduce((sum, e) => sum + (e.confidence || 0), 0) / entities.length 
-    : 0;
+  const avgConfidence =
+    entities.length > 0
+      ? entities.reduce((sum, e) => sum + (e.confidence || 0), 0) /
+        entities.length
+      : 0;
 
   return (
     <div className="space-y-6">
@@ -287,11 +317,15 @@ export default function FloorPlanManager() {
             <div>
               <h3 className="text-xl font-semibold">AI Floor Plan Analysis</h3>
               <p className="text-sm text-muted-foreground font-normal">
-                Upload your restaurant floor plan for intelligent table detection
+                Upload your restaurant floor plan for intelligent table
+                detection
               </p>
             </div>
             <div className="ml-auto">
-              <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 dark:from-blue-900 dark:to-purple-900 dark:text-blue-300">
+              <Badge
+                variant="secondary"
+                className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 dark:from-blue-900 dark:to-purple-900 dark:text-blue-300"
+              >
                 GPT-4 Vision
               </Badge>
             </div>
@@ -302,11 +336,12 @@ export default function FloorPlanManager() {
           <div
             className={`
               relative border-2 border-dashed rounded-xl p-8 transition-all duration-300 cursor-pointer hover-scale
-              ${dragActive 
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 scale-[1.02]' 
-                : uploadedImage 
-                  ? 'border-success bg-success/10'
-                  : 'border-surface-3 hover:border-surface-3 hover:bg-surface-2'
+              ${
+                dragActive
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20 scale-[1.02]"
+                  : uploadedImage
+                    ? "border-success bg-success/10"
+                    : "border-surface-3 hover:border-surface-3 hover:bg-surface-2"
               }
             `}
             onDragEnter={handleDrag}
@@ -326,7 +361,8 @@ export default function FloorPlanManager() {
                       Image Ready for Analysis
                     </h4>
                     <p className="text-sm text-green-600 dark:text-green-400">
-                      {file?.name} • {((file?.size || 0) / 1024 / 1024).toFixed(1)}MB
+                      {file?.name} •{" "}
+                      {((file?.size || 0) / 1024 / 1024).toFixed(1)}MB
                     </p>
                   </div>
                 </>
@@ -346,7 +382,7 @@ export default function FloorPlanManager() {
                 </>
               )}
             </div>
-            
+
             <Input
               ref={fileInputRef}
               type="file"
@@ -377,7 +413,7 @@ export default function FloorPlanManager() {
                   </>
                 )}
               </Button>
-              
+
               {uploadedImage && (
                 <Button
                   onClick={clearFloorPlan}
@@ -407,7 +443,9 @@ export default function FloorPlanManager() {
           {isAnalyzing && (
             <div className="space-y-3 animate-fade-in">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">AI Analysis Progress</span>
+                <span className="text-muted-foreground">
+                  AI Analysis Progress
+                </span>
                 <span className="font-medium">{analysisProgress}%</span>
               </div>
               <Progress value={analysisProgress} className="h-2" />
@@ -497,7 +535,9 @@ export default function FloorPlanManager() {
                   <Eye className="w-4 h-4 text-green-600" />
                 </div>
                 <div>
-                  <div className="font-medium text-foreground">3D Visualization</div>
+                  <div className="font-medium text-foreground">
+                    3D Visualization
+                  </div>
                   <div>View and interact with your floor plan in 3D</div>
                 </div>
               </div>

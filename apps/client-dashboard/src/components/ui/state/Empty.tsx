@@ -1,8 +1,8 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { 
-  Search, 
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Search,
   Calendar,
   Users,
   BarChart3,
@@ -16,23 +16,23 @@ import {
   FileText,
   BookOpen,
   Trophy,
-  Target
-} from 'lucide-react';
+  Target,
+} from "lucide-react";
 
 interface EmptyStateProps {
-  variant: 
-    | 'no-bookings'
-    | 'no-bookings-date'
-    | 'no-customers'
-    | 'no-messages'
-    | 'no-analytics'
-    | 'no-search-results'
-    | 'no-tables'
-    | 'no-staff'
-    | 'no-settings'
-    | 'no-filters'
-    | 'setup-required'
-    | 'feature-unavailable';
+  variant:
+    | "no-bookings"
+    | "no-bookings-date"
+    | "no-customers"
+    | "no-messages"
+    | "no-analytics"
+    | "no-search-results"
+    | "no-tables"
+    | "no-staff"
+    | "no-settings"
+    | "no-filters"
+    | "setup-required"
+    | "feature-unavailable";
   title?: string;
   description?: string;
   action?: {
@@ -47,78 +47,85 @@ interface EmptyStateProps {
 }
 
 const emptyStateConfig = {
-  'no-bookings': {
+  "no-bookings": {
     icon: Calendar,
-    title: 'No bookings yet',
-    description: 'Your first reservation will appear here. Share your booking link to get started!',
-    illustration: 'calendar'
+    title: "No bookings yet",
+    description:
+      "Your first reservation will appear here. Share your booking link to get started!",
+    illustration: "calendar",
   },
-  'no-bookings-date': {
+  "no-bookings-date": {
     icon: Clock,
-    title: 'No bookings for this date',
-    description: 'Try selecting a different date or check your availability settings.',
-    illustration: 'calendar'
+    title: "No bookings for this date",
+    description:
+      "Try selecting a different date or check your availability settings.",
+    illustration: "calendar",
   },
-  'no-customers': {
+  "no-customers": {
     icon: Users,
-    title: 'No customers yet',
-    description: 'Customer profiles will appear here once you receive your first booking.',
-    illustration: 'users'
+    title: "No customers yet",
+    description:
+      "Customer profiles will appear here once you receive your first booking.",
+    illustration: "users",
   },
-  'no-messages': {
+  "no-messages": {
     icon: MessageSquare,
-    title: 'No conversations',
-    description: 'Customer messages and notifications will appear here.',
-    illustration: 'messages'
+    title: "No conversations",
+    description: "Customer messages and notifications will appear here.",
+    illustration: "messages",
   },
-  'no-analytics': {
+  "no-analytics": {
     icon: BarChart3,
-    title: 'Not enough data yet',
-    description: 'Analytics insights will appear once you have at least 5 bookings.',
-    illustration: 'chart'
+    title: "Not enough data yet",
+    description:
+      "Analytics insights will appear once you have at least 5 bookings.",
+    illustration: "chart",
   },
-  'no-search-results': {
+  "no-search-results": {
     icon: Search,
-    title: 'No results found',
-    description: 'Try adjusting your search terms or filters.',
-    illustration: 'search'
+    title: "No results found",
+    description: "Try adjusting your search terms or filters.",
+    illustration: "search",
   },
-  'no-tables': {
+  "no-tables": {
     icon: Utensils,
-    title: 'No tables configured',
-    description: 'Set up your floor plan and table layout to manage reservations.',
-    illustration: 'restaurant'
+    title: "No tables configured",
+    description:
+      "Set up your floor plan and table layout to manage reservations.",
+    illustration: "restaurant",
   },
-  'no-staff': {
+  "no-staff": {
     icon: Users,
-    title: 'No staff members',
-    description: 'Add team members to manage bookings and access the dashboard.',
-    illustration: 'users'
+    title: "No staff members",
+    description:
+      "Add team members to manage bookings and access the dashboard.",
+    illustration: "users",
   },
-  'no-settings': {
+  "no-settings": {
     icon: Settings,
-    title: 'Settings not configured',
-    description: 'Complete your restaurant setup to enable all features.',
-    illustration: 'settings'
+    title: "Settings not configured",
+    description: "Complete your restaurant setup to enable all features.",
+    illustration: "settings",
   },
-  'no-filters': {
+  "no-filters": {
     icon: Filter,
-    title: 'No results with current filters',
-    description: 'Try removing some filters to see more results.',
-    illustration: 'filter'
+    title: "No results with current filters",
+    description: "Try removing some filters to see more results.",
+    illustration: "filter",
   },
-  'setup-required': {
+  "setup-required": {
     icon: Target,
-    title: 'Setup required',
-    description: 'Complete the initial setup to start using this feature.',
-    illustration: 'setup'
+    title: "Setup required",
+    description: "Complete the initial setup to start using this feature.",
+    illustration: "setup",
   },
-  'feature-unavailable': {
+  "feature-unavailable": {
     icon: Trophy,
-    title: 'Feature coming soon',
-    description: 'This feature is currently in development and will be available soon.',
-    illustration: 'feature'
-  }
+    title: "Feature coming soon",
+    description:
+      "This feature is currently in development and will be available soon.",
+    illustration: "feature",
+  },
 };
 
 const EmptyState: React.FC<EmptyStateProps> = ({
@@ -126,11 +133,11 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   description,
   action,
-  secondaryAction
+  secondaryAction,
 }) => {
   const config = emptyStateConfig[variant];
   const IconComponent = config.icon;
-  
+
   const finalTitle = title || config.title;
   const finalDescription = description || config.description;
 
@@ -144,9 +151,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         </div>
 
         <div className="max-w-md space-y-3 mb-8">
-          <h3 className="text-h3 font-semibold text-text">
-            {finalTitle}
-          </h3>
+          <h3 className="text-h3 font-semibold text-text">{finalTitle}</h3>
           <p className="text-body-sm text-text-muted leading-relaxed">
             {finalDescription}
           </p>
@@ -163,7 +168,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                 {secondaryAction.label}
               </Button>
             )}
-            
+
             {action && (
               <Button
                 onClick={action.onClick}

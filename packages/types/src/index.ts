@@ -11,7 +11,13 @@ export interface Job {
   id: string;
   job_name: string;
   job_type: string;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'scheduled';
+  status:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "scheduled";
   priority: number;
   data: Record<string, any>;
   attempts: number;
@@ -33,7 +39,7 @@ export interface JobFilter {
   limit?: number;
   offset?: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }
 
 export interface JobStats {
@@ -58,7 +64,7 @@ export interface SystemMetrics {
 }
 
 export interface Alert {
-  type: 'info' | 'warning' | 'critical';
+  type: "info" | "warning" | "critical";
   metric: string;
   current: number;
   threshold: number;
@@ -67,7 +73,7 @@ export interface Alert {
 }
 
 export interface AlertStatus {
-  status: 'healthy' | 'warning' | 'critical';
+  status: "healthy" | "warning" | "critical";
   alerts: Alert[];
   alertCount: number;
   metrics: SystemMetrics;
@@ -97,7 +103,7 @@ export interface Activity {
   type: string;
   service: string;
   message: string;
-  status: 'success' | 'warning' | 'error' | 'info';
+  status: "success" | "warning" | "error" | "info";
   details?: Record<string, any>;
   user_id?: string;
   timestamp: string;
@@ -124,7 +130,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'client' | 'viewer';
+  role: "admin" | "client" | "viewer";
   created_at: string;
   updated_at: string;
   last_login?: string;
@@ -135,7 +141,7 @@ export interface DashboardStats {
   activeJobs: number;
   completedJobs: number;
   failedJobs: number;
-  systemHealth: 'healthy' | 'warning' | 'critical';
+  systemHealth: "healthy" | "warning" | "critical";
   uptime: string;
   lastUpdated: string;
 }

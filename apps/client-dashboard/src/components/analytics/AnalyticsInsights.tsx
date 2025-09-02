@@ -1,16 +1,16 @@
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { motion } from 'framer-motion';
-import { Lightbulb, Clock, Users, TrendingUp, AlertCircle } from 'lucide-react';
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
+import { Lightbulb, Clock, Users, TrendingUp, AlertCircle } from "lucide-react";
 
 export interface InsightData {
-  type: 'peak' | 'timing' | 'performance' | 'alert';
+  type: "peak" | "timing" | "performance" | "alert";
   title: string;
   value: string;
   description?: string;
   confidence?: number;
-  trend?: 'up' | 'down' | 'stable';
+  trend?: "up" | "down" | "stable";
 }
 
 interface AnalyticsInsightsProps {
@@ -18,58 +18,60 @@ interface AnalyticsInsightsProps {
   className?: string;
 }
 
-export const AnalyticsInsights: React.FC<AnalyticsInsightsProps> = ({ 
-  insights, 
-  className = "" 
+export const AnalyticsInsights: React.FC<AnalyticsInsightsProps> = ({
+  insights,
+  className = "",
 }) => {
   if (!insights || insights.length === 0) {
     return null;
   }
 
-  const getInsightIcon = (type: InsightData['type']) => {
+  const getInsightIcon = (type: InsightData["type"]) => {
     switch (type) {
-      case 'peak':
+      case "peak":
         return <TrendingUp className="h-4 w-4" />;
-      case 'timing':
+      case "timing":
         return <Clock className="h-4 w-4" />;
-      case 'performance':
+      case "performance":
         return <Users className="h-4 w-4" />;
-      case 'alert':
+      case "alert":
         return <AlertCircle className="h-4 w-4" />;
       default:
         return <Lightbulb className="h-4 w-4" />;
     }
   };
 
-  const getInsightColor = (type: InsightData['type']) => {
+  const getInsightColor = (type: InsightData["type"]) => {
     switch (type) {
-      case 'peak':
-        return 'text-success';
-      case 'timing':
-        return 'text-brand';
-      case 'performance':
-        return 'text-accent';
-      case 'alert':
-        return 'text-warning';
+      case "peak":
+        return "text-success";
+      case "timing":
+        return "text-brand";
+      case "performance":
+        return "text-accent";
+      case "alert":
+        return "text-warning";
       default:
-        return 'text-text-muted';
+        return "text-text-muted";
     }
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return 'bg-success/10 text-success border-success/20';
-    if (confidence >= 60) return 'bg-warning/10 text-warning border-warning/20';
-    return 'bg-danger/10 text-danger border-danger/20';
+    if (confidence >= 80) return "bg-success/10 text-success border-success/20";
+    if (confidence >= 60) return "bg-warning/10 text-warning border-warning/20";
+    return "bg-danger/10 text-danger border-danger/20";
   };
 
   return (
-    <Card className={`bg-gradient-to-br from-brand/5 to-accent/5 border-brand/10 ${className}`}>
+    <Card
+      className={`bg-gradient-to-br from-brand/5 to-accent/5 border-brand/10 ${className}`}
+    >
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <Lightbulb className="h-5 w-5 text-brand" />
           <h3 className="text-h4 font-semibold text-text">Insights</h3>
         </div>
-        
+
         <div className="space-y-3">
           {insights.map((insight, index) => (
             <motion.div
@@ -82,7 +84,7 @@ export const AnalyticsInsights: React.FC<AnalyticsInsightsProps> = ({
               <div className={`mt-0.5 ${getInsightColor(insight.type)}`}>
                 {getInsightIcon(insight.type)}
               </div>
-              
+
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -98,9 +100,9 @@ export const AnalyticsInsights: React.FC<AnalyticsInsightsProps> = ({
                       </p>
                     )}
                   </div>
-                  
+
                   {insight.confidence && (
-                    <Badge 
+                    <Badge
                       variant="outline"
                       className={`text-xs ${getConfidenceColor(insight.confidence)}`}
                     >

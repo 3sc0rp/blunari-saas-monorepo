@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export const useSlugValidation = () => {
   const [isValidating, setIsValidating] = useState(false);
@@ -15,18 +15,18 @@ export const useSlugValidation = () => {
     try {
       // Check if slug already exists in auto_provisioning table
       const { data, error } = await supabase
-        .from('auto_provisioning')
-        .select('restaurant_slug')
-        .eq('restaurant_slug', slug)
+        .from("auto_provisioning")
+        .select("restaurant_slug")
+        .eq("restaurant_slug", slug)
         .limit(1);
 
       if (error) {
-        console.error('Error validating slug:', error);
+        console.error("Error validating slug:", error);
         return false;
       }
 
       const isAvailable = !data || data.length === 0;
-      
+
       if (!isAvailable) {
         toast({
           title: "Slug Unavailable",
@@ -37,7 +37,7 @@ export const useSlugValidation = () => {
 
       return isAvailable;
     } catch (error) {
-      console.error('Error validating slug:', error);
+      console.error("Error validating slug:", error);
       return false;
     } finally {
       setIsValidating(false);
@@ -47,15 +47,15 @@ export const useSlugValidation = () => {
   const generateUniqueSlug = async (baseName: string): Promise<string> => {
     let slug = baseName
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-+|-+$/g, '')
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "")
       .trim();
 
     // Ensure minimum length
     if (slug.length < 3) {
-      slug = slug + '-restaurant';
+      slug = slug + "-restaurant";
     }
 
     // Check if this slug is available
@@ -67,7 +67,7 @@ export const useSlugValidation = () => {
     // If not available, try with a suffix
     let counter = 2;
     let newSlug = `${slug}-${counter}`;
-    
+
     while (!(await validateSlug(newSlug)) && counter < 100) {
       counter++;
       newSlug = `${slug}-${counter}`;
@@ -79,6 +79,6 @@ export const useSlugValidation = () => {
   return {
     validateSlug,
     generateUniqueSlug,
-    isValidating
+    isValidating,
   };
 };

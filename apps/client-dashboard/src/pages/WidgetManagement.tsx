@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ExternalLink, 
-  Monitor, 
-  Smartphone, 
-  Tablet, 
-  Copy, 
-  Check, 
-  Code2, 
-  Palette, 
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ExternalLink,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Copy,
+  Check,
+  Code2,
+  Palette,
   Globe,
   Eye,
   Settings2,
@@ -34,24 +34,41 @@ import {
   Clock,
   Users,
   Activity,
-  TrendingUp
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useTenant } from '@/hooks/useTenant';
-import { useToast } from '@/hooks/use-toast';
-import BookingDebugger from '@/components/booking/BookingDebugger';
+  TrendingUp,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useTenant } from "@/hooks/useTenant";
+import { useToast } from "@/hooks/use-toast";
+import BookingDebugger from "@/components/booking/BookingDebugger";
 
 // Widget Configuration Types
 interface WidgetAnalytics {
@@ -80,52 +97,56 @@ interface ConfigHistory {
 const WidgetManagement: React.FC = () => {
   const { tenant, isLoading } = useTenant();
   const { toast } = useToast();
-  
+
   // Core State Management
-  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [widgetType, setWidgetType] = useState<'booking' | 'catering'>('booking');
+  const [previewDevice, setPreviewDevice] = useState<
+    "desktop" | "tablet" | "mobile"
+  >("desktop");
+  const [widgetType, setWidgetType] = useState<"booking" | "catering">(
+    "booking",
+  );
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  
+
   // UI State
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('preview');
-  
+  const [activeTab, setActiveTab] = useState("preview");
+
   // Analytics State
   const [analytics, setAnalytics] = useState<WidgetAnalytics>({
     views: 1247,
     conversions: 89,
     conversionRate: 7.1,
     avgSessionTime: 142,
-    lastUpdated: new Date().toISOString()
+    lastUpdated: new Date().toISOString(),
   });
-  
+
   // Version Control State
   const [versions, setVersions] = useState<WidgetVersion[]>([
     {
-      id: '1',
-      version: 'v2.1.0',
+      id: "1",
+      version: "v2.1.0",
       createdAt: new Date().toISOString(),
       isActive: true,
-      changes: 'Added catering widget support'
-    }
+      changes: "Added catering widget support",
+    },
   ]);
-  
+
   // Configuration History
   const [configHistory, setConfigHistory] = useState<ConfigHistory[]>([]);
-  
+
   // Enhanced Widget Configuration with Validation
   const [bookingConfig, setBookingConfig] = useState({
     // Core Settings
-    theme: 'light' as 'light' | 'dark' | 'auto',
-    primaryColor: tenant?.primary_color || '#3b82f6',
-    borderRadius: '8',
-    fontFamily: 'system',
-    
+    theme: "light" as "light" | "dark" | "auto",
+    primaryColor: tenant?.primary_color || "#3b82f6",
+    borderRadius: "8",
+    fontFamily: "system",
+
     // Functionality
     showAvailability: true,
     showPricing: false,
@@ -136,41 +157,41 @@ const WidgetManagement: React.FC = () => {
     enableWaitlist: true,
     enableNotifications: true,
     showReviews: false,
-    
+
     // Advanced Features
     enableGuestCheckout: true,
     requireDeposit: false,
     depositAmount: 0,
-    cancellationPolicy: 'flexible',
+    cancellationPolicy: "flexible",
     autoConfirm: true,
     enableReminders: true,
     maxPartySize: 12,
     minimumAge: 0,
-    
+
     // Customization
-    welcomeMessage: '',
-    confirmationMessage: '',
-    customCSS: '',
+    welcomeMessage: "",
+    confirmationMessage: "",
+    customCSS: "",
     customFields: [],
-    
+
     // Integration
-    googleAnalyticsId: '',
-    facebookPixelId: '',
+    googleAnalyticsId: "",
+    facebookPixelId: "",
     enableChatbot: false,
-    
+
     // Performance
     lazyLoading: true,
     prefetchData: true,
-    cacheTimeout: 300
+    cacheTimeout: 300,
   });
 
   const [cateringConfig, setCateringConfig] = useState({
     // Core Settings
-    theme: 'light' as 'light' | 'dark' | 'auto',
-    primaryColor: tenant?.primary_color || '#3b82f6',
-    borderRadius: '8',
-    fontFamily: 'system',
-    
+    theme: "light" as "light" | "dark" | "auto",
+    primaryColor: tenant?.primary_color || "#3b82f6",
+    borderRadius: "8",
+    fontFamily: "system",
+
     // Functionality
     showPackages: true,
     showCustomOrders: true,
@@ -181,7 +202,7 @@ const WidgetManagement: React.FC = () => {
     requirePhone: true,
     enableNotifications: true,
     showTestimonials: false,
-    
+
     // Advanced Features
     enableBulkOrders: true,
     requireDeposit: true,
@@ -191,39 +212,41 @@ const WidgetManagement: React.FC = () => {
     enableAllergyFilters: true,
     maxOrderValue: 10000,
     minOrderValue: 100,
-    
+
     // Customization
-    welcomeMessage: '',
-    quotingMessage: '',
-    customCSS: '',
+    welcomeMessage: "",
+    quotingMessage: "",
+    customCSS: "",
     customFields: [],
-    
+
     // Integration
-    googleAnalyticsId: '',
-    facebookPixelId: '',
+    googleAnalyticsId: "",
+    facebookPixelId: "",
     enableChatbot: false,
-    
+
     // Performance
     lazyLoading: true,
     prefetchData: true,
-    cacheTimeout: 300
+    cacheTimeout: 300,
   });
 
   // Get current config based on widget type
-  const currentConfig = widgetType === 'booking' ? bookingConfig : cateringConfig;
-  const setCurrentConfig = widgetType === 'booking' ? setBookingConfig : setCateringConfig;
+  const currentConfig =
+    widgetType === "booking" ? bookingConfig : cateringConfig;
+  const setCurrentConfig =
+    widgetType === "booking" ? setBookingConfig : setCateringConfig;
 
   // Network Status Monitor
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
@@ -244,114 +267,120 @@ const WidgetManagement: React.FC = () => {
   }, [bookingConfig, cateringConfig]);
 
   // Memoized computations
-  const widgetUrls = useMemo(() => ({
-    booking: `${window.location.origin}/book/${tenant?.slug || 'demo'}`,
-    catering: `${window.location.origin}/catering/${tenant?.slug || 'demo'}`
-  }), [tenant?.slug]);
+  const widgetUrls = useMemo(
+    () => ({
+      booking: `${window.location.origin}/book/${tenant?.slug || "demo"}`,
+      catering: `${window.location.origin}/catering/${tenant?.slug || "demo"}`,
+    }),
+    [tenant?.slug],
+  );
 
   const currentUrl = widgetUrls[widgetType];
 
   const validationErrors = useMemo(() => {
     const errors: string[] = [];
     const config = currentConfig;
-    
+
     if (config.primaryColor && !/^#[0-9A-F]{6}$/i.test(config.primaryColor)) {
-      errors.push('Invalid primary color format');
+      errors.push("Invalid primary color format");
     }
-    
-    if (widgetType === 'booking') {
+
+    if (widgetType === "booking") {
       const bConfig = config as typeof bookingConfig;
       if (bConfig.maxAdvanceBooking < 1 || bConfig.maxAdvanceBooking > 365) {
-        errors.push('Max advance booking must be between 1-365 days');
+        errors.push("Max advance booking must be between 1-365 days");
       }
       if (bConfig.timeSlotInterval < 15 || bConfig.timeSlotInterval > 120) {
-        errors.push('Time slot interval must be between 15-120 minutes');
+        errors.push("Time slot interval must be between 15-120 minutes");
       }
     }
-    
+
     return errors;
   }, [currentConfig, widgetType]);
 
   // Advanced handlers
   const handleAutoSave = useCallback(async () => {
     if (!isOnline) return;
-    
+
     try {
       setIsSaving(true);
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       setLastSaved(new Date());
       setHasUnsavedChanges(false);
-      
+
       toast({
         title: "Auto-saved",
         description: "Configuration automatically saved",
         duration: 2000,
       });
     } catch (error) {
-      console.error('Auto-save failed:', error);
+      console.error("Auto-save failed:", error);
     } finally {
       setIsSaving(false);
     }
   }, [isOnline, toast]);
 
-  const handleConfigurationSave = useCallback(async (skipToast = false) => {
-    if (validationErrors.length > 0) {
-      toast({
-        title: "Validation Error",
-        description: validationErrors.join(', '),
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    try {
-      setIsSaving(true);
-      
-      // Add to history
-      const historyEntry: ConfigHistory = {
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        changes: { [widgetType]: currentConfig },
-        user: tenant?.name || 'Unknown'
-      };
-      setConfigHistory(prev => [historyEntry, ...prev.slice(0, 49)]); // Keep last 50
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setLastSaved(new Date());
-      setHasUnsavedChanges(false);
-      
-      if (!skipToast) {
+  const handleConfigurationSave = useCallback(
+    async (skipToast = false) => {
+      if (validationErrors.length > 0) {
         toast({
-          title: "Configuration Saved",
-          description: `${widgetType === 'booking' ? 'Booking' : 'Catering'} widget settings have been saved successfully.`,
+          title: "Validation Error",
+          description: validationErrors.join(", "),
+          variant: "destructive",
         });
+        return false;
       }
-      
-      return true;
-    } catch (error) {
-      toast({
-        title: "Save Failed",
-        description: "Unable to save configuration. Please try again.",
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  }, [validationErrors, widgetType, currentConfig, tenant?.name, toast]);
+
+      try {
+        setIsSaving(true);
+
+        // Add to history
+        const historyEntry: ConfigHistory = {
+          id: Date.now().toString(),
+          timestamp: new Date().toISOString(),
+          changes: { [widgetType]: currentConfig },
+          user: tenant?.name || "Unknown",
+        };
+        setConfigHistory((prev) => [historyEntry, ...prev.slice(0, 49)]); // Keep last 50
+
+        // Simulate API call
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+
+        setLastSaved(new Date());
+        setHasUnsavedChanges(false);
+
+        if (!skipToast) {
+          toast({
+            title: "Configuration Saved",
+            description: `${widgetType === "booking" ? "Booking" : "Catering"} widget settings have been saved successfully.`,
+          });
+        }
+
+        return true;
+      } catch (error) {
+        toast({
+          title: "Save Failed",
+          description: "Unable to save configuration. Please try again.",
+          variant: "destructive",
+        });
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [validationErrors, widgetType, currentConfig, tenant?.name, toast],
+  );
 
   const handleRevertChanges = useCallback(() => {
     // Reset to last saved state (simplified for demo)
-    if (widgetType === 'booking') {
-      setBookingConfig(prev => ({ ...prev }));
+    if (widgetType === "booking") {
+      setBookingConfig((prev) => ({ ...prev }));
     } else {
-      setCateringConfig(prev => ({ ...prev }));
+      setCateringConfig((prev) => ({ ...prev }));
     }
     setHasUnsavedChanges(false);
-    
+
     toast({
       title: "Changes Reverted",
       description: "Configuration reverted to last saved state",
@@ -361,29 +390,29 @@ const WidgetManagement: React.FC = () => {
   // Device configurations for preview with enhanced responsiveness
   const deviceConfigs = {
     desktop: {
-      width: '100%',
-      height: 'h-[700px]',
+      width: "100%",
+      height: "h-[700px]",
       icon: Monitor,
-      label: 'Desktop',
-      containerClass: 'w-full max-w-6xl',
-      viewport: '1920x1080'
+      label: "Desktop",
+      containerClass: "w-full max-w-6xl",
+      viewport: "1920x1080",
     },
     tablet: {
-      width: '768px',
-      height: 'h-[900px]',
+      width: "768px",
+      height: "h-[900px]",
       icon: Tablet,
-      label: 'Tablet',
-      containerClass: 'w-[768px]',
-      viewport: '768x1024'
+      label: "Tablet",
+      containerClass: "w-[768px]",
+      viewport: "768x1024",
     },
     mobile: {
-      width: '375px',
-      height: 'h-[750px]',
+      width: "375px",
+      height: "h-[750px]",
       icon: Smartphone,
-      label: 'Mobile',
-      containerClass: 'w-[375px]',
-      viewport: '375x667'
-    }
+      label: "Mobile",
+      containerClass: "w-[375px]",
+      viewport: "375x667",
+    },
   };
 
   // Enhanced utility functions
@@ -411,14 +440,17 @@ const WidgetManagement: React.FC = () => {
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
-  const handlePreviewError = useCallback((error: string) => {
-    setPreviewError(error);
-    toast({
-      title: "Preview Error",
-      description: error,
-      variant: "destructive",
-    });
-  }, [toast]);
+  const handlePreviewError = useCallback(
+    (error: string) => {
+      setPreviewError(error);
+      toast({
+        title: "Preview Error",
+        description: error,
+        variant: "destructive",
+      });
+    },
+    [toast],
+  );
 
   // Generate comprehensive embed codes with advanced options
   const generateEmbedCodes = useCallback(() => {
@@ -426,23 +458,23 @@ const WidgetManagement: React.FC = () => {
       theme: currentConfig.theme,
       primaryColor: encodeURIComponent(currentConfig.primaryColor),
       borderRadius: currentConfig.borderRadius,
-      fontFamily: currentConfig.fontFamily
+      fontFamily: currentConfig.fontFamily,
     });
 
     const enhancedUrl = `${currentUrl}?${baseParams.toString()}`;
-    
-    const basicEmbed = `<!-- Blunari ${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget -->
+
+    const basicEmbed = `<!-- Blunari ${widgetType === "booking" ? "Booking" : "Catering"} Widget -->
 <iframe
   src="${enhancedUrl}"
   width="100%"
   height="600"
   frameborder="0"
   style="border: 1px solid #e5e7eb; border-radius: ${currentConfig.borderRadius}px;"
-  title="${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget"
+  title="${widgetType === "booking" ? "Booking" : "Catering"} Widget"
   loading="lazy"
 ></iframe>`;
 
-    const advancedEmbed = `<!-- Blunari ${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget - Advanced -->
+    const advancedEmbed = `<!-- Blunari ${widgetType === "booking" ? "Booking" : "Catering"} Widget - Advanced -->
 <div id="blunari-${widgetType}-widget" style="min-height: 600px; position: relative;"></div>
 <script>
 (function() {
@@ -455,7 +487,7 @@ const WidgetManagement: React.FC = () => {
     iframe.frameBorder = '0';
     iframe.loading = 'lazy';
     iframe.style.cssText = 'border: 1px solid #e5e7eb; border-radius: ${currentConfig.borderRadius}px;';
-    iframe.title = '${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget';
+    iframe.title = '${widgetType === "booking" ? "Booking" : "Catering"} Widget';
     
     // Error handling
     iframe.onerror = () => {
@@ -474,7 +506,7 @@ const WidgetManagement: React.FC = () => {
       if (typeof gtag !== 'undefined') {
         gtag('event', 'widget_loaded', {
           widget_type: '${widgetType}',
-          tenant_id: '${tenant?.id || 'unknown'}'
+          tenant_id: '${tenant?.id || "unknown"}'
         });
       }
     }
@@ -489,13 +521,13 @@ const WidgetManagement: React.FC = () => {
 })();
 </script>`;
 
-    const responsiveEmbed = `<!-- Blunari ${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget - Responsive -->
+    const responsiveEmbed = `<!-- Blunari ${widgetType === "booking" ? "Booking" : "Catering"} Widget - Responsive -->
 <div class="blunari-widget-container" style="position: relative; width: 100%; padding-bottom: 75%; height: 0;">
   <iframe
     src="${enhancedUrl}"
     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1px solid #e5e7eb; border-radius: ${currentConfig.borderRadius}px;"
     frameborder="0"
-    title="${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget"
+    title="${widgetType === "booking" ? "Booking" : "Catering"} Widget"
     loading="lazy"
   ></iframe>
 </div>`;
@@ -529,11 +561,12 @@ const WidgetManagement: React.FC = () => {
               <div>
                 <h1 className="text-3xl font-bold">Widget Management</h1>
                 <p className="text-muted-foreground">
-                  Professional widget management with analytics, versioning, and advanced configuration
+                  Professional widget management with analytics, versioning, and
+                  advanced configuration
                 </p>
               </div>
             </div>
-            
+
             {/* Status Bar */}
             <div className="flex items-center gap-4 mt-4">
               <div className="flex items-center gap-2">
@@ -543,10 +576,10 @@ const WidgetManagement: React.FC = () => {
                   <WifiOff className="w-4 h-4 text-red-500" />
                 )}
                 <span className="text-sm text-muted-foreground">
-                  {isOnline ? 'Online' : 'Offline'}
+                  {isOnline ? "Online" : "Offline"}
                 </span>
               </div>
-              
+
               {lastSaved && (
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-gray-500" />
@@ -555,22 +588,26 @@ const WidgetManagement: React.FC = () => {
                   </span>
                 </div>
               )}
-              
+
               {hasUnsavedChanges && (
-                <Badge variant="outline" className="text-orange-600 border-orange-200">
+                <Badge
+                  variant="outline"
+                  className="text-orange-600 border-orange-200"
+                >
                   <AlertTriangle className="w-3 h-3 mr-1" />
                   Unsaved Changes
                 </Badge>
               )}
-              
+
               {validationErrors.length > 0 && (
                 <Badge variant="destructive">
-                  {validationErrors.length} Error{validationErrors.length > 1 ? 's' : ''}
+                  {validationErrors.length} Error
+                  {validationErrors.length > 1 ? "s" : ""}
                 </Badge>
               )}
             </div>
           </div>
-          
+
           {/* Enhanced Action Bar */}
           <div className="flex items-center gap-3">
             {/* Quick Actions */}
@@ -588,7 +625,7 @@ const WidgetManagement: React.FC = () => {
                 </TooltipTrigger>
                 <TooltipContent>Revert Changes</TooltipContent>
               </Tooltip>
-              
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -607,13 +644,13 @@ const WidgetManagement: React.FC = () => {
                 <TooltipContent>Save Configuration</TooltipContent>
               </Tooltip>
             </div>
-            
+
             {/* Widget Type Selector - Enhanced */}
             <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
               <Button
-                variant={widgetType === 'booking' ? 'default' : 'ghost'}
+                variant={widgetType === "booking" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setWidgetType('booking')}
+                onClick={() => setWidgetType("booking")}
                 className="flex items-center gap-2 relative"
               >
                 <Calendar className="w-4 h-4" />
@@ -623,9 +660,9 @@ const WidgetManagement: React.FC = () => {
                 </Badge>
               </Button>
               <Button
-                variant={widgetType === 'catering' ? 'default' : 'ghost'}
+                variant={widgetType === "catering" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setWidgetType('catering')}
+                onClick={() => setWidgetType("catering")}
                 className="flex items-center gap-2 relative"
               >
                 <ChefHat className="w-4 h-4" />
@@ -643,7 +680,7 @@ const WidgetManagement: React.FC = () => {
           {validationErrors.length > 0 && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
+              animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
             >
               <Alert variant="destructive">
@@ -662,7 +699,11 @@ const WidgetManagement: React.FC = () => {
         </AnimatePresence>
 
         {/* Enhanced Tabs with Icons and Badges */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="preview" className="flex items-center gap-2">
               <Eye className="w-4 h-4" />
@@ -671,7 +712,9 @@ const WidgetManagement: React.FC = () => {
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings2 className="w-4 h-4" />
               Settings
-              {hasUnsavedChanges && <div className="w-2 h-2 bg-orange-500 rounded-full ml-1" />}
+              {hasUnsavedChanges && (
+                <div className="w-2 h-2 bg-orange-500 rounded-full ml-1" />
+              )}
             </TabsTrigger>
             <TabsTrigger value="embed" className="flex items-center gap-2">
               <Code2 className="w-4 h-4" />
@@ -699,16 +742,28 @@ const WidgetManagement: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Globe className="w-5 h-5" />
                     <CardTitle>
-                      {widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Preview
+                      {widgetType === "booking" ? "Booking" : "Catering"} Widget
+                      Preview
                     </CardTitle>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={refreshPreview} disabled={refreshing}>
-                      <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={refreshPreview}
+                      disabled={refreshing}
+                    >
+                      <RefreshCw
+                        className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+                      />
                       Refresh
                     </Button>
                     <Button variant="outline" size="sm" asChild>
-                      <a href={currentUrl} target="_blank" rel="noopener noreferrer">
+                      <a
+                        href={currentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <ExternalLink className="w-4 h-4 mr-2" />
                         Open
                       </a>
@@ -725,15 +780,23 @@ const WidgetManagement: React.FC = () => {
                 {/* Device Selector with Enhanced Info */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium">Preview Device:</Label>
+                    <Label className="text-sm font-medium">
+                      Preview Device:
+                    </Label>
                     {Object.entries(deviceConfigs).map(([device, config]) => {
                       const IconComponent = config.icon;
                       return (
                         <Button
                           key={device}
-                          variant={previewDevice === device ? 'default' : 'outline'}
+                          variant={
+                            previewDevice === device ? "default" : "outline"
+                          }
                           size="sm"
-                          onClick={() => setPreviewDevice(device as 'desktop' | 'tablet' | 'mobile')}
+                          onClick={() =>
+                            setPreviewDevice(
+                              device as "desktop" | "tablet" | "mobile",
+                            )
+                          }
                           className="flex items-center gap-2"
                         >
                           <IconComponent className="w-4 h-4" />
@@ -742,7 +805,7 @@ const WidgetManagement: React.FC = () => {
                       );
                     })}
                   </div>
-                  
+
                   {/* Performance Indicator */}
                   <div className="flex items-center gap-2 text-sm">
                     <Zap className="w-4 h-4 text-green-500" />
@@ -769,17 +832,21 @@ const WidgetManagement: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  
-                  <div 
+
+                  <div
                     className={`mx-auto bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 ${deviceConfigs[previewDevice].containerClass}`}
-                    style={{ maxWidth: '100%' }}
+                    style={{ maxWidth: "100%" }}
                   >
                     <iframe
                       key={`${widgetType}-${refreshing}`}
                       src={currentUrl}
                       className={`w-full border-0 transition-all duration-300 ${deviceConfigs[previewDevice].height}`}
-                      title={`${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Preview`}
-                      onError={() => handlePreviewError(`Unable to load the ${widgetType} widget preview. The widget may still work when embedded.`)}
+                      title={`${widgetType === "booking" ? "Booking" : "Catering"} Widget Preview`}
+                      onError={() =>
+                        handlePreviewError(
+                          `Unable to load the ${widgetType} widget preview. The widget may still work when embedded.`,
+                        )
+                      }
                     />
                   </div>
                 </div>
@@ -800,15 +867,17 @@ const WidgetManagement: React.FC = () => {
                     <div>
                       <CardTitle className="flex items-center gap-2">
                         <Settings2 className="w-5 h-5" />
-                        {widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Configuration
+                        {widgetType === "booking" ? "Booking" : "Catering"}{" "}
+                        Widget Configuration
                       </CardTitle>
                       <CardDescription>
-                        Professional-grade customization options for your {widgetType} widget
+                        Professional-grade customization options for your{" "}
+                        {widgetType} widget
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={handleRevertChanges}
                         disabled={!hasUnsavedChanges}
@@ -816,8 +885,8 @@ const WidgetManagement: React.FC = () => {
                         <Undo className="w-4 h-4 mr-2" />
                         Revert
                       </Button>
-                      <Button 
-                        onClick={() => handleConfigurationSave()} 
+                      <Button
+                        onClick={() => handleConfigurationSave()}
                         disabled={isSaving || validationErrors.length > 0}
                         className="flex items-center gap-2"
                       >
@@ -826,7 +895,7 @@ const WidgetManagement: React.FC = () => {
                         ) : (
                           <Check className="w-4 h-4" />
                         )}
-                        {isSaving ? 'Saving...' : 'Save Settings'}
+                        {isSaving ? "Saving..." : "Save Settings"}
                       </Button>
                     </div>
                   </div>
@@ -838,14 +907,21 @@ const WidgetManagement: React.FC = () => {
                       <Palette className="w-5 h-5" />
                       <h3 className="text-lg font-semibold">Appearance</h3>
                     </div>
-                    
+
                     {/* Theme Selection */}
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <Label className="text-sm font-medium">Theme Mode</Label>
-                        <Select 
-                          value={currentConfig.theme} 
-                          onValueChange={(value) => setCurrentConfig(prev => ({ ...prev, theme: value as 'light' | 'dark' | 'auto' }))}
+                        <Label className="text-sm font-medium">
+                          Theme Mode
+                        </Label>
+                        <Select
+                          value={currentConfig.theme}
+                          onValueChange={(value) =>
+                            setCurrentConfig((prev) => ({
+                              ...prev,
+                              theme: value as "light" | "dark" | "auto",
+                            }))
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -859,16 +935,25 @@ const WidgetManagement: React.FC = () => {
                       </div>
 
                       <div className="space-y-3">
-                        <Label className="text-sm font-medium">Font Family</Label>
-                        <Select 
-                          value={currentConfig.fontFamily} 
-                          onValueChange={(value) => setCurrentConfig(prev => ({ ...prev, fontFamily: value }))}
+                        <Label className="text-sm font-medium">
+                          Font Family
+                        </Label>
+                        <Select
+                          value={currentConfig.fontFamily}
+                          onValueChange={(value) =>
+                            setCurrentConfig((prev) => ({
+                              ...prev,
+                              fontFamily: value,
+                            }))
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="system">System Default</SelectItem>
+                            <SelectItem value="system">
+                              System Default
+                            </SelectItem>
                             <SelectItem value="inter">Inter</SelectItem>
                             <SelectItem value="roboto">Roboto</SelectItem>
                             <SelectItem value="arial">Arial</SelectItem>
@@ -881,18 +966,33 @@ const WidgetManagement: React.FC = () => {
                     {/* Color and Border Settings */}
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <Label htmlFor="primary-color" className="text-sm font-medium">Primary Color</Label>
+                        <Label
+                          htmlFor="primary-color"
+                          className="text-sm font-medium"
+                        >
+                          Primary Color
+                        </Label>
                         <div className="flex items-center gap-3">
                           <Input
                             id="primary-color"
                             type="color"
                             value={currentConfig.primaryColor}
-                            onChange={(e) => setCurrentConfig(prev => ({ ...prev, primaryColor: e.target.value }))}
+                            onChange={(e) =>
+                              setCurrentConfig((prev) => ({
+                                ...prev,
+                                primaryColor: e.target.value,
+                              }))
+                            }
                             className="w-16 h-10 p-1 border rounded"
                           />
                           <Input
                             value={currentConfig.primaryColor}
-                            onChange={(e) => setCurrentConfig(prev => ({ ...prev, primaryColor: e.target.value }))}
+                            onChange={(e) =>
+                              setCurrentConfig((prev) => ({
+                                ...prev,
+                                primaryColor: e.target.value,
+                              }))
+                            }
                             className="flex-1 font-mono text-sm"
                             placeholder="#3b82f6"
                           />
@@ -900,12 +1000,22 @@ const WidgetManagement: React.FC = () => {
                       </div>
 
                       <div className="space-y-3">
-                        <Label htmlFor="border-radius" className="text-sm font-medium">Border Radius (px)</Label>
+                        <Label
+                          htmlFor="border-radius"
+                          className="text-sm font-medium"
+                        >
+                          Border Radius (px)
+                        </Label>
                         <Input
                           id="border-radius"
                           type="number"
                           value={currentConfig.borderRadius}
-                          onChange={(e) => setCurrentConfig(prev => ({ ...prev, borderRadius: e.target.value }))}
+                          onChange={(e) =>
+                            setCurrentConfig((prev) => ({
+                              ...prev,
+                              borderRadius: e.target.value,
+                            }))
+                          }
                           min="0"
                           max="20"
                           className="w-full"
@@ -917,32 +1027,82 @@ const WidgetManagement: React.FC = () => {
                   <Separator />
 
                   {/* Feature Configuration - Booking Specific */}
-                  {widgetType === 'booking' && (
+                  {widgetType === "booking" && (
                     <div className="space-y-6">
                       <div className="flex items-center gap-2 mb-4">
                         <Calendar className="w-5 h-5" />
-                        <h3 className="text-lg font-semibold">Booking Features</h3>
+                        <h3 className="text-lg font-semibold">
+                          Booking Features
+                        </h3>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
-                          { key: 'showAvailability', label: 'Show Availability', desc: 'Display real-time table availability' },
-                          { key: 'showPricing', label: 'Show Pricing', desc: 'Display pricing information' },
-                          { key: 'allowCancellation', label: 'Allow Cancellation', desc: 'Let customers cancel bookings' },
-                          { key: 'enableWaitlist', label: 'Enable Waitlist', desc: 'Allow customers to join waitlist' },
-                          { key: 'enableGuestCheckout', label: 'Guest Checkout', desc: 'Allow booking without registration' },
-                          { key: 'requireDeposit', label: 'Require Deposit', desc: 'Require upfront payment' },
-                          { key: 'autoConfirm', label: 'Auto Confirm', desc: 'Automatically confirm bookings' },
-                          { key: 'enableReminders', label: 'Send Reminders', desc: 'Automatic booking reminders' }
+                          {
+                            key: "showAvailability",
+                            label: "Show Availability",
+                            desc: "Display real-time table availability",
+                          },
+                          {
+                            key: "showPricing",
+                            label: "Show Pricing",
+                            desc: "Display pricing information",
+                          },
+                          {
+                            key: "allowCancellation",
+                            label: "Allow Cancellation",
+                            desc: "Let customers cancel bookings",
+                          },
+                          {
+                            key: "enableWaitlist",
+                            label: "Enable Waitlist",
+                            desc: "Allow customers to join waitlist",
+                          },
+                          {
+                            key: "enableGuestCheckout",
+                            label: "Guest Checkout",
+                            desc: "Allow booking without registration",
+                          },
+                          {
+                            key: "requireDeposit",
+                            label: "Require Deposit",
+                            desc: "Require upfront payment",
+                          },
+                          {
+                            key: "autoConfirm",
+                            label: "Auto Confirm",
+                            desc: "Automatically confirm bookings",
+                          },
+                          {
+                            key: "enableReminders",
+                            label: "Send Reminders",
+                            desc: "Automatic booking reminders",
+                          },
                         ].map(({ key, label, desc }) => (
-                          <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div
+                            key={key}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
                             <div className="space-y-1">
-                              <Label className="text-sm font-medium">{label}</Label>
-                              <p className="text-xs text-muted-foreground">{desc}</p>
+                              <Label className="text-sm font-medium">
+                                {label}
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                {desc}
+                              </p>
                             </div>
                             <Switch
-                              checked={bookingConfig[key as keyof typeof bookingConfig] as boolean}
-                              onCheckedChange={(checked) => setBookingConfig(prev => ({ ...prev, [key]: checked }))}
+                              checked={
+                                bookingConfig[
+                                  key as keyof typeof bookingConfig
+                                ] as boolean
+                              }
+                              onCheckedChange={(checked) =>
+                                setBookingConfig((prev) => ({
+                                  ...prev,
+                                  [key]: checked,
+                                }))
+                              }
                             />
                           </div>
                         ))}
@@ -950,28 +1110,44 @@ const WidgetManagement: React.FC = () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-3">
-                          <Label htmlFor="advance-booking" className="text-sm font-medium">
+                          <Label
+                            htmlFor="advance-booking"
+                            className="text-sm font-medium"
+                          >
                             Max Advance Booking (days)
                           </Label>
                           <Input
                             id="advance-booking"
                             type="number"
                             value={bookingConfig.maxAdvanceBooking}
-                            onChange={(e) => setBookingConfig(prev => ({ ...prev, maxAdvanceBooking: Number(e.target.value) }))}
+                            onChange={(e) =>
+                              setBookingConfig((prev) => ({
+                                ...prev,
+                                maxAdvanceBooking: Number(e.target.value),
+                              }))
+                            }
                             min="1"
                             max="365"
                           />
                         </div>
 
                         <div className="space-y-3">
-                          <Label htmlFor="time-slot" className="text-sm font-medium">
+                          <Label
+                            htmlFor="time-slot"
+                            className="text-sm font-medium"
+                          >
                             Time Slot Interval (min)
                           </Label>
                           <Input
                             id="time-slot"
                             type="number"
                             value={bookingConfig.timeSlotInterval}
-                            onChange={(e) => setBookingConfig(prev => ({ ...prev, timeSlotInterval: Number(e.target.value) }))}
+                            onChange={(e) =>
+                              setBookingConfig((prev) => ({
+                                ...prev,
+                                timeSlotInterval: Number(e.target.value),
+                              }))
+                            }
                             min="15"
                             max="120"
                             step="15"
@@ -979,14 +1155,22 @@ const WidgetManagement: React.FC = () => {
                         </div>
 
                         <div className="space-y-3">
-                          <Label htmlFor="max-party" className="text-sm font-medium">
+                          <Label
+                            htmlFor="max-party"
+                            className="text-sm font-medium"
+                          >
                             Max Party Size
                           </Label>
                           <Input
                             id="max-party"
                             type="number"
                             value={bookingConfig.maxPartySize}
-                            onChange={(e) => setBookingConfig(prev => ({ ...prev, maxPartySize: Number(e.target.value) }))}
+                            onChange={(e) =>
+                              setBookingConfig((prev) => ({
+                                ...prev,
+                                maxPartySize: Number(e.target.value),
+                              }))
+                            }
                             min="1"
                             max="50"
                           />
@@ -996,32 +1180,82 @@ const WidgetManagement: React.FC = () => {
                   )}
 
                   {/* Feature Configuration - Catering Specific */}
-                  {widgetType === 'catering' && (
+                  {widgetType === "catering" && (
                     <div className="space-y-6">
                       <div className="flex items-center gap-2 mb-4">
                         <ChefHat className="w-5 h-5" />
-                        <h3 className="text-lg font-semibold">Catering Features</h3>
+                        <h3 className="text-lg font-semibold">
+                          Catering Features
+                        </h3>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
-                          { key: 'showPackages', label: 'Show Packages', desc: 'Display pre-designed catering packages' },
-                          { key: 'showCustomOrders', label: 'Custom Orders', desc: 'Allow custom catering requests' },
-                          { key: 'enableQuotes', label: 'Enable Quotes', desc: 'Allow customers to request quotes' },
-                          { key: 'showGallery', label: 'Show Gallery', desc: 'Display food gallery and photos' },
-                          { key: 'enableBulkOrders', label: 'Bulk Orders', desc: 'Support for large quantity orders' },
-                          { key: 'requireDeposit', label: 'Require Deposit', desc: 'Require upfront payment' },
-                          { key: 'enableMenuCustomization', label: 'Menu Customization', desc: 'Allow menu modifications' },
-                          { key: 'enableAllergyFilters', label: 'Allergy Filters', desc: 'Show allergen information' }
+                          {
+                            key: "showPackages",
+                            label: "Show Packages",
+                            desc: "Display pre-designed catering packages",
+                          },
+                          {
+                            key: "showCustomOrders",
+                            label: "Custom Orders",
+                            desc: "Allow custom catering requests",
+                          },
+                          {
+                            key: "enableQuotes",
+                            label: "Enable Quotes",
+                            desc: "Allow customers to request quotes",
+                          },
+                          {
+                            key: "showGallery",
+                            label: "Show Gallery",
+                            desc: "Display food gallery and photos",
+                          },
+                          {
+                            key: "enableBulkOrders",
+                            label: "Bulk Orders",
+                            desc: "Support for large quantity orders",
+                          },
+                          {
+                            key: "requireDeposit",
+                            label: "Require Deposit",
+                            desc: "Require upfront payment",
+                          },
+                          {
+                            key: "enableMenuCustomization",
+                            label: "Menu Customization",
+                            desc: "Allow menu modifications",
+                          },
+                          {
+                            key: "enableAllergyFilters",
+                            label: "Allergy Filters",
+                            desc: "Show allergen information",
+                          },
                         ].map(({ key, label, desc }) => (
-                          <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div
+                            key={key}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
                             <div className="space-y-1">
-                              <Label className="text-sm font-medium">{label}</Label>
-                              <p className="text-xs text-muted-foreground">{desc}</p>
+                              <Label className="text-sm font-medium">
+                                {label}
+                              </Label>
+                              <p className="text-xs text-muted-foreground">
+                                {desc}
+                              </p>
                             </div>
                             <Switch
-                              checked={cateringConfig[key as keyof typeof cateringConfig] as boolean}
-                              onCheckedChange={(checked) => setCateringConfig(prev => ({ ...prev, [key]: checked }))}
+                              checked={
+                                cateringConfig[
+                                  key as keyof typeof cateringConfig
+                                ] as boolean
+                              }
+                              onCheckedChange={(checked) =>
+                                setCateringConfig((prev) => ({
+                                  ...prev,
+                                  [key]: checked,
+                                }))
+                              }
                             />
                           </div>
                         ))}
@@ -1029,41 +1263,65 @@ const WidgetManagement: React.FC = () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-3">
-                          <Label htmlFor="min-order-days" className="text-sm font-medium">
+                          <Label
+                            htmlFor="min-order-days"
+                            className="text-sm font-medium"
+                          >
                             Min Order Days Advance
                           </Label>
                           <Input
                             id="min-order-days"
                             type="number"
                             value={cateringConfig.minOrderDays}
-                            onChange={(e) => setCateringConfig(prev => ({ ...prev, minOrderDays: Number(e.target.value) }))}
+                            onChange={(e) =>
+                              setCateringConfig((prev) => ({
+                                ...prev,
+                                minOrderDays: Number(e.target.value),
+                              }))
+                            }
                             min="1"
                             max="30"
                           />
                         </div>
 
                         <div className="space-y-3">
-                          <Label htmlFor="min-order-value" className="text-sm font-medium">
+                          <Label
+                            htmlFor="min-order-value"
+                            className="text-sm font-medium"
+                          >
                             Min Order Value ($)
                           </Label>
                           <Input
                             id="min-order-value"
                             type="number"
                             value={cateringConfig.minOrderValue}
-                            onChange={(e) => setCateringConfig(prev => ({ ...prev, minOrderValue: Number(e.target.value) }))}
+                            onChange={(e) =>
+                              setCateringConfig((prev) => ({
+                                ...prev,
+                                minOrderValue: Number(e.target.value),
+                              }))
+                            }
                             min="0"
                           />
                         </div>
 
                         <div className="space-y-3">
-                          <Label htmlFor="deposit-percentage" className="text-sm font-medium">
+                          <Label
+                            htmlFor="deposit-percentage"
+                            className="text-sm font-medium"
+                          >
                             Deposit Percentage (%)
                           </Label>
                           <Input
                             id="deposit-percentage"
                             type="number"
                             value={cateringConfig.depositPercentage}
-                            onChange={(e) => setCateringConfig(prev => ({ ...prev, depositPercentage: Number(e.target.value) }))}
+                            onChange={(e) =>
+                              setCateringConfig((prev) => ({
+                                ...prev,
+                                depositPercentage: Number(e.target.value),
+                              }))
+                            }
                             min="0"
                             max="100"
                           />
@@ -1080,22 +1338,54 @@ const WidgetManagement: React.FC = () => {
                       <Shield className="w-5 h-5" />
                       <h3 className="text-lg font-semibold">Common Features</h3>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[
-                        { key: 'requirePhone', label: 'Require Phone Number', desc: 'Make phone number mandatory' },
-                        { key: 'enableNotifications', label: 'Enable Notifications', desc: 'Send confirmation emails/SMS' },
-                        { key: 'enableChatbot', label: 'Enable Chatbot', desc: 'Integrated customer support chat' },
-                        { key: 'lazyLoading', label: 'Lazy Loading', desc: 'Improve performance with lazy loading' }
+                        {
+                          key: "requirePhone",
+                          label: "Require Phone Number",
+                          desc: "Make phone number mandatory",
+                        },
+                        {
+                          key: "enableNotifications",
+                          label: "Enable Notifications",
+                          desc: "Send confirmation emails/SMS",
+                        },
+                        {
+                          key: "enableChatbot",
+                          label: "Enable Chatbot",
+                          desc: "Integrated customer support chat",
+                        },
+                        {
+                          key: "lazyLoading",
+                          label: "Lazy Loading",
+                          desc: "Improve performance with lazy loading",
+                        },
                       ].map(({ key, label, desc }) => (
-                        <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div
+                          key={key}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
                           <div className="space-y-1">
-                            <Label className="text-sm font-medium">{label}</Label>
-                            <p className="text-xs text-muted-foreground">{desc}</p>
+                            <Label className="text-sm font-medium">
+                              {label}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              {desc}
+                            </p>
                           </div>
                           <Switch
-                            checked={currentConfig[key as keyof typeof currentConfig] as boolean}
-                            onCheckedChange={(checked) => setCurrentConfig(prev => ({ ...prev, [key]: checked }))}
+                            checked={
+                              currentConfig[
+                                key as keyof typeof currentConfig
+                              ] as boolean
+                            }
+                            onCheckedChange={(checked) =>
+                              setCurrentConfig((prev) => ({
+                                ...prev,
+                                [key]: checked,
+                              }))
+                            }
                           />
                         </div>
                       ))}
@@ -1108,44 +1398,70 @@ const WidgetManagement: React.FC = () => {
                   <div className="space-y-6">
                     <div className="flex items-center gap-2 mb-4">
                       <Zap className="w-5 h-5" />
-                      <h3 className="text-lg font-semibold">Advanced Configuration</h3>
+                      <h3 className="text-lg font-semibold">
+                        Advanced Configuration
+                      </h3>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <Label htmlFor="welcome-message" className="text-sm font-medium">
+                        <Label
+                          htmlFor="welcome-message"
+                          className="text-sm font-medium"
+                        >
                           Welcome Message
                         </Label>
                         <Textarea
                           id="welcome-message"
                           value={currentConfig.welcomeMessage}
-                          onChange={(e) => setCurrentConfig(prev => ({ ...prev, welcomeMessage: e.target.value }))}
+                          onChange={(e) =>
+                            setCurrentConfig((prev) => ({
+                              ...prev,
+                              welcomeMessage: e.target.value,
+                            }))
+                          }
                           placeholder="Welcome to our restaurant!"
                           rows={3}
                         />
                       </div>
 
                       <div className="space-y-3">
-                        <Label htmlFor="google-analytics" className="text-sm font-medium">
+                        <Label
+                          htmlFor="google-analytics"
+                          className="text-sm font-medium"
+                        >
                           Google Analytics ID
                         </Label>
                         <Input
                           id="google-analytics"
                           value={currentConfig.googleAnalyticsId}
-                          onChange={(e) => setCurrentConfig(prev => ({ ...prev, googleAnalyticsId: e.target.value }))}
+                          onChange={(e) =>
+                            setCurrentConfig((prev) => ({
+                              ...prev,
+                              googleAnalyticsId: e.target.value,
+                            }))
+                          }
                           placeholder="GA-XXXXXXXXX-X"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <Label htmlFor="custom-css" className="text-sm font-medium">
+                      <Label
+                        htmlFor="custom-css"
+                        className="text-sm font-medium"
+                      >
                         Custom CSS
                       </Label>
                       <Textarea
                         id="custom-css"
                         value={currentConfig.customCSS}
-                        onChange={(e) => setCurrentConfig(prev => ({ ...prev, customCSS: e.target.value }))}
+                        onChange={(e) =>
+                          setCurrentConfig((prev) => ({
+                            ...prev,
+                            customCSS: e.target.value,
+                          }))
+                        }
                         placeholder="/* Add your custom CSS here */"
                         rows={6}
                         className="font-mono text-sm"
@@ -1156,7 +1472,6 @@ const WidgetManagement: React.FC = () => {
               </Card>
             </motion.div>
           </TabsContent>
-
 
           {/* Enhanced Embed Code Tab */}
           <TabsContent value="embed" className="space-y-6">
@@ -1174,14 +1489,22 @@ const WidgetManagement: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="bg-muted p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                    <pre className="whitespace-pre-wrap">{embedCodes.basicEmbed}</pre>
+                    <pre className="whitespace-pre-wrap">
+                      {embedCodes.basicEmbed}
+                    </pre>
                   </div>
-                  
+
                   <Button
-                    onClick={() => copyToClipboard(embedCodes.basicEmbed, "Basic embed code")}
+                    onClick={() =>
+                      copyToClipboard(embedCodes.basicEmbed, "Basic embed code")
+                    }
                     className="w-full"
                   >
-                    {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                    {copied ? (
+                      <Check className="w-4 h-4 mr-2" />
+                    ) : (
+                      <Copy className="w-4 h-4 mr-2" />
+                    )}
                     {copied ? "Copied!" : "Copy Basic Embed"}
                   </Button>
                 </CardContent>
@@ -1200,12 +1523,19 @@ const WidgetManagement: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="bg-muted p-4 rounded-lg font-mono text-sm overflow-x-auto max-h-60">
-                    <pre className="whitespace-pre-wrap">{embedCodes.advancedEmbed}</pre>
+                    <pre className="whitespace-pre-wrap">
+                      {embedCodes.advancedEmbed}
+                    </pre>
                   </div>
-                  
+
                   <Button
                     variant="outline"
-                    onClick={() => copyToClipboard(embedCodes.advancedEmbed, "Advanced embed code")}
+                    onClick={() =>
+                      copyToClipboard(
+                        embedCodes.advancedEmbed,
+                        "Advanced embed code",
+                      )
+                    }
                     className="w-full"
                   >
                     <Copy className="w-4 h-4 mr-2" />
@@ -1227,12 +1557,19 @@ const WidgetManagement: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="bg-muted p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                    <pre className="whitespace-pre-wrap">{embedCodes.responsiveEmbed}</pre>
+                    <pre className="whitespace-pre-wrap">
+                      {embedCodes.responsiveEmbed}
+                    </pre>
                   </div>
-                  
+
                   <Button
                     variant="outline"
-                    onClick={() => copyToClipboard(embedCodes.responsiveEmbed, "Responsive embed code")}
+                    onClick={() =>
+                      copyToClipboard(
+                        embedCodes.responsiveEmbed,
+                        "Responsive embed code",
+                      )
+                    }
                     className="w-full"
                   >
                     <Copy className="w-4 h-4 mr-2" />
@@ -1246,12 +1583,13 @@ const WidgetManagement: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  {widgetType === 'booking' ? (
+                  {widgetType === "booking" ? (
                     <Calendar className="w-5 h-5 text-blue-500" />
                   ) : (
                     <ChefHat className="w-5 h-5 text-orange-500" />
                   )}
-                  {widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Information
+                  {widgetType === "booking" ? "Booking" : "Catering"} Widget
+                  Information
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1267,19 +1605,23 @@ const WidgetManagement: React.FC = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => copyToClipboard(currentUrl, "Widget URL")}
+                        onClick={() =>
+                          copyToClipboard(currentUrl, "Widget URL")
+                        }
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Widget Status</Label>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-2 bg-green-50 border border-green-200 px-3 py-2 rounded-md flex-1">
                         <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="text-sm font-medium text-green-700">Active & Deployed</span>
+                        <span className="text-sm font-medium text-green-700">
+                          Active & Deployed
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1294,11 +1636,15 @@ const WidgetManagement: React.FC = () => {
               {/* Key Metrics */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Views</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total Views
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">{analytics.views.toLocaleString()}</span>
+                    <span className="text-2xl font-bold">
+                      {analytics.views.toLocaleString()}
+                    </span>
                     <Eye className="w-5 h-5 text-blue-500" />
                   </div>
                   <p className="text-xs text-green-600 mt-1">+12% this month</p>
@@ -1307,11 +1653,15 @@ const WidgetManagement: React.FC = () => {
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Conversions</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Conversions
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">{analytics.conversions}</span>
+                    <span className="text-2xl font-bold">
+                      {analytics.conversions}
+                    </span>
                     <TrendingUp className="w-5 h-5 text-green-500" />
                   </div>
                   <p className="text-xs text-green-600 mt-1">+8% this month</p>
@@ -1320,11 +1670,15 @@ const WidgetManagement: React.FC = () => {
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Conversion Rate</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Conversion Rate
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">{analytics.conversionRate}%</span>
+                    <span className="text-2xl font-bold">
+                      {analytics.conversionRate}%
+                    </span>
                     <Activity className="w-5 h-5 text-purple-500" />
                   </div>
                   <p className="text-xs text-red-600 mt-1">-2% this month</p>
@@ -1333,11 +1687,15 @@ const WidgetManagement: React.FC = () => {
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Session</CardTitle>
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Avg. Session
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">{analytics.avgSessionTime}s</span>
+                    <span className="text-2xl font-bold">
+                      {analytics.avgSessionTime}s
+                    </span>
                     <Clock className="w-5 h-5 text-orange-500" />
                   </div>
                   <p className="text-xs text-green-600 mt-1">+15% this month</p>
@@ -1357,19 +1715,27 @@ const WidgetManagement: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Loading Speed</span>
-                    <span className="text-sm text-green-600">Excellent (0.8s)</span>
+                    <span className="text-sm text-green-600">
+                      Excellent (0.8s)
+                    </span>
                   </div>
                   <Progress value={85} className="h-2" />
-                  
+
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Mobile Experience</span>
-                    <span className="text-sm text-green-600">Good (92/100)</span>
+                    <span className="text-sm font-medium">
+                      Mobile Experience
+                    </span>
+                    <span className="text-sm text-green-600">
+                      Good (92/100)
+                    </span>
                   </div>
                   <Progress value={92} className="h-2" />
-                  
+
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Accessibility</span>
-                    <span className="text-sm text-blue-600">Very Good (88/100)</span>
+                    <span className="text-sm text-blue-600">
+                      Very Good (88/100)
+                    </span>
                   </div>
                   <Progress value={88} className="h-2" />
                 </div>
@@ -1386,23 +1752,32 @@ const WidgetManagement: React.FC = () => {
                   Widget Versions
                 </CardTitle>
                 <CardDescription>
-                  Track and manage different versions of your widget configuration
+                  Track and manage different versions of your widget
+                  configuration
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {versions.map((version) => (
-                    <div key={version.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div
+                      key={version.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{version.version}</span>
+                            <span className="font-medium">
+                              {version.version}
+                            </span>
                             {version.isActive && (
-                              <Badge variant="default" className="text-xs">Active</Badge>
+                              <Badge variant="default" className="text-xs">
+                                Active
+                              </Badge>
                             )}
                           </div>
                           <span className="text-sm text-muted-foreground">
-                            {new Date(version.createdAt).toLocaleDateString()} - {version.changes}
+                            {new Date(version.createdAt).toLocaleDateString()} -{" "}
+                            {version.changes}
                           </span>
                         </div>
                       </div>
@@ -1432,7 +1807,10 @@ const WidgetManagement: React.FC = () => {
                 {configHistory.length > 0 ? (
                   <div className="space-y-3">
                     {configHistory.slice(0, 10).map((entry) => (
-                      <div key={entry.id} className="flex items-start justify-between p-3 bg-muted/50 rounded-lg">
+                      <div
+                        key={entry.id}
+                        className="flex items-start justify-between p-3 bg-muted/50 rounded-lg"
+                      >
                         <div>
                           <p className="text-sm font-medium">{entry.user}</p>
                           <p className="text-xs text-muted-foreground">
@@ -1459,7 +1837,9 @@ const WidgetManagement: React.FC = () => {
           <TabsContent value="manage" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
               {/* Booking Widget Overview */}
-              <Card className={`transition-all ${widgetType === 'booking' ? 'ring-2 ring-blue-500' : ''}`}>
+              <Card
+                className={`transition-all ${widgetType === "booking" ? "ring-2 ring-blue-500" : ""}`}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-blue-500" />
@@ -1473,44 +1853,53 @@ const WidgetManagement: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Status</span>
-                      <Badge variant="default" className="bg-green-500">Active</Badge>
+                      <Badge variant="default" className="bg-green-500">
+                        Active
+                      </Badge>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Theme</span>
-                      <span className="text-sm text-muted-foreground capitalize">{bookingConfig.theme}</span>
+                      <span className="text-sm text-muted-foreground capitalize">
+                        {bookingConfig.theme}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Features Enabled</span>
                       <span className="text-sm text-muted-foreground">
-                        {Object.values(bookingConfig).filter(v => v === true).length}
+                        {
+                          Object.values(bookingConfig).filter((v) => v === true)
+                            .length
+                        }
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Last Updated</span>
                       <span className="text-sm text-muted-foreground">
-                        {lastSaved ? new Date(lastSaved).toLocaleDateString() : 'Never'}
+                        {lastSaved
+                          ? new Date(lastSaved).toLocaleDateString()
+                          : "Never"}
                       </span>
                     </div>
                   </div>
-                  
+
                   <Separator />
-                  
+
                   <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => setWidgetType('booking')}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setWidgetType("booking")}
                       className="flex-1"
                     >
                       <Settings2 className="w-4 h-4 mr-2" />
                       Configure
                     </Button>
-                    <Button 
-                      size="sm" 
-                      asChild
-                      className="flex-1"
-                    >
-                      <a href={widgetUrls.booking} target="_blank" rel="noopener noreferrer">
+                    <Button size="sm" asChild className="flex-1">
+                      <a
+                        href={widgetUrls.booking}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <Eye className="w-4 h-4 mr-2" />
                         Preview
                       </a>
@@ -1520,7 +1909,9 @@ const WidgetManagement: React.FC = () => {
               </Card>
 
               {/* Catering Widget Overview */}
-              <Card className={`transition-all ${widgetType === 'catering' ? 'ring-2 ring-orange-500' : ''}`}>
+              <Card
+                className={`transition-all ${widgetType === "catering" ? "ring-2 ring-orange-500" : ""}`}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ChefHat className="w-5 h-5 text-orange-500" />
@@ -1534,44 +1925,54 @@ const WidgetManagement: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Status</span>
-                      <Badge variant="default" className="bg-green-500">Active</Badge>
+                      <Badge variant="default" className="bg-green-500">
+                        Active
+                      </Badge>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Theme</span>
-                      <span className="text-sm text-muted-foreground capitalize">{cateringConfig.theme}</span>
+                      <span className="text-sm text-muted-foreground capitalize">
+                        {cateringConfig.theme}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Features Enabled</span>
                       <span className="text-sm text-muted-foreground">
-                        {Object.values(cateringConfig).filter(v => v === true).length}
+                        {
+                          Object.values(cateringConfig).filter(
+                            (v) => v === true,
+                          ).length
+                        }
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Last Updated</span>
                       <span className="text-sm text-muted-foreground">
-                        {lastSaved ? new Date(lastSaved).toLocaleDateString() : 'Never'}
+                        {lastSaved
+                          ? new Date(lastSaved).toLocaleDateString()
+                          : "Never"}
                       </span>
                     </div>
                   </div>
-                  
+
                   <Separator />
-                  
+
                   <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => setWidgetType('catering')}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setWidgetType("catering")}
                       className="flex-1"
                     >
                       <Settings2 className="w-4 h-4 mr-2" />
                       Configure
                     </Button>
-                    <Button 
-                      size="sm" 
-                      asChild
-                      className="flex-1"
-                    >
-                      <a href={widgetUrls.catering} target="_blank" rel="noopener noreferrer">
+                    <Button size="sm" asChild className="flex-1">
+                      <a
+                        href={widgetUrls.catering}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <Eye className="w-4 h-4 mr-2" />
                         Preview
                       </a>
@@ -1591,19 +1992,31 @@ const WidgetManagement: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Button variant="outline" className="flex flex-col items-center gap-2 h-20">
+                  <Button
+                    variant="outline"
+                    className="flex flex-col items-center gap-2 h-20"
+                  >
                     <QrCode className="w-5 h-5" />
                     <span className="text-xs">Generate QR</span>
                   </Button>
-                  <Button variant="outline" className="flex flex-col items-center gap-2 h-20">
+                  <Button
+                    variant="outline"
+                    className="flex flex-col items-center gap-2 h-20"
+                  >
                     <Download className="w-5 h-5" />
                     <span className="text-xs">Export Config</span>
                   </Button>
-                  <Button variant="outline" className="flex flex-col items-center gap-2 h-20">
+                  <Button
+                    variant="outline"
+                    className="flex flex-col items-center gap-2 h-20"
+                  >
                     <Share className="w-5 h-5" />
                     <span className="text-xs">Share Widget</span>
                   </Button>
-                  <Button variant="outline" className="flex flex-col items-center gap-2 h-20">
+                  <Button
+                    variant="outline"
+                    className="flex flex-col items-center gap-2 h-20"
+                  >
                     <BarChart3 className="w-5 h-5" />
                     <span className="text-xs">View Analytics</span>
                   </Button>
@@ -1614,7 +2027,7 @@ const WidgetManagement: React.FC = () => {
         </Tabs>
 
         {/* Debug Panel for Development */}
-        {process.env.NODE_ENV === 'development' && tenant?.slug && (
+        {process.env.NODE_ENV === "development" && tenant?.slug && (
           <Card>
             <CardHeader>
               <CardTitle className="text-orange-600 flex items-center gap-2">
@@ -1625,20 +2038,28 @@ const WidgetManagement: React.FC = () => {
             <CardContent>
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <Label className="text-sm font-medium">Current Environment</Label>
+                  <Label className="text-sm font-medium">
+                    Current Environment
+                  </Label>
                   <p className="text-sm text-muted-foreground">Development</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Tenant ID</Label>
-                  <p className="text-sm text-muted-foreground font-mono">{tenant.id}</p>
+                  <p className="text-sm text-muted-foreground font-mono">
+                    {tenant.id}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Network Status</Label>
-                  <p className="text-sm text-muted-foreground">{isOnline ? 'Connected' : 'Offline'}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isOnline ? "Connected" : "Offline"}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Unsaved Changes</Label>
-                  <p className="text-sm text-muted-foreground">{hasUnsavedChanges ? 'Yes' : 'No'}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {hasUnsavedChanges ? "Yes" : "No"}
+                  </p>
                 </div>
               </div>
               <BookingDebugger slug={tenant.slug} />
@@ -1666,7 +2087,7 @@ const WidgetManagement: React.FC = () => {
                 ) : (
                   <Save className="w-4 h-4 mr-2" />
                 )}
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </motion.div>
           )}

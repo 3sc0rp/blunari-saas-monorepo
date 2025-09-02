@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { CreditCard, Info } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { TenantInfo, PolicyResponse } from '@/types/booking-api';
-import { getTenantPolicies } from '@/api/booking-proxy';
+import React, { useState, useEffect } from "react";
+import { CreditCard, Info } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TenantInfo, PolicyResponse } from "@/types/booking-api";
+import { getTenantPolicies } from "@/api/booking-proxy";
 
 interface DepositSectionProps {
   tenant: TenantInfo;
@@ -14,7 +14,10 @@ interface DepositSectionProps {
   };
 }
 
-const DepositSection: React.FC<DepositSectionProps> = ({ tenant, reservation }) => {
+const DepositSection: React.FC<DepositSectionProps> = ({
+  tenant,
+  reservation,
+}) => {
   const [policies, setPolicies] = useState<PolicyResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,8 +28,8 @@ const DepositSection: React.FC<DepositSectionProps> = ({ tenant, reservation }) 
         const policyData = await getTenantPolicies(tenant.tenant_id);
         setPolicies(policyData);
       } catch (err) {
-        setError('Could not load deposit policies');
-        console.warn('Failed to load policies:', err);
+        setError("Could not load deposit policies");
+        console.warn("Failed to load policies:", err);
       } finally {
         setLoading(false);
       }
@@ -46,8 +49,11 @@ const DepositSection: React.FC<DepositSectionProps> = ({ tenant, reservation }) 
   }
 
   const { deposit } = policies;
-  const depositAmount = deposit.amount || 
-    (deposit.percentage ? reservation.party_size * 10 * (deposit.percentage / 100) : 0);
+  const depositAmount =
+    deposit.amount ||
+    (deposit.percentage
+      ? reservation.party_size * 10 * (deposit.percentage / 100)
+      : 0);
 
   return (
     <Card>
@@ -56,7 +62,7 @@ const DepositSection: React.FC<DepositSectionProps> = ({ tenant, reservation }) 
           <CreditCard className="w-4 h-4" />
           Deposit Required
           <Badge variant="outline">
-            ${depositAmount} {deposit.currency || 'USD'}
+            ${depositAmount} {deposit.currency || "USD"}
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -64,7 +70,7 @@ const DepositSection: React.FC<DepositSectionProps> = ({ tenant, reservation }) 
         <Alert>
           <Info className="w-4 h-4" />
           <AlertDescription>
-            {deposit.description || 
+            {deposit.description ||
               `A deposit of $${depositAmount} will be collected upon arrival to secure your reservation.`}
           </AlertDescription>
         </Alert>

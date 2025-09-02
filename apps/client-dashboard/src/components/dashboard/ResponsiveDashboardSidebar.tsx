@@ -1,20 +1,20 @@
-import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Calendar, 
-  Users, 
-  MessageSquare, 
-  BarChart3, 
-  Settings, 
+import React from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import {
+  Home,
+  Calendar,
+  Users,
+  MessageSquare,
+  BarChart3,
+  Settings,
   TableProperties,
   UserCheck,
   CreditCard,
   Building,
   ChefHat,
   Cog,
-  Eye
-} from 'lucide-react';
+  Eye,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -25,48 +25,56 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@/components/ui/sidebar';
-import { Badge } from '@/components/ui/badge';
-import { useTenant } from '@/hooks/useTenant';
+} from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
+import { useTenant } from "@/hooks/useTenant";
 
 const navigationItems = [
   {
-    section: 'Overview',
+    section: "Overview",
     items: [
-      { title: 'Dashboard', url: '/dashboard', icon: Home },
-      { title: 'Analytics', url: '/dashboard/analytics', icon: BarChart3 },
-    ]
+      { title: "Dashboard", url: "/dashboard", icon: Home },
+      { title: "Analytics", url: "/dashboard/analytics", icon: BarChart3 },
+    ],
   },
   {
-    section: 'Operations',
+    section: "Operations",
     items: [
-      { title: 'Bookings', url: '/dashboard/bookings', icon: Calendar },
-      { title: 'Tables', url: '/dashboard/tables', icon: TableProperties },
-      { title: 'Waitlist', url: '/dashboard/waitlist', icon: UserCheck },
-      { title: 'Catering', url: '/dashboard/catering', icon: ChefHat },
-    ]
+      { title: "Bookings", url: "/dashboard/bookings", icon: Calendar },
+      { title: "Tables", url: "/dashboard/tables", icon: TableProperties },
+      { title: "Waitlist", url: "/dashboard/waitlist", icon: UserCheck },
+      { title: "Catering", url: "/dashboard/catering", icon: ChefHat },
+    ],
   },
   {
-    section: 'Management',
+    section: "Management",
     items: [
-      { title: 'Customers', url: '/dashboard/customers', icon: Users },
-      { title: 'Staff', url: '/dashboard/staff', icon: Building },
-      { title: 'Messages', url: '/dashboard/messages', icon: MessageSquare },
-    ]
+      { title: "Customers", url: "/dashboard/customers", icon: Users },
+      { title: "Staff", url: "/dashboard/staff", icon: Building },
+      { title: "Messages", url: "/dashboard/messages", icon: MessageSquare },
+    ],
   },
   {
-    section: 'Tools',
+    section: "Tools",
     items: [
-      { title: 'Widget Management', url: '/dashboard/widget-management', icon: Cog },
-    ]
+      {
+        title: "Widget Management",
+        url: "/dashboard/widget-management",
+        icon: Cog,
+      },
+    ],
   },
   {
-    section: 'Admin',
+    section: "Admin",
     items: [
-      { title: 'Settings', url: '/dashboard/settings', icon: Settings },
-      { title: 'POS Integration', url: '/dashboard/pos-integrations', icon: CreditCard },
-    ]
-  }
+      { title: "Settings", url: "/dashboard/settings", icon: Settings },
+      {
+        title: "POS Integration",
+        url: "/dashboard/pos-integrations",
+        icon: CreditCard,
+      },
+    ],
+  },
 ];
 
 export function ResponsiveDashboardSidebar() {
@@ -76,20 +84,21 @@ export function ResponsiveDashboardSidebar() {
   const currentPath = location.pathname;
 
   const isActive = (path: string) => {
-    if (path === '/dashboard') {
-      return currentPath === '/dashboard';
+    if (path === "/dashboard") {
+      return currentPath === "/dashboard";
     }
     return currentPath.startsWith(path);
   };
 
   const getNavClassName = (path: string) => {
-    const baseClasses = "w-full justify-start transition-all duration-200 hover:bg-surface-2";
-    return isActive(path) 
-      ? `${baseClasses} bg-brand/10 text-brand border-r-2 border-brand font-medium` 
+    const baseClasses =
+      "w-full justify-start transition-all duration-200 hover:bg-surface-2";
+    return isActive(path)
+      ? `${baseClasses} bg-brand/10 text-brand border-r-2 border-brand font-medium`
       : `${baseClasses} text-text-muted hover:text-text`;
   };
 
-  const collapsed = state === 'collapsed';
+  const collapsed = state === "collapsed";
 
   return (
     <Sidebar className="border-r border-surface-2 bg-surface">
@@ -103,7 +112,7 @@ export function ResponsiveDashboardSidebar() {
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <h2 className="font-semibold text-text truncate">
-                  {tenant?.name || 'Restaurant'}
+                  {tenant?.name || "Restaurant"}
                 </h2>
                 <p className="text-xs text-text-muted truncate">Dashboard</p>
               </div>
@@ -125,8 +134,8 @@ export function ResponsiveDashboardSidebar() {
                   {section.items.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <NavLink 
-                          to={item.url} 
+                        <NavLink
+                          to={item.url}
                           className={getNavClassName(item.url)}
                           title={collapsed ? item.title : undefined}
                         >
@@ -134,7 +143,7 @@ export function ResponsiveDashboardSidebar() {
                           {!collapsed && (
                             <span className="ml-3 flex-1">{item.title}</span>
                           )}
-                          {!collapsed && item.title === 'Messages' && (
+                          {!collapsed && item.title === "Messages" && (
                             <Badge className="ml-auto h-5 w-5 p-0 bg-destructive text-destructive-foreground text-xs">
                               3
                             </Badge>

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Database } from '@/integrations/supabase/types';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
 
-type Tenant = Database['public']['Tables']['tenants']['Row'];
+type Tenant = Database["public"]["Tables"]["tenants"]["Row"];
 
 interface UseTenantBySlugReturn {
   tenant: Tenant | null;
@@ -27,15 +27,15 @@ export function useTenantBySlug(slug: string): UseTenantBySlugReturn {
         setError(null);
 
         const { data, error } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('slug', slug)
-          .eq('status', 'active')
+          .from("tenants")
+          .select("*")
+          .eq("slug", slug)
+          .eq("status", "active")
           .single();
 
         if (error) {
-          if (error.code === 'PGRST116') {
-            setError('Tenant not found');
+          if (error.code === "PGRST116") {
+            setError("Tenant not found");
           } else {
             throw error;
           }
@@ -44,8 +44,8 @@ export function useTenantBySlug(slug: string): UseTenantBySlugReturn {
 
         setTenant(data);
       } catch (err) {
-        console.error('Error fetching tenant:', err);
-        setError('Failed to load tenant information');
+        console.error("Error fetching tenant:", err);
+        setError("Failed to load tenant information");
       } finally {
         setLoading(false);
       }
@@ -57,6 +57,6 @@ export function useTenantBySlug(slug: string): UseTenantBySlugReturn {
   return {
     tenant,
     loading,
-    error
+    error,
   };
 }

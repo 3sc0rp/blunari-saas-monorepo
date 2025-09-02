@@ -1,15 +1,28 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Clock, Settings, DollarSign, Calendar } from 'lucide-react';
-import { OperationalSettings as OperationalSettingsType } from '@/types/settings';
-import { useForm, Controller } from 'react-hook-form';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Clock, Settings, DollarSign, Calendar } from "lucide-react";
+import { OperationalSettings as OperationalSettingsType } from "@/types/settings";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 interface OperationalSettingsProps {
   settings: OperationalSettingsType;
@@ -17,7 +30,11 @@ interface OperationalSettingsProps {
   isUpdating: boolean;
 }
 
-const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onUpdate, isUpdating }) => {
+const OperationalSettings: React.FC<OperationalSettingsProps> = ({
+  settings,
+  onUpdate,
+  isUpdating,
+}) => {
   const form = useForm<OperationalSettingsType>({
     defaultValues: settings,
   });
@@ -27,18 +44,24 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
   };
 
   const dayNames = [
-    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
   ];
 
   const timezones = [
-    'America/New_York',
-    'America/Chicago',
-    'America/Denver',
-    'America/Los_Angeles',
-    'America/Toronto',
-    'Europe/London',
-    'Europe/Paris',
-    'Asia/Tokyo',
+    "America/New_York",
+    "America/Chicago",
+    "America/Denver",
+    "America/Los_Angeles",
+    "America/Toronto",
+    "Europe/London",
+    "Europe/Paris",
+    "Asia/Tokyo",
   ];
 
   return (
@@ -61,7 +84,10 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Timezone</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select timezone" />
@@ -70,7 +96,7 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
                         <SelectContent>
                           {timezones.map((tz) => (
                             <SelectItem key={tz} value={tz}>
-                              {tz.replace('_', ' ')}
+                              {tz.replace("_", " ")}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -84,7 +110,10 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
               <div className="space-y-4">
                 <Label className="text-sm font-medium">Weekly Schedule</Label>
                 {dayNames.map((day, index) => (
-                  <div key={day} className="flex items-center gap-4 p-3 border rounded-lg">
+                  <div
+                    key={day}
+                    className="flex items-center gap-4 p-3 border rounded-lg"
+                  >
                     <div className="w-20 text-sm font-medium">{day}</div>
                     <Controller
                       control={form.control}
@@ -117,7 +146,9 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
                             </FormItem>
                           )}
                         />
-                        <span className="text-sm text-muted-foreground">to</span>
+                        <span className="text-sm text-muted-foreground">
+                          to
+                        </span>
                         <FormField
                           control={form.control}
                           name={`businessHours.${index}.closeTime`}
@@ -168,7 +199,9 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
                           type="number"
                           min="30"
                           max="300"
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value))
+                          }
                         />
                       </FormControl>
                       <FormMessage />
@@ -188,7 +221,9 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
                           type="number"
                           min="1"
                           max="365"
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value))
+                          }
                         />
                       </FormControl>
                       <FormMessage />
@@ -244,7 +279,7 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
                 <Label>Enable deposit requirements</Label>
               </div>
 
-              {form.watch('depositPolicy.enabled') && (
+              {form.watch("depositPolicy.enabled") && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
@@ -258,7 +293,9 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
                             type="number"
                             min="0"
                             step="0.01"
-                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value))
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -277,7 +314,9 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
                             {...field}
                             type="number"
                             min="1"
-                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value))
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -297,7 +336,9 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
                             type="number"
                             min="0"
                             step="0.01"
-                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value))
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -309,7 +350,7 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({ settings, onU
 
               <div className="flex justify-end">
                 <Button type="submit" disabled={isUpdating}>
-                  {isUpdating ? 'Saving...' : 'Save Operational Settings'}
+                  {isUpdating ? "Saving..." : "Save Operational Settings"}
                 </Button>
               </div>
             </form>

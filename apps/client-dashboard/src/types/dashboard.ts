@@ -29,7 +29,7 @@ export interface PerformanceTrend {
 
 export interface AlertNotification {
   id: string;
-  type: 'critical' | 'warning' | 'info' | 'success';
+  type: "critical" | "warning" | "info" | "success";
   title: string;
   message: string;
   time: string;
@@ -49,6 +49,6 @@ export interface QuickActionItem {
   action: () => void;
   badge?: {
     text: string;
-    variant: 'default' | 'secondary' | 'destructive' | 'outline';
+    variant: "default" | "secondary" | "destructive" | "outline";
   };
 }

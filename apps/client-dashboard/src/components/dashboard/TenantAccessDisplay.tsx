@@ -1,37 +1,37 @@
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { TenantInfo } from '@/types/booking-api';
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, Clock, CheckCircle, XCircle } from "lucide-react";
+import { TenantInfo } from "@/types/booking-api";
 
 interface TenantAccessDisplayProps {
-  accessType: 'domain' | 'user';
+  accessType: "domain" | "user";
   tenantSlug?: string;
   tenant: TenantInfo | null;
 }
 
-const TenantAccessDisplay: React.FC<TenantAccessDisplayProps> = ({ 
-  accessType, 
-  tenantSlug, 
-  tenant 
+const TenantAccessDisplay: React.FC<TenantAccessDisplayProps> = ({
+  accessType,
+  tenantSlug,
+  tenant,
 }) => {
   const getAccessInfo = () => {
-    if (accessType === 'domain') {
+    if (accessType === "domain") {
       return {
-        title: 'Restaurant Dashboard',
+        title: "Restaurant Dashboard",
         description: `Accessing ${tenant?.name || tenantSlug} via ${window.location.hostname}`,
         icon: CheckCircle,
-        color: 'text-success',
-        bgColor: 'bg-success/10'
+        color: "text-success",
+        bgColor: "bg-success/10",
       };
     }
 
     return {
-      title: 'Staff Access',
+      title: "Staff Access",
       description: `Authenticated access to ${tenant?.name}`,
       icon: CheckCircle,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10'
+      color: "text-primary",
+      bgColor: "bg-primary/10",
     };
   };
 
@@ -41,7 +41,9 @@ const TenantAccessDisplay: React.FC<TenantAccessDisplayProps> = ({
     <Card className="mb-4">
       <CardContent className="pt-4">
         <div className="flex items-center gap-3">
-          <div className={`h-10 w-10 rounded-lg ${info.bgColor} flex items-center justify-center`}>
+          <div
+            className={`h-10 w-10 rounded-lg ${info.bgColor} flex items-center justify-center`}
+          >
             <info.icon className={`h-5 w-5 ${info.color}`} />
           </div>
           <div className="flex-1">
@@ -49,7 +51,7 @@ const TenantAccessDisplay: React.FC<TenantAccessDisplayProps> = ({
             <p className="text-sm text-muted-foreground">{info.description}</p>
           </div>
           <Badge variant="outline">
-            {accessType === 'domain' ? 'Public Access' : 'Staff Access'}
+            {accessType === "domain" ? "Public Access" : "Staff Access"}
           </Badge>
         </div>
       </CardContent>

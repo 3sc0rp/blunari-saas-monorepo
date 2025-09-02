@@ -1,40 +1,51 @@
-import React, { useEffect } from 'react';
-import { useCateringData, useCateringAnalytics } from '@/hooks/useCateringData';
-import { useTenant } from '@/hooks/useTenant';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Loader2, ChefHat, Package, TrendingUp } from 'lucide-react';
+import React, { useEffect } from "react";
+import { useCateringData, useCateringAnalytics } from "@/hooks/useCateringData";
+import { useTenant } from "@/hooks/useTenant";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Loader2, ChefHat, Package, TrendingUp } from "lucide-react";
 
 export const CateringTest: React.FC = () => {
   const { tenant } = useTenant();
-  const { packages, loading, error, createOrder, refetch } = useCateringData(tenant?.id);
-  const { analytics, loading: analyticsLoading } = useCateringAnalytics(tenant?.id);
+  const { packages, loading, error, createOrder, refetch } = useCateringData(
+    tenant?.id,
+  );
+  const { analytics, loading: analyticsLoading } = useCateringAnalytics(
+    tenant?.id,
+  );
 
   const testCreateOrder = async () => {
     if (!tenant?.id) return;
 
     try {
       await createOrder({
-        event_name: 'Test Corporate Event',
-        event_date: '2025-01-15',
-        event_start_time: '12:00',
-        event_end_time: '14:00',
+        event_name: "Test Corporate Event",
+        event_date: "2025-01-15",
+        event_start_time: "12:00",
+        event_end_time: "14:00",
         guest_count: 25,
-        service_type: 'delivery',
-        contact_name: 'Test Customer',
-        contact_email: 'test@example.com',
-        contact_phone: '+1234567890',
-        venue_name: 'Test Venue',
-        venue_address: '123 Test St, Test City',
-        special_instructions: 'This is a test order created by the catering test component',
-        dietary_requirements: ['vegetarian', 'gluten_free']
+        service_type: "delivery",
+        contact_name: "Test Customer",
+        contact_email: "test@example.com",
+        contact_phone: "+1234567890",
+        venue_name: "Test Venue",
+        venue_address: "123 Test St, Test City",
+        special_instructions:
+          "This is a test order created by the catering test component",
+        dietary_requirements: ["vegetarian", "gluten_free"],
       });
-      
-      alert('Test order created successfully!');
+
+      alert("Test order created successfully!");
       refetch(); // Refresh the packages
     } catch (err) {
-      console.error('Test order failed:', err);
+      console.error("Test order failed:", err);
       alert(`Test order failed: ${err}`);
     }
   };
@@ -85,19 +96,25 @@ export const CateringTest: React.FC = () => {
               {packages.map((pkg) => (
                 <div key={pkg.id} className="border p-4 rounded-md">
                   <h3 className="font-semibold">{pkg.name}</h3>
-                  <p className="text-sm text-muted-foreground">{pkg.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {pkg.description}
+                  </p>
                   <p className="text-sm">
-                    ${pkg.price_per_person}/person • Min: {pkg.min_guests} guests
+                    ${pkg.price_per_person}/person • Min: {pkg.min_guests}{" "}
+                    guests
                   </p>
                   {pkg.popular && (
-                    <Badge variant="secondary" className="mt-2">Popular</Badge>
+                    <Badge variant="secondary" className="mt-2">
+                      Popular
+                    </Badge>
                   )}
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-yellow-600 p-4 bg-yellow-50 rounded-md">
-              <strong>Info:</strong> No catering packages found. Tables exist but no data yet.
+              <strong>Info:</strong> No catering packages found. Tables exist
+              but no data yet.
             </div>
           )}
         </CardContent>
@@ -122,11 +139,12 @@ export const CateringTest: React.FC = () => {
                 Creating...
               </>
             ) : (
-              'Create Test Order'
+              "Create Test Order"
             )}
           </Button>
           <p className="text-sm text-muted-foreground mt-2">
-            This will create a test catering order to verify database functionality
+            This will create a test catering order to verify database
+            functionality
           </p>
         </CardContent>
       </Card>
@@ -154,14 +172,19 @@ export const CateringTest: React.FC = () => {
                 ✅ Analytics working! Found {analytics.length} months of data
               </p>
               {analytics.slice(0, 3).map((month: any, index: number) => (
-                <div key={index} className="text-sm border-l-4 border-blue-400 pl-3">
-                  <strong>{month.month}:</strong> {month.total_orders} orders, 
-                  ${month.total_revenue || 0} revenue
+                <div
+                  key={index}
+                  className="text-sm border-l-4 border-blue-400 pl-3"
+                >
+                  <strong>{month.month}:</strong> {month.total_orders} orders, $
+                  {month.total_revenue || 0} revenue
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-yellow-600">No analytics data yet - create some orders first!</p>
+            <p className="text-yellow-600">
+              No analytics data yet - create some orders first!
+            </p>
           )}
         </CardContent>
       </Card>
@@ -172,10 +195,22 @@ export const CateringTest: React.FC = () => {
           <CardTitle>Next Steps</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          <p>✅ <strong>Migration Applied:</strong> Catering tables are now available</p>
-          <p>🔧 <strong>Hook Updated:</strong> Type assertions removed, using real database queries</p>
-          <p>📊 <strong>To Add Data:</strong> Use the admin dashboard or create packages via SQL</p>
-          <p>🧪 <strong>Testing:</strong> Use the "Create Test Order" button above</p>
+          <p>
+            ✅ <strong>Migration Applied:</strong> Catering tables are now
+            available
+          </p>
+          <p>
+            🔧 <strong>Hook Updated:</strong> Type assertions removed, using
+            real database queries
+          </p>
+          <p>
+            📊 <strong>To Add Data:</strong> Use the admin dashboard or create
+            packages via SQL
+          </p>
+          <p>
+            🧪 <strong>Testing:</strong> Use the "Create Test Order" button
+            above
+          </p>
         </CardContent>
       </Card>
     </div>

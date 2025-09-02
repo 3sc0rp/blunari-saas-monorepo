@@ -1,9 +1,9 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { 
-  AlertTriangle, 
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertTriangle,
   Wifi,
   Server,
   Shield,
@@ -14,21 +14,21 @@ import {
   CreditCard,
   Database,
   Key,
-  Globe
-} from 'lucide-react';
+  Globe,
+} from "lucide-react";
 
 interface ErrorStateProps {
-  variant: 
-    | 'network-error'
-    | 'server-error'
-    | 'permission-denied'
-    | 'not-found'
-    | 'timeout'
-    | 'payment-error'
-    | 'database-error'
-    | 'auth-error'
-    | 'api-error'
-    | 'general-error';
+  variant:
+    | "network-error"
+    | "server-error"
+    | "permission-denied"
+    | "not-found"
+    | "timeout"
+    | "payment-error"
+    | "database-error"
+    | "auth-error"
+    | "api-error"
+    | "general-error";
   title?: string;
   description?: string;
   error?: string | Error;
@@ -46,66 +46,68 @@ interface ErrorStateProps {
 }
 
 const errorStateConfig = {
-  'network-error': {
+  "network-error": {
     icon: Wifi,
-    title: 'Connection problem',
-    description: 'Please check your internet connection and try again.',
-    severity: 'warning' as const
+    title: "Connection problem",
+    description: "Please check your internet connection and try again.",
+    severity: "warning" as const,
   },
-  'server-error': {
+  "server-error": {
     icon: Server,
-    title: 'Server error',
-    description: 'Something went wrong on our end. Our team has been notified.',
-    severity: 'destructive' as const
+    title: "Server error",
+    description: "Something went wrong on our end. Our team has been notified.",
+    severity: "destructive" as const,
   },
-  'permission-denied': {
+  "permission-denied": {
     icon: Shield,
-    title: 'Access denied',
-    description: 'You don\'t have permission to access this feature.',
-    severity: 'warning' as const
+    title: "Access denied",
+    description: "You don't have permission to access this feature.",
+    severity: "warning" as const,
   },
-  'not-found': {
+  "not-found": {
     icon: FileX,
-    title: 'Not found',
-    description: 'The page or resource you\'re looking for doesn\'t exist.',
-    severity: 'warning' as const
+    title: "Not found",
+    description: "The page or resource you're looking for doesn't exist.",
+    severity: "warning" as const,
   },
-  'timeout': {
+  timeout: {
     icon: Clock,
-    title: 'Request timeout',
-    description: 'The request took too long to complete. Please try again.',
-    severity: 'warning' as const
+    title: "Request timeout",
+    description: "The request took too long to complete. Please try again.",
+    severity: "warning" as const,
   },
-  'payment-error': {
+  "payment-error": {
     icon: CreditCard,
-    title: 'Payment failed',
-    description: 'There was an issue processing your payment. Please try again.',
-    severity: 'destructive' as const
+    title: "Payment failed",
+    description:
+      "There was an issue processing your payment. Please try again.",
+    severity: "destructive" as const,
   },
-  'database-error': {
+  "database-error": {
     icon: Database,
-    title: 'Data error',
-    description: 'Unable to load data. Please refresh the page.',
-    severity: 'destructive' as const
+    title: "Data error",
+    description: "Unable to load data. Please refresh the page.",
+    severity: "destructive" as const,
   },
-  'auth-error': {
+  "auth-error": {
     icon: Key,
-    title: 'Authentication error',
-    description: 'Please sign in again to continue.',
-    severity: 'warning' as const
+    title: "Authentication error",
+    description: "Please sign in again to continue.",
+    severity: "warning" as const,
   },
-  'api-error': {
+  "api-error": {
     icon: Globe,
-    title: 'Service unavailable',
-    description: 'External service is currently unavailable. Please try again later.',
-    severity: 'warning' as const
+    title: "Service unavailable",
+    description:
+      "External service is currently unavailable. Please try again later.",
+    severity: "warning" as const,
   },
-  'general-error': {
+  "general-error": {
     icon: AlertTriangle,
-    title: 'Something went wrong',
-    description: 'An unexpected error occurred. Please try again.',
-    severity: 'destructive' as const
-  }
+    title: "Something went wrong",
+    description: "An unexpected error occurred. Please try again.",
+    severity: "destructive" as const,
+  },
 };
 
 const ErrorState: React.FC<ErrorStateProps> = ({
@@ -116,34 +118,34 @@ const ErrorState: React.FC<ErrorStateProps> = ({
   action,
   secondaryAction,
   showDetails = false,
-  retryable = true
+  retryable = true,
 }) => {
   const config = errorStateConfig[variant];
   const IconComponent = config.icon;
   const errorMessage = error instanceof Error ? error.message : error;
-  
+
   const finalTitle = title || config.title;
   const finalDescription = description || config.description;
 
   const getColorClasses = () => {
     switch (config.severity) {
-      case 'warning':
+      case "warning":
         return {
-          card: 'border-warning/20 bg-warning/5',
-          iconBg: 'bg-warning/10',
-          icon: 'text-warning'
+          card: "border-warning/20 bg-warning/5",
+          iconBg: "bg-warning/10",
+          icon: "text-warning",
         };
-      case 'destructive':
+      case "destructive":
         return {
-          card: 'border-destructive/20 bg-destructive/5',
-          iconBg: 'bg-destructive/10', 
-          icon: 'text-destructive'
+          card: "border-destructive/20 bg-destructive/5",
+          iconBg: "bg-destructive/10",
+          icon: "text-destructive",
         };
       default:
         return {
-          card: 'border-border/50 bg-surface/50',
-          iconBg: 'bg-surface-2',
-          icon: 'text-text-muted'
+          card: "border-border/50 bg-surface/50",
+          iconBg: "bg-surface-2",
+          icon: "text-text-muted",
         };
     }
   };
@@ -155,15 +157,15 @@ const ErrorState: React.FC<ErrorStateProps> = ({
       <Card className={`${colors.card} border-2`}>
         <CardContent className="flex flex-col items-center justify-center text-center py-16 px-8">
           <div className="mb-8">
-            <div className={`w-20 h-20 mx-auto ${colors.iconBg} rounded-full flex items-center justify-center mb-6 ring-1 ring-border/10`}>
+            <div
+              className={`w-20 h-20 mx-auto ${colors.iconBg} rounded-full flex items-center justify-center mb-6 ring-1 ring-border/10`}
+            >
               <IconComponent className={`h-10 w-10 ${colors.icon}`} />
             </div>
           </div>
 
           <div className="max-w-md space-y-3 mb-8">
-            <h3 className="text-h3 font-semibold text-text">
-              {finalTitle}
-            </h3>
+            <h3 className="text-h3 font-semibold text-text">{finalTitle}</h3>
             <p className="text-body-sm text-text-muted leading-relaxed">
               {finalDescription}
             </p>
@@ -180,7 +182,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
                   {secondaryAction.label}
                 </Button>
               )}
-              
+
               {action && (
                 <Button
                   onClick={action.onClick}
@@ -190,7 +192,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
                   {action.label}
                 </Button>
               )}
-              
+
               {!action && retryable && (
                 <Button
                   onClick={() => window.location.reload()}
@@ -207,7 +209,9 @@ const ErrorState: React.FC<ErrorStateProps> = ({
 
       {/* Error Details */}
       {showDetails && errorMessage && (
-        <Alert variant={config.severity === 'warning' ? 'default' : 'destructive'}>
+        <Alert
+          variant={config.severity === "warning" ? "default" : "destructive"}
+        >
           <Bug className="h-4 w-4" />
           <AlertTitle>Technical Details</AlertTitle>
           <AlertDescription className="text-code font-mono mt-2 text-xs bg-surface-2 p-3 rounded border">

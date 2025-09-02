@@ -38,12 +38,22 @@ export interface RevenueAnalytics {
 export interface BookingPatterns {
   peakHours: { hour: number; bookings: number; utilization: number }[];
   dayOfWeek: { day: string; bookings: number; revenue: number }[];
-  sourcePerformance: { source: string; bookings: number; revenue: number; conversionRate: number }[];
+  sourcePerformance: {
+    source: string;
+    bookings: number;
+    revenue: number;
+    conversionRate: number;
+  }[];
   seasonalTrends: { period: string; bookings: number; revenue: number }[];
 }
 
 export interface OperationalMetrics {
-  tableUtilization: { tableId: string; tableName: string; utilizationRate: number; revenue: number }[];
+  tableUtilization: {
+    tableId: string;
+    tableName: string;
+    utilizationRate: number;
+    revenue: number;
+  }[];
   serviceTimes: {
     averageSeatingTime: number;
     averageTurnoverTime: number;
@@ -64,8 +74,16 @@ export interface OperationalMetrics {
 }
 
 export interface PredictiveAnalytics {
-  demandForecast: { date: string; predictedBookings: number; confidence: number }[];
-  revenueProjection: { period: string; projectedRevenue: number; actualRevenue?: number }[];
+  demandForecast: {
+    date: string;
+    predictedBookings: number;
+    confidence: number;
+  }[];
+  revenueProjection: {
+    period: string;
+    projectedRevenue: number;
+    actualRevenue?: number;
+  }[];
   capacityOptimization: { recommendations: string[]; potentialUplift: number };
 }
 

@@ -1,18 +1,18 @@
-import Bull from 'bull';
-import { createClient, RedisClientType } from 'redis';
-import { v4 as uuidv4 } from 'uuid';
-import { config } from '../config';
-import { logger } from '../utils/logger';
-import { 
-  BaseJob, 
-  JobStatus, 
-  JobPriority, 
-  CreateJobRequest, 
+import Bull from "bull";
+import { createClient, RedisClientType } from "redis";
+import { v4 as uuidv4 } from "uuid";
+import { config } from "../config";
+import { logger } from "../utils/logger";
+import {
+  BaseJob,
+  JobStatus,
+  JobPriority,
+  CreateJobRequest,
   JobFilters,
   JOB_SCHEMAS,
   JobType,
-  JobPayload
-} from '../types/jobs';
+  JobPayload,
+} from "../types/jobs";
 
 // Bull queue instance
 let jobQueue: Bull.Queue;
@@ -22,68 +22,68 @@ let redis: RedisClientType;
 export async function initializeJobService(): Promise<void> {
   try {
     // Skip Redis entirely for development - will be re-enabled for production
-    logger.warn('🔄 Redis disabled for development - job service disabled');
+    logger.warn("🔄 Redis disabled for development - job service disabled");
     return;
-    
+
     // Skip Redis entirely if URL is not provided or empty
-    if (!config.REDIS_URL || config.REDIS_URL.trim() === '') {
-      logger.warn('🔄 No REDIS_URL provided - job service disabled');
+    if (!config.REDIS_URL || config.REDIS_URL.trim() === "") {
+      logger.warn("🔄 No REDIS_URL provided - job service disabled");
       return;
     }
 
     // Initialize Redis client
     redis = createClient({
-      url: config.REDIS_URL
+      url: config.REDIS_URL,
     });
 
-    redis.on('error', (err) => {
+    redis.on("error", (err) => {
       // Only log in production
-      if (config.NODE_ENV === 'production') {
-        logger.error('Jobs Redis client error:', err);
+      if (config.NODE_ENV === "production") {
+        logger.error("Jobs Redis client error:", err);
       }
     });
 
     await redis.connect();
 
     // Initialize Bull queue
-    jobQueue = new Bull('job-processing', config.REDIS_URL, {
+    jobQueue = new Bull("job-processing", config.REDIS_URL, {
       defaultJobOptions: {
         removeOnComplete: 100,
         removeOnFail: 50,
         attempts: config.JOB_RETRY_ATTEMPTS,
         backoff: {
-          type: 'exponential',
+          type: "exponential",
           delay: 2000,
         },
       },
     });
 
     // Add queue event listeners
-    jobQueue.on('completed', (job) => {
-      logger.info('Job completed', {
+    jobQueue.on("completed", (job) => {
+      logger.info("Job completed", {
         jobId: job.id,
         type: job.data.type,
-        duration: job.processedOn ? Date.now() - job.processedOn : 0
+        duration: job.processedOn ? Date.now() - job.processedOn : 0,
       });
     });
 
-    jobQueue.on('failed', (job, err) => {
-      logger.error('Job failed', {
+    jobQueue.on("failed", (job, err) => {
+      logger.error("Job failed", {
         jobId: job.id,
         type: job.data?.type,
         error: err.message,
-        attempts: job.attemptsMade
+        attempts: job.attemptsMade,
       });
     });
 
-    logger.info('Job service initialized successfully');
+    logger.info("Job service initialized successfully");
   } catch (error) {
     // Only throw error in production
-    if (config.NODE_ENV === 'production') {
-      logger.error('Failed to initialize job service:', error);
+    if (config.NODE_ENV === "production") {
+      logger.error("Failed to initialize job service:", error);
       throw error;
     } else {
-      logger.warn('🔄 Job service disabled - Redis not available');
+      logger.warn("🔄 Job service disabled - Redis not available");
     }
   }
 }
@@ -100,7 +100,9 @@ function validateJobPayload(type: JobType, payload: any): void {
   try {
     schema.parse(payload);
   } catch (error) {
-    throw new Error(`Invalid payload for job type ${type}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Invalid payload for job type ${type}: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   }
 }
 
@@ -110,17 +112,19 @@ function validateJobPayload(type: JobType, payload: any): void {
 export async function createJob(
   tenantId: string,
   requestId: string,
-  jobRequest: CreateJobRequest
+  jobRequest: CreateJobRequest,
 ): Promise<BaseJob> {
   const jobLogger = logger.child({ requestId, tenantId });
-  
+
   try {
     // Validate payload schema
     validateJobPayload(jobRequest.type, jobRequest.payload);
 
     const jobId = uuidv4();
     const now = new Date();
-    const scheduledFor = jobRequest.scheduledFor ? new Date(jobRequest.scheduledFor) : now;
+    const scheduledFor = jobRequest.scheduledFor
+      ? new Date(jobRequest.scheduledFor)
+      : now;
 
     const job: BaseJob = {
       id: jobId,
@@ -134,39 +138,40 @@ export async function createJob(
       maxRetries: jobRequest.maxRetries || config.JOB_RETRY_ATTEMPTS,
       createdAt: now,
       updatedAt: now,
-      scheduledFor: scheduledFor > now ? scheduledFor : undefined
+      scheduledFor: scheduledFor > now ? scheduledFor : undefined,
     };
 
     // Add to Bull queue
-    const delay = scheduledFor > now ? scheduledFor.getTime() - now.getTime() : 0;
+    const delay =
+      scheduledFor > now ? scheduledFor.getTime() - now.getTime() : 0;
     const bullJob = await jobQueue.add(
       jobRequest.type,
       {
         ...job,
         tenantId,
-        requestId
+        requestId,
       },
       {
         priority: job.priority,
         delay,
         jobId,
-        attempts: job.maxRetries
-      }
+        attempts: job.maxRetries,
+      },
     );
 
-    jobLogger.info('Job created and enqueued', {
+    jobLogger.info("Job created and enqueued", {
       jobId,
       type: jobRequest.type,
       priority: job.priority,
       scheduledFor: scheduledFor.toISOString(),
-      delay
+      delay,
     });
 
     return job;
   } catch (error) {
-    jobLogger.error('Failed to create job', {
+    jobLogger.error("Failed to create job", {
       type: jobRequest.type,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     });
     throw error;
   }
@@ -184,7 +189,10 @@ export async function getJob(jobId: string): Promise<BaseJob | null> {
 
     return convertBullJobToBaseJob(bullJob);
   } catch (error) {
-    logger.error('Failed to get job', { jobId, error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("Failed to get job", {
+      jobId,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     throw error;
   }
 }
@@ -192,9 +200,12 @@ export async function getJob(jobId: string): Promise<BaseJob | null> {
 /**
  * Cancel a job
  */
-export async function cancelJob(jobId: string, requestId?: string): Promise<boolean> {
+export async function cancelJob(
+  jobId: string,
+  requestId?: string,
+): Promise<boolean> {
   const jobLogger = logger.child({ requestId, jobId });
-  
+
   try {
     const bullJob = await jobQueue.getJob(jobId);
     if (!bullJob) {
@@ -203,17 +214,19 @@ export async function cancelJob(jobId: string, requestId?: string): Promise<bool
 
     // Only cancel if job is not already completed or failed
     const state = await bullJob.getState();
-    if (['completed', 'failed'].includes(state)) {
-      jobLogger.warn('Cannot cancel job in final state', { state });
+    if (["completed", "failed"].includes(state)) {
+      jobLogger.warn("Cannot cancel job in final state", { state });
       return false;
     }
 
     await bullJob.remove();
-    jobLogger.info('Job cancelled', { state });
-    
+    jobLogger.info("Job cancelled", { state });
+
     return true;
   } catch (error) {
-    jobLogger.error('Failed to cancel job', { error: error instanceof Error ? error.message : 'Unknown error' });
+    jobLogger.error("Failed to cancel job", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     throw error;
   }
 }
@@ -235,10 +248,10 @@ export async function queryJobs(filters: JobFilters): Promise<{
     if (!filters.status || filters.status.length === 0) {
       // Get all jobs if no status filter
       const [waiting, active, completed, failed] = await Promise.all([
-        jobQueue.getJobs(['waiting'], offset, offset + limit - 1),
-        jobQueue.getJobs(['active'], 0, limit - 1),
-        jobQueue.getJobs(['completed'], 0, limit - 1),
-        jobQueue.getJobs(['failed'], 0, limit - 1)
+        jobQueue.getJobs(["waiting"], offset, offset + limit - 1),
+        jobQueue.getJobs(["active"], 0, limit - 1),
+        jobQueue.getJobs(["completed"], 0, limit - 1),
+        jobQueue.getJobs(["failed"], 0, limit - 1),
       ]);
       bullJobs = [...waiting, ...active, ...completed, ...failed];
     } else {
@@ -247,22 +260,26 @@ export async function queryJobs(filters: JobFilters): Promise<{
       for (const status of filters.status) {
         switch (status) {
           case JobStatus.PENDING:
-            bullStatuses.push('waiting');
+            bullStatuses.push("waiting");
             break;
           case JobStatus.PROCESSING:
-            bullStatuses.push('active');
+            bullStatuses.push("active");
             break;
           case JobStatus.COMPLETED:
-            bullStatuses.push('completed');
+            bullStatuses.push("completed");
             break;
           case JobStatus.FAILED:
-            bullStatuses.push('failed');
+            bullStatuses.push("failed");
             break;
         }
       }
-      
+
       if (bullStatuses.length > 0) {
-        bullJobs = await jobQueue.getJobs(bullStatuses, offset, offset + limit - 1);
+        bullJobs = await jobQueue.getJobs(
+          bullStatuses,
+          offset,
+          offset + limit - 1,
+        );
       }
     }
 
@@ -271,29 +288,32 @@ export async function queryJobs(filters: JobFilters): Promise<{
 
     // Apply additional filters
     if (filters.tenantId) {
-      jobs = jobs.filter(job => job.tenantId === filters.tenantId);
+      jobs = jobs.filter((job) => job.tenantId === filters.tenantId);
     }
 
     if (filters.type && filters.type.length > 0) {
-      jobs = jobs.filter(job => filters.type!.includes(job.type as JobType));
+      jobs = jobs.filter((job) => filters.type!.includes(job.type as JobType));
     }
 
     if (filters.fromDate) {
       const fromDate = new Date(filters.fromDate);
-      jobs = jobs.filter(job => job.createdAt >= fromDate);
+      jobs = jobs.filter((job) => job.createdAt >= fromDate);
     }
 
     if (filters.toDate) {
       const toDate = new Date(filters.toDate);
-      jobs = jobs.filter(job => job.createdAt <= toDate);
+      jobs = jobs.filter((job) => job.createdAt <= toDate);
     }
 
     return {
       jobs: jobs.slice(0, limit),
-      total: jobs.length
+      total: jobs.length,
     };
   } catch (error) {
-    logger.error('Failed to query jobs', { error: error instanceof Error ? error.message : 'Unknown error', filters });
+    logger.error("Failed to query jobs", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      filters,
+    });
     throw error;
   }
 }
@@ -313,40 +333,49 @@ export async function getJobStats(): Promise<{
       jobQueue.getActive(),
       jobQueue.getCompleted(),
       jobQueue.getFailed(),
-      jobQueue.getDelayed()
+      jobQueue.getDelayed(),
     ]);
 
-    const allJobs = [...waiting, ...active, ...completed, ...failed, ...delayed];
-    
+    const allJobs = [
+      ...waiting,
+      ...active,
+      ...completed,
+      ...failed,
+      ...delayed,
+    ];
+
     const byStatus: Record<JobStatus, number> = {
       [JobStatus.PENDING]: waiting.length + delayed.length,
       [JobStatus.PROCESSING]: active.length,
       [JobStatus.COMPLETED]: completed.length,
       [JobStatus.FAILED]: failed.length,
       [JobStatus.CANCELLED]: 0,
-      [JobStatus.RETRYING]: 0
+      [JobStatus.RETRYING]: 0,
     };
 
     const byType: Record<string, number> = {};
     for (const job of allJobs) {
-      const type = job.data?.type || 'unknown';
+      const type = job.data?.type || "unknown";
       byType[type] = (byType[type] || 0) + 1;
     }
 
     // Count recent failures (last hour)
     const oneHourAgo = Date.now() - 60 * 60 * 1000;
-    const recentFailures = failed.filter(job => 
-      job.failedReason && job.finishedOn && job.finishedOn > oneHourAgo
+    const recentFailures = failed.filter(
+      (job) =>
+        job.failedReason && job.finishedOn && job.finishedOn > oneHourAgo,
     ).length;
 
     return {
       total: allJobs.length,
       byStatus,
       byType,
-      recentFailures
+      recentFailures,
     };
   } catch (error) {
-    logger.error('Failed to get job stats', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error("Failed to get job stats", {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     throw error;
   }
 }
@@ -356,19 +385,28 @@ export async function getJobStats(): Promise<{
  */
 function convertBullJobToBaseJob(bullJob: Bull.Job): BaseJob {
   const data = bullJob.data;
-  
+
   let status: JobStatus = JobStatus.PENDING;
-  switch (bullJob.opts.delay && Date.now() < (bullJob.processedOn || 0) + bullJob.opts.delay ? 'delayed' : bullJob.finishedOn ? (bullJob.failedReason ? 'failed' : 'completed') : 'active') {
-    case 'completed':
+  switch (
+    bullJob.opts.delay &&
+    Date.now() < (bullJob.processedOn || 0) + bullJob.opts.delay
+      ? "delayed"
+      : bullJob.finishedOn
+        ? bullJob.failedReason
+          ? "failed"
+          : "completed"
+        : "active"
+  ) {
+    case "completed":
       status = JobStatus.COMPLETED;
       break;
-    case 'failed':
+    case "failed":
       status = JobStatus.FAILED;
       break;
-    case 'active':
+    case "active":
       status = JobStatus.PROCESSING;
       break;
-    case 'delayed':
+    case "delayed":
       status = JobStatus.PENDING;
       break;
     default:
@@ -376,7 +414,7 @@ function convertBullJobToBaseJob(bullJob: Bull.Job): BaseJob {
   }
 
   return {
-    id: bullJob.id?.toString() || '',
+    id: bullJob.id?.toString() || "",
     type: data.type,
     tenantId: data.tenantId,
     requestId: data.requestId,
@@ -390,9 +428,12 @@ function convertBullJobToBaseJob(bullJob: Bull.Job): BaseJob {
     updatedAt: new Date(bullJob.processedOn || bullJob.timestamp),
     scheduledFor: data.scheduledFor ? new Date(data.scheduledFor) : undefined,
     completedAt: bullJob.finishedOn ? new Date(bullJob.finishedOn) : undefined,
-    failedAt: bullJob.failedReason && bullJob.finishedOn ? new Date(bullJob.finishedOn) : undefined,
+    failedAt:
+      bullJob.failedReason && bullJob.finishedOn
+        ? new Date(bullJob.finishedOn)
+        : undefined,
     error: bullJob.failedReason,
-    result: bullJob.returnvalue
+    result: bullJob.returnvalue,
   };
 }
 
@@ -418,7 +459,7 @@ export interface JobFilter {
   limit?: number;
   offset?: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }
 
 class JobsService {
@@ -435,12 +476,12 @@ class JobsService {
       fromDate: filter.startDate,
       toDate: filter.endDate,
       limit: filter.limit,
-      offset: filter.offset
+      offset: filter.offset,
     };
 
     const result = await queryJobs(filters);
     return {
-      jobs: result.jobs.map(job => ({
+      jobs: result.jobs.map((job) => ({
         id: job.id,
         job_name: job.type,
         job_type: job.type,
@@ -454,9 +495,9 @@ class JobsService {
         completed_at: job.completedAt,
         failed_at: job.failedAt,
         error_message: job.error,
-        result: job.result
+        result: job.result,
       })),
-      total: result.total
+      total: result.total,
     };
   }
 
@@ -478,23 +519,21 @@ class JobsService {
       completed_at: job.completedAt,
       failed_at: job.failedAt,
       error_message: job.error,
-      result: job.result
+      result: job.result,
     };
   }
 
   async createJob(jobData: JobData) {
     // Default tenant and request for legacy support
-    const job = await createJob(
-      'default',
-      uuidv4(),
-      {
-        type: jobData.type as JobType,
-        payload: jobData.data as any || {},
-        priority: jobData.priority as JobPriority,
-        scheduledFor: jobData.delay ? new Date(Date.now() + jobData.delay * 1000).toISOString() : undefined,
-        maxRetries: jobData.attempts
-      }
-    );
+    const job = await createJob("default", uuidv4(), {
+      type: jobData.type as JobType,
+      payload: (jobData.data as any) || {},
+      priority: jobData.priority as JobPriority,
+      scheduledFor: jobData.delay
+        ? new Date(Date.now() + jobData.delay * 1000).toISOString()
+        : undefined,
+      maxRetries: jobData.attempts,
+    });
 
     return {
       id: job.id,
@@ -504,7 +543,7 @@ class JobsService {
       priority: job.priority,
       max_retries: job.maxRetries,
       scheduled_at: job.scheduledFor,
-      status: job.status
+      status: job.status,
     };
   }
 
@@ -516,23 +555,19 @@ class JobsService {
     if (job.status !== JobStatus.FAILED) return null;
 
     // Re-create the job
-    const newJob = await createJob(
-      job.tenantId,
-      uuidv4(),
-      {
-        type: job.type as JobType,
-        payload: job.payload,
-        priority: job.priority,
-        maxRetries: job.maxRetries
-      }
-    );
+    const newJob = await createJob(job.tenantId, uuidv4(), {
+      type: job.type as JobType,
+      payload: job.payload,
+      priority: job.priority,
+      maxRetries: job.maxRetries,
+    });
 
     return {
       id: newJob.id,
       job_name: newJob.type,
       job_type: newJob.type,
       status: newJob.status,
-      priority: newJob.priority
+      priority: newJob.priority,
     };
   }
 
@@ -549,13 +584,22 @@ class JobsService {
       completed: stats.byStatus[JobStatus.COMPLETED] || 0,
       failed: stats.byStatus[JobStatus.FAILED] || 0,
       cancelled: stats.byStatus[JobStatus.CANCELLED] || 0,
-      scheduled: 0
+      scheduled: 0,
     };
   }
 
-  async updateJobStatus(jobId: string, status: string, error?: string, jobResult?: any) {
+  async updateJobStatus(
+    jobId: string,
+    status: string,
+    error?: string,
+    jobResult?: any,
+  ) {
     // This is handled automatically by Bull
-    logger.info('Job status update requested', { jobId, status, hasError: !!error });
+    logger.info("Job status update requested", {
+      jobId,
+      status,
+      hasError: !!error,
+    });
     return null;
   }
 

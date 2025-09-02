@@ -1,20 +1,31 @@
-import React from 'react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { MapPin } from 'lucide-react'
-import type { ProvisioningData } from '../ProvisioningWizard'
+import React from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { MapPin } from "lucide-react";
+import type { ProvisioningData } from "../ProvisioningWizard";
 
 interface LocationStepProps {
-  data: ProvisioningData
-  updateData: (updates: Partial<ProvisioningData>) => void
+  data: ProvisioningData;
+  updateData: (updates: Partial<ProvisioningData>) => void;
 }
 
 export function LocationStep({ data, updateData }: LocationStepProps) {
   return (
     <div className="space-y-6">
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -34,12 +45,16 @@ export function LocationStep({ data, updateData }: LocationStepProps) {
               id="street"
               placeholder="123 Main Street"
               value={data.address.street}
-              onChange={(e) => updateData({ 
-                address: { ...data.address, street: e.target.value }
-              })}
+              onChange={(e) =>
+                updateData({
+                  address: { ...data.address, street: e.target.value },
+                })
+              }
               className="h-11"
             />
-            <p className="text-xs text-muted-foreground">Full street address including building number</p>
+            <p className="text-xs text-muted-foreground">
+              Full street address including building number
+            </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -51,9 +66,11 @@ export function LocationStep({ data, updateData }: LocationStepProps) {
                 id="city"
                 placeholder="New York"
                 value={data.address.city}
-                onChange={(e) => updateData({ 
-                  address: { ...data.address, city: e.target.value }
-                })}
+                onChange={(e) =>
+                  updateData({
+                    address: { ...data.address, city: e.target.value },
+                  })
+                }
                 className="h-11"
               />
             </div>
@@ -66,9 +83,11 @@ export function LocationStep({ data, updateData }: LocationStepProps) {
                 id="state"
                 placeholder="NY"
                 value={data.address.state}
-                onChange={(e) => updateData({ 
-                  address: { ...data.address, state: e.target.value }
-                })}
+                onChange={(e) =>
+                  updateData({
+                    address: { ...data.address, state: e.target.value },
+                  })
+                }
                 className="h-11"
               />
             </div>
@@ -81,9 +100,11 @@ export function LocationStep({ data, updateData }: LocationStepProps) {
                 id="zipCode"
                 placeholder="10001"
                 value={data.address.zipCode}
-                onChange={(e) => updateData({ 
-                  address: { ...data.address, zipCode: e.target.value }
-                })}
+                onChange={(e) =>
+                  updateData({
+                    address: { ...data.address, zipCode: e.target.value },
+                  })
+                }
                 className="h-11"
               />
             </div>
@@ -94,9 +115,11 @@ export function LocationStep({ data, updateData }: LocationStepProps) {
               </Label>
               <Select
                 value={data.address.country}
-                onValueChange={(value) => updateData({ 
-                  address: { ...data.address, country: value }
-                })}
+                onValueChange={(value) =>
+                  updateData({
+                    address: { ...data.address, country: value },
+                  })
+                }
               >
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder="Country" />
@@ -113,5 +136,5 @@ export function LocationStep({ data, updateData }: LocationStepProps) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

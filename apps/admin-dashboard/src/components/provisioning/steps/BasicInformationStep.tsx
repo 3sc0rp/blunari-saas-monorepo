@@ -1,41 +1,55 @@
-import React, { useEffect, useState } from 'react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Textarea } from '@/components/ui/textarea'
-import { Store } from 'lucide-react'
-import type { ProvisioningData } from '../ProvisioningWizard'
-import { supabase } from '@/integrations/supabase/client'
+import React, { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Store } from "lucide-react";
+import type { ProvisioningData } from "../ProvisioningWizard";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CuisineType {
-  id: string
-  name: string
-  icon: string
+  id: string;
+  name: string;
+  icon: string;
 }
 
 interface BasicInformationStepProps {
-  data: ProvisioningData
-  updateData: (updates: Partial<ProvisioningData>) => void
+  data: ProvisioningData;
+  updateData: (updates: Partial<ProvisioningData>) => void;
 }
 
-export function BasicInformationStep({ data, updateData }: BasicInformationStepProps) {
-  const [cuisineTypes, setCuisineTypes] = useState<CuisineType[]>([])
+export function BasicInformationStep({
+  data,
+  updateData,
+}: BasicInformationStepProps) {
+  const [cuisineTypes, setCuisineTypes] = useState<CuisineType[]>([]);
 
   useEffect(() => {
     const fetchCuisineTypes = async () => {
       const { data: cuisines } = await supabase
-        .from('cuisine_types')
-        .select('*')
-        .order('name')
-      setCuisineTypes(cuisines || [])
-    }
-    fetchCuisineTypes()
-  }, [])
+        .from("cuisine_types")
+        .select("*")
+        .order("name");
+      setCuisineTypes(cuisines || []);
+    };
+    fetchCuisineTypes();
+  }, []);
 
   return (
     <div className="space-y-6">
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -59,7 +73,9 @@ export function BasicInformationStep({ data, updateData }: BasicInformationStepP
                 onChange={(e) => updateData({ restaurantName: e.target.value })}
                 className="h-11"
               />
-              <p className="text-xs text-muted-foreground">This will be your business display name</p>
+              <p className="text-xs text-muted-foreground">
+                This will be your business display name
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -98,7 +114,9 @@ export function BasicInformationStep({ data, updateData }: BasicInformationStepP
               onChange={(e) => updateData({ description: e.target.value })}
               className="min-h-[80px] resize-none"
             />
-            <p className="text-xs text-muted-foreground">Optional: Help customers understand your unique offering</p>
+            <p className="text-xs text-muted-foreground">
+              Optional: Help customers understand your unique offering
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -106,13 +124,17 @@ export function BasicInformationStep({ data, updateData }: BasicInformationStepP
       {data.slug && (
         <div className="bg-muted/50 rounded-lg p-4">
           <p className="text-sm text-muted-foreground">
-            <strong>Your restaurant slug:</strong> <code className="bg-background px-2 py-1 rounded text-foreground">{data.slug}</code>
+            <strong>Your restaurant slug:</strong>{" "}
+            <code className="bg-background px-2 py-1 rounded text-foreground">
+              {data.slug}
+            </code>
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            This unique identifier will be used for your restaurant's booking URLs and API endpoints
+            This unique identifier will be used for your restaurant's booking
+            URLs and API endpoints
           </p>
         </div>
       )}
     </div>
-  )
+  );
 }

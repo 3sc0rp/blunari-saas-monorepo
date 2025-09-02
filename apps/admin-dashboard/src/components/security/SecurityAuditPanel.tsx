@@ -1,12 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import type { Json } from '@/integrations/supabase/types';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Shield,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import type { Json } from "@/integrations/supabase/types";
 
 interface SecurityEvent {
   id: string;
@@ -26,14 +38,16 @@ interface SecurityEvent {
 interface SecurityVulnerability {
   id: string;
   type: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  severity: "critical" | "high" | "medium" | "low";
   description: string;
-  status: 'open' | 'fixed' | 'ignored';
+  status: "open" | "fixed" | "ignored";
 }
 
 export const SecurityAuditPanel: React.FC = () => {
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
-  const [vulnerabilities, setVulnerabilities] = useState<SecurityVulnerability[]>([]);
+  const [vulnerabilities, setVulnerabilities] = useState<
+    SecurityVulnerability[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -44,12 +58,12 @@ export const SecurityAuditPanel: React.FC = () => {
   const fetchSecurityData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch recent security events
       const { data: events, error: eventsError } = await supabase
-        .from('security_events')
-        .select('*')
-        .order('created_at', { ascending: false })
+        .from("security_events")
+        .select("*")
+        .order("created_at", { ascending: false })
         .limit(50);
 
       if (eventsError) throw eventsError;
@@ -58,31 +72,30 @@ export const SecurityAuditPanel: React.FC = () => {
       // Mock vulnerabilities data (in real implementation, this would come from security scanner)
       const mockVulnerabilities: SecurityVulnerability[] = [
         {
-          id: '1',
-          type: 'Public Data Exposure',
-          severity: 'high',
-          description: 'Some tables allow public read access to sensitive data',
-          status: 'fixed'
+          id: "1",
+          type: "Public Data Exposure",
+          severity: "high",
+          description: "Some tables allow public read access to sensitive data",
+          status: "fixed",
         },
         {
-          id: '2',
-          type: 'Weak Encryption',
-          severity: 'medium',
-          description: 'Client-side encryption using basic base64 encoding',
-          status: 'fixed'
+          id: "2",
+          type: "Weak Encryption",
+          severity: "medium",
+          description: "Client-side encryption using basic base64 encoding",
+          status: "fixed",
         },
         {
-          id: '3',
-          type: 'XSS Prevention',
-          severity: 'medium',
-          description: 'HTML content rendered without proper sanitization',
-          status: 'fixed'
-        }
+          id: "3",
+          type: "XSS Prevention",
+          severity: "medium",
+          description: "HTML content rendered without proper sanitization",
+          status: "fixed",
+        },
       ];
       setVulnerabilities(mockVulnerabilities);
-
     } catch (error) {
-      console.error('Error fetching security data:', error);
+      console.error("Error fetching security data:", error);
       toast({
         title: "Error",
         description: "Failed to fetch security data",
@@ -95,26 +108,26 @@ export const SecurityAuditPanel: React.FC = () => {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical':
-        return 'destructive';
-      case 'high':
-        return 'destructive';
-      case 'medium':
-        return 'default';
-      case 'low':
-        return 'secondary';
+      case "critical":
+        return "destructive";
+      case "high":
+        return "destructive";
+      case "medium":
+        return "default";
+      case "low":
+        return "secondary";
       default:
-        return 'secondary';
+        return "secondary";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'fixed':
+      case "fixed":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'open':
+      case "open":
         return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'ignored':
+      case "ignored":
         return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
       default:
         return <AlertTriangle className="h-4 w-4 text-gray-500" />;
@@ -146,8 +159,9 @@ export const SecurityAuditPanel: React.FC = () => {
       <Alert>
         <Shield className="h-4 w-4" />
         <AlertDescription>
-          Security fixes have been implemented to address critical vulnerabilities including public data exposure, 
-          weak encryption, and XSS prevention. All high-priority issues have been resolved.
+          Security fixes have been implemented to address critical
+          vulnerabilities including public data exposure, weak encryption, and
+          XSS prevention. All high-priority issues have been resolved.
         </AlertDescription>
       </Alert>
 
@@ -162,7 +176,10 @@ export const SecurityAuditPanel: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               {vulnerabilities.map((vuln) => (
-                <div key={vuln.id} className="flex items-start justify-between p-3 border rounded-lg">
+                <div
+                  key={vuln.id}
+                  className="flex items-start justify-between p-3 border rounded-lg"
+                >
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
                       {getStatusIcon(vuln.status)}
@@ -196,10 +213,15 @@ export const SecurityAuditPanel: React.FC = () => {
           <CardContent>
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {securityEvents.map((event) => (
-                <div key={event.id} className="flex items-start justify-between p-2 border-b last:border-b-0">
+                <div
+                  key={event.id}
+                  className="flex items-start justify-between p-2 border-b last:border-b-0"
+                >
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">{event.event_type}</span>
+                      <span className="text-sm font-medium">
+                        {event.event_type}
+                      </span>
                       <Badge variant={getSeverityColor(event.severity)}>
                         {event.severity}
                       </Badge>

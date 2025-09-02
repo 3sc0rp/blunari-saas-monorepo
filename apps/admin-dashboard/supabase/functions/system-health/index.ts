@@ -1,171 +1,179 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
 
-    console.log('Running system health check...')
+    console.log("Running system health check...");
 
-    const healthChecks = []
+    const healthChecks = [];
 
     // Database health check
-    const dbStart = Date.now()
+    const dbStart = Date.now();
     try {
       const { data, error } = await supabaseClient
-        .from('tenants')
-        .select('count(*)')
-        .single()
+        .from("tenants")
+        .select("count(*)")
+        .single();
 
       healthChecks.push({
-        service: 'Database',
-        status: error ? 'unhealthy' : 'healthy',
+        service: "Database",
+        status: error ? "unhealthy" : "healthy",
         response_time: Date.now() - dbStart,
-        details: error ? { error: error.message } : { tenant_count: data?.count || 0 }
-      })
+        details: error
+          ? { error: error.message }
+          : { tenant_count: data?.count || 0 },
+      });
     } catch (error) {
       healthChecks.push({
-        service: 'Database',
-        status: 'unhealthy',
+        service: "Database",
+        status: "unhealthy",
         response_time: Date.now() - dbStart,
-        details: { error: error.message }
-      })
+        details: { error: error.message },
+      });
     }
 
     // Auth service health check
-    const authStart = Date.now()
+    const authStart = Date.now();
     try {
-      const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/health`, {
-        headers: {
-          'apikey': Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-        }
-      })
+      const response = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/auth/v1/health`,
+        {
+          headers: {
+            apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          },
+        },
+      );
 
       healthChecks.push({
-        service: 'Authentication',
-        status: response.ok ? 'healthy' : 'degraded',
+        service: "Authentication",
+        status: response.ok ? "healthy" : "degraded",
         response_time: Date.now() - authStart,
-        details: { status_code: response.status }
-      })
+        details: { status_code: response.status },
+      });
     } catch (error) {
       healthChecks.push({
-        service: 'Authentication',
-        status: 'unhealthy',
+        service: "Authentication",
+        status: "unhealthy",
         response_time: Date.now() - authStart,
-        details: { error: error.message }
-      })
+        details: { error: error.message },
+      });
     }
 
     // Storage service health check
-    const storageStart = Date.now()
+    const storageStart = Date.now();
     try {
-      const { data, error } = await supabaseClient.storage.listBuckets()
+      const { data, error } = await supabaseClient.storage.listBuckets();
 
       healthChecks.push({
-        service: 'Storage',
-        status: error ? 'degraded' : 'healthy',
+        service: "Storage",
+        status: error ? "degraded" : "healthy",
         response_time: Date.now() - storageStart,
-        details: error ? { error: error.message } : { buckets_count: data?.length || 0 }
-      })
+        details: error
+          ? { error: error.message }
+          : { buckets_count: data?.length || 0 },
+      });
     } catch (error) {
       healthChecks.push({
-        service: 'Storage',
-        status: 'unhealthy',
+        service: "Storage",
+        status: "unhealthy",
         response_time: Date.now() - storageStart,
-        details: { error: error.message }
-      })
+        details: { error: error.message },
+      });
     }
 
     // Edge Functions health check
-    const functionsStart = Date.now()
+    const functionsStart = Date.now();
     try {
-      const { data, error } = await supabaseClient.functions.invoke('health-check', {
-        body: { check: 'ping' }
-      })
+      const { data, error } = await supabaseClient.functions.invoke(
+        "health-check",
+        {
+          body: { check: "ping" },
+        },
+      );
 
       healthChecks.push({
-        service: 'Edge Functions',
-        status: error ? 'degraded' : 'healthy',
+        service: "Edge Functions",
+        status: error ? "degraded" : "healthy",
         response_time: Date.now() - functionsStart,
-        details: error ? { error: error.message } : data
-      })
+        details: error ? { error: error.message } : data,
+      });
     } catch (error) {
       healthChecks.push({
-        service: 'Edge Functions',
-        status: 'degraded',
+        service: "Edge Functions",
+        status: "degraded",
         response_time: Date.now() - functionsStart,
-        details: { error: error.message }
-      })
+        details: { error: error.message },
+      });
     }
 
     // Record system metrics
     for (const check of healthChecks) {
-      await supabaseClient
-        .from('system_health_metrics')
-        .insert({
-          metric_name: `${check.service.toLowerCase()}_response_time`,
-          metric_value: check.response_time,
-          metric_unit: 'ms',
-          service_name: check.service.toLowerCase(),
-          severity: check.status === 'healthy' ? 'info' : 'warning',
-          metadata: check.details
-        })
+      await supabaseClient.from("system_health_metrics").insert({
+        metric_name: `${check.service.toLowerCase()}_response_time`,
+        metric_value: check.response_time,
+        metric_unit: "ms",
+        service_name: check.service.toLowerCase(),
+        severity: check.status === "healthy" ? "info" : "warning",
+        metadata: check.details,
+      });
 
-      await supabaseClient
-        .from('system_health_metrics')
-        .insert({
-          metric_name: `${check.service.toLowerCase()}_status`,
-          metric_value: check.status === 'healthy' ? 1 : 0,
-          metric_unit: 'boolean',
-          service_name: check.service.toLowerCase(),
-          severity: check.status === 'healthy' ? 'info' : 'warning',
-          metadata: check.details
-        })
+      await supabaseClient.from("system_health_metrics").insert({
+        metric_name: `${check.service.toLowerCase()}_status`,
+        metric_value: check.status === "healthy" ? 1 : 0,
+        metric_unit: "boolean",
+        service_name: check.service.toLowerCase(),
+        severity: check.status === "healthy" ? "info" : "warning",
+        metadata: check.details,
+      });
     }
 
-    const overallStatus = healthChecks.every(check => check.status === 'healthy') 
-      ? 'healthy' 
-      : healthChecks.some(check => check.status === 'unhealthy') 
-        ? 'unhealthy' 
-        : 'degraded'
+    const overallStatus = healthChecks.every(
+      (check) => check.status === "healthy",
+    )
+      ? "healthy"
+      : healthChecks.some((check) => check.status === "unhealthy")
+        ? "unhealthy"
+        : "degraded";
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         overall_status: overallStatus,
         timestamp: new Date().toISOString(),
-        services: healthChecks
+        services: healthChecks,
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
-
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   } catch (error) {
-    console.error('System health check error:', error)
+    console.error("System health check error:", error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
+      JSON.stringify({
+        success: false,
         error: error.message,
-        overall_status: 'unhealthy'
+        overall_status: "unhealthy",
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
-})
+});

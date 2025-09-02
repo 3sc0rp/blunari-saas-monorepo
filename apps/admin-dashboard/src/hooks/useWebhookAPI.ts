@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface WebhookPayload {
   event_type: string;
   data: any;
   timestamp: string;
-  source: 'pos' | 'payment' | 'email';
+  source: "pos" | "payment" | "email";
 }
 
 export interface WebhookResponse {
@@ -19,14 +19,17 @@ export const useWebhookAPI = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const callWebhookAPI = async (endpoint: string, options: RequestInit = {}) => {
+  const callWebhookAPI = async (
+    endpoint: string,
+    options: RequestInit = {},
+  ) => {
     try {
       setLoading(true);
-      
-      const response = await supabase.functions.invoke('webhook-handler', {
+
+      const response = await supabase.functions.invoke("webhook-handler", {
         body: {
           endpoint,
-          method: options.method || 'POST',
+          method: options.method || "POST",
           body: options.body ? JSON.parse(options.body as string) : undefined,
         },
       });
@@ -37,10 +40,11 @@ export const useWebhookAPI = () => {
 
       return response.data;
     } catch (error) {
-      console.error('Webhook API Error:', error);
+      console.error("Webhook API Error:", error);
       toast({
         title: "Webhook Error",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
       throw error;
@@ -54,8 +58,8 @@ export const useWebhookAPI = () => {
     tenant_id: string;
     pos_data: any;
   }) => {
-    return callWebhookAPI('/webhooks/pos', {
-      method: 'POST',
+    return callWebhookAPI("/webhooks/pos", {
+      method: "POST",
       body: JSON.stringify(eventData),
     });
   };
@@ -67,8 +71,8 @@ export const useWebhookAPI = () => {
     status: string;
     tenant_id: string;
   }) => {
-    return callWebhookAPI('/webhooks/payment', {
-      method: 'POST',
+    return callWebhookAPI("/webhooks/payment", {
+      method: "POST",
       body: JSON.stringify(eventData),
     });
   };
@@ -80,21 +84,24 @@ export const useWebhookAPI = () => {
     recipient: string;
     tenant_id?: string;
   }) => {
-    return callWebhookAPI('/webhooks/email', {
-      method: 'POST',
+    return callWebhookAPI("/webhooks/email", {
+      method: "POST",
       body: JSON.stringify(eventData),
     });
   };
 
-  const testWebhook = async (webhookType: 'pos' | 'payment' | 'email', testData: any) => {
+  const testWebhook = async (
+    webhookType: "pos" | "payment" | "email",
+    testData: any,
+  ) => {
     const endpointMap = {
-      pos: '/webhooks/pos',
-      payment: '/webhooks/payment',
-      email: '/webhooks/email',
+      pos: "/webhooks/pos",
+      payment: "/webhooks/payment",
+      email: "/webhooks/email",
     };
 
     return callWebhookAPI(endpointMap[webhookType], {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({
         ...testData,
         test_mode: true,

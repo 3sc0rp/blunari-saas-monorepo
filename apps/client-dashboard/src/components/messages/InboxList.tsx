@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Conversation } from '@/types/messages';
-import { format, isToday, isYesterday } from 'date-fns';
-import { Search, Filter, MoreVertical } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Conversation } from "@/types/messages";
+import { format, isToday, isYesterday } from "date-fns";
+import { Search, Filter, MoreVertical } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 interface InboxListProps {
   conversations: Conversation[];
@@ -32,38 +32,46 @@ export const InboxList: React.FC<InboxListProps> = ({
   searchQuery,
   onSearchChange,
 }) => {
-  const [filterStatus, setFilterStatus] = useState<'all' | 'unread' | 'archived'>('all');
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "unread" | "archived"
+  >("all");
 
   const formatMessageTime = (timestamp: string) => {
     const date = new Date(timestamp);
     if (isToday(date)) {
-      return format(date, 'h:mm a');
+      return format(date, "h:mm a");
     } else if (isYesterday(date)) {
-      return 'Yesterday';
+      return "Yesterday";
     } else {
-      return format(date, 'MMM dd');
+      return format(date, "MMM dd");
     }
   };
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
-  const filteredConversations = conversations.filter(conversation => {
-    const matchesSearch = conversation.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         conversation.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         conversation.last_message.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesFilter = filterStatus === 'all' || 
-                         (filterStatus === 'unread' && conversation.unread_count > 0) ||
-                         (filterStatus === 'archived' && conversation.status === 'archived');
-    
-    return matchesSearch && matchesFilter && conversation.status !== 'archived';
+  const filteredConversations = conversations.filter((conversation) => {
+    const matchesSearch =
+      conversation.customer_name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      conversation.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conversation.last_message
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+    const matchesFilter =
+      filterStatus === "all" ||
+      (filterStatus === "unread" && conversation.unread_count > 0) ||
+      (filterStatus === "archived" && conversation.status === "archived");
+
+    return matchesSearch && matchesFilter && conversation.status !== "archived";
   });
 
   return (
@@ -80,29 +88,25 @@ export const InboxList: React.FC<InboxListProps> = ({
               className="pl-10 bg-surface-2 border-surface-3"
             />
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Button
-              variant={filterStatus === 'all' ? 'default' : 'outline'}
+              variant={filterStatus === "all" ? "default" : "outline"}
               size="sm"
-              onClick={() => setFilterStatus('all')}
+              onClick={() => setFilterStatus("all")}
               className="text-xs"
             >
               All
             </Button>
             <Button
-              variant={filterStatus === 'unread' ? 'default' : 'outline'}
+              variant={filterStatus === "unread" ? "default" : "outline"}
               size="sm"
-              onClick={() => setFilterStatus('unread')}
+              onClick={() => setFilterStatus("unread")}
               className="text-xs"
             >
               Unread
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs ml-auto"
-            >
+            <Button variant="outline" size="sm" className="text-xs ml-auto">
               <Filter className="h-3 w-3 mr-1" />
               Filter
             </Button>
@@ -116,7 +120,9 @@ export const InboxList: React.FC<InboxListProps> = ({
               <div
                 key={conversation.id}
                 className={`p-4 cursor-pointer transition-colors hover:bg-surface-2 ${
-                  selectedConversation === conversation.id ? 'bg-brand/5 border-r-2 border-r-brand' : ''
+                  selectedConversation === conversation.id
+                    ? "bg-brand/5 border-r-2 border-r-brand"
+                    : ""
                 }`}
                 onClick={() => onSelectConversation(conversation.id)}
               >
@@ -131,39 +137,51 @@ export const InboxList: React.FC<InboxListProps> = ({
                     {conversation.unread_count > 0 && (
                       <div className="absolute -top-1 -right-1 w-5 h-5 bg-brand rounded-full flex items-center justify-center">
                         <span className="text-xs text-brand-foreground font-medium">
-                          {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
+                          {conversation.unread_count > 9
+                            ? "9+"
+                            : conversation.unread_count}
                         </span>
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <h4 className={`text-body-sm font-medium text-text truncate ${
-                        conversation.unread_count > 0 ? 'font-semibold' : ''
-                      }`}>
+                      <h4
+                        className={`text-body-sm font-medium text-text truncate ${
+                          conversation.unread_count > 0 ? "font-semibold" : ""
+                        }`}
+                      >
                         {conversation.customer_name}
                       </h4>
                       <span className="text-xs text-text-muted flex-shrink-0 ml-2">
                         {formatMessageTime(conversation.last_message_at)}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between mb-1">
-                      <p className={`text-xs truncate ${
-                        conversation.unread_count > 0 ? 'text-text font-medium' : 'text-text-muted'
-                      }`}>
+                      <p
+                        className={`text-xs truncate ${
+                          conversation.unread_count > 0
+                            ? "text-text font-medium"
+                            : "text-text-muted"
+                        }`}
+                      >
                         {conversation.subject}
                       </p>
-                      
+
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                          >
                             <MoreVertical className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-40 bg-surface border-surface-2 z-50">
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
                               onArchiveConversation(conversation.id);
@@ -181,14 +199,18 @@ export const InboxList: React.FC<InboxListProps> = ({
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    
-                    <p className={`text-xs truncate ${
-                      conversation.unread_count > 0 ? 'text-text' : 'text-text-muted'
-                    }`}>
+
+                    <p
+                      className={`text-xs truncate ${
+                        conversation.unread_count > 0
+                          ? "text-text"
+                          : "text-text-muted"
+                      }`}
+                    >
                       {conversation.last_message}
                     </p>
-                    
-                    {conversation.status === 'draft' && (
+
+                    {conversation.status === "draft" && (
                       <Badge variant="outline" className="mt-1 text-xs">
                         Draft
                       </Badge>
@@ -197,10 +219,12 @@ export const InboxList: React.FC<InboxListProps> = ({
                 </div>
               </div>
             ))}
-            
+
             {filteredConversations.length === 0 && (
               <div className="p-8 text-center">
-                <p className="text-text-muted text-body-sm">No conversations found</p>
+                <p className="text-text-muted text-body-sm">
+                  No conversations found
+                </p>
                 {searchQuery && (
                   <p className="text-xs text-text-subtle mt-1">
                     Try adjusting your search terms

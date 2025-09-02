@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 
 interface UseRealtimeOptions {
   endpoint?: string;
@@ -25,21 +25,21 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
     endpoint,
     reconnectInterval = 3000,
     maxReconnectAttempts = 5,
-    autoReconnect = true
+    autoReconnect = true,
   } = options;
 
   // Dynamically construct endpoint based on environment
   const wsEndpoint = useMemo(() => {
     if (endpoint) return endpoint;
-    
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
-    
+
     // For production, use the actual Supabase edge function URL
-    if (window.location.hostname !== 'localhost') {
+    if (window.location.hostname !== "localhost") {
       return `${protocol}//kbfbbkcaxhzlnbqxwgoz.supabase.co/functions/v1/realtime-websocket`;
     }
-    
+
     // For development, use local endpoint
     return `${protocol}//${host}/functions/v1/realtime-websocket`;
   }, [endpoint]);
@@ -48,7 +48,7 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
   const [connectionState, setConnectionState] = useState<ConnectionState>({
     isConnected: false,
     isConnecting: false,
-    reconnectCount: 0
+    reconnectCount: 0,
   });
   const [lastMessage, setLastMessage] = useState<RealtimeData | null>(null);
   const [messageHistory, setMessageHistory] = useState<RealtimeData[]>([]);
@@ -59,8 +59,11 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
       socket.onmessage = null;
       socket.onclose = null;
       socket.onerror = null;
-      
-      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+
+      if (
+        socket.readyState === WebSocket.OPEN ||
+        socket.readyState === WebSocket.CONNECTING
+      ) {
         socket.close();
       }
     }
@@ -71,23 +74,23 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
       return;
     }
 
-    setConnectionState(prev => ({ 
-      ...prev, 
-      isConnecting: true, 
-      lastError: undefined 
+    setConnectionState((prev) => ({
+      ...prev,
+      isConnecting: true,
+      lastError: undefined,
     }));
 
     try {
       const ws = new WebSocket(wsEndpoint);
-      
+
       ws.onopen = () => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Real-time connection established');
+        if (process.env.NODE_ENV === "development") {
+          console.log("Real-time connection established");
         }
         setConnectionState({
           isConnected: true,
           isConnecting: false,
-          reconnectCount: 0
+          reconnectCount: 0,
         });
       };
 
@@ -95,36 +98,42 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
         try {
           const data: RealtimeData = JSON.parse(event.data);
           setLastMessage(data);
-          
+
           // Keep last 100 messages for debugging
-          setMessageHistory(prev => {
+          setMessageHistory((prev) => {
             const newHistory = [...prev, data];
             return newHistory.slice(-100);
           });
         } catch (error) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('Failed to parse real-time message:', error);
+          if (process.env.NODE_ENV === "development") {
+            console.error("Failed to parse real-time message:", error);
           }
         }
       };
 
       ws.onclose = (event) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Real-time connection closed', { code: event.code, reason: event.reason });
+        if (process.env.NODE_ENV === "development") {
+          console.log("Real-time connection closed", {
+            code: event.code,
+            reason: event.reason,
+          });
         }
-        
-        setConnectionState(prev => ({
+
+        setConnectionState((prev) => ({
           ...prev,
           isConnected: false,
-          isConnecting: false
+          isConnecting: false,
         }));
-        
+
         // Attempt reconnection if enabled and within limits
-        if (autoReconnect && connectionState.reconnectCount < maxReconnectAttempts) {
+        if (
+          autoReconnect &&
+          connectionState.reconnectCount < maxReconnectAttempts
+        ) {
           setTimeout(() => {
-            setConnectionState(prev => ({
+            setConnectionState((prev) => ({
               ...prev,
-              reconnectCount: prev.reconnectCount + 1
+              reconnectCount: prev.reconnectCount + 1,
             }));
             connect();
           }, reconnectInterval);
@@ -132,31 +141,39 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
       };
 
       ws.onerror = (error) => {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Real-time connection error:', error);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Real-time connection error:", error);
         }
-        
-        setConnectionState(prev => ({
+
+        setConnectionState((prev) => ({
           ...prev,
           isConnected: false,
           isConnecting: false,
-          lastError: 'Connection failed'
+          lastError: "Connection failed",
         }));
       };
 
       setSocket(ws);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to establish real-time connection:', error);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to establish real-time connection:", error);
       }
-      
-      setConnectionState(prev => ({
+
+      setConnectionState((prev) => ({
         ...prev,
         isConnecting: false,
-        lastError: 'Failed to create connection'
+        lastError: "Failed to create connection",
       }));
     }
-  }, [wsEndpoint, connectionState.isConnecting, connectionState.isConnected, connectionState.reconnectCount, autoReconnect, maxReconnectAttempts, reconnectInterval]);
+  }, [
+    wsEndpoint,
+    connectionState.isConnecting,
+    connectionState.isConnected,
+    connectionState.reconnectCount,
+    autoReconnect,
+    maxReconnectAttempts,
+    reconnectInterval,
+  ]);
 
   const disconnect = useCallback(() => {
     cleanup();
@@ -164,54 +181,70 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
     setConnectionState({
       isConnected: false,
       isConnecting: false,
-      reconnectCount: 0
+      reconnectCount: 0,
     });
   }, [cleanup]);
 
-  const sendMessage = useCallback((message: Record<string, unknown>) => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('Cannot send message: WebSocket not connected');
+  const sendMessage = useCallback(
+    (message: Record<string, unknown>) => {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("Cannot send message: WebSocket not connected");
+        }
+        return false;
       }
-      return false;
-    }
 
-    try {
-      socket.send(JSON.stringify(message));
-      return true;
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Failed to send message:', error);
+      try {
+        socket.send(JSON.stringify(message));
+        return true;
+      } catch (error) {
+        if (process.env.NODE_ENV === "development") {
+          console.error("Failed to send message:", error);
+        }
+        return false;
       }
-      return false;
-    }
-  }, [socket]);
+    },
+    [socket],
+  );
 
-  const subscribe = useCallback((channel: string) => {
-    return sendMessage({
-      type: 'subscribe',
-      channel
-    });
-  }, [sendMessage]);
+  const subscribe = useCallback(
+    (channel: string) => {
+      return sendMessage({
+        type: "subscribe",
+        channel,
+      });
+    },
+    [sendMessage],
+  );
 
-  const trackEvent = useCallback((event: string, data?: Record<string, unknown>) => {
-    return sendMessage({
-      type: 'analytics_event',
-      event,
-      data,
-      eventId: crypto.randomUUID(),
-      timestamp: new Date().toISOString()
-    });
-  }, [sendMessage]);
+  const trackEvent = useCallback(
+    (event: string, data?: Record<string, unknown>) => {
+      return sendMessage({
+        type: "analytics_event",
+        event,
+        data,
+        eventId: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+      });
+    },
+    [sendMessage],
+  );
 
-  const sendNotification = useCallback((title: string, message: string, severity: 'info' | 'warning' | 'error' = 'info') => {
-    return sendMessage({
-      type: 'notification',
-      title,
-      message,
-      severity
-    });
-  }, [sendMessage]);
+  const sendNotification = useCallback(
+    (
+      title: string,
+      message: string,
+      severity: "info" | "warning" | "error" = "info",
+    ) => {
+      return sendMessage({
+        type: "notification",
+        title,
+        message,
+        severity,
+      });
+    },
+    [sendMessage],
+  );
 
   // Auto-connect on mount, cleanup on unmount
   useEffect(() => {
@@ -243,6 +276,6 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
     sendNotification,
     connect,
     disconnect,
-    endpoint: wsEndpoint
+    endpoint: wsEndpoint,
   };
 };

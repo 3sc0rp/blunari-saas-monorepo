@@ -1,12 +1,18 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
-import { FeatureFlag } from '@/types/settings';
-import { Settings, TrendingUp, Users, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
+import { FeatureFlag } from "@/types/settings";
+import { Settings, TrendingUp, Users, AlertTriangle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface FeatureFlagCardProps {
   flag: FeatureFlag;
@@ -14,57 +20,61 @@ interface FeatureFlagCardProps {
   onEdit?: (flagId: string) => void;
 }
 
-export function FeatureFlagCard({ flag, onToggle, onEdit }: FeatureFlagCardProps) {
+export function FeatureFlagCard({
+  flag,
+  onToggle,
+  onEdit,
+}: FeatureFlagCardProps) {
   const [isToggling, setIsToggling] = useState(false);
   const { toast } = useToast();
 
   const handleToggle = async () => {
     setIsToggling(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
       onToggle(flag.id, !flag.enabled);
       toast({
-        title: `Feature ${flag.enabled ? 'Disabled' : 'Enabled'}`,
-        description: `${flag.name} has been ${flag.enabled ? 'disabled' : 'enabled'}.`,
+        title: `Feature ${flag.enabled ? "Disabled" : "Enabled"}`,
+        description: `${flag.name} has been ${flag.enabled ? "disabled" : "enabled"}.`,
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to toggle feature flag.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsToggling(false);
     }
   };
 
-  const getCategoryColor = (category: FeatureFlag['category']) => {
+  const getCategoryColor = (category: FeatureFlag["category"]) => {
     switch (category) {
-      case 'booking':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'analytics':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'integrations':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
-      case 'ui':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
-      case 'experimental':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+      case "booking":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "analytics":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "integrations":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400";
+      case "ui":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
+      case "experimental":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
   const getEnvironmentColor = (env: string) => {
     switch (env) {
-      case 'production':
-        return 'bg-green-500';
-      case 'staging':
-        return 'bg-yellow-500';
-      case 'development':
-        return 'bg-blue-500';
+      case "production":
+        return "bg-green-500";
+      case "staging":
+        return "bg-yellow-500";
+      case "development":
+        return "bg-blue-500";
       default:
-        return 'bg-gray-500';
+        return "bg-gray-500";
     }
   };
 
@@ -74,10 +84,15 @@ export function FeatureFlagCard({ flag, onToggle, onEdit }: FeatureFlagCardProps
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <CardTitle className="text-lg">{flag.name}</CardTitle>
-            <CardDescription className="text-sm">{flag.description}</CardDescription>
+            <CardDescription className="text-sm">
+              {flag.description}
+            </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Badge className={getCategoryColor(flag.category)} variant="outline">
+            <Badge
+              className={getCategoryColor(flag.category)}
+              variant="outline"
+            >
               {flag.category}
             </Badge>
             <Switch
@@ -87,7 +102,7 @@ export function FeatureFlagCard({ flag, onToggle, onEdit }: FeatureFlagCardProps
             />
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2 pt-2">
           <span className="text-xs font-medium">Key:</span>
           <code className="text-xs bg-muted px-2 py-1 rounded">{flag.key}</code>
@@ -113,7 +128,9 @@ export function FeatureFlagCard({ flag, onToggle, onEdit }: FeatureFlagCardProps
               <div className="flex gap-1 mt-1">
                 {flag.environments.map((env) => (
                   <div key={env} className="flex items-center gap-1">
-                    <div className={`w-2 h-2 rounded-full ${getEnvironmentColor(env)}`} />
+                    <div
+                      className={`w-2 h-2 rounded-full ${getEnvironmentColor(env)}`}
+                    />
                     <span className="text-xs capitalize">{env}</span>
                   </div>
                 ))}
@@ -124,7 +141,9 @@ export function FeatureFlagCard({ flag, onToggle, onEdit }: FeatureFlagCardProps
                 <span className="text-muted-foreground">Target Tenants:</span>
                 <div className="flex items-center gap-1 mt-1">
                   <Users className="h-3 w-3" />
-                  <span className="text-xs">{flag.targetTenants.length} specific</span>
+                  <span className="text-xs">
+                    {flag.targetTenants.length} specific
+                  </span>
                 </div>
               </div>
             )}
@@ -137,7 +156,7 @@ export function FeatureFlagCard({ flag, onToggle, onEdit }: FeatureFlagCardProps
                 <span className="font-medium">Dependencies:</span>
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
-                Requires: {flag.dependsOn.join(', ')}
+                Requires: {flag.dependsOn.join(", ")}
               </div>
             </div>
           )}

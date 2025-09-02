@@ -1,18 +1,18 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { useNavigation } from '@/contexts/NavigationContext';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useTenantBranding } from '@/contexts/TenantBrandingContext';
-import { 
-  Monitor, 
-  Smartphone, 
-  Sidebar, 
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { useNavigation } from "@/contexts/NavigationContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTenantBranding } from "@/contexts/TenantBrandingContext";
+import {
+  Monitor,
+  Smartphone,
+  Sidebar,
   Navigation2,
   Palette,
   Layout,
@@ -20,41 +20,51 @@ import {
   Sun,
   Eye,
   Contrast,
-  Paintbrush
-} from 'lucide-react';
+  Paintbrush,
+} from "lucide-react";
 
 const InterfaceSettings: React.FC = () => {
   const { preference, setPreference } = useNavigation();
-  const { theme, contrast, setTheme, setContrast, toggleTheme, toggleContrast } = useTheme();
+  const {
+    theme,
+    contrast,
+    setTheme,
+    setContrast,
+    toggleTheme,
+    toggleContrast,
+  } = useTheme();
   const { updateBranding } = useTenantBranding();
 
   const navigationOptions = [
     {
-      value: 'bottom',
-      label: 'Bottom Navigation',
-      description: 'Modern bottom navigation on all devices',
+      value: "bottom",
+      label: "Bottom Navigation",
+      description: "Modern bottom navigation on all devices",
       icon: Smartphone,
-      badge: 'Default'
+      badge: "Default",
     },
     {
-      value: 'auto',
-      label: 'Auto (Responsive)',
-      description: 'Sidebar on desktop, bottom navigation on mobile',
+      value: "auto",
+      label: "Auto (Responsive)",
+      description: "Sidebar on desktop, bottom navigation on mobile",
       icon: Monitor,
-      badge: null
+      badge: null,
     },
     {
-      value: 'sidebar',
-      label: 'Sidebar',
-      description: 'Traditional sidebar navigation on all devices',
+      value: "sidebar",
+      label: "Sidebar",
+      description: "Traditional sidebar navigation on all devices",
       icon: Sidebar,
-      badge: null
-    }
+      badge: null,
+    },
   ];
 
-  const handleColorChange = (colorType: 'primary' | 'accent', value: string) => {
-    updateBranding({ 
-      [colorType === 'primary' ? 'primaryColor' : 'accentColor']: value 
+  const handleColorChange = (
+    colorType: "primary" | "accent",
+    value: string,
+  ) => {
+    updateBranding({
+      [colorType === "primary" ? "primaryColor" : "accentColor"]: value,
     });
   };
 
@@ -70,15 +80,20 @@ const InterfaceSettings: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <Label className="text-base font-medium">Choose your preferred navigation style</Label>
+            <Label className="text-base font-medium">
+              Choose your preferred navigation style
+            </Label>
             <p className="text-sm text-muted-foreground mt-1">
-              This setting controls how the main navigation is displayed across your dashboard.
+              This setting controls how the main navigation is displayed across
+              your dashboard.
             </p>
           </div>
 
-          <RadioGroup 
-            value={preference} 
-            onValueChange={(value: 'sidebar' | 'bottom' | 'auto') => setPreference(value)}
+          <RadioGroup
+            value={preference}
+            onValueChange={(value: "sidebar" | "bottom" | "auto") =>
+              setPreference(value)
+            }
             className="space-y-4"
           >
             {navigationOptions.map((option) => {
@@ -93,8 +108,8 @@ const InterfaceSettings: React.FC = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <Label 
-                            htmlFor={option.value} 
+                          <Label
+                            htmlFor={option.value}
                             className="font-medium cursor-pointer"
                           >
                             {option.label}
@@ -142,19 +157,19 @@ const InterfaceSettings: React.FC = () => {
                 Choose between light and dark mode.
               </p>
             </div>
-            
+
             <div className="flex gap-3">
               <Button
-                variant={theme === 'light' ? 'default' : 'outline'}
-                onClick={() => setTheme('light')}
+                variant={theme === "light" ? "default" : "outline"}
+                onClick={() => setTheme("light")}
                 className="flex-1 flex items-center gap-2"
               >
                 <Sun className="h-4 w-4" />
                 Light
               </Button>
               <Button
-                variant={theme === 'dark' ? 'default' : 'outline'}
-                onClick={() => setTheme('dark')}
+                variant={theme === "dark" ? "default" : "outline"}
+                onClick={() => setTheme("dark")}
                 className="flex-1 flex items-center gap-2"
               >
                 <Moon className="h-4 w-4" />
@@ -177,7 +192,7 @@ const InterfaceSettings: React.FC = () => {
               </div>
             </div>
             <Switch
-              checked={contrast === 'high'}
+              checked={contrast === "high"}
               onCheckedChange={toggleContrast}
             />
           </div>
@@ -199,13 +214,17 @@ const InterfaceSettings: React.FC = () => {
                     id="primary-color"
                     type="color"
                     defaultValue="#1a365d"
-                    onChange={(e) => handleColorChange('primary', e.target.value)}
+                    onChange={(e) =>
+                      handleColorChange("primary", e.target.value)
+                    }
                     className="w-16 h-10 p-1 border rounded"
                   />
                   <Input
                     type="text"
                     placeholder="#1a365d"
-                    onChange={(e) => handleColorChange('primary', e.target.value)}
+                    onChange={(e) =>
+                      handleColorChange("primary", e.target.value)
+                    }
                     className="flex-1"
                   />
                 </div>
@@ -218,13 +237,17 @@ const InterfaceSettings: React.FC = () => {
                     id="accent-color"
                     type="color"
                     defaultValue="#2d8a3e"
-                    onChange={(e) => handleColorChange('accent', e.target.value)}
+                    onChange={(e) =>
+                      handleColorChange("accent", e.target.value)
+                    }
                     className="w-16 h-10 p-1 border rounded"
                   />
                   <Input
                     type="text"
                     placeholder="#2d8a3e"
-                    onChange={(e) => handleColorChange('accent', e.target.value)}
+                    onChange={(e) =>
+                      handleColorChange("accent", e.target.value)
+                    }
                     className="flex-1"
                   />
                 </div>
@@ -252,9 +275,12 @@ const InterfaceSettings: React.FC = () => {
         <CardContent className="space-y-4">
           <div className="text-center py-8">
             <Eye className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Advanced Accessibility</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              Advanced Accessibility
+            </h3>
             <p className="text-muted-foreground">
-              Motion preferences, screen reader optimizations, and keyboard navigation settings coming soon.
+              Motion preferences, screen reader optimizations, and keyboard
+              navigation settings coming soon.
             </p>
             <Badge variant="outline" className="mt-4">
               WCAG 2.1 AA Compliant

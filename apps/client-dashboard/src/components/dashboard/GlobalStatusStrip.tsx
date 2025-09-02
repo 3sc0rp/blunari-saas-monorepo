@@ -1,17 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
-import { Badge } from '@/components/ui/badge';
-import { useTenant } from '@/hooks/useTenant';
-import { useRealtimeBookings } from '@/hooks/useRealtimeBookings';
-import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
-import { 
-  Wifi, 
-  WifiOff, 
-  Target, 
-  Users, 
-  Clock,
-  TrendingUp
-} from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { useTenant } from "@/hooks/useTenant";
+import { useRealtimeBookings } from "@/hooks/useRealtimeBookings";
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+import { Wifi, WifiOff, Target, Users, Clock, TrendingUp } from "lucide-react";
 
 const GlobalStatusStrip: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -27,13 +20,13 @@ const GlobalStatusStrip: React.FC = () => {
   return (
     <motion.div
       initial={{ y: -60, opacity: 0 }}
-      animate={{ 
-        y: isVisible ? 0 : -60, 
-        opacity: isVisible ? 1 : 0 
+      animate={{
+        y: isVisible ? 0 : -60,
+        opacity: isVisible ? 1 : 0,
       }}
-      transition={{ 
-        duration: 0.2, 
-        ease: "easeInOut" 
+      transition={{
+        duration: 0.2,
+        ease: "easeInOut",
       }}
       className="fixed top-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border/50 shadow-elev-1"
     >
@@ -48,13 +41,15 @@ const GlobalStatusStrip: React.FC = () => {
                 <WifiOff className="h-3 w-3 text-destructive" />
               )}
             </div>
-            <Badge 
+            <Badge
               variant={isConnected ? "default" : "destructive"}
               className={`text-xs ${
-                isConnected ? 'bg-success/10 text-success border-success/20' : ''
+                isConnected
+                  ? "bg-success/10 text-success border-success/20"
+                  : ""
               }`}
             >
-              {isConnected ? 'Live' : 'Offline'}
+              {isConnected ? "Live" : "Offline"}
             </Badge>
           </div>
 

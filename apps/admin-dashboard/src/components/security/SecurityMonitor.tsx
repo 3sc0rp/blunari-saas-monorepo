@@ -10,17 +10,17 @@ export const SecurityMonitor = () => {
   useEffect(() => {
     // Initialize security systems
     CSRFProtection.initialize();
-    
+
     // Monitor for suspicious activity
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && user) {
+      if (document.visibilityState === "visible" && user) {
         logSecurityEvent({
-          eventType: 'page_focus_resumed',
-          severity: 'low',
+          eventType: "page_focus_resumed",
+          severity: "low",
           eventData: {
             timestamp: new Date().toISOString(),
-            user_agent: navigator.userAgent
-          }
+            user_agent: navigator.userAgent,
+          },
         });
       }
     };
@@ -42,28 +42,28 @@ export const SecurityMonitor = () => {
     const handleError = (event: ErrorEvent) => {
       if (user) {
         logSecurityEvent({
-          eventType: 'client_error',
-          severity: 'medium',
+          eventType: "client_error",
+          severity: "medium",
           eventData: {
-            error: event.error?.message || 'Unknown error',
+            error: event.error?.message || "Unknown error",
             filename: event.filename,
             line: event.lineno,
-            column: event.colno
-          }
+            column: event.colno,
+          },
         });
       }
     };
 
     // Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     // window.addEventListener('beforeunload', handleBeforeUnload); // Temporarily disabled
-    window.addEventListener('error', handleError);
+    window.addEventListener("error", handleError);
 
     // Cleanup
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       // window.removeEventListener('beforeunload', handleBeforeUnload); // Temporarily disabled
-      window.removeEventListener('error', handleError);
+      window.removeEventListener("error", handleError);
     };
   }, [user, logSecurityEvent]);
 

@@ -1,31 +1,37 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { SecuritySettings, APIKey, TrustedDevice } from '@/types/profile';
-import { APIKeyManager } from '@/components/security/APIKeyManager';
-import { TwoFactorAuth } from '@/components/security/TwoFactorAuth';
-import { 
-  Shield, 
-  Key, 
-  Smartphone, 
-  Eye, 
-  EyeOff, 
-  Copy, 
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SecuritySettings, APIKey, TrustedDevice } from "@/types/profile";
+import { APIKeyManager } from "@/components/security/APIKeyManager";
+import { TwoFactorAuth } from "@/components/security/TwoFactorAuth";
+import {
+  Shield,
+  Key,
+  Smartphone,
+  Eye,
+  EyeOff,
+  Copy,
   Trash2,
   Plus,
   AlertTriangle,
   CheckCircle,
   Monitor,
   Phone,
-  Tablet
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+  Tablet,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface SecurityTabProps {
   securitySettings: SecuritySettings;
@@ -34,12 +40,17 @@ interface SecurityTabProps {
   onUpdateAPIKeys: (keys: APIKey[]) => void;
 }
 
-export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpdateAPIKeys }: SecurityTabProps) {
+export function SecurityTab({
+  securitySettings,
+  apiKeys,
+  onUpdateSecurity,
+  onUpdateAPIKeys,
+}: SecurityTabProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isEnabling2FA, setIsEnabling2FA] = useState(false);
@@ -50,19 +61,23 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
       toast({
         title: "Password Mismatch",
         description: "New password and confirmation don't match.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsChangingPassword(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       onUpdateSecurity({
         ...securitySettings,
-        passwordLastChanged: new Date().toISOString()
+        passwordLastChanged: new Date().toISOString(),
       });
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
       toast({
         title: "Password Updated",
         description: "Your password has been changed successfully.",
@@ -71,7 +86,7 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
       toast({
         title: "Password Change Failed",
         description: "Failed to update password.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsChangingPassword(false);
@@ -81,14 +96,16 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
   const handleToggle2FA = async () => {
     setIsEnabling2FA(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       onUpdateSecurity({
         ...securitySettings,
-        twoFactorEnabled: !securitySettings.twoFactorEnabled
+        twoFactorEnabled: !securitySettings.twoFactorEnabled,
       });
       toast({
-        title: securitySettings.twoFactorEnabled ? "2FA Disabled" : "2FA Enabled",
-        description: securitySettings.twoFactorEnabled 
+        title: securitySettings.twoFactorEnabled
+          ? "2FA Disabled"
+          : "2FA Enabled",
+        description: securitySettings.twoFactorEnabled
           ? "Two-factor authentication has been disabled."
           : "Two-factor authentication has been enabled.",
       });
@@ -96,7 +113,7 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
       toast({
         title: "2FA Toggle Failed",
         description: "Failed to update two-factor authentication.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsEnabling2FA(false);
@@ -104,8 +121,8 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
   };
 
   const handleRevokeAPIKey = (keyId: string) => {
-    const updatedKeys = apiKeys.map(key => 
-      key.id === keyId ? { ...key, isActive: false } : key
+    const updatedKeys = apiKeys.map((key) =>
+      key.id === keyId ? { ...key, isActive: false } : key,
     );
     onUpdateAPIKeys(updatedKeys);
     toast({
@@ -115,10 +132,12 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
   };
 
   const handleRemoveDevice = (deviceId: string) => {
-    const updatedDevices = securitySettings.trustedDevices.filter(d => d.id !== deviceId);
+    const updatedDevices = securitySettings.trustedDevices.filter(
+      (d) => d.id !== deviceId,
+    );
     onUpdateSecurity({
       ...securitySettings,
-      trustedDevices: updatedDevices
+      trustedDevices: updatedDevices,
     });
     toast({
       title: "Device Removed",
@@ -136,13 +155,13 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
     return score;
   };
 
-  const getDeviceIcon = (deviceType: TrustedDevice['deviceType']) => {
+  const getDeviceIcon = (deviceType: TrustedDevice["deviceType"]) => {
     switch (deviceType) {
-      case 'desktop':
+      case "desktop":
         return <Monitor className="h-4 w-4" />;
-      case 'mobile':
+      case "mobile":
         return <Phone className="h-4 w-4" />;
-      case 'tablet':
+      case "tablet":
         return <Tablet className="h-4 w-4" />;
       default:
         return <Monitor className="h-4 w-4" />;
@@ -172,9 +191,14 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
                 <div className="relative">
                   <Input
                     id="currentPassword"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     value={passwordForm.currentPassword}
-                    onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    onChange={(e) =>
+                      setPasswordForm((prev) => ({
+                        ...prev,
+                        currentPassword: e.target.value,
+                      }))
+                    }
                   />
                   <Button
                     type="button"
@@ -183,7 +207,11 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
                     className="absolute right-0 top-0 h-full px-3"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
@@ -192,9 +220,14 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
                 <Label htmlFor="newPassword">New Password</Label>
                 <Input
                   id="newPassword"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      newPassword: e.target.value,
+                    }))
+                  }
                 />
                 {passwordForm.newPassword && (
                   <div className="mt-2">
@@ -211,18 +244,28 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
                 <Label htmlFor="confirmPassword">Confirm New Password</Label>
                 <Input
                   id="confirmPassword"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  onChange={(e) =>
+                    setPasswordForm((prev) => ({
+                      ...prev,
+                      confirmPassword: e.target.value,
+                    }))
+                  }
                 />
               </div>
 
-              <Button 
-                onClick={handlePasswordChange} 
-                disabled={isChangingPassword || !passwordForm.currentPassword || !passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword}
+              <Button
+                onClick={handlePasswordChange}
+                disabled={
+                  isChangingPassword ||
+                  !passwordForm.currentPassword ||
+                  !passwordForm.newPassword ||
+                  passwordForm.newPassword !== passwordForm.confirmPassword
+                }
                 className="w-full"
               >
-                {isChangingPassword ? 'Updating...' : 'Change Password'}
+                {isChangingPassword ? "Updating..." : "Change Password"}
               </Button>
             </div>
 
@@ -240,7 +283,9 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
               <div className="p-4 bg-muted/50 rounded-lg">
                 <h4 className="font-medium mb-2">Last Password Change</h4>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(securitySettings.passwordLastChanged).toLocaleDateString()}
+                  {new Date(
+                    securitySettings.passwordLastChanged,
+                  ).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -286,8 +331,9 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Backup Codes Available:</strong> You have {securitySettings.backupCodes.length} unused backup codes. 
-                Store them securely in case you lose access to your authenticator app.
+                <strong>Backup Codes Available:</strong> You have{" "}
+                {securitySettings.backupCodes.length} unused backup codes. Store
+                them securely in case you lose access to your authenticator app.
               </AlertDescription>
             </Alert>
           )}
@@ -305,7 +351,10 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
         <CardContent>
           <div className="space-y-3">
             {securitySettings.trustedDevices.map((device) => (
-              <div key={device.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div
+                key={device.id}
+                className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+              >
                 <div className="flex items-center gap-3">
                   {getDeviceIcon(device.deviceType)}
                   <div>
@@ -314,7 +363,8 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
                       {device.browser} • {device.os} • {device.location}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Last seen: {new Date(device.lastSeen).toLocaleDateString()}
+                      Last seen:{" "}
+                      {new Date(device.lastSeen).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -334,21 +384,22 @@ export function SecurityTab({ securitySettings, apiKeys, onUpdateSecurity, onUpd
 
       {/* Enhanced Security Features */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <APIKeyManager 
-          apiKeys={apiKeys} 
-          onUpdateAPIKeys={onUpdateAPIKeys} 
-        />
+        <APIKeyManager apiKeys={apiKeys} onUpdateAPIKeys={onUpdateAPIKeys} />
         <TwoFactorAuth
           isEnabled={securitySettings.twoFactorEnabled}
           backupCodes={securitySettings.backupCodes}
-          onToggle2FA={(enabled) => onUpdateSecurity({
-            ...securitySettings,
-            twoFactorEnabled: enabled
-          })}
-          onRegenerateBackupCodes={(codes) => onUpdateSecurity({
-            ...securitySettings,
-            backupCodes: codes
-          })}
+          onToggle2FA={(enabled) =>
+            onUpdateSecurity({
+              ...securitySettings,
+              twoFactorEnabled: enabled,
+            })
+          }
+          onRegenerateBackupCodes={(codes) =>
+            onUpdateSecurity({
+              ...securitySettings,
+              backupCodes: codes,
+            })
+          }
         />
       </div>
     </div>

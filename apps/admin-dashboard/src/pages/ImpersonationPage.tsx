@@ -1,44 +1,59 @@
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Shield, 
-  Play, 
-  Clock, 
-  Users, 
-  Building, 
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Shield,
+  Play,
+  Clock,
+  Users,
+  Building,
   Search,
   AlertTriangle,
   Activity,
   BarChart3,
   FileText,
-  Plus
-} from 'lucide-react';
+  Plus,
+} from "lucide-react";
 
 // Components
-import { ImpersonationCard } from '@/components/impersonation/ImpersonationCard';
-import { StartImpersonationDialog } from '@/components/impersonation/StartImpersonationDialog';
-import { AuditLogViewer } from '@/components/impersonation/AuditLogViewer';
-import { ImpersonationAnalytics } from '@/components/impersonation/ImpersonationAnalytics';
+import { ImpersonationCard } from "@/components/impersonation/ImpersonationCard";
+import { StartImpersonationDialog } from "@/components/impersonation/StartImpersonationDialog";
+import { AuditLogViewer } from "@/components/impersonation/AuditLogViewer";
+import { ImpersonationAnalytics } from "@/components/impersonation/ImpersonationAnalytics";
 
 // Data
-import { 
+import {
   mockImpersonationSessions,
   mockImpersonationAuditLogs,
   mockImpersonationAnalytics,
-  mockImpersonationSettings
-} from '@/data/mockImpersonationData';
-import { TenantImpersonationRequest, ImpersonationSession } from '@/types/impersonation';
-import { useToast } from '@/hooks/use-toast';
+  mockImpersonationSettings,
+} from "@/data/mockImpersonationData";
+import {
+  TenantImpersonationRequest,
+  ImpersonationSession,
+} from "@/types/impersonation";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ImpersonationPage() {
   const [sessions, setSessions] = useState(mockImpersonationSessions);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [auditLogs] = useState(mockImpersonationAuditLogs);
   const [analytics] = useState(mockImpersonationAnalytics);
   const { toast } = useToast();
@@ -46,34 +61,42 @@ export default function ImpersonationPage() {
   const handleStartImpersonation = (request: TenantImpersonationRequest) => {
     const newSession: ImpersonationSession = {
       id: `session-${Date.now()}`,
-      impersonatorId: 'current-user',
-      impersonatorName: 'Current User',
-      impersonatorRole: 'SUPPORT',
+      impersonatorId: "current-user",
+      impersonatorName: "Current User",
+      impersonatorRole: "SUPPORT",
       targetTenantId: request.tenantId,
-      targetTenantName: 'Selected Tenant',
+      targetTenantName: "Selected Tenant",
       reason: request.reason,
       ticketNumber: request.ticketNumber,
       startedAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + request.duration * 60 * 1000).toISOString(),
-      status: 'active',
+      expiresAt: new Date(
+        Date.now() + request.duration * 60 * 1000,
+      ).toISOString(),
+      status: "active",
       permissions: [],
       restrictions: [],
       metadata: {
-        ipAddress: '192.168.1.100',
+        ipAddress: "192.168.1.100",
         userAgent: navigator.userAgent,
-        location: 'Current Location'
-      }
+        location: "Current Location",
+      },
     };
 
-    setSessions(prev => [newSession, ...prev]);
+    setSessions((prev) => [newSession, ...prev]);
   };
 
   const handleEndSession = (sessionId: string) => {
-    setSessions(prev => prev.map(session => 
-      session.id === sessionId 
-        ? { ...session, status: 'terminated' as const, endedAt: new Date().toISOString() }
-        : session
-    ));
+    setSessions((prev) =>
+      prev.map((session) =>
+        session.id === sessionId
+          ? {
+              ...session,
+              status: "terminated" as const,
+              endedAt: new Date().toISOString(),
+            }
+          : session,
+      ),
+    );
   };
 
   const handleViewDetails = (sessionId: string) => {
@@ -97,18 +120,24 @@ export default function ImpersonationPage() {
     });
   };
 
-  const filteredSessions = sessions.filter(session => {
-    const matchesSearch = session.targetTenantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         session.impersonatorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         session.reason.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || session.status === statusFilter;
-    
+  const filteredSessions = sessions.filter((session) => {
+    const matchesSearch =
+      session.targetTenantName
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      session.impersonatorName
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      session.reason.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || session.status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
-  const activeSessions = sessions.filter(s => s.status === 'active');
-  const completedSessions = sessions.filter(s => s.status === 'completed');
-  const expiredSessions = sessions.filter(s => s.status === 'expired');
+  const activeSessions = sessions.filter((s) => s.status === "active");
+  const completedSessions = sessions.filter((s) => s.status === "completed");
+  const expiredSessions = sessions.filter((s) => s.status === "expired");
 
   return (
     <div className="flex-1 space-y-8 p-8">
@@ -123,7 +152,7 @@ export default function ImpersonationPage() {
             Secure tenant access for troubleshooting and support
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <Badge className="bg-success/10 text-success border-success/20">
             {activeSessions.length} Active
@@ -153,7 +182,10 @@ export default function ImpersonationPage() {
               <li>• All actions are tracked and can be reviewed</li>
             </ul>
             <ul className="space-y-1">
-              <li>• Maximum session duration: {mockImpersonationSettings.maxSessionDuration} minutes</li>
+              <li>
+                • Maximum session duration:{" "}
+                {mockImpersonationSettings.maxSessionDuration} minutes
+              </li>
               <li>• Notify tenant owners when accessing sensitive data</li>
               <li>• Follow company security policies at all times</li>
             </ul>
@@ -165,11 +197,15 @@ export default function ImpersonationPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active Sessions
+            </CardTitle>
             <Activity className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">{activeSessions.length}</div>
+            <div className="text-2xl font-bold text-success">
+              {activeSessions.length}
+            </div>
             <p className="text-xs text-muted-foreground">Currently running</p>
           </CardContent>
         </Card>
@@ -180,8 +216,12 @@ export default function ImpersonationPage() {
             <Clock className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{completedSessions.length}</div>
-            <p className="text-xs text-muted-foreground">Successfully completed</p>
+            <div className="text-2xl font-bold text-primary">
+              {completedSessions.length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Successfully completed
+            </p>
           </CardContent>
         </Card>
 
@@ -191,14 +231,18 @@ export default function ImpersonationPage() {
             <AlertTriangle className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">{expiredSessions.length}</div>
+            <div className="text-2xl font-bold text-warning">
+              {expiredSessions.length}
+            </div>
             <p className="text-xs text-muted-foreground">Timed out</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Sessions
+            </CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -267,7 +311,9 @@ export default function ImpersonationPage() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Shield className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-4">No sessions found matching your criteria</p>
+                <p className="text-muted-foreground mb-4">
+                  No sessions found matching your criteria
+                </p>
                 <StartImpersonationDialog onStart={handleStartImpersonation}>
                   <Button variant="outline">
                     <Plus className="h-4 w-4 mr-2" />
@@ -280,7 +326,7 @@ export default function ImpersonationPage() {
         </TabsContent>
 
         <TabsContent value="audit">
-          <AuditLogViewer 
+          <AuditLogViewer
             logs={auditLogs}
             onExport={handleExportAuditLog}
             onViewDetails={handleViewAuditDetails}

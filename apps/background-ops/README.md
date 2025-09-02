@@ -5,8 +5,9 @@ A headless backend service for background operations, metrics collection, job pr
 ## 🚀 **Pure Backend Service**
 
 This is a **headless API-only service** with:
+
 - ✅ REST APIs for metrics, jobs, services, webhooks
-- ✅ WebSocket endpoints for real-time updates  
+- ✅ WebSocket endpoints for real-time updates
 - ✅ Background workers for processing tasks
 - ✅ Scheduled jobs for data collection
 - ❌ No frontend/UI
@@ -15,18 +16,21 @@ This is a **headless API-only service** with:
 ## API Endpoints
 
 ### Health & Status
+
 - `GET /health` - Basic health check
 - `GET /health/detailed` - Detailed health with dependencies
 - `GET /ready` - Readiness probe
 - `GET /live` - Liveness probe
 
 ### Metrics
+
 - `GET /api/v1/metrics` - Get current system metrics
 - `GET /api/v1/metrics/range` - Get metrics for time range
 - `POST /api/v1/metrics` - Record new metric
 - `GET /api/v1/metrics/aggregated/:metricName` - Get aggregated metrics
 
 ### Jobs
+
 - `GET /api/v1/jobs` - List all jobs (with filters)
 - `GET /api/v1/jobs/:jobId` - Get specific job
 - `POST /api/v1/jobs` - Create new job
@@ -35,6 +39,7 @@ This is a **headless API-only service** with:
 - `GET /api/v1/jobs/stats/overview` - Job statistics
 
 ### Services
+
 - `GET /api/v1/services` - List all services
 - `GET /api/v1/services/:serviceId` - Get specific service
 - `PATCH /api/v1/services/:serviceId/status` - Update service status
@@ -43,12 +48,14 @@ This is a **headless API-only service** with:
 - `GET /api/v1/services/:serviceId/uptime` - Uptime statistics
 
 ### Activity Feed
+
 - `GET /api/v1/activity` - Get activity feed
 - `POST /api/v1/activity` - Log new activity
 - `GET /api/v1/activity/stats` - Activity statistics
 - `GET /api/v1/activity/service/:serviceName` - Service-specific activity
 
 ### Webhooks
+
 - `POST /api/v1/webhooks/generic` - Generic webhook handler
 - `POST /api/v1/webhooks/health/:serviceId` - Service health webhook
 - `POST /api/v1/webhooks/payment` - Payment webhook
@@ -78,17 +85,20 @@ ALLOWED_ORIGINS=https://your-admin-dashboard.com,https://your-client-app.com
 ## Deployment to Fly.io
 
 1. **Login to Fly.io:**
+
    ```bash
    fly auth login
    ```
 
 2. **Deploy:**
+
    ```bash
    cd background-ops
    fly launch
    ```
 
 3. **Set environment variables:**
+
    ```bash
    fly secrets set DATABASE_URL="postgresql://..."
    fly secrets set REDIS_URL="redis://..."
@@ -111,12 +121,12 @@ const BACKGROUND_OPS_URL = "https://your-app.fly.dev";
 export default async function handler(req: Request) {
   const response = await fetch(`${BACKGROUND_OPS_URL}/api/v1/metrics`, {
     headers: {
-      'Authorization': `Bearer ${API_KEY}`
-    }
+      Authorization: `Bearer ${API_KEY}`,
+    },
   });
-  
+
   return new Response(await response.text(), {
-    headers: { 'Content-Type': 'application/json' }
+    headers: { "Content-Type": "application/json" },
   });
 }
 ```

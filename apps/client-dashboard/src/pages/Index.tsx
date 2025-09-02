@@ -11,9 +11,9 @@ const Index = () => {
   useEffect(() => {
     if (!loading) {
       if (user) {
-        navigate('/dashboard');
+        navigate("/dashboard");
       } else {
-        navigate('/auth');
+        navigate("/auth");
       }
     }
   }, [user, loading, navigate]);
@@ -37,7 +37,7 @@ const Index = () => {
             <Utensils className="w-10 h-10" />
           </div>
         </motion.div>
-        
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

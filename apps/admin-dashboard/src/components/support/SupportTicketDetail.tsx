@@ -1,35 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card } from '@/components/ui/card';
+import React, { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { 
-  MessageSquare, 
-  Clock, 
-  User, 
-  Mail, 
+} from "@/components/ui/select";
+import {
+  MessageSquare,
+  Clock,
+  User,
+  Mail,
   Phone,
   Building,
   Send,
   Eye,
   EyeOff,
   UserCheck,
-  Calendar
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+  Calendar,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SupportTicketDetailProps {
   ticketId: string;
@@ -81,16 +86,16 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
   ticketId,
   open,
   onClose,
-  onUpdate
+  onUpdate,
 }) => {
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [messages, setMessages] = useState<TicketMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [newMessage, setNewMessage] = useState("");
   const [isInternal, setIsInternal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [newStatus, setNewStatus] = useState('');
-  const [newPriority, setNewPriority] = useState('');
+  const [newStatus, setNewStatus] = useState("");
+  const [newPriority, setNewPriority] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -100,14 +105,16 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
 
       // Load ticket details
       const { data: ticketData, error: ticketError } = await supabase
-        .from('support_tickets')
-        .select(`
+        .from("support_tickets")
+        .select(
+          `
           *,
           category:support_categories!category_id(name, color),
           tenant:tenants!tenant_id(name, slug),
           assignee:employees!assigned_to(id, user_id)
-        `)
-        .eq('id', ticketId)
+        `,
+        )
+        .eq("id", ticketId)
         .single();
 
       if (ticketError) throw ticketError;
@@ -118,16 +125,16 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
 
       // Load messages
       const { data: messagesData, error: messagesError } = await supabase
-        .from('support_ticket_messages')
-        .select('*')
-        .eq('ticket_id', ticketId)
-        .order('created_at', { ascending: true });
+        .from("support_ticket_messages")
+        .select("*")
+        .eq("ticket_id", ticketId)
+        .order("created_at", { ascending: true });
 
       if (messagesError) throw messagesError;
 
       setMessages(messagesData || []);
     } catch (error) {
-      console.error('Error loading ticket detail:', error);
+      console.error("Error loading ticket detail:", error);
       toast({
         title: "Error",
         description: "Failed to load ticket details",
@@ -150,27 +157,25 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
     try {
       setSending(true);
 
-      const { error } = await supabase
-        .from('support_ticket_messages')
-        .insert({
-          ticket_id: ticketId,
-          sender_type: 'agent',
-          sender_name: user.email?.split('@')[0] || 'Agent',
-          sender_email: user.email,
-          content: newMessage,
-          is_internal: isInternal,
-          message_type: 'message'
-        });
+      const { error } = await supabase.from("support_ticket_messages").insert({
+        ticket_id: ticketId,
+        sender_type: "agent",
+        sender_name: user.email?.split("@")[0] || "Agent",
+        sender_email: user.email,
+        content: newMessage,
+        is_internal: isInternal,
+        message_type: "message",
+      });
 
       if (error) throw error;
 
       // Update ticket's updated_at timestamp
       await supabase
-        .from('support_tickets')
+        .from("support_tickets")
         .update({ updated_at: new Date().toISOString() })
-        .eq('id', ticketId);
+        .eq("id", ticketId);
 
-      setNewMessage('');
+      setNewMessage("");
       setIsInternal(false);
       loadTicketDetail();
       onUpdate();
@@ -180,7 +185,7 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
         description: "Message sent successfully",
       });
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error);
       toast({
         title: "Error",
         description: "Failed to send message",
@@ -192,16 +197,20 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
   };
 
   const updateTicketStatus = async () => {
-    if (!ticket || (newStatus === ticket.status && newPriority === ticket.priority)) return;
+    if (
+      !ticket ||
+      (newStatus === ticket.status && newPriority === ticket.priority)
+    )
+      return;
 
     try {
       const updates: any = { updated_at: new Date().toISOString() };
-      
+
       if (newStatus !== ticket.status) {
         updates.status = newStatus;
-        if (newStatus === 'resolved') {
+        if (newStatus === "resolved") {
           updates.resolved_at = new Date().toISOString();
-        } else if (newStatus === 'closed') {
+        } else if (newStatus === "closed") {
           updates.closed_at = new Date().toISOString();
         }
       }
@@ -211,9 +220,9 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
       }
 
       const { error } = await supabase
-        .from('support_tickets')
+        .from("support_tickets")
         .update(updates)
-        .eq('id', ticketId);
+        .eq("id", ticketId);
 
       if (error) throw error;
 
@@ -221,18 +230,17 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
       if (newStatus !== ticket.status || newPriority !== ticket.priority) {
         const changes = [];
         if (newStatus !== ticket.status) changes.push(`status to ${newStatus}`);
-        if (newPriority !== ticket.priority) changes.push(`priority to ${newPriority}`);
-        
-        await supabase
-          .from('support_ticket_messages')
-          .insert({
-            ticket_id: ticketId,
-            sender_type: 'system',
-            sender_name: 'System',
-            content: `Updated ${changes.join(' and ')}`,
-            is_internal: false,
-            message_type: 'status_change'
-          });
+        if (newPriority !== ticket.priority)
+          changes.push(`priority to ${newPriority}`);
+
+        await supabase.from("support_ticket_messages").insert({
+          ticket_id: ticketId,
+          sender_type: "system",
+          sender_name: "System",
+          content: `Updated ${changes.join(" and ")}`,
+          is_internal: false,
+          message_type: "status_change",
+        });
       }
 
       loadTicketDetail();
@@ -243,7 +251,7 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
         description: "Ticket updated successfully",
       });
     } catch (error) {
-      console.error('Error updating ticket:', error);
+      console.error("Error updating ticket:", error);
       toast({
         title: "Error",
         description: "Failed to update ticket",
@@ -253,18 +261,20 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getMessageIcon = (message: TicketMessage) => {
-    if (message.sender_type === 'system') return <Clock className="h-4 w-4 text-blue-500" />;
-    if (message.sender_type === 'agent') return <UserCheck className="h-4 w-4 text-green-500" />;
+    if (message.sender_type === "system")
+      return <Clock className="h-4 w-4 text-blue-500" />;
+    if (message.sender_type === "agent")
+      return <UserCheck className="h-4 w-4 text-green-500" />;
     return <User className="h-4 w-4 text-blue-500" />;
   };
 
@@ -300,20 +310,29 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
             {/* Ticket Info */}
             <div className="space-y-4 mb-6">
               <div className="flex flex-wrap gap-2">
-                <Badge variant={ticket.priority === 'urgent' ? 'destructive' : 'secondary'}>
+                <Badge
+                  variant={
+                    ticket.priority === "urgent" ? "destructive" : "secondary"
+                  }
+                >
                   {ticket.priority.toUpperCase()}
                 </Badge>
                 <Badge variant="outline">
-                  {ticket.status.replace('_', ' ').toUpperCase()}
+                  {ticket.status.replace("_", " ").toUpperCase()}
                 </Badge>
                 {ticket.category && (
-                  <Badge variant="outline" style={{ borderColor: ticket.category.color }}>
+                  <Badge
+                    variant="outline"
+                    style={{ borderColor: ticket.category.color }}
+                  >
                     {ticket.category.name}
                   </Badge>
                 )}
               </div>
-              
-              <p className="text-sm text-muted-foreground">{ticket.description}</p>
+
+              <p className="text-sm text-muted-foreground">
+                {ticket.description}
+              </p>
             </div>
 
             <Separator className="mb-4" />
@@ -330,7 +349,9 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">{message.sender_name}</span>
+                          <span className="text-sm font-medium">
+                            {message.sender_name}
+                          </span>
                           <span className="text-xs text-muted-foreground">
                             {formatDate(message.created_at)}
                           </span>
@@ -341,11 +362,13 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
                             </Badge>
                           )}
                         </div>
-                        <div className={`text-sm p-3 rounded-lg ${
-                          message.is_internal 
-                            ? 'bg-amber-50 border border-amber-200 dark:bg-amber-950 dark:border-amber-800' 
-                            : 'bg-muted'
-                        }`}>
+                        <div
+                          className={`text-sm p-3 rounded-lg ${
+                            message.is_internal
+                              ? "bg-amber-50 border border-amber-200 dark:bg-amber-950 dark:border-amber-800"
+                              : "bg-muted"
+                          }`}
+                        >
                           {message.content}
                         </div>
                       </div>
@@ -358,7 +381,9 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
             {/* Reply Section */}
             <div className="mt-4 space-y-4">
               <div className="flex items-center gap-2">
-                <Label htmlFor="reply" className="text-sm font-medium">Reply</Label>
+                <Label htmlFor="reply" className="text-sm font-medium">
+                  Reply
+                </Label>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <input
                     type="checkbox"
@@ -377,13 +402,13 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
                 onChange={(e) => setNewMessage(e.target.value)}
                 rows={3}
               />
-              <Button 
-                onClick={sendMessage} 
+              <Button
+                onClick={sendMessage}
                 disabled={!newMessage.trim() || sending}
                 className="w-full"
               >
                 <Send className="h-4 w-4 mr-2" />
-                {sending ? 'Sending...' : 'Send Reply'}
+                {sending ? "Sending..." : "Send Reply"}
               </Button>
             </div>
           </div>
@@ -422,14 +447,18 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
               <h3 className="font-semibold mb-3">Ticket Details</h3>
               <div className="space-y-3 text-sm">
                 <div>
-                  <Label className="text-xs text-muted-foreground">Created</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Created
+                  </Label>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>{formatDate(ticket.created_at)}</span>
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Last Updated</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Last Updated
+                  </Label>
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span>{formatDate(ticket.updated_at)}</span>
@@ -443,7 +472,9 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
               <h3 className="font-semibold mb-3">Actions</h3>
               <div className="space-y-3">
                 <div>
-                  <Label className="text-xs text-muted-foreground">Status</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Status
+                  </Label>
                   <Select value={newStatus} onValueChange={setNewStatus}>
                     <SelectTrigger>
                       <SelectValue />
@@ -451,7 +482,9 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
                     <SelectContent>
                       <SelectItem value="open">Open</SelectItem>
                       <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="waiting_customer">Waiting Customer</SelectItem>
+                      <SelectItem value="waiting_customer">
+                        Waiting Customer
+                      </SelectItem>
                       <SelectItem value="resolved">Resolved</SelectItem>
                       <SelectItem value="closed">Closed</SelectItem>
                     </SelectContent>
@@ -459,7 +492,9 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
                 </div>
 
                 <div>
-                  <Label className="text-xs text-muted-foreground">Priority</Label>
+                  <Label className="text-xs text-muted-foreground">
+                    Priority
+                  </Label>
                   <Select value={newPriority} onValueChange={setNewPriority}>
                     <SelectTrigger>
                       <SelectValue />
@@ -473,7 +508,8 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
                   </Select>
                 </div>
 
-                {(newStatus !== ticket.status || newPriority !== ticket.priority) && (
+                {(newStatus !== ticket.status ||
+                  newPriority !== ticket.priority) && (
                   <Button onClick={updateTicketStatus} className="w-full">
                     Update Ticket
                   </Button>

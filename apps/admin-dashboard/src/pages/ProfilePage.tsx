@@ -1,53 +1,58 @@
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { 
-  User, 
-  Shield, 
-  Bell, 
-  Monitor, 
-  Palette,
-  Settings
-} from 'lucide-react';
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { User, Shield, Bell, Monitor, Palette, Settings } from "lucide-react";
 
 // Components
-import { PersonalInfoTab } from '@/components/profile/PersonalInfoTab';
-import { SecurityTab } from '@/components/profile/SecurityTab';
-import { NotificationsTab } from '@/components/profile/NotificationsTab';
-import { SessionsTab } from '@/components/profile/SessionsTab';
-import { ThemeTab } from '@/components/profile/ThemeTab';
+import { PersonalInfoTab } from "@/components/profile/PersonalInfoTab";
+import { SecurityTab } from "@/components/profile/SecurityTab";
+import { NotificationsTab } from "@/components/profile/NotificationsTab";
+import { SessionsTab } from "@/components/profile/SessionsTab";
+import { ThemeTab } from "@/components/profile/ThemeTab";
 
 // Data
-import { 
+import {
   mockUserProfile,
   mockSecuritySettings,
   mockNotificationPreferences,
   mockUserSessions,
   mockActivityLogs,
   mockThemePreferences,
-  mockAPIKeys
-} from '@/data/mockProfileData';
-import { useToast } from '@/hooks/use-toast';
+  mockAPIKeys,
+} from "@/data/mockProfileData";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState(mockUserProfile);
-  const [securitySettings, setSecuritySettings] = useState(mockSecuritySettings);
-  const [notificationPreferences, setNotificationPreferences] = useState(mockNotificationPreferences);
+  const [securitySettings, setSecuritySettings] =
+    useState(mockSecuritySettings);
+  const [notificationPreferences, setNotificationPreferences] = useState(
+    mockNotificationPreferences,
+  );
   const [userSessions, setUserSessions] = useState(mockUserSessions);
-  const [themePreferences, setThemePreferences] = useState(mockThemePreferences);
+  const [themePreferences, setThemePreferences] =
+    useState(mockThemePreferences);
   const [apiKeys, setAPIKeys] = useState(mockAPIKeys);
   const { toast } = useToast();
 
   const handleUpdateProfile = (updates: Partial<typeof profile>) => {
-    setProfile(prev => ({ ...prev, ...updates }));
+    setProfile((prev) => ({ ...prev, ...updates }));
   };
 
   const handleTerminateSession = (sessionId: string) => {
-    setUserSessions(prev => prev.map(session => 
-      session.id === sessionId ? { ...session, isActive: false } : session
-    ));
+    setUserSessions((prev) =>
+      prev.map((session) =>
+        session.id === sessionId ? { ...session, isActive: false } : session,
+      ),
+    );
   };
 
   return (
@@ -55,9 +60,13 @@ export default function ProfilePage() {
       {/* Header */}
       <div className="flex items-center gap-6">
         <Avatar className="h-20 w-20">
-          <AvatarImage src={profile.avatar} alt={`${profile.firstName} ${profile.lastName}`} />
+          <AvatarImage
+            src={profile.avatar}
+            alt={`${profile.firstName} ${profile.lastName}`}
+          />
           <AvatarFallback className="text-xl">
-            {profile.firstName[0]}{profile.lastName[0]}
+            {profile.firstName[0]}
+            {profile.lastName[0]}
           </AvatarFallback>
         </Avatar>
         <div>
@@ -106,7 +115,7 @@ export default function ProfilePage() {
         </TabsContent>
 
         <TabsContent value="security">
-          <SecurityTab 
+          <SecurityTab
             securitySettings={securitySettings}
             apiKeys={apiKeys}
             onUpdateSecurity={setSecuritySettings}
@@ -115,14 +124,14 @@ export default function ProfilePage() {
         </TabsContent>
 
         <TabsContent value="notifications">
-          <NotificationsTab 
+          <NotificationsTab
             preferences={notificationPreferences}
             onUpdate={setNotificationPreferences}
           />
         </TabsContent>
 
         <TabsContent value="sessions">
-          <SessionsTab 
+          <SessionsTab
             sessions={userSessions}
             activityLogs={mockActivityLogs}
             onTerminateSession={handleTerminateSession}
@@ -130,7 +139,7 @@ export default function ProfilePage() {
         </TabsContent>
 
         <TabsContent value="theme">
-          <ThemeTab 
+          <ThemeTab
             preferences={themePreferences}
             onUpdate={setThemePreferences}
           />

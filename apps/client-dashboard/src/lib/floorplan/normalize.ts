@@ -1,4 +1,4 @@
-import { type DetectedEntity } from './schema';
+import { type DetectedEntity } from "./schema";
 
 export const WORLD_W = 10;
 export const WORLD_H = 10;
@@ -16,24 +16,24 @@ export function clamp(v: number, lo = 0, hi = 10) {
 
 /** Ensure every entity is clamped to the visible world plane. */
 export function clampEntities(entities: DetectedEntity[]): DetectedEntity[] {
-  return entities.map(e => ({
+  return entities.map((e) => ({
     ...e,
     x: clamp(e.x, 0, WORLD_W),
     y: clamp(e.y, 0, WORLD_H),
     width: e.width != null ? clamp(e.width, 0, WORLD_W) : e.width,
     height: e.height != null ? clamp(e.height, 0, WORLD_H) : e.height,
-    radius: e.radius != null ? clamp(e.radius, 0, WORLD_W/2) : e.radius,
+    radius: e.radius != null ? clamp(e.radius, 0, WORLD_W / 2) : e.radius,
   }));
 }
 
 /** Simple seats heuristic if missing. */
 export function inferSeats(e: DetectedEntity): number {
   if (e.seats && e.seats > 0) return e.seats;
-  if (e.shape === 'ROUND' && e.radius) {
+  if (e.shape === "ROUND" && e.radius) {
     const circumference = 2 * Math.PI * e.radius;
     return Math.max(2, Math.floor(circumference / 0.55));
   }
-  if (e.shape === 'RECT' && e.width && e.height) {
+  if (e.shape === "RECT" && e.width && e.height) {
     const longEdge = Math.max(e.width, e.height);
     return Math.max(2, 2 * Math.floor(longEdge / 0.55));
   }

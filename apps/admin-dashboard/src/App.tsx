@@ -42,56 +42,85 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light" storageKey="ui-theme">
-        <AuthProvider>
-          <TooltipProvider>
-            <SecurityMonitor />
-            <Toaster />
-            <Sonner />
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-              <Routes>
-                {/* Auth Routes */}
-                <Route path="/" element={<Auth />} />
-                
-                {/* Protected Admin Routes */}
-                <Route path="/admin" element={
-                  <ProtectedRoute>
-                    <AdminLayout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                  <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="tenants" element={<TenantsPage />} />
-                  <Route path="tenants/new" element={<NewTenantPage />} />
-                  <Route path="tenants/provision" element={<TenantProvisioningPage />} />
-                  <Route path="tenants/:tenantId" element={<TenantDetailPage />} />
-                  <Route path="employees" element={<EmployeesPage />} />
-            <Route path="billing" element={<BillingPage />} />
-            <Route path="operations" element={<OperationsPage />} />
-            <Route path="observability" element={<ObservabilityPage />} />
-            <Route path="system-health" element={<SystemHealthPage />} />
-            <Route path="pos-systems" element={<POSSystemsPage />} />
-            <Route path="domains" element={<DomainsPage />} />
-            <Route path="agency-kit" element={<AgencyKitPage />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="impersonate" element={<ImpersonationPage />} />
-              <Route path="integrations" element={<IntegrationsPage />} />
-              <Route path="notifications" element={<NotificationsPage />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="catering" element={<ComprehensiveCateringManagement />} />
-              <Route path="support" element={<SupportPage />} />
-              <Route path="roadmap" element={<RoadmapPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                </Route>
-                
-                {/* 404 */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+        <ThemeProvider defaultTheme="light" storageKey="ui-theme">
+          <AuthProvider>
+            <TooltipProvider>
+              <SecurityMonitor />
+              <Toaster />
+              <Sonner />
+              <BrowserRouter
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true,
+                }}
+              >
+                <Routes>
+                  {/* Auth Routes */}
+                  <Route path="/" element={<Auth />} />
+
+                  {/* Protected Admin Routes */}
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute>
+                        <AdminLayout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route
+                      index
+                      element={<Navigate to="/admin/dashboard" replace />}
+                    />
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="tenants" element={<TenantsPage />} />
+                    <Route path="tenants/new" element={<NewTenantPage />} />
+                    <Route
+                      path="tenants/provision"
+                      element={<TenantProvisioningPage />}
+                    />
+                    <Route
+                      path="tenants/:tenantId"
+                      element={<TenantDetailPage />}
+                    />
+                    <Route path="employees" element={<EmployeesPage />} />
+                    <Route path="billing" element={<BillingPage />} />
+                    <Route path="operations" element={<OperationsPage />} />
+                    <Route
+                      path="observability"
+                      element={<ObservabilityPage />}
+                    />
+                    <Route
+                      path="system-health"
+                      element={<SystemHealthPage />}
+                    />
+                    <Route path="pos-systems" element={<POSSystemsPage />} />
+                    <Route path="domains" element={<DomainsPage />} />
+                    <Route path="agency-kit" element={<AgencyKitPage />} />
+                    <Route path="profile" element={<ProfilePage />} />
+                    <Route path="impersonate" element={<ImpersonationPage />} />
+                    <Route path="integrations" element={<IntegrationsPage />} />
+                    <Route
+                      path="notifications"
+                      element={<NotificationsPage />}
+                    />
+                    <Route path="analytics" element={<AnalyticsPage />} />
+                    <Route
+                      path="catering"
+                      element={<ComprehensiveCateringManagement />}
+                    />
+                    <Route path="support" element={<SupportPage />} />
+                    <Route path="roadmap" element={<RoadmapPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                  </Route>
+
+                  {/* 404 */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

@@ -1,20 +1,25 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { MessageComposer } from './MessageComposer';
-import { MessageTemplate } from '@/types/messages';
-import { Search, Users, Plus } from 'lucide-react';
-import { motion } from 'framer-motion';
+} from "@/components/ui/select";
+import { MessageComposer } from "./MessageComposer";
+import { MessageTemplate } from "@/types/messages";
+import { Search, Users, Plus } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface NewConversationDialogProps {
   open: boolean;
@@ -35,13 +40,17 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
   onCreateConversation,
 }) => {
   const [formData, setFormData] = useState({
-    to: '',
-    subject: '',
-    content: '',
-    templateId: '',
+    to: "",
+    subject: "",
+    content: "",
+    templateId: "",
   });
-  const [recipientType, setRecipientType] = useState<'customer' | 'email' | 'phone'>('customer');
-  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; email?: string; phone?: string }>>([]);
+  const [recipientType, setRecipientType] = useState<
+    "customer" | "email" | "phone"
+  >("customer");
+  const [searchResults, setSearchResults] = useState<
+    Array<{ id: string; name: string; email?: string; phone?: string }>
+  >([]);
 
   const handleSendMessage = (content: string, templateId?: string) => {
     const data = {
@@ -49,19 +58,29 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
       content,
       templateId,
     };
-    
+
     onCreateConversation(data);
-    setFormData({ to: '', subject: '', content: '', templateId: '' });
+    setFormData({ to: "", subject: "", content: "", templateId: "" });
     onOpenChange(false);
   };
 
   const handleRecipientSearch = (query: string) => {
-    setFormData(prev => ({ ...prev, to: query }));
+    setFormData((prev) => ({ ...prev, to: query }));
     // Search customers - integrate with real customer API
     if (query.length > 2) {
       setSearchResults([
-        { id: '1', name: 'John Smith', email: 'john@example.com', phone: '+1234567890' },
-        { id: '2', name: 'Jane Doe', email: 'jane@example.com', phone: '+1234567891' },
+        {
+          id: "1",
+          name: "John Smith",
+          email: "john@example.com",
+          phone: "+1234567890",
+        },
+        {
+          id: "2",
+          name: "Jane Doe",
+          email: "jane@example.com",
+          phone: "+1234567891",
+        },
       ]);
     } else {
       setSearchResults([]);
@@ -83,29 +102,31 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
         <div className="space-y-4">
           {/* Recipient Type Selection */}
           <div>
-            <Label className="text-body-sm font-medium text-text">Send to</Label>
+            <Label className="text-body-sm font-medium text-text">
+              Send to
+            </Label>
             <div className="flex gap-2 mt-2">
               <Button
-                variant={recipientType === 'customer' ? 'default' : 'outline'}
+                variant={recipientType === "customer" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setRecipientType('customer')}
+                onClick={() => setRecipientType("customer")}
                 className="text-xs"
               >
                 <Users className="h-3 w-3 mr-1" />
                 Customer
               </Button>
               <Button
-                variant={recipientType === 'email' ? 'default' : 'outline'}
+                variant={recipientType === "email" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setRecipientType('email')}
+                onClick={() => setRecipientType("email")}
                 className="text-xs"
               >
                 Email
               </Button>
               <Button
-                variant={recipientType === 'phone' ? 'default' : 'outline'}
+                variant={recipientType === "phone" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setRecipientType('phone')}
+                onClick={() => setRecipientType("phone")}
                 className="text-xs"
               >
                 Phone
@@ -115,9 +136,15 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
 
           {/* Recipient Input */}
           <div>
-            <Label htmlFor="recipient" className="text-body-sm font-medium text-text">
-              {recipientType === 'customer' ? 'Customer' : 
-               recipientType === 'email' ? 'Email Address' : 'Phone Number'}
+            <Label
+              htmlFor="recipient"
+              className="text-body-sm font-medium text-text"
+            >
+              {recipientType === "customer"
+                ? "Customer"
+                : recipientType === "email"
+                  ? "Email Address"
+                  : "Phone Number"}
             </Label>
             <div className="relative mt-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-muted" />
@@ -126,14 +153,16 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
                 value={formData.to}
                 onChange={(e) => handleRecipientSearch(e.target.value)}
                 placeholder={
-                  recipientType === 'customer' ? 'Search customers...' :
-                  recipientType === 'email' ? 'Enter email address...' :
-                  'Enter phone number...'
+                  recipientType === "customer"
+                    ? "Search customers..."
+                    : recipientType === "email"
+                      ? "Enter email address..."
+                      : "Enter phone number..."
                 }
                 className="pl-10"
               />
             </div>
-            
+
             {/* Search Results */}
             {searchResults.length > 0 && (
               <motion.div
@@ -146,17 +175,24 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
                     key={result.id}
                     className="p-3 hover:bg-surface-3 cursor-pointer border-b border-surface-3 last:border-b-0"
                     onClick={() => {
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        to: recipientType === 'email' ? result.email : 
-                            recipientType === 'phone' ? result.phone : 
-                            result.name 
+                      setFormData((prev) => ({
+                        ...prev,
+                        to:
+                          recipientType === "email"
+                            ? result.email
+                            : recipientType === "phone"
+                              ? result.phone
+                              : result.name,
                       }));
                       setSearchResults([]);
                     }}
                   >
-                    <div className="text-body-sm font-medium text-text">{result.name}</div>
-                    <div className="text-xs text-text-muted">{result.email}</div>
+                    <div className="text-body-sm font-medium text-text">
+                      {result.name}
+                    </div>
+                    <div className="text-xs text-text-muted">
+                      {result.email}
+                    </div>
                   </div>
                 ))}
               </motion.div>
@@ -165,13 +201,18 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
 
           {/* Subject */}
           <div>
-            <Label htmlFor="subject" className="text-body-sm font-medium text-text">
+            <Label
+              htmlFor="subject"
+              className="text-body-sm font-medium text-text"
+            >
               Subject
             </Label>
             <Input
               id="subject"
               value={formData.subject}
-              onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, subject: e.target.value }))
+              }
               placeholder="Enter message subject..."
               className="mt-2"
             />
@@ -179,7 +220,9 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
 
           {/* Message Composer */}
           <div>
-            <Label className="text-body-sm font-medium text-text">Message</Label>
+            <Label className="text-body-sm font-medium text-text">
+              Message
+            </Label>
             <div className="mt-2">
               <MessageComposer
                 templates={templates}
@@ -201,7 +244,9 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
               Cancel
             </Button>
             <Button
-              onClick={() => handleSendMessage(formData.content, formData.templateId)}
+              onClick={() =>
+                handleSendMessage(formData.content, formData.templateId)
+              }
               disabled={!canSend}
               className="text-xs"
             >

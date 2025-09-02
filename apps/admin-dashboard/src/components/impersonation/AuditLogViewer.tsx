@@ -1,30 +1,42 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { 
-  Search, 
-  Filter, 
-  Calendar, 
-  User, 
-  Building, 
-  Shield, 
-  CheckCircle, 
+} from "@/components/ui/table";
+import {
+  Search,
+  Filter,
+  Calendar,
+  User,
+  Building,
+  Shield,
+  CheckCircle,
   XCircle,
   Download,
-  Eye
-} from 'lucide-react';
-import { ImpersonationAuditLog } from '@/types/impersonation';
+  Eye,
+} from "lucide-react";
+import { ImpersonationAuditLog } from "@/types/impersonation";
 
 interface AuditLogViewerProps {
   logs: ImpersonationAuditLog[];
@@ -32,40 +44,54 @@ interface AuditLogViewerProps {
   onViewDetails?: (logId: string) => void;
 }
 
-export function AuditLogViewer({ logs, onExport, onViewDetails }: AuditLogViewerProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [actionFilter, setActionFilter] = useState('all');
-  const [successFilter, setSuccessFilter] = useState('all');
+export function AuditLogViewer({
+  logs,
+  onExport,
+  onViewDetails,
+}: AuditLogViewerProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [actionFilter, setActionFilter] = useState("all");
+  const [successFilter, setSuccessFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         log.resource.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAction = actionFilter === 'all' || log.actionType === actionFilter;
-    const matchesSuccess = successFilter === 'all' || 
-                          (successFilter === 'success' && log.success) ||
-                          (successFilter === 'failure' && !log.success);
-    
+  const filteredLogs = logs.filter((log) => {
+    const matchesSearch =
+      log.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.resource.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesAction =
+      actionFilter === "all" || log.actionType === actionFilter;
+    const matchesSuccess =
+      successFilter === "all" ||
+      (successFilter === "success" && log.success) ||
+      (successFilter === "failure" && !log.success);
+
     return matchesSearch && matchesAction && matchesSuccess;
   });
 
   const paginatedLogs = filteredLogs.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
 
   const getActionColor = (actionType: string) => {
     switch (actionType) {
-      case 'view': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'create': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'update': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
-      case 'delete': return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
-      case 'export': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
-      case 'system': return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+      case "view":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "create":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "update":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+      case "delete":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+      case "export":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400";
+      case "system":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
@@ -105,7 +131,7 @@ export function AuditLogViewer({ logs, onExport, onViewDetails }: AuditLogViewer
               className="pl-9"
             />
           </div>
-          
+
           <Select value={actionFilter} onValueChange={setActionFilter}>
             <SelectTrigger className="w-full sm:w-[150px]">
               <Filter className="h-4 w-4 mr-2" />
@@ -141,15 +167,19 @@ export function AuditLogViewer({ logs, onExport, onViewDetails }: AuditLogViewer
             <div className="text-2xl font-bold">{filteredLogs.length}</div>
           </div>
           <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div className="text-sm font-medium text-green-700 dark:text-green-300">Successful</div>
+            <div className="text-sm font-medium text-green-700 dark:text-green-300">
+              Successful
+            </div>
             <div className="text-2xl font-bold text-green-800 dark:text-green-200">
-              {filteredLogs.filter(log => log.success).length}
+              {filteredLogs.filter((log) => log.success).length}
             </div>
           </div>
           <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-            <div className="text-sm font-medium text-red-700 dark:text-red-300">Failed</div>
+            <div className="text-sm font-medium text-red-700 dark:text-red-300">
+              Failed
+            </div>
             <div className="text-2xl font-bold text-red-800 dark:text-red-200">
-              {filteredLogs.filter(log => !log.success).length}
+              {filteredLogs.filter((log) => !log.success).length}
             </div>
           </div>
         </div>
@@ -208,15 +238,15 @@ export function AuditLogViewer({ logs, onExport, onViewDetails }: AuditLogViewer
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-              {Math.min(currentPage * itemsPerPage, filteredLogs.length)} of{' '}
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+              {Math.min(currentPage * itemsPerPage, filteredLogs.length)} of{" "}
               {filteredLogs.length} entries
             </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
               >
                 Previous
@@ -224,7 +254,9 @@ export function AuditLogViewer({ logs, onExport, onViewDetails }: AuditLogViewer
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
                 disabled={currentPage === totalPages}
               >
                 Next

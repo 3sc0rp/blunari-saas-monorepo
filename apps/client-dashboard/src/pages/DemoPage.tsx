@@ -1,26 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import PageHeader from '@/components/ui/page-header';
-import { EmptyState, ErrorState } from '@/components/ui/state';
-import { SkeletonPage, SkeletonTable, SkeletonChart } from '@/components/ui/skeleton-components';
-import { Plus, RefreshCw, Download, Users, Search } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PageHeader from "@/components/ui/page-header";
+import { EmptyState, ErrorState } from "@/components/ui/state";
+import {
+  SkeletonPage,
+  SkeletonTable,
+  SkeletonChart,
+} from "@/components/ui/skeleton-components";
+import { Plus, RefreshCw, Download, Users, Search } from "lucide-react";
 
 // Demo page showing all the new patterns
 const DemoPage: React.FC = () => {
-  const [state, setState] = useState<'loading' | 'empty' | 'error' | 'data'>('loading');
+  const [state, setState] = useState<"loading" | "empty" | "error" | "data">(
+    "loading",
+  );
   const [data, setData] = useState<any[]>([]);
 
   // Simulate different states
   useEffect(() => {
     const timer = setTimeout(() => {
       const random = Math.random();
-      if (random < 0.3) setState('empty');
-      else if (random < 0.5) setState('error');
+      if (random < 0.3) setState("empty");
+      else if (random < 0.5) setState("error");
       else {
-        setState('data');
-        setData(['item1', 'item2', 'item3']);
+        setState("data");
+        setData(["item1", "item2", "item3"]);
       }
     }, 2000);
 
@@ -28,20 +34,20 @@ const DemoPage: React.FC = () => {
   }, []);
 
   const handleCreate = () => {
-    console.log('Creating new item...');
+    console.log("Creating new item...");
   };
 
   const handleRefresh = () => {
-    setState('loading');
-    setTimeout(() => setState('data'), 1000);
+    setState("loading");
+    setTimeout(() => setState("data"), 1000);
   };
 
   const handleExport = () => {
-    console.log('Exporting data...');
+    console.log("Exporting data...");
   };
 
   // Loading state
-  if (state === 'loading') {
+  if (state === "loading") {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -59,7 +65,7 @@ const DemoPage: React.FC = () => {
   }
 
   // Error state
-  if (state === 'error') {
+  if (state === "error") {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -72,23 +78,23 @@ const DemoPage: React.FC = () => {
           description="Demonstrating page header patterns and state management"
           secondaryActions={[
             {
-              label: 'Refresh',
+              label: "Refresh",
               onClick: handleRefresh,
               icon: RefreshCw,
-              variant: 'outline'
-            }
+              variant: "outline",
+            },
           ]}
         />
         <ErrorState
           variant="general-error"
           action={{
-            label: 'Try Again',
+            label: "Try Again",
             onClick: handleRefresh,
-            icon: RefreshCw
+            icon: RefreshCw,
           }}
           secondaryAction={{
-            label: 'Contact Support',
-            onClick: () => console.log('Contacting support...')
+            label: "Contact Support",
+            onClick: () => console.log("Contacting support..."),
           }}
         />
       </motion.div>
@@ -96,7 +102,7 @@ const DemoPage: React.FC = () => {
   }
 
   // Empty state
-  if (state === 'empty') {
+  if (state === "empty") {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -108,29 +114,29 @@ const DemoPage: React.FC = () => {
           title="Demo Page"
           description="Demonstrating page header patterns and state management"
           primaryAction={{
-            label: 'Create First Item',
+            label: "Create First Item",
             onClick: handleCreate,
-            icon: Plus
+            icon: Plus,
           }}
           secondaryActions={[
             {
-              label: 'Refresh',
+              label: "Refresh",
               onClick: handleRefresh,
               icon: RefreshCw,
-              variant: 'outline'
-            }
+              variant: "outline",
+            },
           ]}
         />
         <EmptyState
           variant="no-search-results"
           action={{
-            label: 'Create Item',
+            label: "Create Item",
             onClick: handleCreate,
-            icon: Plus
+            icon: Plus,
           }}
           secondaryAction={{
-            label: 'Learn More',
-            onClick: () => console.log('Learning more...')
+            label: "Learn More",
+            onClick: () => console.log("Learning more..."),
           }}
         />
       </motion.div>
@@ -149,28 +155,28 @@ const DemoPage: React.FC = () => {
         title="Demo Page"
         description="Demonstrating page header patterns and state management"
         primaryAction={{
-          label: 'Create New',
+          label: "Create New",
           onClick: handleCreate,
-          icon: Plus
+          icon: Plus,
         }}
         secondaryActions={[
           {
-            label: 'Export',
+            label: "Export",
             onClick: handleExport,
             icon: Download,
-            variant: 'outline'
+            variant: "outline",
           },
           {
-            label: 'Refresh',
+            label: "Refresh",
             onClick: handleRefresh,
             icon: RefreshCw,
-            variant: 'ghost'
-          }
+            variant: "ghost",
+          },
         ]}
         tabs={[
-          { value: 'all', label: 'All Items' },
-          { value: 'active', label: 'Active' },
-          { value: 'archived', label: 'Archived' }
+          { value: "all", label: "All Items" },
+          { value: "active", label: "Active" },
+          { value: "archived", label: "Archived" },
         ]}
         activeTab="all"
       />

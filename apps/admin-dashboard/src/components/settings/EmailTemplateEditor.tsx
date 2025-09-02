@@ -1,15 +1,27 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { EmailTemplate } from '@/types/settings';
-import { Mail, Code, Eye, Save, TestTube } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { EmailTemplate } from "@/types/settings";
+import { Mail, Code, Eye, Save, TestTube } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface EmailTemplateEditorProps {
   template: EmailTemplate;
@@ -17,9 +29,13 @@ interface EmailTemplateEditorProps {
   onTest?: (template: EmailTemplate) => void;
 }
 
-export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateEditorProps) {
+export function EmailTemplateEditor({
+  template,
+  onSave,
+  onTest,
+}: EmailTemplateEditorProps) {
   const [editedTemplate, setEditedTemplate] = useState<EmailTemplate>(template);
-  const [previewMode, setPreviewMode] = useState<'html' | 'text'>('html');
+  const [previewMode, setPreviewMode] = useState<"html" | "text">("html");
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const { toast } = useToast();
@@ -27,7 +43,7 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
       onSave(editedTemplate);
       toast({
         title: "Template Saved",
@@ -37,7 +53,7 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
       toast({
         title: "Save Failed",
         description: "Failed to save email template.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -47,7 +63,7 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
   const handleTest = async () => {
     setIsTesting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API call
       onTest?.(editedTemplate);
       toast({
         title: "Test Email Sent",
@@ -57,38 +73,38 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
       toast({
         title: "Test Failed",
         description: "Failed to send test email.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsTesting(false);
     }
   };
 
-  const getCategoryColor = (category: EmailTemplate['category']) => {
+  const getCategoryColor = (category: EmailTemplate["category"]) => {
     switch (category) {
-      case 'booking':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-      case 'authentication':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
-      case 'notifications':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-      case 'marketing':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400';
+      case "booking":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "authentication":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400";
+      case "notifications":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "marketing":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
   const renderPreview = () => {
-    if (previewMode === 'html') {
+    if (previewMode === "html") {
       // Sanitize HTML content before rendering
       const sanitizedHtml = editedTemplate.htmlContent
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-        .replace(/<[^>]*javascript:[^>]*>/gi, '')
-        .replace(/<(iframe|object|embed|form|input)[^>]*>/gi, '');
-      
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+        .replace(/<[^>]*javascript:[^>]*>/gi, "")
+        .replace(/<(iframe|object|embed|form|input)[^>]*>/gi, "");
+
       return (
-        <div 
+        <div
           className="prose prose-sm max-w-none"
           dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
@@ -107,7 +123,9 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight">Edit Email Template</h2>
+          <h2 className="text-2xl font-bold tracking-tight">
+            Edit Email Template
+          </h2>
           <div className="flex items-center gap-2">
             <Badge className={getCategoryColor(editedTemplate.category)}>
               {editedTemplate.category}
@@ -118,11 +136,11 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleTest} disabled={isTesting}>
             <TestTube className="h-4 w-4 mr-2" />
-            {isTesting ? 'Testing...' : 'Send Test'}
+            {isTesting ? "Testing..." : "Send Test"}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             <Save className="h-4 w-4 mr-2" />
-            {isSaving ? 'Saving...' : 'Save Template'}
+            {isSaving ? "Saving..." : "Save Template"}
           </Button>
         </div>
       </div>
@@ -144,15 +162,23 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
                   <Input
                     id="name"
                     value={editedTemplate.name}
-                    onChange={(e) => setEditedTemplate(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) =>
+                      setEditedTemplate((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
                   />
                 </div>
                 <div>
                   <Label htmlFor="category">Category</Label>
-                  <Select 
-                    value={editedTemplate.category} 
-                    onValueChange={(value: EmailTemplate['category']) => 
-                      setEditedTemplate(prev => ({ ...prev, category: value }))
+                  <Select
+                    value={editedTemplate.category}
+                    onValueChange={(value: EmailTemplate["category"]) =>
+                      setEditedTemplate((prev) => ({
+                        ...prev,
+                        category: value,
+                      }))
                     }
                   >
                     <SelectTrigger>
@@ -160,8 +186,12 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="booking">Booking</SelectItem>
-                      <SelectItem value="authentication">Authentication</SelectItem>
-                      <SelectItem value="notifications">Notifications</SelectItem>
+                      <SelectItem value="authentication">
+                        Authentication
+                      </SelectItem>
+                      <SelectItem value="notifications">
+                        Notifications
+                      </SelectItem>
                       <SelectItem value="marketing">Marketing</SelectItem>
                     </SelectContent>
                   </Select>
@@ -173,7 +203,12 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
                 <Input
                   id="description"
                   value={editedTemplate.description}
-                  onChange={(e) => setEditedTemplate(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedTemplate((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                 />
               </div>
 
@@ -182,7 +217,12 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
                 <Input
                   id="subject"
                   value={editedTemplate.subject}
-                  onChange={(e) => setEditedTemplate(prev => ({ ...prev, subject: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedTemplate((prev) => ({
+                      ...prev,
+                      subject: e.target.value,
+                    }))
+                  }
                   placeholder="Use {{variable}} for dynamic content"
                 />
               </div>
@@ -191,7 +231,9 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
                 <Switch
                   id="enabled"
                   checked={editedTemplate.enabled}
-                  onCheckedChange={(checked) => setEditedTemplate(prev => ({ ...prev, enabled: checked }))}
+                  onCheckedChange={(checked) =>
+                    setEditedTemplate((prev) => ({ ...prev, enabled: checked }))
+                  }
                 />
                 <Label htmlFor="enabled">Template Enabled</Label>
               </div>
@@ -211,7 +253,12 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
                 <Textarea
                   id="htmlContent"
                   value={editedTemplate.htmlContent}
-                  onChange={(e) => setEditedTemplate(prev => ({ ...prev, htmlContent: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedTemplate((prev) => ({
+                      ...prev,
+                      htmlContent: e.target.value,
+                    }))
+                  }
                   rows={8}
                   className="font-mono text-sm"
                   placeholder="Enter HTML email template..."
@@ -223,7 +270,12 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
                 <Textarea
                   id="textContent"
                   value={editedTemplate.textContent}
-                  onChange={(e) => setEditedTemplate(prev => ({ ...prev, textContent: e.target.value }))}
+                  onChange={(e) =>
+                    setEditedTemplate((prev) => ({
+                      ...prev,
+                      textContent: e.target.value,
+                    }))
+                  }
                   rows={6}
                   className="font-mono text-sm"
                   placeholder="Enter plain text version..."
@@ -237,21 +289,31 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
             <CardHeader>
               <CardTitle>Template Variables</CardTitle>
               <CardDescription>
-                Available variables for this template. Use in content as {'{{variable_key}}'}.
+                Available variables for this template. Use in content as{" "}
+                {"{{variable_key}}"}.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {editedTemplate.variables.map((variable, index) => (
-                  <div key={variable.key} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div
+                    key={variable.key}
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                  >
                     <div>
                       <code className="text-sm font-mono bg-background px-2 py-1 rounded">
-                        {'{{'}{variable.key}{'}}'}
+                        {"{{"}
+                        {variable.key}
+                        {"}}"}
                       </code>
-                      <p className="text-sm text-muted-foreground mt-1">{variable.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {variable.description}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {variable.required && <Badge variant="secondary">Required</Badge>}
+                      {variable.required && (
+                        <Badge variant="secondary">Required</Badge>
+                      )}
                       {variable.defaultValue && (
                         <span className="text-xs text-muted-foreground">
                           Default: {variable.defaultValue}
@@ -276,16 +338,16 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
                 </span>
                 <div className="flex gap-2">
                   <Button
-                    variant={previewMode === 'html' ? 'default' : 'outline'}
+                    variant={previewMode === "html" ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setPreviewMode('html')}
+                    onClick={() => setPreviewMode("html")}
                   >
                     HTML
                   </Button>
                   <Button
-                    variant={previewMode === 'text' ? 'default' : 'outline'}
+                    variant={previewMode === "text" ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setPreviewMode('text')}
+                    onClick={() => setPreviewMode("text")}
                   >
                     Text
                   </Button>
@@ -300,7 +362,7 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
                     {editedTemplate.subject}
                   </div>
                 </div>
-                
+
                 <div>
                   <Label>Content Preview:</Label>
                   <div className="border rounded-lg p-4 min-h-[400px] bg-background">
@@ -319,11 +381,15 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Created:</span>
-                  <div className="font-medium">{new Date(editedTemplate.createdAt).toLocaleDateString()}</div>
+                  <div className="font-medium">
+                    {new Date(editedTemplate.createdAt).toLocaleDateString()}
+                  </div>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Last Updated:</span>
-                  <div className="font-medium">{new Date(editedTemplate.updatedAt).toLocaleDateString()}</div>
+                  <div className="font-medium">
+                    {new Date(editedTemplate.updatedAt).toLocaleDateString()}
+                  </div>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Version:</span>
@@ -331,8 +397,14 @@ export function EmailTemplateEditor({ template, onSave, onTest }: EmailTemplateE
                 </div>
                 <div>
                   <span className="text-muted-foreground">Status:</span>
-                  <Badge className={editedTemplate.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                    {editedTemplate.enabled ? 'Active' : 'Inactive'}
+                  <Badge
+                    className={
+                      editedTemplate.enabled
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-800"
+                    }
+                  >
+                    {editedTemplate.enabled ? "Active" : "Inactive"}
                   </Badge>
                 </div>
               </div>

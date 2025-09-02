@@ -1,8 +1,19 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -42,7 +53,7 @@ export const BulkActionsDialog = ({
   selectedEmployees,
   employees,
   departments,
-  onActionsComplete
+  onActionsComplete,
 }: BulkActionsDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [action, setAction] = useState("");
@@ -50,8 +61,8 @@ export const BulkActionsDialog = ({
   const [newStatus, setNewStatus] = useState("");
   const [newDepartment, setNewDepartment] = useState("");
 
-  const selectedEmployeeData = employees.filter(emp => 
-    selectedEmployees.includes(emp.id)
+  const selectedEmployeeData = employees.filter((emp) =>
+    selectedEmployees.includes(emp.id),
   );
 
   const handleBulkAction = async () => {
@@ -64,57 +75,60 @@ export const BulkActionsDialog = ({
     try {
       // eslint-disable-next-line prefer-const
       let updates: Record<string, unknown> = {};
-      
+
       switch (action) {
-        case 'change_role':
+        case "change_role":
           if (!newRole) {
             toast.error("Please select a role");
             return;
           }
           updates.role = newRole;
           break;
-        case 'change_status':
+        case "change_status":
           if (!newStatus) {
             toast.error("Please select a status");
             return;
           }
           updates.status = newStatus;
           break;
-        case 'change_department':
-          updates.department_id = newDepartment === 'no-department' ? null : newDepartment || null;
+        case "change_department":
+          updates.department_id =
+            newDepartment === "no-department" ? null : newDepartment || null;
           break;
-        case 'activate':
-          updates.status = 'ACTIVE';
+        case "activate":
+          updates.status = "ACTIVE";
           break;
-        case 'deactivate':
-          updates.status = 'INACTIVE';
+        case "deactivate":
+          updates.status = "INACTIVE";
           break;
-        case 'suspend':
-          updates.status = 'SUSPENDED';
+        case "suspend":
+          updates.status = "SUSPENDED";
           break;
       }
 
       // Update all selected employees
       const { error } = await supabase
-        .from('employees')
+        .from("employees")
         .update(updates)
-        .in('id', selectedEmployees);
+        .in("id", selectedEmployees);
 
       if (error) throw error;
 
       // Log the bulk action
-      await supabase.rpc('log_employee_activity', {
+      await supabase.rpc("log_employee_activity", {
         p_action: `bulk_${action}`,
-        p_resource_type: 'employees',
-        p_resource_id: selectedEmployees.join(','),
+        p_resource_type: "employees",
+        p_resource_id: selectedEmployees.join(","),
         p_details: {
           action,
           updates,
-          affected_count: selectedEmployees.length
-        } as unknown as Json
+          affected_count: selectedEmployees.length,
+        } as unknown as Json,
       });
 
-      toast.success(`Successfully updated ${selectedEmployees.length} employees`);
+      toast.success(
+        `Successfully updated ${selectedEmployees.length} employees`,
+      );
       onActionsComplete();
       onOpenChange(false);
       setAction("");
@@ -122,7 +136,7 @@ export const BulkActionsDialog = ({
       setNewStatus("");
       setNewDepartment("");
     } catch (error) {
-      console.error('Error performing bulk action:', error);
+      console.error("Error performing bulk action:", error);
       toast.error("Failed to perform bulk action");
     } finally {
       setLoading(false);
@@ -145,7 +159,10 @@ export const BulkActionsDialog = ({
             <Label>Selected Employees</Label>
             <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
               {selectedEmployeeData.map((employee) => (
-                <div key={employee.id} className="flex items-center justify-between text-sm">
+                <div
+                  key={employee.id}
+                  className="flex items-center justify-between text-sm"
+                >
                   <span>
                     {employee.profiles.first_name} {employee.profiles.last_name}
                   </span>
@@ -172,7 +189,9 @@ export const BulkActionsDialog = ({
               <SelectContent>
                 <SelectItem value="change_role">Change Role</SelectItem>
                 <SelectItem value="change_status">Change Status</SelectItem>
-                <SelectItem value="change_department">Change Department</SelectItem>
+                <SelectItem value="change_department">
+                  Change Department
+                </SelectItem>
                 <SelectItem value="activate">Activate All</SelectItem>
                 <SelectItem value="deactivate">Deactivate All</SelectItem>
                 <SelectItem value="suspend">Suspend All</SelectItem>
@@ -181,7 +200,7 @@ export const BulkActionsDialog = ({
           </div>
 
           {/* Conditional Fields */}
-          {action === 'change_role' && (
+          {action === "change_role" && (
             <div className="space-y-2">
               <Label htmlFor="new-role">New Role</Label>
               <Select value={newRole} onValueChange={setNewRole}>
@@ -199,7 +218,7 @@ export const BulkActionsDialog = ({
             </div>
           )}
 
-          {action === 'change_status' && (
+          {action === "change_status" && (
             <div className="space-y-2">
               <Label htmlFor="new-status">New Status</Label>
               <Select value={newStatus} onValueChange={setNewStatus}>
@@ -216,7 +235,7 @@ export const BulkActionsDialog = ({
             </div>
           )}
 
-          {action === 'change_department' && (
+          {action === "change_department" && (
             <div className="space-y-2">
               <Label htmlFor="new-department">Department</Label>
               <Select value={newDepartment} onValueChange={setNewDepartment}>
@@ -225,7 +244,7 @@ export const BulkActionsDialog = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="no-department">No Department</SelectItem>
-                  {departments.map(dept => (
+                  {departments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
                       {dept.name}
                     </SelectItem>
@@ -240,7 +259,9 @@ export const BulkActionsDialog = ({
             <div className="p-3 bg-muted rounded-md">
               <Label className="text-sm font-medium">Preview</Label>
               <p className="text-sm text-muted-foreground mt-1">
-                This will update {selectedEmployees.length} employee{selectedEmployees.length > 1 ? 's' : ''} with the selected changes.
+                This will update {selectedEmployees.length} employee
+                {selectedEmployees.length > 1 ? "s" : ""} with the selected
+                changes.
               </p>
             </div>
           )}

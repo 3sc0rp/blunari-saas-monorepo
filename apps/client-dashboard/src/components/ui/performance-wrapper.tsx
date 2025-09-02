@@ -1,5 +1,5 @@
-import React, { memo, Suspense, Component, ReactNode } from 'react';
-import { SkeletonBox } from './skeleton-components';
+import React, { memo, Suspense, Component, ReactNode } from "react";
+import { SkeletonBox } from "./skeleton-components";
 // Simple error boundary component
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -7,10 +7,16 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends Component<
-  { children: ReactNode; fallback: (error: Error, reset: () => void) => ReactNode },
+  {
+    children: ReactNode;
+    fallback: (error: Error, reset: () => void) => ReactNode;
+  },
   ErrorBoundaryState
 > {
-  constructor(props: { children: ReactNode; fallback: (error: Error, reset: () => void) => ReactNode }) {
+  constructor(props: {
+    children: ReactNode;
+    fallback: (error: Error, reset: () => void) => ReactNode;
+  }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -32,15 +38,15 @@ class ErrorBoundary extends Component<
 }
 
 // Error fallback component
-const ErrorFallback: React.FC<{ error: Error; resetErrorBoundary: () => void }> = ({ 
-  error, 
-  resetErrorBoundary 
-}) => (
+const ErrorFallback: React.FC<{
+  error: Error;
+  resetErrorBoundary: () => void;
+}> = ({ error, resetErrorBoundary }) => (
   <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
     <div className="text-destructive">
       <h2 className="text-lg font-semibold">Something went wrong</h2>
       <p className="text-sm text-muted-foreground mt-2">
-        {error.message || 'An unexpected error occurred'}
+        {error.message || "An unexpected error occurred"}
       </p>
     </div>
     <button
@@ -60,20 +66,27 @@ interface PerformanceWrapperProps {
   height?: string;
 }
 
-export const PerformanceWrapper: React.FC<PerformanceWrapperProps> = memo(({
-  children,
-  fallback,
-  className = '',
-  height = 'h-64'
-}) => (
-  <ErrorBoundary fallback={(error, reset) => <ErrorFallback error={error} resetErrorBoundary={reset} />}>
-    <Suspense fallback={fallback || <SkeletonBox className={`w-full ${height} ${className}`} />}>
-      {children}
-    </Suspense>
-  </ErrorBoundary>
-));
+export const PerformanceWrapper: React.FC<PerformanceWrapperProps> = memo(
+  ({ children, fallback, className = "", height = "h-64" }) => (
+    <ErrorBoundary
+      fallback={(error, reset) => (
+        <ErrorFallback error={error} resetErrorBoundary={reset} />
+      )}
+    >
+      <Suspense
+        fallback={
+          fallback || (
+            <SkeletonBox className={`w-full ${height} ${className}`} />
+          )
+        }
+      >
+        {children}
+      </Suspense>
+    </ErrorBoundary>
+  ),
+);
 
-PerformanceWrapper.displayName = 'PerformanceWrapper';
+PerformanceWrapper.displayName = "PerformanceWrapper";
 
 // Debounced search hook for performance
 export function useDebounce<T>(value: T, delay: number): T {
@@ -98,12 +111,15 @@ export function useThrottle<T>(value: T, delay: number): T {
   const lastRan = React.useRef(Date.now());
 
   React.useEffect(() => {
-    const handler = setTimeout(() => {
-      if (Date.now() - lastRan.current >= delay) {
-        setThrottledValue(value);
-        lastRan.current = Date.now();
-      }
-    }, delay - (Date.now() - lastRan.current));
+    const handler = setTimeout(
+      () => {
+        if (Date.now() - lastRan.current >= delay) {
+          setThrottledValue(value);
+          lastRan.current = Date.now();
+        }
+      },
+      delay - (Date.now() - lastRan.current),
+    );
 
     return () => {
       clearTimeout(handler);
@@ -116,7 +132,11 @@ export function useThrottle<T>(value: T, delay: number): T {
 // Intersection observer hook for lazy loading
 export function useIntersectionObserver(
   elementRef: React.RefObject<Element>,
-  { threshold = 0, root = null, rootMargin = '0%' }: IntersectionObserverInit = {}
+  {
+    threshold = 0,
+    root = null,
+    rootMargin = "0%",
+  }: IntersectionObserverInit = {},
 ): boolean {
   const [isIntersecting, setIsIntersecting] = React.useState(false);
 
@@ -126,7 +146,7 @@ export function useIntersectionObserver(
 
     const observer = new IntersectionObserver(
       ([entry]) => setIsIntersecting(entry.isIntersecting),
-      { threshold, root, rootMargin }
+      { threshold, root, rootMargin },
     );
 
     observer.observe(element);
@@ -140,10 +160,6 @@ export function useIntersectionObserver(
 export const MemoizedCard = memo<{
   children: React.ReactNode;
   className?: string;
-}>(({ children, className }) => (
-  <div className={className}>
-    {children}
-  </div>
-));
+}>(({ children, className }) => <div className={className}>{children}</div>);
 
-MemoizedCard.displayName = 'MemoizedCard';
+MemoizedCard.displayName = "MemoizedCard";

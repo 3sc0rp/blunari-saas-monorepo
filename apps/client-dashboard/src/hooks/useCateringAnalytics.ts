@@ -1,14 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  CateringAnalytics, 
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  CateringAnalytics,
   CateringOrderMetrics,
   CateringRevenueMetrics,
-  CateringPerformanceMetrics 
-} from '../types/catering';
-import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
+  CateringPerformanceMetrics,
+} from "../types/catering";
+import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
 
-export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Date; end: Date }) => {
+export const useCateringAnalytics = (
+  tenantId?: string,
+  dateRange?: { start: Date; end: Date },
+) => {
   // Default to current month if no date range provided
   const defaultStart = startOfMonth(new Date());
   const defaultEnd = endOfMonth(new Date());
@@ -16,13 +19,18 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
   const end = dateRange?.end || defaultEnd;
 
   // Fetch catering analytics data
-  const { 
-    data: analytics, 
-    isLoading, 
+  const {
+    data: analytics,
+    isLoading,
     error,
-    refetch 
+    refetch,
   } = useQuery({
-    queryKey: ['catering-analytics', tenantId, format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd')],
+    queryKey: [
+      "catering-analytics",
+      tenantId,
+      format(start, "yyyy-MM-dd"),
+      format(end, "yyyy-MM-dd"),
+    ],
     queryFn: async (): Promise<CateringAnalytics> => {
       if (!tenantId) {
         return {
@@ -36,7 +44,7 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
             conversion_rate: 0,
             average_lead_time: 0,
             guest_count_total: 0,
-            average_guest_count: 0
+            average_guest_count: 0,
           },
           revenue: {
             total: 0,
@@ -46,7 +54,7 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
             average_order_value: 0,
             deposits_collected: 0,
             deposits_pending: 0,
-            revenue_by_service_type: {} as any
+            revenue_by_service_type: {} as any,
           },
           performance: {
             popular_packages: [],
@@ -54,16 +62,17 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
             service_type_distribution: {} as any,
             monthly_trend: [],
             customer_satisfaction: 0,
-            repeat_customer_rate: 0
-          }
+            repeat_customer_rate: 0,
+          },
         };
       }
 
       try {
         // Fetch orders within date range
         const { data: ordersData, error: ordersError } = await supabase
-          .from('catering_orders' as any)
-          .select(`
+          .from("catering_orders" as any)
+          .select(
+            `
             *,
             catering_packages (
               id,
@@ -74,16 +83,23 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
               overall_rating,
               created_at
             )
-          `)
-          .eq('tenant_id', tenantId)
-          .gte('event_date', format(start, 'yyyy-MM-dd'))
-          .lte('event_date', format(end, 'yyyy-MM-dd'))
-          .order('created_at', { ascending: true });
+          `,
+          )
+          .eq("tenant_id", tenantId)
+          .gte("event_date", format(start, "yyyy-MM-dd"))
+          .lte("event_date", format(end, "yyyy-MM-dd"))
+          .order("created_at", { ascending: true });
 
         if (ordersError) {
           // If table doesn't exist yet, return empty analytics
-          if (ordersError.code === '42P01' || ordersError.message?.includes('relation') || ordersError.message?.includes('does not exist')) {
-            console.info('Catering orders table not found. Please run the database migration.');
+          if (
+            ordersError.code === "42P01" ||
+            ordersError.message?.includes("relation") ||
+            ordersError.message?.includes("does not exist")
+          ) {
+            console.info(
+              "Catering orders table not found. Please run the database migration.",
+            );
             return {
               orders: {
                 total: 0,
@@ -95,7 +111,7 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
                 conversion_rate: 0,
                 average_lead_time: 0,
                 guest_count_total: 0,
-                average_guest_count: 0
+                average_guest_count: 0,
               },
               revenue: {
                 total: 0,
@@ -105,7 +121,7 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
                 average_order_value: 0,
                 deposits_collected: 0,
                 deposits_pending: 0,
-                revenue_by_service_type: {} as any
+                revenue_by_service_type: {} as any,
               },
               performance: {
                 popular_packages: [],
@@ -113,8 +129,8 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
                 service_type_distribution: {} as any,
                 monthly_trend: [],
                 customer_satisfaction: 0,
-                repeat_customer_rate: 0
-              }
+                repeat_customer_rate: 0,
+              },
             };
           }
           throw ordersError;
@@ -126,67 +142,104 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
         // Calculate order metrics
         const orderMetrics: CateringOrderMetrics = {
           total: orders.length,
-          confirmed: orders.filter(o => o.status === 'confirmed').length,
-          completed: orders.filter(o => o.status === 'completed').length,
-          cancelled: orders.filter(o => o.status === 'cancelled').length,
-          inquiry: orders.filter(o => o.status === 'inquiry').length,
-          quoted: orders.filter(o => o.status === 'quoted').length,
+          confirmed: orders.filter((o) => o.status === "confirmed").length,
+          completed: orders.filter((o) => o.status === "completed").length,
+          cancelled: orders.filter((o) => o.status === "cancelled").length,
+          inquiry: orders.filter((o) => o.status === "inquiry").length,
+          quoted: orders.filter((o) => o.status === "quoted").length,
           conversion_rate: 0,
           average_lead_time: 0,
           guest_count_total: 0,
-          average_guest_count: 0
+          average_guest_count: 0,
         };
 
         // Calculate conversion rate (confirmed + completed / total inquiries)
         const convertedOrders = orderMetrics.confirmed + orderMetrics.completed;
-        const totalInquiries = orderMetrics.inquiry + orderMetrics.quoted + convertedOrders;
-        orderMetrics.conversion_rate = totalInquiries > 0 ? (convertedOrders / totalInquiries) * 100 : 0;
+        const totalInquiries =
+          orderMetrics.inquiry + orderMetrics.quoted + convertedOrders;
+        orderMetrics.conversion_rate =
+          totalInquiries > 0 ? (convertedOrders / totalInquiries) * 100 : 0;
 
         // Calculate average lead time (days between order creation and event date)
-        const ordersWithDates = orders.filter(o => o.created_at && o.event_date);
+        const ordersWithDates = orders.filter(
+          (o) => o.created_at && o.event_date,
+        );
         if (ordersWithDates.length > 0) {
           const totalLeadTime = ordersWithDates.reduce((sum, order) => {
             const created = new Date(order.created_at);
             const event = new Date(order.event_date);
-            const leadTime = Math.max(0, (event.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+            const leadTime = Math.max(
+              0,
+              (event.getTime() - created.getTime()) / (1000 * 60 * 60 * 24),
+            );
             return sum + leadTime;
           }, 0);
-          orderMetrics.average_lead_time = totalLeadTime / ordersWithDates.length;
+          orderMetrics.average_lead_time =
+            totalLeadTime / ordersWithDates.length;
         }
 
         // Calculate guest counts
-        orderMetrics.guest_count_total = orders.reduce((sum, order) => sum + (order.guest_count || 0), 0);
-        orderMetrics.average_guest_count = orders.length > 0 ? orderMetrics.guest_count_total / orders.length : 0;
+        orderMetrics.guest_count_total = orders.reduce(
+          (sum, order) => sum + (order.guest_count || 0),
+          0,
+        );
+        orderMetrics.average_guest_count =
+          orders.length > 0
+            ? orderMetrics.guest_count_total / orders.length
+            : 0;
 
         // Calculate revenue metrics
         const revenueMetrics: CateringRevenueMetrics = {
-          total: orders.reduce((sum, order) => sum + (order.total_amount || 0), 0),
+          total: orders.reduce(
+            (sum, order) => sum + (order.total_amount || 0),
+            0,
+          ),
           confirmed: orders
-            .filter(o => o.status === 'confirmed')
+            .filter((o) => o.status === "confirmed")
             .reduce((sum, order) => sum + (order.total_amount || 0), 0),
           completed: orders
-            .filter(o => o.status === 'completed')
+            .filter((o) => o.status === "completed")
             .reduce((sum, order) => sum + (order.total_amount || 0), 0),
           pending: orders
-            .filter(o => ['inquiry', 'quoted'].includes(o.status))
+            .filter((o) => ["inquiry", "quoted"].includes(o.status))
             .reduce((sum, order) => sum + (order.total_amount || 0), 0),
           average_order_value: 0,
-          deposits_collected: orders.reduce((sum, order) => sum + (order.deposit_paid ? order.deposit_amount || 0 : 0), 0),
-          deposits_pending: orders.reduce((sum, order) => sum + (!order.deposit_paid ? order.deposit_amount || 0 : 0), 0),
-          revenue_by_service_type: {} as any
+          deposits_collected: orders.reduce(
+            (sum, order) =>
+              sum + (order.deposit_paid ? order.deposit_amount || 0 : 0),
+            0,
+          ),
+          deposits_pending: orders.reduce(
+            (sum, order) =>
+              sum + (!order.deposit_paid ? order.deposit_amount || 0 : 0),
+            0,
+          ),
+          revenue_by_service_type: {} as any,
         };
 
         // Calculate average order value
-        const revenueOrders = orders.filter(o => (o.total_amount || 0) > 0);
-        revenueMetrics.average_order_value = revenueOrders.length > 0 ? 
-          revenueMetrics.total / revenueOrders.length : 0;
+        const revenueOrders = orders.filter((o) => (o.total_amount || 0) > 0);
+        revenueMetrics.average_order_value =
+          revenueOrders.length > 0
+            ? revenueMetrics.total / revenueOrders.length
+            : 0;
 
         // Calculate revenue by service type
-        const serviceTypes = ['pickup', 'delivery', 'drop_off', 'full_service'] as const;
-        serviceTypes.forEach(serviceType => {
-          const serviceOrders = orders.filter(o => o.service_type === serviceType);
-          (revenueMetrics.revenue_by_service_type as any)[serviceType] = 
-            serviceOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+        const serviceTypes = [
+          "pickup",
+          "delivery",
+          "drop_off",
+          "full_service",
+        ] as const;
+        serviceTypes.forEach((serviceType) => {
+          const serviceOrders = orders.filter(
+            (o) => o.service_type === serviceType,
+          );
+          (revenueMetrics.revenue_by_service_type as any)[serviceType] =
+            serviceOrders.reduce(
+              (sum, order) => sum + (order.total_amount || 0),
+              0,
+            );
         });
 
         // Calculate performance metrics
@@ -196,31 +249,48 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
           service_type_distribution: {} as any,
           monthly_trend: [],
           customer_satisfaction: 0,
-          repeat_customer_rate: 0
+          repeat_customer_rate: 0,
         };
 
         // Popular packages
-        const packageCounts = new Map<string, { name: string; count: number; revenue: number }>();
-        orders.forEach(order => {
+        const packageCounts = new Map<
+          string,
+          { name: string; count: number; revenue: number }
+        >();
+        orders.forEach((order) => {
           if (order.catering_packages) {
             const pkg = order.catering_packages;
             const key = pkg.id;
-            const existing = packageCounts.get(key) || { name: pkg.name, count: 0, revenue: 0 };
+            const existing = packageCounts.get(key) || {
+              name: pkg.name,
+              count: 0,
+              revenue: 0,
+            };
             existing.count += 1;
             existing.revenue += order.total_amount || 0;
             packageCounts.set(key, existing);
           }
         });
 
-        performanceMetrics.popular_packages = Array.from(packageCounts.entries())
+        performanceMetrics.popular_packages = Array.from(
+          packageCounts.entries(),
+        )
           .map(([id, data]) => ({ package_id: id, ...data }))
           .sort((a, b) => b.count - a.count)
           .slice(0, 5);
 
         // Busiest days (day of week analysis)
-        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayNames = [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ];
         const dayCounts = new Array(7).fill(0);
-        orders.forEach(order => {
+        orders.forEach((order) => {
           if (order.event_date) {
             const dayOfWeek = new Date(order.event_date).getDay();
             dayCounts[dayOfWeek]++;
@@ -233,63 +303,82 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
           .slice(0, 3);
 
         // Service type distribution
-        serviceTypes.forEach(serviceType => {
-          const count = orders.filter(o => o.service_type === serviceType).length;
-          (performanceMetrics.service_type_distribution as any)[serviceType] = 
+        serviceTypes.forEach((serviceType) => {
+          const count = orders.filter(
+            (o) => o.service_type === serviceType,
+          ).length;
+          (performanceMetrics.service_type_distribution as any)[serviceType] =
             orders.length > 0 ? (count / orders.length) * 100 : 0;
         });
 
         // Monthly trend (last 6 months including current period)
-        const monthlyData = new Map<string, { orders: number; revenue: number }>();
-        
+        const monthlyData = new Map<
+          string,
+          { orders: number; revenue: number }
+        >();
+
         for (let i = 5; i >= 0; i--) {
           const monthStart = startOfMonth(subMonths(start, i));
           const monthEnd = endOfMonth(monthStart);
-          const monthKey = format(monthStart, 'yyyy-MM');
-          
-          const monthOrders = orders.filter(order => {
+          const monthKey = format(monthStart, "yyyy-MM");
+
+          const monthOrders = orders.filter((order) => {
             const orderDate = new Date(order.event_date);
             return orderDate >= monthStart && orderDate <= monthEnd;
           });
 
           monthlyData.set(monthKey, {
             orders: monthOrders.length,
-            revenue: monthOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0)
+            revenue: monthOrders.reduce(
+              (sum, order) => sum + (order.total_amount || 0),
+              0,
+            ),
           });
         }
 
-        performanceMetrics.monthly_trend = Array.from(monthlyData.entries())
-          .map(([month, data]) => ({ month, ...data }));
+        performanceMetrics.monthly_trend = Array.from(
+          monthlyData.entries(),
+        ).map(([month, data]) => ({ month, ...data }));
 
         // Customer satisfaction from feedback
         const feedbackWithRatings = orders
-          .flatMap(order => order.catering_feedback || [])
-          .filter(feedback => (feedback as any).overall_rating > 0);
+          .flatMap((order) => order.catering_feedback || [])
+          .filter((feedback) => (feedback as any).overall_rating > 0);
 
         if (feedbackWithRatings.length > 0) {
-          const totalRating = feedbackWithRatings.reduce((sum, feedback) => sum + ((feedback as any).overall_rating), 0);
-          performanceMetrics.customer_satisfaction = totalRating / feedbackWithRatings.length;
+          const totalRating = feedbackWithRatings.reduce(
+            (sum, feedback) => sum + (feedback as any).overall_rating,
+            0,
+          );
+          performanceMetrics.customer_satisfaction =
+            totalRating / feedbackWithRatings.length;
         }
 
         // Repeat customer rate
-        const customerEmails = new Set(orders.map(order => order.contact_email));
+        const customerEmails = new Set(
+          orders.map((order) => order.contact_email),
+        );
         const emailCounts = new Map<string, number>();
-        orders.forEach(order => {
+        orders.forEach((order) => {
           const email = order.contact_email;
           emailCounts.set(email, (emailCounts.get(email) || 0) + 1);
         });
 
-        const repeatCustomers = Array.from(emailCounts.values()).filter(count => count > 1).length;
-        performanceMetrics.repeat_customer_rate = 
-          customerEmails.size > 0 ? (repeatCustomers / customerEmails.size) * 100 : 0;
+        const repeatCustomers = Array.from(emailCounts.values()).filter(
+          (count) => count > 1,
+        ).length;
+        performanceMetrics.repeat_customer_rate =
+          customerEmails.size > 0
+            ? (repeatCustomers / customerEmails.size) * 100
+            : 0;
 
         return {
           orders: orderMetrics,
           revenue: revenueMetrics,
-          performance: performanceMetrics
+          performance: performanceMetrics,
         };
       } catch (err) {
-        console.warn('Error fetching catering analytics:', err);
+        console.warn("Error fetching catering analytics:", err);
         return {
           orders: {
             total: 0,
@@ -301,7 +390,7 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
             conversion_rate: 0,
             average_lead_time: 0,
             guest_count_total: 0,
-            average_guest_count: 0
+            average_guest_count: 0,
           },
           revenue: {
             total: 0,
@@ -311,7 +400,7 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
             average_order_value: 0,
             deposits_collected: 0,
             deposits_pending: 0,
-            revenue_by_service_type: {} as any
+            revenue_by_service_type: {} as any,
           },
           performance: {
             popular_packages: [],
@@ -319,8 +408,8 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
             service_type_distribution: {} as any,
             monthly_trend: [],
             customer_satisfaction: 0,
-            repeat_customer_rate: 0
-          }
+            repeat_customer_rate: 0,
+          },
         };
       }
     },
@@ -335,9 +424,9 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
   };
 
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(cents / 100);
   };
 
@@ -350,7 +439,7 @@ export const useCateringAnalytics = (tenantId?: string, dateRange?: { start: Dat
     isLoading,
     error,
     refetch,
-    
+
     // Helper functions
     getMetricChange,
     formatCurrency,

@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -23,13 +29,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { 
-  CreditCard, 
-  MessageSquare, 
-  Cloud, 
-  Mail, 
-  Store, 
+} from "@/components/ui/table";
+import {
+  CreditCard,
+  MessageSquare,
+  Cloud,
+  Mail,
+  Store,
   BarChart3,
   Settings,
   Plus,
@@ -41,17 +47,23 @@ import {
   ExternalLink,
   RefreshCw,
   AlertTriangle,
-  Copy
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+  Copy,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Integration {
   id: string;
   name: string;
-  type: 'payment' | 'communication' | 'infrastructure' | 'analytics' | 'pos' | 'email';
+  type:
+    | "payment"
+    | "communication"
+    | "infrastructure"
+    | "analytics"
+    | "pos"
+    | "email";
   provider: string;
-  status: 'connected' | 'disconnected' | 'error' | 'pending';
+  status: "connected" | "disconnected" | "error" | "pending";
   description: string;
   icon: React.ElementType;
   features: string[];
@@ -65,147 +77,183 @@ interface Integration {
 
 const availableIntegrations: Integration[] = [
   {
-    id: 'stripe',
-    name: 'Stripe',
-    type: 'payment',
-    provider: 'Stripe',
-    status: 'disconnected',
-    description: 'Payment processing and subscription management',
+    id: "stripe",
+    name: "Stripe",
+    type: "payment",
+    provider: "Stripe",
+    status: "disconnected",
+    description: "Payment processing and subscription management",
     icon: CreditCard,
-    features: ['Payment Processing', 'Subscriptions', 'Invoicing', 'Customer Portal'],
+    features: [
+      "Payment Processing",
+      "Subscriptions",
+      "Invoicing",
+      "Customer Portal",
+    ],
     endpoints: {
-      webhooks: ['/webhooks/stripe'],
-      api: 'https://api.stripe.com'
-    }
+      webhooks: ["/webhooks/stripe"],
+      api: "https://api.stripe.com",
+    },
   },
   {
-    id: 'twilio',
-    name: 'Twilio SMS',
-    type: 'communication',
-    provider: 'Twilio',
-    status: 'disconnected',
-    description: 'SMS messaging and phone number management',
+    id: "twilio",
+    name: "Twilio SMS",
+    type: "communication",
+    provider: "Twilio",
+    status: "disconnected",
+    description: "SMS messaging and phone number management",
     icon: MessageSquare,
-    features: ['SMS Notifications', 'Phone Verification', 'Two-Way Messaging'],
+    features: ["SMS Notifications", "Phone Verification", "Two-Way Messaging"],
     endpoints: {
-      webhooks: ['/webhooks/twilio'],
-      api: 'https://api.twilio.com'
-    }
+      webhooks: ["/webhooks/twilio"],
+      api: "https://api.twilio.com",
+    },
   },
   {
-    id: 'cloudflare',
-    name: 'Cloudflare',
-    type: 'infrastructure',
-    provider: 'Cloudflare',
-    status: 'disconnected',
-    description: 'DNS, SSL, and CDN management',
+    id: "cloudflare",
+    name: "Cloudflare",
+    type: "infrastructure",
+    provider: "Cloudflare",
+    status: "disconnected",
+    description: "DNS, SSL, and CDN management",
     icon: Cloud,
-    features: ['DNS Management', 'SSL Certificates', 'CDN', 'DDoS Protection'],
+    features: ["DNS Management", "SSL Certificates", "CDN", "DDoS Protection"],
     endpoints: {
-      webhooks: ['/webhooks/cloudflare'],
-      api: 'https://api.cloudflare.com'
-    }
+      webhooks: ["/webhooks/cloudflare"],
+      api: "https://api.cloudflare.com",
+    },
   },
   {
-    id: 'resend',
-    name: 'Resend',
-    type: 'email',
-    provider: 'Resend',
-    status: 'disconnected',
-    description: 'Transactional email service',
+    id: "resend",
+    name: "Resend",
+    type: "email",
+    provider: "Resend",
+    status: "disconnected",
+    description: "Transactional email service",
     icon: Mail,
-    features: ['Transactional Emails', 'Email Templates', 'Analytics', 'Deliverability'],
+    features: [
+      "Transactional Emails",
+      "Email Templates",
+      "Analytics",
+      "Deliverability",
+    ],
     endpoints: {
-      webhooks: ['/webhooks/resend'],
-      api: 'https://api.resend.com'
-    }
+      webhooks: ["/webhooks/resend"],
+      api: "https://api.resend.com",
+    },
   },
   {
-    id: 'toast-pos',
-    name: 'Toast POS',
-    type: 'pos',
-    provider: 'Toast',
-    status: 'disconnected',
-    description: 'Restaurant POS system integration',
+    id: "toast-pos",
+    name: "Toast POS",
+    type: "pos",
+    provider: "Toast",
+    status: "disconnected",
+    description: "Restaurant POS system integration",
     icon: Store,
-    features: ['Menu Sync', 'Order Management', 'Inventory', 'Reporting'],
+    features: ["Menu Sync", "Order Management", "Inventory", "Reporting"],
     endpoints: {
-      webhooks: ['/webhooks/toast'],
-      api: 'https://ws-api.toasttab.com'
-    }
+      webhooks: ["/webhooks/toast"],
+      api: "https://ws-api.toasttab.com",
+    },
   },
   {
-    id: 'square',
-    name: 'Square POS',
-    type: 'pos',
-    provider: 'Square',
-    status: 'disconnected',
-    description: 'Square POS system integration',
+    id: "square",
+    name: "Square POS",
+    type: "pos",
+    provider: "Square",
+    status: "disconnected",
+    description: "Square POS system integration",
     icon: Store,
-    features: ['Payment Processing', 'Inventory Management', 'Customer Data'],
+    features: ["Payment Processing", "Inventory Management", "Customer Data"],
     endpoints: {
-      webhooks: ['/webhooks/square'],
-      api: 'https://connect.squareup.com'
-    }
+      webhooks: ["/webhooks/square"],
+      api: "https://connect.squareup.com",
+    },
   },
   {
-    id: 'analytics',
-    name: 'Custom Analytics',
-    type: 'analytics',
-    provider: 'Platform',
-    status: 'connected',
-    description: 'Internal analytics and tracking system',
+    id: "analytics",
+    name: "Custom Analytics",
+    type: "analytics",
+    provider: "Platform",
+    status: "connected",
+    description: "Internal analytics and tracking system",
     icon: BarChart3,
-    features: ['Event Tracking', 'User Analytics', 'Performance Metrics', 'Custom Reports']
-  }
+    features: [
+      "Event Tracking",
+      "User Analytics",
+      "Performance Metrics",
+      "Custom Reports",
+    ],
+  },
 ];
 
 export const IntegrationsManager: React.FC = () => {
-  const [integrations, setIntegrations] = useState<Integration[]>(availableIntegrations);
-  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+  const [integrations, setIntegrations] = useState<Integration[]>(
+    availableIntegrations,
+  );
+  const [selectedIntegration, setSelectedIntegration] =
+    useState<Integration | null>(null);
   const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
   const [testResults, setTestResults] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
-  const getStatusBadge = (status: Integration['status']) => {
+  const getStatusBadge = (status: Integration["status"]) => {
     const statusConfig = {
-      connected: { variant: 'default' as const, text: 'Connected', color: 'bg-green-100 text-green-800' },
-      disconnected: { variant: 'secondary' as const, text: 'Disconnected', color: 'bg-gray-100 text-gray-800' },
-      error: { variant: 'destructive' as const, text: 'Error', color: 'bg-red-100 text-red-800' },
-      pending: { variant: 'outline' as const, text: 'Pending', color: 'bg-yellow-100 text-yellow-800' }
+      connected: {
+        variant: "default" as const,
+        text: "Connected",
+        color: "bg-green-100 text-green-800",
+      },
+      disconnected: {
+        variant: "secondary" as const,
+        text: "Disconnected",
+        color: "bg-gray-100 text-gray-800",
+      },
+      error: {
+        variant: "destructive" as const,
+        text: "Error",
+        color: "bg-red-100 text-red-800",
+      },
+      pending: {
+        variant: "outline" as const,
+        text: "Pending",
+        color: "bg-yellow-100 text-yellow-800",
+      },
     };
-    
+
     const config = statusConfig[status];
     return <Badge className={config.color}>{config.text}</Badge>;
   };
 
-  const getTypeIcon = (type: Integration['type']) => {
+  const getTypeIcon = (type: Integration["type"]) => {
     const icons = {
       payment: CreditCard,
       communication: MessageSquare,
       infrastructure: Cloud,
       email: Mail,
       pos: Store,
-      analytics: BarChart3
+      analytics: BarChart3,
     };
     const Icon = icons[type];
     return <Icon className="h-4 w-4" />;
   };
 
   const handleConnect = async (integration: Integration) => {
-    setLoading(prev => ({ ...prev, [integration.id]: true }));
-    
+    setLoading((prev) => ({ ...prev, [integration.id]: true }));
+
     try {
       // Simulate connection process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setIntegrations(prev => prev.map(int => 
-        int.id === integration.id 
-          ? { ...int, status: 'connected' as const, lastSync: new Date() }
-          : int
-      ));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      setIntegrations((prev) =>
+        prev.map((int) =>
+          int.id === integration.id
+            ? { ...int, status: "connected" as const, lastSync: new Date() }
+            : int,
+        ),
+      );
+
       toast({
         title: "Integration Connected",
         description: `Successfully connected to ${integration.name}`,
@@ -217,22 +265,24 @@ export const IntegrationsManager: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(prev => ({ ...prev, [integration.id]: false }));
+      setLoading((prev) => ({ ...prev, [integration.id]: false }));
     }
   };
 
   const handleDisconnect = async (integration: Integration) => {
-    setLoading(prev => ({ ...prev, [integration.id]: true }));
-    
+    setLoading((prev) => ({ ...prev, [integration.id]: true }));
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setIntegrations(prev => prev.map(int => 
-        int.id === integration.id 
-          ? { ...int, status: 'disconnected' as const, lastSync: undefined }
-          : int
-      ));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setIntegrations((prev) =>
+        prev.map((int) =>
+          int.id === integration.id
+            ? { ...int, status: "disconnected" as const, lastSync: undefined }
+            : int,
+        ),
+      );
+
       toast({
         title: "Integration Disconnected",
         description: `Disconnected from ${integration.name}`,
@@ -244,33 +294,36 @@ export const IntegrationsManager: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(prev => ({ ...prev, [integration.id]: false }));
+      setLoading((prev) => ({ ...prev, [integration.id]: false }));
     }
   };
 
   const handleTest = async (integration: Integration) => {
-    setLoading(prev => ({ ...prev, [`test-${integration.id}`]: true }));
-    
+    setLoading((prev) => ({ ...prev, [`test-${integration.id}`]: true }));
+
     try {
       // Simulate test
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       const testResult = {
         success: Math.random() > 0.2,
         timestamp: new Date(),
         responseTime: Math.floor(Math.random() * 500) + 100,
-        details: integration.status === 'connected' ? 'Connection test successful' : 'Service unavailable'
+        details:
+          integration.status === "connected"
+            ? "Connection test successful"
+            : "Service unavailable",
       };
-      
-      setTestResults(prev => ({ ...prev, [integration.id]: testResult }));
-      
+
+      setTestResults((prev) => ({ ...prev, [integration.id]: testResult }));
+
       toast({
         title: testResult.success ? "Test Successful" : "Test Failed",
         description: testResult.details,
         variant: testResult.success ? "default" : "destructive",
       });
     } finally {
-      setLoading(prev => ({ ...prev, [`test-${integration.id}`]: false }));
+      setLoading((prev) => ({ ...prev, [`test-${integration.id}`]: false }));
     }
   };
 
@@ -282,11 +335,14 @@ export const IntegrationsManager: React.FC = () => {
     });
   };
 
-  const integrationsByType = integrations.reduce((acc, integration) => {
-    if (!acc[integration.type]) acc[integration.type] = [];
-    acc[integration.type].push(integration);
-    return acc;
-  }, {} as Record<string, Integration[]>);
+  const integrationsByType = integrations.reduce(
+    (acc, integration) => {
+      if (!acc[integration.type]) acc[integration.type] = [];
+      acc[integration.type].push(integration);
+      return acc;
+    },
+    {} as Record<string, Integration[]>,
+  );
 
   return (
     <div className="space-y-6">
@@ -316,27 +372,33 @@ export const IntegrationsManager: React.FC = () => {
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {Object.entries(integrationsByType).map(([type, typeIntegrations]) => (
-              <Card key={type}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    {getTypeIcon(type as Integration['type'])}
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="text-2xl font-bold">
-                      {typeIntegrations.filter(i => i.status === 'connected').length}/
-                      {typeIntegrations.length}
+            {Object.entries(integrationsByType).map(
+              ([type, typeIntegrations]) => (
+                <Card key={type}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      {getTypeIcon(type as Integration["type"])}
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="text-2xl font-bold">
+                        {
+                          typeIntegrations.filter(
+                            (i) => i.status === "connected",
+                          ).length
+                        }
+                        /{typeIntegrations.length}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Connected integrations
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Connected integrations
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ),
+            )}
           </div>
 
           <Card>
@@ -364,7 +426,9 @@ export const IntegrationsManager: React.FC = () => {
                         <div className="flex items-center gap-3">
                           <integration.icon className="h-5 w-5" />
                           <div>
-                            <div className="font-medium">{integration.name}</div>
+                            <div className="font-medium">
+                              {integration.name}
+                            </div>
                             <div className="text-sm text-muted-foreground">
                               {integration.description}
                             </div>
@@ -376,13 +440,15 @@ export const IntegrationsManager: React.FC = () => {
                           {integration.type}
                         </Badge>
                       </TableCell>
-                      <TableCell>{getStatusBadge(integration.status)}</TableCell>
+                      <TableCell>
+                        {getStatusBadge(integration.status)}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {integration.lastSync?.toLocaleString() || 'Never'}
+                        {integration.lastSync?.toLocaleString() || "Never"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {integration.status === 'connected' ? (
+                          {integration.status === "connected" ? (
                             <>
                               <Button
                                 variant="outline"
@@ -393,7 +459,7 @@ export const IntegrationsManager: React.FC = () => {
                                 {loading[`test-${integration.id}`] ? (
                                   <RefreshCw className="h-3 w-3 animate-spin" />
                                 ) : (
-                                  'Test'
+                                  "Test"
                                 )}
                               </Button>
                               <Button
@@ -415,7 +481,7 @@ export const IntegrationsManager: React.FC = () => {
                               {loading[integration.id] ? (
                                 <RefreshCw className="h-3 w-3 animate-spin mr-1" />
                               ) : (
-                                'Connect'
+                                "Connect"
                               )}
                             </Button>
                           )}
@@ -459,13 +525,17 @@ export const IntegrationsManager: React.FC = () => {
                       <Label className="text-sm font-medium">Features</Label>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {integration.features.map((feature) => (
-                          <Badge key={feature} variant="outline" className="text-xs">
+                          <Badge
+                            key={feature}
+                            variant="outline"
+                            className="text-xs"
+                          >
                             {feature}
                           </Badge>
                         ))}
                       </div>
                     </div>
-                    
+
                     {integration.endpoints && (
                       <div>
                         <Label className="text-sm font-medium">Endpoints</Label>
@@ -479,14 +549,19 @@ export const IntegrationsManager: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => copyToClipboard(integration.endpoints!.api)}
+                                onClick={() =>
+                                  copyToClipboard(integration.endpoints!.api)
+                                }
                               >
                                 <Copy className="h-3 w-3" />
                               </Button>
                             </div>
                           </div>
                           {integration.endpoints.webhooks.map((webhook) => (
-                            <div key={webhook} className="flex items-center justify-between text-xs">
+                            <div
+                              key={webhook}
+                              className="flex items-center justify-between text-xs"
+                            >
                               <span>Webhook:</span>
                               <div className="flex items-center gap-1">
                                 <span className="font-mono text-muted-foreground">
@@ -508,7 +583,9 @@ export const IntegrationsManager: React.FC = () => {
 
                     {testResults[integration.id] && (
                       <div className="p-3 bg-muted rounded-lg">
-                        <div className="text-sm font-medium mb-1">Last Test Result</div>
+                        <div className="text-sm font-medium mb-1">
+                          Last Test Result
+                        </div>
                         <div className="flex items-center gap-2 text-xs">
                           {testResults[integration.id].success ? (
                             <Check className="h-3 w-3 text-green-600" />
@@ -524,7 +601,7 @@ export const IntegrationsManager: React.FC = () => {
                     )}
 
                     <div className="flex gap-2">
-                      {integration.status === 'connected' ? (
+                      {integration.status === "connected" ? (
                         <>
                           <Button
                             variant="outline"
@@ -536,7 +613,7 @@ export const IntegrationsManager: React.FC = () => {
                             {loading[`test-${integration.id}`] ? (
                               <RefreshCw className="h-3 w-3 animate-spin mr-1" />
                             ) : (
-                              'Test Connection'
+                              "Test Connection"
                             )}
                           </Button>
                           <Button
@@ -557,7 +634,7 @@ export const IntegrationsManager: React.FC = () => {
                           {loading[integration.id] ? (
                             <RefreshCw className="h-4 w-4 animate-spin mr-2" />
                           ) : (
-                            'Connect'
+                            "Connect"
                           )}
                         </Button>
                       )}
@@ -586,7 +663,7 @@ export const IntegrationsManager: React.FC = () => {
               Manage settings and credentials for this integration
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedIntegration && (
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
@@ -607,41 +684,47 @@ export const IntegrationsManager: React.FC = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="webhook-url">Webhook URL</Label>
                 <div className="flex gap-2">
                   <Input
                     id="webhook-url"
-                    value={`${window.location.origin}${selectedIntegration.endpoints?.webhooks[0] || '/webhook'}`}
+                    value={`${window.location.origin}${selectedIntegration.endpoints?.webhooks[0] || "/webhook"}`}
                     readOnly
                   />
                   <Button
                     variant="outline"
-                    onClick={() => copyToClipboard(`${window.location.origin}${selectedIntegration.endpoints?.webhooks[0] || '/webhook'}`)}
+                    onClick={() =>
+                      copyToClipboard(
+                        `${window.location.origin}${selectedIntegration.endpoints?.webhooks[0] || "/webhook"}`,
+                      )
+                    }
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="settings">Additional Settings</Label>
-                <Textarea
-                  id="settings"
-                  placeholder="JSON configuration..."
-                />
+                <Textarea id="settings" placeholder="JSON configuration..." />
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Switch id="auto-sync" />
-                <Label htmlFor="auto-sync">Enable automatic synchronization</Label>
+                <Label htmlFor="auto-sync">
+                  Enable automatic synchronization
+                </Label>
               </div>
             </div>
           )}
-          
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsConfigDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsConfigDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button>Save Configuration</Button>

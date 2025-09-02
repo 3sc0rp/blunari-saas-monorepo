@@ -1,10 +1,20 @@
-import express from 'express';
-import { z } from 'zod';
-import { authenticateRequest, validateApiKey, AuthenticatedRequest } from '../middleware/auth';
-import { idempotencyMiddleware } from '../middleware/idempotency';
-import { createJob, getJob, cancelJob, queryJobs, getJobStats } from '../services/jobs';
-import { CreateJobRequest, JobFilters, JobType } from '../types/jobs';
-import { logger } from '../utils/logger';
+import express from "express";
+import { z } from "zod";
+import {
+  authenticateRequest,
+  validateApiKey,
+  AuthenticatedRequest,
+} from "../middleware/auth";
+import { idempotencyMiddleware } from "../middleware/idempotency";
+import {
+  createJob,
+  getJob,
+  cancelJob,
+  queryJobs,
+  getJobStats,
+} from "../services/jobs";
+import { CreateJobRequest, JobFilters, JobType } from "../types/jobs";
+import { logger } from "../utils/logger";
 
 const router = express.Router();
 
@@ -14,7 +24,7 @@ const CreateJobSchema = z.object({
   payload: z.any(),
   priority: z.number().min(1).max(20).optional(),
   scheduledFor: z.string().datetime().optional(),
-  maxRetries: z.number().min(0).max(10).optional()
+  maxRetries: z.number().min(0).max(10).optional(),
 });
 
 // Schema for job query parameters
@@ -25,81 +35,97 @@ const JobQuerySchema = z.object({
   fromDate: z.string().datetime().optional(),
   toDate: z.string().datetime().optional(),
   limit: z.number().min(1).max(100).optional(),
-  offset: z.number().min(0).optional()
+  offset: z.number().min(0).optional(),
 });
 
 /**
  * POST /v1/jobs - Create and enqueue a new job
  */
-router.post('/', authenticateRequest, idempotencyMiddleware, async (req: AuthenticatedRequest, res) => {
-  const requestLogger = logger.child({ requestId: req.requestId, tenantId: req.tenantId });
-  
-  try {
-    // Validate request body
-    const jobRequest = CreateJobSchema.parse(req.body) as CreateJobRequest;
-    
-    requestLogger.info('Creating job', {
-      type: jobRequest.type,
-      priority: jobRequest.priority,
-      hasPayload: !!jobRequest.payload,
-      scheduledFor: jobRequest.scheduledFor
+router.post(
+  "/",
+  authenticateRequest,
+  idempotencyMiddleware,
+  async (req: AuthenticatedRequest, res) => {
+    const requestLogger = logger.child({
+      requestId: req.requestId,
+      tenantId: req.tenantId,
     });
 
-    // Create and enqueue job
-    const job = await createJob(req.tenantId!, req.requestId!, jobRequest);
+    try {
+      // Validate request body
+      const jobRequest = CreateJobSchema.parse(req.body) as CreateJobRequest;
 
-    res.status(201).json({
-      success: true,
-      data: {
-        id: job.id,
-        type: job.type,
-        status: job.status,
-        priority: job.priority,
-        scheduledFor: job.scheduledFor?.toISOString(),
-        createdAt: job.createdAt.toISOString()
+      requestLogger.info("Creating job", {
+        type: jobRequest.type,
+        priority: jobRequest.priority,
+        hasPayload: !!jobRequest.payload,
+        scheduledFor: jobRequest.scheduledFor,
+      });
+
+      // Create and enqueue job
+      const job = await createJob(req.tenantId!, req.requestId!, jobRequest);
+
+      res.status(201).json({
+        success: true,
+        data: {
+          id: job.id,
+          type: job.type,
+          status: job.status,
+          priority: job.priority,
+          scheduledFor: job.scheduledFor?.toISOString(),
+          createdAt: job.createdAt.toISOString(),
+        },
+      });
+
+      requestLogger.info("Job created successfully", { jobId: job.id });
+    } catch (error) {
+      requestLogger.error("Failed to create job", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid request data",
+          details: error.errors,
+        });
+      } else if (
+        error instanceof Error &&
+        error.message.includes("Unknown job type")
+      ) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid job type",
+          message: error.message,
+        });
+      } else if (
+        error instanceof Error &&
+        error.message.includes("Invalid payload")
+      ) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid job payload",
+          message: error.message,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: "Internal server error",
+          message: "Failed to create job",
+        });
       }
-    });
-
-    requestLogger.info('Job created successfully', { jobId: job.id });
-  } catch (error) {
-    requestLogger.error('Failed to create job', { 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    });
-    
-    if (error instanceof z.ZodError) {
-      res.status(400).json({
-        success: false,
-        error: 'Invalid request data',
-        details: error.errors
-      });
-    } else if (error instanceof Error && error.message.includes('Unknown job type')) {
-      res.status(400).json({
-        success: false,
-        error: 'Invalid job type',
-        message: error.message
-      });
-    } else if (error instanceof Error && error.message.includes('Invalid payload')) {
-      res.status(400).json({
-        success: false,
-        error: 'Invalid job payload',
-        message: error.message
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        error: 'Internal server error',
-        message: 'Failed to create job'
-      });
     }
-  }
-});
+  },
+);
 
 /**
  * GET /v1/jobs/:id - Get job by ID
  */
-router.get('/:id', validateApiKey, async (req: AuthenticatedRequest, res) => {
-  const requestLogger = logger.child({ requestId: req.headers['x-request-id'] as string });
-  
+router.get("/:id", validateApiKey, async (req: AuthenticatedRequest, res) => {
+  const requestLogger = logger.child({
+    requestId: req.headers["x-request-id"] as string,
+  });
+
   try {
     const jobId = req.params.id;
     const job = await getJob(jobId);
@@ -107,7 +133,7 @@ router.get('/:id', validateApiKey, async (req: AuthenticatedRequest, res) => {
     if (!job) {
       return res.status(404).json({
         success: false,
-        error: 'Job not found'
+        error: "Job not found",
       });
     }
 
@@ -128,19 +154,19 @@ router.get('/:id', validateApiKey, async (req: AuthenticatedRequest, res) => {
         completedAt: job.completedAt?.toISOString(),
         failedAt: job.failedAt?.toISOString(),
         error: job.error,
-        result: job.result
-      }
+        result: job.result,
+      },
     });
   } catch (error) {
-    requestLogger.error('Failed to get job', { 
+    requestLogger.error("Failed to get job", {
       jobId: req.params.id,
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: error instanceof Error ? error.message : "Unknown error",
     });
-    
+
     return res.status(500).json({
       success: false,
-      error: 'Internal server error',
-      message: 'Failed to get job'
+      error: "Internal server error",
+      message: "Failed to get job",
     });
   }
 });
@@ -148,59 +174,79 @@ router.get('/:id', validateApiKey, async (req: AuthenticatedRequest, res) => {
 /**
  * POST /v1/jobs/:id/cancel - Cancel a job
  */
-router.post('/:id/cancel', authenticateRequest, idempotencyMiddleware, async (req: AuthenticatedRequest, res) => {
-  const requestLogger = logger.child({ requestId: req.requestId, tenantId: req.tenantId });
-  
-  try {
-    const jobId = req.params.id;
-    const cancelled = await cancelJob(jobId, req.requestId);
+router.post(
+  "/:id/cancel",
+  authenticateRequest,
+  idempotencyMiddleware,
+  async (req: AuthenticatedRequest, res) => {
+    const requestLogger = logger.child({
+      requestId: req.requestId,
+      tenantId: req.tenantId,
+    });
 
-    if (!cancelled) {
-      return res.status(404).json({
+    try {
+      const jobId = req.params.id;
+      const cancelled = await cancelJob(jobId, req.requestId);
+
+      if (!cancelled) {
+        return res.status(404).json({
+          success: false,
+          error: "Job not found or cannot be cancelled",
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          id: jobId,
+          cancelled: true,
+        },
+      });
+
+      return requestLogger.info("Job cancelled successfully", { jobId });
+    } catch (error) {
+      requestLogger.error("Failed to cancel job", {
+        jobId: req.params.id,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+
+      return res.status(500).json({
         success: false,
-        error: 'Job not found or cannot be cancelled'
+        error: "Internal server error",
+        message: "Failed to cancel job",
       });
     }
-
-    res.json({
-      success: true,
-      data: {
-        id: jobId,
-        cancelled: true
-      }
-    });
-
-    return requestLogger.info('Job cancelled successfully', { jobId });
-  } catch (error) {
-    requestLogger.error('Failed to cancel job', { 
-      jobId: req.params.id,
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    });
-    
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      message: 'Failed to cancel job'
-    });
-  }
-});
+  },
+);
 
 /**
  * GET /v1/jobs - Query jobs with filters
  */
-router.get('/', validateApiKey, async (req: AuthenticatedRequest, res) => {
-  const requestLogger = logger.child({ requestId: req.headers['x-request-id'] as string });
-  
+router.get("/", validateApiKey, async (req: AuthenticatedRequest, res) => {
+  const requestLogger = logger.child({
+    requestId: req.headers["x-request-id"] as string,
+  });
+
   try {
     // Parse and validate query parameters
     const queryParams = {
-      status: req.query.status ? (Array.isArray(req.query.status) ? req.query.status : [req.query.status]) : undefined,
-      type: req.query.type ? (Array.isArray(req.query.type) ? req.query.type : [req.query.type]) : undefined,
+      status: req.query.status
+        ? Array.isArray(req.query.status)
+          ? req.query.status
+          : [req.query.status]
+        : undefined,
+      type: req.query.type
+        ? Array.isArray(req.query.type)
+          ? req.query.type
+          : [req.query.type]
+        : undefined,
       tenantId: req.query.tenantId as string,
       fromDate: req.query.fromDate as string,
       toDate: req.query.toDate as string,
       limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
-      offset: req.query.offset ? parseInt(req.query.offset as string) : undefined
+      offset: req.query.offset
+        ? parseInt(req.query.offset as string)
+        : undefined,
     };
 
     const filters: JobFilters = {
@@ -210,7 +256,7 @@ router.get('/', validateApiKey, async (req: AuthenticatedRequest, res) => {
       fromDate: queryParams.fromDate,
       toDate: queryParams.toDate,
       limit: queryParams.limit,
-      offset: queryParams.offset
+      offset: queryParams.offset,
     };
 
     const result = await queryJobs(filters);
@@ -218,7 +264,7 @@ router.get('/', validateApiKey, async (req: AuthenticatedRequest, res) => {
     res.json({
       success: true,
       data: {
-        jobs: result.jobs.map(job => ({
+        jobs: result.jobs.map((job) => ({
           id: job.id,
           type: job.type,
           tenantId: job.tenantId,
@@ -231,31 +277,31 @@ router.get('/', validateApiKey, async (req: AuthenticatedRequest, res) => {
           scheduledFor: job.scheduledFor?.toISOString(),
           completedAt: job.completedAt?.toISOString(),
           failedAt: job.failedAt?.toISOString(),
-          error: job.error
+          error: job.error,
         })),
         total: result.total,
         pagination: {
           limit: filters.limit || 50,
-          offset: filters.offset || 0
-        }
-      }
+          offset: filters.offset || 0,
+        },
+      },
     });
   } catch (error) {
-    requestLogger.error('Failed to query jobs', { 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    requestLogger.error("Failed to query jobs", {
+      error: error instanceof Error ? error.message : "Unknown error",
     });
-    
+
     if (error instanceof z.ZodError) {
       res.status(400).json({
         success: false,
-        error: 'Invalid query parameters',
-        details: error.errors
+        error: "Invalid query parameters",
+        details: error.errors,
       });
     } else {
       res.status(500).json({
         success: false,
-        error: 'Internal server error',
-        message: 'Failed to query jobs'
+        error: "Internal server error",
+        message: "Failed to query jobs",
       });
     }
   }
@@ -264,25 +310,27 @@ router.get('/', validateApiKey, async (req: AuthenticatedRequest, res) => {
 /**
  * GET /v1/jobs/stats - Get job statistics
  */
-router.get('/stats', validateApiKey, async (req: AuthenticatedRequest, res) => {
-  const requestLogger = logger.child({ requestId: req.headers['x-request-id'] as string });
-  
+router.get("/stats", validateApiKey, async (req: AuthenticatedRequest, res) => {
+  const requestLogger = logger.child({
+    requestId: req.headers["x-request-id"] as string,
+  });
+
   try {
     const stats = await getJobStats();
 
     res.json({
       success: true,
-      data: stats
+      data: stats,
     });
   } catch (error) {
-    requestLogger.error('Failed to get job stats', { 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    requestLogger.error("Failed to get job stats", {
+      error: error instanceof Error ? error.message : "Unknown error",
     });
-    
+
     res.status(500).json({
       success: false,
-      error: 'Internal server error',
-      message: 'Failed to get job statistics'
+      error: "Internal server error",
+      message: "Failed to get job statistics",
     });
   }
 });

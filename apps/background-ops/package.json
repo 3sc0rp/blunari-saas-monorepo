@@ -10,7 +10,10 @@
     "dev": "tsx watch src/server.ts",
     "test": "jest --passWithNoTests",
     "type-check": "tsc --noEmit",
-    "lint": "echo \"Lint script not configured\"",
+    "lint": "eslint src --ext .ts,.js",
+    "lint:fix": "eslint src --ext .ts,.js --fix",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\"",
     "clean": "rm -rf dist"
   },
   "dependencies": {

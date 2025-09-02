@@ -1,13 +1,13 @@
-import React, { useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Upload, X, Image, AlertCircle, CheckCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useTenant } from '@/hooks/useTenant';
-import { toast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+import React, { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Upload, X, Image, AlertCircle, CheckCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useTenant } from "@/hooks/useTenant";
+import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface FileUploadProps {
   value?: string;
@@ -23,39 +23,43 @@ interface FileUploadProps {
 export const FileUpload: React.FC<FileUploadProps> = ({
   value,
   onChange,
-  accept = 'image/*',
+  accept = "image/*",
   maxSize = 5 * 1024 * 1024, // 5MB default
   label,
   description,
   preview = true,
-  className
+  className,
 }) => {
   const { tenant } = useTenant();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file || !tenant?.id) return;
 
     // Validate file size
     if (file.size > maxSize) {
-      setError(`File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB`);
+      setError(
+        `File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB`,
+      );
       return;
     }
 
-    setError('');
+    setError("");
     setUploading(true);
 
     try {
       // Create a unique file name
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${tenant.id}/${Date.now()}.${fileExt}`;
-      
+
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
-        .from('tenant-assets')
+        .from("tenant-assets")
         .upload(fileName, file);
 
       if (error) {
@@ -63,20 +67,19 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       }
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('tenant-assets')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("tenant-assets").getPublicUrl(fileName);
 
       onChange(publicUrl);
-      
+
       toast({
         title: "Upload Successful",
         description: `${label} has been uploaded successfully.`,
       });
-
     } catch (error) {
-      console.error('Upload error:', error);
-      setError('Upload failed. Please try again.');
+      console.error("Upload error:", error);
+      setError("Upload failed. Please try again.");
       toast({
         title: "Upload Failed",
         description: `Failed to upload ${label}. Please try again.`,
@@ -86,14 +89,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setUploading(false);
       // Reset file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
 
   const handleRemove = () => {
-    onChange('');
-    setError('');
+    onChange("");
+    setError("");
     toast({
       title: "File Removed",
       description: `${label} has been removed.`,
@@ -107,13 +110,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   return (
     <div className={cn("space-y-3", className)}>
       <Label className="text-sm font-medium">{label}</Label>
-      
+
       {value && preview ? (
         <div className="space-y-2">
           <div className="relative inline-block">
-            <img 
-              src={value} 
-              alt={label} 
+            <img
+              src={value}
+              alt={label}
               className="max-h-20 max-w-32 rounded border object-contain"
             />
             <Button
@@ -129,7 +132,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-green-500" />
-            <span className="text-sm text-muted-foreground">File uploaded successfully</span>
+            <span className="text-sm text-muted-foreground">
+              File uploaded successfully
+            </span>
           </div>
           <Button
             type="button"
@@ -143,11 +148,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </Button>
         </div>
       ) : (
-        <Card 
+        <Card
           className={cn(
             "border-2 border-dashed transition-colors cursor-pointer",
             error && "border-destructive",
-            uploading && "pointer-events-none opacity-60"
+            uploading && "pointer-events-none opacity-60",
           )}
           onClick={handleClick}
         >
@@ -168,7 +173,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     <Image className="h-8 w-8 text-muted-foreground" />
                   )}
                 </div>
-                
+
                 <div className="space-y-1">
                   <div className="text-sm font-medium">
                     Upload {label.toLowerCase()}

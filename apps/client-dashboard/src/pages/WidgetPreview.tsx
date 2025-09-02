@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  ExternalLink, 
-  Monitor, 
-  Smartphone, 
-  Tablet, 
-  Copy, 
-  Check, 
-  Code2, 
-  Palette, 
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  ExternalLink,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Copy,
+  Check,
+  Code2,
+  Palette,
   Globe,
   Eye,
   Settings2,
@@ -18,32 +18,42 @@ import {
   QrCode,
   Sliders,
   Calendar,
-  ChefHat
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { useTenant } from '@/hooks/useTenant';
-import { useToast } from '@/hooks/use-toast';
-import BookingDebugger from '@/components/booking/BookingDebugger';
+  ChefHat,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { useTenant } from "@/hooks/useTenant";
+import { useToast } from "@/hooks/use-toast";
+import BookingDebugger from "@/components/booking/BookingDebugger";
 
 const WidgetPreview: React.FC = () => {
   const { tenant, isLoading } = useTenant();
   const { toast } = useToast();
-  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [previewDevice, setPreviewDevice] = useState<
+    "desktop" | "tablet" | "mobile"
+  >("desktop");
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [widgetType, setWidgetType] = useState<'booking' | 'catering'>('booking');
-  
+  const [widgetType, setWidgetType] = useState<"booking" | "catering">(
+    "booking",
+  );
+
   // Widget configuration state - separate for booking and catering
   const [bookingConfig, setBookingConfig] = useState({
-    theme: 'light',
-    primaryColor: tenant?.primary_color || '#3b82f6',
+    theme: "light",
+    primaryColor: tenant?.primary_color || "#3b82f6",
     showAvailability: true,
     showPricing: false,
     requirePhone: true,
@@ -52,12 +62,12 @@ const WidgetPreview: React.FC = () => {
     timeSlotInterval: 30,
     enableWaitlist: true,
     enableNotifications: true,
-    showReviews: false
+    showReviews: false,
   });
 
   const [cateringConfig, setCateringConfig] = useState({
-    theme: 'light',
-    primaryColor: tenant?.primary_color || '#3b82f6',
+    theme: "light",
+    primaryColor: tenant?.primary_color || "#3b82f6",
     showPackages: true,
     showCustomOrders: true,
     enableQuotes: true,
@@ -66,39 +76,41 @@ const WidgetPreview: React.FC = () => {
     minOrderDays: 3,
     requirePhone: true,
     enableNotifications: true,
-    showTestimonials: false
+    showTestimonials: false,
   });
 
   // Get current config based on widget type
-  const currentConfig = widgetType === 'booking' ? bookingConfig : cateringConfig;
-  const setCurrentConfig = widgetType === 'booking' ? setBookingConfig : setCateringConfig;
+  const currentConfig =
+    widgetType === "booking" ? bookingConfig : cateringConfig;
+  const setCurrentConfig =
+    widgetType === "booking" ? setBookingConfig : setCateringConfig;
 
   // Device configurations for preview
   const deviceConfigs = {
     desktop: {
-      width: '100%',
-      height: 'h-[600px]',
+      width: "100%",
+      height: "h-[600px]",
       icon: Monitor,
-      label: 'Desktop'
+      label: "Desktop",
     },
     tablet: {
-      width: '768px',
-      height: 'h-[800px]',
+      width: "768px",
+      height: "h-[800px]",
       icon: Tablet,
-      label: 'Tablet'
+      label: "Tablet",
     },
     mobile: {
-      width: '375px',
-      height: 'h-[667px]',
+      width: "375px",
+      height: "h-[667px]",
       icon: Smartphone,
-      label: 'Mobile'
-    }
+      label: "Mobile",
+    },
   };
 
   // Generate URLs for both widget types
-  const bookingUrl = `${window.location.origin}/booking-widget/${tenant?.id || 'demo'}`;
-  const cateringUrl = `${window.location.origin}/catering-widget/${tenant?.id || 'demo'}`;
-  const currentUrl = widgetType === 'booking' ? bookingUrl : cateringUrl;
+  const bookingUrl = `${window.location.origin}/booking-widget/${tenant?.id || "demo"}`;
+  const cateringUrl = `${window.location.origin}/catering-widget/${tenant?.id || "demo"}`;
+  const currentUrl = widgetType === "booking" ? bookingUrl : cateringUrl;
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
@@ -124,17 +136,17 @@ const WidgetPreview: React.FC = () => {
   };
 
   // Generate embed codes
-  const embedCode = `<!-- Blunari ${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget -->
+  const embedCode = `<!-- Blunari ${widgetType === "booking" ? "Booking" : "Catering"} Widget -->
 <iframe
   src="${currentUrl}"
   width="100%"
   height="600"
   frameborder="0"
   style="border: 1px solid #e5e7eb; border-radius: 8px;"
-  title="${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget"
+  title="${widgetType === "booking" ? "Booking" : "Catering"} Widget"
 ></iframe>`;
 
-  const jsEmbedCode = `<!-- Blunari ${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget - Advanced -->
+  const jsEmbedCode = `<!-- Blunari ${widgetType === "booking" ? "Booking" : "Catering"} Widget - Advanced -->
 <div id="blunari-${widgetType}-widget" style="min-height: 600px;"></div>
 <script>
 (function() {
@@ -144,7 +156,7 @@ const WidgetPreview: React.FC = () => {
   iframe.height = '600';
   iframe.frameBorder = '0';
   iframe.style.cssText = 'border: 1px solid #e5e7eb; border-radius: 8px;';
-  iframe.title = '${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget';
+  iframe.title = '${widgetType === "booking" ? "Booking" : "Catering"} Widget';
   
   const container = document.getElementById('blunari-${widgetType}-widget');
   if (container) {
@@ -154,7 +166,9 @@ const WidgetPreview: React.FC = () => {
 </script>`;
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-96">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-96">Loading...</div>
+    );
   }
 
   return (
@@ -163,25 +177,26 @@ const WidgetPreview: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold">Widget Preview & Settings</h1>
           <p className="text-muted-foreground">
-            Customize and preview your embeddable widgets for both booking and catering
+            Customize and preview your embeddable widgets for both booking and
+            catering
           </p>
         </div>
-        
+
         {/* Widget Type Selector */}
         <div className="flex items-center gap-2 bg-muted p-1 rounded-lg">
           <Button
-            variant={widgetType === 'booking' ? 'default' : 'ghost'}
+            variant={widgetType === "booking" ? "default" : "ghost"}
             size="sm"
-            onClick={() => setWidgetType('booking')}
+            onClick={() => setWidgetType("booking")}
             className="flex items-center gap-2"
           >
             <Calendar className="w-4 h-4" />
             Booking
           </Button>
           <Button
-            variant={widgetType === 'catering' ? 'default' : 'ghost'}
+            variant={widgetType === "catering" ? "default" : "ghost"}
             size="sm"
-            onClick={() => setWidgetType('catering')}
+            onClick={() => setWidgetType("catering")}
             className="flex items-center gap-2"
           >
             <ChefHat className="w-4 h-4" />
@@ -214,16 +229,28 @@ const WidgetPreview: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Globe className="w-5 h-5" />
                   <CardTitle>
-                    {widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Preview
+                    {widgetType === "booking" ? "Booking" : "Catering"} Widget
+                    Preview
                   </CardTitle>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={refreshPreview} disabled={refreshing}>
-                    <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refreshPreview}
+                    disabled={refreshing}
+                  >
+                    <RefreshCw
+                      className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+                    />
                     Refresh
                   </Button>
                   <Button variant="outline" size="sm" asChild>
-                    <a href={currentUrl} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={currentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Open
                     </a>
@@ -240,9 +267,13 @@ const WidgetPreview: React.FC = () => {
                   return (
                     <Button
                       key={device}
-                      variant={previewDevice === device ? 'default' : 'outline'}
+                      variant={previewDevice === device ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setPreviewDevice(device as 'desktop' | 'tablet' | 'mobile')}
+                      onClick={() =>
+                        setPreviewDevice(
+                          device as "desktop" | "tablet" | "mobile",
+                        )
+                      }
                       className="flex items-center gap-2"
                     >
                       <IconComponent className="w-4 h-4" />
@@ -254,18 +285,18 @@ const WidgetPreview: React.FC = () => {
 
               {/* Preview Frame */}
               <div className="border rounded-lg p-4 bg-muted/20">
-                <div 
+                <div
                   className="mx-auto bg-white rounded-lg shadow-lg overflow-hidden"
-                  style={{ 
+                  style={{
                     width: deviceConfigs[previewDevice].width,
-                    maxWidth: '100%'
+                    maxWidth: "100%",
                   }}
                 >
                   <iframe
                     key={`${widgetType}-${refreshing}`}
                     src={currentUrl}
                     className={`w-full border-0 ${deviceConfigs[previewDevice].height}`}
-                    title={`${widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Preview`}
+                    title={`${widgetType === "booking" ? "Booking" : "Catering"} Widget Preview`}
                   />
                 </div>
               </div>
@@ -283,7 +314,8 @@ const WidgetPreview: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Sliders className="w-5 h-5" />
-                  {widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Configuration
+                  {widgetType === "booking" ? "Booking" : "Catering"} Widget
+                  Configuration
                 </CardTitle>
                 <CardDescription>
                   Customize your {widgetType} widget's appearance and behavior
@@ -294,24 +326,39 @@ const WidgetPreview: React.FC = () => {
                 <div className="space-y-3">
                   <Label className="text-sm font-medium">Theme</Label>
                   <div className="flex gap-2">
-                    <Button 
-                      variant={currentConfig.theme === 'light' ? 'default' : 'outline'}
+                    <Button
+                      variant={
+                        currentConfig.theme === "light" ? "default" : "outline"
+                      }
                       size="sm"
-                      onClick={() => setCurrentConfig(prev => ({ ...prev, theme: 'light' }))}
+                      onClick={() =>
+                        setCurrentConfig((prev) => ({
+                          ...prev,
+                          theme: "light",
+                        }))
+                      }
                     >
                       Light
                     </Button>
-                    <Button 
-                      variant={currentConfig.theme === 'dark' ? 'default' : 'outline'}
+                    <Button
+                      variant={
+                        currentConfig.theme === "dark" ? "default" : "outline"
+                      }
                       size="sm"
-                      onClick={() => setCurrentConfig(prev => ({ ...prev, theme: 'dark' }))}
+                      onClick={() =>
+                        setCurrentConfig((prev) => ({ ...prev, theme: "dark" }))
+                      }
                     >
                       Dark
                     </Button>
-                    <Button 
-                      variant={currentConfig.theme === 'auto' ? 'default' : 'outline'}
+                    <Button
+                      variant={
+                        currentConfig.theme === "auto" ? "default" : "outline"
+                      }
                       size="sm"
-                      onClick={() => setCurrentConfig(prev => ({ ...prev, theme: 'auto' }))}
+                      onClick={() =>
+                        setCurrentConfig((prev) => ({ ...prev, theme: "auto" }))
+                      }
                     >
                       Auto
                     </Button>
@@ -320,18 +367,33 @@ const WidgetPreview: React.FC = () => {
 
                 {/* Primary Color */}
                 <div className="space-y-3">
-                  <Label htmlFor="primary-color" className="text-sm font-medium">Primary Color</Label>
+                  <Label
+                    htmlFor="primary-color"
+                    className="text-sm font-medium"
+                  >
+                    Primary Color
+                  </Label>
                   <div className="flex items-center gap-3">
                     <Input
                       id="primary-color"
                       type="color"
                       value={currentConfig.primaryColor}
-                      onChange={(e) => setCurrentConfig(prev => ({ ...prev, primaryColor: e.target.value }))}
+                      onChange={(e) =>
+                        setCurrentConfig((prev) => ({
+                          ...prev,
+                          primaryColor: e.target.value,
+                        }))
+                      }
                       className="w-16 h-10 p-1 border rounded"
                     />
                     <Input
                       value={currentConfig.primaryColor}
-                      onChange={(e) => setCurrentConfig(prev => ({ ...prev, primaryColor: e.target.value }))}
+                      onChange={(e) =>
+                        setCurrentConfig((prev) => ({
+                          ...prev,
+                          primaryColor: e.target.value,
+                        }))
+                      }
                       className="flex-1 font-mono text-sm"
                       placeholder="#3b82f6"
                     />
@@ -339,65 +401,103 @@ const WidgetPreview: React.FC = () => {
                 </div>
 
                 {/* Feature Toggles - Booking Specific */}
-                {widgetType === 'booking' && (
+                {widgetType === "booking" && (
                   <div className="space-y-4">
-                    <Label className="text-sm font-medium">Booking Features</Label>
-                    
+                    <Label className="text-sm font-medium">
+                      Booking Features
+                    </Label>
+
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <Label className="text-sm">Show Availability</Label>
-                          <p className="text-xs text-muted-foreground">Display real-time table availability</p>
+                          <p className="text-xs text-muted-foreground">
+                            Display real-time table availability
+                          </p>
                         </div>
                         <Switch
                           checked={bookingConfig.showAvailability}
-                          onCheckedChange={(checked) => setBookingConfig(prev => ({ ...prev, showAvailability: checked }))}
+                          onCheckedChange={(checked) =>
+                            setBookingConfig((prev) => ({
+                              ...prev,
+                              showAvailability: checked,
+                            }))
+                          }
                         />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <Label className="text-sm">Show Pricing</Label>
-                          <p className="text-xs text-muted-foreground">Display pricing information</p>
+                          <p className="text-xs text-muted-foreground">
+                            Display pricing information
+                          </p>
                         </div>
                         <Switch
                           checked={bookingConfig.showPricing}
-                          onCheckedChange={(checked) => setBookingConfig(prev => ({ ...prev, showPricing: checked }))}
+                          onCheckedChange={(checked) =>
+                            setBookingConfig((prev) => ({
+                              ...prev,
+                              showPricing: checked,
+                            }))
+                          }
                         />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <Label className="text-sm">Allow Cancellation</Label>
-                          <p className="text-xs text-muted-foreground">Let customers cancel bookings</p>
+                          <p className="text-xs text-muted-foreground">
+                            Let customers cancel bookings
+                          </p>
                         </div>
                         <Switch
                           checked={bookingConfig.allowCancellation}
-                          onCheckedChange={(checked) => setBookingConfig(prev => ({ ...prev, allowCancellation: checked }))}
+                          onCheckedChange={(checked) =>
+                            setBookingConfig((prev) => ({
+                              ...prev,
+                              allowCancellation: checked,
+                            }))
+                          }
                         />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <Label className="text-sm">Enable Waitlist</Label>
-                          <p className="text-xs text-muted-foreground">Allow customers to join waitlist when fully booked</p>
+                          <p className="text-xs text-muted-foreground">
+                            Allow customers to join waitlist when fully booked
+                          </p>
                         </div>
                         <Switch
                           checked={bookingConfig.enableWaitlist}
-                          onCheckedChange={(checked) => setBookingConfig(prev => ({ ...prev, enableWaitlist: checked }))}
+                          onCheckedChange={(checked) =>
+                            setBookingConfig((prev) => ({
+                              ...prev,
+                              enableWaitlist: checked,
+                            }))
+                          }
                         />
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <Label htmlFor="advance-booking" className="text-sm font-medium">
+                      <Label
+                        htmlFor="advance-booking"
+                        className="text-sm font-medium"
+                      >
                         Maximum Advance Booking (days)
                       </Label>
                       <Input
                         id="advance-booking"
                         type="number"
                         value={bookingConfig.maxAdvanceBooking}
-                        onChange={(e) => setBookingConfig(prev => ({ ...prev, maxAdvanceBooking: Number(e.target.value) }))}
+                        onChange={(e) =>
+                          setBookingConfig((prev) => ({
+                            ...prev,
+                            maxAdvanceBooking: Number(e.target.value),
+                          }))
+                        }
                         min="1"
                         max="365"
                         className="w-full"
@@ -405,14 +505,22 @@ const WidgetPreview: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <Label htmlFor="time-slot" className="text-sm font-medium">
+                      <Label
+                        htmlFor="time-slot"
+                        className="text-sm font-medium"
+                      >
                         Time Slot Interval (minutes)
                       </Label>
                       <Input
                         id="time-slot"
                         type="number"
                         value={bookingConfig.timeSlotInterval}
-                        onChange={(e) => setBookingConfig(prev => ({ ...prev, timeSlotInterval: Number(e.target.value) }))}
+                        onChange={(e) =>
+                          setBookingConfig((prev) => ({
+                            ...prev,
+                            timeSlotInterval: Number(e.target.value),
+                          }))
+                        }
                         min="15"
                         max="120"
                         step="15"
@@ -423,76 +531,121 @@ const WidgetPreview: React.FC = () => {
                 )}
 
                 {/* Feature Toggles - Catering Specific */}
-                {widgetType === 'catering' && (
+                {widgetType === "catering" && (
                   <div className="space-y-4">
-                    <Label className="text-sm font-medium">Catering Features</Label>
-                    
+                    <Label className="text-sm font-medium">
+                      Catering Features
+                    </Label>
+
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <Label className="text-sm">Show Packages</Label>
-                          <p className="text-xs text-muted-foreground">Display pre-designed catering packages</p>
+                          <p className="text-xs text-muted-foreground">
+                            Display pre-designed catering packages
+                          </p>
                         </div>
                         <Switch
                           checked={cateringConfig.showPackages}
-                          onCheckedChange={(checked) => setCateringConfig(prev => ({ ...prev, showPackages: checked }))}
+                          onCheckedChange={(checked) =>
+                            setCateringConfig((prev) => ({
+                              ...prev,
+                              showPackages: checked,
+                            }))
+                          }
                         />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <Label className="text-sm">Custom Orders</Label>
-                          <p className="text-xs text-muted-foreground">Allow custom catering requests</p>
+                          <p className="text-xs text-muted-foreground">
+                            Allow custom catering requests
+                          </p>
                         </div>
                         <Switch
                           checked={cateringConfig.showCustomOrders}
-                          onCheckedChange={(checked) => setCateringConfig(prev => ({ ...prev, showCustomOrders: checked }))}
+                          onCheckedChange={(checked) =>
+                            setCateringConfig((prev) => ({
+                              ...prev,
+                              showCustomOrders: checked,
+                            }))
+                          }
                         />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <Label className="text-sm">Enable Quotes</Label>
-                          <p className="text-xs text-muted-foreground">Allow customers to request quotes</p>
+                          <p className="text-xs text-muted-foreground">
+                            Allow customers to request quotes
+                          </p>
                         </div>
                         <Switch
                           checked={cateringConfig.enableQuotes}
-                          onCheckedChange={(checked) => setCateringConfig(prev => ({ ...prev, enableQuotes: checked }))}
+                          onCheckedChange={(checked) =>
+                            setCateringConfig((prev) => ({
+                              ...prev,
+                              enableQuotes: checked,
+                            }))
+                          }
                         />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <Label className="text-sm">Show Gallery</Label>
-                          <p className="text-xs text-muted-foreground">Display food gallery and photos</p>
+                          <p className="text-xs text-muted-foreground">
+                            Display food gallery and photos
+                          </p>
                         </div>
                         <Switch
                           checked={cateringConfig.showGallery}
-                          onCheckedChange={(checked) => setCateringConfig(prev => ({ ...prev, showGallery: checked }))}
+                          onCheckedChange={(checked) =>
+                            setCateringConfig((prev) => ({
+                              ...prev,
+                              showGallery: checked,
+                            }))
+                          }
                         />
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <Label className="text-sm">Package Filters</Label>
-                          <p className="text-xs text-muted-foreground">Enable filtering by event type, guest count</p>
+                          <p className="text-xs text-muted-foreground">
+                            Enable filtering by event type, guest count
+                          </p>
                         </div>
                         <Switch
                           checked={cateringConfig.packageFilters}
-                          onCheckedChange={(checked) => setCateringConfig(prev => ({ ...prev, packageFilters: checked }))}
+                          onCheckedChange={(checked) =>
+                            setCateringConfig((prev) => ({
+                              ...prev,
+                              packageFilters: checked,
+                            }))
+                          }
                         />
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <Label htmlFor="min-order-days" className="text-sm font-medium">
+                      <Label
+                        htmlFor="min-order-days"
+                        className="text-sm font-medium"
+                      >
                         Minimum Order Days in Advance
                       </Label>
                       <Input
                         id="min-order-days"
                         type="number"
                         value={cateringConfig.minOrderDays}
-                        onChange={(e) => setCateringConfig(prev => ({ ...prev, minOrderDays: Number(e.target.value) }))}
+                        onChange={(e) =>
+                          setCateringConfig((prev) => ({
+                            ...prev,
+                            minOrderDays: Number(e.target.value),
+                          }))
+                        }
                         min="1"
                         max="30"
                         className="w-full"
@@ -504,42 +657,68 @@ const WidgetPreview: React.FC = () => {
                 {/* Common Features */}
                 <div className="space-y-4">
                   <Label className="text-sm font-medium">Common Features</Label>
-                  
+
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <Label className="text-sm">Require Phone Number</Label>
-                        <p className="text-xs text-muted-foreground">Make phone number mandatory</p>
+                        <p className="text-xs text-muted-foreground">
+                          Make phone number mandatory
+                        </p>
                       </div>
                       <Switch
                         checked={currentConfig.requirePhone}
-                        onCheckedChange={(checked) => setCurrentConfig(prev => ({ ...prev, requirePhone: checked }))}
+                        onCheckedChange={(checked) =>
+                          setCurrentConfig((prev) => ({
+                            ...prev,
+                            requirePhone: checked,
+                          }))
+                        }
                       />
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <Label className="text-sm">Enable Notifications</Label>
-                        <p className="text-xs text-muted-foreground">Send confirmation emails/SMS</p>
+                        <p className="text-xs text-muted-foreground">
+                          Send confirmation emails/SMS
+                        </p>
                       </div>
                       <Switch
                         checked={currentConfig.enableNotifications}
-                        onCheckedChange={(checked) => setCurrentConfig(prev => ({ ...prev, enableNotifications: checked }))}
+                        onCheckedChange={(checked) =>
+                          setCurrentConfig((prev) => ({
+                            ...prev,
+                            enableNotifications: checked,
+                          }))
+                        }
                       />
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <Label className="text-sm">Show Reviews</Label>
-                        <p className="text-xs text-muted-foreground">Display customer testimonials</p>
+                        <p className="text-xs text-muted-foreground">
+                          Display customer testimonials
+                        </p>
                       </div>
                       <Switch
-                        checked={widgetType === 'booking' ? bookingConfig.showReviews : cateringConfig.showTestimonials}
+                        checked={
+                          widgetType === "booking"
+                            ? bookingConfig.showReviews
+                            : cateringConfig.showTestimonials
+                        }
                         onCheckedChange={(checked) => {
-                          if (widgetType === 'booking') {
-                            setBookingConfig(prev => ({ ...prev, showReviews: checked }));
+                          if (widgetType === "booking") {
+                            setBookingConfig((prev) => ({
+                              ...prev,
+                              showReviews: checked,
+                            }));
                           } else {
-                            setCateringConfig(prev => ({ ...prev, showTestimonials: checked }));
+                            setCateringConfig((prev) => ({
+                              ...prev,
+                              showTestimonials: checked,
+                            }));
                           }
                         }}
                       />
@@ -568,12 +747,16 @@ const WidgetPreview: React.FC = () => {
                 <div className="bg-muted p-4 rounded-lg font-mono text-sm overflow-x-auto">
                   <pre className="whitespace-pre-wrap">{embedCode}</pre>
                 </div>
-                
+
                 <Button
                   onClick={() => copyToClipboard(embedCode, "Embed code")}
                   className="w-full"
                 >
-                  {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                  {copied ? (
+                    <Check className="w-4 h-4 mr-2" />
+                  ) : (
+                    <Copy className="w-4 h-4 mr-2" />
+                  )}
                   {copied ? "Copied!" : "Copy Embed Code"}
                 </Button>
               </CardContent>
@@ -594,10 +777,12 @@ const WidgetPreview: React.FC = () => {
                 <div className="bg-muted p-4 rounded-lg font-mono text-sm overflow-x-auto">
                   <pre className="whitespace-pre-wrap">{jsEmbedCode}</pre>
                 </div>
-                
+
                 <Button
                   variant="outline"
-                  onClick={() => copyToClipboard(jsEmbedCode, "Advanced embed code")}
+                  onClick={() =>
+                    copyToClipboard(jsEmbedCode, "Advanced embed code")
+                  }
                   className="w-full"
                 >
                   <Copy className="w-4 h-4 mr-2" />
@@ -611,12 +796,13 @@ const WidgetPreview: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                {widgetType === 'booking' ? (
+                {widgetType === "booking" ? (
                   <Calendar className="w-5 h-5 text-blue-500" />
                 ) : (
                   <ChefHat className="w-5 h-5 text-orange-500" />
                 )}
-                {widgetType === 'booking' ? 'Booking' : 'Catering'} Widget Information
+                {widgetType === "booking" ? "Booking" : "Catering"} Widget
+                Information
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -638,12 +824,12 @@ const WidgetPreview: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Widget Type</Label>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 bg-muted px-3 py-2 rounded-md flex-1">
-                      {widgetType === 'booking' ? (
+                      {widgetType === "booking" ? (
                         <Calendar className="w-4 h-4 text-blue-500" />
                       ) : (
                         <ChefHat className="w-4 h-4 text-orange-500" />
@@ -661,7 +847,7 @@ const WidgetPreview: React.FC = () => {
       </Tabs>
 
       {/* Debug Panel for Development */}
-      {process.env.NODE_ENV === 'development' && tenant?.slug && (
+      {process.env.NODE_ENV === "development" && tenant?.slug && (
         <Card>
           <CardHeader>
             <CardTitle className="text-orange-600">Debug Information</CardTitle>

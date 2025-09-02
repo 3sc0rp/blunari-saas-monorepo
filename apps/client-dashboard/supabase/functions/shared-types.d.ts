@@ -7,19 +7,24 @@ declare const Deno: {
 };
 
 declare module "https://deno.land/std@0.168.0/http/server.ts" {
-  export function serve(handler: (req: Request) => Response | Promise<Response>): void;
+  export function serve(
+    handler: (req: Request) => Response | Promise<Response>,
+  ): void;
 }
 
 declare module "https://esm.sh/@supabase/supabase-js@2.38.4" {
   export interface SupabaseClient {
     from(table: string): any;
-    rpc(functionName: string, params?: Record<string, any>): Promise<{ data: any; error: any }>;
+    rpc(
+      functionName: string,
+      params?: Record<string, any>,
+    ): Promise<{ data: any; error: any }>;
   }
-  
+
   export function createClient(
     supabaseUrl: string,
     supabaseKey: string,
-    options?: any
+    options?: any,
   ): SupabaseClient;
 }
 
@@ -36,9 +41,13 @@ declare global {
         keyData: ArrayBuffer,
         algorithm: { name: string; hash: string },
         extractable: boolean,
-        keyUsages: string[]
+        keyUsages: string[],
       ): Promise<CryptoKey>;
-      sign(algorithm: string, key: CryptoKey, data: ArrayBuffer): Promise<ArrayBuffer>;
+      sign(
+        algorithm: string,
+        key: CryptoKey,
+        data: ArrayBuffer,
+      ): Promise<ArrayBuffer>;
       digest(algorithm: string, data: ArrayBuffer): Promise<ArrayBuffer>;
     };
     randomUUID(): string;

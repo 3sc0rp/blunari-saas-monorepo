@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Booking {
   id: string;
@@ -11,7 +11,7 @@ interface Booking {
   party_size: number;
   booking_time: string;
   duration_minutes: number;
-  status: 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no_show';
+  status: "confirmed" | "seated" | "completed" | "cancelled" | "no_show";
   table_id?: string;
   special_requests?: string;
   created_at: string;
@@ -23,16 +23,20 @@ export const useRealtimeBookings = (tenantId?: string) => {
   const [isConnected, setIsConnected] = useState(false);
 
   // Fetch bookings
-  const { data: bookings = [], isLoading, error } = useQuery({
-    queryKey: ['bookings', tenantId],
+  const {
+    data: bookings = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["bookings", tenantId],
     queryFn: async () => {
       if (!tenantId) return [];
-      
+
       const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('booking_time', { ascending: true });
+        .from("bookings")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("booking_time", { ascending: true });
 
       if (error) throw error;
       return data as Booking[];
@@ -45,22 +49,22 @@ export const useRealtimeBookings = (tenantId?: string) => {
     if (!tenantId) return;
 
     const channel = supabase
-      .channel('tenant-bookings')
+      .channel("tenant-bookings")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'bookings',
+          event: "*",
+          schema: "public",
+          table: "bookings",
           filter: `tenant_id=eq.${tenantId}`,
         },
         (payload) => {
           // Invalidate and refetch bookings when changes occur
-          queryClient.invalidateQueries({ queryKey: ['bookings', tenantId] });
-        }
+          queryClient.invalidateQueries({ queryKey: ["bookings", tenantId] });
+        },
       )
       .subscribe((status) => {
-        setIsConnected(status === 'SUBSCRIBED');
+        setIsConnected(status === "SUBSCRIBED");
       });
 
     return () => {
@@ -78,20 +82,24 @@ export const useRealtimeBookings = (tenantId?: string) => {
 };
 
 export const useTodaysBookings = (tenantId?: string) => {
-  const today = new Date().toISOString().split('T')[0];
-  
-  const { data: bookings = [], isLoading, error } = useQuery({
-    queryKey: ['bookings', 'today', tenantId, today],
+  const today = new Date().toISOString().split("T")[0];
+
+  const {
+    data: bookings = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["bookings", "today", tenantId, today],
     queryFn: async () => {
       if (!tenantId) return [];
-      
+
       const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .gte('booking_time', `${today}T00:00:00`)
-        .lt('booking_time', `${today}T23:59:59`)
-        .order('booking_time', { ascending: true });
+        .from("bookings")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .gte("booking_time", `${today}T00:00:00`)
+        .lt("booking_time", `${today}T23:59:59`)
+        .order("booking_time", { ascending: true });
 
       if (error) throw error;
       return data as Booking[];

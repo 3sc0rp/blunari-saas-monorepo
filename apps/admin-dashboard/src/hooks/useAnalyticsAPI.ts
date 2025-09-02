@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface PerformanceMetrics {
   metric_name: string;
@@ -30,14 +30,17 @@ export const useAnalyticsAPI = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const callAnalyticsAPI = async (endpoint: string, options: RequestInit = {}) => {
+  const callAnalyticsAPI = async (
+    endpoint: string,
+    options: RequestInit = {},
+  ) => {
     try {
       setLoading(true);
-      
-      const response = await supabase.functions.invoke('analytics-api', {
+
+      const response = await supabase.functions.invoke("analytics-api", {
         body: {
           endpoint,
-          method: options.method || 'GET',
+          method: options.method || "GET",
           body: options.body ? JSON.parse(options.body as string) : undefined,
         },
       });
@@ -48,10 +51,11 @@ export const useAnalyticsAPI = () => {
 
       return response.data;
     } catch (error) {
-      console.error('Analytics API Error:', error);
+      console.error("Analytics API Error:", error);
       toast({
         title: "API Error",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
       throw error;
@@ -64,7 +68,7 @@ export const useAnalyticsAPI = () => {
     metric_name?: string;
     start_date?: string;
     end_date?: string;
-    aggregation?: 'hour' | 'day' | 'week' | 'month';
+    aggregation?: "hour" | "day" | "week" | "month";
   }) => {
     const params = new URLSearchParams();
     if (filters) {
@@ -72,24 +76,27 @@ export const useAnalyticsAPI = () => {
         if (value !== undefined) params.append(key, value.toString());
       });
     }
-    
-    const endpoint = `/analytics/performance${params.toString() ? `?${params.toString()}` : ''}`;
+
+    const endpoint = `/analytics/performance${params.toString() ? `?${params.toString()}` : ""}`;
     return callAnalyticsAPI(endpoint);
   };
 
-  const getBusinessMetrics = async (tenantId: string, filters?: {
-    start_date?: string;
-    end_date?: string;
-    granularity?: 'daily' | 'weekly' | 'monthly';
-  }) => {
+  const getBusinessMetrics = async (
+    tenantId: string,
+    filters?: {
+      start_date?: string;
+      end_date?: string;
+      granularity?: "daily" | "weekly" | "monthly";
+    },
+  ) => {
     const params = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined) params.append(key, value.toString());
       });
     }
-    
-    const endpoint = `/analytics/business/${tenantId}${params.toString() ? `?${params.toString()}` : ''}`;
+
+    const endpoint = `/analytics/business/${tenantId}${params.toString() ? `?${params.toString()}` : ""}`;
     return callAnalyticsAPI(endpoint);
   };
 
@@ -97,7 +104,7 @@ export const useAnalyticsAPI = () => {
     tenant_id?: string;
     start_date?: string;
     end_date?: string;
-    breakdown?: 'tenant' | 'endpoint' | 'user';
+    breakdown?: "tenant" | "endpoint" | "user";
   }) => {
     const params = new URLSearchParams();
     if (filters) {
@@ -105,15 +112,19 @@ export const useAnalyticsAPI = () => {
         if (value !== undefined) params.append(key, value.toString());
       });
     }
-    
-    const endpoint = `/analytics/usage${params.toString() ? `?${params.toString()}` : ''}`;
+
+    const endpoint = `/analytics/usage${params.toString() ? `?${params.toString()}` : ""}`;
     return callAnalyticsAPI(endpoint);
   };
 
-  const exportAnalyticsData = async (type: 'performance' | 'business' | 'usage', format: 'csv' | 'json', filters?: Record<string, unknown>) => {
+  const exportAnalyticsData = async (
+    type: "performance" | "business" | "usage",
+    format: "csv" | "json",
+    filters?: Record<string, unknown>,
+  ) => {
     const endpoint = `/analytics/export/${type}`;
     return callAnalyticsAPI(endpoint, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ format, filters }),
     });
   };

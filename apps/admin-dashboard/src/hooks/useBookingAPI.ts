@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Booking {
   id: string;
@@ -11,7 +11,7 @@ export interface Booking {
   party_size: number;
   booking_time: string;
   duration_minutes: number;
-  status: 'confirmed' | 'pending' | 'cancelled';
+  status: "confirmed" | "pending" | "cancelled";
   special_requests?: string;
   table_id?: string;
   created_at: string;
@@ -28,14 +28,17 @@ export const useBookingAPI = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const callBookingAPI = async (endpoint: string, options: RequestInit = {}) => {
+  const callBookingAPI = async (
+    endpoint: string,
+    options: RequestInit = {},
+  ) => {
     try {
       setLoading(true);
-      
-      const response = await supabase.functions.invoke('booking-api', {
+
+      const response = await supabase.functions.invoke("booking-api", {
         body: {
           endpoint,
-          method: options.method || 'GET',
+          method: options.method || "GET",
           body: options.body ? JSON.parse(options.body as string) : undefined,
         },
       });
@@ -46,10 +49,11 @@ export const useBookingAPI = () => {
 
       return response.data;
     } catch (error) {
-      console.error('Booking API Error:', error);
+      console.error("Booking API Error:", error);
       toast({
         title: "API Error",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
       throw error;
@@ -58,9 +62,9 @@ export const useBookingAPI = () => {
     }
   };
 
-  const getBookings = async (filters?: { 
-    status?: string; 
-    date?: string; 
+  const getBookings = async (filters?: {
+    status?: string;
+    date?: string;
     tenant_id?: string;
     page?: number;
     limit?: number;
@@ -71,8 +75,8 @@ export const useBookingAPI = () => {
         if (value !== undefined) params.append(key, value.toString());
       });
     }
-    
-    const endpoint = `/api/bookings${params.toString() ? `?${params.toString()}` : ''}`;
+
+    const endpoint = `/api/bookings${params.toString() ? `?${params.toString()}` : ""}`;
     return callBookingAPI(endpoint);
   };
 
@@ -80,39 +84,45 @@ export const useBookingAPI = () => {
     return callBookingAPI(`/api/bookings/${id}`);
   };
 
-  const createBooking = async (bookingData: Omit<Booking, 'id' | 'created_at' | 'updated_at'>) => {
-    return callBookingAPI('/api/bookings', {
-      method: 'POST',
+  const createBooking = async (
+    bookingData: Omit<Booking, "id" | "created_at" | "updated_at">,
+  ) => {
+    return callBookingAPI("/api/bookings", {
+      method: "POST",
       body: JSON.stringify(bookingData),
     });
   };
 
   const updateBooking = async (id: string, updates: Partial<Booking>) => {
     return callBookingAPI(`/api/bookings/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(updates),
     });
   };
 
   const cancelBooking = async (id: string) => {
     return callBookingAPI(`/api/bookings/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   };
 
   const confirmBooking = async (id: string) => {
     return callBookingAPI(`/api/bookings/${id}/confirm`, {
-      method: 'POST',
+      method: "POST",
     });
   };
 
-  const checkAvailability = async (date: string, partySize: number, tenantId?: string) => {
+  const checkAvailability = async (
+    date: string,
+    partySize: number,
+    tenantId?: string,
+  ) => {
     const params = new URLSearchParams({
       date,
       party_size: partySize.toString(),
       ...(tenantId && { tenant_id: tenantId }),
     });
-    
+
     return callBookingAPI(`/api/availability?${params.toString()}`);
   };
 

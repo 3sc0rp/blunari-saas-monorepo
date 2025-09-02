@@ -1,37 +1,51 @@
-import React, { useState } from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { ExtendedBooking, BookingStatus } from '@/types/booking';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Users, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  MessageSquare, 
+import React, { useState } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ExtendedBooking, BookingStatus } from "@/types/booking";
+import {
+  User,
+  Mail,
+  Phone,
+  Users,
+  Calendar,
+  Clock,
+  MapPin,
+  MessageSquare,
   CreditCard,
   CheckCircle,
   AlertCircle,
   Edit3,
   Save,
-  X
-} from 'lucide-react';
-import { format } from 'date-fns';
+  X,
+} from "lucide-react";
+import { format } from "date-fns";
 
 interface ReservationDrawerProps {
   booking: ExtendedBooking | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onStatusUpdate: (bookingId: string, status: BookingStatus) => void;
-  onUpdateBooking: (bookingId: string, updates: Partial<ExtendedBooking>) => void;
+  onUpdateBooking: (
+    bookingId: string,
+    updates: Partial<ExtendedBooking>,
+  ) => void;
 }
 
 const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
@@ -39,26 +53,44 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
   open,
   onOpenChange,
   onStatusUpdate,
-  onUpdateBooking
+  onUpdateBooking,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editedBooking, setEditedBooking] = useState<Partial<ExtendedBooking>>({});
+  const [editedBooking, setEditedBooking] = useState<Partial<ExtendedBooking>>(
+    {},
+  );
 
   if (!booking) return null;
 
   const getStatusBadge = (status: BookingStatus) => {
     const statusConfig = {
-      confirmed: { variant: 'default' as const, label: 'Confirmed', icon: CheckCircle },
-      pending: { variant: 'secondary' as const, label: 'Pending', icon: Clock },
-      seated: { variant: 'outline' as const, label: 'Seated', icon: Users },
-      completed: { variant: 'default' as const, label: 'Completed', icon: CheckCircle },
-      cancelled: { variant: 'destructive' as const, label: 'Cancelled', icon: X },
-      noshow: { variant: 'destructive' as const, label: 'No Show', icon: AlertCircle }
+      confirmed: {
+        variant: "default" as const,
+        label: "Confirmed",
+        icon: CheckCircle,
+      },
+      pending: { variant: "secondary" as const, label: "Pending", icon: Clock },
+      seated: { variant: "outline" as const, label: "Seated", icon: Users },
+      completed: {
+        variant: "default" as const,
+        label: "Completed",
+        icon: CheckCircle,
+      },
+      cancelled: {
+        variant: "destructive" as const,
+        label: "Cancelled",
+        icon: X,
+      },
+      noshow: {
+        variant: "destructive" as const,
+        label: "No Show",
+        icon: AlertCircle,
+      },
     };
 
     const config = statusConfig[status];
     const IconComponent = config.icon;
-    
+
     return (
       <Badge variant={config.variant} className="font-medium">
         <IconComponent className="h-3 w-3 mr-1" />
@@ -69,9 +101,9 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -91,34 +123,45 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
 
   const activityLog = [
     {
-      id: '1',
-      action: 'Booking Created',
+      id: "1",
+      action: "Booking Created",
       timestamp: booking.created_at,
-      details: `Booking created via ${booking.source || 'website'}`
+      details: `Booking created via ${booking.source || "website"}`,
     },
     {
-      id: '2',
-      action: 'Status Updated',
+      id: "2",
+      action: "Status Updated",
       timestamp: booking.updated_at,
-      details: `Status changed to ${booking.status}`
-    }
+      details: `Status changed to ${booking.status}`,
+    },
   ];
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[500px] sm:max-w-[500px] overflow-y-auto">
+      <SheetContent
+        side="right"
+        className="w-[500px] sm:max-w-[500px] overflow-y-auto"
+      >
         <SheetHeader className="space-y-4">
           <div className="flex items-center justify-between">
             <SheetTitle>Reservation Details</SheetTitle>
             <div className="flex items-center gap-2">
               {!isEditing ? (
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                >
                   <Edit3 className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
               ) : (
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelEdit}
+                  >
                     Cancel
                   </Button>
                   <Button size="sm" onClick={handleSaveChanges}>
@@ -148,11 +191,15 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{booking.guest_name}</h3>
-                  <p className="text-sm text-muted-foreground">Party of {booking.party_size}</p>
+                  <h3 className="font-semibold text-lg">
+                    {booking.guest_name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Party of {booking.party_size}
+                  </p>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 gap-3">
                 <div className="flex items-center gap-3">
                   <Mail className="h-4 w-4 text-muted-foreground" />
@@ -179,44 +226,63 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Date & Time</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Date & Time
+                  </label>
                   <div className="flex items-center gap-2 mt-1">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
-                      {format(new Date(booking.booking_time), 'PPp')}
+                      {format(new Date(booking.booking_time), "PPp")}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Duration</label>
-                  <p className="text-sm mt-1">{booking.duration_minutes} minutes</p>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Duration
+                  </label>
+                  <p className="text-sm mt-1">
+                    {booking.duration_minutes} minutes
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Party Size</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Party Size
+                  </label>
                   <div className="flex items-center gap-2 mt-1">
                     <Users className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">{booking.party_size} guests</span>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Table</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Table
+                  </label>
                   <div className="flex items-center gap-2 mt-1">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{booking.table_id || 'Not assigned'}</span>
+                    <span className="text-sm">
+                      {booking.table_id || "Not assigned"}
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Status</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Status
+                </label>
                 <div className="mt-1">
                   {isEditing ? (
                     <Select
                       value={editedBooking.status || booking.status}
-                      onValueChange={(value) => setEditedBooking(prev => ({ ...prev, status: value as BookingStatus }))}
+                      onValueChange={(value) =>
+                        setEditedBooking((prev) => ({
+                          ...prev,
+                          status: value as BookingStatus,
+                        }))
+                      }
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue />
@@ -238,11 +304,21 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
 
               {booking.special_requests && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Special Requests</label>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Special Requests
+                  </label>
                   {isEditing ? (
                     <Textarea
-                      value={editedBooking.special_requests ?? booking.special_requests}
-                      onChange={(e) => setEditedBooking(prev => ({ ...prev, special_requests: e.target.value }))}
+                      value={
+                        editedBooking.special_requests ??
+                        booking.special_requests
+                      }
+                      onChange={(e) =>
+                        setEditedBooking((prev) => ({
+                          ...prev,
+                          special_requests: e.target.value,
+                        }))
+                      }
                       className="mt-1"
                       rows={3}
                     />
@@ -268,19 +344,25 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Deposit Required</span>
-                  <Badge variant={booking.deposit_required ? "default" : "secondary"}>
+                  <Badge
+                    variant={booking.deposit_required ? "default" : "secondary"}
+                  >
                     {booking.deposit_required ? "Yes" : "No"}
                   </Badge>
                 </div>
                 {booking.deposit_amount && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Deposit Amount</span>
-                    <span className="font-medium">${booking.deposit_amount}</span>
+                    <span className="font-medium">
+                      ${booking.deposit_amount}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Payment Status</span>
-                  <Badge variant={booking.deposit_paid ? "default" : "secondary"}>
+                  <Badge
+                    variant={booking.deposit_paid ? "default" : "secondary"}
+                  >
                     {booking.deposit_paid ? "Paid" : "Pending"}
                   </Badge>
                 </div>
@@ -295,18 +377,18 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                {booking.status === 'pending' && (
+                {booking.status === "pending" && (
                   <Button
-                    onClick={() => onStatusUpdate(booking.id, 'confirmed')}
+                    onClick={() => onStatusUpdate(booking.id, "confirmed")}
                     className="w-full"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Confirm
                   </Button>
                 )}
-                {booking.status === 'confirmed' && (
+                {booking.status === "confirmed" && (
                   <Button
-                    onClick={() => onStatusUpdate(booking.id, 'seated')}
+                    onClick={() => onStatusUpdate(booking.id, "seated")}
                     variant="outline"
                     className="w-full"
                   >
@@ -319,9 +401,9 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
                   Send Message
                 </Button>
               </div>
-              {['pending', 'confirmed'].includes(booking.status) && (
+              {["pending", "confirmed"].includes(booking.status) && (
                 <Button
-                  onClick={() => onStatusUpdate(booking.id, 'cancelled')}
+                  onClick={() => onStatusUpdate(booking.id, "cancelled")}
                   variant="destructive"
                   className="w-full"
                 >
@@ -344,9 +426,11 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
                     <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
                     <div className="flex-1">
                       <p className="text-sm font-medium">{activity.action}</p>
-                      <p className="text-xs text-muted-foreground">{activity.details}</p>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(activity.timestamp), 'PPp')}
+                        {activity.details}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(activity.timestamp), "PPp")}
                       </p>
                     </div>
                   </div>

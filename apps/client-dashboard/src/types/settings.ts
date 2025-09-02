@@ -7,7 +7,7 @@ export interface BrandingSettings {
   restaurantName: string;
   tagline?: string;
   customDomain?: string;
-  domainStatus: 'pending' | 'verified' | 'failed';
+  domainStatus: "pending" | "verified" | "failed";
 }
 
 export interface OperationalSettings {
@@ -33,21 +33,21 @@ export interface OperationalSettings {
 
 export interface IntegrationSettings {
   sms: {
-    provider: 'twilio' | 'disabled';
+    provider: "twilio" | "disabled";
     twilioAccountSid?: string;
     twilioAuthToken?: string;
     fromNumber?: string;
     enabled: boolean;
   };
   email: {
-    provider: 'resend' | 'disabled';
+    provider: "resend" | "disabled";
     resendApiKey?: string;
     fromEmail?: string;
     fromName?: string;
     enabled: boolean;
   };
   pos: {
-    provider: 'square' | 'toast' | 'disabled';
+    provider: "square" | "toast" | "disabled";
     apiKey?: string;
     webhookUrl?: string;
     enabled: boolean;

@@ -3,6 +3,7 @@
 ## Setup Instructions
 
 ### 1. Clone and Install
+
 ```bash
 git clone <repository-url>
 cd blunari-saas
@@ -10,6 +11,7 @@ npm install
 ```
 
 ### 2. Database Setup (Background-ops)
+
 ```bash
 # Install PostgreSQL
 # Create database
@@ -22,6 +24,7 @@ DATABASE_URL=postgresql://username:password@localhost:5432/blunari_dev
 ### 3. Environment Configuration
 
 #### apps/background-ops/.env
+
 ```
 NODE_ENV=development
 PORT=3000
@@ -34,6 +37,7 @@ RATE_LIMIT_MAX=100
 ```
 
 #### apps/admin-dashboard/.env.local
+
 ```
 NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 NEXT_PUBLIC_WS_URL=ws://localhost:3001
@@ -41,6 +45,7 @@ NEXT_PUBLIC_APP_ENV=development
 ```
 
 #### apps/client-dashboard/.env.local
+
 ```
 NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 NEXT_PUBLIC_WS_URL=ws://localhost:3001
@@ -75,7 +80,7 @@ When modifying shared packages, you'll need to rebuild them:
 # After modifying packages/types
 npm run build --workspace=packages/types
 
-# After modifying packages/utils  
+# After modifying packages/utils
 npm run build --workspace=packages/utils
 
 # After modifying packages/config
@@ -83,6 +88,7 @@ npm run build --workspace=packages/config
 ```
 
 For active development, use watch mode:
+
 ```bash
 # Watch and rebuild packages on changes
 npm run dev:packages
@@ -91,6 +97,7 @@ npm run dev:packages
 ### Adding New Features
 
 1. **New Shared Type**
+
    ```bash
    # Edit packages/types/src/index.ts
    # Add new interface/type
@@ -99,6 +106,7 @@ npm run dev:packages
    ```
 
 2. **New Utility Function**
+
    ```bash
    # Edit packages/utils/src/index.ts
    # Add new function with tests
@@ -160,6 +168,7 @@ npm run format:check
 ### VS Code Setup
 
 Create `.vscode/launch.json`:
+
 ```json
 {
   "version": "0.2.0",
@@ -205,7 +214,9 @@ curl -H "x-api-key: dev-key-1" http://localhost:3000/api/v1/health
 ## Common Issues
 
 ### 1. Port Conflicts
+
 If ports 3000-3002 are in use:
+
 ```bash
 # Kill processes using ports
 npx kill-port 3000 3001 3002
@@ -214,7 +225,9 @@ npx kill-port 3000 3001 3002
 ```
 
 ### 2. TypeScript Path Resolution
+
 If imports from shared packages fail:
+
 ```bash
 # Rebuild packages
 npm run build:packages
@@ -223,6 +236,7 @@ npm run build:packages
 ```
 
 ### 3. Database Connection Issues
+
 ```bash
 # Check PostgreSQL is running
 pg_isready
@@ -236,6 +250,7 @@ createdb blunari_dev
 ```
 
 ### 4. WebSocket Connection Failed
+
 ```bash
 # Check WebSocket server is running
 netstat -an | grep 3001
@@ -246,6 +261,7 @@ netstat -an | grep 3001
 ## Performance Optimization
 
 ### Build Performance
+
 ```bash
 # Use Turborepo caching
 npm run build --cache-dir=.turbo
@@ -258,6 +274,7 @@ npm run build --filter=...changed
 ```
 
 ### Development Performance
+
 ```bash
 # Start only needed apps
 npm run dev:background-ops
@@ -269,6 +286,7 @@ npm run dev:background-ops
 ## IDE Configuration
 
 ### VS Code Extensions
+
 - TypeScript Hero
 - ESLint
 - Prettier
@@ -276,7 +294,9 @@ npm run dev:background-ops
 - Thunder Client (API testing)
 
 ### Settings
+
 Create `.vscode/settings.json`:
+
 ```json
 {
   "typescript.preferences.includePackageJsonAutoImports": "on",

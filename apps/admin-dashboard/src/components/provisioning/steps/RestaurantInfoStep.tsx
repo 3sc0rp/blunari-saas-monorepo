@@ -1,83 +1,116 @@
-import React, { useEffect, useState } from 'react'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { Store, Globe, Mail, Phone, MapPin, Edit3, Check, X } from 'lucide-react'
-import type { ProvisioningData } from '../ProvisioningWizard'
-import { supabase } from '@/integrations/supabase/client'
-import { useSlugValidation } from '@/hooks/useSlugValidation'
+import React, { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Store,
+  Globe,
+  Mail,
+  Phone,
+  MapPin,
+  Edit3,
+  Check,
+  X,
+} from "lucide-react";
+import type { ProvisioningData } from "../ProvisioningWizard";
+import { supabase } from "@/integrations/supabase/client";
+import { useSlugValidation } from "@/hooks/useSlugValidation";
 
 interface CuisineType {
-  id: string
-  name: string
-  icon: string
+  id: string;
+  name: string;
+  icon: string;
 }
 
 interface RestaurantInfoStepProps {
-  data: ProvisioningData
-  updateData: (updates: Partial<ProvisioningData>) => void
+  data: ProvisioningData;
+  updateData: (updates: Partial<ProvisioningData>) => void;
 }
 
-export function RestaurantInfoStep({ data, updateData }: RestaurantInfoStepProps) {
-  const [cuisineTypes, setCuisineTypes] = useState<CuisineType[]>([])
-  const [isEditingSlug, setIsEditingSlug] = useState(false)
-  const [tempSlug, setTempSlug] = useState('')
-  const { generateUniqueSlug, validateSlug, isValidating } = useSlugValidation()
+export function RestaurantInfoStep({
+  data,
+  updateData,
+}: RestaurantInfoStepProps) {
+  const [cuisineTypes, setCuisineTypes] = useState<CuisineType[]>([]);
+  const [isEditingSlug, setIsEditingSlug] = useState(false);
+  const [tempSlug, setTempSlug] = useState("");
+  const { generateUniqueSlug, validateSlug, isValidating } =
+    useSlugValidation();
 
   useEffect(() => {
     const fetchCuisineTypes = async () => {
       const { data: cuisines } = await supabase
-        .from('cuisine_types')
-        .select('*')
-        .order('name')
-      setCuisineTypes(cuisines || [])
-    }
-    fetchCuisineTypes()
-  }, [])
+        .from("cuisine_types")
+        .select("*")
+        .order("name");
+      setCuisineTypes(cuisines || []);
+    };
+    fetchCuisineTypes();
+  }, []);
 
   // Auto-generate slug when restaurant name changes
   useEffect(() => {
     const generateSlug = async () => {
-      if (data.restaurantName && data.restaurantName.length >= 3 && !isEditingSlug) {
-        console.log('Generating slug for:', data.restaurantName)
-        const slug = await generateUniqueSlug(data.restaurantName)
-        console.log('Generated unique slug:', slug)
-        updateData({ slug })
+      if (
+        data.restaurantName &&
+        data.restaurantName.length >= 3 &&
+        !isEditingSlug
+      ) {
+        console.log("Generating slug for:", data.restaurantName);
+        const slug = await generateUniqueSlug(data.restaurantName);
+        console.log("Generated unique slug:", slug);
+        updateData({ slug });
       }
-    }
-    
-    const timeoutId = setTimeout(generateSlug, 500) // Debounce for 500ms
-    return () => clearTimeout(timeoutId)
-  }, [data.restaurantName, generateUniqueSlug, updateData, isEditingSlug])
+    };
+
+    const timeoutId = setTimeout(generateSlug, 500); // Debounce for 500ms
+    return () => clearTimeout(timeoutId);
+  }, [data.restaurantName, generateUniqueSlug, updateData, isEditingSlug]);
 
   const handleEditSlug = () => {
-    setTempSlug(data.slug || '')
-    setIsEditingSlug(true)
-  }
+    setTempSlug(data.slug || "");
+    setIsEditingSlug(true);
+  };
 
   const handleSaveSlug = async () => {
     if (tempSlug && tempSlug.length >= 3) {
-      const isValid = await validateSlug(tempSlug)
+      const isValid = await validateSlug(tempSlug);
       if (isValid) {
-        updateData({ slug: tempSlug })
-        setIsEditingSlug(false)
+        updateData({ slug: tempSlug });
+        setIsEditingSlug(false);
       }
     }
-  }
+  };
 
   const handleCancelSlug = () => {
-    setTempSlug('')
-    setIsEditingSlug(false)
-  }
+    setTempSlug("");
+    setIsEditingSlug(false);
+  };
 
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">Restaurant Information</h2>
-        <p className="text-muted-foreground">Tell us about your restaurant to create your business profile</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">
+          Restaurant Information
+        </h2>
+        <p className="text-muted-foreground">
+          Tell us about your restaurant to create your business profile
+        </p>
       </div>
 
       <Card>
@@ -87,7 +120,8 @@ export function RestaurantInfoStep({ data, updateData }: RestaurantInfoStepProps
             Basic Information
           </CardTitle>
           <CardDescription>
-            Essential details about your restaurant that will appear on your client dashboard
+            Essential details about your restaurant that will appear on your
+            client dashboard
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -103,7 +137,9 @@ export function RestaurantInfoStep({ data, updateData }: RestaurantInfoStepProps
                 onChange={(e) => updateData({ restaurantName: e.target.value })}
                 className="h-11"
               />
-              <p className="text-xs text-muted-foreground">This will be your business display name</p>
+              <p className="text-xs text-muted-foreground">
+                This will be your business display name
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -142,7 +178,9 @@ export function RestaurantInfoStep({ data, updateData }: RestaurantInfoStepProps
               onChange={(e) => updateData({ description: e.target.value })}
               className="min-h-[80px] resize-none"
             />
-            <p className="text-xs text-muted-foreground">Optional: Help customers understand your unique offering</p>
+            <p className="text-xs text-muted-foreground">
+              Optional: Help customers understand your unique offering
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -232,9 +270,11 @@ export function RestaurantInfoStep({ data, updateData }: RestaurantInfoStepProps
               id="street"
               placeholder="123 Main Street"
               value={data.address.street}
-              onChange={(e) => updateData({ 
-                address: { ...data.address, street: e.target.value }
-              })}
+              onChange={(e) =>
+                updateData({
+                  address: { ...data.address, street: e.target.value },
+                })
+              }
               className="h-11"
             />
           </div>
@@ -248,9 +288,11 @@ export function RestaurantInfoStep({ data, updateData }: RestaurantInfoStepProps
                 id="city"
                 placeholder="New York"
                 value={data.address.city}
-                onChange={(e) => updateData({ 
-                  address: { ...data.address, city: e.target.value }
-                })}
+                onChange={(e) =>
+                  updateData({
+                    address: { ...data.address, city: e.target.value },
+                  })
+                }
                 className="h-11"
               />
             </div>
@@ -263,9 +305,11 @@ export function RestaurantInfoStep({ data, updateData }: RestaurantInfoStepProps
                 id="state"
                 placeholder="NY"
                 value={data.address.state}
-                onChange={(e) => updateData({ 
-                  address: { ...data.address, state: e.target.value }
-                })}
+                onChange={(e) =>
+                  updateData({
+                    address: { ...data.address, state: e.target.value },
+                  })
+                }
                 className="h-11"
               />
             </div>
@@ -278,9 +322,11 @@ export function RestaurantInfoStep({ data, updateData }: RestaurantInfoStepProps
                 id="zipCode"
                 placeholder="10001"
                 value={data.address.zipCode}
-                onChange={(e) => updateData({ 
-                  address: { ...data.address, zipCode: e.target.value }
-                })}
+                onChange={(e) =>
+                  updateData({
+                    address: { ...data.address, zipCode: e.target.value },
+                  })
+                }
                 className="h-11"
               />
             </div>
@@ -291,9 +337,11 @@ export function RestaurantInfoStep({ data, updateData }: RestaurantInfoStepProps
               </Label>
               <Select
                 value={data.address.country}
-                onValueChange={(value) => updateData({ 
-                  address: { ...data.address, country: value }
-                })}
+                onValueChange={(value) =>
+                  updateData({
+                    address: { ...data.address, country: value },
+                  })
+                }
               >
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder="Country" />
@@ -318,7 +366,8 @@ export function RestaurantInfoStep({ data, updateData }: RestaurantInfoStepProps
               Restaurant Slug
             </CardTitle>
             <CardDescription>
-              This unique identifier will be used for your restaurant's booking URLs and API endpoints
+              This unique identifier will be used for your restaurant's booking
+              URLs and API endpoints
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -367,12 +416,13 @@ export function RestaurantInfoStep({ data, updateData }: RestaurantInfoStepProps
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                Your booking URL will be: <span className="font-mono">yourdomain.com/{data.slug}</span>
+                Your booking URL will be:{" "}
+                <span className="font-mono">yourdomain.com/{data.slug}</span>
               </p>
             </div>
           </CardContent>
         </Card>
       )}
     </div>
-  )
+  );
 }

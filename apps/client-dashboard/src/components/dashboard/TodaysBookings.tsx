@@ -13,9 +13,9 @@ const TodaysBookings = () => {
   const { bookings, isLoading } = useTodaysBookings(tenant?.id);
 
   const getBookingStats = () => {
-    const confirmed = bookings.filter(b => b.status === 'confirmed').length;
-    const seated = bookings.filter(b => b.status === 'seated').length;
-    const completed = bookings.filter(b => b.status === 'completed').length;
+    const confirmed = bookings.filter((b) => b.status === "confirmed").length;
+    const seated = bookings.filter((b) => b.status === "seated").length;
+    const completed = bookings.filter((b) => b.status === "completed").length;
     const total = bookings.length;
 
     return { confirmed, seated, completed, total };
@@ -51,7 +51,7 @@ const TodaysBookings = () => {
             {stats.total} total
           </Badge>
         </div>
-        
+
         {/* Quick Stats */}
         <div className="flex gap-4 pt-2">
           <div className="flex items-center gap-2">
@@ -68,16 +68,16 @@ const TodaysBookings = () => {
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="p-0">
         {bookings.length === 0 ? (
           <div className="p-6">
             <EmptyState
               variant="no-bookings-date"
               action={{
-                label: 'View All Bookings',
-                onClick: () => window.location.href = '/dashboard/bookings',
-                icon: Users
+                label: "View All Bookings",
+                onClick: () => (window.location.href = "/dashboard/bookings"),
+                icon: Users,
               }}
             />
           </div>
@@ -85,17 +85,21 @@ const TodaysBookings = () => {
           <ScrollArea className="h-80">
             <div className="space-y-2 p-4">
               {bookings.map((booking) => (
-                <BookingCard 
-                  key={booking.id} 
+                <BookingCard
+                  key={booking.id}
                   booking={{
                     id: booking.id,
                     customerName: booking.guest_name,
                     time: booking.booking_time,
                     guests: booking.party_size,
-                    table: booking.table_id || 'TBD',
-                    phone: booking.guest_phone || '',
-                    status: booking.status as 'confirmed' | 'seated' | 'completed' | 'cancelled',
-                    specialRequests: booking.special_requests
+                    table: booking.table_id || "TBD",
+                    phone: booking.guest_phone || "",
+                    status: booking.status as
+                      | "confirmed"
+                      | "seated"
+                      | "completed"
+                      | "cancelled",
+                    specialRequests: booking.special_requests,
                   }}
                 />
               ))}

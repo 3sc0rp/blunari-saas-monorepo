@@ -1,19 +1,37 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Activity, Shield, Settings, Save, Loader2 } from "lucide-react";
 
-type EmployeeRole = 'SUPER_ADMIN' | 'ADMIN' | 'SUPPORT' | 'OPS' | 'VIEWER';
-type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'SUSPENDED';
+type EmployeeRole = "SUPER_ADMIN" | "ADMIN" | "SUPPORT" | "OPS" | "VIEWER";
+type EmployeeStatus = "ACTIVE" | "INACTIVE" | "PENDING" | "SUSPENDED";
 
 interface PermissionSet {
   can_manage_tenants?: boolean;
@@ -82,13 +100,17 @@ export const EmployeeDetailsDialog = ({
   departments,
   open,
   onOpenChange,
-  onEmployeeUpdated
+  onEmployeeUpdated,
 }: EmployeeDetailsDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [role, setRole] = useState<EmployeeRole>(employee.role as EmployeeRole);
-  const [status, setStatus] = useState<EmployeeStatus>(employee.status as EmployeeStatus);
-  const [departmentId, setDepartmentId] = useState(employee.department_id || "");
+  const [status, setStatus] = useState<EmployeeStatus>(
+    employee.status as EmployeeStatus,
+  );
+  const [departmentId, setDepartmentId] = useState(
+    employee.department_id || "",
+  );
   const [hireDate, setHireDate] = useState(employee.hire_date || "");
 
   useEffect(() => {
@@ -100,19 +122,21 @@ export const EmployeeDetailsDialog = ({
   const fetchActivityLogs = async () => {
     try {
       const { data, error } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .eq('employee_id', employee.id)
-        .order('created_at', { ascending: false })
+        .from("activity_logs")
+        .select("*")
+        .eq("employee_id", employee.id)
+        .order("created_at", { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setActivityLogs((data || []).map(log => ({
-        ...log,
-        details: log.details as ActivityLogDetails
-      })));
+      setActivityLogs(
+        (data || []).map((log) => ({
+          ...log,
+          details: log.details as ActivityLogDetails,
+        })),
+      );
     } catch (error) {
-      console.error('Error fetching activity logs:', error);
+      console.error("Error fetching activity logs:", error);
     }
   };
 
@@ -120,36 +144,36 @@ export const EmployeeDetailsDialog = ({
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('employees')
+        .from("employees")
         .update({
           role,
           status,
           department_id: departmentId || null,
-          hire_date: hireDate || null
+          hire_date: hireDate || null,
         })
-        .eq('id', employee.id);
+        .eq("id", employee.id);
 
       if (error) throw error;
 
       // Log the activity
-      await supabase.rpc('log_employee_activity', {
-        p_action: 'employee_updated',
-        p_resource_type: 'employee',
+      await supabase.rpc("log_employee_activity", {
+        p_action: "employee_updated",
+        p_resource_type: "employee",
         p_resource_id: employee.id,
         p_details: {
           changes: {
             role: { from: employee.role, to: role },
             status: { from: employee.status, to: status },
-            department_id: { from: employee.department_id, to: departmentId }
-          }
-        }
+            department_id: { from: employee.department_id, to: departmentId },
+          },
+        },
       });
 
       toast.success("Employee updated successfully");
       onEmployeeUpdated();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error updating employee:', error);
+      console.error("Error updating employee:", error);
       toast.error("Failed to update employee");
     } finally {
       setLoading(false);
@@ -158,22 +182,33 @@ export const EmployeeDetailsDialog = ({
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case 'ACTIVE': return 'default';
-      case 'INACTIVE': return 'secondary';
-      case 'PENDING': return 'outline';
-      case 'SUSPENDED': return 'destructive';
-      default: return 'secondary';
+      case "ACTIVE":
+        return "default";
+      case "INACTIVE":
+        return "secondary";
+      case "PENDING":
+        return "outline";
+      case "SUSPENDED":
+        return "destructive";
+      default:
+        return "secondary";
     }
   };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case 'SUPER_ADMIN': return 'destructive';
-      case 'ADMIN': return 'default';
-      case 'SUPPORT': return 'secondary';
-      case 'OPS': return 'outline';
-      case 'VIEWER': return 'secondary';
-      default: return 'secondary';
+      case "SUPER_ADMIN":
+        return "destructive";
+      case "ADMIN":
+        return "default";
+      case "SUPPORT":
+        return "secondary";
+      case "OPS":
+        return "outline";
+      case "VIEWER":
+        return "secondary";
+      default:
+        return "secondary";
     }
   };
 
@@ -198,13 +233,16 @@ export const EmployeeDetailsDialog = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Personal Information</CardTitle>
+                  <CardTitle className="text-lg">
+                    Personal Information
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <Label>Full Name</Label>
                     <div className="text-sm text-muted-foreground">
-                      {employee.profiles.first_name} {employee.profiles.last_name}
+                      {employee.profiles.first_name}{" "}
+                      {employee.profiles.last_name}
                     </div>
                   </div>
                   <div>
@@ -238,7 +276,10 @@ export const EmployeeDetailsDialog = ({
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="role">Role</Label>
-                    <Select value={role} onValueChange={(value) => setRole(value as EmployeeRole)}>
+                    <Select
+                      value={role}
+                      onValueChange={(value) => setRole(value as EmployeeRole)}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -254,7 +295,12 @@ export const EmployeeDetailsDialog = ({
 
                   <div>
                     <Label htmlFor="status">Status</Label>
-                    <Select value={status} onValueChange={(value) => setStatus(value as EmployeeStatus)}>
+                    <Select
+                      value={status}
+                      onValueChange={(value) =>
+                        setStatus(value as EmployeeStatus)
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -269,12 +315,15 @@ export const EmployeeDetailsDialog = ({
 
                   <div>
                     <Label htmlFor="department">Department</Label>
-                    <Select value={departmentId} onValueChange={setDepartmentId}>
+                    <Select
+                      value={departmentId}
+                      onValueChange={setDepartmentId}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map(dept => (
+                        {departments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
                           </SelectItem>
@@ -295,30 +344,34 @@ export const EmployeeDetailsDialog = ({
                   <div>
                     <Label>Last Login</Label>
                     <div className="text-sm text-muted-foreground">
-                      {employee.last_login 
+                      {employee.last_login
                         ? new Date(employee.last_login).toLocaleString()
-                        : 'Never'
-                      }
+                        : "Never"}
                     </div>
                   </div>
                   <div>
                     <Label>Last Activity</Label>
                     <div className="text-sm text-muted-foreground">
-                      {employee.last_activity 
+                      {employee.last_activity
                         ? new Date(employee.last_activity).toLocaleString()
-                        : 'Never'
-                      }
+                        : "Never"}
                     </div>
                   </div>
                   <div>
                     <Label>Current Role</Label>
-                    <Badge variant={getRoleBadgeVariant(employee.role)} className="mt-1">
-                      {employee.role.replace('_', ' ')}
+                    <Badge
+                      variant={getRoleBadgeVariant(employee.role)}
+                      className="mt-1"
+                    >
+                      {employee.role.replace("_", " ")}
                     </Badge>
                   </div>
                   <div>
                     <Label>Status</Label>
-                    <Badge variant={getStatusBadgeVariant(employee.status)} className="mt-1">
+                    <Badge
+                      variant={getStatusBadgeVariant(employee.status)}
+                      className="mt-1"
+                    >
                       {employee.status}
                     </Badge>
                   </div>
@@ -359,12 +412,12 @@ export const EmployeeDetailsDialog = ({
                   <TableBody>
                     {activityLogs.map((log) => (
                       <TableRow key={log.id}>
-                        <TableCell className="font-medium">{log.action}</TableCell>
+                        <TableCell className="font-medium">
+                          {log.action}
+                        </TableCell>
                         <TableCell>
                           {log.resource_type && (
-                            <Badge variant="outline">
-                              {log.resource_type}
-                            </Badge>
+                            <Badge variant="outline">{log.resource_type}</Badge>
                           )}
                         </TableCell>
                         <TableCell>
@@ -396,9 +449,11 @@ export const EmployeeDetailsDialog = ({
               <CardContent>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {role === 'SUPER_ADMIN' && (
+                    {role === "SUPER_ADMIN" && (
                       <div className="p-4 border rounded-lg">
-                        <h4 className="font-semibold text-destructive mb-2">Super Admin</h4>
+                        <h4 className="font-semibold text-destructive mb-2">
+                          Super Admin
+                        </h4>
                         <ul className="text-sm text-muted-foreground space-y-1">
                           <li>• Full platform access</li>
                           <li>• Employee management</li>
@@ -407,7 +462,7 @@ export const EmployeeDetailsDialog = ({
                         </ul>
                       </div>
                     )}
-                    {['ADMIN', 'SUPER_ADMIN'].includes(role) && (
+                    {["ADMIN", "SUPER_ADMIN"].includes(role) && (
                       <div className="p-4 border rounded-lg">
                         <h4 className="font-semibold mb-2">Admin</h4>
                         <ul className="text-sm text-muted-foreground space-y-1">
@@ -418,7 +473,7 @@ export const EmployeeDetailsDialog = ({
                         </ul>
                       </div>
                     )}
-                    {['SUPPORT', 'ADMIN', 'SUPER_ADMIN'].includes(role) && (
+                    {["SUPPORT", "ADMIN", "SUPER_ADMIN"].includes(role) && (
                       <div className="p-4 border rounded-lg">
                         <h4 className="font-semibold mb-2">Support</h4>
                         <ul className="text-sm text-muted-foreground space-y-1">
@@ -429,7 +484,9 @@ export const EmployeeDetailsDialog = ({
                         </ul>
                       </div>
                     )}
-                    {['OPS', 'SUPPORT', 'ADMIN', 'SUPER_ADMIN'].includes(role) && (
+                    {["OPS", "SUPPORT", "ADMIN", "SUPER_ADMIN"].includes(
+                      role,
+                    ) && (
                       <div className="p-4 border rounded-lg">
                         <h4 className="font-semibold mb-2">Operations</h4>
                         <ul className="text-sm text-muted-foreground space-y-1">

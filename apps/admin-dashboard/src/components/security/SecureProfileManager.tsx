@@ -1,22 +1,38 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Shield, AlertTriangle, Save, Lock } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Shield, AlertTriangle, Save, Lock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SecureProfileManagerProps {
   profile: any;
   onUpdate: (updates: any) => void;
 }
 
-export function SecureProfileManager({ profile, onUpdate }: SecureProfileManagerProps) {
+export function SecureProfileManager({
+  profile,
+  onUpdate,
+}: SecureProfileManagerProps) {
   const [editedProfile, setEditedProfile] = useState(profile);
   const [isSaving, setIsSaving] = useState(false);
   const [showRoleWarning, setShowRoleWarning] = useState(false);
@@ -49,20 +65,19 @@ export function SecureProfileManager({ profile, onUpdate }: SecureProfileManager
       }
 
       const { error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update(allowedUpdates)
-        .eq('id', user?.id);
+        .eq("id", user?.id);
 
       if (error) throw error;
 
       // Log the profile update
-      await supabase
-        .rpc('log_security_event', {
-          p_event_type: 'profile_updated',
-          p_severity: 'info',
-          p_user_id: user?.id,
-          p_event_data: { updated_fields: Object.keys(allowedUpdates) }
-        });
+      await supabase.rpc("log_security_event", {
+        p_event_type: "profile_updated",
+        p_severity: "info",
+        p_user_id: user?.id,
+        p_event_data: { updated_fields: Object.keys(allowedUpdates) },
+      });
 
       onUpdate(editedProfile);
       toast({
@@ -70,26 +85,28 @@ export function SecureProfileManager({ profile, onUpdate }: SecureProfileManager
         description: "Your profile has been updated successfully.",
       });
     } catch (error) {
-      console.error('Profile update error:', error);
+      console.error("Profile update error:", error);
       toast({
         title: "Update Failed",
         description: "Failed to update profile. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const hasChanges = JSON.stringify({
-    first_name: editedProfile.first_name,
-    last_name: editedProfile.last_name,
-    avatar_url: editedProfile.avatar_url
-  }) !== JSON.stringify({
-    first_name: profile.first_name,
-    last_name: profile.last_name,
-    avatar_url: profile.avatar_url
-  });
+  const hasChanges =
+    JSON.stringify({
+      first_name: editedProfile.first_name,
+      last_name: editedProfile.last_name,
+      avatar_url: editedProfile.avatar_url,
+    }) !==
+    JSON.stringify({
+      first_name: profile.first_name,
+      last_name: profile.last_name,
+      avatar_url: profile.avatar_url,
+    });
 
   return (
     <>
@@ -108,8 +125,9 @@ export function SecureProfileManager({ profile, onUpdate }: SecureProfileManager
           <Alert>
             <Lock className="h-4 w-4" />
             <AlertDescription>
-              <strong>Security Notice:</strong> Role and permission changes require administrative approval 
-              and cannot be modified through this interface.
+              <strong>Security Notice:</strong> Role and permission changes
+              require administrative approval and cannot be modified through
+              this interface.
             </AlertDescription>
           </Alert>
 
@@ -119,17 +137,27 @@ export function SecureProfileManager({ profile, onUpdate }: SecureProfileManager
                 <Label htmlFor="firstName">First Name</Label>
                 <Input
                   id="firstName"
-                  value={editedProfile.first_name || ''}
-                  onChange={(e) => setEditedProfile(prev => ({ ...prev, first_name: e.target.value }))}
+                  value={editedProfile.first_name || ""}
+                  onChange={(e) =>
+                    setEditedProfile((prev) => ({
+                      ...prev,
+                      first_name: e.target.value,
+                    }))
+                  }
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="lastName">Last Name</Label>
                 <Input
                   id="lastName"
-                  value={editedProfile.last_name || ''}
-                  onChange={(e) => setEditedProfile(prev => ({ ...prev, last_name: e.target.value }))}
+                  value={editedProfile.last_name || ""}
+                  onChange={(e) =>
+                    setEditedProfile((prev) => ({
+                      ...prev,
+                      last_name: e.target.value,
+                    }))
+                  }
                 />
               </div>
 
@@ -138,7 +166,7 @@ export function SecureProfileManager({ profile, onUpdate }: SecureProfileManager
                 <Input
                   id="email"
                   type="email"
-                  value={editedProfile.email || ''}
+                  value={editedProfile.email || ""}
                   disabled
                   className="bg-muted"
                 />
@@ -154,7 +182,7 @@ export function SecureProfileManager({ profile, onUpdate }: SecureProfileManager
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="flex items-center gap-1">
                     <Shield className="h-3 w-3" />
-                    {profile.role || 'User'}
+                    {profile.role || "User"}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
                     Contact admin to change role
@@ -184,7 +212,7 @@ export function SecureProfileManager({ profile, onUpdate }: SecureProfileManager
             <div className="flex justify-end">
               <Button onClick={handleSave} disabled={isSaving}>
                 <Save className="h-4 w-4 mr-2" />
-                {isSaving ? 'Saving...' : 'Save Changes'}
+                {isSaving ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           )}
@@ -200,20 +228,22 @@ export function SecureProfileManager({ profile, onUpdate }: SecureProfileManager
               Role Change Detected
             </DialogTitle>
             <DialogDescription>
-              Role changes are not permitted through the profile interface for security reasons.
+              Role changes are not permitted through the profile interface for
+              security reasons.
             </DialogDescription>
           </DialogHeader>
 
           <Alert>
             <Shield className="h-4 w-4" />
             <AlertDescription>
-              <strong>Security Policy:</strong> Role and permission changes must be requested through 
-              proper administrative channels to maintain system security and audit compliance.
+              <strong>Security Policy:</strong> Role and permission changes must
+              be requested through proper administrative channels to maintain
+              system security and audit compliance.
             </AlertDescription>
           </Alert>
 
           <DialogFooter>
-            <Button 
+            <Button
               onClick={() => {
                 setEditedProfile(profile); // Reset changes
                 setShowRoleWarning(false);

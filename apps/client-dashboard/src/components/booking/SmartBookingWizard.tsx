@@ -1,42 +1,57 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useSmartBookingCreation } from '@/hooks/useSmartBookingCreation';
-import { useTenant } from '@/hooks/useTenant';
-import { format } from 'date-fns';
-import { 
-  CalendarIcon, 
-  Clock, 
-  Users, 
-  Phone, 
-  Mail, 
-  MapPin, 
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useSmartBookingCreation } from "@/hooks/useSmartBookingCreation";
+import { useTenant } from "@/hooks/useTenant";
+import { format } from "date-fns";
+import {
+  CalendarIcon,
+  Clock,
+  Users,
+  Phone,
+  Mail,
+  MapPin,
   CreditCard,
   CheckCircle,
   ArrowLeft,
   ArrowRight,
   Target,
-  TrendingUp
-} from 'lucide-react';
+  TrendingUp,
+} from "lucide-react";
 
 interface SmartBookingWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({ 
-  open, 
-  onOpenChange 
+const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
+  open,
+  onOpenChange,
 }) => {
   const { tenant } = useTenant();
   const {
@@ -49,42 +64,47 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
     previousStep,
     updateFormData,
     resetForm,
-    calculateETA
+    calculateETA,
   } = useSmartBookingCreation(tenant?.id);
 
   const [selectedDate, setSelectedDate] = useState<Date>();
-  const [selectedTable, setSelectedTable] = useState<string>('');
+  const [selectedTable, setSelectedTable] = useState<string>("");
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
-      updateFormData({ date: format(date, 'yyyy-MM-dd') });
+      updateFormData({ date: format(date, "yyyy-MM-dd") });
     }
   };
 
   const handleSubmit = () => {
     createBooking({
       ...formData,
-      tableId: selectedTable
+      tableId: selectedTable,
     });
   };
 
   const steps = [
-    { title: 'Customer Details', icon: Users },
-    { title: 'Date & Time', icon: CalendarIcon },
-    { title: 'Table Selection', icon: MapPin },
-    { title: 'Confirmation', icon: CheckCircle }
+    { title: "Customer Details", icon: Users },
+    { title: "Date & Time", icon: CalendarIcon },
+    { title: "Table Selection", icon: MapPin },
+    { title: "Confirmation", icon: CheckCircle },
   ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="booking-wizard-description">
+      <DialogContent
+        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        aria-describedby="booking-wizard-description"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Target className="h-5 w-5" />
             Smart Booking Creation
           </DialogTitle>
-          <p id="booking-wizard-description" className="sr-only">Step-by-step booking wizard to create reservations</p>
+          <p id="booking-wizard-description" className="sr-only">
+            Step-by-step booking wizard to create reservations
+          </p>
         </DialogHeader>
 
         {/* Progress Indicator */}
@@ -93,24 +113,34 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
             const StepIcon = step.icon;
             const isActive = currentStep === index + 1;
             const isCompleted = currentStep > index + 1;
-            
+
             return (
               <div key={index} className="flex items-center">
-                <div className={`
+                <div
+                  className={`
                   flex items-center justify-center w-10 h-10 rounded-full border-2 
-                  ${isCompleted ? 'bg-success border-success text-success-foreground' : 
-                    isActive ? 'bg-primary border-primary text-primary-foreground' : 
-                    'bg-muted border-muted-foreground/30 text-muted-foreground'}
-                `}>
+                  ${
+                    isCompleted
+                      ? "bg-success border-success text-success-foreground"
+                      : isActive
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : "bg-muted border-muted-foreground/30 text-muted-foreground"
+                  }
+                `}
+                >
                   <StepIcon className="h-4 w-4" />
                 </div>
                 <div className="ml-2 hidden sm:block">
-                  <p className={`text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  <p
+                    className={`text-sm font-medium ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+                  >
                     {step.title}
                   </p>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`w-12 h-0.5 mx-4 ${isCompleted ? 'bg-success' : 'bg-muted'}`} />
+                  <div
+                    className={`w-12 h-0.5 mx-4 ${isCompleted ? "bg-success" : "bg-muted"}`}
+                  />
                 )}
               </div>
             );
@@ -134,15 +164,19 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                   <Input
                     id="customerName"
                     value={formData.customerName}
-                    onChange={(e) => updateFormData({ customerName: e.target.value })}
+                    onChange={(e) =>
+                      updateFormData({ customerName: e.target.value })
+                    }
                     placeholder="Enter customer name"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="partySize">Party Size *</Label>
-                  <Select 
-                    value={formData.partySize.toString()} 
-                    onValueChange={(value) => updateFormData({ partySize: parseInt(value) })}
+                  <Select
+                    value={formData.partySize.toString()}
+                    onValueChange={(value) =>
+                      updateFormData({ partySize: parseInt(value) })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -150,7 +184,7 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                     <SelectContent>
                       {[...Array(12)].map((_, i) => (
                         <SelectItem key={i + 1} value={(i + 1).toString()}>
-                          {i + 1} {i === 0 ? 'person' : 'people'}
+                          {i + 1} {i === 0 ? "person" : "people"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -177,12 +211,19 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="source">Booking Source</Label>
-                <Select 
-                  value={formData.source} 
-                  onValueChange={(value: 'phone' | 'walk_in' | 'website' | 'social' | 'partner') => updateFormData({ source: value })}
+                <Select
+                  value={formData.source}
+                  onValueChange={(
+                    value:
+                      | "phone"
+                      | "walk_in"
+                      | "website"
+                      | "social"
+                      | "partner",
+                  ) => updateFormData({ source: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -219,7 +260,9 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                         className="w-full justify-start text-left font-normal"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate ? format(selectedDate, 'PPP') : 'Pick a date'}
+                        {selectedDate
+                          ? format(selectedDate, "PPP")
+                          : "Pick a date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -249,9 +292,11 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="duration">Duration (minutes)</Label>
-                  <Select 
-                    value={formData.duration?.toString() || '120'} 
-                    onValueChange={(value) => updateFormData({ duration: parseInt(value) })}
+                  <Select
+                    value={formData.duration?.toString() || "120"}
+                    onValueChange={(value) =>
+                      updateFormData({ duration: parseInt(value) })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -271,10 +316,9 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                   <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
-                      {formData.date && formData.time ? 
-                        `${calculateETA(`${formData.date}T${formData.time}`, formData.partySize)} minutes`
-                        : 'Select date & time'
-                      }
+                      {formData.date && formData.time
+                        ? `${calculateETA(`${formData.date}T${formData.time}`, formData.partySize)} minutes`
+                        : "Select date & time"}
                     </span>
                   </div>
                 </div>
@@ -282,10 +326,12 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
 
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
+                  <Checkbox
                     id="deposit"
                     checked={formData.depositRequired}
-                    onCheckedChange={(checked) => updateFormData({ depositRequired: !!checked })}
+                    onCheckedChange={(checked) =>
+                      updateFormData({ depositRequired: !!checked })
+                    }
                   />
                   <Label htmlFor="deposit">Require deposit</Label>
                 </div>
@@ -296,8 +342,12 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                     <Input
                       id="depositAmount"
                       type="number"
-                      value={formData.depositAmount || ''}
-                      onChange={(e) => updateFormData({ depositAmount: parseFloat(e.target.value) })}
+                      value={formData.depositAmount || ""}
+                      onChange={(e) =>
+                        updateFormData({
+                          depositAmount: parseFloat(e.target.value),
+                        })
+                      }
                       placeholder="25.00"
                     />
                   </div>
@@ -319,26 +369,29 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Optimized Table Recommendations</h3>
+                  <h3 className="text-lg font-semibold">
+                    Optimized Table Recommendations
+                  </h3>
                 </div>
-                
+
                 {availableTables.length === 0 ? (
                   <Card>
                     <CardContent className="py-8 text-center">
                       <p className="text-muted-foreground">
-                        No tables available for the selected time. Please choose a different time.
+                        No tables available for the selected time. Please choose
+                        a different time.
                       </p>
                     </CardContent>
                   </Card>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {availableTables.map((table) => (
-                      <Card 
+                      <Card
                         key={table.tableId}
                         className={`cursor-pointer transition-all duration-200 ${
-                          selectedTable === table.tableId 
-                            ? 'ring-2 ring-primary bg-primary/5' 
-                            : 'hover:shadow-md'
+                          selectedTable === table.tableId
+                            ? "ring-2 ring-primary bg-primary/5"
+                            : "hover:shadow-md"
                         }`}
                         onClick={() => setSelectedTable(table.tableId)}
                       >
@@ -353,17 +406,23 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                         <CardContent>
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">Capacity:</span>
+                              <span className="text-muted-foreground">
+                                Capacity:
+                              </span>
                               <span>{table.capacity} people</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">Utilization:</span>
+                              <span className="text-muted-foreground">
+                                Utilization:
+                              </span>
                               <span>{Math.round(table.utilization)}%</span>
                             </div>
                             <div className="w-full bg-muted rounded-full h-2">
-                              <div 
+                              <div
                                 className="bg-primary rounded-full h-2 transition-all duration-300"
-                                style={{ width: `${table.recommendationScore}%` }}
+                                style={{
+                                  width: `${table.recommendationScore}%`,
+                                }}
                               />
                             </div>
                           </div>
@@ -378,8 +437,10 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                 <Label htmlFor="specialRequests">Special Requests</Label>
                 <Textarea
                   id="specialRequests"
-                  value={formData.specialRequests || ''}
-                  onChange={(e) => updateFormData({ specialRequests: e.target.value })}
+                  value={formData.specialRequests || ""}
+                  onChange={(e) =>
+                    updateFormData({ specialRequests: e.target.value })
+                  }
                   placeholder="Any special requests or dietary requirements..."
                   rows={3}
                 />
@@ -409,7 +470,9 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{formData.customerName}</span>
+                        <span className="font-medium">
+                          {formData.customerName}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground" />
@@ -422,15 +485,21 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                        <span>{selectedDate ? format(selectedDate, 'PPP') : formData.date}</span>
+                        <span>
+                          {selectedDate
+                            ? format(selectedDate, "PPP")
+                            : formData.date}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{formData.time} ({formData.duration} minutes)</span>
+                        <span>
+                          {formData.time} ({formData.duration} minutes)
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
@@ -442,7 +511,12 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                   {selectedTable && (
                     <div className="p-3 bg-primary/10 rounded-lg">
                       <p className="text-sm font-medium">
-                        Table: {availableTables.find(t => t.tableId === selectedTable)?.tableName}
+                        Table:{" "}
+                        {
+                          availableTables.find(
+                            (t) => t.tableId === selectedTable,
+                          )?.tableName
+                        }
                       </p>
                     </div>
                   )}
@@ -450,14 +524,20 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                   {formData.depositRequired && (
                     <div className="flex items-center gap-2 p-3 bg-warning/10 rounded-lg">
                       <CreditCard className="h-4 w-4 text-warning" />
-                      <span className="text-sm">Deposit required: ${formData.depositAmount}</span>
+                      <span className="text-sm">
+                        Deposit required: ${formData.depositAmount}
+                      </span>
                     </div>
                   )}
 
                   {formData.specialRequests && (
                     <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-sm font-medium mb-1">Special Requests:</p>
-                      <p className="text-sm text-muted-foreground">{formData.specialRequests}</p>
+                      <p className="text-sm font-medium mb-1">
+                        Special Requests:
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {formData.specialRequests}
+                      </p>
                     </div>
                   )}
                 </CardContent>
@@ -482,9 +562,12 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
             <Button
               onClick={nextStep}
               disabled={
-                (currentStep === 1 && (!formData.customerName || !formData.email)) ||
+                (currentStep === 1 &&
+                  (!formData.customerName || !formData.email)) ||
                 (currentStep === 2 && (!formData.date || !formData.time)) ||
-                (currentStep === 3 && availableTables.length > 0 && !selectedTable)
+                (currentStep === 3 &&
+                  availableTables.length > 0 &&
+                  !selectedTable)
               }
               className="flex items-center gap-2"
             >
@@ -497,7 +580,7 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
               disabled={isCreating}
               className="flex items-center gap-2"
             >
-              {isCreating ? 'Creating...' : 'Create Booking'}
+              {isCreating ? "Creating..." : "Create Booking"}
               <CheckCircle className="h-4 w-4" />
             </Button>
           )}

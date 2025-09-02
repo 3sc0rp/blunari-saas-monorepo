@@ -1,6 +1,6 @@
-import React from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import React from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const SkeletonMetricsCard: React.FC = () => {
   return (
@@ -25,8 +25,8 @@ export const SkeletonMetricsCard: React.FC = () => {
   );
 };
 
-export const SkeletonDashboardChart: React.FC<{ height?: string }> = ({ 
-  height = "h-96" 
+export const SkeletonDashboardChart: React.FC<{ height?: string }> = ({
+  height = "h-96",
 }) => {
   return (
     <Card className={`${height} bg-surface border-surface-2`}>
@@ -43,8 +43,8 @@ export const SkeletonDashboardChart: React.FC<{ height?: string }> = ({
           <div className="h-60 flex items-end justify-between gap-2">
             {Array.from({ length: 12 }, (_, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                <Skeleton 
-                  className="w-full" 
+                <Skeleton
+                  className="w-full"
                   style={{ height: `${Math.random() * 80 + 20}%` }}
                 />
                 <Skeleton className="h-3 w-6" />
@@ -80,7 +80,10 @@ export const SkeletonBookingsList: React.FC = () => {
       <CardContent>
         <div className="space-y-4">
           {Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="flex items-center justify-between p-4 bg-surface-2 rounded-lg">
+            <div
+              key={i}
+              className="flex items-center justify-between p-4 bg-surface-2 rounded-lg"
+            >
               <div className="flex items-center gap-3">
                 <Skeleton className="h-10 w-10 rounded-full" />
                 <div className="space-y-1">
@@ -121,19 +124,19 @@ export const SkeletonAnalyticsDashboard: React.FC = () => {
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-96" />
       </div>
-      
+
       {/* Time Picker */}
       <div className="flex gap-2">
         <Skeleton className="h-10 w-32" />
         <Skeleton className="h-10 w-40" />
       </div>
-      
+
       {/* Main Analytics Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SkeletonDashboardChart height="h-80" />
         <SkeletonDashboardChart height="h-80" />
       </div>
-      
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }, (_, i) => (
@@ -158,7 +161,10 @@ export const SkeletonMessagesDashboard: React.FC = () => {
         <CardContent>
           <div className="space-y-4">
             {Array.from({ length: 6 }, (_, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 bg-surface-2 rounded-lg">
+              <div
+                key={i}
+                className="flex items-center gap-3 p-3 bg-surface-2 rounded-lg"
+              >
                 <Skeleton className="h-10 w-10 rounded-full" />
                 <div className="flex-1 space-y-1">
                   <Skeleton className="h-4 w-20" />
@@ -170,7 +176,7 @@ export const SkeletonMessagesDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Messages View */}
       <Card className="lg:col-span-2">
         <CardHeader>
@@ -185,8 +191,13 @@ export const SkeletonMessagesDashboard: React.FC = () => {
         <CardContent>
           <div className="space-y-4">
             {Array.from({ length: 5 }, (_, i) => (
-              <div key={i} className={`flex ${i % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
-                <div className={`max-w-xs p-3 rounded-lg ${i % 2 === 0 ? 'bg-surface-2' : 'bg-brand/10'}`}>
+              <div
+                key={i}
+                className={`flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}
+              >
+                <div
+                  className={`max-w-xs p-3 rounded-lg ${i % 2 === 0 ? "bg-surface-2" : "bg-brand/10"}`}
+                >
                   <Skeleton className="h-4 w-full mb-1" />
                   <Skeleton className="h-4 w-3/4" />
                 </div>

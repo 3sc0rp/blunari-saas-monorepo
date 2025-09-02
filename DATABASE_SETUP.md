@@ -1,6 +1,7 @@
 # DATABASE SETUP GUIDE FOR BLUNARI SAAS
 
 ## Option 1: Supabase (Recommended for SAAS)
+
 1. Go to https://supabase.com
 2. Create a free account
 3. Create a new project
@@ -10,6 +11,7 @@
 DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres
 
 ## Option 2: Neon (Serverless PostgreSQL)
+
 1. Go to https://neon.tech
 2. Create a free account
 3. Create a database
@@ -19,6 +21,7 @@ DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabas
 DATABASE_URL=postgresql://[username]:[password]@[hostname]/[dbname]?sslmode=require
 
 ## Option 3: Local PostgreSQL
+
 1. Install PostgreSQL locally
 2. Create database: createdb blunari_saas
 3. Add to .env file:
@@ -26,6 +29,7 @@ DATABASE_URL=postgresql://[username]:[password]@[hostname]/[dbname]?sslmode=requ
 DATABASE_URL=postgresql://postgres:password@localhost:5432/blunari_saas
 
 ## Option 4: Railway
+
 1. Go to https://railway.app
 2. Create account and new project
 3. Add PostgreSQL service
@@ -33,6 +37,7 @@ DATABASE_URL=postgresql://postgres:password@localhost:5432/blunari_saas
 5. Add to .env file
 
 ## Current .env Template
+
 Copy one of the DATABASE_URL options above and update your .env file:
 
 ```env

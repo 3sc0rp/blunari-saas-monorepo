@@ -1,9 +1,20 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SecureForm } from "@/components/security/SecureForm";
@@ -26,7 +37,7 @@ export const InviteEmployeeDialog = ({
   open,
   onOpenChange,
   departments,
-  onInviteSent
+  onInviteSent,
 }: InviteEmployeeDialogProps) => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
@@ -34,10 +45,10 @@ export const InviteEmployeeDialog = ({
   const [loading, setLoading] = useState(false);
 
   const handleFormSubmit = async (formData: FormData) => {
-    const email = formData.get('email') as string;
-    const role = formData.get('role') as string;
-    const departmentId = formData.get('department_id') as string;
-    
+    const email = formData.get("email") as string;
+    const role = formData.get("role") as string;
+    const departmentId = formData.get("department_id") as string;
+
     // Additional validation and sanitization
     const sanitizedEmail = InputSanitizer.sanitizeEmail(email);
     if (!sanitizedEmail) {
@@ -53,12 +64,12 @@ export const InviteEmployeeDialog = ({
     setLoading(true);
     try {
       // Call edge function to send invitation
-      const { error } = await supabase.functions.invoke('invite-employee', {
+      const { error } = await supabase.functions.invoke("invite-employee", {
         body: {
           email: sanitizedEmail,
           role,
-          department_id: departmentId || null
-        }
+          department_id: departmentId || null,
+        },
       });
 
       if (error) throw error;
@@ -70,7 +81,7 @@ export const InviteEmployeeDialog = ({
       setRole("");
       setDepartmentId("");
     } catch (error) {
-      console.error('Error inviting employee:', error);
+      console.error("Error inviting employee:", error);
       toast.error("Failed to send invitation");
     } finally {
       setLoading(false);
@@ -87,8 +98,8 @@ export const InviteEmployeeDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        <SecureForm 
-          onSubmit={handleFormSubmit} 
+        <SecureForm
+          onSubmit={handleFormSubmit}
           action="invite_employee"
           rateLimit={{ limit: 5, windowMinutes: 10 }}
           className="space-y-4"
@@ -130,7 +141,7 @@ export const InviteEmployeeDialog = ({
                 <SelectValue placeholder="Select department (optional)" />
               </SelectTrigger>
               <SelectContent>
-                {departments.map(dept => (
+                {departments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>

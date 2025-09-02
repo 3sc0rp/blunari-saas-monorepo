@@ -1,13 +1,13 @@
-import { logger } from '../utils/logger';
-import { db } from '../database';
+import { logger } from "../utils/logger";
+import { db } from "../database";
 
 export interface ServiceStatus {
-  status: 'online' | 'warning' | 'error' | 'maintenance';
+  status: "online" | "warning" | "error" | "maintenance";
   message?: string;
 }
 
 export interface HealthCheckResult {
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: "healthy" | "degraded" | "unhealthy";
   response_time: number;
   details?: Record<string, any>;
 }
@@ -29,12 +29,12 @@ class ServicesService {
         FROM services
         ORDER BY name
       `;
-      
+
       const result = await db.query(query);
-      
+
       return result.rows;
     } catch (error) {
-      logger.error('Error fetching services:', error);
+      logger.error("Error fetching services:", error);
       throw error;
     }
   }
@@ -57,12 +57,12 @@ class ServicesService {
         FROM services
         WHERE id = $1
       `;
-      
+
       const result = await db.query(query, [serviceId]);
-      
+
       return result.rows[0] || null;
     } catch (error) {
-      logger.error('Error fetching service by ID:', error);
+      logger.error("Error fetching service by ID:", error);
       throw error;
     }
   }
@@ -77,23 +77,25 @@ class ServicesService {
         WHERE id = $1
         RETURNING *
       `;
-      
+
       const result = await db.query(query, [serviceId, statusData.status]);
-      
+
       if (result.rows.length > 0) {
-        logger.info(`Updated service ${serviceId} status to ${statusData.status}`);
-        
+        logger.info(
+          `Updated service ${serviceId} status to ${statusData.status}`,
+        );
+
         // Log activity
-        await this.logServiceActivity(serviceId, 'status_update', {
+        await this.logServiceActivity(serviceId, "status_update", {
           old_status: result.rows[0].status,
           new_status: statusData.status,
-          message: statusData.message
+          message: statusData.message,
         });
       }
-      
+
       return result.rows[0] || null;
     } catch (error) {
-      logger.error('Error updating service status:', error);
+      logger.error("Error updating service status:", error);
       throw error;
     }
   }
@@ -102,53 +104,54 @@ class ServicesService {
     try {
       const service = await this.getServiceById(serviceId);
       if (!service) return null;
-      
+
       const startTime = Date.now();
       let healthResult: HealthCheckResult;
-      
+
       if (service.health_check_url) {
         // Perform actual health check
         try {
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000);
-          
+
           const response = await fetch(service.health_check_url, {
-            method: 'GET',
-            signal: controller.signal
+            method: "GET",
+            signal: controller.signal,
           });
-          
+
           clearTimeout(timeoutId);
-          
+
           const responseTime = Date.now() - startTime;
-          
+
           healthResult = {
-            status: response.ok ? 'healthy' : 'degraded',
+            status: response.ok ? "healthy" : "degraded",
             response_time: responseTime,
             details: {
               status_code: response.status,
-              url: service.health_check_url
-            }
+              url: service.health_check_url,
+            },
           };
         } catch (error) {
           healthResult = {
-            status: 'unhealthy',
+            status: "unhealthy",
             response_time: Date.now() - startTime,
             details: {
-              error: error instanceof Error ? error.message : 'Unknown error'
-            }
+              error: error instanceof Error ? error.message : "Unknown error",
+            },
           };
         }
       } else {
         // Simulate health check for services without URL
         const responseTime = Math.floor(Math.random() * 200) + 50; // 50-250ms
         healthResult = {
-          status: Math.random() > 0.1 ? 'healthy' : 'degraded',
-          response_time: responseTime
+          status: Math.random() > 0.1 ? "healthy" : "degraded",
+          response_time: responseTime,
         };
       }
-      
+
       // Update service with health check results
-      await db.query(`
+      await db.query(
+        `
         UPDATE services
         SET 
           last_health_check = NOW(),
@@ -159,25 +162,32 @@ class ServicesService {
             ELSE 'error'
           END
         WHERE id = $1
-      `, [serviceId, healthResult.response_time, healthResult.status]);
-      
+      `,
+        [serviceId, healthResult.response_time, healthResult.status],
+      );
+
       // Record health check result
-      await db.query(`
+      await db.query(
+        `
         INSERT INTO service_health_checks (
           service_id, status, response_time, details
         ) VALUES ($1, $2, $3, $4)
-      `, [
-        serviceId,
-        healthResult.status,
-        healthResult.response_time,
-        JSON.stringify(healthResult.details || {})
-      ]);
-      
-      logger.info(`Health check completed for service ${serviceId}: ${healthResult.status}`);
-      
+      `,
+        [
+          serviceId,
+          healthResult.status,
+          healthResult.response_time,
+          JSON.stringify(healthResult.details || {}),
+        ],
+      );
+
+      logger.info(
+        `Health check completed for service ${serviceId}: ${healthResult.status}`,
+      );
+
       return healthResult;
     } catch (error) {
-      logger.error('Error running health check:', error);
+      logger.error("Error running health check:", error);
       throw error;
     }
   }
@@ -196,34 +206,34 @@ class ServicesService {
         ORDER BY checked_at DESC
         LIMIT 1000
       `;
-      
+
       const result = await db.query(query, [serviceId]);
-      
+
       return result.rows;
     } catch (error) {
-      logger.error('Error fetching health history:', error);
+      logger.error("Error fetching health history:", error);
       throw error;
     }
   }
 
-  async getUptimeStats(serviceId: string, period: string = '30d') {
+  async getUptimeStats(serviceId: string, period: string = "30d") {
     try {
       let interval: string;
-      
+
       switch (period) {
-        case '24h':
-          interval = '24 hours';
+        case "24h":
+          interval = "24 hours";
           break;
-        case '7d':
-          interval = '7 days';
+        case "7d":
+          interval = "7 days";
           break;
-        case '30d':
-          interval = '30 days';
+        case "30d":
+          interval = "30 days";
           break;
         default:
-          interval = '30 days';
+          interval = "30 days";
       }
-      
+
       const query = `
         SELECT 
           COUNT(*) as total_checks,
@@ -235,14 +245,15 @@ class ServicesService {
         WHERE service_id = $1
         AND checked_at >= NOW() - INTERVAL $2
       `;
-      
+
       const result = await db.query(query, [serviceId, interval]);
       const stats = result.rows[0];
-      
-      const uptime = stats.total_checks > 0 
-        ? (stats.healthy_checks / stats.total_checks) * 100 
-        : 100;
-      
+
+      const uptime =
+        stats.total_checks > 0
+          ? (stats.healthy_checks / stats.total_checks) * 100
+          : 100;
+
       return {
         uptime_percentage: Math.round(uptime * 100) / 100,
         total_checks: parseInt(stats.total_checks),
@@ -250,23 +261,30 @@ class ServicesService {
         avg_response_time: Math.round(parseFloat(stats.avg_response_time || 0)),
         min_response_time: parseInt(stats.min_response_time || 0),
         max_response_time: parseInt(stats.max_response_time || 0),
-        period
+        period,
       };
     } catch (error) {
-      logger.error('Error fetching uptime stats:', error);
+      logger.error("Error fetching uptime stats:", error);
       throw error;
     }
   }
 
-  private async logServiceActivity(serviceId: string, action: string, details: any) {
+  private async logServiceActivity(
+    serviceId: string,
+    action: string,
+    details: any,
+  ) {
     try {
-      await db.query(`
+      await db.query(
+        `
         INSERT INTO activity_feed (
           service_id, action, details, timestamp
         ) VALUES ($1, $2, $3, NOW())
-      `, [serviceId, action, JSON.stringify(details)]);
+      `,
+        [serviceId, action, JSON.stringify(details)],
+      );
     } catch (error) {
-      logger.error('Error logging service activity:', error);
+      logger.error("Error logging service activity:", error);
     }
   }
 }

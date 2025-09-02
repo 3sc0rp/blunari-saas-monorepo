@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Plug, 
-  Settings, 
-  CheckCircle, 
-  AlertCircle, 
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Plug,
+  Settings,
+  CheckCircle,
+  AlertCircle,
   Plus,
   Trash2,
   RefreshCw,
@@ -18,14 +18,14 @@ import {
   Key,
   Database,
   Zap,
-  Clock
-} from 'lucide-react';
+  Clock,
+} from "lucide-react";
 
 interface POSIntegration {
   id: string;
   name: string;
-  type: 'square' | 'toast' | 'clover' | 'lightspeed' | 'resy' | 'opentable';
-  status: 'connected' | 'disconnected' | 'error';
+  type: "square" | "toast" | "clover" | "lightspeed" | "resy" | "opentable";
+  status: "connected" | "disconnected" | "error";
   lastSync: string;
   features: string[];
   logo: string;
@@ -34,53 +34,74 @@ interface POSIntegration {
 const POSIntegration: React.FC = () => {
   const [integrations] = useState<POSIntegration[]>([
     {
-      id: '1',
-      name: 'Square POS',
-      type: 'square',
-      status: 'connected',
-      lastSync: '2024-01-15T10:30:00Z',
-      features: ['Order Management', 'Payment Processing', 'Inventory Sync'],
-      logo: '🟦'
+      id: "1",
+      name: "Square POS",
+      type: "square",
+      status: "connected",
+      lastSync: "2024-01-15T10:30:00Z",
+      features: ["Order Management", "Payment Processing", "Inventory Sync"],
+      logo: "🟦",
     },
     {
-      id: '2',
-      name: 'Toast POS',
-      type: 'toast',
-      status: 'disconnected',
-      lastSync: '2024-01-10T15:45:00Z',
-      features: ['Menu Management', 'Order Tracking', 'Staff Management'],
-      logo: '🍞'
+      id: "2",
+      name: "Toast POS",
+      type: "toast",
+      status: "disconnected",
+      lastSync: "2024-01-10T15:45:00Z",
+      features: ["Menu Management", "Order Tracking", "Staff Management"],
+      logo: "🍞",
     },
     {
-      id: '3',
-      name: 'OpenTable',
-      type: 'opentable',
-      status: 'error',
-      lastSync: '2024-01-14T09:15:00Z',
-      features: ['Reservation Sync', 'Guest Management', 'Waitlist'],
-      logo: '🪑'
-    }
+      id: "3",
+      name: "OpenTable",
+      type: "opentable",
+      status: "error",
+      lastSync: "2024-01-14T09:15:00Z",
+      features: ["Reservation Sync", "Guest Management", "Waitlist"],
+      logo: "🪑",
+    },
   ]);
 
   const [availableIntegrations] = useState([
-    { name: 'Clover', type: 'clover', logo: '☘️', description: 'Complete POS solution with inventory management' },
-    { name: 'Lightspeed', type: 'lightspeed', logo: '⚡', description: 'Cloud-based POS for restaurants and retail' },
-    { name: 'Resy', type: 'resy', logo: '🎯', description: 'Premium reservation and guest management platform' },
+    {
+      name: "Clover",
+      type: "clover",
+      logo: "☘️",
+      description: "Complete POS solution with inventory management",
+    },
+    {
+      name: "Lightspeed",
+      type: "lightspeed",
+      logo: "⚡",
+      description: "Cloud-based POS for restaurants and retail",
+    },
+    {
+      name: "Resy",
+      type: "resy",
+      logo: "🎯",
+      description: "Premium reservation and guest management platform",
+    },
   ]);
 
-  const getStatusColor = (status: POSIntegration['status']) => {
+  const getStatusColor = (status: POSIntegration["status"]) => {
     switch (status) {
-      case 'connected': return 'text-success';
-      case 'error': return 'text-destructive';
-      default: return 'text-muted-foreground';
+      case "connected":
+        return "text-success";
+      case "error":
+        return "text-destructive";
+      default:
+        return "text-muted-foreground";
     }
   };
 
-  const getStatusIcon = (status: POSIntegration['status']) => {
+  const getStatusIcon = (status: POSIntegration["status"]) => {
     switch (status) {
-      case 'connected': return CheckCircle;
-      case 'error': return AlertCircle;
-      default: return Clock;
+      case "connected":
+        return CheckCircle;
+      case "error":
+        return AlertCircle;
+      default:
+        return Clock;
     }
   };
 
@@ -94,12 +115,14 @@ const POSIntegration: React.FC = () => {
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
         <div>
-          <h1 className="text-h1 font-bold text-foreground">POS Integrations</h1>
+          <h1 className="text-h1 font-bold text-foreground">
+            POS Integrations
+          </h1>
           <p className="text-muted-foreground">
             Connect your restaurant management system with popular POS platforms
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -123,38 +146,40 @@ const POSIntegration: React.FC = () => {
           <CardContent className="pt-4">
             <div className="text-center">
               <div className="text-2xl font-bold">{integrations.length}</div>
-              <div className="text-sm text-muted-foreground">Total Integrations</div>
+              <div className="text-sm text-muted-foreground">
+                Total Integrations
+              </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-success">
-                {integrations.filter(i => i.status === 'connected').length}
+                {integrations.filter((i) => i.status === "connected").length}
               </div>
               <div className="text-sm text-muted-foreground">Connected</div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-destructive">
-                {integrations.filter(i => i.status === 'error').length}
+                {integrations.filter((i) => i.status === "error").length}
               </div>
               <div className="text-sm text-muted-foreground">Errors</div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-muted-foreground">
-                {integrations.filter(i => i.status === 'disconnected').length}
+                {integrations.filter((i) => i.status === "disconnected").length}
               </div>
               <div className="text-sm text-muted-foreground">Disconnected</div>
             </div>
@@ -167,7 +192,7 @@ const POSIntegration: React.FC = () => {
           <TabsTrigger value="active">Active Integrations</TabsTrigger>
           <TabsTrigger value="available">Available Integrations</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="active" className="space-y-4">
           {/* Active Integrations */}
           <motion.div
@@ -178,7 +203,7 @@ const POSIntegration: React.FC = () => {
           >
             {integrations.map((integration, index) => {
               const StatusIcon = getStatusIcon(integration.status);
-              
+
               return (
                 <motion.div
                   key={integration.id}
@@ -192,14 +217,20 @@ const POSIntegration: React.FC = () => {
                         <div className="flex items-center gap-3">
                           <div className="text-2xl">{integration.logo}</div>
                           <div>
-                            <CardTitle className="text-lg">{integration.name}</CardTitle>
+                            <CardTitle className="text-lg">
+                              {integration.name}
+                            </CardTitle>
                             <div className="flex items-center gap-2 mt-1">
-                              <StatusIcon className={`h-4 w-4 ${getStatusColor(integration.status)}`} />
-                              <Badge 
+                              <StatusIcon
+                                className={`h-4 w-4 ${getStatusColor(integration.status)}`}
+                              />
+                              <Badge
                                 variant={
-                                  integration.status === 'connected' ? 'default' :
-                                  integration.status === 'error' ? 'destructive' :
-                                  'secondary'
+                                  integration.status === "connected"
+                                    ? "default"
+                                    : integration.status === "error"
+                                      ? "destructive"
+                                      : "secondary"
                                 }
                               >
                                 {integration.status}
@@ -212,26 +243,30 @@ const POSIntegration: React.FC = () => {
                         </Button>
                       </div>
                     </CardHeader>
-                    
+
                     <CardContent className="space-y-4">
                       <div>
                         <h4 className="text-sm font-medium mb-2">Features</h4>
                         <div className="flex flex-wrap gap-1">
                           {integration.features.map((feature) => (
-                            <Badge key={feature} variant="outline" className="text-xs">
+                            <Badge
+                              key={feature}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {feature}
                             </Badge>
                           ))}
                         </div>
                       </div>
-                      
+
                       <div>
                         <h4 className="text-sm font-medium mb-1">Last Sync</h4>
                         <p className="text-sm text-muted-foreground">
                           {new Date(integration.lastSync).toLocaleString()}
                         </p>
                       </div>
-                      
+
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" className="flex-1">
                           <RefreshCw className="h-4 w-4 mr-2" />
@@ -252,7 +287,7 @@ const POSIntegration: React.FC = () => {
             })}
           </motion.div>
         </TabsContent>
-        
+
         <TabsContent value="available" className="space-y-4">
           {/* Available Integrations */}
           <motion.div
@@ -273,7 +308,9 @@ const POSIntegration: React.FC = () => {
                     <div className="text-center space-y-4">
                       <div className="text-4xl">{integration.logo}</div>
                       <div>
-                        <h3 className="font-semibold text-lg">{integration.name}</h3>
+                        <h3 className="font-semibold text-lg">
+                          {integration.name}
+                        </h3>
                         <p className="text-sm text-muted-foreground mt-2">
                           {integration.description}
                         </p>
@@ -309,57 +346,79 @@ const POSIntegration: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-sm font-medium">Auto-sync enabled</label>
-                    <p className="text-xs text-muted-foreground">Automatically sync data every 15 minutes</p>
+                    <label className="text-sm font-medium">
+                      Auto-sync enabled
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Automatically sync data every 15 minutes
+                    </p>
                   </div>
                   <Switch defaultChecked />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-sm font-medium">Real-time notifications</label>
-                    <p className="text-xs text-muted-foreground">Get notified of sync errors immediately</p>
+                    <label className="text-sm font-medium">
+                      Real-time notifications
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Get notified of sync errors immediately
+                    </p>
                   </div>
                   <Switch defaultChecked />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-sm font-medium">Data validation</label>
-                    <p className="text-xs text-muted-foreground">Validate data before syncing</p>
+                    <label className="text-sm font-medium">
+                      Data validation
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Validate data before syncing
+                    </p>
                   </div>
                   <Switch defaultChecked />
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">Sync interval (minutes)</label>
-                  <Input type="number" defaultValue="15" className="mt-2" min="5" max="60" />
+                  <label className="text-sm font-medium">
+                    Sync interval (minutes)
+                  </label>
+                  <Input
+                    type="number"
+                    defaultValue="15"
+                    className="mt-2"
+                    min="5"
+                    max="60"
+                  />
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium">Retry attempts</label>
-                  <Input type="number" defaultValue="3" className="mt-2" min="1" max="10" />
+                  <Input
+                    type="number"
+                    defaultValue="3"
+                    className="mt-2"
+                    min="1"
+                    max="10"
+                  />
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium">Webhook URL</label>
-                  <Input 
-                    placeholder="https://your-app.com/webhooks/pos" 
-                    className="mt-2" 
+                  <Input
+                    placeholder="https://your-app.com/webhooks/pos"
+                    className="mt-2"
                   />
                 </div>
               </div>
             </div>
-            
+
             <div className="flex gap-2">
-              <Button>
-                Save Settings
-              </Button>
-              <Button variant="outline">
-                Test Connection
-              </Button>
+              <Button>Save Settings</Button>
+              <Button variant="outline">Test Connection</Button>
             </div>
           </CardContent>
         </Card>

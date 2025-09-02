@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigation } from '@/contexts/NavigationContext';
+import { useState, useEffect } from "react";
+import { useNavigation } from "@/contexts/NavigationContext";
 
 /**
  * Hook to detect layout changes and provide responsive utilities
@@ -20,17 +20,17 @@ export const useResponsiveLayout = () => {
     };
 
     updateScreenSize();
-    window.addEventListener('resize', updateScreenSize);
-    
-    return () => window.removeEventListener('resize', updateScreenSize);
+    window.addEventListener("resize", updateScreenSize);
+
+    return () => window.removeEventListener("resize", updateScreenSize);
   }, []);
 
   // Calculate responsive padding based on layout
   const getMainPadding = () => {
-    if (actualLayout === 'bottom') {
-      return 'pb-safe-mobile'; // Extra bottom padding for bottom nav
+    if (actualLayout === "bottom") {
+      return "pb-safe-mobile"; // Extra bottom padding for bottom nav
     }
-    return 'pb-6'; // Normal bottom padding for sidebar layout
+    return "pb-6"; // Normal bottom padding for sidebar layout
   };
 
   // Get layout-specific CSS classes
@@ -38,8 +38,8 @@ export const useResponsiveLayout = () => {
     return {
       main: `flex-1 overflow-y-auto bg-surface-2/50 p-6 ${getMainPadding()}`,
       container: `max-w-7xl mx-auto page-padding motion-reduce:transform-none`,
-      sidebar: actualLayout === 'sidebar' ? 'lg:pl-0' : '',
-      bottomNav: actualLayout === 'bottom' ? 'lg:pb-0' : '',
+      sidebar: actualLayout === "sidebar" ? "lg:pl-0" : "",
+      bottomNav: actualLayout === "bottom" ? "lg:pb-0" : "",
     };
   };
 
@@ -51,7 +51,7 @@ export const useResponsiveLayout = () => {
     isDesktop,
     getMainPadding,
     getLayoutClasses,
-    hasSidebar: actualLayout === 'sidebar',
-    hasBottomNav: actualLayout === 'bottom',
+    hasSidebar: actualLayout === "sidebar",
+    hasBottomNav: actualLayout === "bottom",
   };
 };

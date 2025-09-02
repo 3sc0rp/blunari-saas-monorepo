@@ -1,7 +1,7 @@
-import React, { Component, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { Component, ReactNode } from "react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -24,7 +24,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Booking widget error:', error, errorInfo);
+    console.error("Booking widget error:", error, errorInfo);
     this.props.onError?.(error);
   }
 
@@ -44,15 +44,16 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              The booking widget encountered an unexpected error. Please try again.
+              The booking widget encountered an unexpected error. Please try
+              again.
             </p>
-            
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+
+            {process.env.NODE_ENV === "development" && this.state.error && (
               <div className="bg-muted p-3 rounded text-xs font-mono">
                 {this.state.error.message}
               </div>
             )}
-            
+
             <Button onClick={this.handleRetry} className="w-full">
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again

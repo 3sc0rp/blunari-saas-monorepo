@@ -1,15 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Smartphone, Download, Play, Settings, Code, Puzzle, Palette, Zap } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Smartphone,
+  Download,
+  Play,
+  Settings,
+  Code,
+  Puzzle,
+  Palette,
+  Zap,
+} from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 interface Plugin {
   id: string;
@@ -17,7 +38,7 @@ interface Plugin {
   version: string;
   description: string;
   enabled: boolean;
-  category: 'analytics' | 'integration' | 'ui' | 'automation';
+  category: "analytics" | "integration" | "ui" | "automation";
   author: string;
   downloads: number;
   rating: number;
@@ -27,7 +48,7 @@ interface Plugin {
 interface Widget {
   id: string;
   name: string;
-  type: 'chart' | 'metric' | 'list' | 'custom';
+  type: "chart" | "metric" | "list" | "custom";
   position: { x: number; y: number; w: number; h: number };
   config: Record<string, any>;
   enabled: boolean;
@@ -41,15 +62,15 @@ export const ExtensibilityManager: React.FC = () => {
     enablePushNotifications: true,
     offlineMode: true,
     biometricAuth: false,
-    darkMode: true
+    darkMode: true,
   });
   const [customTheme, setCustomTheme] = useState({
-    primaryColor: '#3b82f6',
-    secondaryColor: '#64748b',
-    accentColor: '#8b5cf6',
-    brandName: 'Blunari',
-    logo: '',
-    favicon: ''
+    primaryColor: "#3b82f6",
+    secondaryColor: "#64748b",
+    accentColor: "#8b5cf6",
+    brandName: "Blunari",
+    logo: "",
+    favicon: "",
   });
 
   useEffect(() => {
@@ -61,109 +82,115 @@ export const ExtensibilityManager: React.FC = () => {
       // Mock data - replace with actual API calls
       const mockPlugins: Plugin[] = [
         {
-          id: '1',
-          name: 'Advanced Analytics',
-          version: '2.1.0',
-          description: 'Machine learning-powered insights and predictive analytics',
+          id: "1",
+          name: "Advanced Analytics",
+          version: "2.1.0",
+          description:
+            "Machine learning-powered insights and predictive analytics",
           enabled: true,
-          category: 'analytics',
-          author: 'Blunari Team',
+          category: "analytics",
+          author: "Blunari Team",
           downloads: 1250,
           rating: 4.8,
-          configurable: true
+          configurable: true,
         },
         {
-          id: '2',
-          name: 'Slack Integration',
-          version: '1.5.2',
-          description: 'Send notifications and manage bookings through Slack',
+          id: "2",
+          name: "Slack Integration",
+          version: "1.5.2",
+          description: "Send notifications and manage bookings through Slack",
           enabled: false,
-          category: 'integration',
-          author: 'Community',
+          category: "integration",
+          author: "Community",
           downloads: 890,
           rating: 4.5,
-          configurable: true
+          configurable: true,
         },
         {
-          id: '3',
-          name: 'Custom Dashboard Widgets',
-          version: '3.0.1',
-          description: 'Create and customize dashboard widgets with drag-and-drop',
+          id: "3",
+          name: "Custom Dashboard Widgets",
+          version: "3.0.1",
+          description:
+            "Create and customize dashboard widgets with drag-and-drop",
           enabled: true,
-          category: 'ui',
-          author: 'Blunari Team',
+          category: "ui",
+          author: "Blunari Team",
           downloads: 2100,
           rating: 4.9,
-          configurable: true
+          configurable: true,
         },
         {
-          id: '4',
-          name: 'Automated Email Campaigns',
-          version: '1.8.0',
-          description: 'Automated marketing campaigns and customer retention',
+          id: "4",
+          name: "Automated Email Campaigns",
+          version: "1.8.0",
+          description: "Automated marketing campaigns and customer retention",
           enabled: false,
-          category: 'automation',
-          author: 'Marketing Pro',
+          category: "automation",
+          author: "Marketing Pro",
           downloads: 670,
           rating: 4.3,
-          configurable: true
-        }
+          configurable: true,
+        },
       ];
 
       const mockWidgets: Widget[] = [
         {
-          id: 'w1',
-          name: 'Revenue Chart',
-          type: 'chart',
+          id: "w1",
+          name: "Revenue Chart",
+          type: "chart",
           position: { x: 0, y: 0, w: 6, h: 4 },
-          config: { chartType: 'line', period: '30d' },
-          enabled: true
+          config: { chartType: "line", period: "30d" },
+          enabled: true,
         },
         {
-          id: 'w2',
-          name: 'Active Users',
-          type: 'metric',
+          id: "w2",
+          name: "Active Users",
+          type: "metric",
           position: { x: 6, y: 0, w: 3, h: 2 },
-          config: { format: 'number', color: 'blue' },
-          enabled: true
+          config: { format: "number", color: "blue" },
+          enabled: true,
         },
         {
-          id: 'w3',
-          name: 'Recent Bookings',
-          type: 'list',
+          id: "w3",
+          name: "Recent Bookings",
+          type: "list",
           position: { x: 0, y: 4, w: 9, h: 3 },
           config: { limit: 10, showActions: true },
-          enabled: true
-        }
+          enabled: true,
+        },
       ];
 
       setPlugins(mockPlugins);
       setWidgets(mockWidgets);
     } catch (error) {
-      toast.error('Failed to load extensibility data');
+      toast.error("Failed to load extensibility data");
     }
   };
 
   const togglePlugin = async (pluginId: string) => {
     try {
-      setPlugins(prev => prev.map(plugin => 
-        plugin.id === pluginId 
-          ? { ...plugin, enabled: !plugin.enabled }
-          : plugin
-      ));
-      toast.success('Plugin settings updated');
+      setPlugins((prev) =>
+        prev.map((plugin) =>
+          plugin.id === pluginId
+            ? { ...plugin, enabled: !plugin.enabled }
+            : plugin,
+        ),
+      );
+      toast.success("Plugin settings updated");
     } catch (error) {
-      toast.error('Failed to update plugin');
+      toast.error("Failed to update plugin");
     }
   };
 
   const generateMobileApp = async () => {
     try {
       // Mock mobile app generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success('Mobile app build initiated. You can now run `npx cap sync` to sync with native platforms.');
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      toast.success(
+        "Mobile app build initiated. You can now run `npx cap sync` to sync with native platforms.",
+      );
     } catch (error) {
-      toast.error('Failed to generate mobile app');
+      toast.error("Failed to generate mobile app");
     }
   };
 
@@ -172,42 +199,52 @@ export const ExtensibilityManager: React.FC = () => {
       setRealTimeEnabled(!realTimeEnabled);
       if (!realTimeEnabled) {
         // Initialize WebSocket connection
-        toast.success('Real-time updates enabled');
+        toast.success("Real-time updates enabled");
       } else {
-        toast.success('Real-time updates disabled');
+        toast.success("Real-time updates disabled");
       }
     } catch (error) {
-      toast.error('Failed to toggle real-time updates');
+      toast.error("Failed to toggle real-time updates");
     }
   };
 
   const saveThemeSettings = async () => {
     try {
       // Mock save theme
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Theme settings saved');
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      toast.success("Theme settings saved");
     } catch (error) {
-      toast.error('Failed to save theme settings');
+      toast.error("Failed to save theme settings");
     }
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'analytics': return <Zap className="h-4 w-4" />;
-      case 'integration': return <Puzzle className="h-4 w-4" />;
-      case 'ui': return <Palette className="h-4 w-4" />;
-      case 'automation': return <Settings className="h-4 w-4" />;
-      default: return <Code className="h-4 w-4" />;
+      case "analytics":
+        return <Zap className="h-4 w-4" />;
+      case "integration":
+        return <Puzzle className="h-4 w-4" />;
+      case "ui":
+        return <Palette className="h-4 w-4" />;
+      case "automation":
+        return <Settings className="h-4 w-4" />;
+      default:
+        return <Code className="h-4 w-4" />;
     }
   };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'analytics': return 'bg-blue-100 text-blue-800';
-      case 'integration': return 'bg-green-100 text-green-800';
-      case 'ui': return 'bg-purple-100 text-purple-800';
-      case 'automation': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "analytics":
+        return "bg-blue-100 text-blue-800";
+      case "integration":
+        return "bg-green-100 text-green-800";
+      case "ui":
+        return "bg-purple-100 text-purple-800";
+      case "automation":
+        return "bg-orange-100 text-orange-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -220,7 +257,10 @@ export const ExtensibilityManager: React.FC = () => {
             Extend your platform with plugins, mobile apps, and custom features
           </p>
         </div>
-        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+        <Badge
+          variant="outline"
+          className="bg-purple-50 text-purple-700 border-purple-200"
+        >
           <Zap className="h-3 w-3 mr-1" />
           Beta Features
         </Badge>
@@ -250,7 +290,8 @@ export const ExtensibilityManager: React.FC = () => {
               <Alert>
                 <Smartphone className="h-4 w-4" />
                 <AlertDescription>
-                  Mobile app is configured with Capacitor. To test on device, export to GitHub and run `npx cap sync`.
+                  Mobile app is configured with Capacitor. To test on device,
+                  export to GitHub and run `npx cap sync`.
                 </AlertDescription>
               </Alert>
 
@@ -260,37 +301,51 @@ export const ExtensibilityManager: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-sm">Push Notifications</label>
-                      <Switch 
+                      <Switch
                         checked={mobileAppConfig.enablePushNotifications}
-                        onCheckedChange={(checked) => 
-                          setMobileAppConfig(prev => ({ ...prev, enablePushNotifications: checked }))
+                        onCheckedChange={(checked) =>
+                          setMobileAppConfig((prev) => ({
+                            ...prev,
+                            enablePushNotifications: checked,
+                          }))
                         }
                       />
                     </div>
                     <div className="flex items-center justify-between">
                       <label className="text-sm">Offline Mode</label>
-                      <Switch 
+                      <Switch
                         checked={mobileAppConfig.offlineMode}
-                        onCheckedChange={(checked) => 
-                          setMobileAppConfig(prev => ({ ...prev, offlineMode: checked }))
+                        onCheckedChange={(checked) =>
+                          setMobileAppConfig((prev) => ({
+                            ...prev,
+                            offlineMode: checked,
+                          }))
                         }
                       />
                     </div>
                     <div className="flex items-center justify-between">
-                      <label className="text-sm">Biometric Authentication</label>
-                      <Switch 
+                      <label className="text-sm">
+                        Biometric Authentication
+                      </label>
+                      <Switch
                         checked={mobileAppConfig.biometricAuth}
-                        onCheckedChange={(checked) => 
-                          setMobileAppConfig(prev => ({ ...prev, biometricAuth: checked }))
+                        onCheckedChange={(checked) =>
+                          setMobileAppConfig((prev) => ({
+                            ...prev,
+                            biometricAuth: checked,
+                          }))
                         }
                       />
                     </div>
                     <div className="flex items-center justify-between">
                       <label className="text-sm">Dark Mode Support</label>
-                      <Switch 
+                      <Switch
                         checked={mobileAppConfig.darkMode}
-                        onCheckedChange={(checked) => 
-                          setMobileAppConfig(prev => ({ ...prev, darkMode: checked }))
+                        onCheckedChange={(checked) =>
+                          setMobileAppConfig((prev) => ({
+                            ...prev,
+                            darkMode: checked,
+                          }))
                         }
                       />
                     </div>
@@ -321,11 +376,17 @@ export const ExtensibilityManager: React.FC = () => {
               </div>
 
               <div className="flex space-x-4">
-                <Button onClick={generateMobileApp} className="flex items-center space-x-2">
+                <Button
+                  onClick={generateMobileApp}
+                  className="flex items-center space-x-2"
+                >
                   <Download className="h-4 w-4" />
                   <span>Generate Mobile Build</span>
                 </Button>
-                <Button variant="outline" className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  className="flex items-center space-x-2"
+                >
                   <Play className="h-4 w-4" />
                   <span>Test in Browser</span>
                 </Button>
@@ -345,19 +406,28 @@ export const ExtensibilityManager: React.FC = () => {
             <CardContent>
               <div className="grid gap-4">
                 {plugins.map((plugin) => (
-                  <div key={plugin.id} className="p-4 border rounded-lg space-y-3">
+                  <div
+                    key={plugin.id}
+                    className="p-4 border rounded-lg space-y-3"
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-3">
-                        <div className={`p-2 rounded-lg ${getCategoryColor(plugin.category)}`}>
+                        <div
+                          className={`p-2 rounded-lg ${getCategoryColor(plugin.category)}`}
+                        >
                           {getCategoryIcon(plugin.category)}
                         </div>
                         <div>
                           <h4 className="font-medium">{plugin.name}</h4>
-                          <p className="text-sm text-muted-foreground">{plugin.description}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {plugin.description}
+                          </p>
                           <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
                             <span>v{plugin.version}</span>
                             <span>by {plugin.author}</span>
-                            <span>{plugin.downloads.toLocaleString()} downloads</span>
+                            <span>
+                              {plugin.downloads.toLocaleString()} downloads
+                            </span>
                             <span>★ {plugin.rating}</span>
                           </div>
                         </div>
@@ -368,7 +438,7 @@ export const ExtensibilityManager: React.FC = () => {
                             <Settings className="h-3 w-3" />
                           </Button>
                         )}
-                        <Switch 
+                        <Switch
                           checked={plugin.enabled}
                           onCheckedChange={() => togglePlugin(plugin.id)}
                         />
@@ -392,7 +462,9 @@ export const ExtensibilityManager: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h4 className="font-medium">Active Widgets ({widgets.filter(w => w.enabled).length})</h4>
+                  <h4 className="font-medium">
+                    Active Widgets ({widgets.filter((w) => w.enabled).length})
+                  </h4>
                   <Button size="sm">
                     <Code className="h-3 w-3 mr-1" />
                     Create Widget
@@ -404,17 +476,22 @@ export const ExtensibilityManager: React.FC = () => {
                     <div key={widget.id} className="p-4 border rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <h5 className="font-medium">{widget.name}</h5>
-                        <Switch 
+                        <Switch
                           checked={widget.enabled}
                           onCheckedChange={() => {
-                            setWidgets(prev => prev.map(w => 
-                              w.id === widget.id ? { ...w, enabled: !w.enabled } : w
-                            ));
+                            setWidgets((prev) =>
+                              prev.map((w) =>
+                                w.id === widget.id
+                                  ? { ...w, enabled: !w.enabled }
+                                  : w,
+                              ),
+                            );
                           }}
                         />
                       </div>
                       <div className="text-sm text-muted-foreground mb-3">
-                        Type: {widget.type} • Position: {widget.position.x},{widget.position.y}
+                        Type: {widget.type} • Position: {widget.position.x},
+                        {widget.position.y}
                       </div>
                       <div className="flex space-x-2">
                         <Button size="sm" variant="outline">
@@ -447,10 +524,11 @@ export const ExtensibilityManager: React.FC = () => {
                 <div>
                   <h4 className="font-medium">Real-time Engine</h4>
                   <p className="text-sm text-muted-foreground">
-                    WebSocket-powered live updates for dashboards, notifications, and data
+                    WebSocket-powered live updates for dashboards,
+                    notifications, and data
                   </p>
                 </div>
-                <Switch 
+                <Switch
                   checked={realTimeEnabled}
                   onCheckedChange={enableRealTime}
                 />
@@ -505,49 +583,85 @@ export const ExtensibilityManager: React.FC = () => {
                   <h4 className="font-medium">Brand Colors</h4>
                   <div className="space-y-3">
                     <div>
-                      <label className="text-sm font-medium">Primary Color</label>
+                      <label className="text-sm font-medium">
+                        Primary Color
+                      </label>
                       <div className="flex items-center space-x-2 mt-1">
-                        <Input 
-                          type="color" 
+                        <Input
+                          type="color"
                           value={customTheme.primaryColor}
-                          onChange={(e) => setCustomTheme(prev => ({ ...prev, primaryColor: e.target.value }))}
+                          onChange={(e) =>
+                            setCustomTheme((prev) => ({
+                              ...prev,
+                              primaryColor: e.target.value,
+                            }))
+                          }
                           className="w-12 h-8 p-0 border-0"
                         />
-                        <Input 
+                        <Input
                           value={customTheme.primaryColor}
-                          onChange={(e) => setCustomTheme(prev => ({ ...prev, primaryColor: e.target.value }))}
+                          onChange={(e) =>
+                            setCustomTheme((prev) => ({
+                              ...prev,
+                              primaryColor: e.target.value,
+                            }))
+                          }
                           className="flex-1"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Secondary Color</label>
+                      <label className="text-sm font-medium">
+                        Secondary Color
+                      </label>
                       <div className="flex items-center space-x-2 mt-1">
-                        <Input 
-                          type="color" 
+                        <Input
+                          type="color"
                           value={customTheme.secondaryColor}
-                          onChange={(e) => setCustomTheme(prev => ({ ...prev, secondaryColor: e.target.value }))}
+                          onChange={(e) =>
+                            setCustomTheme((prev) => ({
+                              ...prev,
+                              secondaryColor: e.target.value,
+                            }))
+                          }
                           className="w-12 h-8 p-0 border-0"
                         />
-                        <Input 
+                        <Input
                           value={customTheme.secondaryColor}
-                          onChange={(e) => setCustomTheme(prev => ({ ...prev, secondaryColor: e.target.value }))}
+                          onChange={(e) =>
+                            setCustomTheme((prev) => ({
+                              ...prev,
+                              secondaryColor: e.target.value,
+                            }))
+                          }
                           className="flex-1"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Accent Color</label>
+                      <label className="text-sm font-medium">
+                        Accent Color
+                      </label>
                       <div className="flex items-center space-x-2 mt-1">
-                        <Input 
-                          type="color" 
+                        <Input
+                          type="color"
                           value={customTheme.accentColor}
-                          onChange={(e) => setCustomTheme(prev => ({ ...prev, accentColor: e.target.value }))}
+                          onChange={(e) =>
+                            setCustomTheme((prev) => ({
+                              ...prev,
+                              accentColor: e.target.value,
+                            }))
+                          }
                           className="w-12 h-8 p-0 border-0"
                         />
-                        <Input 
+                        <Input
                           value={customTheme.accentColor}
-                          onChange={(e) => setCustomTheme(prev => ({ ...prev, accentColor: e.target.value }))}
+                          onChange={(e) =>
+                            setCustomTheme((prev) => ({
+                              ...prev,
+                              accentColor: e.target.value,
+                            }))
+                          }
                           className="flex-1"
                         />
                       </div>
@@ -560,25 +674,40 @@ export const ExtensibilityManager: React.FC = () => {
                   <div className="space-y-3">
                     <div>
                       <label className="text-sm font-medium">Brand Name</label>
-                      <Input 
+                      <Input
                         value={customTheme.brandName}
-                        onChange={(e) => setCustomTheme(prev => ({ ...prev, brandName: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomTheme((prev) => ({
+                            ...prev,
+                            brandName: e.target.value,
+                          }))
+                        }
                         placeholder="Enter brand name"
                       />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Logo URL</label>
-                      <Input 
+                      <Input
                         value={customTheme.logo}
-                        onChange={(e) => setCustomTheme(prev => ({ ...prev, logo: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomTheme((prev) => ({
+                            ...prev,
+                            logo: e.target.value,
+                          }))
+                        }
                         placeholder="https://example.com/logo.png"
                       />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Favicon URL</label>
-                      <Input 
+                      <Input
                         value={customTheme.favicon}
-                        onChange={(e) => setCustomTheme(prev => ({ ...prev, favicon: e.target.value }))}
+                        onChange={(e) =>
+                          setCustomTheme((prev) => ({
+                            ...prev,
+                            favicon: e.target.value,
+                          }))
+                        }
                         placeholder="https://example.com/favicon.ico"
                       />
                     </div>
@@ -591,12 +720,8 @@ export const ExtensibilityManager: React.FC = () => {
                   <Palette className="h-4 w-4 mr-2" />
                   Save Theme
                 </Button>
-                <Button variant="outline">
-                  Preview Changes
-                </Button>
-                <Button variant="outline">
-                  Reset to Default
-                </Button>
+                <Button variant="outline">Preview Changes</Button>
+                <Button variant="outline">Reset to Default</Button>
               </div>
             </CardContent>
           </Card>
