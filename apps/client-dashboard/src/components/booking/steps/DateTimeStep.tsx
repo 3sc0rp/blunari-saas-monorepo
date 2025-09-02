@@ -115,7 +115,7 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
 
   useEffect(() => {
     fetchAvailability(selectedDate);
-  }, [selectedDate, partySize, tenant.tenant_id]);
+  }, [selectedDate, partySize, tenant.tenant_id, fetchAvailability]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {

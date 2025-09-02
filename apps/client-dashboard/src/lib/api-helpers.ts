@@ -27,7 +27,7 @@ export class ApiError extends Error {
  * Enhanced API call wrapper with better error handling for Supabase
  */
 export async function apiCall<T>(
-  operation: () => Promise<{ data: T | null; error: any }>,
+  operation: () => Promise<{ data: T | null; error: unknown }>,
   operationName = 'API call'
 ): Promise<{ data: T | null; error: ApiError | null }> {
   try {
@@ -36,12 +36,13 @@ export async function apiCall<T>(
     const result = await operation();
     
     if (result.error) {
+      const error = result.error as any; // Type assertion for Supabase error structure
       const errorDetails: ApiErrorDetails = {
-        code: result.error.code,
-        message: result.error.message || 'Unknown API error',
-        details: result.error.details,
-        hint: result.error.hint,
-        status: result.error.status,
+        code: error?.code,
+        message: error?.message || 'Unknown API error',
+        details: error?.details,
+        hint: error?.hint,
+        status: error?.status,
       };
 
       console.error(`${operationName} failed:`, errorDetails);

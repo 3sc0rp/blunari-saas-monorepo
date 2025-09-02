@@ -261,7 +261,7 @@ const AdvancedBookingStatusOverview: React.FC<
       trends,
       filteredBookings,
     };
-  }, [bookings, timeRange]);
+  }, [bookings, timeRange, statusConfig]);
 
   // Advanced insights calculations
   const insights = useMemo(() => {

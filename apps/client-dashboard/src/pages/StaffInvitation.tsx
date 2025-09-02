@@ -39,7 +39,7 @@ export default function StaffInvitation() {
     }
 
     verifyInvitation();
-  }, [token]);
+  }, [token, verifyInvitation]);
 
   const verifyInvitation = async () => {
     try {

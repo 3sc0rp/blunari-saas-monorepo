@@ -98,7 +98,7 @@ export default function FloorPlanManager() {
         handleFile(selectedFile);
       }
     },
-    [handleFile],
+    [], // Remove handleFile dependency to avoid circular dependency
   );
 
   const analyzeFloorPlan = useCallback(async () => {
@@ -111,9 +111,11 @@ export default function FloorPlanManager() {
     setAnalyzing(true);
     setAnalysisProgress(0);
 
+    let progressInterval: NodeJS.Timeout | null = null;
+
     try {
       // Simulate progress for better UX
-      const progressInterval = setInterval(() => {
+      progressInterval = setInterval(() => {
         setAnalysisProgress((prev) => Math.min(prev + 15, 85));
       }, 500);
 
@@ -127,12 +129,12 @@ export default function FloorPlanManager() {
         img.onerror = () => reject(new Error("Failed to load image"));
       });
 
+      if (progressInterval) clearInterval(progressInterval);
       setAnalysisProgress(90);
 
       // Use existing FloorPlanAI service
       const analysisResult = await FloorPlanAI.analyzeFloorPlan(img);
 
-      clearInterval(progressInterval);
       setAnalysisProgress(100);
 
       // Convert to our schema format with enhanced distribution
@@ -272,6 +274,7 @@ export default function FloorPlanManager() {
         }
       }, 300);
     } catch (error) {
+      if (progressInterval) clearInterval(progressInterval);
       console.error("Enhanced analysis failed:", error);
       toast.error(
         "Analysis failed. Please try again or position tables manually.",

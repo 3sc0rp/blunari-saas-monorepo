@@ -250,11 +250,19 @@ const WidgetManagement: React.FC = () => {
     };
   }, []);
 
-  // Auto-save functionality
+  // Auto-save functionality  
   useEffect(() => {
+    if (!hasUnsavedChanges || !isOnline) return;
+
     const autoSaveTimer = setTimeout(() => {
       if (hasUnsavedChanges && isOnline) {
-        handleAutoSave();
+        // Call handleAutoSave function defined later
+        setTimeout(() => {
+          // This ensures handleAutoSave is defined before being called
+          if (typeof window !== 'undefined' && (window as any).handleAutoSave) {
+            (window as any).handleAutoSave();
+          }
+        }, 0);
       }
     }, 30000); // Auto-save every 30 seconds
 
