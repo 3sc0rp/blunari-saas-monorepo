@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantBrandingProvider } from "@/contexts/TenantBrandingContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
@@ -67,6 +67,16 @@ const App = () => (
                       {/* Public booking widget routes */}
                       <Route path="/book/:slug" element={<BookingPage />} />
                       <Route path="/catering/:slug" element={<BookingPage />} />
+
+                      {/* Direct command-center redirect */}
+                      <Route 
+                        path="/command-center" 
+                        element={
+                          <ProtectedRoute>
+                            <Navigate to="/dashboard/command-center" replace />
+                          </ProtectedRoute>
+                        } 
+                      />
 
                       <Route
                         path="/dashboard"
