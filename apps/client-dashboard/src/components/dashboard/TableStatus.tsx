@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,94 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const TableStatus = () => {
   const { tenant } = useTenant();
-  const { tables, isLoading, updateTable } = useTableManagement(tenant?.id);
+  const { tables, isLoading, updateTable, error } = useTableManagement(tenant?.id);
+
+  // Advanced error handling and debugging
+  React.useEffect(() => {
+    if (tenant?.id) {
+      console.log(`[TableStatus] Tenant ID: ${tenant.id}, Tables loaded: ${tables?.length || 0}`);
+    } else {
+      console.warn("[TableStatus] No tenant ID available");
+    }
+    
+    if (error) {
+      console.error("[TableStatus] Error loading tables:", error);
+    }
+  }, [tenant?.id, tables?.length, error]);
+
+  // Handle loading state with better UX
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Table Status</h3>
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-6 w-16" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Table Status</h3>
+        <div className="text-center text-muted-foreground">
+          <p className="mb-2">Failed to load table data</p>
+          <p className="text-sm">Error: {error.message}</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-3"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle no tenant case
+  if (!tenant?.id) {
+    return (
+      <div className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Table Status</h3>
+        <div className="text-center text-muted-foreground">
+          <p>No restaurant data available</p>
+          <p className="text-sm mt-1">Please ensure you're logged in to a restaurant account</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle no tables case with better messaging
+  if (!tables || tables.length === 0) {
+    return (
+      <div className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Table Status</h3>
+        <div className="text-center text-muted-foreground">
+          <p className="mb-2">No tables configured</p>
+          <p className="text-sm mb-3">Set up your restaurant tables in the Tables section</p>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => window.location.href = '/dashboard/tables'}
+          >
+            Configure Tables
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {

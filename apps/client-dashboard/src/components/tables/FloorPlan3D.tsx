@@ -1,8 +1,8 @@
-import React, { useRef, useState, useCallback } from "react";
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { OrbitControls, Text, Box } from "@react-three/drei";
-import { TextureLoader } from "three";
+import React, { useState, useMemo, useCallback, useRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { OrbitControls, Text, Html } from "@react-three/drei";
 import * as THREE from "three";
+import { useWebGLContextManager } from "@/hooks/useWebGLContextManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,8 +150,23 @@ const FloorPlanPlaneWithTexture: React.FC<{ imageUrl: string }> = ({
   );
 };
 
-// Main 3D Scene Component
+// Main 3D Scene Component with Advanced WebGL Management
 const FloorPlan3D: React.FC<FloorPlanProps> = ({ floorPlanImage, tables }) => {
+  // Advanced WebGL context management
+  const webglManager = useWebGLContextManager({
+    maxRetries: 3,
+    retryDelay: 1000,
+    onContextLost: () => {
+      console.warn("FloorPlan3D: WebGL context lost, maintaining state");
+    },
+    onContextRestored: () => {
+      console.log("FloorPlan3D: WebGL context restored successfully");
+    },
+    onMaxRetriesReached: () => {
+      console.error("FloorPlan3D: WebGL permanently unavailable, consider 2D fallback");
+    }
+  });
+
   return (
     <Canvas
       camera={{ position: [0, 8, 8], fov: 60 }}
@@ -165,16 +180,55 @@ const FloorPlan3D: React.FC<FloorPlanProps> = ({ floorPlanImage, tables }) => {
         preserveDrawingBuffer: false,
         powerPreference: "default",
       }}
-      onCreated={({ gl }) => {
-        // Handle context lost/restored events
-        gl.domElement.addEventListener("webglcontextlost", (event) => {
-          event.preventDefault();
-          console.log("WebGL context lost");
-        });
+      onCreated={({ gl, scene, camera }) => {
+        // Register WebGL context with our advanced manager
+        const webglContext = gl.getContext();
+        if (webglContext) {
+          webglManager.registerWebGLContext(webglContext);
+        }
 
-        gl.domElement.addEventListener("webglcontextrestored", () => {
-          console.log("WebGL context restored");
-        });
+        // Enhanced WebGL context recovery system
+        let isContextLost = false;
+        let restoreAttempts = 0;
+        const MAX_RESTORE_ATTEMPTS = 3;
+
+        const handleContextLost = (event: Event) => {
+          event.preventDefault();
+          isContextLost = true;
+          console.warn("🚨 WebGL context lost - Three.js Canvas implementing recovery");
+          
+          // Let the WebGL manager handle the recovery
+          if (restoreAttempts < MAX_RESTORE_ATTEMPTS) {
+            setTimeout(() => {
+              console.log(`🔄 Three.js attempting context recovery (attempt ${restoreAttempts + 1}/${MAX_RESTORE_ATTEMPTS})`);
+              restoreAttempts++;
+              
+              // Force re-render
+              gl.setSize(gl.domElement.clientWidth, gl.domElement.clientHeight);
+            }, 1000 * Math.pow(2, restoreAttempts));
+          }
+        };
+
+        const handleContextRestored = () => {
+          console.log("✅ Three.js WebGL context restored successfully");
+          isContextLost = false;
+          restoreAttempts = 0;
+          
+          // Reinitialize renderer
+          gl.clear();
+          gl.render(scene, camera);
+        };
+
+        // Enhanced context event handling
+        gl.domElement.addEventListener("webglcontextlost", handleContextLost, false);
+        gl.domElement.addEventListener("webglcontextrestored", handleContextRestored, false);
+
+        // Cleanup function
+        return () => {
+          gl.domElement.removeEventListener("webglcontextlost", handleContextLost);
+          gl.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
+          webglManager.cleanup();
+        };
       }}
     >
       {/* Lighting */}

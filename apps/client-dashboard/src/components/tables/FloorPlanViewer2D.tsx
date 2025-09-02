@@ -94,9 +94,33 @@ export default function FloorPlanViewer2D() {
         ctx.fillText(j.toString(), 5, H - y);
       }
 
+      // Enhanced data validation and error handling
+      if (!entities || !Array.isArray(entities)) {
+        console.warn("[FloorPlan2D] Invalid entities data:", entities);
+        // Draw placeholder message
+        ctx.fillStyle = "rgba(107, 114, 128, 0.8)";
+        ctx.font = "16px Inter, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("No floor plan data available", W / 2, H / 2);
+        ctx.fillText("Configure your floor plan in Settings", W / 2, H / 2 + 25);
+        return;
+      }
+
       // Draw tables with enhanced styling (optimized)
-      const tables = entities.filter((e) => e.type === "TABLE");
-      console.log(`[FloorPlan2D] Rendering ${tables.length} tables`);
+      const tables = entities.filter((e) => e && e.type === "TABLE" && typeof e.x === "number" && typeof e.y === "number");
+      
+      if (tables.length === 0) {
+        console.log(`[FloorPlan2D] No valid table entities found. Total entities: ${entities.length}, Entity types: ${[...new Set(entities.map(e => e?.type).filter(Boolean))]}`);
+        
+        // Draw helpful message instead of empty canvas
+        ctx.fillStyle = "rgba(107, 114, 128, 0.8)";
+        ctx.font = "14px Inter, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Floor plan loaded but no tables detected", W / 2, H / 2);
+        ctx.fillText(`Found ${entities.length} entities: ${[...new Set(entities.map(e => e?.type).filter(Boolean))].join(", ") || "none"}`, W / 2, H / 2 + 20);
+      } else {
+        console.log(`[FloorPlan2D] Rendering ${tables.length} tables successfully`);
+      }
 
       tables.forEach((e, index) => {
         const x = (e.x / WORLD_W) * W;
