@@ -42,7 +42,14 @@ interface OrderForm {
 
 const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   const { tenant, loading: tenantLoading, error: tenantError } = useTenantBySlug(slug);
-  const { packages, loading: packagesLoading, createOrder } = useCateringData(tenant?.id);
+  const { 
+    packages, 
+    loading: packagesLoading, 
+    createOrder, 
+    error: cateringError,
+    tablesExist,
+    diagnosticInfo 
+  } = useCateringData(tenant?.id);
 
   const [currentStep, setCurrentStep] = useState<Step>('packages');
   const [selectedPackage, setSelectedPackage] = useState<CateringPackage | null>(null);
@@ -62,31 +69,71 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   });
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  // Enhanced error handling with user feedback
+  const displayError = tenantError || cateringError || submitError;
+  const isInDemoMode = !tablesExist && diagnosticInfo?.cateringTablesAvailable === false;
 
-  // Loading states
+  // Loading states with better UX
   if (tenantLoading || packagesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/20">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
             <LoadingSpinner className="w-8 h-8 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold mb-2">Loading Catering Services</h2>
-            <p className="text-muted-foreground">Please wait while we load your catering options...</p>
+            <h2 className="text-lg font-semibold mb-2">
+              {tenantLoading ? 'Finding Restaurant...' : 'Loading Catering Services'}
+            </h2>
+            <p className="text-muted-foreground">
+              {tenantLoading 
+                ? 'Please wait while we verify the restaurant details...' 
+                : 'Please wait while we load your catering options...'
+              }
+            </p>
+            {isInDemoMode && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  🎭 Demo mode with sample packages
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // Error states
-  if (tenantError) {
+  // Enhanced error states with better messaging
+  if (displayError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/20">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
             <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-lg font-semibold mb-2">Restaurant Not Found</h2>
-            <p className="text-muted-foreground">The restaurant "{slug}" could not be found or is not available for catering.</p>
+            <h2 className="text-lg font-semibold mb-2">
+              {tenantError ? 'Restaurant Not Found' : 'Service Issue'}
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              {tenantError ? 
+                `The restaurant "${slug}" could not be found or is not available for catering.` :
+                displayError
+              }
+            </p>
+            {isInDemoMode && (
+              <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
+                <p className="text-sm text-yellow-700">
+                  ℹ️ This is a demo environment. Contact support for full functionality.
+                </p>
+              </div>
+            )}
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+              className="mt-4"
+            >
+              Try Again
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -121,23 +168,61 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   const handleOrderSubmit = async () => {
     if (!selectedPackage || !tenant) return;
 
+    // Client-side validation
+    if (!orderForm.event_name.trim()) {
+      setSubmitError('Event name is required');
+      return;
+    }
+
+    if (!orderForm.event_date) {
+      setSubmitError('Event date is required');
+      return;
+    }
+
+    if (!orderForm.contact_name.trim()) {
+      setSubmitError('Contact name is required');
+      return;
+    }
+
+    if (!orderForm.contact_email.trim()) {
+      setSubmitError('Contact email is required');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(orderForm.contact_email)) {
+      setSubmitError('Please enter a valid email address');
+      return;
+    }
+
+    // Date validation
+    const eventDate = new Date(orderForm.event_date);
+    const minDate = addDays(new Date(), 3);
+    if (eventDate < minDate) {
+      setSubmitError('Event date must be at least 3 days in advance');
+      return;
+    }
+
     setSubmitting(true);
+    setSubmitError(null);
+    
     try {
       const orderData: CreateCateringOrderRequest = {
         package_id: selectedPackage.id,
-        event_name: orderForm.event_name,
+        event_name: orderForm.event_name.trim(),
         event_date: orderForm.event_date,
         event_start_time: orderForm.event_start_time,
         event_end_time: orderForm.event_end_time,
         guest_count: orderForm.guest_count,
         service_type: orderForm.service_type,
-        contact_name: orderForm.contact_name,
-        contact_email: orderForm.contact_email,
-        contact_phone: orderForm.contact_phone,
-        venue_name: orderForm.venue_name,
-        venue_address: orderForm.venue_address,
-        delivery_address: orderForm.delivery_address,
-        special_instructions: orderForm.special_instructions,
+        contact_name: orderForm.contact_name.trim(),
+        contact_email: orderForm.contact_email.trim().toLowerCase(),
+        contact_phone: orderForm.contact_phone?.trim(),
+        venue_name: orderForm.venue_name?.trim(),
+        venue_address: orderForm.venue_address?.trim(),
+        delivery_address: orderForm.delivery_address?.trim(),
+        special_instructions: orderForm.special_instructions?.trim(),
         dietary_requirements: orderForm.dietary_requirements
       };
 
@@ -146,13 +231,17 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
       setCurrentStep('confirmation');
     } catch (error) {
       console.error('Error creating catering order:', error);
-      // Handle error - could show toast notification
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit catering order';
+      setSubmitError(errorMessage);
     } finally {
       setSubmitting(false);
     }
   };
 
   const formatPrice = (priceInCents: number) => {
+    if (typeof priceInCents !== 'number' || isNaN(priceInCents)) {
+      return '$0.00';
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
@@ -160,8 +249,14 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   };
 
   const getTotalPrice = () => {
-    if (!selectedPackage) return 0;
+    if (!selectedPackage || !orderForm.guest_count) return 0;
     return selectedPackage.price_per_person * orderForm.guest_count;
+  };
+
+  const validateGuestCount = (count: number) => {
+    if (!selectedPackage) return true;
+    return count >= selectedPackage.min_guests && 
+           (!selectedPackage.max_guests || count <= selectedPackage.max_guests);
   };
 
   return (
@@ -552,6 +647,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                             />
                           </div>
                         </div>
+
+                        {submitError && (
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                            <p className="text-sm text-red-600">{submitError}</p>
+                          </div>
+                        )}
 
                         <Button 
                           onClick={handleOrderSubmit}
