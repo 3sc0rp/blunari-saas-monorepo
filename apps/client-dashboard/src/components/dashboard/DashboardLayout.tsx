@@ -30,45 +30,48 @@ const DashboardLayout: React.FC = () => {
       <GlobalStatusStrip />
 
       <SidebarProvider defaultOpen={shouldShowSidebar}>
-        <div className="flex min-h-screen w-full">
-          {/* Responsive Sidebar - only render when needed */}
-          {shouldShowSidebar && <ResponsiveDashboardSidebar />}
+        {/* Unified Header Strip Container */}
+        <div className="border-b border-surface-2/30 bg-gradient-to-r from-surface via-surface-2 to-surface">
+          <div className="flex min-h-screen w-full">
+            {/* Responsive Sidebar - only render when needed */}
+            {shouldShowSidebar && <ResponsiveDashboardSidebar />}
 
-          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-            {/* Integrated Header Strip - matches sidebar top */}
-            <header
-              role="banner"
-              className="h-[88px] flex items-center border-b border-surface-2 bg-gradient-to-r from-surface via-surface-2 to-surface w-full min-w-0"
-            >
-              <div className="flex items-center w-full h-full">
-                {shouldShowSidebar && (
-                  <div className="flex items-center pl-4 lg:hidden">
-                    <SidebarTrigger />
-                  </div>
-                )}
-                <div className="flex-1 h-full flex items-center">
-                  <BreadcrumbHeader />
-                </div>
-              </div>
-            </header>
-
-            <main
-              id="main-content"
-              role="main"
-              className={getLayoutClasses().main}
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.3,
-                  ease: "easeOut",
-                }}
-                className={getLayoutClasses().container}
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+              {/* Seamless Integrated Header Strip - part of unified container */}
+              <header
+                role="banner"
+                className="h-[64px] flex items-center w-full min-w-0"
               >
-                <Outlet />
-              </motion.div>
-            </main>
+                <div className="flex items-center w-full h-full">
+                  {shouldShowSidebar && (
+                    <div className="flex items-center pl-3 lg:hidden">
+                      <SidebarTrigger />
+                    </div>
+                  )}
+                  <div className="flex-1 h-full flex items-center">
+                    <BreadcrumbHeader />
+                  </div>
+                </div>
+              </header>
+
+              <main
+                id="main-content"
+                role="main"
+                className={getLayoutClasses().main}
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.3,
+                    ease: "easeOut",
+                  }}
+                  className={getLayoutClasses().container}
+                >
+                  <Outlet />
+                </motion.div>
+              </main>
+            </div>
           </div>
         </div>
 

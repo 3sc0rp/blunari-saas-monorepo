@@ -53,120 +53,111 @@ const BreadcrumbHeader: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-r from-surface via-surface-2 to-surface w-full">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between min-w-0 px-6 py-4 gap-4">
-        {/* Breadcrumb & Page Info Section */}
-        <div className="space-y-2 min-w-0 flex-shrink-0">
-          {/* Enhanced Breadcrumb Navigation */}
-          <div className="flex items-center gap-2 text-sm">
-            <Home className="h-4 w-4 text-muted-foreground" />
+    <div className="w-full h-full">
+      <div className="flex items-center justify-between min-w-0 px-4 h-full gap-3">
+        {/* Compact Breadcrumb & Page Info */}
+        <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
+          {/* Breadcrumb Navigation */}
+          <div className="flex items-center gap-1.5 text-sm">
+            <Home className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-muted-foreground">Dashboard</span>
             {!isHomePage && (
               <>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                <span className="text-brand font-semibold border-b-2 border-brand pb-0.5">
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-brand font-medium">
                   {currentRoute?.title || "Page"}
                 </span>
               </>
             )}
           </div>
           
-          {/* Page Title */}
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-brand">
-              {currentRoute?.title || "Dashboard"}
-            </h1>
-            <div className="text-sm text-muted-foreground">
-              {restaurantName}
-            </div>
+          {/* Compact Restaurant Info */}
+          <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="opacity-50">•</span>
+            <span className="truncate max-w-32">{restaurantName}</span>
           </div>
         </div>
 
-        {/* Status & Capacity Indicator */}
-        <div className="flex items-center gap-4 flex-shrink-0">
-          <div className="px-3 py-2 bg-card/50 border border-border/50 rounded-lg backdrop-blur-sm">
-            <div className="flex items-center gap-3">
+        {/* Compact Status & Actions */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Status Indicator - more compact */}
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-card/30 border border-border/30 rounded-md backdrop-blur-sm">
+            <div
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${
+                isConnected
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
+                  : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"
+              }`}
+            >
               <div
-                className={`flex items-center gap-2 px-2 py-1 rounded-full ${
-                  isConnected
-                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
-                    : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                className={`h-1.5 w-1.5 rounded-full ${
+                  isConnected ? "bg-emerald-500 animate-pulse" : "bg-red-500"
                 }`}
-              >
-                <div
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    isConnected ? "bg-emerald-500 animate-pulse" : "bg-red-500"
-                  }`}
-                ></div>
-                <span className="text-xs font-medium">
-                  {isConnected ? "Live" : "Offline"}
-                </span>
-              </div>
-              <div className="text-sm">
-                <div className="font-semibold text-foreground">87%</div>
-                <div className="text-xs text-muted-foreground">Capacity</div>
-              </div>
+              ></div>
+              <span className="text-xs font-medium">
+                {isConnected ? "Live" : "Off"}
+              </span>
+            </div>
+            <div className="text-xs text-center">
+              <div className="font-semibold text-foreground leading-tight">87%</div>
+              <div className="text-[10px] text-muted-foreground leading-tight">Cap</div>
             </div>
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center flex-shrink-0 gap-2">
+          {/* Compact Action Buttons */}
           {!isMobile && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleRefresh}
-              className="h-8 px-3 bg-card/50 border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors backdrop-blur-sm"
+              className="h-7 w-7 p-0 hover:bg-accent/50 transition-colors"
             >
-              <RefreshCw className="h-3.5 w-3.5 mr-2" />
-              Refresh
-            </Button>
-          )}
-
-          {!isMobile && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleQuickSave}
-              className="h-8 px-3 bg-card/50 border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors backdrop-blur-sm"
-            >
-              <Save className="h-3.5 w-3.5 mr-2" />
-              Quick Save
+              <RefreshCw className="h-3.5 w-3.5" />
             </Button>
           )}
 
           {/* Mobile Refresh Button */}
           {isMobile && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleRefresh}
-              className="h-8 w-8 p-0 bg-card/50 border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors backdrop-blur-sm"
+              className="h-7 w-7 p-0 hover:bg-accent/50 transition-colors"
             >
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
           )}
 
-          {/* Notification Bell */}
+          {/* Notification Bell - compact */}
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 relative bg-card/50 border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors backdrop-blur-sm"
+            className="h-7 w-7 p-0 relative hover:bg-accent/50 transition-colors"
           >
             <Bell className="h-3.5 w-3.5" />
             <Badge className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 p-0 bg-destructive border-0"></Badge>
           </Button>
 
-          {/* Settings Button */}
+          {/* Settings & Quick Save - compact */}
           {!isMobile && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0 bg-card/50 border-border/50 hover:bg-accent hover:text-accent-foreground transition-colors backdrop-blur-sm"
-            >
-              <Settings2 className="h-3.5 w-3.5" />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleQuickSave}
+                className="h-7 w-7 p-0 hover:bg-accent/50 transition-colors"
+              >
+                <Save className="h-3.5 w-3.5" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-accent/50 transition-colors"
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+              </Button>
+            </>
           )}
         </div>
       </div>
