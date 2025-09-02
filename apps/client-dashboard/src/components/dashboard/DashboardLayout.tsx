@@ -33,7 +33,7 @@ const DashboardLayout: React.FC = () => {
         {/* Professional Layout Container */}
         <div className="relative min-h-screen">
           {/* Unified Header Strip with Glass Effect */}
-          <div className="sticky top-0 z-40 border-b border-surface-2/30 bg-gradient-to-r from-surface via-surface-2/60 to-surface backdrop-blur-xl supports-backdrop-blur:bg-surface/80">
+          <div className="sticky top-0 z-40 border-b border-surface-2/30 bg-surface">
             <div className="flex w-full">
               {/* Responsive Sidebar - Enhanced Integration */}
               {shouldShowSidebar && (
@@ -76,9 +76,6 @@ const DashboardLayout: React.FC = () => {
               role="main"
               className={`flex-1 relative ${getLayoutClasses().main}`}
             >
-              {/* Content Background with Subtle Pattern */}
-              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-surface-2/10 to-transparent pointer-events-none" />
-              
               {/* Content Container with Professional Animation */}
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
