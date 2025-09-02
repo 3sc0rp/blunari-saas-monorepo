@@ -364,25 +364,14 @@
   }
 
   /* === RESPONSIVE LAYOUT CLASSES === */
-  /* Prevent content hiding and ensure proper layout */
+  /* Layout utilities for responsive design */
   
   .mobile-layout {
-    --sidebar-width: 0px;
     --content-padding: 1rem;
   }
   
   .desktop-layout {
-    --sidebar-width: 280px;
     --content-padding: 1.5rem;
-  }
-  
-  .sidebar-open {
-    --sidebar-transition: transform 0.3s ease, width 0.3s ease;
-  }
-  
-  .sidebar-closed {
-    --sidebar-width: 0px;
-    --sidebar-transition: transform 0.3s ease, width 0.3s ease;
   }
   
   /* SSR Safety - Prevent flash of unstyled content */
@@ -403,33 +392,27 @@
     }
   }
   
-  /* Ensure main content is never hidden behind navigation */
+  /* Ensure main content is properly spaced */
   #main-content {
     min-height: 100vh;
     width: 100%;
     overflow-x: hidden;
     position: relative;
-    z-index: 1;
+    transition: padding-bottom 0.3s ease;
   }
   
-  /* Responsive content containers */
-  @media (max-width: 768px) {
-    .mobile-layout #main-content {
-      padding-bottom: 80px; /* Space for bottom navigation */
-    }
+  /* Bottom navigation space utility */
+  .pb-20 {
+    padding-bottom: 5rem; /* 80px */
   }
   
-  @media (min-width: 1024px) {
-    .desktop-layout.sidebar-open #main-content {
-      margin-left: var(--sidebar-width);
-      width: calc(100% - var(--sidebar-width));
-      transition: margin-left 0.3s ease, width 0.3s ease;
-    }
-    
-    .desktop-layout.sidebar-closed #main-content {
-      margin-left: 0;
-      width: 100%;
-      transition: margin-left 0.3s ease, width 0.3s ease;
-    }
+  /* Smooth transition for navigation mode switching */
+  [data-sidebar] {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Layout transition smoothing */
+  .navigation-transition {
+    transition: transform 0.3s ease, opacity 0.2s ease;
   }
 }

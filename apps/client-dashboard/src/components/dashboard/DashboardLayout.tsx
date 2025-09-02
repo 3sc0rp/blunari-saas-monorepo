@@ -13,24 +13,19 @@ const DashboardLayout: React.FC = () => {
   const { actualLayout } = useNavigation();
   const { getLayoutClasses, isMobile, isDesktop, sidebarCollapsed, isSSR } = useResponsiveLayout();
 
-  // Sidebar visibility logic:
-  // - "sidebar": Always show sidebar (desktop and mobile)
-  // - "auto": Show sidebar on desktop, bottom nav on mobile  
-  // - "bottom": Always show bottom navigation
-  const shouldShowSidebar = 
-    actualLayout === "sidebar" || 
-    (actualLayout === "auto" && isDesktop);
-  const shouldShowBottomNav = 
-    actualLayout === "bottom" || 
-    (actualLayout === "auto" && isMobile) ||
-    isMobile; // Fallback for mobile
+  // Navigation visibility logic based on user preference:
+  // - "sidebar": Always show sidebar on all devices
+  // - "bottom": Always show bottom navigation on all devices
+  // Note: actualLayout already handles auto mode internally in NavigationContext
+  const shouldShowSidebar = actualLayout === "sidebar";
+  const shouldShowBottomNav = actualLayout === "bottom";
 
   // Check for reduced motion preference
   const prefersReducedMotion = typeof window !== 'undefined' ? 
     window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
 
   return (
-    <div className={getLayoutClasses()}>
+    <div className={`${getLayoutClasses()} navigation-transition`}>
       {/* Accessibility: Skip to main content */}
       <a href="#main-content" className="skip-to-main">
         Skip to main content
@@ -39,15 +34,23 @@ const DashboardLayout: React.FC = () => {
       {/* Global Status Strip */}
       <GlobalStatusStrip />
 
-      <SidebarProvider defaultOpen={true}>
-        <ResponsiveDashboardSidebar />
+      <SidebarProvider 
+        defaultOpen={shouldShowSidebar}
+        style={{
+          "--sidebar-width": "280px",
+          "--sidebar-width-mobile": "280px",
+        } as React.CSSProperties}
+      >
+        {shouldShowSidebar && <ResponsiveDashboardSidebar />}
 
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
           <header className="sticky top-0 z-40 border-b border-surface-2/30 bg-surface h-[64px] flex items-center px-4">
-            <div className="flex items-center mr-4">
-              <SidebarTrigger className="h-8 w-8" />
-            </div>
+            {shouldShowSidebar && (
+              <div className="flex items-center mr-4">
+                <SidebarTrigger className="h-8 w-8" />
+              </div>
+            )}
             <div className="flex-1">
               <BreadcrumbHeader />
             </div>
@@ -57,8 +60,9 @@ const DashboardLayout: React.FC = () => {
           <main
             id="main-content"
             role="main" 
-            className="flex-1 p-6 overflow-auto"
-            style={{ paddingBottom: shouldShowBottomNav ? '80px' : '0' }}
+            className={`flex-1 p-6 overflow-auto ${
+              shouldShowBottomNav ? 'pb-20' : ''
+            }`}
           >
             <motion.div
               initial={prefersReducedMotion || isSSR ? false : { opacity: 0, y: 10 }}
@@ -71,12 +75,12 @@ const DashboardLayout: React.FC = () => {
           </main>
         </div>
 
-        {/* Bottom Navigation for Mobile */}
+        {/* Bottom Navigation */}
         {shouldShowBottomNav && (
           <nav 
             role="navigation" 
-            aria-label="Mobile navigation"
-            className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
+            aria-label="Bottom navigation"
+            className="fixed bottom-0 left-0 right-0 z-50"
           >
             <div className="pb-safe">
               <BottomNavigation />

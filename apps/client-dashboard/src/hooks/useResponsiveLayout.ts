@@ -105,12 +105,16 @@ export const useResponsiveLayout = (): ResponsiveLayout => {
     if (isSSR) return;
 
     const { isMobile } = breakpointValues;
-    const actualLayout = navigation?.actualLayout || 'bottom';
+    const actualLayout = navigation?.actualLayout || 'sidebar'; // Default to sidebar
 
-    if (actualLayout === 'sidebar' && !isMobile) {
-      setSidebarCollapsed(false);
+    // Only collapse sidebar in mobile when using sidebar layout
+    // For bottom navigation, sidebar should always be collapsed (not visible)
+    if (actualLayout === 'sidebar' && isMobile) {
+      setSidebarCollapsed(true); // Collapsed on mobile but still accessible
+    } else if (actualLayout === 'sidebar') {
+      setSidebarCollapsed(false); // Open on desktop
     } else {
-      setSidebarCollapsed(true);
+      setSidebarCollapsed(true); // Hidden when using bottom navigation
     }
   }, [navigation?.actualLayout, breakpointValues, isSSR]);
 
@@ -154,7 +158,7 @@ export const useResponsiveLayout = (): ResponsiveLayout => {
     isDesktop: breakpointValues.isDesktop,
     sidebarCollapsed,
     toggleSidebar,
-    actualLayout: navigation?.actualLayout || "bottom",
+    actualLayout: navigation?.actualLayout || "sidebar",
     getLayoutClasses,
     screenSize,
     isSSR,
