@@ -45,7 +45,7 @@ export const TenantHookTester: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log('🔄 TenantHookTester: Hook result changed:', hookResult);
+    // Hook result changed
   }, [hookResult]);
 
   return (

@@ -71,9 +71,8 @@ export const TenantBrandingProvider: React.FC<{
 
   // Handle loading and error states
   const handleRetry = () => {
-    // Invalidate the tenant queries to force a refetch
-    queryClient.invalidateQueries({ queryKey: ["tenant-by-domain"] });
-    queryClient.invalidateQueries({ queryKey: ["tenant-by-user"] });
+    // Invalidate the user tenant query to force a refetch
+    queryClient.invalidateQueries({ queryKey: ["user-tenant"] });
   };
 
   // Update branding when tenant data changes - MUST be before conditional returns
@@ -95,28 +94,25 @@ export const TenantBrandingProvider: React.FC<{
     }
   }, [tenant]);
 
-  // Show fallback if we're trying to load a tenant but failing
-  if (tenantSlug && !tenant && (isLoading || error)) {
-    // Don't show fallback immediately, give it a moment to load
-    if (isLoading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-        </div>
-      );
-    }
-    
-    // Show fallback if there's an error
-    if (error) {
-      return (
-        <TenantLoadingFallback
-          tenantSlug={tenantSlug}
-          error={error}
-          onRetry={handleRetry}
-          isLoading={false}
-        />
-      );
-    }
+  // Show loading state while fetching user's tenant
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+  
+  // Show fallback if there's an error loading the user's tenant
+  if (!tenant && error) {
+    return (
+      <TenantLoadingFallback
+        tenantSlug="unknown"
+        error={error}
+        onRetry={handleRetry}
+        isLoading={false}
+      />
+    );
   }
 
   // Apply branding to CSS variables

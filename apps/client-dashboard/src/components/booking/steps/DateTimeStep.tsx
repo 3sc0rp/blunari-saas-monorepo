@@ -57,14 +57,6 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
         service_date: format(date, "yyyy-MM-dd"), // Plain date string in YYYY-MM-DD format
       };
 
-      console.log("Making availability search request:", searchRequest);
-      console.log("Tenant info available:", {
-        tenant_id: tenant.tenant_id,
-        name: tenant.name,
-        party_size: partySize,
-        selected_date: format(date, "yyyy-MM-dd"),
-      });
-
       // Add timeout to prevent infinite loading
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(

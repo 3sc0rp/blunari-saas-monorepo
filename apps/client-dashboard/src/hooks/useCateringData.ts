@@ -108,7 +108,6 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
 
       if (!exist) {
         // No mock data - only real database data
-        console.log('No catering packages found for tenant:', tenantId);
         setError('No catering packages found');
         setPackages([]);
         return;

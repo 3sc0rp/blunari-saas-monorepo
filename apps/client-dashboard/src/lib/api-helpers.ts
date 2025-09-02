@@ -81,7 +81,6 @@ export async function getTenantBySlug(slug: string) {
       
       // If no result, try the public view as fallback
       if (!result.data && !result.error) {
-        console.log(`No tenant found with slug '${slug}', trying public view...`);
         const publicResult = await supabase
           .from('tenant_public_info')
           .select('*')
