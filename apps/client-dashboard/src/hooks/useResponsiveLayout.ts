@@ -67,7 +67,7 @@ export const useResponsiveLayout = () => {
   // Professional layout-specific CSS classes
   const getLayoutClasses = useCallback(() => {
     const baseClasses = {
-      main: `flex-1 overflow-y-auto bg-gradient-to-br from-surface via-surface to-surface-2/30 ${getMainPadding()}`,
+      main: `flex-1 overflow-y-auto bg-background ${getMainPadding()}`,
       sidebar: actualLayout === "sidebar" ? "lg:pl-0" : "",
       bottomNav: actualLayout === "bottom" ? "lg:pb-0" : "",
     };

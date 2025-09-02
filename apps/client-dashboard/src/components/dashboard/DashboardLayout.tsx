@@ -20,7 +20,7 @@ const DashboardLayout: React.FC = () => {
   const shouldShowBottomNav = isMobile || actualLayout === "bottom";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface via-surface-2/30 to-surface">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Accessibility: Skip to main content */}
       <a href="#main-content" className="skip-to-main">
         Skip to main content
@@ -74,7 +74,7 @@ const DashboardLayout: React.FC = () => {
             <main
               id="main-content"
               role="main"
-              className={`flex-1 relative ${getLayoutClasses().main}`}
+              className={`flex-1 relative min-h-screen ${getLayoutClasses().main}`}
             >
               {/* Content Container with Professional Animation */}
               <motion.div
@@ -84,9 +84,12 @@ const DashboardLayout: React.FC = () => {
                   duration: 0.4,
                   ease: [0.4, 0, 0.2, 1],
                 }}
-                className={`relative z-10 ${getLayoutClasses().container}`}
+                className={`relative z-10 w-full ${getLayoutClasses().container}`}
+                style={{ minHeight: "100vh" }}
               >
-                <Outlet />
+                <div className="w-full">
+                  <Outlet />
+                </div>
               </motion.div>
             </main>
           </div>

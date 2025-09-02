@@ -32,8 +32,19 @@ const Dashboard: React.FC = () => {
   );
   const { alerts, dismissAlert, clearAllAlerts } = useAlertSystem(tenant?.id);
 
+  // Debug: Log rendering status
+  console.log("Dashboard rendering:", { tenant, accessType, tenantSlug, isLoading });
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
+      {/* Debug: Visible content indicator */}
+      <div className="p-4 bg-blue-100 text-blue-900 rounded-lg border-2 border-blue-200">
+        <h2 className="text-xl font-bold">Dashboard Debug</h2>
+        <p>Tenant: {tenant?.name || 'Loading...'}</p>
+        <p>Access Type: {accessType}</p>
+        <p>Loading: {isLoading ? 'Yes' : 'No'}</p>
+      </div>
+
       {/* Tenant Access Information */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
