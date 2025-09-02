@@ -4771,3 +4771,15 @@ export const Constants = {
     },
   },
 } as const;
+
+// Export commonly used types
+export type Tenant = Database['public']['Tables']['tenants']['Row'];
+export type TenantInsert = Database['public']['Tables']['tenants']['Insert'];
+export type TenantUpdate = Database['public']['Tables']['tenants']['Update'];
+
+// Tenant user relationship types (for API responses)
+export type TenantUser = Database['public']['Tables']['tenant_users']['Row'];
+export type UserTenantWithTenant = {
+  tenant_id: string;
+  tenants: Tenant;
+};

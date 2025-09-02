@@ -48,7 +48,7 @@ export async function apiCall<T>(
       return { data: null, error: new ApiError(errorDetails) };
     }
 
-    console.log(`${operationName} completed successfully`);
+    console.log(`${operationName} completed successfully with data:`, result.data);
     return { data: result.data, error: null };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unexpected error occurred';
@@ -69,11 +69,14 @@ export async function apiCall<T>(
  */
 export async function getTenantBySlug(slug: string) {
   return apiCall(
-    () => supabase
-      .from('tenants')
-      .select('*')
-      .eq('slug', slug)
-      .single(),
+    async () => {
+      const result = await supabase
+        .from('tenants')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+      return result;
+    },
     `getTenantBySlug(${slug})`
   );
 }
@@ -83,33 +86,37 @@ export async function getTenantBySlug(slug: string) {
  */
 export async function getUserTenant(userId: string) {
   return apiCall(
-    () => supabase
-      .from('user_tenants')
-      .select(`
-        tenant_id,
-        tenants (
-          id,
-          name,
-          slug,
-          status,
-          timezone,
-          currency,
-          description,
-          phone,
-          email,
-          website,
-          address,
-          cuisine_type_id,
-          logo_url,
-          primary_color,
-          secondary_color,
-          created_at,
-          updated_at
-        )
-      `)
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .single(),
+    async () => {
+      const result = await supabase
+        .rpc('get_user_tenant', { p_user_id: userId });
+      
+      // The function returns an array, get the first result
+      if (result.data && result.data.length > 0) {
+        const tenantInfo = result.data[0];
+        
+        // Get full tenant details
+        const tenantResult = await supabase
+          .from('tenants')
+          .select('*')
+          .eq('id', tenantInfo.tenant_id)
+          .single();
+        
+        if (tenantResult.error) {
+          return { data: null, error: tenantResult.error };
+        }
+        
+        // Return in the expected format for the hook
+        return {
+          data: {
+            tenant_id: tenantInfo.tenant_id,
+            tenants: tenantResult.data
+          },
+          error: null
+        };
+      }
+      
+      return { data: null, error: null };
+    },
     `getUserTenant(${userId})`
   );
 }
@@ -123,7 +130,10 @@ export async function checkApiHealth() {
   const tests = [
     {
       name: 'Basic connectivity',
-      test: () => supabase.from('tenants').select('count', { count: 'exact', head: true })
+      test: async () => {
+        const result = await supabase.from('tenants').select('count', { count: 'exact', head: true });
+        return result;
+      }
     },
     {
       name: 'Authentication status',

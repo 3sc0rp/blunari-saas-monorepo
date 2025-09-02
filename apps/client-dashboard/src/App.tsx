@@ -24,6 +24,7 @@ import Staff from "./pages/Staff";
 import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import DebugTenantPage from "./pages/DebugTenant";
 import BookingPage from "./pages/BookingPage";
 import Catering from "./pages/Catering";
 import { Suspense, lazy } from "react";
@@ -50,6 +51,10 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
+                    {/* Debug route for development */}
+                    {import.meta.env.MODE === 'development' && (
+                      <Route path="/debug-tenant" element={<DebugTenantPage />} />
+                    )}
                     <Route
                       path="/staff-invitation"
                       element={<StaffInvitation />}
