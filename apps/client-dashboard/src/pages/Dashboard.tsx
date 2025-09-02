@@ -11,6 +11,7 @@ import TableStatus from "@/components/dashboard/TableStatus";
 import MetricsCard from "@/components/dashboard/MetricsCard";
 import PerformanceTrendsChart from "@/components/dashboard/PerformanceTrendsChart";
 import AlertSystem from "@/components/dashboard/AlertSystem";
+import { ApiDebugPanel } from "@/components/ApiDebugPanel";
 import {
   Users,
   Calendar,
@@ -270,6 +271,22 @@ const Dashboard: React.FC = () => {
           <TableStatus />
         </div>
       </motion.div>
+
+      {/* API Debug Panel (Development Only) */}
+      {(import.meta.env.MODE === 'development' || window.location.hostname === 'localhost') && (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.6,
+            delay: 1.2,
+            type: "spring",
+            stiffness: 60,
+          }}
+        >
+          <ApiDebugPanel />
+        </motion.div>
+      )}
     </div>
   );
 };
