@@ -269,8 +269,8 @@ const WidgetManagement: React.FC = () => {
   // Memoized computations
   const widgetUrls = useMemo(
     () => ({
-      booking: `${window.location.origin}/book/${tenant?.slug || "demo"}`,
-      catering: `${window.location.origin}/catering/${tenant?.slug || "demo"}`,
+      booking: tenant?.slug ? `${window.location.origin}/book/${tenant.slug}` : null,
+      catering: tenant?.slug ? `${window.location.origin}/catering/${tenant.slug}` : null,
     }),
     [tenant?.slug],
   );

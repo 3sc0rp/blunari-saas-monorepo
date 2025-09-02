@@ -108,8 +108,8 @@ const WidgetPreview: React.FC = () => {
   };
 
   // Generate URLs for both widget types
-  const bookingUrl = `${window.location.origin}/booking-widget/${tenant?.id || "demo"}`;
-  const cateringUrl = `${window.location.origin}/catering-widget/${tenant?.id || "demo"}`;
+  const bookingUrl = tenant?.id ? `${window.location.origin}/booking-widget/${tenant.id}` : null;
+  const cateringUrl = tenant?.id ? `${window.location.origin}/catering-widget/${tenant.id}` : null;
   const currentUrl = widgetType === "booking" ? bookingUrl : cateringUrl;
 
   const copyToClipboard = async (text: string, label: string) => {

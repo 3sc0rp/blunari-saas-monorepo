@@ -28,7 +28,6 @@ export class ApiError extends Error {
  */
 export async function apiCall<T>(
   operation: () => Promise<{ data: T | null; error: any }>,
-  fallbackData?: T | null,
   operationName = 'API call'
 ): Promise<{ data: T | null; error: ApiError | null }> {
   try {
@@ -45,25 +44,7 @@ export async function apiCall<T>(
         status: result.error.status,
       };
 
-      console.warn(`${operationName} failed:`, errorDetails);
-
-      // Handle specific error cases
-      if (result.error.code === '406' || result.error.status === 406) {
-        console.warn('API returned 406 (Not Acceptable) - possible RLS policy issue');
-        if (fallbackData !== undefined) {
-          console.log(`Using fallback data for ${operationName}`);
-          return { data: fallbackData, error: null };
-        }
-      }
-
-      if (result.error.code === '42501' || result.error.message?.includes('permission denied')) {
-        console.warn('Permission denied - likely RLS policy restricting access');
-        if (fallbackData !== undefined) {
-          console.log(`Using fallback data for ${operationName}`);
-          return { data: fallbackData, error: null };
-        }
-      }
-
+      console.error(`${operationName} failed:`, errorDetails);
       return { data: null, error: new ApiError(errorDetails) };
     }
 
@@ -73,11 +54,6 @@ export async function apiCall<T>(
     const errorMessage = err instanceof Error ? err.message : 'Unexpected error occurred';
     console.error(`${operationName} threw exception:`, err);
     
-    if (fallbackData !== undefined) {
-      console.log(`Using fallback data for ${operationName} due to exception`);
-      return { data: fallbackData, error: null };
-    }
-
     return { 
       data: null, 
       error: new ApiError({ 
@@ -89,56 +65,21 @@ export async function apiCall<T>(
 }
 
 /**
- * Tenant-specific API wrapper with development fallbacks
+ * Tenant lookup by slug - uses only real data from API
  */
 export async function getTenantBySlug(slug: string) {
-  const fallbackTenant = {
-    id: `fallback-${slug}`,
-    name: slug.split('-').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' '),
-    slug,
-    status: 'active',
-    timezone: 'UTC',
-    currency: 'USD',
-    description: `Fallback tenant for ${slug}`,
-    phone: '+1-555-0123',
-    email: `contact@${slug}.com`,
-    website: `https://${slug}.com`,
-    address: {
-      street: '123 Main Street',
-      city: 'Demo City',
-      state: 'Demo State',
-      country: 'United States',
-      postal_code: '12345'
-    },
-    cuisine_type_id: 'fallback-cuisine',
-    logo_url: null,
-    primary_color: '#3b82f6',
-    secondary_color: '#1e40af',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-
-  // For localhost development, always return fallback
-  if (window.location.hostname === 'localhost' || window.location.hostname.startsWith('127.0.0.1')) {
-    console.log(`Using localhost fallback tenant for slug: ${slug}`);
-    return { data: fallbackTenant, error: null };
-  }
-
   return apiCall(
     () => supabase
       .from('tenants')
       .select('*')
       .eq('slug', slug)
       .single(),
-    fallbackTenant,
     `getTenantBySlug(${slug})`
   );
 }
 
 /**
- * User tenant relationship lookup with fallbacks
+ * User tenant relationship lookup - uses only real data
  */
 export async function getUserTenant(userId: string) {
   return apiCall(
@@ -169,7 +110,6 @@ export async function getUserTenant(userId: string) {
       .eq('user_id', userId)
       .eq('status', 'active')
       .single(),
-    null,
     `getUserTenant(${userId})`
   );
 }

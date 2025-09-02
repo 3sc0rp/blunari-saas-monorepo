@@ -7,14 +7,14 @@ import { getTenantBySlug, getUserTenant } from "@/lib/api-helpers";
 function getTenantSlugFromDomain(): string | null {
   const hostname = window.location.hostname;
   
-  // For localhost development, check for tenant parameter in URL or use demo
+  // For localhost development, check for tenant parameter in URL
   if (hostname === "localhost" || hostname.startsWith("127.0.0.1")) {
     const urlParams = new URLSearchParams(window.location.search);
     const tenantParam = urlParams.get('tenant');
     if (tenantParam) return tenantParam;
     
-    // Default to demo-restaurant for development
-    return "demo-restaurant";
+    // No default - must be explicitly provided
+    return null;
   }
 
   // For production domains, extract subdomain
@@ -37,7 +37,7 @@ export const useTenant = () => {
   const { user } = useAuth();
   const tenantSlug = getTenantSlugFromDomain();
 
-  // Enhanced tenant lookup using the new API helpers
+  // Tenant lookup by domain/slug - real data only
   const { data: tenantByDomain, isLoading: isLoadingDomain, error: domainError } = useQuery({
     queryKey: ["tenant-by-domain", tenantSlug],
     queryFn: async () => {
@@ -46,19 +46,19 @@ export const useTenant = () => {
       const { data, error } = await getTenantBySlug(tenantSlug);
       
       if (error) {
-        console.warn(`Domain-based tenant lookup failed for "${tenantSlug}":`, error);
-        return null;
+        console.error(`Domain-based tenant lookup failed for "${tenantSlug}":`, error);
+        throw new Error(`Failed to load tenant "${tenantSlug}": ${error.message}`);
       }
 
       return data as Tenant | null;
     },
     enabled: !!tenantSlug,
-    retry: false, // Don't retry to avoid API spam
+    retry: 1, // Retry once on failure
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // User-based tenant lookup with better error handling
-  const { data: tenantByUser, isLoading: isLoadingUser } = useQuery({
+  // User-based tenant lookup - real data only
+  const { data: tenantByUser, isLoading: isLoadingUser, error: userError } = useQuery({
     queryKey: ["tenant-by-user", user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -66,7 +66,8 @@ export const useTenant = () => {
       const { data, error } = await getUserTenant(user.id);
       
       if (error) {
-        console.warn(`User-based tenant lookup failed for user "${user.id}":`, error);
+        console.error(`User-based tenant lookup failed for user "${user.id}":`, error);
+        // Don't throw error for user lookup as it might be expected to fail
         return null;
       }
 
@@ -77,7 +78,7 @@ export const useTenant = () => {
       return data.tenants as Tenant;
     },
     enabled: !!user && !tenantByDomain,
-    retry: false,
+    retry: 1,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -86,7 +87,7 @@ export const useTenant = () => {
   const accessType = tenantByDomain ? "domain" : "user";
 
   const isLoading = isLoadingDomain || isLoadingUser;
-  const error = domainError;
+  const error = domainError || userError;
 
   // Create tenant info for user-based access
   const tenantInfo = tenantByUser ? {
