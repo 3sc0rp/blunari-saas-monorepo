@@ -17,7 +17,7 @@ import { useTenant } from "@/hooks/useTenant";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 
 // Route mapping for breadcrumbs
-const routeMap: Record<string, { title: string; icon?: React.ComponentType }> =
+const routeMap: Record<string, { title: string; icon?: React.ComponentType<{ className?: string }> }> =
   {
     "/dashboard": { title: "Dashboard", icon: Home },
     "/dashboard/bookings": { title: "Bookings" },
@@ -53,112 +53,131 @@ const BreadcrumbHeader: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full">
-      <div className="flex items-center justify-between min-w-0 px-4 h-full gap-3">
-        {/* Compact Breadcrumb & Page Info */}
-        <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
-          {/* Breadcrumb Navigation */}
-          <div className="flex items-center gap-1.5 text-sm">
-            <Home className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-muted-foreground">Dashboard</span>
-            {!isHomePage && (
-              <>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-brand font-medium">
-                  {currentRoute?.title || "Page"}
-                </span>
-              </>
-            )}
-          </div>
+    <div className="w-full h-full relative">
+      {/* Subtle Background Pattern */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-surface-2/5 to-transparent pointer-events-none" />
+      
+      <div className="flex items-center justify-between min-w-0 px-6 h-full gap-4 relative z-10">
+        {/* Enhanced Breadcrumb & Page Info */}
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          {/* Professional Breadcrumb Navigation */}
+          <nav className="flex items-center gap-2 text-sm" aria-label="Breadcrumb">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-2/40 backdrop-blur-sm rounded-lg border border-surface-2/30">
+              <Home className="h-4 w-4 text-text-muted" />
+              <span className="text-text-muted font-medium">Dashboard</span>
+              {!isHomePage && (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 text-text-subtle mx-1" />
+                  <div className="flex items-center gap-2">
+                    {currentRoute?.icon && (
+                      <currentRoute.icon className="h-3.5 w-3.5 text-brand" />
+                    )}
+                    <span className="text-brand font-semibold">
+                      {currentRoute?.title || "Page"}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </nav>
           
-          {/* Compact Restaurant Info */}
-          <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="opacity-50">•</span>
-            <span className="truncate max-w-32">{restaurantName}</span>
+          {/* Enhanced Restaurant Context */}
+          <div className="hidden md:flex items-center gap-3 px-3 py-1.5 bg-surface-2/20 backdrop-blur-sm rounded-lg border border-surface-2/20">
+            <div className="w-2 h-2 bg-brand rounded-full animate-pulse" />
+            <span className="text-sm text-text-muted font-medium truncate max-w-40">
+              {restaurantName || tenant?.name || "Restaurant"}
+            </span>
           </div>
         </div>
 
-        {/* Compact Status & Actions */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Status Indicator - more compact */}
-          <div className="flex items-center gap-2 px-2.5 py-1 bg-card/30 border border-border/30 rounded-md backdrop-blur-sm">
+        {/* Enhanced Status & Actions */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Professional Status Dashboard */}
+          <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-surface-2/30 to-surface-2/20 backdrop-blur-sm border border-surface-2/40 rounded-xl shadow-elevation-low">
+            {/* Connection Status */}
             <div
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${
+              className={`flex items-center gap-2 px-3 py-1 rounded-lg transition-all duration-300 ${
                 isConnected
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
-                  : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"
+                  ? "bg-success/15 text-success border border-success/20"
+                  : "bg-destructive/15 text-destructive border border-destructive/20"
               }`}
             >
               <div
-                className={`h-1.5 w-1.5 rounded-full ${
-                  isConnected ? "bg-emerald-500 animate-pulse" : "bg-red-500"
+                className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                  isConnected 
+                    ? "bg-success animate-pulse shadow-glow-success" 
+                    : "bg-destructive animate-pulse shadow-glow-destructive"
                 }`}
-              ></div>
-              <span className="text-xs font-medium">
-                {isConnected ? "Live" : "Off"}
+              />
+              <span className="text-xs font-semibold">
+                {isConnected ? "LIVE" : "OFFLINE"}
               </span>
             </div>
-            <div className="text-xs text-center">
-              <div className="font-semibold text-foreground leading-tight">87%</div>
-              <div className="text-[10px] text-muted-foreground leading-tight">Cap</div>
+            
+            {/* Capacity Indicator */}
+            <div className="text-center px-2">
+              <div className="text-sm font-bold text-text leading-none">87%</div>
+              <div className="text-xs text-text-subtle leading-none mt-0.5">Capacity</div>
             </div>
           </div>
 
-          {/* Compact Action Buttons */}
-          {!isMobile && (
+          {/* Professional Action Buttons */}
+          <div className="flex items-center gap-1 bg-surface-2/20 backdrop-blur-sm rounded-xl p-1 border border-surface-2/30">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleRefresh}
-              className="h-7 w-7 p-0 hover:bg-accent/50 transition-colors"
+              className="h-8 w-8 p-0 hover:bg-surface-2/60 transition-all duration-200 hover:scale-105 rounded-lg"
+              title="Refresh Data"
             >
-              <RefreshCw className="h-3.5 w-3.5" />
+              <RefreshCw className="h-4 w-4" />
             </Button>
-          )}
 
-          {/* Mobile Refresh Button */}
-          {isMobile && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleRefresh}
-              className="h-7 w-7 p-0 hover:bg-accent/50 transition-colors"
+              className="h-8 w-8 p-0 relative hover:bg-surface-2/60 transition-all duration-200 hover:scale-105 rounded-lg"
+              title="Notifications"
             >
-              <RefreshCw className="h-3.5 w-3.5" />
+              <Bell className="h-4 w-4" />
+              <Badge className="absolute -top-1 -right-1 h-3 w-3 p-0 bg-destructive border-2 border-surface text-xs animate-pulse" />
             </Button>
-          )}
 
-          {/* Notification Bell - compact */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 relative hover:bg-accent/50 transition-colors"
-          >
-            <Bell className="h-3.5 w-3.5" />
-            <Badge className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 p-0 bg-destructive border-0"></Badge>
-          </Button>
+            {!isMobile && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleQuickSave}
+                  className="h-8 w-8 p-0 hover:bg-surface-2/60 transition-all duration-200 hover:scale-105 rounded-lg"
+                  title="Quick Save"
+                >
+                  <Save className="h-4 w-4" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-surface-2/60 transition-all duration-200 hover:scale-105 rounded-lg"
+                  title="Settings"
+                >
+                  <Settings2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
 
-          {/* Settings & Quick Save - compact */}
-          {!isMobile && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleQuickSave}
-                className="h-7 w-7 p-0 hover:bg-accent/50 transition-colors"
-              >
-                <Save className="h-3.5 w-3.5" />
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 hover:bg-accent/50 transition-colors"
-              >
-                <Settings2 className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          )}
+          {/* User Avatar - Premium Touch */}
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-brand/10 to-brand/5 backdrop-blur-sm rounded-xl border border-brand/20">
+            <div className="w-6 h-6 bg-gradient-to-br from-brand to-brand/80 rounded-full flex items-center justify-center shadow-elevation-medium">
+              <span className="text-xs font-bold text-brand-foreground">
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            </div>
+            <span className="text-xs font-medium text-text truncate max-w-20">
+              {user?.email?.split('@')[0] || 'User'}
+            </span>
+          </div>
         </div>
       </div>
     </div>

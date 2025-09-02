@@ -13,7 +13,7 @@ interface MetricsCardProps {
   title: string;
   value: string | number;
   trend: number;
-  icon: React.ComponentType<{ className?: string; size?: number }>;
+  icon: React.ComponentType<{ className?: string; size?: number | string }>;
   color: string;
   bgColor: string;
   format?: "currency" | "percentage" | "number";
@@ -92,57 +92,68 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
 
   return (
     <TooltipProvider>
-      <Card className="relative overflow-hidden bg-surface border-surface-2 hover:shadow-elev-2 transition-all duration-300 group hover:scale-[1.02] hover:border-brand/20">
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-surface via-transparent to-surface-2 opacity-50"></div>
+      <Card className="relative overflow-hidden bg-gradient-to-br from-surface via-surface to-surface-2/30 border border-surface-2/50 hover:shadow-elevation-medium transition-all duration-300 group hover:scale-[1.02] hover:border-brand/30 backdrop-blur-sm">
+        {/* Professional Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-surface-2/5 to-surface-2/10 opacity-50"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand/2 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-        <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3">
+        <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-3 border-b border-surface-2/30">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-body-sm font-medium text-text-muted">
+            <CardTitle className="text-sm font-semibold text-text-muted tracking-wide">
               {title}
             </CardTitle>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <Info className="h-3 w-3 text-text-subtle hover:text-text-muted" />
+                <button className="opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110">
+                  <Info className="h-3.5 w-3.5 text-text-subtle hover:text-text-muted" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-60">
-                <p className="text-xs">{tooltipText}</p>
+              <TooltipContent side="top" className="max-w-64 z-50">
+                <p className="text-xs leading-relaxed">{tooltipText}</p>
               </TooltipContent>
             </Tooltip>
           </div>
           <div
-            className={`h-10 w-10 rounded-lg ${bgColor} flex items-center justify-center transition-transform duration-200 group-hover:scale-110`}
+            className={`h-11 w-11 rounded-xl ${bgColor} flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-elevation-low border border-surface-2/30`}
           >
             <Icon className={`h-5 w-5 ${color}`} />
           </div>
         </CardHeader>
 
-        {/* Separator line */}
-        <div className="h-px bg-gradient-to-r from-transparent via-surface-3 to-transparent mx-6"></div>
-
-        <CardContent className="relative pt-4">
-          <div className="space-y-3">
-            <div className="text-h2 font-bold text-text font-tabular tracking-tight">
+        <CardContent className="relative pt-5 pb-4">
+          <div className="space-y-4">
+            {/* Primary Value with Professional Typography */}
+            <div className="text-3xl font-bold text-text font-tabular tracking-tight bg-gradient-to-r from-text via-text to-text-muted bg-clip-text">
               {formatValue(value)}
             </div>
-            {subtitle && <p className="text-xs text-text-muted">{subtitle}</p>}
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className={`flex items-center gap-1 ${trendInfo.bgColor} ${trendInfo.color} border-0 text-xs font-medium`}
-              >
-                <TrendIcon className="h-3 w-3" />
-                <span className="font-tabular">{trendInfo.text}</span>
-              </Badge>
-              <span className="text-xs text-text-subtle">vs yesterday</span>
+            
+            {subtitle && (
+              <p className="text-sm text-text-muted leading-relaxed font-medium">
+                {subtitle}
+              </p>
+            )}
+            
+            {/* Enhanced Trend Indicator */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className={`flex items-center gap-1.5 px-3 py-1 ${trendInfo.bgColor} ${trendInfo.color} border border-surface-2/50 text-xs font-semibold rounded-lg backdrop-blur-sm transition-all duration-200 group-hover:scale-105`}
+                >
+                  <TrendIcon className="h-3.5 w-3.5" />
+                  <span className="font-tabular tracking-wide">{trendInfo.text}</span>
+                </Badge>
+              </div>
+              <span className="text-xs text-text-subtle opacity-70">vs yesterday</span>
             </div>
           </div>
         </CardContent>
 
-        {/* Bottom accent border */}
-        <div className={`h-1 ${bgColor} opacity-60`}></div>
+        {/* Professional Bottom Accent */}
+        <div className={`h-1 bg-gradient-to-r ${bgColor.replace('bg-', 'from-').replace(/\/\d+/, '/60')} via-brand/40 to-transparent`}></div>
+        
+        {/* Subtle Hover Glow Effect */}
+        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-brand/0 via-brand/5 to-brand/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
       </Card>
     </TooltipProvider>
   );

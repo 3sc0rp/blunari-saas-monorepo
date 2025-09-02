@@ -20,8 +20,8 @@ const DashboardLayout: React.FC = () => {
   const shouldShowBottomNav = isMobile || actualLayout === "bottom";
 
   return (
-    <div className="min-h-screen bg-surface">
-      {/* Skip to main content for keyboard navigation */}
+    <div className="min-h-screen bg-gradient-to-br from-surface via-surface-2/30 to-surface">
+      {/* Accessibility: Skip to main content */}
       <a href="#main-content" className="skip-to-main">
         Skip to main content
       </a>
@@ -30,55 +30,81 @@ const DashboardLayout: React.FC = () => {
       <GlobalStatusStrip />
 
       <SidebarProvider defaultOpen={shouldShowSidebar}>
-        {/* Unified Header Strip Container */}
-        <div className="border-b border-surface-2/30 bg-gradient-to-r from-surface via-surface-2 to-surface">
-          <div className="flex min-h-screen w-full">
-            {/* Responsive Sidebar - only render when needed */}
-            {shouldShowSidebar && <ResponsiveDashboardSidebar />}
-
-            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-              {/* Seamless Integrated Header Strip - part of unified container */}
-              <header
-                role="banner"
-                className="h-[64px] flex items-center w-full min-w-0"
-              >
-                <div className="flex items-center w-full h-full">
-                  {shouldShowSidebar && (
-                    <div className="flex items-center pl-3 lg:hidden">
-                      <SidebarTrigger />
-                    </div>
-                  )}
-                  <div className="flex-1 h-full flex items-center">
-                    <BreadcrumbHeader />
-                  </div>
+        {/* Professional Layout Container */}
+        <div className="relative min-h-screen">
+          {/* Unified Header Strip with Glass Effect */}
+          <div className="sticky top-0 z-40 border-b border-surface-2/30 bg-gradient-to-r from-surface via-surface-2/60 to-surface backdrop-blur-xl supports-backdrop-blur:bg-surface/80">
+            <div className="flex w-full">
+              {/* Responsive Sidebar - Enhanced Integration */}
+              {shouldShowSidebar && (
+                <div className="flex-shrink-0">
+                  <ResponsiveDashboardSidebar />
                 </div>
-              </header>
+              )}
 
-              <main
-                id="main-content"
-                role="main"
-                className={getLayoutClasses().main}
-              >
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.3,
-                    ease: "easeOut",
-                  }}
-                  className={getLayoutClasses().container}
+              <div className="flex-1 flex flex-col min-w-0">
+                {/* Seamless Header Strip */}
+                <header
+                  role="banner"
+                  className="h-[64px] flex items-center w-full min-w-0"
                 >
-                  <Outlet />
-                </motion.div>
-              </main>
+                  <div className="flex items-center w-full h-full">
+                    {shouldShowSidebar && (
+                      <div className="flex items-center pl-3 lg:hidden">
+                        <SidebarTrigger className="h-8 w-8" />
+                      </div>
+                    )}
+                    <div className="flex-1 h-full flex items-center">
+                      <BreadcrumbHeader />
+                    </div>
+                  </div>
+                </header>
+              </div>
             </div>
+          </div>
+
+          {/* Main Content Area with Professional Layout */}
+          <div className="flex min-h-[calc(100vh-64px)]">
+            {/* Sidebar Spacer for Layout Consistency */}
+            {shouldShowSidebar && (
+              <div className="flex-shrink-0 w-[280px] hidden lg:block" />
+            )}
+            
+            {/* Enhanced Main Content */}
+            <main
+              id="main-content"
+              role="main"
+              className={`flex-1 relative ${getLayoutClasses().main}`}
+            >
+              {/* Content Background with Subtle Pattern */}
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-surface-2/10 to-transparent pointer-events-none" />
+              
+              {/* Content Container with Professional Animation */}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.4,
+                  ease: [0.4, 0, 0.2, 1],
+                }}
+                className={`relative z-10 ${getLayoutClasses().container}`}
+              >
+                <Outlet />
+              </motion.div>
+            </main>
           </div>
         </div>
 
-        {/* Bottom Navigation for Mobile */}
+        {/* Enhanced Bottom Navigation for Mobile */}
         {shouldShowBottomNav && (
-          <nav role="navigation" aria-label="Mobile navigation">
-            <BottomNavigation />
+          <nav 
+            role="navigation" 
+            aria-label="Mobile navigation"
+            className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
+          >
+            <div className="pb-safe">
+              <BottomNavigation />
+            </div>
           </nav>
         )}
       </SidebarProvider>

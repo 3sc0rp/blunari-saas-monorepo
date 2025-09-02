@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { format } from "date-fns";
 import { useTenant } from "@/hooks/useTenant";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useAlertSystem } from "@/hooks/useAlertSystem";
@@ -18,6 +19,8 @@ import {
   DollarSign,
   Target,
   UserX,
+  AlertTriangle,
+  type LucideIcon,
 } from "lucide-react";
 
 const Dashboard: React.FC = () => {
@@ -38,34 +41,89 @@ const Dashboard: React.FC = () => {
         <TenantAccessDisplay
           accessType={accessType as "domain" | "user"}
           tenantSlug={tenantSlug}
-          tenant={tenant}
+          tenant={tenant as any}
         />
       </motion.div>
 
-      {/* Welcome Section with Enhanced Styling */}
+      {/* Enhanced Welcome Section with Professional Styling */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative overflow-hidden bg-gradient-primary rounded-2xl p-6 text-primary-foreground shadow-strong"
+        transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+        className="relative overflow-hidden bg-gradient-to-br from-brand via-brand/95 to-brand/90 rounded-2xl p-8 text-brand-foreground shadow-elevation-high backdrop-blur-sm border border-brand/20"
       >
+        {/* Professional Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-transparent via-brand-foreground/5 to-brand-foreground/10 opacity-50"></div>
+        <div className="absolute -top-20 -right-20 w-60 h-60 bg-brand-foreground/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-brand-foreground/5 rounded-full blur-2xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-brand-foreground/5 to-transparent rounded-full blur-3xl opacity-30"></div>
+        
         <div className="relative z-10">
-          <h1 className="text-4xl font-bold mb-2">
-            Good{" "}
-            {new Date().getHours() < 12
-              ? "Morning"
-              : new Date().getHours() < 18
-                ? "Afternoon"
-                : "Evening"}
-            !
-          </h1>
-          <p className="text-primary-foreground/90 text-lg">
-            Here's what's happening at {tenant?.name || "your restaurant"}{" "}
-            today.
-          </p>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-3">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
+                <h1 className="text-4xl lg:text-5xl font-bold mb-2 bg-gradient-to-r from-brand-foreground via-brand-foreground to-brand-foreground/90 bg-clip-text text-transparent">
+                  Good{" "}
+                  {new Date().getHours() < 12
+                    ? "Morning"
+                    : new Date().getHours() < 18
+                      ? "Afternoon"
+                      : "Evening"}
+                  !
+                </h1>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+              >
+                <p className="text-brand-foreground/90 text-lg leading-relaxed">
+                  Here's what's happening at{" "}
+                  <span className="font-semibold text-brand-foreground">
+                    {tenant?.name || "your restaurant"}
+                  </span>{" "}
+                  today.
+                </p>
+              </motion.div>
+            </div>
+            
+            {/* Enhanced Status Indicators */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+              className="flex flex-col sm:flex-row gap-4 items-start sm:items-center"
+            >
+              <div className="bg-brand-foreground/20 backdrop-blur-sm rounded-xl p-4 border border-brand-foreground/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-success rounded-full animate-pulse shadow-glow-success"></div>
+                  <div className="text-brand-foreground">
+                    <div className="text-sm font-semibold">System Status</div>
+                    <div className="text-xs text-brand-foreground/80">All systems operational</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-brand-foreground/20 backdrop-blur-sm rounded-xl p-4 border border-brand-foreground/30">
+                <div className="text-right text-brand-foreground">
+                  <div className="text-lg font-bold">
+                    {format(new Date(), "EEEE")}
+                  </div>
+                  <div className="text-sm text-brand-foreground/80">
+                    {format(new Date(), "MMM do, yyyy")}
+                  </div>
+                  <div className="text-xs text-brand-foreground/70 mt-1">
+                    {format(new Date(), "h:mm a")}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </div>
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary-foreground/10 rounded-full blur-2xl"></div>
-        <div className="absolute -bottom-5 -left-5 w-32 h-32 bg-primary-foreground/5 rounded-full blur-xl"></div>
       </motion.div>
 
       {/* Enhanced Key Metrics with Staggered Animation */}
