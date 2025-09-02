@@ -2,11 +2,14 @@
 -- This migration ensures the demo tenant can be accessed via 'demo' slug
 
 -- Update the existing demo tenant to use 'demo' as slug for easier access
+-- Handle both possible existing names
 UPDATE public.tenants 
 SET slug = 'demo'
-WHERE id = 'f47ac10b-58cc-4372-a567-0e02b2c3d479'::uuid;
+WHERE (name ILIKE '%demo%' OR slug ILIKE '%demo%') 
+  AND slug != 'demo' 
+  AND status = 'active';
 
--- Also insert the kpizza tenant for testing (if not exists)
+-- Update or insert the kpizza tenant (handle existing case)
 INSERT INTO public.tenants (id, name, slug, status, timezone, currency, description, email, primary_color, secondary_color)
 VALUES (
   '123e4567-e89b-12d3-a456-426614174000'::uuid,
@@ -19,30 +22,54 @@ VALUES (
   'demo@kpizza.com',
   '#dc2626',
   '#fbbf24'
-) ON CONFLICT (id) DO UPDATE SET 
+) ON CONFLICT (slug) DO UPDATE SET 
   name = EXCLUDED.name,
-  slug = EXCLUDED.slug,
   status = EXCLUDED.status,
+  description = EXCLUDED.description,
   primary_color = EXCLUDED.primary_color,
-  secondary_color = EXCLUDED.secondary_color;
+  secondary_color = EXCLUDED.secondary_color
+WHERE tenants.slug = 'kpizza';
 
--- Create default tables for kpizza
-INSERT INTO public.restaurant_tables (tenant_id, name, capacity, table_type, active, x_position, y_position)
-VALUES
-  ('123e4567-e89b-12d3-a456-426614174000'::uuid, 'Table 1', 2, 'standard', true, 2.0, 2.0),
-  ('123e4567-e89b-12d3-a456-426614174000'::uuid, 'Table 2', 4, 'standard', true, 4.0, 2.0),
-  ('123e4567-e89b-12d3-a456-426614174000'::uuid, 'Table 3', 4, 'standard', true, 6.0, 2.0),
-  ('123e4567-e89b-12d3-a456-426614174000'::uuid, 'Table 4', 6, 'large', true, 2.0, 4.0),
-  ('123e4567-e89b-12d3-a456-426614174000'::uuid, 'Table 5', 6, 'large', true, 4.0, 4.0),
-  ('123e4567-e89b-12d3-a456-426614174000'::uuid, 'Booth 1', 4, 'booth', true, 1.0, 6.0),
-  ('123e4567-e89b-12d3-a456-426614174000'::uuid, 'Booth 2', 4, 'booth', true, 3.0, 6.0)
-ON CONFLICT (tenant_id, name) DO NOTHING;
+-- Create default tables for kpizza (only if they don't exist)
+INSERT INTO public.restaurant_tables (tenant_id, name, capacity, table_type, active)
+SELECT 
+  '123e4567-e89b-12d3-a456-426614174000'::uuid,
+  table_name,
+  capacity,
+  table_type,
+  true
+FROM (VALUES
+  ('Table 1', 2, 'standard'),
+  ('Table 2', 4, 'standard'),
+  ('Table 3', 4, 'standard'),
+  ('Table 4', 6, 'large'),
+  ('Table 5', 6, 'large'),
+  ('Booth 1', 4, 'booth'),
+  ('Booth 2', 4, 'booth')
+) AS tables(table_name, capacity, table_type)
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.restaurant_tables 
+  WHERE tenant_id = '123e4567-e89b-12d3-a456-426614174000'::uuid 
+  AND name = table_name
+);
 
--- Create sample menu items for kpizza
+-- Create sample menu items for kpizza (only if they don't exist)
 INSERT INTO public.menu_items (tenant_id, name, description, price, category, active)
-VALUES
-  ('123e4567-e89b-12d3-a456-426614174000'::uuid, 'Margherita Pizza', 'Classic pizza with tomato, mozzarella, and basil', 18.99, 'Pizza', true),
-  ('123e4567-e89b-12d3-a456-426614174000'::uuid, 'Pepperoni Pizza', 'Traditional pepperoni with mozzarella cheese', 21.99, 'Pizza', true),
-  ('123e4567-e89b-12d3-a456-426614174000'::uuid, 'Caesar Salad', 'Fresh romaine lettuce with caesar dressing', 12.99, 'Salads', true),
-  ('123e4567-e89b-12d3-a456-426614174000'::uuid, 'Garlic Bread', 'Toasted bread with garlic butter', 8.99, 'Appetizers', true)
-ON CONFLICT (tenant_id, name) DO NOTHING;
+SELECT 
+  '123e4567-e89b-12d3-a456-426614174000'::uuid,
+  item_name,
+  description,
+  price,
+  category,
+  true
+FROM (VALUES
+  ('Margherita Pizza', 'Classic pizza with tomato, mozzarella, and basil', 18.99, 'Pizza'),
+  ('Pepperoni Pizza', 'Traditional pepperoni with mozzarella cheese', 21.99, 'Pizza'),
+  ('Caesar Salad', 'Fresh romaine lettuce with caesar dressing', 12.99, 'Salads'),
+  ('Garlic Bread', 'Toasted bread with garlic butter', 8.99, 'Appetizers')
+) AS items(item_name, description, price, category)
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.menu_items 
+  WHERE tenant_id = '123e4567-e89b-12d3-a456-426614174000'::uuid 
+  AND name = item_name
+);
