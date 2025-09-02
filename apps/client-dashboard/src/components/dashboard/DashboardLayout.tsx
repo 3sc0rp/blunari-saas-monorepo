@@ -69,28 +69,22 @@ const DashboardLayout: React.FC = () => {
 
           {/* Main Content Area with Professional Layout */}
           <div className="flex min-h-[calc(100vh-64px)]">
-            {/* Sidebar Spacer for Layout Consistency */}
-            {shouldShowSidebar && (
-              <div className="flex-shrink-0 w-[280px] hidden lg:block" />
-            )}
-            
             {/* Enhanced Main Content */}
             <main
               id="main-content"
-              role="main"
-              className={`flex-1 relative min-h-screen ${getLayoutClasses().main}`}
+              role="main" 
+              className={`w-full relative min-h-screen ${getLayoutClasses().main}`}
+              style={{ marginLeft: shouldShowSidebar ? "280px" : "0" }}
             >
               {/* Content Container with subtle animation */}
               <motion.div
                 initial={prefersReducedMotion ? false : { opacity: 0 }}
                 animate={prefersReducedMotion ? false : { opacity: 1 }}
                 transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
-                className={`relative z-10 w-full ${getLayoutClasses().container}`}
+                className="w-full p-6"
                 style={{ minHeight: "100vh" }}
               >
-                <div className="w-full">
-                  <Outlet />
-                </div>
+                <Outlet />
               </motion.div>
             </main>
           </div>

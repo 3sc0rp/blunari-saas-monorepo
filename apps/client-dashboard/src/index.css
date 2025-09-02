@@ -239,7 +239,8 @@
   /* Mobile Safe Areas & Bottom Navigation Utilities */
   .pb-safe-mobile {
     @apply pb-4 lg:pb-4;
-    padding-bottom: max(1rem, env(safe-area-inset-bottom) + 140px);
+    /* Fix safe area padding implementation */
+    padding-bottom: max(1rem, calc(env(safe-area-inset-bottom, 0px) + 140px));
   }
 
   .h-safe-area-bottom {
@@ -295,7 +296,7 @@
     }
   }
 
-  /* Reduced Motion Support */
+  /* Reduced Motion Support - Enhanced */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -313,6 +314,13 @@
     /* Disable all motion-based animations */
     [data-state="open"],
     [data-state="closed"] {
+      animation: none !important;
+    }
+    
+    /* Disable transform animations that can cause layout issues */
+    .motion-safe\\:animate-pulse,
+    .motion-safe\\:animate-spin,
+    .motion-safe\\:animate-bounce {
       animation: none !important;
     }
   }

@@ -58,7 +58,7 @@ const Dashboard: React.FC = () => {
         initial={prefersReducedMotion ? false : { opacity: 0 }}
         animate={prefersReducedMotion ? false : { opacity: 1 }}
         transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.4 }}
-        className="relative overflow-hidden bg-gradient-to-br from-brand via-brand/95 to-brand/90 rounded-2xl p-8 text-brand-foreground shadow-xl backdrop-blur-sm border border-brand/20"
+        className="relative overflow-hidden bg-gradient-to-br from-brand via-brand/95 to-brand/90 rounded-2xl p-8 text-brand-foreground shadow-xl border border-brand/20"
       >
         {/* Professional Background Pattern */}
         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-brand-foreground/5 to-brand-foreground/10 opacity-50"></div>
@@ -106,7 +106,7 @@ const Dashboard: React.FC = () => {
               transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3, duration: 0.3 }}
               className="flex flex-col sm:flex-row gap-4 items-start sm:items-center"
             >
-              <div className="bg-brand-foreground/20 backdrop-blur-sm rounded-xl p-4 border border-brand-foreground/30">
+              <div className="bg-brand-foreground/20 rounded-xl p-4 border border-brand-foreground/30">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 bg-success rounded-full animate-pulse shadow-glow-success"></div>
                   <div className="text-brand-foreground">
@@ -116,7 +116,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
               
-              <div className="bg-brand-foreground/20 backdrop-blur-sm rounded-xl p-4 border border-brand-foreground/30">
+              <div className="bg-brand-foreground/20 rounded-xl p-4 border border-brand-foreground/30">
                 <div className="text-right text-brand-foreground">
                   <div className="text-lg font-bold">
                     {format(new Date(), "EEEE")}
