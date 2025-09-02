@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTenantBranding } from "@/contexts/TenantBrandingContext";
+import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import {
   Monitor,
   Smartphone,
@@ -21,10 +22,12 @@ import {
   Eye,
   Contrast,
   Paintbrush,
+  Info,
 } from "lucide-react";
 
 const InterfaceSettings: React.FC = () => {
-  const { preference, setPreference } = useNavigation();
+  const { preference, setPreference, actualLayout } = useNavigation();
+  const { isDesktop, isMobile } = useResponsiveLayout();
   const {
     theme,
     contrast,
@@ -37,24 +40,24 @@ const InterfaceSettings: React.FC = () => {
 
   const navigationOptions = [
     {
-      value: "bottom",
-      label: "Bottom Navigation",
-      description: "Modern bottom navigation on all devices",
-      icon: Smartphone,
+      value: "sidebar",
+      label: "Sidebar",
+      description: "Classic sidebar navigation for desktop and mobile - recommended for power users",
+      icon: Sidebar,
       badge: "Default",
     },
     {
       value: "auto",
       label: "Auto (Responsive)",
-      description: "Sidebar on desktop, bottom navigation on mobile",
+      description: "Sidebar on desktop (≥1024px), bottom navigation on mobile - best of both worlds",
       icon: Monitor,
-      badge: null,
+      badge: "Smart",
     },
     {
-      value: "sidebar",
-      label: "Sidebar",
-      description: "Traditional sidebar navigation on all devices",
-      icon: Sidebar,
+      value: "bottom",
+      label: "Bottom Navigation",
+      description: "Modern bottom navigation on all devices - optimized for mobile-first usage",
+      icon: Smartphone,
       badge: null,
     },
   ];
@@ -100,11 +103,17 @@ const InterfaceSettings: React.FC = () => {
               const IconComponent = option.icon;
               return (
                 <div key={option.value} className="space-y-2">
-                  <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className={`flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors ${
+                    preference === option.value ? 'border-primary bg-primary/5' : ''
+                  }`}>
                     <RadioGroupItem value={option.value} id={option.value} />
                     <div className="flex items-center gap-3 flex-1">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <IconComponent className="h-5 w-5 text-primary" />
+                      <div className={`p-2 rounded-lg ${
+                        preference === option.value ? 'bg-primary/20' : 'bg-primary/10'
+                      }`}>
+                        <IconComponent className={`h-5 w-5 ${
+                          preference === option.value ? 'text-primary' : 'text-primary/70'
+                        }`} />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -115,7 +124,7 @@ const InterfaceSettings: React.FC = () => {
                             {option.label}
                           </Label>
                           {option.badge && (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant={preference === option.value ? "default" : "secondary"} className="text-xs">
                               {option.badge}
                             </Badge>
                           )}
@@ -131,10 +140,24 @@ const InterfaceSettings: React.FC = () => {
             })}
           </RadioGroup>
 
-          <div className="border-t pt-4">
+          <div className="border-t pt-4 space-y-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Navigation2 className="h-4 w-4" />
               <span>Changes take effect immediately</span>
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm bg-muted/50 rounded-lg p-3">
+              <Info className="h-4 w-4 text-blue-500" />
+              <span className="text-foreground">
+                Currently showing: <strong>
+                  {actualLayout === "sidebar" ? "Sidebar" : "Bottom Navigation"}
+                </strong>
+                {preference === "auto" && (
+                  <span className="text-muted-foreground ml-1">
+                    ({isDesktop ? "Desktop" : "Mobile"} mode)
+                  </span>
+                )}
+              </span>
             </div>
           </div>
         </CardContent>

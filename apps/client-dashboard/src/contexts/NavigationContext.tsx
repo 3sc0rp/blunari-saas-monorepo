@@ -16,9 +16,9 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [preference, setPreferenceState] =
-    useState<NavigationPreference>("auto");
+    useState<NavigationPreference>("sidebar");
   const [actualLayout, setActualLayout] = useState<"sidebar" | "bottom">(
-    "sidebar", // Default to sidebar on initial load
+    "sidebar", // Default to sidebar on desktop
   );
 
   // Load preference from localStorage
@@ -30,9 +30,9 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({
     if (saved && ["sidebar", "bottom", "auto"].includes(saved)) {
       setPreferenceState(saved as NavigationPreference);
     } else {
-      // Set default to auto for responsive behavior
-      setPreferenceState("auto");
-      localStorage.setItem("navigation-preference", "auto");
+      // Set default to sidebar for desktop-first experience
+      setPreferenceState("sidebar");
+      localStorage.setItem("navigation-preference", "sidebar");
     }
   }, []);
 
@@ -54,8 +54,8 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({
         setActualLayout("sidebar");
       } else if (preference === "bottom") {
         setActualLayout("bottom");
-      } else {
-        // Auto mode - responsive based on screen size
+      } else if (preference === "auto") {
+        // Auto mode - responsive based on screen size (1024px breakpoint)
         setActualLayout(window.innerWidth >= 1024 ? "sidebar" : "bottom");
       }
     };
@@ -73,6 +73,8 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({
     window.addEventListener("resize", handleResize);
 
     // Also trigger update when preference changes
+    updateActualLayout();
+
     return () => {
       window.removeEventListener("resize", handleResize);
     };
