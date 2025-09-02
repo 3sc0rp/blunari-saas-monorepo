@@ -301,7 +301,7 @@ const Settings: React.FC = () => {
                   </div>
                 </div>
                 <Badge variant="outline">
-                  {settings.operational.timezone.split("/")[1]}
+                  {settings?.operational?.timezone?.split("/")?.[1] || "UTC"}
                 </Badge>
               </div>
             </CardContent>

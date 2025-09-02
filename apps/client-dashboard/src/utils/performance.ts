@@ -22,12 +22,13 @@ export const preloadImage = (src: string): Promise<void> => {
 
 // Check if user prefers reduced motion
 export const prefersReducedMotion = (): boolean => {
+  if (typeof window === 'undefined') return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 };
 
 // Measure performance metrics
 export const measurePerformance = (name: string, fn: () => void) => {
-  if ("performance" in window) {
+  if (typeof window !== 'undefined' && "performance" in window) {
     performance.mark(`${name}-start`);
     fn();
     performance.mark(`${name}-end`);
@@ -57,7 +58,7 @@ export const optimizeFCP = () => {
 
 // Defer non-critical resources
 export const deferResource = (callback: () => void, delay = 100) => {
-  if ("requestIdleCallback" in window) {
+  if (typeof window !== 'undefined' && "requestIdleCallback" in window) {
     requestIdleCallback(callback);
   } else {
     setTimeout(callback, delay);
@@ -109,6 +110,9 @@ export const createCache = <T>(ttlMinutes?: number) =>
 
 // Run performance optimizations on page load
 export const initializePerformance = () => {
+  // Ensure we're on the client side
+  if (typeof window === 'undefined') return;
+  
   // Optimize FCP
   optimizeFCP();
 

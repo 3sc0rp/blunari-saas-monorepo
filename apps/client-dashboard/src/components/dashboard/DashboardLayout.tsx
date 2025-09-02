@@ -13,8 +13,8 @@ const DashboardLayout: React.FC = () => {
   const { actualLayout } = useNavigation();
   const { getLayoutClasses, isMobile, isDesktop, sidebarCollapsed, isSSR } = useResponsiveLayout();
 
-  // Use sidebar for desktop, bottom navigation for mobile
-  const shouldShowSidebar = isDesktop;
+  // Show sidebar on desktop by default, unless explicitly set to bottom
+  const shouldShowSidebar = isDesktop && actualLayout !== "bottom";
   const shouldShowBottomNav = isMobile || actualLayout === "bottom";
 
   // Check for reduced motion preference

@@ -53,6 +53,16 @@
     --motion-slow: 350ms;
     --motion-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
     
+    /* Sidebar Variables - Light Mode */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+    
     /* Spacing Scale - Consistent 4/8/12/16px increments */
     --space-1: 0.25rem; /* 4px */
     --space-2: 0.5rem;  /* 8px */
@@ -106,6 +116,16 @@
     --shadow-elev-1: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
     --shadow-elev-2: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
     --shadow-elev-3: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    
+    /* Sidebar Variables - Dark Mode */
+    --sidebar-background: 220 13% 6%;
+    --sidebar-foreground: 220 13% 91%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 220 13% 9%;
+    --sidebar-accent: 220 13% 11%;
+    --sidebar-accent-foreground: 220 13% 91%;
+    --sidebar-border: 220 13% 11%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   /* === HIGH CONTRAST MODE === */

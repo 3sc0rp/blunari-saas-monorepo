@@ -16,32 +16,40 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [preference, setPreferenceState] =
-    useState<NavigationPreference>("bottom");
+    useState<NavigationPreference>("auto");
   const [actualLayout, setActualLayout] = useState<"sidebar" | "bottom">(
-    "bottom",
+    "sidebar", // Default to sidebar on initial load
   );
 
   // Load preference from localStorage
   useEffect(() => {
+    // Ensure we're on the client side before accessing localStorage
+    if (typeof window === 'undefined') return;
+    
     const saved = localStorage.getItem("navigation-preference");
     if (saved && ["sidebar", "bottom", "auto"].includes(saved)) {
       setPreferenceState(saved as NavigationPreference);
     } else {
-      // Set default to bottom if no preference saved
-      setPreferenceState("bottom");
-      localStorage.setItem("navigation-preference", "bottom");
+      // Set default to auto for responsive behavior
+      setPreferenceState("auto");
+      localStorage.setItem("navigation-preference", "auto");
     }
   }, []);
 
   // Save preference to localStorage
   const setPreference = (newPreference: NavigationPreference) => {
     setPreferenceState(newPreference);
-    localStorage.setItem("navigation-preference", newPreference);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem("navigation-preference", newPreference);
+    }
   };
 
   // Determine actual layout based on preference and screen size
   useEffect(() => {
     const updateActualLayout = () => {
+      // Ensure we're on the client side before accessing window
+      if (typeof window === 'undefined') return;
+      
       if (preference === "sidebar") {
         setActualLayout("sidebar");
       } else if (preference === "bottom") {
