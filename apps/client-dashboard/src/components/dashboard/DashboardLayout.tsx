@@ -6,6 +6,7 @@ import { ResponsiveDashboardSidebar } from "./ResponsiveDashboardSidebar";
 import BottomNavigation from "./BottomNavigation";
 import BreadcrumbHeader from "./BreadcrumbHeader";
 import GlobalStatusStrip from "./GlobalStatusStrip";
+import HeaderDebug from "../debug/HeaderDebug";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -28,6 +29,7 @@ const DashboardLayout: React.FC = () => {
 
       {/* Global Status Strip */}
       <GlobalStatusStrip />
+      <HeaderDebug />
 
       {shouldShowSidebar ? (
         <SidebarProvider defaultOpen={true}>
