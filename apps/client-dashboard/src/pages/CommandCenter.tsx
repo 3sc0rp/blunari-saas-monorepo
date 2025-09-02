@@ -1,6 +1,10 @@
-import React, { Suspense, lazy, memo, useCallback, useMemo, Component, ReactNode } from "react";
-import { motion } from "framer-motion";
-import { Loader2, Activity, TrendingUp, Users, Clock, Square } from "lucide-react";
+import React, { Suspense, lazy, memo, useCallback, useMemo, Component, ReactNode, useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, Activity, TrendingUp, Users, Clock, Square, Wifi, WifiOff, RefreshCw, Zap } from "lucide-react";
+import { useRealtimeCommandCenter } from "@/hooks/useRealtimeCommandCenter";
+import { RealtimeCommandCenterProvider } from "@/contexts/RealtimeCommandCenterContext";
+import { useHeartbeat } from "@/hooks/useHeartbeat";
+import { Badge } from "@/components/ui/badge";
 
 // Enhanced lazy loading with better error handling and component tracking
 const createLazyComponent = (
@@ -251,10 +255,32 @@ class ErrorBoundary extends Component<
 }
 
 const CommandCenter: React.FC = memo(() => {
+  // Real-time data hook
+  const {
+    bookings,
+    tables,
+    waitlist,
+    metrics,
+    isLoading: realtimeLoading,
+    error: realtimeError,
+    connectionStatus,
+    isConnected,
+    allConnected,
+    lastUpdate,
+    refreshData,
+  } = useRealtimeCommandCenter();
+
   // State for performance monitoring and error recovery
   const [componentLoadStatus, setComponentLoadStatus] = React.useState<Record<string, 'loading' | 'loaded' | 'error'>>({});
   const [resetKey, setResetKey] = React.useState(0);
   const [loadingMetrics, setLoadingMetrics] = React.useState<Record<string, number>>({});
+  
+  // Auto-refresh timer state
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [refreshTimer, setRefreshTimer] = useState<number | null>(null);
+  
+  // Heartbeat indicator
+  const pulse = useHeartbeat(allConnected, 2000);
   
   // Track component loading performance
   const trackComponentLoad = useCallback((componentName: string, startTime: number) => {
@@ -408,9 +434,77 @@ const CommandCenter: React.FC = memo(() => {
         <header className="flex-shrink-0 border-b border-slate-200 bg-white">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">Command Center</h1>
-                <p className="text-sm text-slate-600">Live operations dashboard</p>
+              <div className="flex items-center gap-6">
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900">Command Center</h1>
+                  <p className="text-sm text-slate-600">Live operations dashboard</p>
+                </div>
+
+                {/* Real-time Status Indicator */}
+                <div className="flex items-center gap-2">
+                  <AnimatePresence mode="wait">
+                    {allConnected ? (
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="flex items-center gap-2"
+                      >
+                        <div className="relative">
+                          <Wifi className="w-4 h-4 text-emerald-500" />
+                          {pulse && (
+                            <motion.div
+                              initial={{ scale: 0, opacity: 1 }}
+                              animate={{ scale: 2, opacity: 0 }}
+                              transition={{ duration: 0.6 }}
+                              className="absolute inset-0 bg-emerald-400 rounded-full"
+                            />
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                          <Zap className="w-3 h-3 mr-1" />
+                          Live
+                        </Badge>
+                      </motion.div>
+                    ) : isConnected ? (
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="flex items-center gap-2"
+                      >
+                        <Wifi className="w-4 h-4 text-amber-500 animate-pulse" />
+                        <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">
+                          Connecting...
+                        </Badge>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        className="flex items-center gap-2"
+                      >
+                        <WifiOff className="w-4 h-4 text-slate-400" />
+                        <Badge variant="outline" className="text-slate-600">
+                          Offline
+                        </Badge>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  
+                  <button
+                    onClick={refreshData}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                    title="Refresh data"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+
+                  <div className="text-xs text-slate-500">
+                    Last updated: {lastUpdate.toLocaleTimeString()}
+                  </div>
+                </div>
               </div>
               <ErrorBoundary 
                 fallback={<SkeletonCard className="w-64 h-10" />} 
@@ -559,4 +653,15 @@ LoadingSpinner.displayName = 'LoadingSpinner';
 ErrorFallback.displayName = 'ErrorFallback';
 CommandCenter.displayName = 'CommandCenter';
 
-export default CommandCenter;
+// Main export with real-time provider
+const RealtimeCommandCenter: React.FC = () => {
+  return (
+    <RealtimeCommandCenterProvider>
+      <CommandCenter />
+    </RealtimeCommandCenterProvider>
+  );
+};
+
+RealtimeCommandCenter.displayName = 'RealtimeCommandCenter';
+
+export default RealtimeCommandCenter;
