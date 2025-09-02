@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantBrandingProvider } from "@/contexts/TenantBrandingContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { FullscreenProvider } from "@/contexts/FullscreenContext";
 import { ModeProvider } from "@/lib/ui-mode";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -16,6 +17,7 @@ import Auth from "./pages/Auth";
 import StaffInvitation from "./pages/StaffInvitation";
 import Dashboard from "./pages/Dashboard";
 import CommandCenter from "./pages/CommandCenter";
+import FullscreenCommandCenter from "./components/FullscreenCommandCenter";
 import Bookings from "./pages/Bookings";
 import Customers from "./pages/Customers";
 import BookingWidget from "./pages/BookingWidget";
@@ -47,11 +49,12 @@ const App = () => (
         <TenantBrandingProvider>
           <ModeProvider>
             <NavigationProvider>
-              <TooltipProvider>
-                <DesignQAProvider>
-                  <Toaster />
-                  <Sonner />
-                  <BrowserRouter>
+              <FullscreenProvider>
+                <TooltipProvider>
+                  <DesignQAProvider>
+                    <Toaster />
+                    <Sonner />
+                    <BrowserRouter>
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/auth" element={<Auth />} />
@@ -68,12 +71,22 @@ const App = () => (
                       <Route path="/book/:slug" element={<BookingPage />} />
                       <Route path="/catering/:slug" element={<BookingPage />} />
 
-                      {/* Direct command-center redirect */}
+                      {/* Direct command-center redirect - goes to fullscreen by default */}
                       <Route 
                         path="/command-center" 
                         element={
                           <ProtectedRoute>
-                            <Navigate to="/dashboard/command-center" replace />
+                            <Navigate to="/fullscreen/command-center" replace />
+                          </ProtectedRoute>
+                        } 
+                      />
+
+                      {/* Fullscreen Command Center route */}
+                      <Route 
+                        path="/fullscreen/command-center" 
+                        element={
+                          <ProtectedRoute>
+                            <FullscreenCommandCenter />
                           </ProtectedRoute>
                         } 
                       />
@@ -137,12 +150,13 @@ const App = () => (
                   </BrowserRouter>
                 </DesignQAProvider>
               </TooltipProvider>
-            </NavigationProvider>
-          </ModeProvider>
-        </TenantBrandingProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+            </FullscreenProvider>
+          </NavigationProvider>
+        </ModeProvider>
+      </TenantBrandingProvider>
+    </AuthProvider>
+  </ThemeProvider>
+</QueryClientProvider>
 );
 
 export default App;

@@ -8,24 +8,26 @@ import BreadcrumbHeader from "./BreadcrumbHeader";
 import GlobalStatusStrip from "./GlobalStatusStrip";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { useFullscreen } from "@/contexts/FullscreenContext";
 
 const DashboardLayout: React.FC = () => {
   const { actualLayout } = useNavigation();
   const { getLayoutClasses, isMobile, isDesktop, sidebarCollapsed, isSSR } = useResponsiveLayout();
+  const { isFullscreen } = useFullscreen();
 
   // Navigation visibility logic based on user preference:
   // - "sidebar": Always show sidebar on all devices
   // - "bottom": Always show bottom navigation on all devices
   // Note: actualLayout already handles auto mode internally in NavigationContext
-  const shouldShowSidebar = actualLayout === "sidebar";
-  const shouldShowBottomNav = actualLayout === "bottom";
+  const shouldShowSidebar = actualLayout === "sidebar" && !isFullscreen;
+  const shouldShowBottomNav = actualLayout === "bottom" && !isFullscreen;
 
   // Check for reduced motion preference
   const prefersReducedMotion = typeof window !== 'undefined' ? 
     window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
 
   return (
-    <div className={`${getLayoutClasses()} navigation-transition`}>
+    <div className={`${getLayoutClasses()} navigation-transition`} data-dashboard-layout>
       {/* Accessibility: Skip to main content */}
       <a href="#main-content" className="skip-to-main">
         Skip to main content
@@ -45,22 +47,24 @@ const DashboardLayout: React.FC = () => {
 
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <header className="sticky top-0 z-40 border-b border-surface-2/30 bg-surface h-[64px] flex items-center px-4">
-            {shouldShowSidebar && (
-              <div className="flex items-center mr-4">
-                <SidebarTrigger className="h-8 w-8" />
+          {!isFullscreen && (
+            <header className="sticky top-0 z-40 border-b border-surface-2/30 bg-surface h-[64px] flex items-center px-4">
+              {shouldShowSidebar && (
+                <div className="flex items-center mr-4">
+                  <SidebarTrigger className="h-8 w-8" />
+                </div>
+              )}
+              <div className="flex-1">
+                <BreadcrumbHeader />
               </div>
-            )}
-            <div className="flex-1">
-              <BreadcrumbHeader />
-            </div>
-          </header>
+            </header>
+          )}
 
           {/* Main Content */}
           <main
             id="main-content"
             role="main" 
-            className={`flex-1 p-6 overflow-auto ${
+            className={`flex-1 ${isFullscreen ? 'p-0' : 'p-6'} overflow-auto ${
               shouldShowBottomNav ? 'pb-20' : ''
             }`}
           >
