@@ -145,8 +145,7 @@ const ProvisionTenantSchema = z
   })
   .strict(); // Reject any additional properties
 
-interface ProvisionTenantRequest
-  extends z.infer<typeof ProvisionTenantSchema> {}
+type ProvisionTenantRequest = z.infer<typeof ProvisionTenantSchema>;
 
 // Provision new tenant - REQUIRES FULL AUTHENTICATION
 router.post(
