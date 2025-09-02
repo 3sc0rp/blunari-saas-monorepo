@@ -316,7 +316,7 @@ const POSIntegrations: React.FC = () => {
       fetchRecentEvents();
       fetchHealthChecks();
     }
-  }, [tenant?.id]);
+  }, [tenant?.id, fetchIntegrations, fetchRecentEvents, fetchHealthChecks]);
 
   if (loading) {
     return (

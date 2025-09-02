@@ -76,6 +76,25 @@ export const TenantBrandingProvider: React.FC<{
     queryClient.invalidateQueries({ queryKey: ["tenant-by-user"] });
   };
 
+  // Update branding when tenant data changes - MUST be before conditional returns
+  useEffect(() => {
+    if (tenant) {
+      const newBranding: TenantBranding = {
+        logoUrl: tenant.logo_url || "/logo.png",
+        restaurantName: tenant.name || "Blunari",
+        // Note: tenant.settings structure needs to be defined in types
+        // For now, using fallback values
+        primaryColor: undefined,
+        accentColor: undefined,
+        fontFamily: undefined,
+        borderRadius: undefined,
+      };
+
+      setBranding(newBranding);
+      applyBrandingToCSS(newBranding);
+    }
+  }, [tenant]);
+
   // Show fallback if we're trying to load a tenant but failing
   if (tenantSlug && !tenant && (isLoading || error)) {
     // Don't show fallback immediately, give it a moment to load
@@ -99,25 +118,6 @@ export const TenantBrandingProvider: React.FC<{
       );
     }
   }
-
-  // Update branding when tenant data changes
-  useEffect(() => {
-    if (tenant) {
-      const newBranding: TenantBranding = {
-        logoUrl: tenant.logo_url || "/logo.png",
-        restaurantName: tenant.name || "Blunari",
-        // Note: tenant.settings structure needs to be defined in types
-        // For now, using fallback values
-        primaryColor: undefined,
-        accentColor: undefined,
-        fontFamily: undefined,
-        borderRadius: undefined,
-      };
-
-      setBranding(newBranding);
-      applyBrandingToCSS(newBranding);
-    }
-  }, [tenant]);
 
   // Apply branding to CSS variables
   const applyBrandingToCSS = (brandingData: TenantBranding) => {
