@@ -14,4 +14,21 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          supabase: ['@supabase/supabase-js'],
+          query: ['@tanstack/react-query'],
+          ui: ['framer-motion', 'lucide-react']
+        }
+      }
+    },
+    target: 'es2020',
+    minify: 'esbuild'
+  },
+  esbuild: {
+    target: 'es2020'
+  }
 }));

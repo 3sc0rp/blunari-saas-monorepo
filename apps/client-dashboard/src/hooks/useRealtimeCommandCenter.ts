@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "./useTenant";
@@ -212,6 +212,38 @@ export const useRealtimeCommandCenter = () => {
 
     console.log("🔥 Setting up real-time Command Center subscriptions");
 
+    const handleBookingUpdate = (payload: any) => {
+      console.log("📅 Booking update:", payload);
+      queryClient.invalidateQueries({ 
+        queryKey: ["command-center", "bookings", tenantId] 
+      });
+      setLastUpdate(new Date());
+    };
+
+    const handleBookingSubscription = (status: string) => {
+      console.log("📅 Bookings subscription status:", status);
+      setConnectionStatus(prevStatus => ({ 
+        ...prevStatus, 
+        bookings: status === "SUBSCRIBED" 
+      }));
+    };
+
+    const handleTableUpdate = (payload: any) => {
+      console.log("🪑 Table update:", payload);
+      queryClient.invalidateQueries({ 
+        queryKey: ["command-center", "tables", tenantId] 
+      });
+      setLastUpdate(new Date());
+    };
+
+    const handleTableSubscription = (status: string) => {
+      console.log("🪑 Tables subscription status:", status);
+      setConnectionStatus(prevStatus => ({ 
+        ...prevStatus, 
+        tables: status === "SUBSCRIBED" 
+      }));
+    };
+
     // Bookings subscription
     const bookingsChannel = supabase
       .channel(`command-center-bookings-${tenantId}`)
@@ -223,18 +255,9 @@ export const useRealtimeCommandCenter = () => {
           table: "bookings",
           filter: `tenant_id=eq.${tenantId}`,
         },
-        (payload) => {
-          console.log("📅 Booking update:", payload);
-          queryClient.invalidateQueries({ 
-            queryKey: ["command-center", "bookings", tenantId] 
-          });
-          setLastUpdate(new Date());
-        }
+        handleBookingUpdate
       )
-      .subscribe((status) => {
-        console.log("📅 Bookings subscription status:", status);
-        setConnectionStatus(prev => ({ ...prev, bookings: status === "SUBSCRIBED" }));
-      });
+      .subscribe(handleBookingSubscription);
 
     // Tables subscription
     const tablesChannel = supabase
@@ -247,22 +270,9 @@ export const useRealtimeCommandCenter = () => {
           table: "restaurant_tables",
           filter: `tenant_id=eq.${tenantId}`,
         },
-        (payload) => {
-          console.log("🪑 Table update:", payload);
-          queryClient.invalidateQueries({ 
-            queryKey: ["command-center", "tables", tenantId] 
-          });
-          setLastUpdate(new Date());
-        }
+        handleTableUpdate
       )
-      .subscribe((status) => {
-        console.log("🪑 Tables subscription status:", status);
-        setConnectionStatus(prev => ({ ...prev, tables: status === "SUBSCRIBED" }));
-      });
-
-    // For waitlist, we'll use simulated data for now
-    // When a real waitlist table exists, this can be enabled
-    // const waitlistChannel = supabase.channel(...);
+      .subscribe(handleTableSubscription);
 
     // Cleanup subscriptions
     return () => {
@@ -275,7 +285,7 @@ export const useRealtimeCommandCenter = () => {
         waitlist: false,
       });
     };
-  }, [tenantId, queryClient]);
+  }, [tenantId, queryClient, setLastUpdate, setConnectionStatus]);
 
   // Auto-refresh data every minute as a fallback
   useEffect(() => {
@@ -312,10 +322,10 @@ export const useRealtimeCommandCenter = () => {
     lastUpdate,
     
     // Actions
-    refreshData: () => {
+    refreshData: useCallback(() => {
       queryClient.invalidateQueries({ queryKey: ["command-center"] });
       setLastUpdate(new Date());
-    },
+    }, [queryClient, setLastUpdate]),
     
     // Filtered data helpers
     todaysBookings: bookings,
