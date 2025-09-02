@@ -128,6 +128,56 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
+  /* === DEEP SEA GREEN THEME === */
+  .deep-sea,
+  [data-theme="deep-sea"] {
+    /* Brand Colors - Deep Sea Green palette */
+    --brand: 160 84% 25%;
+    --brand-foreground: 0 0% 98%;
+    
+    /* Surface System - Deep ocean tones */
+    --surface: 160 28% 8%;
+    --surface-2: 160 28% 12%;
+    --surface-3: 160 28% 16%;
+    
+    /* Text System - Light text with green tint */
+    --text: 160 15% 95%;
+    --text-muted: 160 20% 65%;
+    --text-subtle: 160 15% 50%;
+    
+    /* Semantic Colors - Ocean inspired */
+    --success: 150 76% 45%;
+    --success-foreground: 0 0% 98%;
+    --warning: 45 92% 60%;
+    --warning-foreground: 160 25% 12%;
+    --danger: 10 84% 60%;
+    --danger-foreground: 0 0% 98%;
+    
+    /* Secondary & Accent - Teal and aqua tones */
+    --secondary: 180 87% 45%;
+    --secondary-foreground: 160 25% 12%;
+    --accent: 160 76% 35%;
+    --accent-foreground: 0 0% 98%;
+    
+    /* Interactive Elements */
+    --ring: 160 84% 35%;
+    
+    /* Shadow System - Deep sea shadows */
+    --shadow-elev-1: 0 1px 3px 0 rgb(0 40 30 / 0.5), 0 1px 2px -1px rgb(0 40 30 / 0.5);
+    --shadow-elev-2: 0 4px 6px -1px rgb(0 40 30 / 0.5), 0 2px 4px -2px rgb(0 40 30 / 0.5);
+    --shadow-elev-3: 0 10px 15px -3px rgb(0 40 30 / 0.5), 0 4px 6px -4px rgb(0 40 30 / 0.5);
+    
+    /* Sidebar Variables - Deep Sea Mode */
+    --sidebar-background: 160 35% 6%;
+    --sidebar-foreground: 160 25% 85%;
+    --sidebar-primary: 160 15% 92%;
+    --sidebar-primary-foreground: 160 35% 9%;
+    --sidebar-accent: 160 35% 11%;
+    --sidebar-accent-foreground: 160 25% 85%;
+    --sidebar-border: 160 35% 11%;
+    --sidebar-ring: 160 84% 45%;
+  }
+
   /* === HIGH CONTRAST MODE === */
   [data-contrast="high"] {
     /* Enhanced contrast ratios for accessibility */
@@ -161,6 +211,24 @@
     
     /* Stronger contrast in dark mode */
     --ring: 0 0% 100%;
+  }
+
+  .deep-sea[data-contrast="high"],
+  [data-theme="deep-sea"][data-contrast="high"] {
+    /* Deep Sea high contrast */
+    --text: 160 15% 100%;
+    --text-muted: 160 20% 90%;
+    --surface: 160 40% 5%;
+    --surface-2: 160 40% 8%;
+    --surface-3: 160 40% 12%;
+    
+    /* High contrast deep sea semantic colors */
+    --success: 150 100% 60%;
+    --warning: 45 100% 75%;
+    --danger: 10 100% 75%;
+    
+    /* Stronger contrast in deep sea mode */
+    --ring: 160 50% 80%;
   }
 
   /* === TYPOGRAPHY SCALE === */

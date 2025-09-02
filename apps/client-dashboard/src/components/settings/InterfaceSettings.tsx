@@ -23,6 +23,7 @@ import {
   Contrast,
   Paintbrush,
   Info,
+  Waves,
 } from "lucide-react";
 
 const InterfaceSettings: React.FC = () => {
@@ -177,26 +178,43 @@ const InterfaceSettings: React.FC = () => {
             <div>
               <Label className="text-base font-medium">Color Theme</Label>
               <p className="text-sm text-muted-foreground mt-1">
-                Choose between light and dark mode.
+                Choose your preferred visual theme.
               </p>
             </div>
 
-            <div className="flex gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Button
                 variant={theme === "light" ? "default" : "outline"}
                 onClick={() => setTheme("light")}
-                className="flex-1 flex items-center gap-2"
+                className="flex-1 flex items-center gap-2 h-12"
               >
                 <Sun className="h-4 w-4" />
-                Light
+                <span className="flex flex-col items-start">
+                  <span className="font-medium">Light</span>
+                  <span className="text-xs opacity-75">Clean & bright</span>
+                </span>
               </Button>
               <Button
                 variant={theme === "dark" ? "default" : "outline"}
                 onClick={() => setTheme("dark")}
-                className="flex-1 flex items-center gap-2"
+                className="flex-1 flex items-center gap-2 h-12"
               >
                 <Moon className="h-4 w-4" />
-                Dark
+                <span className="flex flex-col items-start">
+                  <span className="font-medium">Dark</span>
+                  <span className="text-xs opacity-75">Easy on eyes</span>
+                </span>
+              </Button>
+              <Button
+                variant={theme === "deep-sea" ? "default" : "outline"}
+                onClick={() => setTheme("deep-sea")}
+                className="flex-1 flex items-center gap-2 h-12"
+              >
+                <Waves className="h-4 w-4" />
+                <span className="flex flex-col items-start">
+                  <span className="font-medium">Deep Sea</span>
+                  <span className="text-xs opacity-75">Ocean vibes</span>
+                </span>
               </Button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "deep-sea";
 type Contrast = "normal" | "high";
 
 interface ThemeContextType {
@@ -25,7 +25,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     const savedTheme = localStorage.getItem("theme") as Theme;
     const savedContrast = localStorage.getItem("contrast") as Contrast;
 
-    if (savedTheme && ["light", "dark"].includes(savedTheme)) {
+    if (savedTheme && ["light", "dark", "deep-sea"].includes(savedTheme)) {
       setThemeState(savedTheme);
     } else {
       // Check system preference
@@ -57,8 +57,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     // Also set class for compatibility with existing dark mode detection
     if (theme === "dark") {
       root.classList.add("dark");
-    } else {
+      root.classList.remove("deep-sea");
+    } else if (theme === "deep-sea") {
+      root.classList.add("deep-sea");
       root.classList.remove("dark");
+    } else {
+      root.classList.remove("dark", "deep-sea");
     }
   }, [theme, contrast]);
 
@@ -73,7 +77,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
+    const themes: Theme[] = ["light", "dark", "deep-sea"];
+    const currentIndex = themes.indexOf(theme);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    setTheme(themes[nextIndex]);
   };
 
   const toggleContrast = () => {
