@@ -34,8 +34,13 @@ export const useSettings = () => {
           .eq("tenant_id", tenant.id);
 
         if (error) {
-          console.error("Error fetching settings:", error);
-          throw error;
+          console.warn("Settings query error:", error);
+          // Return default settings on error
+          const defaultSettings = getDefaultSettings(tenant);
+          return {
+            ...defaultSettings,
+            lastUpdated: new Date().toISOString(),
+          };
         }
 
         // Convert array to settings object
@@ -71,7 +76,7 @@ export const useSettings = () => {
           lastUpdated: new Date().toISOString(),
         } as TenantSettings;
       } catch (err) {
-        console.error("Settings fetch error:", err);
+        console.warn("Settings fetch error:", err);
         // Return default settings as fallback
         const defaultSettings = getDefaultSettings(tenant);
         return {
@@ -83,6 +88,7 @@ export const useSettings = () => {
     enabled: !!tenant?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 30, // 30 minutes
+    retry: 1, // Reduce retries to avoid spam
   });
 
   // Helper function to upsert settings

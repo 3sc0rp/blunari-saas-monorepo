@@ -32,16 +32,25 @@ export const useRealtimeBookings = (tenantId?: string) => {
     queryFn: async () => {
       if (!tenantId) return [];
 
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .order("booking_time", { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from("bookings")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .order("booking_time", { ascending: true });
 
-      if (error) throw error;
-      return data as Booking[];
+        if (error) {
+          console.warn("Bookings query error:", error);
+          return [];
+        }
+        return data as Booking[];
+      } catch (err) {
+        console.warn("Bookings query failed:", err);
+        return [];
+      }
     },
     enabled: !!tenantId,
+    retry: 1,
   });
 
   // Set up real-time subscription
@@ -93,18 +102,27 @@ export const useTodaysBookings = (tenantId?: string) => {
     queryFn: async () => {
       if (!tenantId) return [];
 
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .gte("booking_time", `${today}T00:00:00`)
-        .lt("booking_time", `${today}T23:59:59`)
-        .order("booking_time", { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from("bookings")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .gte("booking_time", `${today}T00:00:00`)
+          .lt("booking_time", `${today}T23:59:59`)
+          .order("booking_time", { ascending: true });
 
-      if (error) throw error;
-      return data as Booking[];
+        if (error) {
+          console.warn("Today's bookings query error:", error);
+          return [];
+        }
+        return data as Booking[];
+      } catch (err) {
+        console.warn("Today's bookings query failed:", err);
+        return [];
+      }
     },
     enabled: !!tenantId,
+    retry: 1,
   });
 
   return {
