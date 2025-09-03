@@ -5,6 +5,7 @@ import { Filters } from "@/components/command-center/Filters.tsx";
 import { MainSplit } from "@/components/command-center/MainSplit.tsx";
 import { ReservationDrawer } from "@/components/command-center/ReservationDrawer.tsx";
 import { AuthDebugger } from "@/components/command-center/AuthDebugger.tsx";
+import { TenantTestComponent } from "@/components/TenantTestComponent.tsx";
 import { useCommandCenterData } from "@/hooks/useCommandCenterDataNew.ts";
 import { useReservationActions } from "@/hooks/useReservationActions.ts";
 import { useState, useMemo } from "react";
@@ -277,6 +278,13 @@ export default function CommandCenter() {
             <div className="text-red-400 font-semibold mb-2">❌ Command Center Error:</div>
             <div className="text-red-300 text-sm mb-4">{error}</div>
             <AuthDebugger />
+          </div>
+        )}
+
+        {/* Tenant Test Component - Development Only */}
+        {import.meta.env.MODE === 'development' && (
+          <div className="max-w-lg">
+            <TenantTestComponent />
           </div>
         )}
 

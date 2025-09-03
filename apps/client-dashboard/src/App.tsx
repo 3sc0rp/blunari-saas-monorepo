@@ -30,6 +30,7 @@ import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import DebugTenantPage from "./pages/DebugTenant";
+import TenantTestPage from "./pages/TenantTestPage";
 import BookingPage from "./pages/BookingPage";
 import Catering from "./pages/Catering";
 import { Suspense, lazy } from "react";
@@ -61,6 +62,9 @@ const App = () => (
                       {/* Debug route for development */}
                       {import.meta.env.MODE === 'development' && (
                         <Route path="/debug-tenant" element={<DebugTenantPage />} />
+                      )}
+                      {import.meta.env.MODE === 'development' && (
+                        <Route path="/test-tenant" element={<TenantTestPage />} />
                       )}
                       <Route
                         path="/staff-invitation"
