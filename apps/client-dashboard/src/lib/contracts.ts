@@ -120,6 +120,15 @@ export const FiltersZ = z.object({
 
 // Tenant info schema
 export const TenantInfoZ = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  slug: z.string(),
+  timezone: z.string().default('America/New_York'),
+  currency: z.string().default('USD')
+});
+
+// Legacy tenant info for backward compatibility
+export const LegacyTenantInfoZ = z.object({
   tenantId: z.string().uuid(),
   name: z.string(),
   slug: z.string(),

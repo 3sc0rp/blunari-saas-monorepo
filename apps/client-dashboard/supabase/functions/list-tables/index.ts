@@ -170,20 +170,53 @@ serve(async (req) => {
       return createErrorResponse('AUTH_INVALID', 'Invalid authorization token', 401);
     }
 
-    // Get tenant information with proper error handling
-    const { data: tenantData, error: tenantError } = await supabaseClient
-      .from('auto_provisioning')
+    // Get tenant information using the same logic as the tenant function
+    let tenantId: string | null = null;
+
+    // Method 1: Check if user has explicit tenant assignment in user_tenant_access
+    const { data: userTenantAccess } = await supabaseClient
+      .from('user_tenant_access')
       .select('tenant_id')
       .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .single();
+      .eq('active', true)
+      .single()
 
-    if (tenantError || !tenantData) {
-      console.error('Tenant lookup error:', tenantError);
-      return createErrorResponse('TENANT_NOT_FOUND', 'No tenant found for user', 404);
+    if (userTenantAccess) {
+      tenantId = userTenantAccess.tenant_id;
     }
 
-    const tenantId = (tenantData as TenantData).tenant_id;
+    // Method 2: Check if user is provisioned in auto_provisioning
+    if (!tenantId) {
+      const { data: autoProvisionData } = await supabaseClient
+        .from('auto_provisioning')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .single()
+
+      if (autoProvisionData) {
+        tenantId = autoProvisionData.tenant_id;
+      }
+    }
+
+    // Method 3: Assign to demo tenant if no specific assignment (for demo purposes)
+    if (!tenantId) {
+      const { data: demoTenant } = await supabaseClient
+        .from('tenants')
+        .select('id')
+        .eq('slug', 'demo')
+        .eq('status', 'active')
+        .single()
+
+      if (demoTenant) {
+        tenantId = demoTenant.id;
+      }
+    }
+
+    if (!tenantId) {
+      console.error('No tenant found for user:', user.id)
+      return createErrorResponse('TENANT_NOT_FOUND', 'No tenant found for user', 404);
+    }
 
     // Fetch restaurant tables with explicit field selection
     const { data: tablesData, error: tablesError } = await supabaseClient

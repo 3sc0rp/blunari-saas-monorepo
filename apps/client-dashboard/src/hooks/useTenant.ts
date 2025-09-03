@@ -1,14 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { TenantInfo, TenantInfoZ } from '@/lib/contracts';
 import { parseError, toastError } from '@/lib/errors';
+import { z } from 'zod';
+
+const TenantErrorZ = z.object({
+  code: z.string(),
+  message: z.string(),
+  requestId: z.string()
+});
 
 interface TenantState {
   tenant: TenantInfo | null;
   loading: boolean;
   error: string | null;
+  requestId: string | null;
 }
+
+// Global tenant cache
+let cachedTenant: TenantInfo | null = null;
+let cacheExpiry: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Hook to resolve and manage tenant context
@@ -18,14 +31,27 @@ export function useTenant() {
   const [state, setState] = useState<TenantState>({
     tenant: null,
     loading: true,
-    error: null
+    error: null,
+    requestId: null
   });
 
   const params = useParams<{ slug?: string }>();
+  const navigate = useNavigate();
   
   const resolveTenant = useCallback(async () => {
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
+      setState(prev => ({ ...prev, loading: true, error: null, requestId: null }));
+
+      // Check cache first (only for user-based resolution, not slug-based)
+      if (!params.slug && cachedTenant && Date.now() < cacheExpiry) {
+        setState({
+          tenant: cachedTenant,
+          loading: false,
+          error: null,
+          requestId: null
+        });
+        return;
+      }
 
       // Get user session first
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -35,65 +61,82 @@ export function useTenant() {
       }
 
       if (!session) {
+        console.log('No active session, redirecting to login');
+        navigate('/login');
+        return;
+      }
+
+      // Call the tenant Edge Function
+      const { data: responseData, error: functionError } = await supabase.functions.invoke('tenant', {
+        body: params.slug ? { slug: params.slug } : {}
+      });
+
+      if (functionError) {
+        console.error('Tenant function error:', functionError);
+        
+        // Handle specific error cases
+        if (functionError.message?.includes('401') || functionError.message?.includes('unauthorized')) {
+          navigate('/login');
+          return;
+        }
+        
         setState({
           tenant: null,
           loading: false,
-          error: 'User not authenticated'
+          error: 'Unable to resolve restaurant. Please try again.',
+          requestId: null
         });
         return;
       }
 
-      // First, try to get tenant from URL slug
-      if (params.slug) {
-        const { data, error } = await supabase.functions.invoke('tenant', {
-          body: { slug: params.slug },
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          }
+      // Handle error responses from the function
+      if (responseData?.error) {
+        const tenantError = TenantErrorZ.parse(responseData.error);
+        console.error('Tenant resolution error:', tenantError);
+        
+        setState({
+          tenant: null,
+          loading: false,
+          error: tenantError.message,
+          requestId: tenantError.requestId
         });
 
-        if (error) {
-          throw error;
+        // Handle specific error codes
+        if (tenantError.code === 'TENANT_NOT_FOUND') {
+          toastError(new Error(tenantError.message), 'Restaurant Not Found');
+        } else if (tenantError.code === 'ACCESS_DENIED') {
+          toastError(new Error(tenantError.message), 'Access Denied');
+        } else if (tenantError.code === 'NO_TENANT_ACCESS') {
+          toastError(new Error('Your account doesn\'t have access to any restaurants. Please contact support.'), 'No Restaurant Access');
         }
-
-        if (data?.data) {
-          const tenant = TenantInfoZ.parse(data.data);
-          setState({
-            tenant,
-            loading: false,
-            error: null
-          });
-          return;
-        }
+        return;
       }
 
-      // Fallback: Get tenant from session/user context
-      const { data, error } = await supabase.functions.invoke('tenant', {
-        body: {},
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
+      // Handle successful response
+      if (responseData?.data) {
+        const tenant = TenantInfoZ.parse(responseData.data);
+        
+        // Cache the result (only for user-based resolution)
+        if (!params.slug) {
+          cachedTenant = tenant;
+          cacheExpiry = Date.now() + CACHE_DURATION;
         }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data?.data) {
-        const tenant = TenantInfoZ.parse(data.data);
+        
         setState({
           tenant,
           loading: false,
-          error: null
+          error: null,
+          requestId: null
         });
         return;
       }
 
-      // If all else fails, throw an error
+      // Fallback error
       setState({
         tenant: null,
         loading: false,
-        error: 'No tenant found for user'
+        error: 'No restaurant data received',
+        requestId: null
       });
 
     } catch (error) {
@@ -103,7 +146,8 @@ export function useTenant() {
       setState({
         tenant: null,
         loading: false,
-        error: parsedError.message
+        error: parsedError.message,
+        requestId: null
       });
 
       // Only toast error if it's not an auth issue (handled elsewhere)
@@ -111,40 +155,53 @@ export function useTenant() {
         toastError(parsedError, 'Failed to load restaurant information');
       }
     }
-  }, [params.slug]);
+  }, [params.slug, navigate]);
 
   const refreshTenant = useCallback(() => {
+    // Clear cache on refresh
+    cachedTenant = null;
+    cacheExpiry = 0;
     resolveTenant();
   }, [resolveTenant]);
+
+  const clearCache = useCallback(() => {
+    cachedTenant = null;
+    cacheExpiry = 0;
+  }, []);
 
   // Resolve tenant on mount and slug changes
   useEffect(() => {
     resolveTenant();
   }, [resolveTenant]);
 
-  // Listen for auth changes
+  // Listen for auth changes to clear cache
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        clearCache();
         resolveTenant();
       } else if (event === 'SIGNED_OUT') {
+        clearCache();
         setState({
           tenant: null,
           loading: false,
-          error: null
+          error: null,
+          requestId: null
         });
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [resolveTenant]);
+  }, [resolveTenant, clearCache]);
 
   return {
     tenant: state.tenant,
-    tenantId: state.tenant?.tenantId || null,
+    tenantId: state.tenant?.id || null, // Use id from new schema
     loading: state.loading,
     error: state.error,
-    refreshTenant
+    requestId: state.requestId,
+    refreshTenant,
+    clearCache
   };
 }
 

@@ -13,25 +13,68 @@ interface TenantRequest {
 }
 
 interface TenantResponse {
-  tenantId: string;
-  name: string;
+  id: string;
   slug: string;
+  name: string;
   timezone: string;
   currency: string;
 }
 
+interface ErrorResponse {
+  error: {
+    code: string;
+    message: string;
+    requestId: string;
+  }
+}
+
+function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function createSuccessResponse(data: TenantResponse) {
+  return new Response(
+    JSON.stringify({ data }),
+    { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  );
+}
+
+function createErrorResponse(code: string, message: string, status: number, requestId: string) {
+  const errorResponse: ErrorResponse = {
+    error: {
+      code,
+      message,
+      requestId
+    }
+  };
+  
+  return new Response(
+    JSON.stringify(errorResponse),
+    { 
+      status, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  );
+}
+
 serve(async (req) => {
+  const requestId = generateRequestId();
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
-  // Support both GET and POST requests
-  if (req.method !== 'POST' && req.method !== 'GET') {
-    return new Response(
-      JSON.stringify({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET and POST requests are allowed' } }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+  // Only allow POST requests for consistent API design
+  if (req.method !== 'POST') {
+    return createErrorResponse(
+      'METHOD_NOT_ALLOWED', 
+      'Only POST requests are allowed', 
+      405, 
+      requestId
+    );
   }
 
   try {
@@ -45,7 +88,7 @@ serve(async (req) => {
           persistSession: false
         }
       }
-    )
+    );
 
     // Create anon client for user verification
     const anonClient = createClient(
@@ -57,126 +100,93 @@ serve(async (req) => {
           persistSession: false
         }
       }
-    )
+    );
 
     // Get the authorization header
-    const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '')
+    const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: { code: 'AUTH_REQUIRED', message: 'Authorization header required' } }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return createErrorResponse(
+        'AUTH_REQUIRED', 
+        'Authorization header required', 
+        401, 
+        requestId
+      );
     }
 
     // Verify the JWT token and get user
-    const { data: { user }, error: authError } = await anonClient.auth.getUser(authHeader)
+    const { data: { user }, error: authError } = await anonClient.auth.getUser(authHeader);
     if (authError || !user) {
-      console.error('Auth error:', authError)
-      return new Response(
-        JSON.stringify({ error: { code: 'AUTH_INVALID', message: 'Invalid authorization token' } }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      console.error('Auth error:', authError);
+      return createErrorResponse(
+        'AUTH_INVALID', 
+        'Invalid authorization token', 
+        401, 
+        requestId
+      );
     }
 
-    // Parse request body if POST, otherwise use empty object for GET
-    let body: TenantRequest = {}
-    if (req.method === 'POST') {
-      try {
-        body = await req.json()
-      } catch (jsonError) {
-        console.error('JSON parse error:', jsonError)
-        return new Response(
-          JSON.stringify({ error: { code: 'INVALID_JSON', message: 'Invalid JSON in request body' } }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
+    // Parse request body
+    let body: TenantRequest = {};
+    try {
+      body = await req.json();
+    } catch (jsonError) {
+      console.error('JSON parse error:', jsonError);
+      return createErrorResponse(
+        'INVALID_JSON', 
+        'Invalid JSON in request body', 
+        400, 
+        requestId
+      );
     }
 
     let tenantData;
 
     if (body.slug) {
       // Resolve tenant by slug
+      console.log(`Resolving tenant by slug: ${body.slug}`);
+      
       const { data, error } = await supabaseClient
         .from('tenants')
         .select('id, name, slug, timezone, currency')
         .eq('slug', body.slug)
         .eq('status', 'active')
-        .single()
+        .single();
 
       if (error || !data) {
-        return new Response(
-          JSON.stringify({ error: { code: 'TENANT_NOT_FOUND', message: 'Tenant not found' } }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        console.error('Tenant not found for slug:', body.slug, error);
+        return createErrorResponse(
+          'TENANT_NOT_FOUND', 
+          `Restaurant "${body.slug}" not found`, 
+          404, 
+          requestId
+        );
       }
 
       // Verify user has access to this tenant
-      const { data: membershipData, error: membershipError } = await supabaseClient
-        .from('auto_provisioning')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .eq('tenant_id', data.id)
-        .eq('status', 'completed')
-        .single()
-
-      if (membershipError || !membershipData) {
-        return new Response(
-          JSON.stringify({ error: { code: 'AUTH_FORBIDDEN', message: 'Access denied to this tenant' } }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+      const hasAccess = await checkUserTenantAccess(supabaseClient, user.id, data.id);
+      if (!hasAccess) {
+        console.error('User access denied to tenant:', user.id, data.id);
+        return createErrorResponse(
+          'ACCESS_DENIED', 
+          'Access denied to this restaurant', 
+          403, 
+          requestId
+        );
       }
 
-      tenantData = data
+      tenantData = data;
     } else {
-      // Try to resolve tenant for this user using multiple methods
-      let tenantId: string | null = null;
-
-      // Method 1: Check if user has explicit tenant assignment in user_tenant_access
-      const { data: userTenantAccess } = await supabaseClient
-        .from('user_tenant_access')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .eq('active', true)
-        .single()
-
-      if (userTenantAccess) {
-        tenantId = userTenantAccess.tenant_id;
-      }
-
-      // Method 2: Check if user is provisioned in auto_provisioning
+      // Resolve tenant by user memberships
+      console.log(`Resolving tenant by user memberships: ${user.id}`);
+      
+      const tenantId = await resolveUserTenant(supabaseClient, user.id);
       if (!tenantId) {
-        const { data: autoProvisionData } = await supabaseClient
-          .from('auto_provisioning')
-          .select('tenant_id')
-          .eq('user_id', user.id)
-          .eq('status', 'completed')
-          .single()
-
-        if (autoProvisionData) {
-          tenantId = autoProvisionData.tenant_id;
-        }
-      }
-
-      // Method 3: Assign to demo tenant if no specific assignment (for demo purposes)
-      if (!tenantId) {
-        const { data: demoTenant } = await supabaseClient
-          .from('tenants')
-          .select('id')
-          .eq('slug', 'demo')
-          .eq('status', 'active')
-          .single()
-
-        if (demoTenant) {
-          tenantId = demoTenant.id;
-        }
-      }
-
-      if (!tenantId) {
-        console.error('No tenant found for user:', user.id)
-        return new Response(
-          JSON.stringify({ error: { code: 'TENANT_NOT_FOUND', message: 'No tenant found for user' } }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return createErrorResponse(
+          'NO_TENANT_ACCESS', 
+          'No restaurant access found for your account', 
+          404, 
+          requestId
+        );
       }
 
       // Get the full tenant data
@@ -185,43 +195,116 @@ serve(async (req) => {
         .select('id, name, slug, timezone, currency')
         .eq('id', tenantId)
         .eq('status', 'active')
-        .single()
+        .single();
 
       if (error || !data) {
-        console.error('Tenant data fetch error:', error)
-        return new Response(
-          JSON.stringify({ error: { code: 'TENANT_NOT_FOUND', message: 'Tenant data not found' } }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        console.error('Tenant data fetch error:', error);
+        return createErrorResponse(
+          'TENANT_DATA_ERROR', 
+          'Unable to load restaurant data', 
+          500, 
+          requestId
+        );
       }
 
-      tenantData = data
+      tenantData = data;
     }
 
     const response: TenantResponse = {
-      tenantId: tenantData.id,
-      name: tenantData.name,
+      id: tenantData.id,
       slug: tenantData.slug,
+      name: tenantData.name,
       timezone: tenantData.timezone || 'America/New_York',
       currency: tenantData.currency || 'USD'
-    }
+    };
 
-    return new Response(
-      JSON.stringify({ data: response }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    console.log(`Tenant resolved successfully:`, { tenantId: response.id, slug: response.slug, userId: user.id });
+    return createSuccessResponse(response);
 
   } catch (error) {
-    console.error('Tenant resolution error:', error)
-    return new Response(
-      JSON.stringify({ 
-        error: { 
-          code: 'INTERNAL_ERROR', 
-          message: 'Internal server error',
-          requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        } 
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    console.error('Tenant resolution error:', error);
+    return createErrorResponse(
+      'INTERNAL_ERROR', 
+      'Internal server error', 
+      500, 
+      requestId
+    );
   }
-})
+});
+
+async function checkUserTenantAccess(supabaseClient: any, userId: string, tenantId: string): Promise<boolean> {
+  // Check user_tenant_access table
+  const { data: userAccess } = await supabaseClient
+    .from('user_tenant_access')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('tenant_id', tenantId)
+    .eq('active', true)
+    .single();
+
+  if (userAccess) return true;
+
+  // Check auto_provisioning table
+  const { data: autoProvision } = await supabaseClient
+    .from('auto_provisioning')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('tenant_id', tenantId)
+    .eq('status', 'completed')
+    .single();
+
+  if (autoProvision) return true;
+
+  // For demo purposes, allow access to demo tenant
+  const { data: demoTenant } = await supabaseClient
+    .from('tenants')
+    .select('id')
+    .eq('id', tenantId)
+    .eq('slug', 'demo')
+    .eq('status', 'active')
+    .single();
+
+  return !!demoTenant;
+}
+
+async function resolveUserTenant(supabaseClient: any, userId: string): Promise<string | null> {
+  // Method 1: Check user_tenant_access table (with preference for default/recently used)
+  const { data: userTenantAccess } = await supabaseClient
+    .from('user_tenant_access')
+    .select('tenant_id, is_default, last_accessed_at')
+    .eq('user_id', userId)
+    .eq('active', true)
+    .order('is_default', { ascending: false })
+    .order('last_accessed_at', { ascending: false });
+
+  if (userTenantAccess && userTenantAccess.length > 0) {
+    return userTenantAccess[0].tenant_id;
+  }
+
+  // Method 2: Check auto_provisioning table
+  const { data: autoProvisionData } = await supabaseClient
+    .from('auto_provisioning')
+    .select('tenant_id')
+    .eq('user_id', userId)
+    .eq('status', 'completed')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (autoProvisionData && autoProvisionData.length > 0) {
+    return autoProvisionData[0].tenant_id;
+  }
+
+  // Method 3: Demo tenant fallback for testing
+  const { data: demoTenant } = await supabaseClient
+    .from('tenants')
+    .select('id')
+    .eq('slug', 'demo')
+    .eq('status', 'active')
+    .single();
+
+  if (demoTenant) {
+    return demoTenant.id;
+  }
+
+  return null;
+}
