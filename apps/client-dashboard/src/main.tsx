@@ -40,21 +40,26 @@ window.addEventListener('unhandledrejection', (event) => {
 // Initialize performance optimizations
 try {
   initializePerformance();
+  console.log('✅ Performance initialization successful');
 } catch (error) {
-  console.warn('Performance initialization failed:', error);
+  console.warn('⚠️ Performance initialization failed:', error);
 }
 
 const root = createRoot(document.getElementById("root")!);
 
 try {
   root.render(<App />);
+  console.log('✅ App rendering successful');
 } catch (error) {
-  console.error('Failed to render app:', error);
+  console.error('❌ Failed to render app:', error);
   // Fallback rendering
   root.render(
     <div style={{ padding: '20px', textAlign: 'center' }}>
-      <h1>Loading...</h1>
-      <p>The application is starting up. Please wait a moment.</p>
+      <h1>⚠️ App Rendering Error</h1>
+      <p>The application failed to render properly.</p>
+      <pre style={{ textAlign: 'left', background: '#f5f5f5', padding: '10px', borderRadius: '4px' }}>
+        {error.message}
+      </pre>
     </div>
   );
 }
