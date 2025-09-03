@@ -35,10 +35,22 @@ serve(async (req) => {
   }
 
   try {
-    // Create Supabase client
+    // Create Supabase client with service role key for database operations
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    // Create anon client for user verification
+    const anonClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         auth: {
           autoRefreshToken: false,
@@ -57,7 +69,7 @@ serve(async (req) => {
     }
 
     // Verify the JWT token and get user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader)
+    const { data: { user }, error: authError } = await anonClient.auth.getUser(authHeader)
     if (authError || !user) {
       console.error('Auth error:', authError)
       return new Response(
@@ -116,31 +128,74 @@ serve(async (req) => {
 
       tenantData = data
     } else {
-      // Get tenant from user's auto_provisioning record
-      const { data, error } = await supabaseClient
-        .from('auto_provisioning')
-        .select(`
-          tenant_id,
-          tenants (
-            id,
-            name,
-            slug,
-            timezone,
-            currency
-          )
-        `)
+      // Try to resolve tenant for this user using multiple methods
+      let tenantId: string | null = null;
+
+      // Method 1: Check if user has explicit tenant assignment in user_tenant_access
+      const { data: userTenantAccess } = await supabaseClient
+        .from('user_tenant_access')
+        .select('tenant_id')
         .eq('user_id', user.id)
-        .eq('status', 'completed')
+        .eq('active', true)
         .single()
 
-      if (error || !data || !data.tenants) {
+      if (userTenantAccess) {
+        tenantId = userTenantAccess.tenant_id;
+      }
+
+      // Method 2: Check if user is provisioned in auto_provisioning
+      if (!tenantId) {
+        const { data: autoProvisionData } = await supabaseClient
+          .from('auto_provisioning')
+          .select('tenant_id')
+          .eq('user_id', user.id)
+          .eq('status', 'completed')
+          .single()
+
+        if (autoProvisionData) {
+          tenantId = autoProvisionData.tenant_id;
+        }
+      }
+
+      // Method 3: Assign to demo tenant if no specific assignment (for demo purposes)
+      if (!tenantId) {
+        const { data: demoTenant } = await supabaseClient
+          .from('tenants')
+          .select('id')
+          .eq('slug', 'demo')
+          .eq('status', 'active')
+          .single()
+
+        if (demoTenant) {
+          tenantId = demoTenant.id;
+        }
+      }
+
+      if (!tenantId) {
+        console.error('No tenant found for user:', user.id)
         return new Response(
           JSON.stringify({ error: { code: 'TENANT_NOT_FOUND', message: 'No tenant found for user' } }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
-      tenantData = data.tenants
+      // Get the full tenant data
+      const { data, error } = await supabaseClient
+        .from('tenants')
+        .select('id, name, slug, timezone, currency')
+        .eq('id', tenantId)
+        .eq('status', 'active')
+        .single()
+
+      if (error || !data) {
+        console.error('Tenant data fetch error:', error)
+        return new Response(
+          JSON.stringify({ error: { code: 'TENANT_NOT_FOUND', message: 'Tenant data not found' } }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      tenantData = data
     }
 
     const response: TenantResponse = {
