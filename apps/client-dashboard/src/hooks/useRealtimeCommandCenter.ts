@@ -77,20 +77,8 @@ interface RealtimeConnectionState {
 
 export const useRealtimeCommandCenter = () => {
   const { tenant } = useTenant();
-  const tenantId = tenant?.tenantId;
+  const tenantId = tenant?.id;
   const queryClient = useQueryClient();
-  
-  // Helper function to create subscription handlers
-  const createSubscriptionHandler = useCallback((service: string, queryKey: any[]) => ({
-    onUpdate: (payload: any) => {
-      console.log(`🔄 ${service} update received:`, payload.eventType);
-      queryClient.invalidateQueries({ queryKey });
-      setLastUpdate(new Date());
-    },
-    onStatus: (status: string) => {
-      console.log(`📡 ${service} subscription status:`, status);
-    }
-  }), [queryClient]);
   
   // Enhanced connection status with proper typing
   const [connectionStatus, setConnectionStatus] = useState<RealtimeConnectionState>({
@@ -368,13 +356,14 @@ export const useRealtimeCommandCenter = () => {
         switch (status) {
           case 'SUBSCRIBED':
             connectionState = 'connected';
+            console.log(`✅ ${service} subscription active`);
             break;
           case 'TIMED_OUT':
           case 'CHANNEL_ERROR':
           case 'CLOSED':
             connectionState = 'error';
+            console.log(`⚠️ ${service} subscription failed, enabling polling mode`);
             // Trigger polling fallback when subscriptions fail
-            console.log(`🔄 ${service} subscription failed, enabling polling mode`);
             setTimeout(() => {
               queryClient.invalidateQueries({ queryKey });
             }, 1000);
@@ -434,20 +423,13 @@ export const useRealtimeCommandCenter = () => {
             }
           )
           .subscribe(async (status, err) => {
-            console.log(`🔔 Bookings subscription status: ${status}`);
             if (err) {
               console.error("❌ Bookings subscription error:", err);
               updateConnectionStatus('bookings', 'error');
               return;
             }
             
-            if (status === 'SUBSCRIBED') {
-              console.log("✅ Bookings subscription active");
-              updateConnectionStatus('bookings', 'connected');
-            } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
-              console.log("⚠️ Bookings subscription failed, falling back to polling");
-              updateConnectionStatus('bookings', 'error');
-            }
+            bookingHandlers.onStatus(status);
           });
 
         // Tables subscription with enhanced configuration
@@ -473,20 +455,13 @@ export const useRealtimeCommandCenter = () => {
             }
           )
           .subscribe(async (status, err) => {
-            console.log(`🔔 Tables subscription status: ${status}`);
             if (err) {
               console.error("❌ Tables subscription error:", err);
               updateConnectionStatus('tables', 'error');
               return;
             }
             
-            if (status === 'SUBSCRIBED') {
-              console.log("✅ Tables subscription active");
-              updateConnectionStatus('tables', 'connected');
-            } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
-              console.log("⚠️ Tables subscription failed, falling back to polling");
-              updateConnectionStatus('tables', 'error');
-            }
+            tableHandlers.onStatus(status);
           });
 
         // Waitlist subscription (using bookings as fallback)
@@ -512,20 +487,13 @@ export const useRealtimeCommandCenter = () => {
             }
           )
           .subscribe(async (status, err) => {
-            console.log(`🔔 Waitlist subscription status: ${status}`);
             if (err) {
               console.error("❌ Waitlist subscription error:", err);
               updateConnectionStatus('waitlist', 'error');
               return;
             }
             
-            if (status === 'SUBSCRIBED') {
-              console.log("✅ Waitlist subscription active");
-              updateConnectionStatus('waitlist', 'connected');
-            } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
-              console.log("⚠️ Waitlist subscription failed, falling back to polling");
-              updateConnectionStatus('waitlist', 'error');
-            }
+            waitlistHandlers.onStatus(status);
           });
 
       } catch (error) {
@@ -575,32 +543,42 @@ export const useRealtimeCommandCenter = () => {
   useEffect(() => {
     if (!tenantId) return;
 
-    const interval = setInterval(() => {
-      const { overall } = connectionStatus;
-      
-      if (overall === 'error' || overall === 'disconnected') {
-        console.log("📱 Polling fallback active - refreshing data");
-        queryClient.invalidateQueries({ 
-          queryKey: ["command-center"] 
-        });
-        setLastUpdate(new Date());
-      } else if (overall === 'connecting') {
-        console.log("📱 Connection unstable - light refresh");
-        queryClient.invalidateQueries({ 
-          queryKey: ["command-center"] 
-        });
-        setLastUpdate(new Date());
-      }
-      // If fully connected, let real-time subscriptions handle updates
-    }, 
-    // Adaptive polling intervals based on connection status
-    connectionStatus.overall === 'error' ? 15000 :  // Fast polling on error
-    connectionStatus.overall === 'disconnected' ? 20000 : // Medium polling when disconnected  
-    connectionStatus.overall === 'connecting' ? 30000 : // Slower when connecting
-    120000 // Very slow when connected (let real-time handle it)
-    );
+    let intervalId: NodeJS.Timeout;
 
-    return () => clearInterval(interval);
+    const setupPolling = () => {
+      intervalId = setInterval(() => {
+        const { overall } = connectionStatus;
+        
+        if (overall === 'error' || overall === 'disconnected') {
+          console.log("📱 Polling fallback active - refreshing data");
+          queryClient.invalidateQueries({ 
+            queryKey: ["command-center"] 
+          });
+          setLastUpdate(new Date());
+        } else if (overall === 'connecting') {
+          console.log("📱 Connection unstable - light refresh");
+          queryClient.invalidateQueries({ 
+            queryKey: ["command-center"] 
+          });
+          setLastUpdate(new Date());
+        }
+        // If fully connected, let real-time subscriptions handle updates
+      }, 
+      // Adaptive polling intervals based on connection status
+      connectionStatus.overall === 'error' ? 15000 :  // Fast polling on error
+      connectionStatus.overall === 'disconnected' ? 20000 : // Medium polling when disconnected  
+      connectionStatus.overall === 'connecting' ? 30000 : // Slower when connecting
+      120000 // Very slow when connected (let real-time handle it)
+      );
+    };
+
+    setupPolling();
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
   }, [tenantId, queryClient, connectionStatus.overall]);
 
   // Memoized refresh function to prevent unnecessary re-renders

@@ -1,15 +1,14 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { useTenant } from '@/hooks/useTenant';
-import { AuthContext } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, User, Database, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
 export default function TenantTestPage() {
-  const authContext = useContext(AuthContext);
-  const { user, loading: authLoading } = authContext || { user: null, loading: true };
-  const { tenant, tenantId, loading: tenantLoading, error, requestId, refreshTenant, clearCache } = useTenant();
+  const { user, loading: authLoading } = useAuth();
+  const { tenant, loading: tenantLoading, error, requestId, refreshTenant, clearCache } = useTenant();
 
   const allLoading = authLoading || tenantLoading;
 
@@ -111,7 +110,7 @@ export default function TenantTestPage() {
                       <div className="flex justify-between">
                         <span className="text-sm font-medium">Tenant ID:</span>
                         <Badge variant="outline" className="font-mono text-xs">
-                          {tenantId}
+                          {tenant?.id || 'N/A'}
                         </Badge>
                       </div>
                     </div>
