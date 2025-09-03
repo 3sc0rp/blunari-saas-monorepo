@@ -99,14 +99,16 @@ const App = () => (
                           </ProtectedRoute>
                         }
                       >
+                        {/* Default dashboard route now redirects to Command Center */}
                         <Route 
                           index 
-                          element={
-                            <LandingMiddleware>
-                              <Dashboard />
-                            </LandingMiddleware>
-                          } 
+                          element={<Navigate to="/command-center" replace />} 
                         />
+                        <Route path="home" element={
+                          <LandingMiddleware>
+                            <Dashboard />
+                          </LandingMiddleware>
+                        } />
                         <Route path="command-center" element={<CommandCenter />} />
                         <Route path="bookings" element={<Bookings />} />
                         <Route

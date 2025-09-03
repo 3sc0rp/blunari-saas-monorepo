@@ -41,9 +41,9 @@ import { ModeSwitch } from "@/components/ModeSwitch";
 // Mode-aware navigation items
 const operationsNavigation = [
   {
-    section: "Command Center",
+    section: "Command Center", 
     items: [
-      { title: "Command Center", url: "/dashboard/command-center", icon: Monitor },
+      { title: "Command Center", url: "/command-center", icon: Monitor },
       { title: "Live Floor", url: "/dashboard/tables", icon: MapPin },
       { title: "Timeline", url: "/dashboard/bookings", icon: Clock },
     ],
@@ -61,7 +61,8 @@ const managementNavigation = [
   {
     section: "Overview",
     items: [
-      { title: "Dashboard", url: "/dashboard", icon: Home },
+      { title: "Command Center", url: "/command-center", icon: Monitor },
+      { title: "Dashboard", url: "/dashboard/home", icon: Home },
       { title: "Analytics", url: "/dashboard/analytics", icon: BarChart3 },
     ],
   },
@@ -116,6 +117,12 @@ export function ResponsiveDashboardSidebar() {
   const navigationItems = mode === "operations" ? operationsNavigation : managementNavigation;
 
   const isActive = (path: string) => {
+    if (path === "/command-center") {
+      return currentPath === "/command-center";
+    }
+    if (path === "/dashboard/home") {
+      return currentPath === "/dashboard/home";
+    }
     if (path === "/dashboard") {
       return currentPath === "/dashboard";
     }

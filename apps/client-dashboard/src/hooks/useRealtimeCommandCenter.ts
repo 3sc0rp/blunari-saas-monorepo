@@ -344,7 +344,13 @@ export const useRealtimeCommandCenter = () => {
             break;
           case 'TIMED_OUT':
           case 'CHANNEL_ERROR':
+          case 'CLOSED':
             connectionState = 'error';
+            // Trigger polling fallback when subscriptions fail
+            console.log(`🔄 ${service} subscription failed, enabling polling mode`);
+            setTimeout(() => {
+              queryClient.invalidateQueries({ queryKey });
+            }, 1000);
             break;
           case 'CONNECTING':
             connectionState = 'connecting';
@@ -357,82 +363,142 @@ export const useRealtimeCommandCenter = () => {
       }
     });
 
-    try {
-      // Bookings subscription
-      const bookingHandlers = createSubscriptionHandler('bookings', ["command-center", "bookings", tenantId, today.start]);
-      bookingsChannel = supabase
-        .channel(`command-center-bookings-${tenantId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "bookings",
-            filter: `tenant_id=eq.${tenantId}`,
-          },
-          bookingHandlers.onUpdate
-        )
-        .subscribe(bookingHandlers.onStatus);
+    const setupSubscriptions = async () => {
+      try {
+        // Check authentication status first
+        const { data: { session }, error: authError } = await supabase.auth.getSession();
+        
+        if (authError) {
+          console.warn("🔐 Auth check failed:", authError.message);
+        }
+        
+        if (!session) {
+          console.warn("🔐 No active session found");
+        }
 
-      // Tables subscription
-      const tableHandlers = createSubscriptionHandler('tables', ["command-center", "tables", tenantId]);
-      tablesChannel = supabase
-        .channel(`command-center-tables-${tenantId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "restaurant_tables",
-            filter: `tenant_id=eq.${tenantId}`,
-          },
-          tableHandlers.onUpdate
-        )
-        .subscribe(tableHandlers.onStatus);
+        // Bookings subscription with enhanced configuration
+        const bookingHandlers = createSubscriptionHandler('bookings', ["command-center", "bookings", tenantId, today.start]);
+        bookingsChannel = supabase
+          .channel(`command-center-bookings-${tenantId}`, {
+            config: {
+              presence: { key: 'command-center' },
+              broadcast: { self: false }
+            }
+          })
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "bookings",
+              filter: `tenant_id=eq.${tenantId}`,
+            },
+            bookingHandlers.onUpdate
+          )
+          .subscribe(async (status) => {
+            console.log(`🔔 Bookings subscription status: ${status}`);
+            if (status === 'SUBSCRIBED') {
+              console.log("✅ Bookings subscription active");
+            } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
+              console.log("⚠️ Bookings subscription failed, falling back to polling");
+            }
+            bookingHandlers.onStatus(status);
+          });
 
-      // Waitlist subscription (using bookings as fallback)
-      const waitlistHandlers = createSubscriptionHandler('waitlist', ["command-center", "waitlist", tenantId]);
-      waitlistChannel = supabase
-        .channel(`command-center-waitlist-${tenantId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "bookings", // Use bookings table as fallback
-            filter: `tenant_id=eq.${tenantId}`,
-          },
-          waitlistHandlers.onUpdate
-        )
-        .subscribe((status) => {
-          // Always mark waitlist as connected since we're using bookings table
-          if (status === 'SUBSCRIBED') {
-            updateConnectionStatus('waitlist', 'connected');
-          } else {
-            waitlistHandlers.onStatus(status);
-          }
+        // Tables subscription with enhanced configuration
+        const tableHandlers = createSubscriptionHandler('tables', ["command-center", "tables", tenantId]);
+        tablesChannel = supabase
+          .channel(`command-center-tables-${tenantId}`, {
+            config: {
+              presence: { key: 'command-center' },
+              broadcast: { self: false }
+            }
+          })
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public", 
+              table: "restaurant_tables",
+              filter: `tenant_id=eq.${tenantId}`,
+            },
+            tableHandlers.onUpdate
+          )
+          .subscribe(async (status) => {
+            console.log(`🔔 Tables subscription status: ${status}`);
+            if (status === 'SUBSCRIBED') {
+              console.log("✅ Tables subscription active");
+            } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
+              console.log("⚠️ Tables subscription failed, falling back to polling");
+            }
+            tableHandlers.onStatus(status);
+          });
+
+        // Waitlist subscription (using bookings as fallback)
+        const waitlistHandlers = createSubscriptionHandler('waitlist', ["command-center", "waitlist", tenantId]);
+        waitlistChannel = supabase
+          .channel(`command-center-waitlist-${tenantId}`, {
+            config: {
+              presence: { key: 'command-center' },
+              broadcast: { self: false }
+            }
+          })
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "bookings", // Use bookings table as fallback
+              filter: `tenant_id=eq.${tenantId}`,
+            },
+            waitlistHandlers.onUpdate
+          )
+          .subscribe(async (status) => {
+            console.log(`🔔 Waitlist subscription status: ${status}`);
+            if (status === 'SUBSCRIBED') {
+              console.log("✅ Waitlist subscription active");
+              updateConnectionStatus('waitlist', 'connected');
+            } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
+              console.log("⚠️ Waitlist subscription failed, falling back to polling");
+              updateConnectionStatus('waitlist', 'error');
+            } else {
+              waitlistHandlers.onStatus(status);
+            }
+          });
+
+      } catch (error) {
+        console.error("Failed to set up real-time subscriptions:", error);
+        setConnectionStatus({
+          bookings: 'error',
+          tables: 'error',
+          waitlist: 'error',
+          overall: 'error'
         });
+      }
+    };
 
-    } catch (error) {
-      console.error("Failed to set up real-time subscriptions:", error);
-      setConnectionStatus({
-        bookings: 'error',
-        tables: 'error',
-        waitlist: 'error',
-        overall: 'error'
-      });
-    }
+    // Initialize subscriptions
+    setupSubscriptions();
 
-    // Enhanced cleanup function
+    // Enhanced cleanup function with better error handling
     return () => {
       console.log("🧹 Cleaning up Command Center subscriptions");
-      try {
-        if (bookingsChannel) supabase.removeChannel(bookingsChannel);
-        if (tablesChannel) supabase.removeChannel(tablesChannel);
-        if (waitlistChannel) supabase.removeChannel(waitlistChannel);
-      } catch (error) {
-        console.warn("Error during subscription cleanup:", error);
-      }
+      
+      const cleanupChannel = (channel: RealtimeChannel | undefined, name: string) => {
+        if (channel) {
+          try {
+            console.log(`🗑️ Unsubscribing ${name} channel`);
+            channel.unsubscribe();
+            supabase.removeChannel(channel);
+          } catch (error) {
+            console.warn(`Failed to cleanup ${name} channel:`, error);
+          }
+        }
+      };
+      
+      cleanupChannel(bookingsChannel, 'bookings');
+      cleanupChannel(tablesChannel, 'tables');
+      cleanupChannel(waitlistChannel, 'waitlist');
       
       setConnectionStatus({
         bookings: 'disconnected',
@@ -443,20 +509,34 @@ export const useRealtimeCommandCenter = () => {
     };
   }, [tenantId, queryClient, today.start, updateConnectionStatus]);
 
-  // Smart auto-refresh with connection-based intervals
+  // Enhanced auto-refresh with connection-based intervals and fallback polling
   useEffect(() => {
     if (!tenantId) return;
 
     const interval = setInterval(() => {
-      // Only refresh if we're not fully connected
-      if (connectionStatus.overall !== 'connected') {
-        console.log("📱 Auto-refresh triggered (real-time not fully connected)");
+      const { overall } = connectionStatus;
+      
+      if (overall === 'error' || overall === 'disconnected') {
+        console.log("📱 Polling fallback active - refreshing data");
+        queryClient.invalidateQueries({ 
+          queryKey: ["command-center"] 
+        });
+        setLastUpdate(new Date());
+      } else if (overall === 'connecting') {
+        console.log("📱 Connection unstable - light refresh");
         queryClient.invalidateQueries({ 
           queryKey: ["command-center"] 
         });
         setLastUpdate(new Date());
       }
-    }, connectionStatus.overall === 'error' ? 30000 : 60000); // Faster refresh on error
+      // If fully connected, let real-time subscriptions handle updates
+    }, 
+    // Adaptive polling intervals based on connection status
+    connectionStatus.overall === 'error' ? 15000 :  // Fast polling on error
+    connectionStatus.overall === 'disconnected' ? 20000 : // Medium polling when disconnected  
+    connectionStatus.overall === 'connecting' ? 30000 : // Slower when connecting
+    120000 // Very slow when connected (let real-time handle it)
+    );
 
     return () => clearInterval(interval);
   }, [tenantId, queryClient, connectionStatus.overall]);
