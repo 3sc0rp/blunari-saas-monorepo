@@ -6,16 +6,35 @@ import "./App.css";
 
 // Global error handler for uncaught errors
 window.addEventListener('error', (event) => {
-  console.error('Global error caught:', event.error);
-  // Prevent the error from breaking the entire app
-  event.preventDefault();
+  console.error('=== Global Error Details ===');
+  console.error('Message:', event.message);
+  console.error('Filename:', event.filename);
+  console.error('Line:', event.lineno);
+  console.error('Column:', event.colno);
+  console.error('Error object:', event.error);
+  console.error('Stack trace:', event.error?.stack);
+  console.error('=== End Error Details ===');
+  
+  // Don't prevent default to allow Vite's error overlay in development
+  if (import.meta.env.PROD) {
+    event.preventDefault();
+  }
 });
 
 // Global handler for unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
-  // Prevent the error from breaking the entire app
-  event.preventDefault();
+  console.error('=== Unhandled Promise Rejection ===');
+  console.error('Reason:', event.reason);
+  console.error('Promise:', event.promise);
+  if (event.reason?.stack) {
+    console.error('Stack trace:', event.reason.stack);
+  }
+  console.error('=== End Promise Rejection ===');
+  
+  // Don't prevent default to allow Vite's error overlay in development
+  if (import.meta.env.PROD) {
+    event.preventDefault();
+  }
 });
 
 // Initialize performance optimizations

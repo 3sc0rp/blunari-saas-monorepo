@@ -37,6 +37,7 @@ import Catering from "./pages/Catering";
 import { Suspense, lazy } from "react";
 import { SkeletonPage } from "@/components/ui/skeleton-components";
 import { DesignQAProvider } from "@/components/dev/DesignQAProvider";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Code splitting for heavy pages
 const Analytics = lazy(() => import("./pages/Analytics"));
@@ -45,7 +46,8 @@ const Tables = lazy(() => import("./pages/Tables"));
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
         <TenantBrandingProvider>
@@ -166,6 +168,7 @@ const App = () => (
   </AuthProvider>
 </ThemeProvider>
 </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
