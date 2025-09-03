@@ -26,7 +26,9 @@ export default defineConfig(({ mode }) => ({
       }
     },
     target: 'es2020',
-    minify: 'esbuild'
+    minify: 'esbuild',
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000
   },
   esbuild: {
     target: 'es2020'
