@@ -12,6 +12,18 @@
     --brand: 217 91% 60%;
     --brand-foreground: 0 0% 100%;
     
+    /* Command Center specific variables */
+    --accent: 226 90% 64%;
+    --accent-2: 259 73% 60%;
+    --success: 152 70% 40%;
+    --warning: 38 92% 50%;
+    --muted: 220 10% 20%;
+    --card: 220 12% 12%;
+    --bg: 220 14% 8%;
+    --ring: 226 90% 64%;
+    --shadow-1: 0 4px 16px hsl(220 10% 4% / 0.3);
+    --shadow-2: 0 8px 24px hsl(220 10% 4% / 0.35);
+    
     /* Surface System - Clean whites with subtle warmth */
     --surface: 0 0% 100%;
     --surface-2: 220 14% 98%;
@@ -85,6 +97,18 @@
     --brand: 217 91% 65%;
     --brand-foreground: 0 0% 100%;
     
+    /* Command Center Dark Theme */
+    --accent: 226 90% 64%;
+    --accent-2: 259 73% 60%;
+    --success: 152 70% 50%;
+    --warning: 38 92% 60%;
+    --muted: 220 10% 40%;
+    --card: 220 12% 12%;
+    --bg: 220 14% 8%;
+    --ring: 226 90% 64%;
+    --shadow-1: 0 4px 16px hsl(220 10% 4% / 0.5);
+    --shadow-2: 0 8px 24px hsl(220 10% 4% / 0.6);
+    
     /* Surface System - Rich dark with subtle blue tint */
     --surface: 222 84% 5%;
     --surface-2: 222 47% 11%;
@@ -126,6 +150,16 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 222 47% 11%;
     --sidebar-ring: 217 91% 65%;
+  }
+
+  /* Command Center Glass Effect */
+  .glass {
+    @apply bg-[hsl(var(--card)/0.7)] backdrop-blur-md border border-white/10;
+    box-shadow: var(--shadow-1);
+  }
+
+  .dark .glass {
+    @apply bg-[hsl(var(--card)/0.8)] border-white/5;
   }
 
   /* === ENHANCED DEEP SEA GREEN THEME === */

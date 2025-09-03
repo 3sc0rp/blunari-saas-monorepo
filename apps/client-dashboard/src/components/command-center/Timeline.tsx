@@ -1,397 +1,294 @@
-import React, { useMemo, useState, useCallback, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { useTodayData } from "@/hooks/useTodayData";
-import { 
-  Clock, 
-  Users, 
-  MapPin, 
-  Calendar,
-  AlertCircle,
-  CheckCircle,
-  Utensils,
-  Timer,
-  User,
-  ChevronLeft,
-  ChevronRight
-} from "lucide-react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import type { TableRow, Reservation } from "@/hooks/useCommandCenterData";
+import { format, addHours, startOfDay, differenceInMinutes } from "date-fns";
 
-// Timeline constants
-const HOURS_START = 11; // 11 AM
-const HOURS_END = 23; // 11 PM
-const MINUTES_INTERVAL = 15; // 15-minute intervals
+interface TimelineProps {
+  tables: TableRow[];
+  reservations: Reservation[];
+  focusTableId?: string;
+  onReservationClick: (reservation: Reservation) => void;
+  onTimeSlotClick: (tableId: string, time: Date) => void;
+}
 
-interface TimelineSlot {
+interface TimeSlot {
   time: Date;
-  timeString: string;
-  bookings: BookingData[];
-  isCurrentHour: boolean;
+  label: string;
+  isCurrentTime: boolean;
 }
 
-interface BookingData {
-  id: string;
-  booking_time: string;
-  party_size: number;
-  status: string;
-  table_number?: string;
-  customer_name?: string;
-  profiles?: {
-    first_name?: string;
-    last_name?: string;
-  };
-}
+export function Timeline({
+  tables,
+  reservations,
+  focusTableId,
+  onReservationClick,
+  onTimeSlotClick
+}: TimelineProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-interface TimelineItemProps {
-  booking: BookingData;
-  onClick: (booking: BookingData) => void;
-  style?: React.CSSProperties;
-}
+  // Update current time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
 
-const TimelineItem: React.FC<TimelineItemProps> = ({ booking, onClick, style }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return "bg-blue-500/10 border-blue-500/30 text-blue-700";
-      case 'seated':
-        return "bg-green-500/10 border-green-500/30 text-green-700";
-      case 'completed':
-        return "bg-slate-500/10 border-slate-500/30 text-slate-700";
-      case 'cancelled':
-        return "bg-red-500/10 border-red-500/30 text-red-700";
-      case 'no_show':
-        return "bg-orange-500/10 border-orange-500/30 text-orange-700";
-      case 'waiting':
-        return "bg-amber-500/10 border-amber-500/30 text-amber-700";
-      default:
-        return "bg-slate-500/10 border-slate-500/30 text-slate-700";
+    return () => clearInterval(timer);
+  }, []);
+
+  // Generate time slots (every 30 minutes from 11 AM to 11 PM)
+  const generateTimeSlots = (): TimeSlot[] => {
+    const slots: TimeSlot[] = [];
+    const today = new Date();
+    const startTime = new Date(today);
+    startTime.setHours(11, 0, 0, 0); // Start at 11:00 AM
+    
+    for (let i = 0; i < 24; i++) { // 12 hours * 2 slots per hour = 24 slots
+      const time = new Date(startTime.getTime() + (i * 30 * 60 * 1000)); // Add 30 minutes each iteration
+      const isCurrentTime = Math.abs(differenceInMinutes(time, currentTime)) < 30;
+      
+      slots.push({
+        time,
+        label: format(time, "h:mm a"),
+        isCurrentTime
+      });
     }
+    
+    return slots;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return <Calendar className="w-3 h-3" />;
-      case 'seated':
-        return <CheckCircle className="w-3 h-3" />;
-      case 'completed':
-        return <Utensils className="w-3 h-3" />;
-      case 'cancelled':
-      case 'no_show':
-        return <AlertCircle className="w-3 h-3" />;
-      case 'waiting':
-        return <Timer className="w-3 h-3" />;
-      default:
-        return <Clock className="w-3 h-3" />;
-    }
-  };
+  const timeSlots = useMemo(() => generateTimeSlots(), [currentTime]);
 
-  const formatTime = (timeString: string) => {
-    return new Date(timeString).toLocaleTimeString([], { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true
+  // Get reservations for a specific table and time slot
+  const getReservationsForSlot = (tableId: string, slotTime: Date) => {
+    return reservations.filter(reservation => {
+      try {
+        if (reservation.tableId !== tableId) return false;
+        
+        const resStart = new Date(reservation.start);
+        const resEnd = new Date(reservation.end);
+        
+        // Validate dates
+        if (isNaN(resStart.getTime()) || isNaN(resEnd.getTime())) {
+          return false;
+        }
+        
+        const slotEnd = new Date(slotTime.getTime() + (30 * 60 * 1000)); // Add 30 minutes
+        
+        // Check if reservation overlaps with this 30-minute slot
+        return resStart < slotEnd && resEnd > slotTime;
+      } catch (error) {
+        console.warn('Error filtering reservation:', error);
+        return false;
+      }
     });
   };
 
-  const customerName = booking.profiles?.first_name && booking.profiles?.last_name 
-    ? `${booking.profiles.first_name} ${booking.profiles.last_name}`
-    : booking.customer_name || "Guest";
-
-  return (
-    <motion.div 
-      style={style}
-      className="p-1"
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-    >
-      <Card 
-        className={cn(
-          "p-3 cursor-pointer border-2 transition-all duration-200 hover:shadow-md",
-          getStatusColor(booking.status),
-          "h-full min-h-[54px]"
-        )}
-        onClick={() => onClick(booking)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClick(booking);
-          }
-        }}
-        aria-label={`Booking for ${customerName} at ${formatTime(booking.booking_time)}`}
-      >
-        <div className="space-y-1">
-          {/* Header row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              {getStatusIcon(booking.status)}
-              <span className="text-xs font-medium truncate max-w-[60px]">
-                {formatTime(booking.booking_time)}
-              </span>
-            </div>
-            <Badge 
-              variant="secondary" 
-              className="h-5 px-1.5 text-xs"
-            >
-              {booking.party_size}
-            </Badge>
-          </div>
-          
-          {/* Customer name */}
-          <div className="flex items-center gap-1">
-            <User className="w-3 h-3 opacity-60" />
-            <span className="text-xs font-medium truncate">
-              {customerName}
-            </span>
-          </div>
-          
-          {/* Table info */}
-          {booking.table_number && (
-            <div className="flex items-center gap-1">
-              <MapPin className="w-3 h-3 opacity-60" />
-              <span className="text-xs opacity-75">
-                Table {booking.table_number}
-              </span>
-            </div>
-          )}
-        </div>
-      </Card>
-    </motion.div>
-  );
-};
-
-const Timeline: React.FC = () => {
-  const { data, isLoading, error } = useTodayData();
-  const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
-  const [currentHour, setCurrentHour] = useState(new Date().getHours());
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Generate time slots
-  const timeSlots = useMemo((): TimelineSlot[] => {
-    const slots: TimelineSlot[] = [];
-    const now = new Date();
-    const currentHourNum = now.getHours();
-
-    for (let hour = HOURS_START; hour <= HOURS_END; hour++) {
-      for (let minute = 0; minute < 60; minute += MINUTES_INTERVAL) {
-        const slotTime = new Date();
-        slotTime.setHours(hour, minute, 0, 0);
-        
-        const timeString = slotTime.toLocaleTimeString([], { 
-          hour: 'numeric', 
-          minute: '2-digit',
-          hour12: true
-        });
-
-        // Find bookings for this slot (within the time interval)
-        const slotBookings = data?.bookings?.filter(booking => {
-          const bookingTime = new Date(booking.booking_time);
-          const bookingHour = bookingTime.getHours();
-          const bookingMinute = bookingTime.getMinutes();
-          
-          return bookingHour === hour && 
-                 bookingMinute >= minute && 
-                 bookingMinute < minute + MINUTES_INTERVAL;
-        }) || [];
-
-        slots.push({
-          time: slotTime,
-          timeString,
-          bookings: slotBookings,
-          isCurrentHour: hour === currentHourNum
-        });
-      }
-    }
-
-    return slots;
-  }, [data?.bookings]);
-
-  // Scroll to current hour on mount
-  useEffect(() => {
-    if (scrollRef.current && timeSlots.length > 0) {
-      const currentHourIndex = timeSlots.findIndex(slot => slot.isCurrentHour);
-      if (currentHourIndex >= 0) {
-        const targetElement = scrollRef.current.children[currentHourIndex] as HTMLElement;
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
-    }
-  }, [timeSlots]);
-
-  const handleBookingClick = useCallback((booking: BookingData) => {
-    setSelectedBooking(booking);
-    // TODO: Trigger details drawer or modal
-  }, []);
-
-  const navigateToHour = (direction: 'prev' | 'next') => {
-    const newHour = direction === 'prev' ? currentHour - 1 : currentHour + 1;
-    if (newHour >= HOURS_START && newHour <= HOURS_END) {
-      setCurrentHour(newHour);
-      const targetSlotIndex = timeSlots.findIndex(slot => 
-        slot.time.getHours() === newHour && slot.time.getMinutes() === 0
-      );
-      if (targetSlotIndex >= 0 && scrollRef.current) {
-        const targetElement = scrollRef.current.children[targetSlotIndex] as HTMLElement;
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
+  // Get status color for reservation card
+  const getReservationColor = (reservation: Reservation) => {
+    switch (reservation.status) {
+      case 'confirmed':
+        return 'bg-blue-500/80 border-blue-400';
+      case 'seated':
+        return 'bg-purple-500/80 border-purple-400';
+      case 'completed':
+        return 'bg-gray-500/80 border-gray-400';
+      case 'no_show':
+        return 'bg-red-500/80 border-red-400';
+      case 'cancelled':
+        return 'bg-gray-600/80 border-gray-500';
+      default:
+        return 'bg-slate-500/80 border-slate-400';
     }
   };
 
-  if (error) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
-          <div>
-            <p className="font-semibold text-destructive">Failed to load timeline</p>
-            <p className="text-sm text-muted-foreground">Please refresh the page</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="h-full p-4">
-        <div className="animate-pulse space-y-3">
-          {Array.from({ length: 8 }, (_, i) => (
-            <div key={i} className="flex gap-4">
-              <div className="w-20 h-12 bg-surface-2/50 rounded" />
-              <div className="flex-1 h-12 bg-surface-2/30 rounded" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  // Calculate reservation card width based on duration
+  const getReservationWidth = (reservation: Reservation) => {
+    try {
+      const start = new Date(reservation.start);
+      const end = new Date(reservation.end);
+      
+      // Validate dates
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return '100%'; // Default width for invalid dates
+      }
+      
+      const durationMinutes = differenceInMinutes(end, start);
+      
+      // Each 30-minute slot is 1 unit width
+      // Minimum width of 1 slot, maximum of 4 slots
+      const slots = Math.max(1, Math.min(4, durationMinutes / 30));
+      return `${slots * 100}%`;
+    } catch (error) {
+      console.warn('Error calculating reservation width:', error);
+      return '100%'; // Fallback width
+    }
+  };
 
   return (
     <div 
-      ref={containerRef} 
-      className="h-full flex flex-col"
+      ref={containerRef}
+      className="h-full overflow-auto glass rounded-lg"
       role="region"
-      aria-label="Restaurant timeline for today's bookings"
+      aria-label="Restaurant table timeline showing reservations throughout the day"
     >
-      {/* Navigation header */}
-      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-surface-2/30">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigateToHour('prev')}
-            disabled={currentHour <= HOURS_START}
-            aria-label="Previous hour"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          
-          <div className="text-center min-w-[100px]">
-            <p className="text-sm font-semibold">
-              {new Date().setHours(currentHour, 0, 0, 0) && 
-                new Date(new Date().setHours(currentHour, 0, 0, 0)).toLocaleTimeString([], {
-                  hour: 'numeric',
-                  hour12: true
-                })
-              }
-            </p>
-            <p className="text-xs text-muted-foreground">Current view</p>
+      {/* Header with time slots */}
+      <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur border-b border-white/10">
+        <div className="flex">
+          {/* Table column header */}
+          <div className="w-32 p-3 text-sm font-medium text-white/90 border-r border-white/10">
+            Tables
           </div>
           
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigateToHour('next')}
-            disabled={currentHour >= HOURS_END}
-            aria-label="Next hour"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-
-        <div className="text-sm text-muted-foreground">
-          {data?.bookings?.length || 0} bookings today
+          {/* Time slot headers */}
+          <div className="flex-1 overflow-x-auto">
+            <div className="flex min-w-max">
+              {timeSlots.map((slot, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "flex-1 min-w-[100px] p-3 text-xs font-medium text-center border-r border-white/5",
+                    slot.isCurrentTime && "bg-accent/20 text-accent"
+                  )}
+                >
+                  {slot.label}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Scrollable timeline */}
-      <div 
-        ref={scrollRef}
-        className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-surface-2 scrollbar-track-transparent"
-      >
-        {timeSlots.map((slot, index) => (
-          <div
-            key={`${slot.time.getHours()}-${slot.time.getMinutes()}`}
-            className="border-b border-surface-2/30 hover:bg-surface-2/10 transition-colors relative h-20"
+      {/* Table rows */}
+      <div className="divide-y divide-white/5">
+        {tables.map((table) => (
+          <div 
+            key={table.id}
+            className={cn(
+              "flex hover:bg-white/5 transition-colors",
+              focusTableId === table.id && "bg-accent/10"
+            )}
           >
-            <div className="flex items-center h-full px-4">
-              {/* Time column */}
-              <div className="w-20 flex-shrink-0">
-                <div className={cn(
-                  "text-xs font-medium",
-                  slot.isCurrentHour ? "text-brand font-bold" : "text-text-muted"
-                )}>
-                  {slot.timeString}
-                  {slot.isCurrentHour && (
-                    <div className="w-2 h-2 bg-brand rounded-full mt-1 animate-pulse" />
-                  )}
-                </div>
+            {/* Table info */}
+            <div className="w-32 p-3 border-r border-white/10">
+              <div className="text-sm font-medium text-white">
+                {table.name}
               </div>
-
-              {/* Bookings */}
-              <div className="flex-1 flex items-center gap-2 overflow-x-auto">
-                {slot.bookings.length === 0 ? (
-                  <span className="text-xs text-muted-foreground italic">No bookings</span>
-                ) : (
-                  slot.bookings.map((booking, bookingIndex) => (
-                    <TimelineItem
-                      key={`${booking.id}-${bookingIndex}`}
-                      booking={booking}
-                      onClick={handleBookingClick}
-                      style={{
-                        flexShrink: 0,
-                        minWidth: '150px'
-                      }}
-                    />
-                  ))
-                )}
+              <div className="text-xs text-white/60">
+                {table.capacity} seats • {table.section}
+              </div>
+              <div className={cn(
+                "text-xs font-medium mt-1",
+                table.status === 'available' && "text-blue-400",
+                table.status === 'occupied' && "text-purple-400",
+                table.status === 'reserved' && "text-amber-400",
+                table.status === 'maintenance' && "text-red-400"
+              )}>
+                {table.status}
               </div>
             </div>
 
-            {/* Current time indicator overlay */}
-            {slot.isCurrentHour && (
-              <div className="absolute inset-0 bg-brand/5 pointer-events-none" />
-            )}
+            {/* Timeline slots */}
+            <div className="flex-1 overflow-x-auto">
+              <div className="flex min-w-max relative">
+                {timeSlots.map((slot, slotIndex) => {
+                  const slotReservations = getReservationsForSlot(table.id, slot.time);
+                  
+                  return (
+                    <div
+                      key={slotIndex}
+                      className="flex-1 min-w-[100px] p-1 border-r border-white/5 relative"
+                      style={{ minHeight: '64px' }}
+                    >
+                      {/* Time slot click area */}
+                      <button
+                        className="w-full h-full rounded hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-accent"
+                        onClick={() => onTimeSlotClick(table.id, slot.time)}
+                        aria-label={`Create reservation for ${table.name} at ${slot.label}`}
+                        tabIndex={0}
+                      />
+
+                      {/* Reservation cards */}
+                      {slotReservations.map((reservation) => (
+                        <div
+                          key={reservation.id}
+                          className={cn(
+                            "absolute top-1 left-1 right-1 rounded border cursor-pointer p-1 hover:shadow-md transition-all focus:outline-none focus:ring-1 focus:ring-accent",
+                            getReservationColor(reservation)
+                          )}
+                          style={{
+                            width: getReservationWidth(reservation),
+                            zIndex: 20
+                          }}
+                          onClick={() => onReservationClick(reservation)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onReservationClick(reservation);
+                            }
+                          }}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`Reservation for ${reservation.guestName}, ${reservation.partySize} guests at ${format(new Date(reservation.start), "h:mm a")}, status: ${reservation.status}`}
+                        >
+                          <div className="text-xs font-medium text-white truncate">
+                            {reservation.guestName}
+                          </div>
+                          <div className="text-xs text-white/80 truncate">
+                            {reservation.partySize}p • {format(new Date(reservation.start), "h:mm a")}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Current time indicator */}
+                      {slot.isCurrentTime && (
+                        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent animate-pulse" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Selected booking indicator */}
-      <AnimatePresence>
-        {selectedBooking && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="absolute bottom-4 right-4 bg-surface border border-surface-2 rounded-lg p-3 shadow-lg"
-          >
-            <p className="text-sm font-semibold">Selected:</p>
-            <p className="text-sm text-muted-foreground">
-              {selectedBooking.customer_name} - Table {selectedBooking.table_number}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Loading state */}
+      {tables.length === 0 && (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center space-y-2">
+            <div className="w-8 h-8 border-2 border-white/20 border-t-accent rounded-full animate-spin mx-auto" />
+            <div className="text-sm text-white/60">Loading timeline...</div>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state when tables exist but no reservations */}
+      {tables.length > 0 && reservations.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-center space-y-2 bg-slate-900/80 backdrop-blur rounded-lg p-4">
+            <div className="text-sm text-white/60">No reservations found</div>
+            <div className="text-xs text-white/40">Click on time slots to create new reservations</div>
+          </div>
+        </div>
+      )}
+
+      {/* Current time line overlay */}
+      {(() => {
+        const currentSlotIndex = timeSlots.findIndex(slot => slot.isCurrentTime);
+        if (currentSlotIndex === -1) return null;
+        
+        return (
+          <div 
+            className="absolute w-0.5 bg-accent shadow-lg pointer-events-none z-30"
+            style={{
+              left: `${132 + (currentSlotIndex * 100)}px`,
+              top: '56px',
+              bottom: '0px'
+            }}
+          />
+        );
+      })()}
     </div>
   );
-};
-
-export default Timeline;
+}
