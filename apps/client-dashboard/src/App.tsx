@@ -8,6 +8,7 @@ import { TenantBrandingProvider } from "@/contexts/TenantBrandingContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { FullscreenProvider } from "@/contexts/FullscreenContext";
+import { RealtimeCommandCenterProvider } from "@/contexts/RealtimeCommandCenterContext";
 import { ModeProvider } from "@/lib/ui-mode";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -48,14 +49,15 @@ const App = () => (
     <ThemeProvider>
       <AuthProvider>
         <TenantBrandingProvider>
-          <ModeProvider>
-            <NavigationProvider>
-              <FullscreenProvider>
-                <TooltipProvider>
-                  <DesignQAProvider>
-                    <Toaster />
-                    <Sonner />
-                    <BrowserRouter>
+          <RealtimeCommandCenterProvider>
+            <ModeProvider>
+              <NavigationProvider>
+                <FullscreenProvider>
+                  <TooltipProvider>
+                    <DesignQAProvider>
+                      <Toaster />
+                      <Sonner />
+                      <BrowserRouter>
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/auth" element={<Auth />} />
@@ -159,9 +161,10 @@ const App = () => (
             </FullscreenProvider>
           </NavigationProvider>
         </ModeProvider>
-      </TenantBrandingProvider>
-    </AuthProvider>
-  </ThemeProvider>
+      </RealtimeCommandCenterProvider>
+    </TenantBrandingProvider>
+  </AuthProvider>
+</ThemeProvider>
 </QueryClientProvider>
 );
 
