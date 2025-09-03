@@ -4,6 +4,10 @@ export { default as KitchenLoadGauge } from './KitchenLoadGauge';
 export { StatusLegend } from './StatusLegend';
 export { Timeline } from './Timeline';
 export { MainSplit } from './MainSplit';
+export { TopBar } from './TopBar';
+export { KpiStrip, type KpiCard } from './KpiStrip';
+export { Filters, type FiltersState } from './Filters';
+export { ReservationDrawer } from './ReservationDrawer';
 
 // Error boundaries
 export { default as MiniFloorplanErrorBoundary } from './MiniFloorplanErrorBoundary';

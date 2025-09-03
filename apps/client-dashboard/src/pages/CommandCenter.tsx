@@ -1,12 +1,12 @@
 import React from "react";
-import { TopBar } from "@/components/command-center/TopBar";
-import { KpiStrip } from "@/components/command-center/KpiStrip";
-import { Filters } from "@/components/command-center/Filters";
-import { MainSplit } from "@/components/command-center/MainSplit";
-import { ReservationDrawer } from "@/components/command-center/ReservationDrawer";
-import { useCommandCenterData } from "@/hooks/useCommandCenterData";
-import { useState } from "react";
-import { FiltersState } from "@/components/command-center/Filters";
+import { TopBar } from "@/components/command-center/TopBar.tsx";
+import { KpiStrip, type KpiCard } from "@/components/command-center/KpiStrip.tsx";
+import { Filters } from "@/components/command-center/Filters.tsx";
+import { MainSplit } from "@/components/command-center/MainSplit.tsx";
+import { ReservationDrawer } from "@/components/command-center/ReservationDrawer.tsx";
+import { useCommandCenterData, type KpiItem } from "@/hooks/useCommandCenterData.ts";
+import { useState, useMemo } from "react";
+import { FiltersState } from "@/components/command-center/Filters.tsx";
 
 export default function CommandCenter() {
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -28,9 +28,44 @@ export default function CommandCenter() {
     filters
   });
 
+  // Convert KpiItem to KpiCard format
+  const kpiCards = useMemo<KpiCard[]>(() => {
+    return kpis.map((item: KpiItem) => ({
+      id: item.id,
+      label: item.label,
+      value: formatKpiValue(item.value, item.format),
+      trendDirection: item.change && item.change > 0 ? 'up' : 'down',
+      sublabel: item.change ? `${item.change > 0 ? '+' : ''}${item.change}%` : undefined,
+    }));
+  }, [kpis]);
+
+  // Convert error string to ErrorState format
+  const errorState = useMemo(() => {
+    if (!error) return null;
+    return {
+      message: error,
+      requestId: undefined
+    };
+  }, [error]);
+
   const selectedReservation = selectedReservationId 
     ? reservations.find(r => r.id === selectedReservationId)
     : null;
+
+  // Helper function to format KPI values
+  function formatKpiValue(value: number, format?: 'number' | 'percentage' | 'currency'): string {
+    switch (format) {
+      case 'currency':
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+        }).format(value);
+      case 'percentage':
+        return `${value}%`;
+      default:
+        return value.toString();
+    }
+  }
 
   return (
     <main 
@@ -62,7 +97,7 @@ export default function CommandCenter() {
 
         {/* KPI Strip */}
         <KpiStrip 
-          items={kpis}
+          items={kpiCards}
           loading={loading}
         />
 
@@ -81,7 +116,7 @@ export default function CommandCenter() {
           onFocusTable={setFocusTableId}
           focusTableId={focusTableId}
           loading={loading}
-          error={error}
+          error={errorState}
         />
       </div>
 
