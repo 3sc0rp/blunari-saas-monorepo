@@ -27,18 +27,37 @@ export function useTenant() {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
 
+      // Get user session first
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      if (!session) {
+        setState({
+          tenant: null,
+          loading: false,
+          error: 'User not authenticated'
+        });
+        return;
+      }
+
       // First, try to get tenant from URL slug
       if (params.slug) {
         const { data, error } = await supabase.functions.invoke('tenant', {
-          body: { slug: params.slug }
+          body: { slug: params.slug },
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          }
         });
 
         if (error) {
           throw error;
         }
 
-        if (data) {
-          const tenant = TenantInfoZ.parse(data);
+        if (data?.data) {
+          const tenant = TenantInfoZ.parse(data.data);
           setState({
             tenant,
             loading: false,
@@ -49,64 +68,32 @@ export function useTenant() {
       }
 
       // Fallback: Get tenant from session/user context
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError) {
-        throw authError;
+      const { data, error } = await supabase.functions.invoke('tenant', {
+        body: {},
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        }
+      });
+
+      if (error) {
+        throw error;
       }
 
-      if (!user) {
+      if (data?.data) {
+        const tenant = TenantInfoZ.parse(data.data);
         setState({
-          tenant: null,
+          tenant,
           loading: false,
-          error: 'User not authenticated'
+          error: null
         });
         return;
       }
 
-      // Get tenant ID from user metadata or auto_provisioning table
-      const { data: provisioningData, error: provisioningError } = await supabase
-        .from('auto_provisioning')
-        .select(`
-          tenant_id,
-          tenants (
-            id,
-            name,
-            slug,
-            timezone,
-            currency
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'completed')
-        .single();
-
-      if (provisioningError) {
-        throw provisioningError;
-      }
-
-      if (!provisioningData?.tenants) {
-        setState({
-          tenant: null,
-          loading: false,
-          error: 'No tenant found for user'
-        });
-        return;
-      }
-
-      const tenantData = provisioningData.tenants as any;
-      const tenant: TenantInfo = {
-        tenantId: tenantData.id,
-        name: tenantData.name,
-        slug: tenantData.slug,
-        timezone: tenantData.timezone || 'America/New_York',
-        currency: tenantData.currency || 'USD'
-      };
-
+      // If all else fails, throw an error
       setState({
-        tenant,
+        tenant: null,
         loading: false,
-        error: null
+        error: 'No tenant found for user'
       });
 
     } catch (error) {

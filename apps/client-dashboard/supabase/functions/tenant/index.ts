@@ -26,6 +26,14 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Support both GET and POST requests
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return new Response(
+      JSON.stringify({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Only GET and POST requests are allowed' } }),
+      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
   try {
     // Create Supabase client
     const supabaseClient = createClient(
@@ -51,13 +59,26 @@ serve(async (req) => {
     // Verify the JWT token and get user
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader)
     if (authError || !user) {
+      console.error('Auth error:', authError)
       return new Response(
         JSON.stringify({ error: { code: 'AUTH_INVALID', message: 'Invalid authorization token' } }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const body: TenantRequest = await req.json()
+    // Parse request body if POST, otherwise use empty object for GET
+    let body: TenantRequest = {}
+    if (req.method === 'POST') {
+      try {
+        body = await req.json()
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError)
+        return new Response(
+          JSON.stringify({ error: { code: 'INVALID_JSON', message: 'Invalid JSON in request body' } }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
 
     let tenantData;
 

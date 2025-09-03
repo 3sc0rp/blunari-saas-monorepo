@@ -4,6 +4,7 @@ import { KpiStrip, type KpiCard } from "@/components/command-center/KpiStrip.tsx
 import { Filters } from "@/components/command-center/Filters.tsx";
 import { MainSplit } from "@/components/command-center/MainSplit.tsx";
 import { ReservationDrawer } from "@/components/command-center/ReservationDrawer.tsx";
+import { AuthDebugger } from "@/components/command-center/AuthDebugger.tsx";
 import { useCommandCenterData } from "@/hooks/useCommandCenterDataNew.ts";
 import { useReservationActions } from "@/hooks/useReservationActions.ts";
 import { useState, useMemo } from "react";
@@ -270,6 +271,15 @@ export default function CommandCenter() {
       </a>
 
       <div id="main-content" className="max-w-full space-y-6">
+        {/* Debug Panel - Remove in production */}
+        {error && (
+          <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-4">
+            <div className="text-red-400 font-semibold mb-2">❌ Command Center Error:</div>
+            <div className="text-red-300 text-sm mb-4">{error}</div>
+            <AuthDebugger />
+          </div>
+        )}
+
         {/* Top Bar */}
         <TopBar 
           onDateChange={setSelectedDate}

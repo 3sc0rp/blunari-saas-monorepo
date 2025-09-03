@@ -67,62 +67,40 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           'Content-Type': 'application/json'
         };
 
-        // Parallel fetch all data with proper error handling
-        const apiBaseUrl = import.meta.env.VITE_CLIENT_API_BASE_URL;
-        if (!apiBaseUrl) {
-          throw new Error('API base URL not configured');
-        }
-
-        const [reservationsRes, tablesRes, kpisRes] = await Promise.all([
-          // Fetch reservations
-          fetch(`${apiBaseUrl}/list-reservations`, {
-            method: 'POST',
-            headers: authHeaders,
-            body: JSON.stringify({ date, filters })
-          }),
-          
+        // Parallel fetch all data using Supabase Functions
+        const [tablesResult, kpisResult] = await Promise.all([
           // Fetch tables
-          fetch(`${apiBaseUrl}/list-tables`, {
-            method: 'GET',
-            headers: authHeaders
+          supabase.functions.invoke('list-tables', {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
           }),
           
-          // Fetch KPIs (updated to GET with query params)
-          fetch(`${apiBaseUrl}/get-kpis?date=${encodeURIComponent(date)}`, {
-            method: 'GET',
-            headers: authHeaders
+          // Fetch KPIs
+          supabase.functions.invoke('get-kpis', {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            body: { date }
           })
         ]);
 
-        // Handle errors - check response status
-        if (!reservationsRes.ok) {
-          const errorText = await reservationsRes.text();
-          throw new Error(`Failed to fetch reservations: ${reservationsRes.status} ${errorText}`);
+        // Handle function invocation errors
+        if (tablesResult.error) {
+          throw new Error(`Failed to fetch tables: ${tablesResult.error.message}`);
         }
-        if (!tablesRes.ok) {
-          const errorText = await tablesRes.text();
-          throw new Error(`Failed to fetch tables: ${tablesRes.status} ${errorText}`);
-        }
-        if (!kpisRes.ok) {
-          const errorText = await kpisRes.text();
-          throw new Error(`Failed to fetch KPIs: ${kpisRes.status} ${errorText}`);
+        if (kpisResult.error) {
+          throw new Error(`Failed to fetch KPIs: ${kpisResult.error.message}`);
         }
 
-        // Parse response data
-        const reservationsData = await reservationsRes.json();
-        const tablesData = await tablesRes.json();
-        const kpisData = await kpisRes.json();
+        // Extract data from Supabase function results
+        const tablesData = tablesResult.data;
+        const kpisData = kpisResult.data;
+
+        // For now, use empty reservations array (we can implement list-reservations later)
+        const reservations: Reservation[] = [];
 
         // Validate and transform data
-        const reservations: Reservation[] = (reservationsData?.data || []).map((r: any) => {
-          try {
-            return validateReservation(r);
-          } catch (error) {
-            console.warn('Invalid reservation data:', r, error);
-            return null;
-          }
-        }).filter(Boolean);
-
         const tables: TableRow[] = (tablesData?.data || []).map((t: any) => {
           try {
             return validateTableRow(t);

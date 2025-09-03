@@ -84,9 +84,9 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  // Only allow GET requests
-  if (req.method !== 'GET') {
-    return createErrorResponse('METHOD_NOT_ALLOWED', 'Only GET requests are allowed', 405);
+  // Allow both GET and POST requests
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return createErrorResponse('METHOD_NOT_ALLOWED', 'Only GET and POST requests are allowed', 405);
   }
 
   try {
@@ -128,9 +128,23 @@ serve(async (req) => {
 
     const tenantId = (tenantData as TenantData).tenant_id;
 
-    // Parse and validate request parameters
-    const url = new URL(req.url);
-    const dateParam = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+    // Parse and validate request parameters from URL or body
+    let dateParam: string;
+    
+    if (req.method === 'GET') {
+      // Get date from query parameters
+      const url = new URL(req.url);
+      dateParam = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
+    } else {
+      // POST request - get date from body
+      try {
+        const body = await req.json();
+        dateParam = body.date || new Date().toISOString().split('T')[0];
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError);
+        return createErrorResponse('INVALID_JSON', 'Invalid JSON in request body', 400);
+      }
+    }
     
     if (!isValidDateString(dateParam)) {
       return createErrorResponse('INVALID_DATE', 'Invalid date format. Use YYYY-MM-DD', 400);
