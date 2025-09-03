@@ -14,8 +14,11 @@ export default defineConfig(({ mode }) => ({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(__dirname, "./src")
     },
+  },
+  define: {
+    global: 'globalThis',
   },
   optimizeDeps: {
     include: [
@@ -29,34 +32,8 @@ export default defineConfig(({ mode }) => ({
     exclude: ['@huggingface/transformers']
   },
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
-            }
-            if (id.includes('@supabase')) {
-              return 'supabase-vendor';
-            }
-            if (id.includes('@tanstack') || id.includes('react-query')) {
-              return 'query-vendor';
-            }
-            if (id.includes('framer-motion') || id.includes('lucide-react')) {
-              return 'ui-vendor';
-            }
-            if (id.includes('@radix-ui')) {
-              return 'radix-vendor';
-            }
-            // Put all other vendors into a single chunk
-            return 'vendor';
-          }
-        }
-      }
-    },
     target: 'es2020',
-    minify: false, // Disable minification temporarily for debugging
-    sourcemap: true, // Enable sourcemaps temporarily for debugging  
+    sourcemap: true,
     chunkSizeWarningLimit: 2000
   },
   esbuild: {
