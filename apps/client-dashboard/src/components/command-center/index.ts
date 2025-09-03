@@ -8,6 +8,8 @@ export { TopBar } from './TopBar';
 export { KpiStrip, type KpiCard } from './KpiStrip';
 export { Filters, type FiltersState } from './Filters';
 export { ReservationDrawer } from './ReservationDrawer';
+export { default as CurrentTimeMarker } from './CurrentTimeMarker';
+export { default as DurationBar } from './DurationBar';
 
 // Error boundaries
 export { default as MiniFloorplanErrorBoundary } from './MiniFloorplanErrorBoundary';

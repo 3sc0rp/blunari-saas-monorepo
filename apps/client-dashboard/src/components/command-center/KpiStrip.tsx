@@ -50,11 +50,11 @@ const MiniSparkline: React.FC<{ data: number[]; tone?: string }> = ({ data, tone
 };
 
 const KpiCardSkeleton: React.FC = () => (
-  <div className="glass rounded-[10px] p-4 flex-1 min-w-[140px]">
-    <div className="flex items-start justify-between">
-      <div className="space-y-2 flex-1">
+  <div className="glass rounded-[10px] p-5 flex-1 min-w-[160px] h-[100px]">
+    <div className="flex items-start justify-between h-full">
+      <div className="space-y-3 flex-1">
         <Skeleton className="h-3 w-16 bg-white/10" />
-        <Skeleton className="h-6 w-20 bg-white/10" />
+        <Skeleton className="h-8 w-20 bg-white/10" />
         <Skeleton className="h-3 w-12 bg-white/10" />
       </div>
       <div className="flex flex-col items-end gap-2">
@@ -101,11 +101,11 @@ const KpiCardComponent: React.FC<{
   const styles = getToneStyles(card.tone);
 
   return (
-    <div className="glass rounded-[10px] p-4 flex-1 min-w-[140px] group hover:bg-white/[0.08] transition-all duration-200">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1 flex-1">
+    <div className="glass rounded-[10px] p-5 flex-1 min-w-[160px] h-[100px] group hover:bg-white/[0.08] transition-all duration-200">
+      <div className="flex items-start justify-between h-full">
+        <div className="space-y-2 flex-1 flex flex-col">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-white/60 font-medium">
+            <span className="text-sm text-white/60 font-medium leading-tight">
               {card.label}
             </span>
             {card.hint && (
@@ -118,7 +118,7 @@ const KpiCardComponent: React.FC<{
               </button>
             )}
           </div>
-          <div className="font-tabular text-2xl font-semibold text-white">
+          <div className="font-mono text-3xl font-bold text-white tracking-tight tabular-nums flex-1 flex items-center">
             {card.value}
           </div>
           {card.sublabel && (
@@ -130,13 +130,22 @@ const KpiCardComponent: React.FC<{
           )}
         </div>
         
-        <div className="flex flex-col items-end gap-2">
-          {/* Status indicator dot */}
-          <div className={cn("w-2 h-2 rounded-full", styles.dot)} />
+        <div className="flex flex-col items-end gap-3">
+          {/* Status indicator dot with tooltip */}
+          {card.hint ? (
+            <div 
+              className={cn("w-2.5 h-2.5 rounded-full cursor-pointer", styles.dot)}
+              title={card.hint}
+            />
+          ) : (
+            <div className={cn("w-2.5 h-2.5 rounded-full", styles.dot)} />
+          )}
           
           {/* Mini sparkline */}
           {card.spark && (
-            <MiniSparkline data={card.spark} tone={card.tone} />
+            <div className="mt-auto">
+              <MiniSparkline data={card.spark} tone={card.tone} />
+            </div>
           )}
         </div>
       </div>

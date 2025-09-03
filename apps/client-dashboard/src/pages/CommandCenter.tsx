@@ -4,9 +4,43 @@ import { KpiStrip, type KpiCard } from "@/components/command-center/KpiStrip.tsx
 import { Filters } from "@/components/command-center/Filters.tsx";
 import { MainSplit } from "@/components/command-center/MainSplit.tsx";
 import { ReservationDrawer } from "@/components/command-center/ReservationDrawer.tsx";
-import { useCommandCenterData, type KpiItem } from "@/hooks/useCommandCenterData.ts";
+import { useCommandCenterData } from "@/hooks/useCommandCenterDataNew.ts";
+import { useReservationActions } from "@/hooks/useReservationActions.ts";
 import { useState, useMemo } from "react";
 import { FiltersState } from "@/components/command-center/Filters.tsx";
+import { 
+  Filters as FiltersType, 
+  shouldUseMocks,
+  Reservation as ContractReservation,
+  TableRow as ContractTableRow
+} from "@/lib/contracts.ts";
+import { toast } from "sonner";
+import type { TableRow as LegacyTableRow, Reservation as LegacyReservation } from "@/hooks/useCommandCenterData";
+
+// Type transformation utilities for converting contract types to legacy component types
+const transformTableToLegacy = (table: ContractTableRow): LegacyTableRow => ({
+  id: table.id,
+  name: table.name,
+  capacity: table.seats, // Map seats to capacity for backward compatibility
+  section: table.section,
+  status: table.status.toLowerCase() as 'available' | 'occupied' | 'reserved' | 'maintenance'
+});
+
+const transformReservationToLegacy = (reservation: ContractReservation): LegacyReservation => ({
+  id: reservation.id,
+  tableId: reservation.tableId,
+  guestName: reservation.guestName,
+  partySize: reservation.partySize,
+  start: reservation.start,
+  end: reservation.end,
+  status: reservation.status.toLowerCase() as 'confirmed' | 'seated' | 'completed' | 'no_show' | 'cancelled',
+  channel: reservation.channel === 'WEB' ? 'online' : 
+           reservation.channel === 'PHONE' ? 'phone' : 'walkin',
+  deposit: reservation.depositAmount,
+  isVip: reservation.vip,
+  guestPhone: reservation.guestPhone,
+  specialRequests: reservation.specialRequests
+});
 
 export default function CommandCenter() {
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -15,6 +49,100 @@ export default function CommandCenter() {
   const [filters, setFilters] = useState<FiltersState>({});
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
   const [focusTableId, setFocusTableId] = useState<string | undefined>();
+  const [advancedMode, setAdvancedMode] = useState<boolean>(
+    localStorage.getItem('commandCenter.advancedMode') === 'true'
+  );
+
+  // Convert FiltersState to contracts.Filters
+  const contractFilters = useMemo<FiltersType>(() => ({
+    section: 'all', // Current FiltersState doesn't have section, defaulting to 'all'
+    status: filters.status?.length === 1 ? filters.status[0] as any : 'all',
+    channel: filters.channel?.length === 1 ? filters.channel[0] as any : 'all',
+    partySize: filters.party ? {
+      min: Math.min(...filters.party),
+      max: Math.max(...filters.party)
+    } : undefined
+  }), [filters]);
+
+  // Get reservation actions
+  const {
+    createReservationAction,
+    moveReservationAction,
+    cancelReservationAction,
+    isAnyLoading: isActionLoading
+  } = useReservationActions();
+
+  // Persist advanced mode preference
+  const handleAdvancedModeChange = (mode: boolean) => {
+    setAdvancedMode(mode);
+    localStorage.setItem('commandCenter.advancedMode', mode.toString());
+  };
+
+  const handleNewReservation = async () => {
+    try {
+      // Mock new reservation for now - in real app would open a modal
+      if (shouldUseMocks()) {
+        console.log('New reservation shortcut triggered (mock mode)');
+        return;
+      }
+      
+      // Example of creating a reservation programmatically
+      const result = await createReservationAction({
+        tableId: 'table-1',
+        start: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
+        end: new Date(Date.now() + 2.5 * 60 * 60 * 1000).toISOString(), // 2.5 hours from now
+        partySize: 4,
+        guestName: 'Test Guest',
+        guestEmail: 'test@example.com',
+        channel: 'WEB'
+      });
+      
+      if (result.ok) {
+        toast.success('Reservation created successfully');
+      } else {
+        toast.error(`Failed to create reservation: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to create new reservation:', error);
+      toast.error('Failed to create reservation. Please try again.');
+    }
+  };
+
+  // Handle keyboard shortcuts with enhanced error handling
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      try {
+        // Only handle shortcuts when not in an input field
+        if ((event.target as HTMLElement)?.tagName === 'INPUT') return;
+        
+        switch (event.key.toLowerCase()) {
+          case 'n':
+            event.preventDefault();
+            handleNewReservation();
+            break;
+          case 'f':
+            event.preventDefault();
+            // Focus filters - could implement this
+            break;
+          case 'escape':
+            // Clear filters if any are active
+            if (Object.values(filters).some(v => v && (Array.isArray(v) ? v.length : true))) {
+              setFilters({});
+            }
+            break;
+          case '?':
+            event.preventDefault();
+            // Show shortcuts modal - could implement this
+            break;
+        }
+      } catch (error) {
+        console.error('Keyboard shortcut error:', error);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filters, handleNewReservation]);
 
   const {
     kpis,
@@ -25,19 +153,80 @@ export default function CommandCenter() {
     error
   } = useCommandCenterData({
     date: selectedDate,
-    filters
+    filters: contractFilters
   });
 
-  // Convert KpiItem to KpiCard format
+  // Transform data for legacy components with error handling
+  const legacyTables = useMemo<LegacyTableRow[]>(() => {
+    try {
+      return tables.map(transformTableToLegacy);
+    } catch (error) {
+      console.error('Error transforming tables:', error);
+      return [];
+    }
+  }, [tables]);
+  
+  const legacyReservations = useMemo<LegacyReservation[]>(() => {
+    try {
+      return reservations.map(transformReservationToLegacy);
+    } catch (error) {
+      console.error('Error transforming reservations:', error);
+      return [];
+    }
+  }, [reservations]);
+
+  // Convert KPI data to KpiCard format with enhanced data
   const kpiCards = useMemo<KpiCard[]>(() => {
-    return kpis.map((item: KpiItem) => ({
-      id: item.id,
-      label: item.label,
-      value: formatKpiValue(item.value, item.format),
-      trendDirection: item.change && item.change > 0 ? 'up' : 'down',
-      sublabel: item.change ? `${item.change > 0 ? '+' : ''}${item.change}%` : undefined,
-    }));
+    return kpis.map((item) => {
+      return {
+        id: item.id,
+        label: item.label,
+        value: item.value,
+        spark: item.spark,
+        tone: item.tone,
+        hint: item.hint,
+        trendDirection: 'up', // Could be enhanced based on sparkline data
+        sublabel: undefined,
+      };
+    });
   }, [kpis]);
+
+  const handleExport = () => {
+    try {
+      // Export current reservations as CSV using original contract data for more complete information
+      const csvHeader = 'Date,Time,Guest Name,Party Size,Table,Status,Channel,Phone,Email\n';
+      const csvData = reservations.map(r => {
+        const date = new Date(r.start).toLocaleDateString();
+        const time = new Date(r.start).toLocaleTimeString();
+        return [
+          date,
+          time,
+          r.guestName,
+          r.partySize,
+          r.tableId,
+          r.status,
+          r.channel,
+          r.guestPhone || '',
+          r.guestEmail || ''
+        ].join(',');
+      }).join('\n');
+      
+      const blob = new Blob([csvHeader + csvData], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reservations-${selectedDate}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Exported ${reservations.length} reservations`);
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export reservations. Please try again.');
+    }
+  };
 
   // Convert error string to ErrorState format
   const errorState = useMemo(() => {
@@ -85,14 +274,10 @@ export default function CommandCenter() {
         <TopBar 
           onDateChange={setSelectedDate}
           selectedDate={selectedDate}
-          onNewReservation={() => {
-            // TODO: Open new reservation modal
-            console.log('New reservation clicked');
-          }}
-          onExport={() => {
-            // TODO: Handle export
-            console.log('Export clicked');
-          }}
+          onNewReservation={handleNewReservation}
+          onExport={handleExport}
+          advancedMode={advancedMode}
+          onAdvancedModeChange={handleAdvancedModeChange}
         />
 
         {/* KPI Strip */}
@@ -110,8 +295,8 @@ export default function CommandCenter() {
 
         {/* Main Split Layout */}
         <MainSplit
-          tables={tables}
-          reservations={reservations}
+          tables={legacyTables}
+          reservations={legacyReservations}
           onSelectReservation={setSelectedReservationId}
           onFocusTable={setFocusTableId}
           focusTableId={focusTableId}

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import type { TableRow, Reservation } from "@/hooks/useCommandCenterData";
 import { format, addHours, startOfDay, differenceInMinutes } from "date-fns";
+import CurrentTimeMarker from './CurrentTimeMarker.tsx';
+import DurationBar from './DurationBar.tsx';
 
 interface TimelineProps {
   tables: TableRow[];
@@ -36,20 +38,20 @@ export function Timeline({
     return () => clearInterval(timer);
   }, []);
 
-  // Generate time slots (every 30 minutes from 11 AM to 11 PM)
+  // Generate time slots (every 15 minutes from 5 PM to 11 PM)
   const generateTimeSlots = (): TimeSlot[] => {
     const slots: TimeSlot[] = [];
     const today = new Date();
     const startTime = new Date(today);
-    startTime.setHours(11, 0, 0, 0); // Start at 11:00 AM
+    startTime.setHours(17, 0, 0, 0); // Start at 5:00 PM
     
-    for (let i = 0; i < 24; i++) { // 12 hours * 2 slots per hour = 24 slots
-      const time = new Date(startTime.getTime() + (i * 30 * 60 * 1000)); // Add 30 minutes each iteration
-      const isCurrentTime = Math.abs(differenceInMinutes(time, currentTime)) < 30;
+    for (let i = 0; i < 24; i++) { // 6 hours * 4 slots per hour = 24 slots
+      const time = new Date(startTime.getTime() + (i * 15 * 60 * 1000)); // Add 15 minutes each iteration
+      const isCurrentTime = Math.abs(differenceInMinutes(time, currentTime)) < 15;
       
       slots.push({
         time,
-        label: format(time, "h:mm a"),
+        label: format(time, "H:mm"),
         isCurrentTime
       });
     }
@@ -58,6 +60,25 @@ export function Timeline({
   };
 
   const timeSlots = useMemo(() => generateTimeSlots(), [currentTime]);
+
+  // Calculate table utilization for duration bar
+  const getTableUtilization = (tableId: string): number => {
+    const tableReservations = reservations.filter(r => r.tableId === tableId);
+    if (tableReservations.length === 0) return 0;
+    
+    // Calculate total booked minutes vs total available minutes (6 hours = 360 minutes)
+    const totalMinutes = tableReservations.reduce((acc, reservation) => {
+      try {
+        const start = new Date(reservation.start);
+        const end = new Date(reservation.end);
+        return acc + differenceInMinutes(end, start);
+      } catch {
+        return acc;
+      }
+    }, 0);
+    
+    return Math.min(100, (totalMinutes / 360) * 100); // 360 minutes = 6 hours
+  };
 
   // Get reservations for a specific table and time slot
   const getReservationsForSlot = (tableId: string, slotTime: Date) => {
@@ -73,7 +94,7 @@ export function Timeline({
           return false;
         }
         
-        const slotEnd = new Date(slotTime.getTime() + (30 * 60 * 1000)); // Add 30 minutes
+        const slotEnd = new Date(slotTime.getTime() + (15 * 60 * 1000)); // Add 15 minutes
         
         // Check if reservation overlaps with this 30-minute slot
         return resStart < slotEnd && resEnd > slotTime;
@@ -115,9 +136,9 @@ export function Timeline({
       
       const durationMinutes = differenceInMinutes(end, start);
       
-      // Each 30-minute slot is 1 unit width
-      // Minimum width of 1 slot, maximum of 4 slots
-      const slots = Math.max(1, Math.min(4, durationMinutes / 30));
+      // Each 15-minute slot is 1 unit width
+      // Minimum width of 1 slot, maximum of 8 slots
+      const slots = Math.max(1, Math.min(8, durationMinutes / 15));
       return `${slots * 100}%`;
     } catch (error) {
       console.warn('Error calculating reservation width:', error);
@@ -128,129 +149,194 @@ export function Timeline({
   return (
     <div 
       ref={containerRef}
-      className="h-full overflow-auto glass rounded-lg"
+      className="h-full overflow-auto glass rounded-lg relative"
       role="region"
       aria-label="Restaurant table timeline showing reservations throughout the day"
     >
       {/* Header with time slots */}
-      <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur border-b border-white/10">
+      <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur border-b border-white/15">
         <div className="flex">
           {/* Table column header */}
-          <div className="w-32 p-3 text-sm font-medium text-white/90 border-r border-white/10">
-            Tables
+          <div className="w-32 p-3 text-sm font-medium text-white/90 border-r border-white/15 bg-slate-800/50">
+            <span className="uppercase tracking-wide text-xs text-white/70">Tables</span>
           </div>
           
           {/* Time slot headers */}
           <div className="flex-1 overflow-x-auto">
-            <div className="flex min-w-max">
-              {timeSlots.map((slot, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "flex-1 min-w-[100px] p-3 text-xs font-medium text-center border-r border-white/5",
-                    slot.isCurrentTime && "bg-accent/20 text-accent"
-                  )}
-                >
-                  {slot.label}
-                </div>
-              ))}
+            <div className="flex min-w-max relative">
+              {timeSlots.map((slot, index) => {
+                const isHourStart = slot.time.getMinutes() === 0;
+                const hourIndex = Math.floor(index / 4); // Every 4 slots = 1 hour
+                const isEvenHour = hourIndex % 2 === 0;
+                
+                return (
+                  <div
+                    key={index}
+                    className={cn(
+                      "flex-1 min-w-[80px] p-3 text-xs font-medium text-center border-r",
+                      "transition-colors",
+                      isHourStart ? "border-white/15" : "border-white/6",
+                      slot.isCurrentTime && "bg-accent/20 text-accent font-semibold",
+                      isEvenHour ? "bg-white/[0.02]" : "bg-transparent",
+                      isHourStart && "font-semibold uppercase tracking-wide text-white/80"
+                    )}
+                  >
+                    {isHourStart ? format(slot.time, "H:mm") : format(slot.time, ":mm")}
+                  </div>
+                );
+              })}
+              
+              {/* Current Time Marker in header */}
+              <CurrentTimeMarker
+                startHour={17}
+                endHour={23}
+                slotHeight={60}
+                slotWidth={80}
+                className="top-0"
+              />
             </div>
           </div>
         </div>
       </div>
 
       {/* Table rows */}
-      <div className="divide-y divide-white/5">
-        {tables.map((table) => (
-          <div 
-            key={table.id}
-            className={cn(
-              "flex hover:bg-white/5 transition-colors",
-              focusTableId === table.id && "bg-accent/10"
-            )}
-          >
-            {/* Table info */}
-            <div className="w-32 p-3 border-r border-white/10">
-              <div className="text-sm font-medium text-white">
-                {table.name}
-              </div>
-              <div className="text-xs text-white/60">
-                {table.capacity} seats • {table.section}
-              </div>
+      <div className="divide-y divide-white/10">
+        {tables.map((table, tableIndex) => {
+          const isEvenRow = tableIndex % 2 === 0;
+          const utilization = getTableUtilization(table.id);
+          const tableReservations = reservations.filter(r => r.tableId === table.id);
+          
+          return (
+            <div 
+              key={table.id}
+              className={cn(
+                "flex transition-colors relative",
+                isEvenRow ? "bg-white/[0.015]" : "bg-transparent",
+                "hover:bg-white/[0.05]",
+                focusTableId === table.id && "bg-accent/10 hover:bg-accent/15"
+              )}
+            >
+              {/* Table info */}
               <div className={cn(
-                "text-xs font-medium mt-1",
-                table.status === 'available' && "text-blue-400",
-                table.status === 'occupied' && "text-purple-400",
-                table.status === 'reserved' && "text-amber-400",
-                table.status === 'maintenance' && "text-red-400"
+                "w-32 p-4 border-r border-white/15 bg-slate-800/30",
+                isEvenRow && "bg-slate-800/40"
               )}>
-                {table.status}
+                <div className="text-sm font-semibold text-white leading-tight">
+                  {table.name}
+                </div>
+                <div className="text-xs text-white/60 mt-1">
+                  {table.capacity} seats • {table.section}
+                </div>
+                <div className={cn(
+                  "text-xs font-medium mt-2 px-2 py-0.5 rounded-full inline-block",
+                  table.status === 'available' && "text-blue-300 bg-blue-500/20",
+                  table.status === 'occupied' && "text-purple-300 bg-purple-500/20",
+                  table.status === 'reserved' && "text-amber-300 bg-amber-500/20",
+                  table.status === 'maintenance' && "text-red-300 bg-red-500/20"
+                )}>
+                  {table.status}
+                </div>
               </div>
-            </div>
 
-            {/* Timeline slots */}
-            <div className="flex-1 overflow-x-auto">
-              <div className="flex min-w-max relative">
-                {timeSlots.map((slot, slotIndex) => {
-                  const slotReservations = getReservationsForSlot(table.id, slot.time);
-                  
-                  return (
-                    <div
-                      key={slotIndex}
-                      className="flex-1 min-w-[100px] p-1 border-r border-white/5 relative"
-                      style={{ minHeight: '64px' }}
-                    >
-                      {/* Time slot click area */}
-                      <button
-                        className="w-full h-full rounded hover:bg-white/5 transition-colors focus:outline-none focus:ring-1 focus:ring-accent"
-                        onClick={() => onTimeSlotClick(table.id, slot.time)}
-                        aria-label={`Create reservation for ${table.name} at ${slot.label}`}
-                        tabIndex={0}
-                      />
-
-                      {/* Reservation cards */}
-                      {slotReservations.map((reservation) => (
-                        <div
-                          key={reservation.id}
-                          className={cn(
-                            "absolute top-1 left-1 right-1 rounded border cursor-pointer p-1 hover:shadow-md transition-all focus:outline-none focus:ring-1 focus:ring-accent",
-                            getReservationColor(reservation)
-                          )}
-                          style={{
-                            width: getReservationWidth(reservation),
-                            zIndex: 20
-                          }}
-                          onClick={() => onReservationClick(reservation)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              onReservationClick(reservation);
-                            }
-                          }}
+              {/* Timeline slots */}
+              <div className="flex-1 overflow-x-auto">
+                <div className="flex min-w-max relative">
+                  {timeSlots.map((slot, slotIndex) => {
+                    const slotReservations = getReservationsForSlot(table.id, slot.time);
+                    const hourIndex = Math.floor(slotIndex / 4); // Every 4 slots = 1 hour
+                    const isEvenHour = hourIndex % 2 === 0;
+                    const isHourStart = slot.time.getMinutes() === 0;
+                    
+                    return (
+                      <div
+                        key={slotIndex}
+                        className={cn(
+                          "flex-1 min-w-[80px] p-1 border-r relative",
+                          isHourStart ? "border-white/10" : "border-white/6",
+                          isEvenHour ? "bg-white/[0.02]" : "bg-transparent"
+                        )}
+                        style={{ minHeight: '72px' }}
+                      >
+                        {/* Time slot click area */}
+                        <button
+                          className="w-full h-full rounded hover:bg-white/8 transition-colors focus:outline-none focus:ring-2 focus:ring-accent/50"
+                          onClick={() => onTimeSlotClick(table.id, slot.time)}
+                          aria-label={`Create reservation for ${table.name} at ${slot.label}`}
                           tabIndex={0}
-                          role="button"
-                          aria-label={`Reservation for ${reservation.guestName}, ${reservation.partySize} guests at ${format(new Date(reservation.start), "h:mm a")}, status: ${reservation.status}`}
-                        >
-                          <div className="text-xs font-medium text-white truncate">
-                            {reservation.guestName}
-                          </div>
-                          <div className="text-xs text-white/80 truncate">
-                            {reservation.partySize}p • {format(new Date(reservation.start), "h:mm a")}
-                          </div>
-                        </div>
-                      ))}
+                        />
 
-                      {/* Current time indicator */}
-                      {slot.isCurrentTime && (
-                        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent animate-pulse" />
-                      )}
-                    </div>
-                  );
-                })}
+                        {/* Reservation cards */}
+                        {slotReservations.map((reservation) => (
+                          <div
+                            key={reservation.id}
+                            className={cn(
+                              "absolute top-1 left-1 right-1 rounded border cursor-pointer p-2 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-accent/50",
+                              "backdrop-blur-sm",
+                              getReservationColor(reservation)
+                            )}
+                            style={{
+                              width: getReservationWidth(reservation),
+                              zIndex: 20
+                            }}
+                            onClick={() => onReservationClick(reservation)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                onReservationClick(reservation);
+                              }
+                            }}
+                            tabIndex={0}
+                            role="button"
+                            aria-label={`Reservation for ${reservation.guestName}, ${reservation.partySize} guests at ${format(new Date(reservation.start), "H:mm")}, status: ${reservation.status}`}
+                          >
+                            <div className="text-xs font-semibold text-white truncate">
+                              {reservation.guestName}
+                            </div>
+                            <div className="text-xs text-white/80 truncate flex items-center gap-1">
+                              <span className="bg-white/20 px-1 rounded text-[10px] font-medium">
+                                P{reservation.partySize}
+                              </span>
+                              <span>{format(new Date(reservation.start), "H:mm")}</span>
+                              {reservation.channel && (
+                                <span className={cn(
+                                  "text-[10px] px-1 rounded",
+                                  reservation.channel === 'online' && "bg-blue-400/30 text-blue-200",
+                                  reservation.channel === 'phone' && "bg-orange-400/30 text-orange-200",
+                                  reservation.channel === 'walkin' && "bg-green-400/30 text-green-200"
+                                )}>
+                                  {reservation.channel.toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                  
+                  {/* Current Time Marker for this row */}
+                  <CurrentTimeMarker
+                    startHour={17}
+                    endHour={23}
+                    slotHeight={72}
+                    slotWidth={80}
+                    className="top-0"
+                  />
+                </div>
+              </div>
+
+              {/* Duration Bar */}
+              <div className="w-8 border-l border-white/10 p-2 bg-slate-800/20 flex items-center justify-center">
+                <DurationBar 
+                  utilization={utilization}
+                  bookings={tableReservations.length}
+                  capacity={1}
+                  className="opacity-80 hover:opacity-100 transition-opacity"
+                />
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Loading state */}
@@ -266,29 +352,16 @@ export function Timeline({
       {/* Empty state when tables exist but no reservations */}
       {tables.length > 0 && reservations.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center space-y-2 bg-slate-900/80 backdrop-blur rounded-lg p-4">
-            <div className="text-sm text-white/60">No reservations found</div>
-            <div className="text-xs text-white/40">Click on time slots to create new reservations</div>
+          <div className="text-center space-y-3 bg-slate-900/80 backdrop-blur rounded-lg p-6 border border-white/10">
+            <div className="text-sm text-white/70 font-medium">No reservations for this date</div>
+            <div className="text-xs text-white/50">Click on time slots to add your first booking</div>
+            <div className="text-xs text-white/40 bg-white/5 px-2 py-1 rounded">
+              Press <kbd className="bg-white/10 px-1 rounded text-white/60">N</kbd> for quick booking
+            </div>
           </div>
         </div>
       )}
 
-      {/* Current time line overlay */}
-      {(() => {
-        const currentSlotIndex = timeSlots.findIndex(slot => slot.isCurrentTime);
-        if (currentSlotIndex === -1) return null;
-        
-        return (
-          <div 
-            className="absolute w-0.5 bg-accent shadow-lg pointer-events-none z-30"
-            style={{
-              left: `${132 + (currentSlotIndex * 100)}px`,
-              top: '56px',
-              bottom: '0px'
-            }}
-          />
-        );
-      })()}
     </div>
   );
 }

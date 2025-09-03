@@ -77,8 +77,20 @@ interface RealtimeConnectionState {
 
 export const useRealtimeCommandCenter = () => {
   const { tenant } = useTenant();
-  const tenantId = tenant?.id;
+  const tenantId = tenant?.tenantId;
   const queryClient = useQueryClient();
+  
+  // Helper function to create subscription handlers
+  const createSubscriptionHandler = useCallback((service: string, queryKey: any[]) => ({
+    onUpdate: (payload: any) => {
+      console.log(`🔄 ${service} update received:`, payload.eventType);
+      queryClient.invalidateQueries({ queryKey });
+      setLastUpdate(new Date());
+    },
+    onStatus: (status: string) => {
+      console.log(`📡 ${service} subscription status:`, status);
+    }
+  }), [queryClient]);
   
   // Enhanced connection status with proper typing
   const [connectionStatus, setConnectionStatus] = useState<RealtimeConnectionState>({
@@ -157,7 +169,10 @@ export const useRealtimeCommandCenter = () => {
         throw error;
       }
 
-      return (data || []) as RealtimeBooking[];
+      return (data || []).map(booking => ({
+        ...booking,
+        table: booking.table || null
+      })) as RealtimeBooking[];
     },
     enabled: !!tenantId,
     refetchInterval: 30000,
@@ -190,11 +205,23 @@ export const useRealtimeCommandCenter = () => {
         throw error;
       }
       
-      // Add computed status to each table
-      return (data || []).map(table => ({
-        ...table,
+      // Add computed status to each table with proper typing
+      const tablesWithStatus = (data || []).map(table => ({
+        id: table.id,
+        tenant_id: table.tenant_id,
+        name: table.name,
+        capacity: table.capacity,
+        position_x: table.position_x,
+        position_y: table.position_y,
+        table_type: table.table_type,
+        active: table.active,
+        created_at: table.created_at,
+        updated_at: table.updated_at,
         status: "available" as const,
+        current_booking_id: undefined
       }));
+      
+      return tablesWithStatus;
     },
     enabled: !!tenantId,
     refetchInterval: 30000,
@@ -374,6 +401,14 @@ export const useRealtimeCommandCenter = () => {
         
         if (!session) {
           console.warn("🔐 No active session found");
+          // Set error state for all services
+          setConnectionStatus({
+            bookings: 'error',
+            tables: 'error',
+            waitlist: 'error',
+            overall: 'error'
+          });
+          return;
         }
 
         // Bookings subscription with enhanced configuration
@@ -393,16 +428,26 @@ export const useRealtimeCommandCenter = () => {
               table: "bookings",
               filter: `tenant_id=eq.${tenantId}`,
             },
-            bookingHandlers.onUpdate
+            (payload) => {
+              console.log("📊 Bookings change:", payload);
+              bookingHandlers.onUpdate(payload);
+            }
           )
-          .subscribe(async (status) => {
+          .subscribe(async (status, err) => {
             console.log(`🔔 Bookings subscription status: ${status}`);
+            if (err) {
+              console.error("❌ Bookings subscription error:", err);
+              updateConnectionStatus('bookings', 'error');
+              return;
+            }
+            
             if (status === 'SUBSCRIBED') {
               console.log("✅ Bookings subscription active");
+              updateConnectionStatus('bookings', 'connected');
             } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
               console.log("⚠️ Bookings subscription failed, falling back to polling");
+              updateConnectionStatus('bookings', 'error');
             }
-            bookingHandlers.onStatus(status);
           });
 
         // Tables subscription with enhanced configuration
@@ -422,16 +467,26 @@ export const useRealtimeCommandCenter = () => {
               table: "restaurant_tables",
               filter: `tenant_id=eq.${tenantId}`,
             },
-            tableHandlers.onUpdate
+            (payload) => {
+              console.log("🪑 Tables change:", payload);
+              tableHandlers.onUpdate(payload);
+            }
           )
-          .subscribe(async (status) => {
+          .subscribe(async (status, err) => {
             console.log(`🔔 Tables subscription status: ${status}`);
+            if (err) {
+              console.error("❌ Tables subscription error:", err);
+              updateConnectionStatus('tables', 'error');
+              return;
+            }
+            
             if (status === 'SUBSCRIBED') {
               console.log("✅ Tables subscription active");
+              updateConnectionStatus('tables', 'connected');
             } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
               console.log("⚠️ Tables subscription failed, falling back to polling");
+              updateConnectionStatus('tables', 'error');
             }
-            tableHandlers.onStatus(status);
           });
 
         // Waitlist subscription (using bookings as fallback)
@@ -451,18 +506,25 @@ export const useRealtimeCommandCenter = () => {
               table: "bookings", // Use bookings table as fallback
               filter: `tenant_id=eq.${tenantId}`,
             },
-            waitlistHandlers.onUpdate
+            (payload) => {
+              console.log("⏱️ Waitlist change:", payload);
+              waitlistHandlers.onUpdate(payload);
+            }
           )
-          .subscribe(async (status) => {
+          .subscribe(async (status, err) => {
             console.log(`🔔 Waitlist subscription status: ${status}`);
+            if (err) {
+              console.error("❌ Waitlist subscription error:", err);
+              updateConnectionStatus('waitlist', 'error');
+              return;
+            }
+            
             if (status === 'SUBSCRIBED') {
               console.log("✅ Waitlist subscription active");
               updateConnectionStatus('waitlist', 'connected');
             } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
               console.log("⚠️ Waitlist subscription failed, falling back to polling");
               updateConnectionStatus('waitlist', 'error');
-            } else {
-              waitlistHandlers.onStatus(status);
             }
           });
 

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useTenant } from './useTenant';
 
 // Types matching MainSplit.tsx interfaces
 export interface TableRow {
@@ -33,25 +35,219 @@ export interface KpiItem {
   format?: 'number' | 'percentage' | 'currency';
 }
 
-export function useCommandCenterData({ date, filters }: { date: string; filters: any }) {
-  const [data, setData] = useState({
-    kpis: [] as KpiItem[],
-    tables: [] as TableRow[],
-    reservations: [] as Reservation[],
+export interface DatabaseBooking {
+  id: string;
+  guest_name?: string;
+  booking_time: string;
+  duration_minutes?: number;
+  party_size: number;
+  status?: string;
+  deposit_amount?: number;
+  special_requests?: string;
+  guest_phone?: string;
+}
+
+export interface CommandCenterData {
+  kpis: KpiItem[];
+  tables: TableRow[];
+  reservations: Reservation[];
+  policies: Record<string, unknown>;
+  loading: boolean;
+  error: string | null;
+}
+
+export interface UseCommandCenterDataParams {
+  date: string;
+  filters: {
+    status?: string[];
+    channel?: string[];
+    section?: string[];
+  };
+}
+
+// Constants
+const DEFAULT_DURATION_MINUTES = 90;
+const TABLE_COUNT = 20;
+const TABLES_PER_SECTION = 7;
+const NO_SHOW_RISK_MULTIPLIER = 0.15;
+const KITCHEN_PACING_MULTIPLIER = 20;
+const SEAT_OPTIONS = [2, 4, 6, 8] as const;
+const TABLE_SECTIONS: Array<'Patio' | 'Bar' | 'Main'> = ['Patio', 'Bar', 'Main'];
+
+// Utility functions
+const generateTableId = (index: number): string => `table-${index + 1}`;
+
+const getTableSection = (index: number): 'Patio' | 'Bar' | 'Main' => {
+  return TABLE_SECTIONS[Math.floor(index / TABLES_PER_SECTION)] || 'Main';
+};
+
+const getRandomCapacity = (): number => {
+  return SEAT_OPTIONS[Math.floor(Math.random() * SEAT_OPTIONS.length)];
+};
+
+const transformBookingToReservation = (booking: DatabaseBooking): Reservation => {
+  const guestName = booking.guest_name || `Guest ${booking.id.slice(0, 6)}`;
+  const startTime = new Date(booking.booking_time);
+  const duration = booking.duration_minutes || DEFAULT_DURATION_MINUTES;
+  const endTime = new Date(startTime.getTime() + (duration * 60 * 1000));
+
+  return {
+    id: booking.id,
+    tableId: generateTableId(Math.floor(Math.random() * TABLE_COUNT)), // TODO: Replace with actual table assignment
+    guestName,
+    partySize: booking.party_size,
+    start: booking.booking_time,
+    end: endTime.toISOString(),
+    status: (booking.status as Reservation['status']) || 'confirmed',
+    channel: 'online', // TODO: Add channel field to database
+    deposit: booking.deposit_amount || undefined,
+    isVip: booking.special_requests?.toLowerCase().includes('vip') || false,
+    guestPhone: booking.guest_phone || undefined,
+    specialRequests: booking.special_requests || undefined
+  };
+};
+
+const getTableStatus = (
+  tableId: string, 
+  reservations: Reservation[], 
+  currentTime: Date
+): TableRow['status'] => {
+  const currentReservation = reservations.find(reservation => 
+    reservation.tableId === tableId &&
+    new Date(reservation.start) <= currentTime &&
+    new Date(reservation.end) >= currentTime &&
+    reservation.status !== 'cancelled'
+  );
+
+  if (currentReservation) {
+    return currentReservation.status === 'seated' ? 'occupied' : 'reserved';
+  }
+
+  return 'available';
+};
+
+const applyFilters = (
+  reservations: Reservation[], 
+  filters: UseCommandCenterDataParams['filters']
+): Reservation[] => {
+  return reservations.filter(reservation => {
+    // Filter by status
+    if (filters.status && filters.status.length > 0) {
+      if (!filters.status.includes(reservation.status)) {
+        return false;
+      }
+    }
+
+    // Filter by channel
+    if (filters.channel && filters.channel.length > 0) {
+      if (!filters.channel.includes(reservation.channel)) {
+        return false;
+      }
+    }
+
+    // TODO: Add section filtering when table assignments are real
+    
+    return true;
+  });
+};
+
+const calculateKPIs = (tables: TableRow[], reservations: Reservation[]): KpiItem[] => {
+  // Basic table statistics
+  const occupiedTables = tables.filter(table => table.status === 'occupied');
+  const occupancy = tables.length > 0 
+    ? Math.round((occupiedTables.length / tables.length) * 100) 
+    : 0;
+
+  // Reservation statistics
+  const activeReservations = reservations.filter(reservation => 
+    reservation.status !== 'cancelled'
+  );
+  const covers = activeReservations.reduce((sum, reservation) => 
+    sum + reservation.partySize, 0
+  );
+
+  // No-show risk calculation
+  const confirmedReservations = activeReservations.filter(reservation => 
+    reservation.status === 'confirmed'
+  );
+  const noShowRisk = confirmedReservations.length > 0 
+    ? Math.round((confirmedReservations.length * NO_SHOW_RISK_MULTIPLIER) * 100) / 100
+    : 0;
+
+  // Average party size
+  const avgPartySize = activeReservations.length > 0 
+    ? Math.round((covers / activeReservations.length) * 10) / 10
+    : 0;
+
+  // Kitchen pacing based on current hour load
+  const currentHour = new Date().getHours();
+  const currentHourReservations = reservations.filter(reservation => {
+    const reservationHour = new Date(reservation.start).getHours();
+    return reservationHour === currentHour && reservation.status === 'seated';
+  });
+  const kitchenPacing = Math.min(100, currentHourReservations.length * KITCHEN_PACING_MULTIPLIER);
+
+  return [
+    {
+      id: 'occupancy',
+      label: 'Occupancy',
+      value: occupancy,
+      format: 'percentage'
+    },
+    {
+      id: 'covers',
+      label: 'Covers',
+      value: covers,
+      format: 'number'
+    },
+    {
+      id: 'no-show-risk',
+      label: 'No-Show Risk',
+      value: noShowRisk,
+      format: 'percentage'
+    },
+    {
+      id: 'avg-party',
+      label: 'Avg Party',
+      value: avgPartySize,
+      format: 'number'
+    },
+    {
+      id: 'kitchen-pacing',
+      label: 'Kitchen Pacing',
+      value: kitchenPacing,
+      format: 'percentage'
+    }
+  ];
+};
+
+export function useCommandCenterData({ date, filters }: UseCommandCenterDataParams) {
+  const [data, setData] = useState<CommandCenterData>({
+    kpis: [],
+    tables: [],
+    reservations: [],
     policies: {},
     loading: true,
-    error: null as string | null
+    error: null
   });
 
   useEffect(() => {
-    loadCommandCenterData();
+    const loadData = async () => {
+      await loadCommandCenterData();
+    };
+    
+    loadData();
     
     // Set up real-time subscriptions
     const tableSubscription = supabase
       .channel('command-center-tables')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
-        loadCommandCenterData();
-      })
+      .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public', table: 'bookings' }, 
+        () => {
+          loadCommandCenterData();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -59,151 +255,87 @@ export function useCommandCenterData({ date, filters }: { date: string; filters:
     };
   }, [date, filters]);
 
-  const loadCommandCenterData = async () => {
+  const loadCommandCenterData = async (): Promise<void> => {
     try {
       setData(prev => ({ ...prev, loading: true, error: null }));
 
-      // Get bookings for selected date
+      // Validate date parameter
       const selectedDate = new Date(date);
-      const dateStart = new Date(selectedDate.setHours(0, 0, 0, 0));
-      const dateEnd = new Date(selectedDate.setHours(23, 59, 59, 999));
+      if (isNaN(selectedDate.getTime())) {
+        throw new Error('Invalid date provided');
+      }
 
+      // Create date range for the selected day
+      const dateStart = new Date(selectedDate);
+      dateStart.setHours(0, 0, 0, 0);
+      
+      const dateEnd = new Date(selectedDate);
+      dateEnd.setHours(23, 59, 59, 999);
+
+      // Fetch bookings with proper error handling
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
-        .select('*')
+        .select(`
+          id,
+          guest_name,
+          booking_time,
+          duration_minutes,
+          party_size,
+          status,
+          deposit_amount,
+          special_requests,
+          guest_phone
+        `)
         .gte('booking_time', dateStart.toISOString())
         .lte('booking_time', dateEnd.toISOString())
         .order('booking_time', { ascending: true });
 
-      if (bookingsError) throw bookingsError;
+      if (bookingsError) {
+        throw new Error(`Failed to fetch bookings: ${bookingsError.message}`);
+      }
 
-      // Transform bookings data
-      const reservations: Reservation[] = (bookingsData || []).map(booking => {
-        const guestName = booking.guest_name || `Guest ${booking.id.slice(0, 6)}`;
+      // Transform bookings data with type safety
+      const reservations: Reservation[] = (bookingsData || []).map(
+        (booking: DatabaseBooking) => transformBookingToReservation(booking)
+      );
 
-        // Calculate end time using duration_minutes or default
-        const startTime = new Date(booking.booking_time);
-        const duration = booking.duration_minutes || 90; // minutes
-        const endTime = new Date(startTime.getTime() + (duration * 60 * 1000));
+      // Apply filters if provided
+      const filteredReservations = applyFilters(reservations, filters);
 
-        return {
-          id: booking.id,
-          tableId: `table-${Math.floor(Math.random() * 20) + 1}`, // Mock table assignment
-          guestName,
-          partySize: booking.party_size,
-          start: booking.booking_time,
-          end: endTime.toISOString(),
-          status: (booking.status as any) || 'confirmed',
-          channel: 'online', // Default channel
-          deposit: booking.deposit_amount || undefined,
-          isVip: booking.special_requests?.toLowerCase().includes('vip') || false,
-          guestPhone: booking.guest_phone || undefined,
-          specialRequests: booking.special_requests || undefined
-        };
-      });
-
-      // Generate mock table data (in real app, this would come from a tables table)
-      const tables: TableRow[] = Array.from({ length: 20 }, (_, i) => {
-        const tableId = `table-${i + 1}`;
-        const sections: Array<'Patio' | 'Bar' | 'Main'> = ['Patio', 'Bar', 'Main'];
-        const section = sections[Math.floor(i / 7)] || 'Main';
+      // Generate table data (TODO: Replace with actual restaurant_tables query)
+      const currentTime = new Date();
+      const tables: TableRow[] = Array.from({ length: TABLE_COUNT }, (_, i): TableRow => {
+        const tableId = generateTableId(i);
         
-        // Check if table has current reservation
-        const currentTime = new Date();
-        const currentReservation = reservations.find(r => 
-          r.tableId === tableId &&
-          new Date(r.start) <= currentTime &&
-          new Date(r.end) >= currentTime &&
-          r.status !== 'cancelled'
-        );
-
-        let status: 'available' | 'occupied' | 'reserved' | 'maintenance' = 'available';
-        if (currentReservation) {
-          status = currentReservation.status === 'seated' ? 'occupied' : 'reserved';
-        }
-
         return {
           id: tableId,
           name: `Table ${i + 1}`,
-          capacity: [2, 4, 6, 8][Math.floor(Math.random() * 4)],
-          section,
-          status
+          capacity: getRandomCapacity(),
+          section: getTableSection(i),
+          status: getTableStatus(tableId, filteredReservations, currentTime)
         };
       });
 
-      // Calculate KPIs
-      const totalCapacity = tables.reduce((sum, table) => sum + table.capacity, 0);
-      const occupiedTables = tables.filter(t => t.status === 'occupied');
-      const occupancy = Math.round((occupiedTables.length / tables.length) * 100);
-      
-      const todayReservations = reservations.filter(r => r.status !== 'cancelled');
-      const covers = todayReservations.reduce((sum, r) => sum + r.partySize, 0);
-      
-      const confirmedReservations = todayReservations.filter(r => r.status === 'confirmed');
-      const noShowRisk = confirmedReservations.length > 0 
-        ? Math.round((confirmedReservations.length * 0.15) * 100) / 100 
-        : 0;
-      
-      const avgPartySize = todayReservations.length > 0 
-        ? Math.round((covers / todayReservations.length) * 10) / 10
-        : 0;
-      
-      // Kitchen pacing based on current hour load
-      const currentHour = new Date().getHours();
-      const currentHourReservations = reservations.filter(r => {
-        const resHour = new Date(r.start).getHours();
-        return resHour === currentHour && r.status === 'seated';
-      });
-      const kitchenPacing = Math.min(100, (currentHourReservations.length * 20));
-
-      const kpis: KpiItem[] = [
-        {
-          id: 'occupancy',
-          label: 'Occupancy',
-          value: occupancy,
-          format: 'percentage'
-        },
-        {
-          id: 'covers',
-          label: 'Covers',
-          value: covers,
-          format: 'number'
-        },
-        {
-          id: 'no-show-risk',
-          label: 'No-Show Risk',
-          value: noShowRisk,
-          format: 'percentage'
-        },
-        {
-          id: 'avg-party',
-          label: 'Avg Party',
-          value: avgPartySize,
-          format: 'number'
-        },
-        {
-          id: 'kitchen-pacing',
-          label: 'Kitchen Pacing',
-          value: kitchenPacing,
-          format: 'percentage'
-        }
-      ];
+      // Calculate KPIs with proper error handling
+      const kpis = calculateKPIs(tables, filteredReservations);
 
       setData({
         kpis,
         tables,
-        reservations,
-        policies: {},
+        reservations: filteredReservations,
+        policies: {}, // TODO: Add policies data
         loading: false,
         error: null
       });
 
     } catch (error) {
       console.error('Failed to load command center data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load data';
+      
       setData(prev => ({
         ...prev,
         loading: false,
-        error: error instanceof Error ? error.message : 'Failed to load data'
+        error: errorMessage
       }));
     }
   };

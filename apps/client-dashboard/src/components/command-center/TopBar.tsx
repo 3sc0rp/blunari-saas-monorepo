@@ -73,9 +73,11 @@ export function TopBar({
       <div className="flex items-center justify-between">
         {/* Left Group - Brand */}
         <div className="flex items-center gap-6">
-          <h1 className="text-lg font-semibold text-white/90">
-            Blunari — Bookings Command Center
-          </h1>
+          <img 
+            src="/logo.png" 
+            alt="Blunari Logo" 
+            className="h-8 w-auto"
+          />
         </div>
 
         {/* Control Group */}
@@ -148,10 +150,14 @@ export function TopBar({
           {/* New Reservation */}
           <Button
             onClick={onNewReservation}
-            className="bg-gradient-to-r from-[hsl(var(--accent))] to-[hsl(var(--accent-2))] text-white border-0 h-10 px-4 hover:opacity-90 font-medium"
+            className="bg-gradient-to-r from-[hsl(var(--accent))] to-[hsl(var(--accent-2))] text-white border-0 h-10 px-4 hover:opacity-90 font-medium relative group"
+            title="Create new reservation (Press N)"
           >
             <Plus className="w-4 h-4 mr-2" />
             New Reservation
+            <kbd className="absolute -top-2 -right-2 bg-white/20 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+              N
+            </kbd>
           </Button>
 
           {/* Export */}
