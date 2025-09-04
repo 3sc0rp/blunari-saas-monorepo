@@ -88,12 +88,21 @@ export default function CommandCenter() {
         return;
       }
       
+      // Check if we have any available tables
+      if (!tables || tables.length === 0) {
+        toast.error('No tables available. Please ensure your restaurant has tables configured.');
+        return;
+      }
+      
+      // Use the first available table for demo purposes
+      const firstTable = tables[0];
+      
       // Example of creating a reservation programmatically
       const result = await createReservationAction({
-        tableId: 'table-1',
+        tableId: firstTable.id,
         start: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
         end: new Date(Date.now() + 2.5 * 60 * 60 * 1000).toISOString(), // 2.5 hours from now
-        partySize: 4,
+        partySize: Math.min(4, firstTable.seats), // Don't exceed table capacity
         guestName: 'Test Guest',
         guestEmail: 'test@example.com',
         channel: 'WEB'
