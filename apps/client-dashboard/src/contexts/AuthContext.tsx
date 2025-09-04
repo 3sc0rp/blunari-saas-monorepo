@@ -26,10 +26,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    let authInitialized = false;
+    
     // Development mode bypass
     if (import.meta.env.MODE === 'development' && import.meta.env.VITE_BYPASS_AUTH === 'true') {
       console.log("Development mode: bypassing authentication");
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+      }
       return;
     }
 
@@ -37,36 +42,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Check for existing session with timeout
-    const sessionCheck = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
+      if (isMounted) {
+        authInitialized = true;
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
+          console.log('🔐 Auth state changed:', event, session?.user?.id ? 'user logged in' : 'no user');
+        }
+      }
+    });
+
+    // Check for existing session
+    const sessionCheck = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Session check error:", error);
+        }
+        if (isMounted && !authInitialized) {
+          authInitialized = true;
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+          if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
+            console.log('🔐 Initial session check:', session?.user?.id ? 'user found' : 'no user');
+          }
+        }
       } catch (error) {
         console.error("Error checking session:", error);
-        // If there's an error, still set loading to false so the app doesn't hang
-        setLoading(false);
+        if (isMounted && !authInitialized) {
+          authInitialized = true;
+          setLoading(false);
+        }
       }
     };
 
     sessionCheck();
 
-    // Fallback timeout to prevent infinite loading
+    // Reduced timeout to prevent long waits, but still provide a safety net
     const timeout = setTimeout(() => {
-      if (loading) {
-        console.warn("Auth initialization timeout, setting loading to false");
+      if (isMounted && !authInitialized) {
+        if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
+          console.warn("Auth initialization timeout (1.5s), proceeding without auth");
+        }
+        authInitialized = true;
         setLoading(false);
       }
-    }, 3000);
+    }, 1500); // Reduced from 3000ms to 1500ms
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
       clearTimeout(timeout);
     };

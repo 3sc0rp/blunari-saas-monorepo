@@ -181,6 +181,20 @@ export default function CommandCenter() {
     filters: contractFilters
   });
 
+  // Add debug logging in development mode
+  if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
+    console.log('🏢 Command Center State:', {
+      loading,
+      error,
+      hasKpis: kpis?.length > 0,
+      hasTables: tables?.length > 0,
+      hasReservations: reservations?.length > 0,
+      kpiCount: kpis?.length,
+      tableCount: tables?.length,
+      reservationCount: reservations?.length
+    });
+  }
+
   // Transform data for legacy components with error handling
   const legacyTables = useMemo<LegacyTableRow[]>(() => {
     try {
