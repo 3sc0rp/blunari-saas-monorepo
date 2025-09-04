@@ -1,6 +1,50 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders, createCorsResponse, createErrorResponse } from '../_shared/cors'
+
+// CORS headers for cross-origin requests
+const createCorsHeaders = (requestOrigin: string | null = null) => {
+  const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
+  
+  let allowedOrigin = '*';
+  if (environment === 'production' && requestOrigin) {
+    const allowedOrigins = [
+      'https://demo.blunari.ai',
+      'https://admin.blunari.ai', 
+      'https://services.blunari.ai',
+      'https://blunari.ai',
+      'https://www.blunari.ai'
+    ];
+    allowedOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+  }
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key, accept, accept-language, content-length',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400',
+  };
+};
+
+// Helper functions for CORS responses
+function createCorsResponse(data: any, requestOrigin: string | null = null) {
+  return new Response(JSON.stringify(data), {
+    headers: {
+      'Content-Type': 'application/json',
+      ...createCorsHeaders(requestOrigin),
+    },
+  });
+}
+
+function createErrorResponse(code: string, message: string, status: number, requestOrigin: string | null = null) {
+  return new Response(JSON.stringify({ error: code, message }), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      ...createCorsHeaders(requestOrigin),
+    },
+  });
+}
 
 interface CreateReservationRequest {
   tableId: string;
@@ -15,8 +59,10 @@ interface CreateReservationRequest {
 }
 
 serve(async (req) => {
+  const requestOrigin = req.headers.get('origin');
+  
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: createCorsHeaders(requestOrigin) })
   }
 
   try {
@@ -27,12 +73,12 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '')
     if (!authHeader) {
-      return createErrorResponse('AUTH_REQUIRED', 'Authorization header required', 401)
+      return createErrorResponse('AUTH_REQUIRED', 'Authorization header required', 401, requestOrigin)
     }
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader)
     if (authError || !user) {
-      return createErrorResponse('AUTH_INVALID', 'Invalid authorization token', 401)
+      return createErrorResponse('AUTH_INVALID', 'Invalid authorization token', 401, requestOrigin)
     }
 
     const { data: tenantData, error: tenantError } = await supabaseClient
@@ -43,7 +89,7 @@ serve(async (req) => {
       .single()
 
     if (tenantError || !tenantData) {
-      return createErrorResponse('TENANT_NOT_FOUND', 'No tenant found for user', 404)
+      return createErrorResponse('TENANT_NOT_FOUND', 'No tenant found for user', 404, requestOrigin)
     }
 
     const tenantId = tenantData.tenant_id
@@ -51,14 +97,14 @@ serve(async (req) => {
     // Get idempotency key from headers
     const idempotencyKey = req.headers.get('x-idempotency-key')
     if (!idempotencyKey) {
-      return createErrorResponse('MISSING_IDEMPOTENCY_KEY', 'x-idempotency-key header required', 400)
+      return createErrorResponse('MISSING_IDEMPOTENCY_KEY', 'x-idempotency-key header required', 400, requestOrigin)
     }
 
     const body: CreateReservationRequest = await req.json()
 
     // Validate required fields
     if (!body.tableId || !body.start || !body.end || !body.partySize || !body.guestName) {
-      return createErrorResponse('MISSING_REQUIRED_FIELD', 'Missing required fields', 400)
+      return createErrorResponse('MISSING_REQUIRED_FIELD', 'Missing required fields', 400, requestOrigin)
     }
 
     // Validate party size
@@ -165,7 +211,7 @@ serve(async (req) => {
 
     if (createError) {
       console.error('Create booking error:', createError)
-      return createErrorResponse('DATABASE_ERROR', 'Failed to create reservation', 500)
+      return createErrorResponse('DATABASE_ERROR', 'Failed to create reservation', 500, requestOrigin)
     }
 
     // Transform to frontend format
@@ -190,10 +236,16 @@ serve(async (req) => {
       updatedAt: newBooking.updated_at
     }
 
-    return createCorsResponse({ data: reservation }, 201)
+    return new Response(JSON.stringify({ data: reservation }), {
+      status: 201,
+      headers: {
+        'Content-Type': 'application/json',
+        ...createCorsHeaders(requestOrigin),
+      },
+    })
 
   } catch (error) {
     console.error('Function error:', error)
-    return createErrorResponse('INTERNAL_ERROR', 'Internal server error', 500)
+    return createErrorResponse('INTERNAL_ERROR', 'Internal server error', 500, requestOrigin)
   }
 })

@@ -68,31 +68,35 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         };
 
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         
-        // Parallel fetch all data using appropriate methods
-        const [tablesResult, kpisResult] = await Promise.all([
-          // Fetch tables using GET request (edge function requires GET)
-          fetch(`${supabaseUrl}/functions/v1/list-tables`, {
-            method: 'GET',
+        // Standardized fetch for all edge functions to ensure consistent behavior
+        const fetchEdgeFunction = async (functionName: string, method: string = 'POST', body?: any) => {
+          const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+            method,
             headers: {
               'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json'
-            }
-          }).then(async (response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            const data = await response.json();
-            return { data, error: null };
-          }).catch(error => ({ data: null, error })),
-          
-          // Fetch KPIs using POST request (edge function accepts both GET/POST)
-          supabase.functions.invoke('get-kpis', {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`
+              'Content-Type': 'application/json',
+              'apikey': supabaseKey
             },
-            body: { date }
-          })
+            ...(body && method !== 'GET' ? { body: JSON.stringify(body) } : {})
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          return { data, error: null };
+        };
+        
+        // Parallel fetch all data using standardized approach
+        const [tablesResult, kpisResult] = await Promise.all([
+          // Fetch tables using GET request (edge function requires GET)
+          fetchEdgeFunction('list-tables', 'GET').catch(error => ({ data: null, error })),
+          
+          // Fetch KPIs using POST request with date parameter
+          fetchEdgeFunction('get-kpis', 'POST', { date }).catch(error => ({ data: null, error }))
         ]);
 
         // Handle function invocation errors

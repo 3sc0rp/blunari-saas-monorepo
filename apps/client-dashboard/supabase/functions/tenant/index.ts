@@ -2,11 +2,29 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // CORS headers for cross-origin requests
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-}
+const createCorsHeaders = (requestOrigin: string | null = null) => {
+  const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
+  
+  let allowedOrigin = '*';
+  if (environment === 'production' && requestOrigin) {
+    const allowedOrigins = [
+      'https://demo.blunari.ai',
+      'https://admin.blunari.ai', 
+      'https://services.blunari.ai',
+      'https://blunari.ai',
+      'https://www.blunari.ai'
+    ];
+    allowedOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+  }
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key, accept, accept-language, content-length',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400',
+  };
+};
 
 interface TenantRequest {
   slug?: string;
@@ -32,16 +50,19 @@ function generateRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-function createSuccessResponse(data: TenantResponse) {
+function createSuccessResponse(data: TenantResponse, requestOrigin: string | null = null) {
   return new Response(
     JSON.stringify({ data }),
     { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      headers: { 
+        'Content-Type': 'application/json',
+        ...createCorsHeaders(requestOrigin)
+      } 
     }
   );
 }
 
-function createErrorResponse(code: string, message: string, status: number, requestId: string) {
+function createErrorResponse(code: string, message: string, status: number, requestId: string, requestOrigin: string | null = null) {
   const errorResponse: ErrorResponse = {
     error: {
       code,
@@ -54,17 +75,21 @@ function createErrorResponse(code: string, message: string, status: number, requ
     JSON.stringify(errorResponse),
     { 
       status, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      headers: { 
+        'Content-Type': 'application/json',
+        ...createCorsHeaders(requestOrigin)
+      } 
     }
   );
 }
 
 serve(async (req) => {
   const requestId = generateRequestId();
+  const requestOrigin = req.headers.get('origin');
   
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: createCorsHeaders(requestOrigin) });
   }
 
   // Only allow POST requests for consistent API design
@@ -73,7 +98,8 @@ serve(async (req) => {
       'METHOD_NOT_ALLOWED', 
       'Only POST requests are allowed', 
       405, 
-      requestId
+      requestId,
+      requestOrigin
     );
   }
 
@@ -109,7 +135,8 @@ serve(async (req) => {
         'AUTH_REQUIRED', 
         'Authorization header required', 
         401, 
-        requestId
+        requestId,
+        requestOrigin
       );
     }
 
@@ -121,7 +148,8 @@ serve(async (req) => {
         'AUTH_INVALID', 
         'Invalid authorization token', 
         401, 
-        requestId
+        requestId,
+        requestOrigin
       );
     }
 
@@ -135,7 +163,8 @@ serve(async (req) => {
         'INVALID_JSON', 
         'Invalid JSON in request body', 
         400, 
-        requestId
+        requestId,
+        requestOrigin
       );
     }
 
@@ -158,7 +187,8 @@ serve(async (req) => {
           'TENANT_NOT_FOUND', 
           `Restaurant "${body.slug}" not found`, 
           404, 
-          requestId
+          requestId,
+          requestOrigin
         );
       }
 
@@ -170,7 +200,8 @@ serve(async (req) => {
           'ACCESS_DENIED', 
           'Access denied to this restaurant', 
           403, 
-          requestId
+          requestId,
+          requestOrigin
         );
       }
 
@@ -185,7 +216,8 @@ serve(async (req) => {
           'NO_TENANT_ACCESS', 
           'No restaurant access found for your account', 
           404, 
-          requestId
+          requestId,
+          requestOrigin
         );
       }
 
@@ -203,7 +235,8 @@ serve(async (req) => {
           'TENANT_DATA_ERROR', 
           'Unable to load restaurant data', 
           500, 
-          requestId
+          requestId,
+          requestOrigin
         );
       }
 
@@ -219,7 +252,7 @@ serve(async (req) => {
     };
 
     console.log(`Tenant resolved successfully:`, { tenantId: response.id, slug: response.slug, userId: user.id });
-    return createSuccessResponse(response);
+    return createSuccessResponse(response, requestOrigin);
 
   } catch (error) {
     console.error('Tenant resolution error:', error);
@@ -227,7 +260,8 @@ serve(async (req) => {
       'INTERNAL_ERROR', 
       'Internal server error', 
       500, 
-      requestId
+      requestId,
+      requestOrigin
     );
   }
 });

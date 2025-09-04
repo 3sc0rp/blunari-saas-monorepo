@@ -2,28 +2,46 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // CORS headers for cross-origin requests
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-}
+const createCorsHeaders = (requestOrigin: string | null = null) => {
+  const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
+  
+  let allowedOrigin = '*';
+  if (environment === 'production' && requestOrigin) {
+    const allowedOrigins = [
+      'https://demo.blunari.ai',
+      'https://admin.blunari.ai', 
+      'https://services.blunari.ai',
+      'https://blunari.ai',
+      'https://www.blunari.ai'
+    ];
+    allowedOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+  }
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key, accept, accept-language, content-length',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400',
+  };
+};
 
 // Helper functions for CORS responses
-function createCorsResponse(data: any) {
+function createCorsResponse(data: any, requestOrigin: string | null = null) {
   return new Response(JSON.stringify(data), {
     headers: {
       'Content-Type': 'application/json',
-      ...corsHeaders,
+      ...createCorsHeaders(requestOrigin),
     },
   });
 }
 
-function createErrorResponse(code: string, message: string, status: number) {
+function createErrorResponse(code: string, message: string, status: number, requestOrigin: string | null = null) {
   return new Response(JSON.stringify({ error: code, message }), {
     status,
     headers: {
       'Content-Type': 'application/json',
-      ...corsHeaders,
+      ...createCorsHeaders(requestOrigin),
     },
   });
 }
@@ -136,14 +154,16 @@ const isTableCurrentlyOccupied = (
 };
 
 serve(async (req) => {
+  const requestOrigin = req.headers.get('origin');
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: createCorsHeaders(requestOrigin) });
   }
 
   // Only allow GET requests
   if (req.method !== 'GET') {
-    return createErrorResponse('METHOD_NOT_ALLOWED', 'Only GET requests are allowed', 405);
+    return createErrorResponse('METHOD_NOT_ALLOWED', 'Only GET requests are allowed', 405, requestOrigin);
   }
 
   try {
@@ -153,7 +173,7 @@ serve(async (req) => {
     
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing required environment variables');
-      return createErrorResponse('CONFIG_ERROR', 'Server configuration error', 500);
+      return createErrorResponse('CONFIG_ERROR', 'Server configuration error', 500, requestOrigin);
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -161,13 +181,13 @@ serve(async (req) => {
     // Authenticate and validate user
     const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '');
     if (!authHeader) {
-      return createErrorResponse('AUTH_REQUIRED', 'Authorization header required', 401);
+      return createErrorResponse('AUTH_REQUIRED', 'Authorization header required', 401, requestOrigin);
     }
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader);
     if (authError || !user) {
       console.error('Authentication error:', authError);
-      return createErrorResponse('AUTH_INVALID', 'Invalid authorization token', 401);
+      return createErrorResponse('AUTH_INVALID', 'Invalid authorization token', 401, requestOrigin);
     }
 
     // Get tenant information using the same logic as the tenant function
@@ -215,7 +235,7 @@ serve(async (req) => {
 
     if (!tenantId) {
       console.error('No tenant found for user:', user.id)
-      return createErrorResponse('TENANT_NOT_FOUND', 'No tenant found for user', 404);
+      return createErrorResponse('TENANT_NOT_FOUND', 'No tenant found for user', 404, requestOrigin);
     }
 
     // Fetch restaurant tables with explicit field selection
@@ -310,11 +330,11 @@ serve(async (req) => {
       }
     };
 
-    return createCorsResponse(responseData);
+    return createCorsResponse(responseData, requestOrigin);
 
   } catch (error) {
     console.error('List tables function error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    return createErrorResponse('INTERNAL_ERROR', `Internal server error: ${errorMessage}`, 500);
+    return createErrorResponse('INTERNAL_ERROR', `Internal server error: ${errorMessage}`, 500, requestOrigin);
   }
 });
