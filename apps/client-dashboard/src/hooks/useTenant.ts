@@ -62,7 +62,7 @@ export function useTenant() {
 
       if (!session) {
         console.log('No active session, redirecting to login');
-        navigate('/login');
+        navigate('/auth');
         return;
       }
 
@@ -76,7 +76,7 @@ export function useTenant() {
         
         // Handle specific error cases
         if (functionError.message?.includes('401') || functionError.message?.includes('unauthorized')) {
-          navigate('/login');
+          navigate('/auth');
           return;
         }
         

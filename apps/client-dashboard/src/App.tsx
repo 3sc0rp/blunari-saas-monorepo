@@ -63,6 +63,7 @@ const App = () => (
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/auth" element={<Auth />} />
+                      <Route path="/login" element={<Navigate to="/auth" replace />} />
                       {/* Debug route for development */}
                       {import.meta.env.MODE === 'development' && (
                         <Route path="/debug-tenant" element={<DebugTenantPage />} />
