@@ -67,16 +67,26 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           'Content-Type': 'application/json'
         };
 
-        // Parallel fetch all data using Supabase Functions
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        
+        // Parallel fetch all data using appropriate methods
         const [tablesResult, kpisResult] = await Promise.all([
-          // Fetch tables
-          supabase.functions.invoke('list-tables', {
+          // Fetch tables using GET request (edge function requires GET)
+          fetch(`${supabaseUrl}/functions/v1/list-tables`, {
+            method: 'GET',
             headers: {
-              'Authorization': `Bearer ${session.access_token}`
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json'
             }
-          }),
+          }).then(async (response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const data = await response.json();
+            return { data, error: null };
+          }).catch(error => ({ data: null, error })),
           
-          // Fetch KPIs
+          // Fetch KPIs using POST request (edge function accepts both GET/POST)
           supabase.functions.invoke('get-kpis', {
             headers: {
               'Authorization': `Bearer ${session.access_token}`
