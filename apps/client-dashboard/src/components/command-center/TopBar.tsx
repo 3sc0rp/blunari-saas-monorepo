@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Search, 
   Plus, 
@@ -45,6 +46,7 @@ export function TopBar({
   advancedMode = false,
   onAdvancedModeChange = () => {}
 }: TopBarProps) {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState("demo-restaurant");
@@ -186,7 +188,15 @@ export function TopBar({
                 ? 'bg-accent hover:bg-accent/80 text-white' 
                 : 'text-white/90'
             }`}
-            onClick={() => onAdvancedModeChange(!advancedMode)}
+            onClick={() => {
+              if (advancedMode) {
+                // If already in advanced mode, toggle back to focus mode
+                onAdvancedModeChange(false);
+              } else {
+                // Navigate to full dashboard
+                navigate('/dashboard/home');
+              }
+            }}
           >
             <Settings className="w-4 h-4 mr-2" />
             {advancedMode ? "Focus Mode" : "Advanced Mode"}

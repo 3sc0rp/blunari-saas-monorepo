@@ -1,28 +1,56 @@
-# Deployment Fix for Loading Issues
+# Deployment Fix for Loading Issues and Database Errors
 
-## Problem
-The deployment at https://demo.blunari.ai was experiencing infinite loading issues due to:
+## Problems Fixed
+The deployment at https://demo.blunari.ai was experiencing multiple issues:
 
-1. **Authentication Loop**: The app was getting stuck in an auth/tenant resolution loop
-2. **Missing Fallbacks**: No proper fallback when tenant resolution fails in production
-3. **Timeout Issues**: No timeout mechanisms to prevent infinite loading
+1. **Loading Issues**: Infinite loading due to auth/tenant resolution loops
+2. **Database Query Errors**: "invalid input syntax for type uuid" errors  
+3. **Fallback UUID Issues**: Non-UUID tenant IDs causing database failures
+4. **API Failures**: Multiple 400 Bad Request errors to Supabase functions
 
-## Solution Applied
+## Solutions Applied
 
 ### 1. Tenant Resolution Fixes (`useTenant.ts`)
 - ✅ Added 10-second timeout to prevent infinite loading
 - ✅ Added production fallbacks for tenant resolution failures
 - ✅ Improved session handling to prevent auth redirect loops
-- ✅ Added proper cleanup of timeouts and mounted state tracking
+- ✅ **NEW**: Proper UUID generation for fallback tenants
+- ✅ **NEW**: Use actual user ID (which is already a UUID) for fallbacks
 
-### 2. Authentication Fixes (`AuthContext.tsx`)
+### 2. UUID Validation (`useRealtimeCommandCenter.ts`, `useCommandCenterDataNew.ts`)
+- ✅ **NEW**: Added UUID format validation before all database queries
+- ✅ **NEW**: Skip database queries entirely when tenant ID is invalid
+- ✅ **NEW**: Return empty arrays/mock data for invalid UUIDs
+- ✅ **NEW**: Enhanced query enabled conditions to include UUID validation
+
+### 3. Authentication Fixes (`AuthContext.tsx`)
 - ✅ Increased auth initialization timeout to 3 seconds for better stability
 - ✅ Enhanced error handling for session check failures
 
-### 3. Environment Configuration
+### 4. Environment Configuration
 - ✅ Created `.env.production` with optimized production settings
 - ✅ Set `VITE_APP_ENV=production` for proper environment detection
 - ✅ Disabled development flags for production performance
+
+## Error Resolution
+
+### Before Fix:
+```
+❌ GET https://...supabase.co/rest/v1/bookings?select=...
+400 (Bad Request)
+❌ "invalid input syntax for type uuid: timeout-fallback"
+❌ Multiple database query failures
+❌ Infinite loading loops
+```
+
+### After Fix:
+```
+✅ UUID validation prevents invalid database queries
+✅ Proper fallback UUIDs generated using crypto.randomUUID()
+✅ Query enabled conditions prevent unnecessary API calls  
+✅ Mock data returned for invalid tenant scenarios
+✅ Loading completes within timeout limits
+```
 
 ## Deployment Steps
 
