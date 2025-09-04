@@ -26,6 +26,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 /**
  * Hook to resolve and manage tenant context
  * Handles both slug-based routing and session-based tenant resolution
+ * CRITICAL FIX: Added proper race condition handling and cleanup
  */
 export function useTenant() {
   const [state, setState] = useState<TenantState>({
@@ -39,17 +40,21 @@ export function useTenant() {
   const navigate = useNavigate();
   
   const resolveTenant = useCallback(async () => {
+    let isMounted = true; // FIX: Track if component is still mounted
+    
     try {
       setState(prev => ({ ...prev, loading: true, error: null, requestId: null }));
 
       // Check cache first (only for user-based resolution, not slug-based)
       if (!params.slug && cachedTenant && Date.now() < cacheExpiry) {
-        setState({
-          tenant: cachedTenant,
-          loading: false,
-          error: null,
-          requestId: null
-        });
+        if (isMounted) {
+          setState({
+            tenant: cachedTenant,
+            loading: false,
+            error: null,
+            requestId: null
+          });
+        }
         return;
       }
 
@@ -62,7 +67,9 @@ export function useTenant() {
 
       if (!session) {
         console.log('No active session, redirecting to login');
-        navigate('/auth');
+        if (isMounted) {
+          navigate('/auth');
+        }
         return;
       }
 
@@ -70,6 +77,9 @@ export function useTenant() {
       const { data: responseData, error: functionError } = await supabase.functions.invoke('tenant', {
         body: params.slug ? { slug: params.slug } : {}
       });
+
+      // FIX: Check if component is still mounted before updating state
+      if (!isMounted) return;
 
       if (functionError) {
         console.error('Tenant function error:', functionError);
@@ -203,18 +213,26 @@ export function useTenant() {
       const parsedError = parseError(error);
       console.error('Tenant resolution failed:', parsedError);
       
-      setState({
-        tenant: null,
-        loading: false,
-        error: parsedError.message,
-        requestId: null
-      });
+      // FIX: Only update state if component is still mounted
+      if (isMounted) {
+        setState({
+          tenant: null,
+          loading: false,
+          error: parsedError.message,
+          requestId: null
+        });
 
-      // Only toast error if it's not an auth issue (handled elsewhere)
-      if (!parsedError.message.includes('auth') && !parsedError.message.includes('User not authenticated')) {
-        toastError(parsedError, 'Failed to load restaurant information');
+        // Only toast error if it's not an auth issue (handled elsewhere)
+        if (!parsedError.message.includes('auth') && !parsedError.message.includes('User not authenticated')) {
+          toastError(parsedError, 'Failed to load restaurant information');
+        }
       }
     }
+    
+    // FIX: Return cleanup function to handle component unmounting
+    return () => {
+      isMounted = false;
+    };
   }, [params.slug, navigate]);
 
   const refreshTenant = useCallback(() => {

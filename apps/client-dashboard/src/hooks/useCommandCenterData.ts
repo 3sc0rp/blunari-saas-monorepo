@@ -86,16 +86,33 @@ const getRandomCapacity = (): number => {
 };
 
 const transformBookingToReservation = (booking: DatabaseBooking): Reservation => {
+  // CRITICAL FIX: Validate booking data before transformation
+  if (!booking || !booking.id) {
+    throw new Error('Invalid booking data: missing required fields');
+  }
+
   const guestName = booking.guest_name || `Guest ${booking.id.slice(0, 6)}`;
   const startTime = new Date(booking.booking_time);
+  
+  // FIX: Validate date before using it
+  if (isNaN(startTime.getTime())) {
+    throw new Error(`Invalid booking time: ${booking.booking_time}`);
+  }
+  
   const duration = booking.duration_minutes || DEFAULT_DURATION_MINUTES;
-  const endTime = new Date(startTime.getTime() + (duration * 60 * 1000));
+  
+  // FIX: Validate duration is positive
+  if (duration <= 0) {
+    console.warn(`Invalid duration for booking ${booking.id}, using default`);
+  }
+  
+  const endTime = new Date(startTime.getTime() + (Math.max(duration, 30) * 60 * 1000)); // Min 30 minutes
 
   return {
     id: booking.id,
     tableId: generateTableId(Math.floor(Math.random() * TABLE_COUNT)), // TODO: Replace with actual table assignment
     guestName,
-    partySize: booking.party_size,
+    partySize: Math.max(1, booking.party_size), // FIX: Ensure party size is at least 1
     start: booking.booking_time,
     end: endTime.toISOString(),
     status: (booking.status as Reservation['status']) || 'confirmed',

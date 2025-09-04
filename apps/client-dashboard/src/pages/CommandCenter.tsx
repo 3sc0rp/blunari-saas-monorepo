@@ -88,21 +88,34 @@ export default function CommandCenter() {
         return;
       }
       
-      // Check if we have any available tables
-      if (!tables || tables.length === 0) {
+      // CRITICAL FIX: Proper validation before accessing array elements
+      if (!tables || !Array.isArray(tables) || tables.length === 0) {
         toast.error('No tables available. Please ensure your restaurant has tables configured.');
         return;
       }
       
-      // Use the first available table for demo purposes
-      const firstTable = tables[0];
+      // CRITICAL FIX: Find available table instead of using first table blindly  
+      const availableTable = tables.find(table => 
+        table.status === 'AVAILABLE' && table.seats > 0 // FIX: Use correct enum value
+      );
+      
+      if (!availableTable) {
+        toast.error('No available tables found. All tables are currently occupied or reserved.');
+        return;
+      }
+      
+      // CRITICAL FIX: Validate table data before using it
+      if (!availableTable.id || !availableTable.seats) {
+        toast.error('Invalid table data. Please refresh and try again.');
+        return;
+      }
       
       // Example of creating a reservation programmatically
       const result = await createReservationAction({
-        tableId: firstTable.id,
+        tableId: availableTable.id,
         start: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
         end: new Date(Date.now() + 2.5 * 60 * 60 * 1000).toISOString(), // 2.5 hours from now
-        partySize: Math.min(4, firstTable.seats), // Don't exceed table capacity
+        partySize: Math.min(4, availableTable.seats), // Don't exceed table capacity
         guestName: 'Test Guest',
         guestEmail: 'test@example.com',
         channel: 'WEB'

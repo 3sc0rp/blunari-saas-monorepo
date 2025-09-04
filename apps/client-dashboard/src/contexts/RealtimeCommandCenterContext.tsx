@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode } from "react";
-import { useRealtimeCommandCenter, RealtimeBooking, RealtimeTable, WaitlistEntry, CommandCenterMetrics } from "@/hooks/useRealtimeCommandCenter";
+import { useRealtimeCommandCenter, RealtimeBooking, RealtimeTable, WaitlistEntry, CommandCenterMetrics, RealtimeConnectionState } from "@/hooks/useRealtimeCommandCenter";
 
 interface RealtimeCommandCenterContextType {
   // Data
@@ -10,12 +10,8 @@ interface RealtimeCommandCenterContextType {
   
   // Status
   isLoading: boolean;
-  error: any;
-  connectionStatus: {
-    bookings: boolean;
-    tables: boolean;
-    waitlist: boolean;
-  };
+  error: Error | null; // FIX: Replace 'any' with proper Error type
+  connectionStatus: RealtimeConnectionState; // FIX: Use proper connection status type
   isConnected: boolean;
   allConnected: boolean;
   lastUpdate: Date;

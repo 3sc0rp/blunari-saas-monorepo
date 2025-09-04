@@ -539,14 +539,18 @@ export const useRealtimeCommandCenter = () => {
     };
   }, [tenantId, queryClient, today.start, updateConnectionStatus]);
 
-  // Enhanced auto-refresh with connection-based intervals and fallback polling
+  // CRITICAL FIX: Enhanced auto-refresh with connection-based intervals and proper cleanup
   useEffect(() => {
     if (!tenantId) return;
 
     let intervalId: NodeJS.Timeout;
+    let isComponentMounted = true; // FIX: Track component mount state
 
     const setupPolling = () => {
       intervalId = setInterval(() => {
+        // FIX: Check if component is still mounted before executing
+        if (!isComponentMounted) return;
+        
         const { overall } = connectionStatus;
         
         if (overall === 'error' || overall === 'disconnected') {
@@ -575,6 +579,7 @@ export const useRealtimeCommandCenter = () => {
     setupPolling();
 
     return () => {
+      isComponentMounted = false; // FIX: Mark component as unmounted
       if (intervalId) {
         clearInterval(intervalId);
       }

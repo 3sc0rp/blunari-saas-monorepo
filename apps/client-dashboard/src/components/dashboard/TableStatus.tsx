@@ -6,23 +6,38 @@ import { Clock, Users, Loader2 } from "lucide-react";
 import { useTableManagement } from "@/hooks/useTableManagement";
 import { useTenant } from "@/hooks/useTenant";
 import { Skeleton } from "@/components/ui/skeleton";
+import { logger } from "@/utils/logger"; // CRITICAL FIX: Use proper logging
 
 const TableStatus = () => {
   const { tenant } = useTenant();
   const { tables, isLoading, updateTable, error } = useTableManagement(tenant?.id);
 
-  // Advanced error handling and debugging
+  // CRITICAL FIX: Enhanced error handling and debugging with proper logging
   React.useEffect(() => {
     if (tenant?.id) {
-      console.log(`[TableStatus] Tenant ID: ${tenant.id}, Tables loaded: ${tables?.length || 0}`);
+      logger.debug('TableStatus component loaded', { 
+        tenantId: tenant.id, 
+        tablesCount: tables?.length || 0 
+      });
     } else {
-      console.warn("[TableStatus] No tenant ID available");
+      logger.warn('TableStatus: No tenant ID available');
     }
     
     if (error) {
-      console.error("[TableStatus] Error loading tables:", error);
+      logger.error('TableStatus: Failed to load tables', error, { 
+        tenantId: tenant?.id 
+      });
     }
   }, [tenant?.id, tables?.length, error]);
+
+  // CRITICAL FIX: Add null safety checks
+  const safeTables = React.useMemo(() => {
+    if (!Array.isArray(tables)) {
+      logger.warn('Tables data is not an array', { tables });
+      return [];
+    }
+    return tables.filter(table => table && typeof table === 'object' && table.id);
+  }, [tables]);
 
   // Handle loading state with better UX
   if (isLoading) {
@@ -78,8 +93,8 @@ const TableStatus = () => {
     );
   }
 
-  // Handle no tables case with better messaging
-  if (!tables || tables.length === 0) {
+  // CRITICAL FIX: Handle no tables case with proper safety checks
+  if (!safeTables || safeTables.length === 0) {
     return (
       <div className="p-6">
         <h3 className="text-lg font-semibold mb-4">Table Status</h3>
