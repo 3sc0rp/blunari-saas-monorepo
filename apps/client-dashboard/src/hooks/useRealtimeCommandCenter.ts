@@ -358,6 +358,42 @@ export const useRealtimeCommandCenter = () => {
   useEffect(() => {
     if (!tenantId) return;
 
+    // Skip real-time subscriptions for fallback tenant to prevent errors
+    if (tenantId === '99e1607d-da99-4f72-9182-a417072eb629') {
+      console.log("🟡 Skipping real-time subscriptions for fallback tenant");
+      setConnectionStatus({
+        bookings: 'disconnected',
+        tables: 'disconnected', 
+        waitlist: 'disconnected',
+        overall: 'disconnected'
+      });
+      return;
+    }
+
+    // Skip subscriptions if tenant ID is not a valid UUID
+    if (!isValidUUID(tenantId)) {
+      console.log("🟡 Skipping real-time subscriptions for invalid tenant ID:", tenantId);
+      setConnectionStatus({
+        bookings: 'disconnected',
+        tables: 'disconnected',
+        waitlist: 'disconnected', 
+        overall: 'disconnected'
+      });
+      return;
+    }
+
+    // Skip real-time subscriptions in development mode if flag is set
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_DISABLE_REALTIME === 'true') {
+      console.log("🟡 Real-time subscriptions disabled in development mode");
+      setConnectionStatus({
+        bookings: 'disconnected',
+        tables: 'disconnected',
+        waitlist: 'disconnected',
+        overall: 'disconnected'
+      });
+      return;
+    }
+
     console.log("🔥 Setting up Command Center real-time subscriptions for tenant:", tenantId);
 
     let bookingsChannel: RealtimeChannel;

@@ -46,16 +46,16 @@ export function useTenant() {
     const timeoutId = setTimeout(() => {
       if (isMounted) {
         console.warn('Tenant resolution timeout, using fallback');
-        // Generate a proper UUID for fallback
-        const fallbackUuid = crypto.randomUUID ? crypto.randomUUID() : 'demo-tenant-' + Date.now();
+        // Use a realistic demo tenant ID that might exist in the database
+        const fallbackTenant: TenantInfo = {
+          id: '99e1607d-da99-4f72-9182-a417072eb629', // Use the tenant ID from the logs
+          slug: 'demo',
+          name: 'Demo Restaurant',
+          timezone: 'America/New_York',
+          currency: 'USD'
+        };
         setState({
-          tenant: {
-            id: fallbackUuid,
-            slug: 'demo',
-            name: 'Restaurant Dashboard',
-            timezone: 'America/New_York',
-            currency: 'USD'
-          },
+          tenant: fallbackTenant,
           loading: false,
           error: null,
           requestId: null
@@ -120,11 +120,11 @@ export function useTenant() {
           return;
         }
         
-        // In development mode, if the tenant function fails, create a mock tenant
+        // In development mode, if the tenant function fails, create a demo tenant
         if (import.meta.env.VITE_APP_ENV === 'development') {
-          console.log('Development mode: Tenant function failed, creating mock tenant');
-          const mockTenant: TenantInfo = {
-            id: 'demo-tenant-id',
+          console.log('Development mode: Tenant function failed, using fallback tenant');
+          const fallbackTenant: TenantInfo = {
+            id: session.user.id, // Use the actual user ID which is already a UUID
             slug: 'demo',
             name: 'Demo Restaurant',
             timezone: 'America/New_York',
@@ -132,7 +132,7 @@ export function useTenant() {
           };
           
           setState({
-            tenant: mockTenant,
+            tenant: fallbackTenant,
             loading: false,
             error: null,
             requestId: null
@@ -175,11 +175,11 @@ export function useTenant() {
         const tenantError = TenantErrorZ.parse(responseData.error);
         console.error('Tenant resolution error:', tenantError);
         
-        // In development mode, if no tenant access is found, create a mock tenant
+        // In development mode, if no tenant access is found, use fallback tenant
         if (tenantError.code === 'NO_TENANT_ACCESS' && import.meta.env.VITE_APP_ENV === 'development') {
-          console.log('Development mode: Creating mock tenant for user access');
-          const mockTenant: TenantInfo = {
-            id: 'demo-tenant-id',
+          console.log('Development mode: No tenant access, using fallback tenant');
+          const fallbackTenant: TenantInfo = {
+            id: session.user.id, // Use the actual user ID which is already a UUID
             slug: 'demo',
             name: 'Demo Restaurant',
             timezone: 'America/New_York',
@@ -187,7 +187,7 @@ export function useTenant() {
           };
           
           setState({
-            tenant: mockTenant,
+            tenant: fallbackTenant,
             loading: false,
             error: null,
             requestId: null
@@ -253,12 +253,11 @@ export function useTenant() {
         return;
       }
 
-      // Fallback error
-      // In development mode, if no data is received, create a mock tenant
+      // Fallback error - In development mode, if no data is received, use fallback tenant
       if (import.meta.env.VITE_APP_ENV === 'development') {
-        console.log('Development mode: No tenant data received, creating mock tenant');
-        const mockTenant: TenantInfo = {
-          id: 'demo-tenant-id',
+        console.log('Development mode: No tenant data received, using fallback tenant');
+        const fallbackTenant: TenantInfo = {
+          id: session.user.id, // Use the actual user ID which is already a UUID
           slug: 'demo',
           name: 'Demo Restaurant',
           timezone: 'America/New_York',
@@ -266,7 +265,7 @@ export function useTenant() {
         };
         
         setState({
-          tenant: mockTenant,
+          tenant: fallbackTenant,
           loading: false,
           error: null,
           requestId: null

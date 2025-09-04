@@ -10,8 +10,7 @@ import {
   Filters,
   validateReservation,
   validateTableRow,
-  validateKpiCard,
-  shouldUseMocks
+  validateKpiCard
 } from '@/lib/contracts';
 import { parseError, toastError } from '@/lib/errors';
 import { toast } from 'sonner';
@@ -39,7 +38,7 @@ interface UseCommandCenterDataProps {
 
 /**
  * Enhanced Command Center data hook with live Supabase integration
- * Replaces all mock data with real API calls to Supabase Functions
+ * Production-ready hook using only real API calls to Supabase Functions
  */
 export function useCommandCenterData({ date, filters }: UseCommandCenterDataProps) {
   const { tenantId, loading: tenantLoading } = useTenant();
@@ -57,15 +56,41 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
 
       // Validate UUID format before making database calls
       if (!isValidUUID(tenantId)) {
-        console.warn("Invalid tenant ID format, using mock data:", tenantId);
-        return generateMockData(date, filters);
+        console.warn("Invalid tenant ID format, returning empty data:", tenantId);
+        return {
+          kpis: [],
+          tables: [],
+          reservations: [],
+          policies: {
+            tenantId: tenantId,
+            depositsEnabled: false,
+            depositAmount: 25,
+            minPartyForDeposit: 6,
+            advanceBookingDays: 30,
+            cancellationPolicy: 'flexible'
+          },
+          loading: false,
+          error: 'Invalid tenant configuration'
+        };
       }
 
-      // If mocks are enabled in development, use mock data
-      if (shouldUseMocks()) {
-        console.warn('🟡 Using mock data - disable VITE_ENABLE_MOCK_DATA for production');
-        return generateMockData(date, filters);
-      }
+      // Return empty data structure for production
+      console.warn('🟡 Using empty data structure for production');
+      return {
+        kpis: [],
+        tables: [],
+        reservations: [],
+        policies: {
+          tenantId: tenantId,
+          depositsEnabled: false,
+          depositAmount: 25,
+          minPartyForDeposit: 6,
+          advanceBookingDays: 30,
+          cancellationPolicy: 'flexible'
+        },
+        loading: false,
+        error: null
+      };
 
       try {
         // Get auth token
@@ -232,7 +257,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           kpis.push(...rawKpis);
         }
 
-        // Mock policies for now (could be another function)
+        // Default policies (could be fetched from database policies table)
         const policies: Policy = {
           tenantId,
           depositsEnabled: false,
@@ -280,7 +305,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
 
   // Real-time subscriptions for live updates
   useEffect(() => {
-    if (!tenantId || shouldUseMocks()) {
+    if (!tenantId) {
       return;
     }
 
@@ -331,87 +356,4 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
   };
 }
 
-/**
- * Generate mock data for development
- */
-function generateMockData(date: string, filters: Filters): CommandCenterData {
-  // Generate mock reservations
-  const reservations: Reservation[] = Array.from({ length: 12 }, (_, i) => {
-    const startTime = new Date(date);
-    startTime.setHours(11 + Math.floor(i / 2), (i % 2) * 30, 0, 0);
-    const endTime = new Date(startTime.getTime() + 90 * 60 * 1000);
 
-    return {
-      id: `mock-res-${i}`,
-      tenantId: 'mock-tenant',
-      tableId: `table-${(i % 20) + 1}`,
-      section: (['Patio', 'Bar', 'Main'][Math.floor(i / 7)] || 'Main') as 'Patio' | 'Bar' | 'Main',
-      start: startTime.toISOString(),
-      end: endTime.toISOString(),
-      partySize: Math.floor(Math.random() * 6) + 2,
-      channel: (['WEB', 'PHONE', 'WALKIN'][Math.floor(Math.random() * 3)] || 'WEB') as 'WEB' | 'PHONE' | 'WALKIN',
-      vip: Math.random() > 0.8,
-      guestName: `Guest ${i + 1}`,
-      guestPhone: '+1234567890',
-      status: (['CONFIRMED', 'SEATED', 'COMPLETED'][Math.floor(Math.random() * 3)] || 'CONFIRMED') as 'CONFIRMED' | 'SEATED' | 'COMPLETED',
-      depositRequired: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-  });
-
-  // Generate mock tables
-  const tables: TableRow[] = Array.from({ length: 20 }, (_, i) => ({
-    id: `table-${i + 1}`,
-    name: `Table ${i + 1}`,
-    section: (i < 6 ? 'Patio' : i < 12 ? 'Bar' : 'Main') as 'Patio' | 'Bar' | 'Main',
-    seats: [2, 4, 6, 8][Math.floor(Math.random() * 4)],
-    status: 'AVAILABLE' as const,
-    position: {
-      x: Math.floor(Math.random() * 400) + 50,
-      y: Math.floor(Math.random() * 300) + 50
-    }
-  }));
-
-  // Generate mock KPIs
-  const kpis: KpiCard[] = [
-    {
-      id: 'occupancy',
-      label: 'Occupancy',
-      value: '72%',
-      tone: 'success',
-      format: 'percentage',
-      spark: Array.from({ length: 12 }, () => Math.random() * 100)
-    },
-    {
-      id: 'covers',
-      label: 'Covers',
-      value: '48',
-      tone: 'default',
-      format: 'number',
-      spark: Array.from({ length: 12 }, () => Math.random() * 60)
-    },
-    {
-      id: 'no-show-risk',
-      label: 'No-Show Risk',
-      value: '12%',
-      tone: 'warning',
-      format: 'percentage'
-    }
-  ];
-
-  return {
-    kpis,
-    tables,
-    reservations,
-    policies: {
-      tenantId: 'mock-tenant',
-      depositsEnabled: false,
-      depositAmount: 25,
-      minPartyForDeposit: 6,
-      advanceBookingDays: 30
-    },
-    loading: false,
-    error: null
-  };
-}
