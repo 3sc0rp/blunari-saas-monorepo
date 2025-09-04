@@ -67,11 +67,26 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           'Content-Type': 'application/json'
         };
 
+        // Validate session and authentication
+        if (!session?.access_token) {
+          throw new Error('No valid session or access token available');
+        }
+
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         
+        console.log('🔐 Auth check:', {
+          hasSession: !!session,
+          hasAccessToken: !!session?.access_token,
+          tokenLength: session?.access_token?.length,
+          userId: session?.user?.id,
+          supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'missing'
+        });
+        
         // Standardized fetch for all edge functions to ensure consistent behavior
         const fetchEdgeFunction = async (functionName: string, method: string = 'POST', body?: any) => {
+          console.log(`📡 Calling edge function: ${functionName} (${method})`, body ? { bodyKeys: Object.keys(body) } : 'no body');
+          
           const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
             method,
             headers: {
@@ -82,28 +97,49 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
             ...(body && method !== 'GET' ? { body: JSON.stringify(body) } : {})
           });
           
+          console.log(`📡 Response from ${functionName}:`, {
+            status: response.status,
+            statusText: response.statusText,
+            ok: response.ok
+          });
+          
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error(`❌ Edge function ${functionName} error:`, {
+              status: response.status,
+              statusText: response.statusText,
+              body: errorText
+            });
+            throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
           }
           
           const data = await response.json();
+          console.log(`✅ Edge function ${functionName} success:`, { dataKeys: Object.keys(data) });
           return { data, error: null };
         };
         
         // Parallel fetch all data using standardized approach
         const [tablesResult, kpisResult] = await Promise.all([
           // Fetch tables using GET request (edge function requires GET)
-          fetchEdgeFunction('list-tables', 'GET').catch(error => ({ data: null, error })),
+          fetchEdgeFunction('list-tables', 'GET').catch(error => {
+            console.error('🚨 Tables fetch catch block triggered:', error);
+            return { data: null, error };
+          }),
           
           // Fetch KPIs using POST request with date parameter
-          fetchEdgeFunction('get-kpis', 'POST', { date }).catch(error => ({ data: null, error }))
+          fetchEdgeFunction('get-kpis', 'POST', { date }).catch(error => {
+            console.error('🚨 KPIs fetch catch block triggered:', error);
+            return { data: null, error };
+          })
         ]);
 
         // Handle function invocation errors
         if (tablesResult.error) {
+          console.error('Tables fetch error details:', tablesResult.error);
           throw new Error(`Failed to fetch tables: ${tablesResult.error.message}`);
         }
         if (kpisResult.error) {
+          console.error('KPIs fetch error details:', kpisResult.error);
           throw new Error(`Failed to fetch KPIs: ${kpisResult.error.message}`);
         }
 
@@ -111,27 +147,78 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         const tablesData = tablesResult.data;
         const kpisData = kpisResult.data;
 
+        console.log('📊 Processing edge function results:', {
+          tablesData: tablesData ? Object.keys(tablesData) : 'null',
+          kpisData: kpisData ? Object.keys(kpisData) : 'null',
+          tablesDataStructure: tablesData?.data ? 'has data array' : 'no data array',
+          kpisDataStructure: kpisData?.data ? 'has data array' : 'no data array'
+        });
+
         // For now, use empty reservations array (we can implement list-reservations later)
         const reservations: Reservation[] = [];
 
-        // Validate and transform data
-        const tables: TableRow[] = (tablesData?.data || []).map((t: any) => {
+        // Validate and transform data - fix the data access
+        console.log('🔍 Raw table data sample:', tablesData?.data?.[0]);
+        console.log('🔍 Raw KPI data sample:', kpisData?.data?.[0]);
+
+        const tables: TableRow[] = (tablesData?.data || []).map((t: any, index: number) => {
           try {
-            return validateTableRow(t);
+            const validated = validateTableRow(t);
+            if (index === 0) console.log('✅ First table validated successfully:', validated);
+            return validated;
           } catch (error) {
-            console.warn('Invalid table data:', t, error);
+            console.warn(`❌ Invalid table data at index ${index}:`, t, error);
             return null;
           }
         }).filter(Boolean);
 
-        const kpis: KpiCard[] = (kpisData?.data || []).map((k: any) => {
+        const kpis: KpiCard[] = (kpisData?.data || []).map((k: any, index: number) => {
           try {
-            return validateKpiCard(k);
+            const validated = validateKpiCard(k);
+            if (index === 0) console.log('✅ First KPI validated successfully:', validated);
+            return validated;
           } catch (error) {
-            console.warn('Invalid KPI data:', k, error);
+            console.warn(`❌ Invalid KPI data at index ${index}:`, k, error);
             return null;
           }
         }).filter(Boolean);
+
+        console.log('✅ Data validation complete:', {
+          validTables: tables.length,
+          validKpis: kpis.length,
+          totalTablesReceived: tablesData?.data?.length || 0,
+          totalKpisReceived: kpisData?.data?.length || 0
+        });
+
+        // TEMPORARY: If validation is failing, return raw data for debugging
+        if (tables.length === 0 && tablesData?.data?.length > 0) {
+          console.warn('⚠️ Table validation failed, using raw data structure');
+          // Convert raw data to match expected structure
+          const rawTables = tablesData.data.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            section: t.section,
+            seats: t.seats,
+            status: t.status,
+            position: t.position
+          }));
+          tables.push(...rawTables);
+        }
+
+        if (kpis.length === 0 && kpisData?.data?.length > 0) {
+          console.warn('⚠️ KPI validation failed, using raw data structure');
+          // Convert raw data to match expected structure  
+          const rawKpis = kpisData.data.map((k: any) => ({
+            id: k.id,
+            label: k.label,
+            value: k.value,
+            tone: k.tone || 'default',
+            format: k.format || 'number',
+            spark: k.spark || [],
+            hint: k.hint || ''
+          }));
+          kpis.push(...rawKpis);
+        }
 
         // Mock policies for now (could be another function)
         const policies: Policy = {

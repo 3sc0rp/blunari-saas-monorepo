@@ -34,6 +34,27 @@ import DebugTenantPage from "./pages/DebugTenant";
 import TenantTestPage from "./pages/TenantTestPage";
 import BookingPage from "./pages/BookingPage";
 import Catering from "./pages/Catering";
+// Phase 1 Restaurant Management Components
+import MenuManagement from "./pages/MenuManagement";
+import KitchenDisplaySystem from "./pages/KitchenDisplaySystem";
+import StaffManagement from "./pages/StaffManagement";
+import InventoryManagement from "./pages/InventoryManagement";
+import CustomerProfiles from "./pages/CustomerProfiles";
+// Phase 2 Customer Experience Components
+import AdvancedReservationSystem from "./pages/AdvancedReservationSystem";
+import WaitlistManagement from "./pages/WaitlistManagement";
+import EnhancedLoyaltyProgram from "./pages/EnhancedLoyaltyProgram";
+import ReviewFeedbackSystem from "./pages/ReviewFeedbackSystem";
+import AdvancedAnalyticsDashboard from "./pages/AdvancedAnalyticsDashboard";
+import FinancialReporting from "./pages/FinancialReporting";
+import PerformanceOptimization from "./pages/PerformanceOptimization";
+import CompetitiveIntelligence from "./pages/CompetitiveIntelligence";
+import AIBusinessInsights from "./pages/AIBusinessInsights";
+// Phase 5: Enterprise Features
+import APIIntegrationHub from "./components/integrations/APIIntegrationHub";
+import MobileAppCenter from "./components/mobile/MobileAppCenter";
+import AutomationWorkflows from "./components/automation/AutomationWorkflows";
+import MultiLocationManagement from "./components/multi-location/MultiLocationManagement";
 import { Suspense, lazy } from "react";
 import { SkeletonPage } from "@/components/ui/skeleton-components";
 import { DesignQAProvider } from "@/components/dev/DesignQAProvider";
@@ -153,6 +174,33 @@ const App = () => (
                           }
                         />
                         <Route path="catering" element={<Catering />} />
+                        {/* Phase 1: Restaurant Management Routes */}
+                        <Route path="menu-management" element={<MenuManagement />} />
+                        <Route path="kitchen-display" element={<KitchenDisplaySystem />} />
+                        <Route path="staff-management" element={<StaffManagement />} />
+                        <Route path="inventory-management" element={<InventoryManagement />} />
+                        <Route path="customer-profiles" element={<CustomerProfiles />} />
+                        {/* Phase 2: Customer Experience Routes */}
+                        <Route path="advanced-reservations" element={<AdvancedReservationSystem />} />
+                        <Route path="waitlist-management" element={<WaitlistManagement />} />
+                        <Route path="enhanced-loyalty" element={<EnhancedLoyaltyProgram />} />
+                        <Route path="review-feedback" element={<ReviewFeedbackSystem />} />
+                        
+                        {/* Phase 3: Advanced Analytics & Reporting Routes */}
+                        <Route path="advanced-analytics" element={<AdvancedAnalyticsDashboard />} />
+                        <Route path="financial-reporting" element={<FinancialReporting />} />
+                        <Route path="performance-optimization" element={<PerformanceOptimization />} />
+                        
+                        {/* Phase 4: AI & Intelligence Routes */}
+                        <Route path="competitive-intelligence" element={<CompetitiveIntelligence />} />
+                        <Route path="ai-business-insights" element={<AIBusinessInsights />} />
+                        
+                        {/* Phase 5: Enterprise Features Routes */}
+                        <Route path="api-integrations" element={<APIIntegrationHub />} />
+                        <Route path="mobile-apps" element={<MobileAppCenter />} />
+                        <Route path="automation" element={<AutomationWorkflows />} />
+                        <Route path="multi-location" element={<MultiLocationManagement />} />
+                        
                         <Route path="settings" element={<Settings />} />
                       </Route>
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

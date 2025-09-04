@@ -26,6 +26,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Development mode bypass
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_BYPASS_AUTH === 'true') {
+      console.log("Development mode: bypassing authentication");
+      setLoading(false);
+      return;
+    }
+
     // Set up auth state listener
     const {
       data: { subscription },
@@ -35,14 +42,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(false);
     });
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Check for existing session with timeout
+    const sessionCheck = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error checking session:", error);
+        // If there's an error, still set loading to false so the app doesn't hang
+        setLoading(false);
+      }
+    };
 
-    return () => subscription.unsubscribe();
+    sessionCheck();
+
+    // Fallback timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn("Auth initialization timeout, setting loading to false");
+        setLoading(false);
+      }
+    }, 3000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   Home,
   Calendar,
+  CalendarCheck,
   Users,
   MessageSquare,
   BarChart3,
@@ -20,7 +21,18 @@ import {
   Clock,
   TrendingUp,
   FileText,
-  Settings2
+  Settings2,
+  MenuIcon,
+  Package,
+  UserCircle,
+  UtensilsCrossed,
+  Receipt,
+  Star,
+  Target,
+  Brain,
+  Globe,
+  Smartphone,
+  Zap
 } from "lucide-react";
 import {
   Sidebar,
@@ -49,9 +61,18 @@ const operationsNavigation = [
     ],
   },
   {
+    section: "Kitchen Operations",
+    items: [
+      { title: "Kitchen Display", url: "/dashboard/kitchen-display", icon: UtensilsCrossed },
+      { title: "Menu Management", url: "/dashboard/menu-management", icon: MenuIcon },
+      { title: "Inventory", url: "/dashboard/inventory-management", icon: Package },
+    ],
+  },
+  {
     section: "Service",
     items: [
       { title: "Waitlist", url: "/dashboard/waitlist", icon: UserCheck },
+      { title: "Staff Management", url: "/dashboard/staff-management", icon: UserCircle },
       { title: "Messages", url: "/dashboard/messages", icon: MessageSquare },
     ],
   },
@@ -67,11 +88,25 @@ const managementNavigation = [
     ],
   },
   {
-    section: "Operations",
+    section: "Restaurant Operations",
+    items: [
+      { title: "Menu Management", url: "/dashboard/menu-management", icon: MenuIcon },
+      { title: "Kitchen Display", url: "/dashboard/kitchen-display", icon: UtensilsCrossed },
+      { title: "Staff Management", url: "/dashboard/staff-management", icon: UserCircle },
+      { title: "Inventory", url: "/dashboard/inventory-management", icon: Package },
+    ],
+  },
+  {
+    section: "Customer Experience",
     items: [
       { title: "Bookings", url: "/dashboard/bookings", icon: Calendar },
-      { title: "Tables", url: "/dashboard/tables", icon: TableProperties },
+      { title: "Advanced Reservations", url: "/dashboard/advanced-reservations", icon: CalendarCheck },
       { title: "Waitlist", url: "/dashboard/waitlist", icon: UserCheck },
+      { title: "Waitlist Management", url: "/dashboard/waitlist-management", icon: Clock },
+      { title: "Tables", url: "/dashboard/tables", icon: TableProperties },
+      { title: "Customer Profiles", url: "/dashboard/customer-profiles", icon: Users },
+      { title: "Enhanced Loyalty", url: "/dashboard/enhanced-loyalty", icon: Star },
+      { title: "Reviews & Feedback", url: "/dashboard/review-feedback", icon: MessageSquare },
       { title: "Catering", url: "/dashboard/catering", icon: ChefHat },
     ],
   },
@@ -81,6 +116,30 @@ const managementNavigation = [
       { title: "Customers", url: "/dashboard/customers", icon: Users },
       { title: "Staff", url: "/dashboard/staff", icon: Building },
       { title: "Messages", url: "/dashboard/messages", icon: MessageSquare },
+    ],
+  },
+  {
+    section: "Analytics & Reporting",
+    items: [
+      { title: "Advanced Analytics", url: "/dashboard/advanced-analytics", icon: BarChart3 },
+      { title: "Financial Reports", url: "/dashboard/financial-reporting", icon: FileText },
+      { title: "Performance Optimization", url: "/dashboard/performance-optimization", icon: TrendingUp },
+    ],
+  },
+  {
+    section: "AI & Intelligence",
+    items: [
+      { title: "Competitive Intelligence", url: "/dashboard/competitive-intelligence", icon: Target },
+      { title: "AI Business Insights", url: "/dashboard/ai-business-insights", icon: Brain },
+    ],
+  },
+  {
+    section: "Enterprise",
+    items: [
+      { title: "API Integrations", url: "/dashboard/api-integrations", icon: Globe },
+      { title: "Mobile Apps", url: "/dashboard/mobile-apps", icon: Smartphone },
+      { title: "Automation", url: "/dashboard/automation", icon: Zap },
+      { title: "Multi-Location", url: "/dashboard/multi-location", icon: Building },
     ],
   },
   {

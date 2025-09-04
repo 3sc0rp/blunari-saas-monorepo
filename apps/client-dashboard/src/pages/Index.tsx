@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
@@ -7,6 +7,7 @@ import { Loader2, Utensils } from "lucide-react";
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [timeoutReached, setTimeoutReached] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -17,6 +18,23 @@ const Index = () => {
       }
     }
   }, [user, loading, navigate]);
+
+  // Add timeout fallback in case auth is stuck
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setTimeoutReached(true);
+      console.warn("Auth timeout reached, redirecting to auth page");
+      navigate("/auth");
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(timeout);
+  }, [navigate]);
+
+  // If timeout reached, redirect immediately
+  if (timeoutReached) {
+    navigate("/auth");
+    return null;
+  }
 
   // Show elegant loading screen while redirecting
   return (

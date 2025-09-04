@@ -6,6 +6,7 @@ import { MainSplit } from "@/components/command-center/MainSplit.tsx";
 import { ReservationDrawer } from "@/components/command-center/ReservationDrawer.tsx";
 import { AuthDebugger } from "@/components/command-center/AuthDebugger.tsx";
 import { TenantTestComponent } from "@/components/TenantTestComponent.tsx";
+import { DebugEdgeFunctions } from "@/components/debug/DebugEdgeFunctions.tsx";
 import { useCommandCenterData } from "@/hooks/useCommandCenterDataNew.ts";
 import { useReservationActions } from "@/hooks/useReservationActions.ts";
 import { useState, useMemo } from "react";
@@ -319,6 +320,13 @@ export default function CommandCenter() {
           advancedMode={advancedMode}
           onAdvancedModeChange={handleAdvancedModeChange}
         />
+
+        {/* Debug Component - Remove in production */}
+        {import.meta.env.MODE === 'development' && error && (
+          <div className="mb-4">
+            <DebugEdgeFunctions />
+          </div>
+        )}
 
         {/* KPI Strip */}
         <KpiStrip 
