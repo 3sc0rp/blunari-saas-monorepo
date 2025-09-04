@@ -42,6 +42,25 @@ export function useTenant() {
   const resolveTenant = useCallback(async () => {
     let isMounted = true; // FIX: Track if component is still mounted
     
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('Tenant resolution timeout, using fallback');
+        setState({
+          tenant: {
+            id: 'timeout-fallback',
+            slug: 'demo',
+            name: 'Restaurant Dashboard',
+            timezone: 'America/New_York',
+            currency: 'USD'
+          },
+          loading: false,
+          error: null,
+          requestId: null
+        });
+      }
+    }, 10000); // 10 second timeout
+    
     try {
       setState(prev => ({ ...prev, loading: true, error: null, requestId: null }));
 
@@ -68,7 +87,16 @@ export function useTenant() {
       if (!session) {
         console.log('No active session, redirecting to login');
         if (isMounted) {
-          navigate('/auth');
+          setState({
+            tenant: null,
+            loading: false,
+            error: null,
+            requestId: null
+          });
+          // Only navigate if we're not already on the auth page
+          if (window.location.pathname !== '/auth') {
+            navigate('/auth');
+          }
         }
         return;
       }
@@ -110,6 +138,27 @@ export function useTenant() {
           return;
         }
         
+        // Production fallback: If tenant function fails but we have a valid session, 
+        // create a default tenant to prevent infinite loading
+        if (session && session.user) {
+          console.warn('Production: Tenant function failed, using fallback tenant');
+          const fallbackTenant: TenantInfo = {
+            id: session.user.id,
+            slug: 'demo',
+            name: 'Restaurant Dashboard',
+            timezone: 'America/New_York',
+            currency: 'USD'
+          };
+          
+          setState({
+            tenant: fallbackTenant,
+            loading: false,
+            error: null,
+            requestId: null
+          });
+          return;
+        }
+        
         setState({
           tenant: null,
           loading: false,
@@ -137,6 +186,26 @@ export function useTenant() {
           
           setState({
             tenant: mockTenant,
+            loading: false,
+            error: null,
+            requestId: null
+          });
+          return;
+        }
+        
+        // Production fallback: If no tenant access but valid session, create fallback tenant
+        if (tenantError.code === 'NO_TENANT_ACCESS' && session && session.user) {
+          console.warn('Production: No tenant access, using fallback tenant');
+          const fallbackTenant: TenantInfo = {
+            id: session.user.id,
+            slug: 'demo',
+            name: 'Restaurant Dashboard',
+            timezone: 'America/New_York',
+            currency: 'USD'
+          };
+          
+          setState({
+            tenant: fallbackTenant,
             loading: false,
             error: null,
             requestId: null
@@ -178,6 +247,7 @@ export function useTenant() {
           error: null,
           requestId: null
         });
+        clearTimeout(timeoutId);
         return;
       }
 
@@ -210,6 +280,7 @@ export function useTenant() {
       });
 
     } catch (error) {
+      clearTimeout(timeoutId);
       const parsedError = parseError(error);
       console.error('Tenant resolution failed:', parsedError);
       

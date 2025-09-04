@@ -84,12 +84,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const timeout = setTimeout(() => {
       if (isMounted && !authInitialized) {
         if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
-          console.warn("Auth initialization timeout (1.5s), proceeding without auth");
+          console.warn("Auth initialization timeout (3s), proceeding without auth");
         }
         authInitialized = true;
         setLoading(false);
       }
-    }, 1500); // Reduced from 3000ms to 1500ms
+    }, 3000); // Increased to 3 seconds for better stability // Reduced from 3000ms to 1500ms
 
     return () => {
       isMounted = false;
