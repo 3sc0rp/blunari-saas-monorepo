@@ -50,16 +50,16 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
-        <TenantBrandingProvider>
-          <RealtimeCommandCenterProvider>
-            <ModeProvider>
-              <NavigationProvider>
-                <FullscreenProvider>
-                  <TooltipProvider>
-                    <DesignQAProvider>
-                      <Toaster />
-                      <Sonner />
-                      <BrowserRouter>
+        <BrowserRouter>
+          <TenantBrandingProvider>
+            <RealtimeCommandCenterProvider>
+              <ModeProvider>
+                <NavigationProvider>
+                  <FullscreenProvider>
+                    <TooltipProvider>
+                      <DesignQAProvider>
+                        <Toaster />
+                        <Sonner />
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/auth" element={<Auth />} />
@@ -157,14 +157,14 @@ const App = () => (
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>
-                  </BrowserRouter>
-                </DesignQAProvider>
-              </TooltipProvider>
-            </FullscreenProvider>
-          </NavigationProvider>
-        </ModeProvider>
-      </RealtimeCommandCenterProvider>
-    </TenantBrandingProvider>
+                  </DesignQAProvider>
+                </TooltipProvider>
+              </FullscreenProvider>
+            </NavigationProvider>
+          </ModeProvider>
+        </RealtimeCommandCenterProvider>
+      </TenantBrandingProvider>
+    </BrowserRouter>
   </AuthProvider>
 </ThemeProvider>
 </QueryClientProvider>
