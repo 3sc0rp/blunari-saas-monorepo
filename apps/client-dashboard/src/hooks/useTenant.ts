@@ -80,6 +80,26 @@ export function useTenant() {
           return;
         }
         
+        // In development mode, if the tenant function fails, create a mock tenant
+        if (import.meta.env.VITE_APP_ENV === 'development') {
+          console.log('Development mode: Tenant function failed, creating mock tenant');
+          const mockTenant: TenantInfo = {
+            id: 'demo-tenant-id',
+            slug: 'demo',
+            name: 'Demo Restaurant',
+            timezone: 'America/New_York',
+            currency: 'USD'
+          };
+          
+          setState({
+            tenant: mockTenant,
+            loading: false,
+            error: null,
+            requestId: null
+          });
+          return;
+        }
+        
         setState({
           tenant: null,
           loading: false,
@@ -93,6 +113,26 @@ export function useTenant() {
       if (responseData?.error) {
         const tenantError = TenantErrorZ.parse(responseData.error);
         console.error('Tenant resolution error:', tenantError);
+        
+        // In development mode, if no tenant access is found, create a mock tenant
+        if (tenantError.code === 'NO_TENANT_ACCESS' && import.meta.env.VITE_APP_ENV === 'development') {
+          console.log('Development mode: Creating mock tenant for user access');
+          const mockTenant: TenantInfo = {
+            id: 'demo-tenant-id',
+            slug: 'demo',
+            name: 'Demo Restaurant',
+            timezone: 'America/New_York',
+            currency: 'USD'
+          };
+          
+          setState({
+            tenant: mockTenant,
+            loading: false,
+            error: null,
+            requestId: null
+          });
+          return;
+        }
         
         setState({
           tenant: null,
@@ -132,6 +172,26 @@ export function useTenant() {
       }
 
       // Fallback error
+      // In development mode, if no data is received, create a mock tenant
+      if (import.meta.env.VITE_APP_ENV === 'development') {
+        console.log('Development mode: No tenant data received, creating mock tenant');
+        const mockTenant: TenantInfo = {
+          id: 'demo-tenant-id',
+          slug: 'demo',
+          name: 'Demo Restaurant',
+          timezone: 'America/New_York',
+          currency: 'USD'
+        };
+        
+        setState({
+          tenant: mockTenant,
+          loading: false,
+          error: null,
+          requestId: null
+        });
+        return;
+      }
+      
       setState({
         tenant: null,
         loading: false,
@@ -197,6 +257,9 @@ export function useTenant() {
   return {
     tenant: state.tenant,
     tenantId: state.tenant?.id || null, // Use id from new schema
+    tenantSlug: params.slug || state.tenant?.slug || null, // Add tenantSlug
+    accessType: params.slug ? 'domain' : 'user', // Add accessType
+    isLoading: state.loading, // Match the expected prop name
     loading: state.loading,
     error: state.error,
     requestId: state.requestId,
