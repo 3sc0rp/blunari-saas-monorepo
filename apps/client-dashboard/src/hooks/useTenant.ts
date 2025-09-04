@@ -43,10 +43,13 @@ export function useTenant() {
   const resolveTenant = useCallback(async () => {
     let isMounted = true; // FIX: Track if component is still mounted
     
-    // Add timeout to prevent infinite loading
+    // Add timeout to prevent infinite loading - REDUCED TIMEOUT for faster response
     const timeoutId = setTimeout(() => {
       if (isMounted) {
-        console.warn('Tenant resolution timeout, using fallback');
+        logger.info('Tenant resolution timeout (5s), using fallback tenant', {
+          component: 'useTenant',
+          slug: params.slug
+        });
         // Use a realistic demo tenant ID that might exist in the database
         const fallbackTenant: TenantInfo = {
           id: '99e1607d-da99-4f72-9182-a417072eb629', // Use the tenant ID from the logs
@@ -62,7 +65,7 @@ export function useTenant() {
           requestId: null
         });
       }
-    }, 10000); // 10 second timeout
+    }, 5000); // REDUCED: 5 second timeout instead of 10
     
     try {
       setState(prev => ({ ...prev, loading: true, error: null, requestId: null }));

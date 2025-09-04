@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "./useTenant";
 import { logger } from "@/utils/logger";
+import { handleSubscriptionError, handleFallbackUsage } from "@/utils/productionErrorManager";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface RealtimeTable {
@@ -361,7 +362,7 @@ export const useRealtimeCommandCenter = () => {
 
     // Skip real-time subscriptions for fallback tenant to prevent errors
     if (tenantId === '99e1607d-da99-4f72-9182-a417072eb629') {
-      logger.warn("Skipping real-time subscriptions for fallback tenant");
+      handleFallbackUsage('useRealtimeCommandCenter', 'polling mode', { tenantId });
       setConnectionStatus({
         bookings: 'disconnected',
         tables: 'disconnected', 
@@ -373,7 +374,9 @@ export const useRealtimeCommandCenter = () => {
 
     // Skip subscriptions if tenant ID is not a valid UUID
     if (!isValidUUID(tenantId)) {
-      logger.warn("Skipping real-time subscriptions for invalid tenant ID:", { context: tenantId });
+      handleFallbackUsage('useRealtimeCommandCenter', 'polling mode (invalid UUID)', { 
+        tenantId: tenantId?.substring(0, 8) + '...' 
+      });
       setConnectionStatus({
         bookings: 'disconnected',
         tables: 'disconnected',
@@ -385,7 +388,9 @@ export const useRealtimeCommandCenter = () => {
 
     // Skip real-time subscriptions in development mode if flag is set
     if (import.meta.env.MODE === 'development' && import.meta.env.VITE_DISABLE_REALTIME === 'true') {
-      logger.warn("Real-time subscriptions disabled in development mode");
+      logger.info("Real-time subscriptions disabled in development mode", {
+        component: 'useRealtimeCommandCenter'
+      });
       setConnectionStatus({
         bookings: 'disconnected',
         tables: 'disconnected',
@@ -423,7 +428,7 @@ export const useRealtimeCommandCenter = () => {
           case 'CHANNEL_ERROR':
           case 'CLOSED':
             connectionState = 'error';
-            logger.warn(`${service} subscription failed, enabling polling mode`);
+            handleSubscriptionError('useRealtimeCommandCenter', service, `Subscription ${status}`, { tenantId });
             // Trigger polling fallback when subscriptions fail
             setTimeout(() => {
               queryClient.invalidateQueries({ queryKey });
@@ -485,7 +490,7 @@ export const useRealtimeCommandCenter = () => {
           )
           .subscribe(async (status, err) => {
             if (err) {
-              console.error("❌ Bookings subscription error:", err);
+              handleSubscriptionError('useRealtimeCommandCenter', 'bookings', err.message, { tenantId });
               updateConnectionStatus('bookings', 'error');
               return;
             }
@@ -517,7 +522,7 @@ export const useRealtimeCommandCenter = () => {
           )
           .subscribe(async (status, err) => {
             if (err) {
-              console.error("❌ Tables subscription error:", err);
+              handleSubscriptionError('useRealtimeCommandCenter', 'tables', err.message, { tenantId });
               updateConnectionStatus('tables', 'error');
               return;
             }
@@ -549,7 +554,7 @@ export const useRealtimeCommandCenter = () => {
           )
           .subscribe(async (status, err) => {
             if (err) {
-              console.error("❌ Waitlist subscription error:", err);
+              handleSubscriptionError('useRealtimeCommandCenter', 'waitlist', err.message, { tenantId });
               updateConnectionStatus('waitlist', 'error');
               return;
             }

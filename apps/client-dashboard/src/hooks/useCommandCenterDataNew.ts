@@ -15,6 +15,7 @@ import {
 import { parseError, toastError } from '@/lib/errors';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
+import { handleFallbackUsage } from '@/utils/productionErrorManager';
 
 // UUID validation helper
 const isValidUUID = (str: string): boolean => {
@@ -57,7 +58,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
 
       // Validate UUID format before making database calls
       if (!isValidUUID(tenantId)) {
-        console.warn("Invalid tenant ID format, returning empty data:", tenantId);
+        handleFallbackUsage('useCommandCenterDataNew', 'empty data (invalid UUID)', { tenantId });
         return {
           kpis: [],
           tables: [],
@@ -75,23 +76,13 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         };
       }
 
-      // Return empty data structure for production
-      console.warn('🟡 Using empty data structure for production');
-      return {
-        kpis: [],
-        tables: [],
-        reservations: [],
-        policies: {
-          tenantId: tenantId,
-          depositsEnabled: false,
-          depositAmount: 25,
-          minPartyForDeposit: 6,
-          advanceBookingDays: 30,
-          cancellationPolicy: 'flexible'
-        },
-        loading: false,
-        error: null
-      };
+      // PRODUCTION FIX: Attempt real data fetch with graceful fallback
+      logger.info('Fetching real Command Center data for production', {
+        component: 'useCommandCenterDataNew',
+        tenantId,
+        date,
+        filters
+      });
 
       try {
         // Get auth token
