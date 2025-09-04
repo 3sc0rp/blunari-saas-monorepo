@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { TenantInfo, TenantInfoZ } from '@/lib/contracts';
 import { parseError, toastError } from '@/lib/errors';
+import { logger } from '@/utils/logger';
 import { z } from 'zod';
 
 const TenantErrorZ = z.object({
@@ -87,7 +88,7 @@ export function useTenant() {
       }
 
       if (!session) {
-        console.log('No active session, redirecting to login');
+        logger.info('No active session found, redirecting to login');
         if (isMounted) {
           setState({
             tenant: null,
@@ -122,7 +123,7 @@ export function useTenant() {
         
         // In development mode, if the tenant function fails, create a demo tenant
         if (import.meta.env.VITE_APP_ENV === 'development') {
-          console.log('Development mode: Tenant function failed, using fallback tenant');
+          logger.info('Development mode: Tenant function failed, using fallback tenant');
           const fallbackTenant: TenantInfo = {
             id: session.user.id, // Use the actual user ID which is already a UUID
             slug: 'demo',
@@ -177,7 +178,7 @@ export function useTenant() {
         
         // In development mode, if no tenant access is found, use fallback tenant
         if (tenantError.code === 'NO_TENANT_ACCESS' && import.meta.env.VITE_APP_ENV === 'development') {
-          console.log('Development mode: No tenant access, using fallback tenant');
+          logger.info('Development mode: No tenant access, using fallback tenant');
           const fallbackTenant: TenantInfo = {
             id: session.user.id, // Use the actual user ID which is already a UUID
             slug: 'demo',
@@ -255,7 +256,7 @@ export function useTenant() {
 
       // Fallback error - In development mode, if no data is received, use fallback tenant
       if (import.meta.env.VITE_APP_ENV === 'development') {
-        console.log('Development mode: No tenant data received, using fallback tenant');
+        logger.info('Development mode: No tenant data received, using fallback tenant');
         const fallbackTenant: TenantInfo = {
           id: session.user.id, // Use the actual user ID which is already a UUID
           slug: 'demo',

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "./useTenant";
+import { logger } from "@/utils/logger";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface RealtimeTable {
@@ -360,7 +361,7 @@ export const useRealtimeCommandCenter = () => {
 
     // Skip real-time subscriptions for fallback tenant to prevent errors
     if (tenantId === '99e1607d-da99-4f72-9182-a417072eb629') {
-      console.log("🟡 Skipping real-time subscriptions for fallback tenant");
+      logger.warn("Skipping real-time subscriptions for fallback tenant");
       setConnectionStatus({
         bookings: 'disconnected',
         tables: 'disconnected', 
@@ -372,7 +373,7 @@ export const useRealtimeCommandCenter = () => {
 
     // Skip subscriptions if tenant ID is not a valid UUID
     if (!isValidUUID(tenantId)) {
-      console.log("🟡 Skipping real-time subscriptions for invalid tenant ID:", tenantId);
+      logger.warn("Skipping real-time subscriptions for invalid tenant ID:", { context: tenantId });
       setConnectionStatus({
         bookings: 'disconnected',
         tables: 'disconnected',
@@ -384,7 +385,7 @@ export const useRealtimeCommandCenter = () => {
 
     // Skip real-time subscriptions in development mode if flag is set
     if (import.meta.env.MODE === 'development' && import.meta.env.VITE_DISABLE_REALTIME === 'true') {
-      console.log("🟡 Real-time subscriptions disabled in development mode");
+      logger.warn("Real-time subscriptions disabled in development mode");
       setConnectionStatus({
         bookings: 'disconnected',
         tables: 'disconnected',
@@ -394,7 +395,7 @@ export const useRealtimeCommandCenter = () => {
       return;
     }
 
-    console.log("🔥 Setting up Command Center real-time subscriptions for tenant:", tenantId);
+    logger.info("Setting up Command Center real-time subscriptions for tenant:", { tenantId: tenantId });
 
     let bookingsChannel: RealtimeChannel;
     let tablesChannel: RealtimeChannel;
@@ -416,13 +417,13 @@ export const useRealtimeCommandCenter = () => {
         switch (status) {
           case 'SUBSCRIBED':
             connectionState = 'connected';
-            console.log(`✅ ${service} subscription active`);
+            logger.info(`${service} subscription active`);
             break;
           case 'TIMED_OUT':
           case 'CHANNEL_ERROR':
           case 'CLOSED':
             connectionState = 'error';
-            console.log(`⚠️ ${service} subscription failed, enabling polling mode`);
+            logger.warn(`${service} subscription failed, enabling polling mode`);
             // Trigger polling fallback when subscriptions fail
             setTimeout(() => {
               queryClient.invalidateQueries({ queryKey });
@@ -478,7 +479,7 @@ export const useRealtimeCommandCenter = () => {
               filter: `tenant_id=eq.${tenantId}`,
             },
             (payload) => {
-              console.log("📊 Bookings change:", payload);
+              logger.debug("Bookings change:", { payload: payload });
               bookingHandlers.onUpdate(payload);
             }
           )
@@ -510,7 +511,7 @@ export const useRealtimeCommandCenter = () => {
               filter: `tenant_id=eq.${tenantId}`,
             },
             (payload) => {
-              console.log("🪑 Tables change:", payload);
+              logger.debug("Tables change:", { payload: payload });
               tableHandlers.onUpdate(payload);
             }
           )
@@ -542,7 +543,7 @@ export const useRealtimeCommandCenter = () => {
               filter: `tenant_id=eq.${tenantId}`,
             },
             (payload) => {
-              console.log("⏱️ Waitlist change:", payload);
+              logger.debug("Waitlist change:", { payload: payload });
               waitlistHandlers.onUpdate(payload);
             }
           )
@@ -572,12 +573,12 @@ export const useRealtimeCommandCenter = () => {
 
     // Enhanced cleanup function with better error handling
     return () => {
-      console.log("🧹 Cleaning up Command Center subscriptions");
+      logger.info("Cleaning up Command Center subscriptions");
       
       const cleanupChannel = (channel: RealtimeChannel | undefined, name: string) => {
         if (channel) {
           try {
-            console.log(`🗑️ Unsubscribing ${name} channel`);
+            logger.debug(`Unsubscribing ${name} channel`);
             channel.unsubscribe();
             supabase.removeChannel(channel);
           } catch (error) {
@@ -614,13 +615,13 @@ export const useRealtimeCommandCenter = () => {
         const { overall } = connectionStatus;
         
         if (overall === 'error' || overall === 'disconnected') {
-          console.log("📱 Polling fallback active - refreshing data");
+          logger.debug("Polling fallback active - refreshing data");
           queryClient.invalidateQueries({ 
             queryKey: ["command-center"] 
           });
           setLastUpdate(new Date());
         } else if (overall === 'connecting') {
-          console.log("📱 Connection unstable - light refresh");
+          logger.debug("Connection unstable - light refresh");
           queryClient.invalidateQueries({ 
             queryKey: ["command-center"] 
           });

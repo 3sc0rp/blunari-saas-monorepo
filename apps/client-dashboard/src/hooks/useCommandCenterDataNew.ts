@@ -14,6 +14,7 @@ import {
 } from '@/lib/contracts';
 import { parseError, toastError } from '@/lib/errors';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 // UUID validation helper
 const isValidUUID = (str: string): boolean => {
@@ -122,7 +123,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         
         // Standardized fetch for all edge functions to ensure consistent behavior
         const fetchEdgeFunction = async (functionName: string, method: string = 'POST', body?: any) => {
-          console.log(`📡 Calling edge function: ${functionName} (${method})`, body ? { bodyKeys: Object.keys(body) } : 'no body');
+          logger.debug(`Calling edge function: ${functionName} (${method})`, body ? { bodyKeys: Object.keys(body) } : { body: 'none' });
           
           const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
             method,
@@ -134,7 +135,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
             ...(body && method !== 'GET' ? { body: JSON.stringify(body) } : {})
           });
           
-          console.log(`📡 Response from ${functionName}:`, {
+          logger.debug(`Response from ${functionName}`, {
             status: response.status,
             statusText: response.statusText,
             ok: response.ok
@@ -151,7 +152,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           }
           
           const data = await response.json();
-          console.log(`✅ Edge function ${functionName} success:`, { dataKeys: Object.keys(data) });
+          logger.debug(`Edge function ${functionName} success`, { dataKeys: Object.keys(data) });
           return { data, error: null };
         };
         
@@ -184,7 +185,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         const tablesData = tablesResult.data;
         const kpisData = kpisResult.data;
 
-        console.log('📊 Processing edge function results:', {
+        logger.debug('Processing edge function results', {
           tablesData: tablesData ? Object.keys(tablesData) : 'null',
           kpisData: kpisData ? Object.keys(kpisData) : 'null',
           tablesDataStructure: tablesData?.data ? 'has data array' : 'no data array',
@@ -195,13 +196,13 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         const reservations: Reservation[] = [];
 
         // Validate and transform data - fix the data access
-        console.log('🔍 Raw table data sample:', tablesData?.data?.[0]);
-        console.log('🔍 Raw KPI data sample:', kpisData?.data?.[0]);
+        logger.debug('Raw table data sample', { data: tablesData?.data?.[0] });
+        logger.debug('Raw KPI data sample', { data: kpisData?.data?.[0] });
 
         const tables: TableRow[] = (tablesData?.data || []).map((t: any, index: number) => {
           try {
             const validated = validateTableRow(t);
-            if (index === 0) console.log('✅ First table validated successfully:', validated);
+            if (index === 0) logger.debug('First table validated successfully', { data: validated });
             return validated;
           } catch (error) {
             console.warn(`❌ Invalid table data at index ${index}:`, t, error);
@@ -212,7 +213,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         const kpis: KpiCard[] = (kpisData?.data || []).map((k: any, index: number) => {
           try {
             const validated = validateKpiCard(k);
-            if (index === 0) console.log('✅ First KPI validated successfully:', validated);
+            if (index === 0) logger.debug('First KPI validated successfully', { data: validated });
             return validated;
           } catch (error) {
             console.warn(`❌ Invalid KPI data at index ${index}:`, k, error);
@@ -220,7 +221,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           }
         }).filter(Boolean);
 
-        console.log('✅ Data validation complete:', {
+        logger.debug('Data validation complete', {
           validTables: tables.length,
           validKpis: kpis.length,
           totalTablesReceived: tablesData?.data?.length || 0,
