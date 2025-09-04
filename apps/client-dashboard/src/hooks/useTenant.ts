@@ -46,9 +46,11 @@ export function useTenant() {
     const timeoutId = setTimeout(() => {
       if (isMounted) {
         console.warn('Tenant resolution timeout, using fallback');
+        // Generate a proper UUID for fallback
+        const fallbackUuid = crypto.randomUUID ? crypto.randomUUID() : 'demo-tenant-' + Date.now();
         setState({
           tenant: {
-            id: 'timeout-fallback',
+            id: fallbackUuid,
             slug: 'demo',
             name: 'Restaurant Dashboard',
             timezone: 'America/New_York',
@@ -143,7 +145,7 @@ export function useTenant() {
         if (session && session.user) {
           console.warn('Production: Tenant function failed, using fallback tenant');
           const fallbackTenant: TenantInfo = {
-            id: session.user.id,
+            id: session.user.id, // Use the actual user ID which is already a UUID
             slug: 'demo',
             name: 'Restaurant Dashboard',
             timezone: 'America/New_York',
@@ -197,7 +199,7 @@ export function useTenant() {
         if (tenantError.code === 'NO_TENANT_ACCESS' && session && session.user) {
           console.warn('Production: No tenant access, using fallback tenant');
           const fallbackTenant: TenantInfo = {
-            id: session.user.id,
+            id: session.user.id, // Use the actual user ID which is already a UUID
             slug: 'demo',
             name: 'Restaurant Dashboard',
             timezone: 'America/New_York',

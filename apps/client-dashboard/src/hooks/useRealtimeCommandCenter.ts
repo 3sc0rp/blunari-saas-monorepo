@@ -75,6 +75,12 @@ interface RealtimeConnectionState {
   overall: ConnectionStatus;
 }
 
+// UUID validation helper
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 export const useRealtimeCommandCenter = () => {
   const { tenant } = useTenant();
   const tenantId = tenant?.id;
@@ -141,6 +147,12 @@ export const useRealtimeCommandCenter = () => {
         throw new Error("Tenant ID is required for fetching bookings");
       }
 
+      // Validate UUID format before making database call
+      if (!isValidUUID(tenantId)) {
+        console.warn("Invalid tenant ID format, skipping bookings query:", tenantId);
+        return [];
+      }
+
       const { data, error } = await supabase
         .from("bookings")
         .select(`
@@ -162,7 +174,7 @@ export const useRealtimeCommandCenter = () => {
         table: booking.table || null
       })) as RealtimeBooking[];
     },
-    enabled: !!tenantId,
+    enabled: !!tenantId && isValidUUID(tenantId),
     refetchInterval: 30000,
     staleTime: 10000,
     retry: 3,
@@ -179,6 +191,12 @@ export const useRealtimeCommandCenter = () => {
     queryFn: async (): Promise<RealtimeTable[]> => {
       if (!tenantId) {
         throw new Error("Tenant ID is required for fetching tables");
+      }
+
+      // Validate UUID format before making database call
+      if (!isValidUUID(tenantId)) {
+        console.warn("Invalid tenant ID format, skipping tables query:", tenantId);
+        return [];
       }
 
       const { data, error } = await supabase
@@ -211,7 +229,7 @@ export const useRealtimeCommandCenter = () => {
       
       return tablesWithStatus;
     },
-    enabled: !!tenantId,
+    enabled: !!tenantId && isValidUUID(tenantId),
     refetchInterval: 30000,
     staleTime: 10000,
     retry: 3,
@@ -227,6 +245,12 @@ export const useRealtimeCommandCenter = () => {
     queryKey: ["command-center", "waitlist", tenantId],
     queryFn: async (): Promise<WaitlistEntry[]> => {
       if (!tenantId) return [];
+
+      // Validate UUID format before making database call
+      if (!isValidUUID(tenantId)) {
+        console.warn("Invalid tenant ID format, skipping waitlist query:", tenantId);
+        return [];
+      }
 
       try {
         // First check if the table exists by attempting a minimal query
@@ -268,7 +292,7 @@ export const useRealtimeCommandCenter = () => {
         return [];
       }
     },
-    enabled: !!tenantId,
+    enabled: !!tenantId && isValidUUID(tenantId),
     refetchInterval: 30000,
     staleTime: 10000,
     retry: 1, // Only retry once to avoid spam

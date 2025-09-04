@@ -16,6 +16,12 @@ import {
 import { parseError, toastError } from '@/lib/errors';
 import { toast } from 'sonner';
 
+// UUID validation helper
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 // Types matching the enhanced contracts
 export interface CommandCenterData {
   kpis: KpiCard[];
@@ -47,6 +53,12 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
     queryFn: async (): Promise<CommandCenterData> => {
       if (!tenantId) {
         throw new Error('Tenant not found');
+      }
+
+      // Validate UUID format before making database calls
+      if (!isValidUUID(tenantId)) {
+        console.warn("Invalid tenant ID format, using mock data:", tenantId);
+        return generateMockData(date, filters);
       }
 
       // If mocks are enabled in development, use mock data
@@ -244,7 +256,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         throw error;
       }
     },
-    enabled: !!tenantId && !tenantLoading,
+    enabled: !!tenantId && !tenantLoading && isValidUUID(tenantId),
     staleTime: 30_000, // 30 seconds
     gcTime: 5 * 60_000, // 5 minutes
     refetchOnWindowFocus: false,
