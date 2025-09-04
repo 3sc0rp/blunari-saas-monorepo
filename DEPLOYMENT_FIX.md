@@ -27,7 +27,13 @@ The deployment at https://demo.blunari.ai was experiencing multiple issues:
 - ✅ Increased auth initialization timeout to 3 seconds for better stability
 - ✅ Enhanced error handling for session check failures
 
-### 4. Environment Configuration
+### 4. Navigation & Routing Fixes
+- ✅ **NEW**: Fixed Advanced Mode button to navigate to full dashboard
+- ✅ **NEW**: Added Focus Mode button on full dashboard to return to command center  
+- ✅ **NEW**: Implemented proper bidirectional navigation between views
+- ✅ **NEW**: Enhanced user experience with intuitive mode switching
+
+### 5. Environment Configuration
 - ✅ Created `.env.production` with optimized production settings
 - ✅ Set `VITE_APP_ENV=production` for proper environment detection
 - ✅ Disabled development flags for production performance
@@ -77,6 +83,13 @@ After logging in, access the enterprise features at:
 - `/automation` - Automation Workflows  
 - `/mobile-apps` - Mobile App Center
 - `/multi-location` - Multi-Location Management
+
+## Navigation Testing
+After logging in, test the navigation flow:
+- **Command Center**: `/dashboard/command-center` - Focused booking management view
+- **Advanced Mode Button**: Click to navigate to full dashboard (`/dashboard/home`)
+- **Focus Mode Button**: Click on full dashboard to return to command center
+- **Phase 5 Routes**: `/api-integrations`, `/automation`, `/mobile-apps`, `/multi-location`
 
 ## Verification
 1. ✅ Loading should complete within 10 seconds maximum
