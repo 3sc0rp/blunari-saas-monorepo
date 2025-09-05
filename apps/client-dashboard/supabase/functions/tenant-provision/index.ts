@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.56.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,8 +73,10 @@ serve(async (req) => {
 
       // Update password if provided
       if (password) {
-        const { error: updateError } =
-          await supabaseAdmin.auth.admin.updateUserById(userId, { password });
+        const { error: updateError } = await (supabaseAdmin.auth.admin as any).updateUserById(
+          userId,
+          { password },
+        );
         if (updateError) {
           console.error("Error updating password:", updateError);
           throw updateError;
@@ -98,7 +100,10 @@ serve(async (req) => {
         throw createUserError;
       }
 
-      userId = newUser.user!.id;
+      if (!newUser?.user) {
+        throw createUserError || new Error("User creation returned no user");
+      }
+      userId = newUser.user.id;
       console.log("Created new user:", userId);
     }
 
