@@ -29,8 +29,14 @@ import { SendCredentialsDialog } from "@/components/tenant/SendCredentialsDialog
 import { TenantFeaturesTab } from "@/components/admin/TenantFeaturesTab";
 import { TenantBillingTab } from "@/components/tenant/TenantBillingTab";
 import { TenantApiKeysPanel } from "@/components/tenant/TenantApiKeysPanel";
+import { TenantOperationsPanel } from "@/components/tenant/TenantOperationsPanel";
+import { TenantIntegrationsPanel } from "@/components/tenant/TenantIntegrationsPanel";
+import { TenantInternalNotesPanel } from "@/components/tenant/TenantInternalNotesPanel";
+import { TenantAuditLogPanel } from "@/components/tenant/TenantAuditLogPanel";
+import { TenantChurnSignalsPanel } from "@/components/tenant/TenantChurnSignalsPanel";
 import { TenantUsageOverview } from "@/components/tenant/TenantUsageOverview";
 import { TenantSecurityExtended } from "@/components/tenant/TenantSecurityExtended";
+import { TenantAdoptionSnapshot } from "@/components/tenant/TenantAdoptionSnapshot";
 import { LoadingState, ErrorState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
 import type { TenantData } from "@/types/admin";
@@ -611,14 +617,19 @@ export default function TenantDetailPage() {
       </Card>
 
       {/* Tabs for different sections */}
-    <Tabs defaultValue="features" className="space-y-6">
+  <Tabs defaultValue="features" className="space-y-6">
         <TabsList>
           <TabsTrigger value="features">Features</TabsTrigger>
       <TabsTrigger value="billing">Billing</TabsTrigger>
       <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="usage">Usage</TabsTrigger>
           <TabsTrigger value="domains">Domains</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+      <TabsTrigger value="operations">Operations</TabsTrigger>
+      <TabsTrigger value="integrations">Integrations</TabsTrigger>
+      <TabsTrigger value="notes">Notes</TabsTrigger>
+      <TabsTrigger value="audit">Audit</TabsTrigger>
+      <TabsTrigger value="churn">Churn</TabsTrigger>
+      <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="features">
@@ -651,15 +662,50 @@ export default function TenantDetailPage() {
         </TabsContent>
 
         <TabsContent value="usage">
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="md:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Usage Overview</CardTitle>
+                  <CardDescription>Bookings, staff, features & trend window</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TenantUsageOverview tenantId={tenant.id} />
+                </CardContent>
+              </Card>
+            </div>
+            <div className="space-y-6">
+              <TenantAdoptionSnapshot tenantId={tenant.id} />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="operations">
           <Card>
             <CardHeader>
-              <CardTitle>Usage Overview</CardTitle>
-              <CardDescription>Bookings, staff, features & trend window</CardDescription>
+              <CardTitle>Operations</CardTitle>
+              <CardDescription>Background jobs & rate state</CardDescription>
             </CardHeader>
             <CardContent>
-              <TenantUsageOverview tenantId={tenant.id} />
+              <TenantOperationsPanel tenantId={tenant.id} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="integrations">
+          <TenantIntegrationsPanel tenantId={tenant.id} />
+        </TabsContent>
+
+        <TabsContent value="notes">
+          <TenantInternalNotesPanel tenantId={tenant.id} />
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <TenantAuditLogPanel tenantId={tenant.id} />
+        </TabsContent>
+
+        <TabsContent value="churn">
+          <TenantChurnSignalsPanel tenantId={tenant.id} />
         </TabsContent>
 
         <TabsContent value="domains">
