@@ -29,6 +29,7 @@ import { TenantFeaturesTab } from "@/components/admin/TenantFeaturesTab";
 import { LoadingState, ErrorState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
 import type { TenantData } from "@/types/admin";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function TenantDetailPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
@@ -41,6 +42,11 @@ export default function TenantDetailPage() {
   const [resending, setResending] = useState(false);
   const [openWelcomeDialog, setOpenWelcomeDialog] = useState(false);
   const [openCredentialsDialog, setOpenCredentialsDialog] = useState(false);
+  const [loadingEmailStatus, setLoadingEmailStatus] = useState(false);
+  const [lastWelcomeJob, setLastWelcomeJob] = useState<
+    | { id: string; status: string; created_at: string; updated_at?: string | null }
+    | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTenant = useCallback(async () => {
@@ -66,6 +72,49 @@ export default function TenantDetailPage() {
       fetchTenant();
     }
   }, [tenantId, fetchTenant]);
+
+  // Fetch last welcome email job for this tenant
+  useEffect(() => {
+    const fetchLastWelcome = async () => {
+      if (!tenantId) return;
+      try {
+        setLoadingEmailStatus(true);
+        const { data, error } = await supabase
+          .from("background_jobs")
+          .select("id, job_type, status, created_at, updated_at")
+          .eq("tenant_id", tenantId)
+          .in("job_type", ["WELCOME_EMAIL", "NOTIFICATION_EMAIL"] as const) // covers welcome pack path
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .returns<Array<{
+            id: string;
+            job_type: string;
+            status: string;
+            created_at: string;
+            updated_at: string | null;
+          }>>();
+        if (error) throw error;
+        const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
+        setLastWelcomeJob(
+          row
+            ? {
+                id: row.id as string,
+                status: row.status as string,
+                created_at: row.created_at as string,
+                updated_at: (row as any).updated_at ?? null,
+              }
+            : null,
+        );
+      } catch (e) {
+        console.warn("Failed to fetch last welcome job", e);
+        setLastWelcomeJob(null);
+      } finally {
+        setLoadingEmailStatus(false);
+      }
+    };
+    fetchLastWelcome();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId]);
 
   const handleResendWelcomeEmail = async () => {
     if (!tenant) return;
@@ -212,6 +261,29 @@ export default function TenantDetailPage() {
             Send Credentials
           </Button>
         </div>
+      </div>
+
+      {/* Last email status */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Mail className="h-4 w-4" />
+        {loadingEmailStatus ? (
+          <span>Checking welcome email status…</span>
+        ) : lastWelcomeJob ? (
+          <span>
+            Welcome email: <span className="font-medium">{lastWelcomeJob.status}</span>
+            {" "}• {new Date(lastWelcomeJob.created_at).toLocaleString()}
+          </span>
+        ) : (
+          <span>Welcome email: Never sent</span>
+        )}
+        <Button
+          variant="link"
+          size="sm"
+          className="px-1"
+          onClick={() => navigate("/admin/operations")}
+        >
+          View Jobs
+        </Button>
       </div>
 
       {/* Overview Cards */}
