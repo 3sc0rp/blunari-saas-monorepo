@@ -19,15 +19,18 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-  const { tenantId, refreshInvoices } = await req.json();
+    // Safely parse JSON (handle empty body)
+    let body: any = {};
+    try { body = await req.json(); } catch { body = {}; }
+    const { tenantId, refreshInvoices } = body;
     if (!tenantId) return createErrorResponse('MISSING_TENANT_ID', 'tenantId required', 400, undefined, origin);
 
-    const { data: tenant, error } = await supabase
+  const { data: tenant, error: tenantErr } = await supabase
       .from('tenants')
       .select('id, name, stripe_customer_id, stripe_subscription_id, plan_code, plan_renews_at')
       .eq('id', tenantId)
       .single();
-    if (error || !tenant) return createErrorResponse('TENANT_NOT_FOUND', 'Tenant not found', 404, undefined, origin);
+  if (tenantErr || !tenant) return createErrorResponse('TENANT_NOT_FOUND', 'Tenant not found', 404, undefined, origin);
 
     const subscription = await fetchStripeSubscription(tenant.stripe_subscription_id);
 
@@ -50,7 +53,7 @@ serve(async (req) => {
       }
     }
 
-    const { data: invoices } = await supabase
+  const { data: invoices } = await supabase
       .from('tenant_invoices_cache')
       .select('stripe_invoice_id, status, amount_due, amount_paid, currency, hosted_invoice_url, pdf_url, issued_at')
       .eq('tenant_id', tenantId)
@@ -62,34 +65,34 @@ serve(async (req) => {
     periodStart.setDate(1);
     const periodStartIso = periodStart.toISOString();
 
-    const { data: bookingAgg } = await supabase
+    const { count: bookingCount } = await supabase
       .from('bookings')
-      .select('id', { count: 'exact' })
+      .select('id', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
       .gte('booking_time', periodStartIso);
 
-    const { data: staffAgg } = await supabase
+    const { count: staffCount } = await supabase
       .from('staff')
-      .select('id', { count: 'exact' })
+      .select('id', { count: 'exact', head: true })
       .eq('tenant_id', tenantId);
 
-  const payload = {
+    const payload = {
       tenantId,
       plan: tenant.plan_code,
       renewal: tenant.plan_renews_at,
       stripe: {
         customerId: tenant.stripe_customer_id,
         subscription,
-  },
-  invoices: invoices || [],
+      },
+      invoices: invoices || [],
       usage: {
-        bookingsThisMonth: bookingAgg?.length ?? 0,
-        staffCount: staffAgg?.length ?? 0,
+        bookingsThisMonth: bookingCount ?? 0,
+        staffCount: staffCount ?? 0,
       },
       requestId: crypto.randomUUID(),
       generatedAt: new Date().toISOString(),
-  };
-  return createCorsResponse(payload, 200, origin);
+    };
+    return createCorsResponse(payload, 200, origin);
   } catch (e) {
     return createErrorResponse('INTERNAL', e instanceof Error ? e.message : 'Unknown error', 500, undefined, origin);
   }
