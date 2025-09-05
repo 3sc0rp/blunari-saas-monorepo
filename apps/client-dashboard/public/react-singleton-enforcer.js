@@ -100,25 +100,54 @@
     return singletonReact;
   };
   
-  // ENFORCE SINGLETON EVERYWHERE
+  // ENFORCE SINGLETON EVERYWHERE - ULTRA AGGRESSIVE
   if (typeof window !== 'undefined' && !reactInitialized) {
     const singleton = createReactSingleton();
     
-    console.error('🔥🔥🔥 REACT SINGLETON ENFORCER ACTIVE 🔥🔥🔥');
+    console.error('🔥🔥🔥 REACT SINGLETON ENFORCER ACTIVE - ULTRA MODE 🔥🔥🔥');
     
-    // Primary assignments
+    // FORCE singleton on ALL possible global locations IMMEDIATELY
     window.React = singleton;
     globalThis.React = singleton;
     
-    // Force assignment even if React is already defined
-    Object.defineProperty(window, 'React', {
-      get: function() { return singleton; },
-      set: function(value) {
-        console.warn('🔥 Attempted to override React singleton - BLOCKED');
-        return singleton;
-      },
-      configurable: false
+    // Override ANY existing React with our singleton
+    if (typeof global !== 'undefined') {
+      global.React = singleton;
+    }
+    if (typeof self !== 'undefined') {
+      self.React = singleton;
+    }
+    
+    // CRITICAL: Override individual hooks globally to prevent vendor chunk errors
+    const hookNames = [
+      'useState', 'useEffect', 'useLayoutEffect', 'useContext', 
+      'useCallback', 'useMemo', 'useRef', 'useReducer',
+      'useImperativeHandle', 'useDebugValue', 'useDeferredValue',
+      'useTransition', 'useId', 'useSyncExternalStore', 'useInsertionEffect'
+    ];
+    
+    hookNames.forEach(hookName => {
+      window[hookName] = singleton[hookName];
+      globalThis[hookName] = singleton[hookName];
+      if (typeof global !== 'undefined') global[hookName] = singleton[hookName];
+      if (typeof self !== 'undefined') self[hookName] = singleton[hookName];
     });
+    
+    // Force React property to be completely immutable
+    try {
+      Object.defineProperty(window, 'React', {
+        get: function() { return singleton; },
+        set: function(value) {
+          console.warn('🔥 Attempted to override React singleton - BLOCKED');
+          return singleton;
+        },
+        configurable: false,
+        enumerable: true
+      });
+    } catch (e) {
+      // If defineProperty fails, just force assign
+      window.React = singleton;
+    }
     
     // Global scope assignments
     if (typeof global !== 'undefined') {

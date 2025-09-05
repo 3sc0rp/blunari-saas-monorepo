@@ -196,6 +196,7 @@
   if (typeof window !== 'undefined') {
     console.error('🚨🚨🚨 NUCLEAR REACT POLYFILL ACTIVATING - MAXIMUM PROTECTION 🚨🚨🚨');
     
+    // IMMEDIATE global assignment before ANY other scripts
     window.React = nuclearReact;
     window.react = nuclearReact; // lowercase variant
     
@@ -215,31 +216,42 @@
       global.react = nuclearReact;
     }
     
-    // Force assignment to any possible global scope
-    try {
-      Object.defineProperty(window, 'React', {
-        value: nuclearReact,
-        writable: false,
-        configurable: false
-      });
-    } catch (e) {
-      console.warn('Could not make React non-writable, but it is assigned');
-    }
-    
-    // EXTREME: Override any existing React hooks individually
+    // CRITICAL: Force individual hook assignments to prevent vendor chunk undefined errors
     [
       'useState', 'useEffect', 'useLayoutEffect', 'useContext', 
       'useCallback', 'useMemo', 'useRef', 'useReducer',
       'useImperativeHandle', 'useDebugValue', 'useDeferredValue',
       'useTransition', 'useId', 'useSyncExternalStore', 'useInsertionEffect'
     ].forEach(hookName => {
-      if (window[hookName] === undefined) {
-        window[hookName] = nuclearReact[hookName];
-      }
-      if (globalThis[hookName] === undefined) {
-        globalThis[hookName] = nuclearReact[hookName];
-      }
+      window[hookName] = nuclearReact[hookName];
+      globalThis[hookName] = nuclearReact[hookName];
+      if (typeof global !== 'undefined') global[hookName] = nuclearReact[hookName];
+      if (typeof self !== 'undefined') self[hookName] = nuclearReact[hookName];
     });
+    
+    // ULTRA-CRITICAL: Override ANY potential React imports or requires
+    if (typeof require !== 'undefined') {
+      const originalRequire = require;
+      require = function(moduleName) {
+        if (moduleName === 'react' || moduleName === 'React') {
+          console.warn('🚨 Nuclear polyfill intercepted require("react")');
+          return nuclearReact;
+        }
+        return originalRequire.apply(this, arguments);
+      };
+    }
+    
+    // Force assignment to any possible global scope with error handling
+    try {
+      Object.defineProperty(window, 'React', {
+        value: nuclearReact,
+        writable: true,  // Allow overwriting for flexibility
+        configurable: true,
+        enumerable: true
+      });
+    } catch (e) {
+      console.warn('Could not make React non-writable, but it is assigned');
+    }
     
     console.error('🚨 NUCLEAR REACT POLYFILL ACTIVE - ALL VENDOR CHUNKS PROTECTED 🚨');
     console.error('🚨 useLayoutEffect is now BULLETPROOF against undefined errors 🚨');

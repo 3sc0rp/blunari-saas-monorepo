@@ -24,7 +24,10 @@
     <meta name="twitter:site" content="@blunari" />
     <meta name="twitter:image" content="/logo.png" />
     
-    <!-- 🔥 STEP 1: React Singleton Enforcer - MUST LOAD FIRST -->
+    <!-- � STEP 0: Vendor Chunk Error Interceptor - MUST LOAD ABSOLUTELY FIRST -->
+    <script src="/vendor-chunk-interceptor.js"></script>
+    
+    <!-- �🔥 STEP 1: React Singleton Enforcer - MUST LOAD FIRST -->
     <script src="/react-singleton-enforcer.js"></script>
     
     <!-- 🚨 STEP 2: Nuclear React polyfill backup -->

@@ -294,29 +294,46 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             if (id.includes('node_modules')) {
               
-              // CRITICAL: Keep ALL React-ecosystem libraries together in main vendor
-              if (id.includes('react') || 
-                  id.includes('react-dom') || 
-                  id.includes('scheduler') ||
-                  id.includes('@radix-ui') ||
-                  id.includes('framer-motion') ||
-                  id.includes('lucide-react') ||
-                  id.includes('@tanstack/react') ||
-                  id.includes('react-router') ||
-                  id.includes('react-hook-form') ||
-                  id.includes('react-day-picker') ||
-                  id.includes('react-resizable') ||
-                  id.includes('react-window') ||
-                  id.includes('next-themes') ||
-                  id.includes('sonner') ||
-                  id.includes('vaul') ||
-                  id.includes('cmdk') ||
-                  id.includes('embla-carousel-react') ||
-                  id.includes('input-otp')) {
-                return 'vendor-react-all';
-              }
-              
-              // Supabase - completely separate
+          // CRITICAL: Keep ALL React-ecosystem libraries together in main vendor
+          // ULTRA-AGGRESSIVE: Prevent ANY React splitting
+          if (id.includes('react') || 
+              id.includes('react-dom') || 
+              id.includes('scheduler') ||
+              id.includes('@radix-ui') ||
+              id.includes('framer-motion') ||
+              id.includes('lucide-react') ||
+              id.includes('@tanstack/react') ||
+              id.includes('react-router') ||
+              id.includes('react-hook-form') ||
+              id.includes('react-day-picker') ||
+              id.includes('react-resizable') ||
+              id.includes('react-window') ||
+              id.includes('next-themes') ||
+              id.includes('sonner') ||
+              id.includes('vaul') ||
+              id.includes('cmdk') ||
+              id.includes('embla-carousel-react') ||
+              id.includes('input-otp') ||
+              id.includes('recharts') ||
+              id.includes('react-smooth') ||
+              id.includes('react-transition-group') ||
+              id.includes('react-remove-scroll') ||
+              id.includes('react-style-singleton') ||
+              id.includes('use-callback-ref') ||
+              id.includes('use-sidecar') ||
+              id.includes('react-composer') ||
+              id.includes('suspend-react') ||
+              id.includes('tunnel-rat') ||
+              id.includes('its-fine') ||
+              id.includes('react-reconciler') ||
+              id.includes('react-use-measure') ||
+              id.includes('@react-spring') ||
+              id.includes('@use-gesture/react') ||
+              id.includes('@react-three') ||
+              id.includes('@react-email') ||
+              id.includes('react-email')) {
+            return 'vendor-react-all';
+          }              // Supabase - completely separate
               if (id.includes('@supabase') || id.includes('supabase')) {
                 return 'vendor-supabase';
               }
