@@ -46,7 +46,9 @@ export default function TenantDetailPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getTenant, resendWelcomeEmail } = useAdminAPI();
+  const { getTenant, resendWelcomeEmail, issuePasswordSetupLink } = useAdminAPI() as any;
+  const [sendingSetupEmail, setSendingSetupEmail] = useState(false);
+  const [lastSetupRequest, setLastSetupRequest] = useState<null | { mode: string; requestId: string; at: number }>(null);
 
   const [tenant, setTenant] = useState<TenantData | null>(null);
   const [loadingPage, setLoadingPage] = useState(true);
@@ -356,6 +358,27 @@ export default function TenantDetailPage() {
           >
             <Key className="h-4 w-4 mr-2" />
             Send Credentials
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={sendingSetupEmail}
+            onClick={async () => {
+              if (!tenantId) return;
+              try {
+                setSendingSetupEmail(true);
+                const resp = await issuePasswordSetupLink(tenantId, { sendEmail: true, ownerNameOverride: tenant?.name });
+                setLastSetupRequest({ mode: (resp as any).mode, requestId: (resp as any).requestId, at: Date.now() });
+                toast({ title: 'Password Setup Email Sent', description: `Mode: ${(resp as any).mode}` });
+              } catch (e) {
+                toast({ title: 'Failed to send setup email', description: e instanceof Error ? e.message : 'Unknown error', variant: 'destructive' });
+              } finally {
+                setSendingSetupEmail(false);
+              }
+            }}
+          >
+            <Mail className="h-4 w-4 mr-2" />
+            {sendingSetupEmail ? 'Sending...' : 'Password Setup Email'}
           </Button>
           <Button
             variant="outline"

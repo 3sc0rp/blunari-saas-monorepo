@@ -157,6 +157,28 @@ export const useAdminAPI = () => {
     [callEdgeFunction],
   );
 
+  // Issue password setup (invite or recovery) link for tenant owner
+  const issuePasswordSetupLink = useCallback(
+    async (tenantId: string, options?: { sendEmail?: boolean; redirectUrl?: string; ownerNameOverride?: string }) => {
+      const payload: Record<string, unknown> = {
+        tenantId,
+        sendEmail: options?.sendEmail !== false,
+        loginRedirectUrl: options?.redirectUrl,
+        ownerNameOverride: options?.ownerNameOverride,
+      };
+      const response = await callEdgeFunction<any>(
+        "tenant-password-setup-email",
+        payload,
+      );
+      if (!response.success) {
+        const e = (response as any).error || {};
+        throw new Error(e.message || "Failed to issue password setup link");
+      }
+      return response as any;
+    },
+    [callEdgeFunction],
+  );
+
   // Features Management
   const getTenantFeatures = useCallback(
     async (tenantSlug: string): Promise<TenantFeature[]> => {
@@ -317,6 +339,7 @@ export const useAdminAPI = () => {
     // Tenant Operations
     provisionTenant,
     resendWelcomeEmail,
+  issuePasswordSetupLink,
     getTenant,
     listTenants,
     // Features Management

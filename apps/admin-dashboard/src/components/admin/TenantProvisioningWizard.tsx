@@ -79,7 +79,9 @@ export function TenantProvisioningWizard({
   const [loading, setLoading] = useState(false);
   const [idempotencyKey] = useState(crypto.randomUUID());
   const navigate = useNavigate();
-  const { provisionTenant } = useAdminAPI();
+  const { provisionTenant, issuePasswordSetupLink } = useAdminAPI();
+  const [sendingSetup, setSendingSetup] = useState(false);
+  const [setupSentInfo, setSetupSentInfo] = useState<null | { mode: string; requestId: string }>(null);
   const { toast } = useToast();
   const steps = useMemo(
     () => [
@@ -387,7 +389,31 @@ export function TenantProvisioningWizard({
                 <Settings className="h-4 w-4 mr-2" />
                 View Observability
               </Button>
+              {result.tenantId && formData.owner.email && (
+                <Button
+                  disabled={sendingSetup}
+                  onClick={async () => {
+                    try {
+                      setSendingSetup(true);
+                      const resp = await issuePasswordSetupLink(result.tenantId, { sendEmail: true, ownerNameOverride: formData.basics.name });
+                      setSetupSentInfo({ mode: (resp as any).mode, requestId: (resp as any).requestId });
+                      toast({ title: "Password Setup Email Sent", description: `Mode: ${(resp as any).mode}` });
+                    } catch (e) {
+                      toast({ title: "Failed to send setup email", description: e instanceof Error ? e.message : 'Unknown error', variant: 'destructive' });
+                    } finally {
+                      setSendingSetup(false);
+                    }
+                  }}
+                  variant="outline"
+                >
+                  {sendingSetup ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+                  {sendingSetup ? 'Sending...' : 'Send Password Setup Email'}
+                </Button>
+              )}
             </div>
+            {setupSentInfo && (
+              <p className="text-xs text-muted-foreground">Password setup link issued (mode: {setupSentInfo.mode}) • Request ID: {setupSentInfo.requestId}</p>
+            )}
           </CardContent>
         </Card>
       </div>
