@@ -11,6 +11,48 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       
+      // Critical React polyfill plugin
+      {
+        name: 'react-emergency-polyfill',
+        configureServer(server) {
+          server.middlewares.use('/react-emergency-polyfill.js', (req, res, next) => {
+            res.setHeader('Content-Type', 'application/javascript');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.end(`
+// Emergency React Polyfill - Development Mode
+(function() {
+  'use strict';
+  if (typeof window !== 'undefined' && !window.React) {
+    console.warn('⚠️ Emergency React polyfill activating (dev mode)...');
+    window.React = window.React || {
+      createContext: function(defaultValue) {
+        console.warn('🔧 Emergency createContext polyfill called');
+        return {
+          Provider: function({ children }) { return children; },
+          Consumer: function({ children }) { return children(); },
+          _currentValue: defaultValue,
+          _defaultValue: defaultValue
+        };
+      },
+      useState: function(initial) { return [initial, function() {}]; },
+      useEffect: function() {},
+      useContext: function(context) { return context._currentValue; },
+      useCallback: function(fn) { return fn; },
+      useMemo: function(fn) { return fn(); },
+      useRef: function(initial) { return { current: initial }; },
+      forwardRef: function(fn) { return fn; },
+      Fragment: function({ children }) { return children; },
+      version: '18.0.0-polyfill'
+    };
+    globalThis.React = window.React;
+    console.log('🚨 Emergency React polyfill activated (dev)');
+  }
+})();
+            `);
+          });
+        }
+      },
+      
       // Custom plugin for bundle analysis
       {
         name: 'bundle-analyzer',
@@ -60,6 +102,8 @@ export default defineConfig(({ mode }) => {
     // Environment variables
     define: {
       global: 'globalThis',
+      // Force React to be available globally
+      'process.env.NODE_ENV': JSON.stringify(mode),
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
       __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
       __COMMIT_HASH__: JSON.stringify(process.env.VITE_COMMIT_HASH || 'dev')
@@ -155,36 +199,50 @@ export default defineConfig(({ mode }) => {
             'react-dom': 'ReactDOM'
           },
           
-          // Disable chunk splitting for React-related modules to prevent context issues
+          // AGGRESSIVE: Don't split ANY React-related dependencies
           manualChunks: (id) => {
-            // Don't split React and React-related modules at all - keep them together
             if (id.includes('node_modules')) {
-              // Keep all React stuff together in the main vendor chunk
+              
+              // CRITICAL: Keep ALL React-ecosystem libraries together in main vendor
               if (id.includes('react') || 
                   id.includes('react-dom') || 
                   id.includes('scheduler') ||
                   id.includes('@radix-ui') ||
-                  id.includes('framer-motion')) {
-                return 'vendor-react-ecosystem';
+                  id.includes('framer-motion') ||
+                  id.includes('lucide-react') ||
+                  id.includes('@tanstack/react') ||
+                  id.includes('react-router') ||
+                  id.includes('react-hook-form') ||
+                  id.includes('react-day-picker') ||
+                  id.includes('react-resizable') ||
+                  id.includes('react-window') ||
+                  id.includes('next-themes') ||
+                  id.includes('sonner') ||
+                  id.includes('vaul') ||
+                  id.includes('cmdk') ||
+                  id.includes('embla-carousel-react') ||
+                  id.includes('input-otp')) {
+                return 'vendor-react-all';
               }
-              // Supabase (large library)
+              
+              // Supabase - completely separate
               if (id.includes('@supabase') || id.includes('supabase')) {
                 return 'vendor-supabase';
               }
-              // Queries and state management (but not React related)
-              if (id.includes('@tanstack') && !id.includes('react')) {
-                return 'vendor-state';
-              }
-              // Date utilities and other safe utils
-              if (id.includes('date-fns') || id.includes('clsx') || id.includes('class-variance-authority')) {
+              
+              // Pure utilities that don't use React
+              if (id.includes('date-fns') || 
+                  id.includes('clsx') || 
+                  id.includes('class-variance-authority') ||
+                  id.includes('tailwind-merge') ||
+                  id.includes('zod') ||
+                  id.includes('zustand')) {
                 return 'vendor-utils';
               }
-              // Everything else that's safe to separate
-              if (!id.includes('react') && !id.includes('context') && !id.includes('jsx')) {
-                return 'vendor-misc';
-              }
+              
+              // Everything else that's problematic - minimize this
+              return 'vendor-safe';
             }
-            // Let Vite handle application code automatically
             return undefined;
           },
           
