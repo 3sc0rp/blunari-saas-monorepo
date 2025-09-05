@@ -77,40 +77,16 @@ export default defineConfig(({ mode }) => {
 
       rollupOptions: {
         output: {
-      manualChunks: (id) => {
-            if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom')) {
-                return 'vendor-react';
-              }
-              if (id.includes('@supabase') || id.includes('supabase')) {
-                return 'vendor-supabase';
-              }
-              if (id.includes('@radix-ui')) {
-                return 'vendor-ui';
-              }
-              return 'vendor';
-            }
-            return undefined;
-          },
-          
+          inlineDynamicImports: true,
           chunkFileNames: 'chunks/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
-          
           assetFileNames: (assetInfo) => {
             if (!assetInfo.name) return 'assets/[name]-[hash][extname]';
-            
             const info = assetInfo.name.split('.');
             const ext = info[info.length - 1];
-            
-            if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
-              return `images/[name]-[hash].${ext}`;
-            }
-            if (/css/i.test(ext)) {
-              return `styles/[name]-[hash].${ext}`;
-            }
-            if (/woff2?|eot|ttf|otf/i.test(ext)) {
-              return `fonts/[name]-[hash].${ext}`;
-            }
+            if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) return `images/[name]-[hash].${ext}`;
+            if (/css/i.test(ext)) return `styles/[name]-[hash].${ext}`;
+            if (/woff2?|eot|ttf|otf/i.test(ext)) return `fonts/[name]-[hash].${ext}`;
             return `assets/[name]-[hash].${ext}`;
           }
         }
