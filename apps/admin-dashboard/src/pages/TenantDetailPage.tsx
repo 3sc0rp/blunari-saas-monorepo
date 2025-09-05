@@ -27,6 +27,7 @@ import { useAdminAPI } from "@/hooks/useAdminAPI";
 import { SendWelcomePackDialog } from "@/components/tenant/SendWelcomePackDialog";
 import { SendCredentialsDialog } from "@/components/tenant/SendCredentialsDialog";
 import { TenantFeaturesTab } from "@/components/admin/TenantFeaturesTab";
+import { TenantBillingTab } from "@/components/tenant/TenantBillingTab";
 import { LoadingState, ErrorState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
 import type { TenantData } from "@/types/admin";
@@ -607,15 +608,28 @@ export default function TenantDetailPage() {
       </Card>
 
       {/* Tabs for different sections */}
-      <Tabs defaultValue="features" className="space-y-6">
+    <Tabs defaultValue="features" className="space-y-6">
         <TabsList>
           <TabsTrigger value="features">Features</TabsTrigger>
+      <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="domains">Domains</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="features">
           <TenantFeaturesTab tenantSlug={tenant.slug} />
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <Card>
+            <CardHeader>
+              <CardTitle>Billing & Plan</CardTitle>
+              <CardDescription>Subscription, Stripe identifiers & monthly usage snapshot</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TenantBillingTab tenantId={tenant.id} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="domains">
