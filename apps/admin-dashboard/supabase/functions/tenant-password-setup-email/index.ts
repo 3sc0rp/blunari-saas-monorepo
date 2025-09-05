@@ -91,7 +91,7 @@ serve(async (req) => {
     if (!actionLink) return err("LINK_GENERATION_FAILED", "Failed to generate setup link", 500, origin, requestId);
 
     // Record event + enforce limits atomically
-    const { data: rateRows, error: rateErr } = await supabase.rpc('record_password_setup_link_event', { p_tenant: tenant.id, p_admin: user.id, p_mode: mode });
+  const { data: rateRows, error: rateErr } = await supabase.rpc('record_password_setup_link_event', { p_tenant: tenant.id, p_admin: user.id, p_mode: mode });
     if (rateErr) {
       console.warn('Rate limit RPC error', rateErr);
     }
@@ -176,7 +176,18 @@ serve(async (req) => {
       mode,
       link: actionLink,
       email: sendEmail ? { sent: emailSent, error: emailError } : { sent: false, skipped: true },
-  rateLimit: rate,
+      rateLimit: rate ? {
+        tenantCount: rate.tenant_count,
+        tenantLimit: rate.tenant_limit,
+        tenantRemaining: rate.tenant_remaining,
+        tenantWindowSeconds: rate.tenant_window_seconds,
+        adminCount: rate.admin_count,
+        adminLimit: rate.admin_limit,
+        adminRemaining: rate.admin_remaining,
+        adminWindowSeconds: rate.admin_window_seconds,
+        limited: rate.limited,
+        limitedReason: rate.limited_reason,
+      } : null,
       message: mode === "invite" ? "Invitation link generated" : "Recovery link generated",
     }, 200, origin);
   } catch (e) {

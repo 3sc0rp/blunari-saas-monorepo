@@ -188,7 +188,18 @@ serve(async (req) => {
       recoveryLink,
       message: "Send this one-time recovery link to the owner so they can securely set a new password.",
       deprecatedActionUsed: body.action === "generate-temp" || undefined,
-  rateLimit: rate,
+      rateLimit: rate ? {
+        tenantCount: rate.tenant_count,
+        tenantLimit: rate.tenant_limit,
+        tenantRemaining: rate.tenant_remaining,
+        tenantWindowSeconds: rate.tenant_window_seconds,
+        adminCount: rate.admin_count,
+        adminLimit: rate.admin_limit,
+        adminRemaining: rate.admin_remaining,
+        adminWindowSeconds: rate.admin_window_seconds,
+        limited: rate.limited,
+        limitedReason: rate.limited_reason,
+      } : null,
     }, 200, origin);
   } catch (e) {
     console.error("tenant-owner-credentials error", e);
