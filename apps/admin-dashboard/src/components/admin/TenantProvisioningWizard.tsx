@@ -311,7 +311,7 @@ export function TenantProvisioningWizard({
   // Show results if provisioning completed
   if (result?.success) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6" data-testid="prov-success">
         <Card className="border-success/20 bg-success/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-success">
@@ -435,6 +435,7 @@ export function TenantProvisioningWizard({
             <Label htmlFor="name">Restaurant Name *</Label>
             <Input
               id="name"
+              data-testid="prov-name"
               value={formData.basics.name}
               onChange={(e) => handleInputChange("basics", "name", e.target.value)}
               placeholder="Amazing Restaurant"
@@ -445,6 +446,7 @@ export function TenantProvisioningWizard({
             <Label htmlFor="slug">Slug *</Label>
             <Input
               id="slug"
+              data-testid="prov-slug"
               value={formData.basics.slug}
               onChange={(e) => handleInputChange("basics", "slug", e.target.value)}
               placeholder="amazing-restaurant"
@@ -617,6 +619,7 @@ export function TenantProvisioningWizard({
           <Label htmlFor="owner-email">Owner Email *</Label>
           <Input
             id="owner-email"
+            data-testid="prov-owner-email"
             type="email"
             value={formData.owner.email}
             onChange={(e) => handleInputChange("owner", "email", e.target.value)}
@@ -753,7 +756,7 @@ export function TenantProvisioningWizard({
   );
 
   const ReviewStep = (
-    <Card>
+    <Card data-testid="prov-review">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Eye className="h-5 w-5" />
@@ -873,15 +876,15 @@ export function TenantProvisioningWizard({
         {renderStep()}
 
     <div className="flex justify-between">
-          <Button type="button" variant="outline" onClick={goBack} disabled={currentStep === 0 || loading}>
+      <Button type="button" variant="outline" onClick={goBack} disabled={currentStep === 0 || loading} data-testid="prov-back">
             Back
           </Button>
           {currentStep < steps.length - 1 ? (
-      <Button type="button" onClick={goNext} disabled={loading || !stepIsValid(currentStep)}>
+    <Button type="button" onClick={goNext} disabled={loading || !stepIsValid(currentStep)} data-testid="prov-next">
               Next
             </Button>
           ) : (
-            <Button type="submit" disabled={loading}>
+      <Button type="submit" disabled={loading} data-testid="prov-submit">
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
