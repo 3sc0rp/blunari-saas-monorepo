@@ -11,10 +11,12 @@ globalThis.React = React;
 window.React.createContext = React.createContext;
 window.React.useState = React.useState;
 window.React.useEffect = React.useEffect;
+window.React.useLayoutEffect = React.useLayoutEffect; // CRITICAL: Missing hook
 window.React.useContext = React.useContext;
 window.React.useCallback = React.useCallback;
 window.React.useMemo = React.useMemo;
 window.React.useRef = React.useRef;
+window.React.useReducer = React.useReducer;
 window.React.forwardRef = React.forwardRef;
 
 // Ensure React is always available for dynamic imports
