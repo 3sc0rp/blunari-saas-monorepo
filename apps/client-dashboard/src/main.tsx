@@ -1,3 +1,6 @@
+// Load React polyfill FIRST before anything else
+import "./polyfills/react-global.ts";
+
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
@@ -7,6 +10,15 @@ import "./App.css";
 
 // Ensure React is available globally for better compatibility
 window.React = React;
+
+// Additional polyfill for React context to ensure it's always available
+if (!window.React || !window.React.createContext) {
+  console.error('React.createContext is not available, forcing reload...');
+  window.location.reload();
+}
+
+// Polyfill React in global scope for vendor libraries
+globalThis.React = React;
 
 // Global error handler for uncaught errors
 window.addEventListener('error', (event) => {

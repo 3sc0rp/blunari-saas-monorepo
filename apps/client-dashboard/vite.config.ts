@@ -72,6 +72,7 @@ export default defineConfig(({ mode }) => {
         'react',
         'react-dom',
         'react/jsx-runtime',
+        './src/polyfills/react-global.ts',
         'react-router-dom',
         '@supabase/supabase-js',
         '@tanstack/react-query',
@@ -154,36 +155,34 @@ export default defineConfig(({ mode }) => {
             'react-dom': 'ReactDOM'
           },
           
-          // Smart dynamic chunk splitting
+          // Disable chunk splitting for React-related modules to prevent context issues
           manualChunks: (id) => {
-            // Only split vendor chunks if they actually exist in node_modules
+            // Don't split React and React-related modules at all - keep them together
             if (id.includes('node_modules')) {
-              // React and related - keep together for compatibility
-              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-                return 'vendor-react';
-              }
-              // Routing
-              if (id.includes('react-router')) {
-                return 'vendor-router';
+              // Keep all React stuff together in the main vendor chunk
+              if (id.includes('react') || 
+                  id.includes('react-dom') || 
+                  id.includes('scheduler') ||
+                  id.includes('@radix-ui') ||
+                  id.includes('framer-motion')) {
+                return 'vendor-react-ecosystem';
               }
               // Supabase (large library)
               if (id.includes('@supabase') || id.includes('supabase')) {
                 return 'vendor-supabase';
               }
-              // Queries and state management
-              if (id.includes('@tanstack') || id.includes('react-query')) {
+              // Queries and state management (but not React related)
+              if (id.includes('@tanstack') && !id.includes('react')) {
                 return 'vendor-state';
               }
-              // UI and styling
-              if (id.includes('@radix-ui') || id.includes('framer-motion') || id.includes('lucide-react')) {
-                return 'vendor-ui';
-              }
-              // Date utilities and other utils
+              // Date utilities and other safe utils
               if (id.includes('date-fns') || id.includes('clsx') || id.includes('class-variance-authority')) {
                 return 'vendor-utils';
               }
-              // Everything else goes to vendor-misc
-              return 'vendor-misc';
+              // Everything else that's safe to separate
+              if (!id.includes('react') && !id.includes('context') && !id.includes('jsx')) {
+                return 'vendor-misc';
+              }
             }
             // Let Vite handle application code automatically
             return undefined;
