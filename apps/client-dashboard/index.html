@@ -26,15 +26,6 @@
   <body>
     <div id="root"></div>
 
-    <!-- Ensure React is made global before any other modules execute -->
-    <script type="module" src="/src/polyfills/react-global.ts"></script>
-
-    <!-- Safety: create the React namespace early to avoid undefined access during preload -->
-    <script>
-      window.React = window.React || {};
-      globalThis.React = globalThis.React || window.React;
-    </script>
-
-    <script type="module" src="/src/main.tsx"></script>
+  <script type="module" src="/src/entry.ts"></script>
   </body>
 </html>
