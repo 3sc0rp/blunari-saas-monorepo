@@ -5,47 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blunari - Restaurant Management Dashboard</title>
     <link rel="icon" href="/logo.png" type="image/png">
-    <link rel="mask-icon" href="/logo.png" color="#0EA5E9">
-    <link rel="apple-touch-icon" href="/logo.png">
     
     <!-- Typography: Inter font with optimized loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-    <meta name="description" content="Professional restaurant management dashboard for bookings, tables, and customer management. Real-time updates for restaurant owners and staff." />
-    <meta name="author" content="Blunari" />
-
-    <meta property="og:title" content="Blunari - Restaurant Management Dashboard" />
-    <meta property="og:description" content="Professional restaurant management dashboard for bookings, tables, and customer management. Real-time updates for restaurant owners and staff." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/logo.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@blunari" />
-    <meta name="twitter:image" content="/logo.png" />
     
-    <!-- � STEP 0: Vendor Chunk Error Interceptor - MUST LOAD ABSOLUTELY FIRST -->
-    <script src="/vendor-chunk-interceptor.js"></script>
+    <meta name="description" content="Professional restaurant management dashboard for bookings, tables, and customer management." />
     
-    <!-- �🔥 STEP 1: React Singleton Enforcer - MUST LOAD FIRST -->
-    <script src="/react-singleton-enforcer.js"></script>
-    
-    <!-- 🚨 STEP 2: Nuclear React polyfill backup -->
-    <script src="/nuclear-react-polyfill.js"></script>
-    
-    <!-- ⚡ STEP 3: Emergency fallback polyfill -->
-    <script src="/react-emergency-polyfill.js"></script>
+    <style>
+      /* Prevent flash of white content */
+      body {
+        margin: 0;
+        background: #f8fafc;
+        font-family: 'Inter', sans-serif;
+      }
+    </style>
   </head>
 
   <body>
     <div id="root"></div>
-    
-    <!-- Development: Load React status checker -->
-    <script src="/react-status-checker.js"></script>
-    
-    <!-- Development: Load React protection test suite -->
-    <script src="/react-protection-test.js"></script>
-    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
