@@ -6,16 +6,26 @@ import React from 'react';
 // Production-safe React global assignment
 const setupReactGlobally = () => {
   // Ensure we don't override an existing React instance
-  if (typeof window !== 'undefined' && !window.React) {
-    window.React = React;
+  if (typeof window !== 'undefined') {
+    const w = window as unknown as { React?: typeof React };
+    if (!w.React) {
+      w.React = React;
+    }
   }
   
-  if (typeof globalThis !== 'undefined' && !globalThis.React) {
-    globalThis.React = React;
+  if (typeof globalThis !== 'undefined') {
+    const g = globalThis as unknown as { React?: typeof React };
+    if (!g.React) {
+      g.React = React;
+    }
   }
 
   // Always ensure the current React instance is available
-  const reactInstance = window.React || globalThis.React || React;
+  const reactInstance = (
+    typeof window !== 'undefined' && (window as unknown as { React?: typeof React }).React
+  ) || (
+    typeof globalThis !== 'undefined' && (globalThis as unknown as { React?: typeof React }).React
+  ) || React;
 
   // Polyfill commonly accessed React methods with safety checks
   if (reactInstance && typeof reactInstance.createContext !== 'function') {
@@ -50,8 +60,12 @@ const setupReactGlobally = () => {
   }
 
   // Final safety assignment
-  window.React = reactInstance;
-  globalThis.React = reactInstance;
+  if (typeof window !== 'undefined') {
+    (window as unknown as { React?: typeof React }).React = reactInstance;
+  }
+  if (typeof globalThis !== 'undefined') {
+    (globalThis as unknown as { React?: typeof React }).React = reactInstance;
+  }
   
   return reactInstance;
 };
