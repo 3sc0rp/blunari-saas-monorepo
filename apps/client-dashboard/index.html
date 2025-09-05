@@ -26,23 +26,6 @@
   </head>
 
   <body>
-    <!-- React Global Polyfill - Ensure React is available before any modules load -->
-    <script>
-      // Pre-load React globals to prevent createContext undefined errors
-      window.__REACT_POLYFILL_LOADED__ = false;
-      
-      // Error handler for React context issues
-      window.addEventListener('error', function(event) {
-        if (event.message && event.message.includes('createContext')) {
-          console.warn('⚠️ React createContext error detected - attempting recovery...');
-          if (!window.__REACT_POLYFILL_LOADED__) {
-            console.log('🔄 React polyfill not loaded, refreshing page...');
-            window.location.reload();
-          }
-        }
-      });
-    </script>
-    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

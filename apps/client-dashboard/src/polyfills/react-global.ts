@@ -25,6 +25,4 @@ if (typeof globalThis.React === 'undefined') {
 // Mark polyfill as loaded
 window.__REACT_POLYFILL_LOADED__ = true;
 
-console.log('✅ React global polyfill loaded successfully');
-
 export default React;

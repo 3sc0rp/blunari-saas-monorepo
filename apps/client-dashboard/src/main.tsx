@@ -11,12 +11,6 @@ import "./App.css";
 // Ensure React is available globally for better compatibility
 window.React = React;
 
-// Additional polyfill for React context to ensure it's always available
-if (!window.React || !window.React.createContext) {
-  console.error('React.createContext is not available, forcing reload...');
-  window.location.reload();
-}
-
 // Polyfill React in global scope for vendor libraries
 globalThis.React = React;
 
