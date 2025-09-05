@@ -132,9 +132,7 @@ serve(async (req) => {
               ownerEmail: tenant.email,
               restaurantName: tenant.name,
               loginUrl:
-                Deno.env.get("CLIENT_BASE_URL") ??
-                Deno.env.get("APP_BASE_URL") ??
-                "https://app.blunari.ai",
+                Deno.env.get("ADMIN_BASE_URL") ?? "https://admin.blunari.ai",
             },
           },
         );
