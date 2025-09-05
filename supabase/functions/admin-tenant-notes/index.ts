@@ -1,24 +1,38 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Inline CORS utilities
+// SHARED CORS CONFIGURATION - Auto-synced from _shared/cors.ts
+// Environment-aware CORS configuration for admin functions
 const getAllowedOrigins = () => {
+  const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
+
+  if (environment === 'production') {
+    return [
+      'https://admin.blunari.ai',
+      'https://services.blunari.ai',
+      'https://blunari.ai',
+      'https://www.blunari.ai',
+    ];
+  }
+
+  // Development origins
   return [
-    'https://admin.blunari.ai',
-    'https://services.blunari.ai',
-    'https://blunari.ai',
-    'https://www.blunari.ai',
     'http://localhost:5173',
     'http://localhost:3000',
+    'http://localhost:8080',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:3000',
+    'http://127.0.0.1:8080',
   ];
 };
 
 const createOriginHeader = (requestOrigin: string | null) => {
   const allowedOrigins = getAllowedOrigins();
+  const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
+
+  if (environment === 'development') return '*';
   if (requestOrigin && allowedOrigins.includes(requestOrigin)) return requestOrigin;
-  return allowedOrigins[0]; // Default to admin.blunari.ai
+  return allowedOrigins[0] || '*';
 };
 
 const createCorsHeaders = (requestOrigin: string | null = null) => ({
