@@ -77,8 +77,8 @@ export default defineConfig(({ mode }) => {
         
         // CRITICAL: Transform HTML to inject polyfill FIRST
         transformIndexHtml: {
-          enforce: 'pre',
-          transform(html) {
+          order: 'pre',
+          handler(html) {
             return html.replace(
               '<head>',
               `<head>

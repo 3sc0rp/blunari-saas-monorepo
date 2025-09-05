@@ -5,6 +5,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import { initializePerformance } from "./utils/performance.ts";
+import ReactPolyfillMonitor from "./utils/react-polyfill-monitor.ts";
 import "./index.css";
 import "./App.css";
 
@@ -13,6 +14,10 @@ window.React = React;
 
 // Polyfill React in global scope for vendor libraries
 globalThis.React = React;
+
+// Initialize React Polyfill Monitor for production-grade monitoring
+const monitor = new ReactPolyfillMonitor();
+monitor.init();
 
 // Global error handler for uncaught errors
 window.addEventListener('error', (event) => {

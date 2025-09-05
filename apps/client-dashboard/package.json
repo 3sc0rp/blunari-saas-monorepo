@@ -18,7 +18,9 @@
     "type-check": "tsc --noEmit",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "analyze": "node scripts/bundle-optimizer.js",
+    "analyze:bundle": "npm run build && npm run analyze"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
