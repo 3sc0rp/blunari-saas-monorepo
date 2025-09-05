@@ -21,6 +21,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Building2,
   User,
@@ -92,6 +93,8 @@ export function TenantProvisioningWizard({
     [],
   );
   const [currentStep, setCurrentStep] = useState(0);
+  const [hasDraft, setHasDraft] = useState(false);
+  const DRAFT_KEY = "admin:tenant-provisioning-draft-v1";
 
   const [formData, setFormData] = useState<ExtendedProvisioningRequestData>({
     basics: {
@@ -152,33 +155,95 @@ export function TenantProvisioningWizard({
     }
   }, [formData.basics.name]);
 
-  const validateStep = (index: number): boolean => {
-    // Minimal step-level validation; final submission uses full zod schema
+  // Draft: load
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.formData && parsed?.idempotencyKey) {
+        setFormData(parsed.formData);
+        // Only restore idempotency if present; else keep current
+        setCurrentStep(parsed.currentStep ?? 0);
+        setHasDraft(true);
+        toast({ title: "Draft restored", description: "Continuing from your last progress." });
+      }
+    } catch (_) {
+      // ignore
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Draft: autosave (light debounce)
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({ formData, currentStep, idempotencyKey, savedAt: new Date().toISOString() }),
+        );
+        setHasDraft(true);
+      } catch (_) {
+        // ignore
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [formData, currentStep, idempotencyKey]);
+
+  const saveDraftNow = () => {
+    try {
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({ formData, currentStep, idempotencyKey, savedAt: new Date().toISOString() }),
+      );
+      setHasDraft(true);
+      toast({ title: "Draft saved" });
+    } catch (_) {
+      toast({ title: "Failed to save draft", variant: "destructive" });
+    }
+  };
+
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+      setHasDraft(false);
+      toast({ title: "Draft discarded" });
+    } catch (_) {
+      // ignore
+    }
+  };
+
+  const stepIsValid = (index: number): boolean => {
     const sKey = steps[index]?.key;
     if (sKey === "basics") {
-      const ok = !!formData.basics.name?.trim() && !!formData.basics.slug?.trim();
-      if (!ok) {
+      return !!formData.basics.name?.trim() && !!formData.basics.slug?.trim();
+    }
+    if (sKey === "owner") {
+      const email = formData.owner.email?.trim();
+      return !!email && /[^\s@]+@[^\s@]+\.[^\s@]+/.test(email);
+    }
+    return true;
+  };
+
+  const validateStep = (index: number): boolean => {
+    const valid = stepIsValid(index);
+    if (!valid) {
+      const sKey = steps[index]?.key;
+      if (sKey === "basics") {
         toast({
           title: "Missing required fields",
           description: "Please provide Restaurant Name and Slug.",
           variant: "destructive",
         });
-      }
-      return ok;
-    }
-    if (sKey === "owner") {
-      const email = formData.owner.email?.trim();
-      const ok = !!email && /[^\s@]+@[^\s@]+\.[^\s@]+/.test(email);
-      if (!ok) {
+      } else if (sKey === "owner") {
         toast({
           title: "Invalid owner email",
           description: "Please provide a valid owner email address.",
           variant: "destructive",
         });
       }
-      return ok;
     }
-    return true;
+    return valid;
   };
 
   const goNext = () => {
@@ -330,14 +395,23 @@ export function TenantProvisioningWizard({
   }
 
   const StepHeader = () => {
-    const CurrentIcon = steps[currentStep].icon;
+    const progress = Math.round(((currentStep + 1) / steps.length) * 100);
     return (
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Tenant Provisioning</h1>
           <p className="text-muted-foreground">Step {currentStep + 1} of {steps.length} • {steps[currentStep].title}</p>
+          <div className="mt-2">
+            <Progress value={progress} className="h-2" />
+          </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={saveDraftNow}>
+            Save Draft
+          </Button>
+          <Button variant="outline" onClick={discardDraft} disabled={!hasDraft}>
+            Discard Draft
+          </Button>
           <Button variant="ghost" onClick={handleCancel}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Cancel
@@ -798,12 +872,12 @@ export function TenantProvisioningWizard({
       <form onSubmit={handleSubmit} className="space-y-6">
         {renderStep()}
 
-        <div className="flex justify-between">
+    <div className="flex justify-between">
           <Button type="button" variant="outline" onClick={goBack} disabled={currentStep === 0 || loading}>
             Back
           </Button>
           {currentStep < steps.length - 1 ? (
-            <Button type="button" onClick={goNext} disabled={loading}>
+      <Button type="button" onClick={goNext} disabled={loading || !stepIsValid(currentStep)}>
               Next
             </Button>
           ) : (
