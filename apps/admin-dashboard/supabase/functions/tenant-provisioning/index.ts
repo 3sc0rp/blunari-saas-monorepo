@@ -50,7 +50,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const supabase = createClient(
+  const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
@@ -168,12 +168,36 @@ serve(async (req: Request) => {
       }
     }
 
-    // Call the provision_tenant database function
+    // Determine or create the owner user account if provided
+    let ownerUserId: string | null = null;
+    const ownerEmail: string | undefined = requestData.owner?.email;
+    if (ownerEmail) {
+      try {
+        const { data: existingUser } =
+          await supabase.auth.admin.getUserByEmail(ownerEmail);
+        if (existingUser?.user) {
+          ownerUserId = existingUser.user.id;
+        } else {
+          const { data: created, error: createErr } =
+            await supabase.auth.admin.createUser({
+              email: ownerEmail,
+              email_confirm: true,
+              user_metadata: { role: "owner" },
+            });
+          if (createErr) throw createErr;
+          ownerUserId = created.user?.id ?? null;
+        }
+      } catch (e) {
+        console.warn("Owner user create/get failed (continuing):", e);
+      }
+    }
+
+    // Call the provision_tenant database function using owner user if available
     // NOTE: There are multiple overloaded versions in the DB; pass full argument list to disambiguate
     const { data: tenantId, error: provisionError } = await supabase.rpc(
       "provision_tenant",
       {
-        p_user_id: user.id,
+        p_user_id: ownerUserId ?? user.id,
         p_restaurant_name: requestData.basics.name,
         p_restaurant_slug: requestData.basics.slug,
         p_timezone: requestData.basics.timezone,
@@ -211,9 +235,11 @@ serve(async (req: Request) => {
 
     // Send emails if requested
     if (requestData.owner?.sendInvite && requestData.owner?.email) {
+      // Use client app URL for onboarding
       const baseUrl =
-        Deno.env.get("ADMIN_BASE_URL") ?? "https://admin.blunari.ai";
-      const ownerEmail = requestData.owner.email;
+        Deno.env.get("CLIENT_BASE_URL") ??
+        Deno.env.get("APP_BASE_URL") ??
+        "https://app.blunari.ai";
       const restaurantName = requestData.basics.name;
 
       // Fire-and-forget; do not block provisioning on email transport
@@ -221,7 +247,7 @@ serve(async (req: Request) => {
         await supabase.functions.invoke("send-welcome-email", {
           body: {
             ownerName: restaurantName,
-            ownerEmail,
+            ownerEmail: requestData.owner.email,
             restaurantName,
             loginUrl: baseUrl,
           },
@@ -233,7 +259,7 @@ serve(async (req: Request) => {
         await supabase.functions.invoke("send-welcome-pack", {
           body: {
             ownerName: restaurantName,
-            ownerEmail,
+            ownerEmail: requestData.owner.email,
             restaurantName,
             loginUrl: baseUrl,
           },
@@ -241,12 +267,20 @@ serve(async (req: Request) => {
       } catch {
         /* ignore email errors */
       }
+
+  // Also trigger a magic link via Supabase Auth (non-blocking) for immediate access
       try {
-        await supabase.functions.invoke("send-credentials-email", {
-          body: { ownerEmail, tenantName: restaurantName, loginUrl: baseUrl },
-        });
+        if (ownerEmail) {
+          await supabase.auth.admin.generateLink({
+    type: "magiclink",
+            email: ownerEmail,
+            options: {
+              redirectTo: `${baseUrl}/auth`,
+            },
+          });
+        }
       } catch {
-        /* ignore email errors */
+        /* ignore auth email errors */
       }
     }
 
@@ -254,7 +288,10 @@ serve(async (req: Request) => {
       runId: crypto.randomUUID(),
       tenantId,
       slug: requestData.basics.slug,
-      primaryUrl: Deno.env.get("ADMIN_BASE_URL") ?? "https://admin.blunari.ai",
+      primaryUrl:
+        Deno.env.get("CLIENT_BASE_URL") ??
+        Deno.env.get("APP_BASE_URL") ??
+        "https://app.blunari.ai",
       message: "Tenant provisioned successfully",
     };
 
