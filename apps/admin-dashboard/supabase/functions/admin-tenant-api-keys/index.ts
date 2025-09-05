@@ -1,4 +1,7 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Shared CORS Configuration - Synced from _shared/cors.ts
 const isProduction = !!Deno.env.get('DENO_DEPLOYMENT_ID');
 const allowedOrigins = isProduction 
   ? [
