@@ -1,0 +1,27 @@
+name: CORS Preflight
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run preflight checks (production)
+        run: node scripts/preflight-check.mjs
+        env:
+          PREFLIGHT_ORIGIN: https://admin.blunari.ai
+          PREFLIGHT_ENDPOINTS: |
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/tenant-provisioning,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/tenant-provision

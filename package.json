@@ -32,7 +32,8 @@
     "quality:check": "node dev.js quality:check",
     "quality:fix": "node dev.js quality:fix",
   "secrets:setup": "node scripts/setup-secrets.js",
-  "verify:admin-live": "node scripts/live-admin-login-check.mjs"
+  "verify:admin-live": "node scripts/live-admin-login-check.mjs",
+  "preflight": "node scripts/preflight-check.mjs"
   },
   "devDependencies": {
     "@turbo/gen": "^1.10.12",
