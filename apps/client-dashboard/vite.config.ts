@@ -1,13 +1,14 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import inject from '@rollup/plugin-inject';
 
 // Simplified Vite configuration for production builds
 export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production';
 
   return {
-    plugins: [react()],
+  plugins: [react()],
 
     // Path resolution
     resolve: {
@@ -72,10 +73,15 @@ export default defineConfig(({ mode }) => {
     build: {
     target: 'es2020',
       outDir: 'dist',
-      sourcemap: isProduction ? 'hidden' : true,
-      minify: isProduction ? 'esbuild' : false,
+  sourcemap: true,
+  minify: false,
 
       rollupOptions: {
+        plugins: [
+          inject({
+            React: ['react', 'default']
+          })
+        ],
         output: {
           inlineDynamicImports: true,
           chunkFileNames: 'chunks/[name]-[hash].js',
