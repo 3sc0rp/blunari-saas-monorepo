@@ -25,6 +25,7 @@ jobs:
           PREFLIGHT_ENDPOINTS: |
             https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/tenant-provisioning,
             https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/tenant-provision,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/provision-tenant,
             https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/send-credentials-email,
             https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/send-welcome-email,
             https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/background-ops-proxy,

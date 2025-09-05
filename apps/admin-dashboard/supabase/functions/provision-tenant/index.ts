@@ -1,11 +1,8 @@
+// @ts-ignore - Deno remote import (valid at runtime)
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// @ts-ignore - Deno remote import (valid at runtime)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { createCorsHeaders } from "../_shared/cors";
 
 interface ProvisionRequest {
   // Basic Information
@@ -66,51 +63,26 @@ const logStep = (step: string, details?: any) => {
   console.log(`[PROVISION-TENANT] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
     logStep("Function started");
 
     // Parse request body
-    let requestData: ProvisionRequest;
-    try {
-      requestData = await req.json();
-      logStep("Request data received", {
-        restaurantName: requestData.restaurantName,
-        hasOwnerEmail: !!requestData.ownerEmail,
-        hasOwnerPassword: !!requestData.ownerPassword,
-        hasSelectedPlan: !!requestData.selectedPlanId,
-      });
-    } catch (parseError) {
-      logStep("JSON parse error", parseError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Invalid request body: ${parseError instanceof Error ? parseError.message : "Unknown error"}`,
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        },
-      );
-    }
+    const requestData: ProvisionRequest = await req.json();
 
     // Validate required fields more thoroughly
-    const requiredFields = [];
-    if (!requestData.restaurantName?.trim())
-      requiredFields.push("restaurantName");
+    const requiredFields: string[] = [];
+    if (!requestData.restaurantName?.trim()) requiredFields.push("restaurantName");
     if (!requestData.slug?.trim()) requiredFields.push("slug");
     if (!requestData.ownerEmail?.trim()) requiredFields.push("ownerEmail");
-    if (!requestData.ownerPassword?.trim())
-      requiredFields.push("ownerPassword");
-    if (!requestData.ownerFirstName?.trim())
-      requiredFields.push("ownerFirstName");
-    if (!requestData.ownerLastName?.trim())
-      requiredFields.push("ownerLastName");
+    if (!requestData.ownerPassword?.trim()) requiredFields.push("ownerPassword");
+    if (!requestData.ownerFirstName?.trim()) requiredFields.push("ownerFirstName");
+    if (!requestData.ownerLastName?.trim()) requiredFields.push("ownerLastName");
 
     if (requiredFields.length > 0) {
       logStep("Missing required fields", { missingFields: requiredFields });
@@ -119,55 +91,31 @@ serve(async (req) => {
           success: false,
           error: `Missing required fields: ${requiredFields.join(", ")}`,
         }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        },
+        { headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" }, status: 400 },
       );
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(requestData.ownerEmail)) {
-      logStep("Invalid owner email format", { email: requestData.ownerEmail });
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid admin email format",
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        },
+        JSON.stringify({ success: false, error: "Invalid admin email format" }),
+        { headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" }, status: 400 },
       );
     }
 
     if (requestData.email && !emailRegex.test(requestData.email)) {
-      logStep("Invalid business email format", { email: requestData.email });
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid business email format",
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        },
+        JSON.stringify({ success: false, error: "Invalid business email format" }),
+        { headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" }, status: 400 },
       );
     }
 
     // Validate password strength
     if (requestData.ownerPassword.length < 8) {
-      logStep("Weak password", { length: requestData.ownerPassword.length });
       return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Password must be at least 8 characters long",
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        },
+        JSON.stringify({ success: false, error: "Password must be at least 8 characters long" }),
+        { headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" }, status: 400 },
       );
     }
 
@@ -182,53 +130,32 @@ serve(async (req) => {
 
     // Try to create the owner user account, or get existing user
     let userData: any;
-    const { data: createUserData, error: userError } =
-      await supabaseAdmin.auth.admin.createUser({
-        email: requestData.ownerEmail,
-        password: requestData.ownerPassword,
-        email_confirm: true,
-        user_metadata: {
-          first_name: requestData.ownerFirstName,
-          last_name: requestData.ownerLastName,
-          role: "owner",
-        },
-      });
+    const { data: createUserData, error: userError } = await supabaseAdmin.auth.admin.createUser({
+      email: requestData.ownerEmail,
+      password: requestData.ownerPassword,
+      email_confirm: true,
+      user_metadata: {
+        first_name: requestData.ownerFirstName,
+        last_name: requestData.ownerLastName,
+        role: "owner",
+      },
+    });
 
     if (userError && userError.message?.includes("already been registered")) {
-      logStep("User already exists, fetching existing user", {
-        email: requestData.ownerEmail,
-      });
-
       // Try to get the existing user by email
-      const { data: existingUsers, error: getUserError } =
-        await supabaseAdmin.auth.admin.listUsers();
-
+      const { data: existingUsers, error: getUserError } = await supabaseAdmin.auth.admin.listUsers();
       if (getUserError) {
-        logStep("Error fetching existing users", getUserError);
-        throw new Error(
-          `Failed to fetch existing user: ${getUserError.message}`,
-        );
+        throw new Error(`Failed to fetch existing user: ${getUserError.message}`);
       }
-
-      const existingUser = existingUsers.users.find(
-        (user) => user.email === requestData.ownerEmail,
-      );
-
+      const existingUser = existingUsers.users.find((user: any) => user.email === requestData.ownerEmail);
       if (!existingUser) {
-        logStep("Existing user not found after email check");
-        throw new Error(
-          `User with email ${requestData.ownerEmail} should exist but was not found`,
-        );
+        throw new Error(`User with email ${requestData.ownerEmail} should exist but was not found`);
       }
-
       userData = { user: existingUser };
-      logStep("Using existing user", { userId: existingUser.id });
     } else if (userError) {
-      logStep("Error creating user", userError);
       throw new Error(`Failed to create owner account: ${userError.message}`);
     } else {
       userData = createUserData;
-      logStep("Owner user created", { userId: userData.user.id });
     }
 
     // Call the enhanced provision_tenant function
@@ -250,33 +177,19 @@ serve(async (req) => {
     );
 
     if (tenantError) {
-      logStep("Error creating tenant", tenantError);
-
       // Provide specific error messages for common issues
-      if (
-        tenantError.message.includes(
-          "duplicate key value violates unique constraint",
-        )
-      ) {
+      if (tenantError.message.includes("duplicate key value violates unique constraint")) {
         if (tenantError.message.includes("restaurant_slug")) {
-          throw new Error(
-            `Restaurant slug "${requestData.slug}" is already taken. Please choose a different slug.`,
-          );
+          throw new Error(`Restaurant slug "${requestData.slug}" is already taken. Please choose a different slug.`);
         }
         if (tenantError.message.includes("email")) {
-          throw new Error(
-            `Business email "${requestData.email}" is already registered. Please use a different email address.`,
-          );
+          throw new Error(`Business email "${requestData.email}" is already registered. Please use a different email address.`);
         }
-        throw new Error(
-          "This information is already registered. Please check your details and try again.",
-        );
+        throw new Error("This information is already registered. Please check your details and try again.");
       }
 
       if (tenantError.message.includes("foreign key")) {
-        throw new Error(
-          "Invalid cuisine type selected. Please choose a valid cuisine type.",
-        );
+        throw new Error("Invalid cuisine type selected. Please choose a valid cuisine type.");
       }
 
       throw new Error(`Failed to create tenant: ${tenantError.message}`);
@@ -308,9 +221,7 @@ serve(async (req) => {
           logStep("Error updating business hours", hoursError);
         }
       }
-      logStep("Business hours updated", {
-        updatedCount: businessHoursToUpdate.length,
-      });
+      logStep("Business hours updated", { updatedCount: businessHoursToUpdate.length });
     }
 
     // Update party size config if different from defaults
@@ -344,12 +255,7 @@ serve(async (req) => {
             status: "active",
             current_period_start: new Date().toISOString(),
             current_period_end: new Date(
-              Date.now() +
-                (requestData.billingCycle === "yearly" ? 365 : 30) *
-                  24 *
-                  60 *
-                  60 *
-                  1000,
+              Date.now() + (requestData.billingCycle === "yearly" ? 365 : 30) * 24 * 60 * 60 * 1000,
             ).toISOString(),
           });
 
@@ -360,22 +266,16 @@ serve(async (req) => {
           logStep("Subscription created");
         }
       } catch (subscriptionError) {
-        logStep(
-          "Subscription creation failed (non-blocking)",
-          subscriptionError,
-        );
+        logStep("Subscription creation failed (non-blocking)", subscriptionError);
       }
     }
 
     // Enable additional features based on selection
-    if (
-      requestData.enabledFeatures &&
-      Object.keys(requestData.enabledFeatures).length > 0
-    ) {
+    if (requestData.enabledFeatures && Object.keys(requestData.enabledFeatures).length > 0) {
       try {
         const featuresToEnable = Object.entries(requestData.enabledFeatures)
-          .filter(([_, enabled]) => enabled)
-          .map(([feature, _]) => ({
+          .filter(([, enabled]) => enabled)
+          .map(([feature]) => ({
             tenant_id: tenantId,
             feature_key: feature,
             enabled: true,
@@ -398,8 +298,6 @@ serve(async (req) => {
       }
     }
 
-    logStep("Provisioning completed successfully", { tenantId });
-
     // Don't send email automatically - let user choose which email to send
     const emailStatus = "pending";
 
@@ -418,24 +316,14 @@ serve(async (req) => {
         },
         message: `${requestData.restaurantName} has been successfully provisioned! You can now send welcome emails.`,
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      },
+      { headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" }, status: 200 },
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in provision-tenant", { message: errorMessage });
-
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: errorMessage,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      },
+      JSON.stringify({ success: false, error: errorMessage }),
+      { headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" }, status: 500 },
     );
   }
 });
