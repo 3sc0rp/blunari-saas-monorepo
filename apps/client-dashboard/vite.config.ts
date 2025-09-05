@@ -71,10 +71,10 @@ export default defineConfig(({ mode }) => {
 
     // Build optimizations
     build: {
-    target: 'es2020',
+      target: 'es2020',
       outDir: 'dist',
-  sourcemap: true,
-  minify: false,
+      sourcemap: !isProduction, // keep maps in dev only
+      minify: isProduction ? 'terser' : false,
 
       rollupOptions: {
         plugins: [
@@ -82,7 +82,7 @@ export default defineConfig(({ mode }) => {
             React: ['react', 'default']
           })
         ],
-        output: {
+  output: {
           inlineDynamicImports: true,
           chunkFileNames: 'chunks/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
@@ -98,10 +98,10 @@ export default defineConfig(({ mode }) => {
         }
       },
 
-      chunkSizeWarningLimit: 1000,
-      reportCompressedSize: isProduction,
-      cssCodeSplit: true,
-      copyPublicDir: true
+  chunkSizeWarningLimit: 1200,
+  reportCompressedSize: isProduction,
+  cssCodeSplit: true,
+  copyPublicDir: true
     },
 
     css: {
@@ -115,10 +115,16 @@ export default defineConfig(({ mode }) => {
     },
 
     esbuild: {
-      target: 'es2020',
-      ...(isProduction && {
-        drop: ['console', 'debugger']
-      })
-    }
+      target: 'es2020'
+    },
+    // Extra terser options to drop console/debugger only in prod
+    ...(isProduction && {
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true
+        }
+      }
+    })
   };
 });
