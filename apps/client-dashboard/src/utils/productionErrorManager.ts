@@ -28,7 +28,17 @@ class ProductionErrorManager {
     /subscription status.*closed/i,
     /waitlist subscription.*failed/i,
     /tables subscription.*failed/i,
-    /bookings subscription.*failed/i
+    /bookings subscription.*failed/i,
+    /edge function.*returned.*non-2xx status code/i,
+    /tenant function error detected/i,
+    /edge function call failed/i,
+    /403.*forbidden/i,
+    /400.*bad request/i,
+    /auth.*error/i,
+    /authentication.*error/i,
+    /session.*error/i,
+    /POST.*400.*bad request/i,
+    /POST.*403.*forbidden/i
   ];
 
   // Error patterns that should be converted to info logs

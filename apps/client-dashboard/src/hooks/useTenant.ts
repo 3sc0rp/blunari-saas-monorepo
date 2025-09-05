@@ -176,14 +176,36 @@ export function useTenant() {
           component: 'useTenant',
           error: functionError.message || 'Unknown function error',
           errorCode: functionError.code,
+          status: functionError.status,
           slug: params.slug
         });
         
         // Handle specific error cases
-        if (functionError.message?.includes('401') || functionError.message?.includes('unauthorized') || functionError.message?.includes('403')) {
-          logger.info('Authentication error, using fallback tenant', {
+        if (functionError.requiresAuth || functionError.status === 401) {
+          logger.info('Authentication required, redirecting to auth', {
             component: 'useTenant',
-            errorType: 'auth'
+            errorType: 'auth_required'
+          });
+          
+          if (isMounted) {
+            setState({
+              tenant: null,
+              loading: false,
+              error: null,
+              requestId: null
+            });
+            // Only navigate if we're not already on the auth page
+            if (window.location.pathname !== '/auth') {
+              navigate('/auth');
+            }
+          }
+          return;
+        }
+        
+        if (functionError.status === 403 || functionError.message?.includes('403') || functionError.message?.includes('forbidden')) {
+          logger.info('Access forbidden, using fallback tenant', {
+            component: 'useTenant',
+            errorType: 'access_denied'
           });
           
           // Use fallback tenant instead of redirecting to auth
@@ -206,10 +228,51 @@ export function useTenant() {
           return;
         }
         
-        // Enhanced fallback logic for any tenant function failure
+        if (functionError.message?.includes('401') || functionError.message?.includes('unauthorized')) {
+          logger.info('Authentication error, using fallback tenant for development', {
+            component: 'useTenant',
+            errorType: 'auth_error'
+          });
+          
+          // Use fallback tenant for development, redirect for production
+          if (import.meta.env.MODE === 'development') {
+            const fallbackTenant: TenantInfo = {
+              id: '99e1607d-da99-4f72-9182-a417072eb629', // Demo tenant ID
+              slug: 'demo',
+              name: 'Demo Restaurant',
+              timezone: 'America/New_York',
+              currency: 'USD'
+            };
+            
+            if (isMounted) {
+              setState({
+                tenant: fallbackTenant,
+                loading: false,
+                error: null,
+                requestId: null
+              });
+            }
+            return;
+          } else {
+            // In production, redirect to auth for 401 errors
+            if (isMounted) {
+              setState({
+                tenant: null,
+                loading: false,
+                error: null,
+                requestId: null
+              });
+              navigate('/auth');
+            }
+            return;
+          }
+        }
+        
+        // Enhanced fallback logic for any other tenant function failure
         logger.info('Tenant function failed, using production fallback', {
           component: 'useTenant',
-          errorMessage: functionError.message
+          errorMessage: functionError.message,
+          status: functionError.status
         });
         
         const fallbackTenant: TenantInfo = {

@@ -54,6 +54,20 @@ class SupabaseAuthManager {
         }
       }
 
+      // Additional validation: ensure the session has required fields
+      if (session && (!session.access_token || !session.user)) {
+        logger.warn('Session missing required fields', {
+          component: 'SupabaseAuthManager',
+          hasAccessToken: !!session.access_token,
+          hasUser: !!session.user
+        });
+        
+        // Try one more refresh to get valid session
+        const refreshResult = await supabase.auth.refreshSession();
+        session = refreshResult.data.session;
+        error = refreshResult.error;
+      }
+
       return { session, error };
     } catch (error) {
       logger.error('Authentication manager error', error instanceof Error ? error : new Error('Unknown auth error'), {
@@ -108,15 +122,34 @@ class SupabaseAuthManager {
         const headers = await this.getAuthHeaders();
         
         if (!headers) {
-          // If we can't get auth headers, return a friendly fallback
-          logger.info('No auth headers available, using anonymous approach', {
+          // If we can't get auth headers, check if we need to redirect to auth
+          const { session } = await this.getValidSession();
+          
+          if (!session) {
+            logger.info('No valid session available, authentication required', {
+              component: 'SupabaseAuthManager',
+              functionName
+            });
+            
+            return {
+              data: null,
+              error: { 
+                message: 'Authentication required', 
+                code: 'NO_AUTH',
+                status: 401,
+                requiresAuth: true
+              }
+            };
+          }
+          
+          logger.info('Auth headers unavailable despite valid session', {
             component: 'SupabaseAuthManager',
             functionName
           });
           
           return {
             data: null,
-            error: { message: 'Authentication not available', code: 'NO_AUTH' }
+            error: { message: 'Authentication not available', code: 'NO_AUTH_HEADERS' }
           };
         }
 
@@ -145,6 +178,42 @@ class SupabaseAuthManager {
 
         lastError = result.error;
         
+        // Enhanced error handling for specific status codes
+        if (result.error?.status === 401 || result.error?.status === 403) {
+          logger.warn('Authentication/authorization error in Edge Function', {
+            component: 'SupabaseAuthManager',
+            functionName,
+            status: result.error.status,
+            message: result.error.message
+          });
+          
+          // For auth errors, try to refresh session once
+          if (attempt === 1) {
+            logger.info('Attempting session refresh for auth error', {
+              component: 'SupabaseAuthManager',
+              functionName
+            });
+            
+            const refreshResult = await supabase.auth.refreshSession();
+            if (refreshResult.data.session) {
+              logger.info('Session refreshed successfully, retrying', {
+                component: 'SupabaseAuthManager',
+                functionName
+              });
+              continue;
+            }
+          }
+          
+          // If refresh failed or this is a repeated auth error, don't retry
+          return {
+            data: null,
+            error: {
+              ...result.error,
+              requiresAuth: result.error.status === 401
+            }
+          };
+        }
+        
         // Check if this is a retryable error
         if (this.isRetryableError(result.error) && attempt < retries) {
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
@@ -164,7 +233,8 @@ class SupabaseAuthManager {
           component: 'SupabaseAuthManager',
           functionName,
           attempt,
-          error: result.error.message
+          error: result.error.message,
+          status: result.error.status
         });
         
         return result;
@@ -201,16 +271,40 @@ class SupabaseAuthManager {
     
     const message = error.message?.toLowerCase() || '';
     const code = error.code || '';
+    const status = error.status || 0;
     
     // Retry on network errors, timeouts, and some server errors
-    return (
+    const isRetryable = (
       message.includes('timeout') ||
       message.includes('network') ||
       message.includes('connection') ||
       code === 'NETWORK_ERROR' ||
       code === 'TIMEOUT' ||
-      (error.status >= 500 && error.status < 600) // Server errors
+      (status >= 500 && status < 600) // Server errors
     );
+
+    // Do NOT retry on authentication errors to avoid infinite loops
+    const isAuthError = (
+      status === 401 || 
+      status === 403 ||
+      message.includes('unauthorized') ||
+      message.includes('forbidden') ||
+      message.includes('auth') ||
+      code === 'AUTH_REQUIRED' ||
+      code === 'AUTH_INVALID' ||
+      code === 'ACCESS_DENIED'
+    );
+
+    // Special handling for specific Edge Function errors
+    if (status === 400 && message.includes('bad request')) {
+      logger.debug('400 Bad Request - not retrying', {
+        component: 'SupabaseAuthManager',
+        error: message
+      });
+      return false;
+    }
+
+    return isRetryable && !isAuthError;
   }
 
   async healthCheck(): Promise<boolean> {
