@@ -8,7 +8,7 @@ interface RequestBody {
 }
 
 interface ErrorPayload {
-  error: { code: string; message: string; requestId: string };
+  error: { code: string; message: string; requestId: string; meta?: Record<string, unknown> };
 }
 
 function jsonResponse(body: unknown, status = 200, origin: string | null = null) {
@@ -18,45 +18,53 @@ function jsonResponse(body: unknown, status = 200, origin: string | null = null)
   });
 }
 
-function error(code: string, message: string, status: number, origin: string | null, requestId: string) {
-  const payload: ErrorPayload = { error: { code, message, requestId } };
+function error(code: string, message: string, status: number, origin: string | null, requestId: string, meta?: Record<string, unknown>) {
+  const payload: ErrorPayload = { error: { code, message, requestId, meta } };
   return jsonResponse(payload, status, origin);
 }
 
-// Simple helper to implement a naive per-tenant + per-admin rate limit using existing activity_logs.
-async function isRateLimited(supabase: any, tenantId: string, adminUserId: string) {
-  // Allow at most 3 recovery link issuances per tenant per 30 minutes and 5 per admin per hour.
+// Enhanced rate limiting with explicit counts returned for UI display
+async function getRateLimitInfo(supabase: any, tenantId: string, adminUserId: string) {
   const now = new Date();
-  const thirtyMinsAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString();
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+  const tenantWindowSec = 30 * 60; // 30 minutes
+  const adminWindowSec = 60 * 60; // 1 hour
+  const thirtyMinsAgo = new Date(now.getTime() - tenantWindowSec * 1000).toISOString();
+  const oneHourAgo = new Date(now.getTime() - adminWindowSec * 1000).toISOString();
 
-  const { data: recentTenant, error: tenantCountErr } = await supabase
+  const tenantQuery = await supabase
     .from("activity_logs")
     .select("id", { count: "exact", head: true })
     .eq("resource_id", tenantId)
     .eq("action", "owner_recovery_link_issued")
     .gte("created_at", thirtyMinsAgo);
 
-  const { data: recentAdmin, error: adminCountErr } = await supabase
+  const adminQuery = await supabase
     .from("activity_logs")
     .select("id", { count: "exact", head: true })
     .eq("employee_id", adminUserId)
     .eq("action", "owner_recovery_link_issued")
     .gte("created_at", oneHourAgo);
 
-  const tenantCount = (recentTenant as any)?.length ?? 0; // head:true + count not always returned in Deno edge env
-  const adminCount = (recentAdmin as any)?.length ?? 0;
-  // Fallback: if head:true doesn't populate length, skip limiting (defensive). A more robust version would rely on RPC.
-  if (tenantCountErr || adminCountErr) {
-    return { limited: false };
-  }
-  if (tenantCount >= 3) {
-    return { limited: true, reason: "Too many recovery links requested for this tenant in the last 30 minutes." };
-  }
-  if (adminCount >= 5) {
-    return { limited: true, reason: "Too many recovery links requested by this admin in the last hour." };
-  }
-  return { limited: false };
+  const tenantCount = tenantQuery.count ?? 0;
+  const adminCount = adminQuery.count ?? 0;
+  const tenantLimit = 3;
+  const adminLimit = 5;
+  const limitedTenant = tenantCount >= tenantLimit;
+  const limitedAdmin = adminCount >= adminLimit;
+  return {
+    tenantCount,
+    adminCount,
+    tenantLimit,
+    adminLimit,
+    tenantWindowSec,
+    adminWindowSec,
+    limited: limitedTenant || limitedAdmin,
+    limitedReason: limitedTenant
+      ? "Too many recovery links requested for this tenant in the last 30 minutes."
+      : limitedAdmin
+        ? "Too many recovery links requested by this admin in the last hour."
+        : null,
+  };
 }
 
 serve(async (req) => {
@@ -136,9 +144,16 @@ serve(async (req) => {
     }
 
     // Basic rate limiting guard
-    const rate = await isRateLimited(supabase, tenant.id, user.id);
+    const rate = await getRateLimitInfo(supabase, tenant.id, user.id);
     if (rate.limited) {
-      return error("RATE_LIMITED", rate.reason || "Too many requests", 429, origin, requestId);
+      return error(
+        "RATE_LIMITED",
+        rate.limitedReason || "Too many requests",
+        429,
+        origin,
+        requestId,
+        { rate }
+      );
     }
 
     // Generate recovery link (password reset) so the owner can set a new password themselves.
@@ -175,6 +190,7 @@ serve(async (req) => {
       recoveryLink,
       message: "Send this one-time recovery link to the owner so they can securely set a new password.",
       deprecatedActionUsed: body.action === "generate-temp" || undefined,
+      rateLimit: rate,
     }, 200, origin);
   } catch (e) {
     console.error("tenant-owner-credentials error", e);

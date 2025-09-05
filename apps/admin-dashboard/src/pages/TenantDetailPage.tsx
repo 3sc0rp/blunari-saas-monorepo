@@ -31,6 +31,16 @@ import { LoadingState, ErrorState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
 import type { TenantData } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function TenantDetailPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
@@ -58,7 +68,10 @@ export default function TenantDetailPage() {
   >([]);
   const [error, setError] = useState<string | null>(null);
   const [issuingRecovery, setIssuingRecovery] = useState(false);
-  const [recoveryData, setRecoveryData] = useState<null | { ownerEmail: string; recoveryLink: string; requestId: string; message: string; deprecatedActionUsed?: boolean }>(null);
+  const [recoveryData, setRecoveryData] = useState<null | { ownerEmail: string; recoveryLink: string; requestId: string; message: string; deprecatedActionUsed?: boolean; rateLimit?: any; issuedAt: number }>(null);
+  const [confirmRecoveryOpen, setConfirmRecoveryOpen] = useState(false);
+  const [rateInfo, setRateInfo] = useState<null | { tenantCount: number; tenantLimit: number; adminCount: number; adminLimit: number; tenantWindowSec: number; adminWindowSec: number }>(null);
+  const recoveryDisplayTTLms = 5 * 60 * 1000; // 5 minutes
 
   const fetchTenant = useCallback(async () => {
     if (!tenantId) return;
@@ -179,7 +192,21 @@ export default function TenantDetailPage() {
         { body: { tenantId, action: "issue-recovery" } },
       );
       if (error || data?.error) {
+        const metaRate = data?.error?.meta?.rate;
+        if (metaRate) {
+          setRateInfo(metaRate);
+        }
         throw new Error(data?.error?.message || error?.message || "Failed");
+      }
+      if (data?.rateLimit) {
+        setRateInfo({
+          tenantCount: data.rateLimit.tenantCount,
+          tenantLimit: data.rateLimit.tenantLimit,
+          adminCount: data.rateLimit.adminCount,
+          adminLimit: data.rateLimit.adminLimit,
+          tenantWindowSec: data.rateLimit.tenantWindowSec,
+          adminWindowSec: data.rateLimit.adminWindowSec,
+        });
       }
       setRecoveryData({
         ownerEmail: data.ownerEmail,
@@ -187,6 +214,8 @@ export default function TenantDetailPage() {
         requestId: data.requestId,
         message: data.message,
         deprecatedActionUsed: data.deprecatedActionUsed,
+        rateLimit: data.rateLimit,
+        issuedAt: Date.now(),
       });
       toast({
         title: "Recovery Link Issued",
@@ -200,8 +229,21 @@ export default function TenantDetailPage() {
       });
     } finally {
       setIssuingRecovery(false);
+      setConfirmRecoveryOpen(false);
     }
   };
+
+  // Auto-expire displayed recovery link after TTL
+  useEffect(() => {
+    if (!recoveryData) return;
+    const remaining = recoveryDisplayTTLms - (Date.now() - recoveryData.issuedAt);
+    if (remaining <= 0) {
+      setRecoveryData(null);
+      return;
+    }
+    const timer = setTimeout(() => setRecoveryData(null), remaining);
+    return () => clearTimeout(timer);
+  }, [recoveryData]);
 
   if (loadingPage) {
     return (
@@ -319,7 +361,7 @@ export default function TenantDetailPage() {
             variant="outline"
             size="sm"
             disabled={issuingRecovery}
-            onClick={handleIssueRecoveryLink}
+            onClick={() => setConfirmRecoveryOpen(true)}
           >
             <Shield className="h-4 w-4 mr-2" />
             {issuingRecovery ? "Issuing..." : "Recovery Link"}
@@ -585,6 +627,18 @@ export default function TenantDetailPage() {
           )}
         </CardContent>
       </Card>
+      {rateInfo && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recovery Link Rate Limits</CardTitle>
+            <CardDescription>Current usage within enforcement windows</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 md:grid-cols-2">
+            <p className="text-sm text-muted-foreground">Tenant: {rateInfo.tenantCount} / {rateInfo.tenantLimit} (30m)</p>
+            <p className="text-sm text-muted-foreground">Admin: {rateInfo.adminCount} / {rateInfo.adminLimit} (60m)</p>
+          </CardContent>
+        </Card>
+      )}
       {recoveryData && (
         <Card className="border-warning/40">
           <CardHeader>
@@ -609,6 +663,7 @@ export default function TenantDetailPage() {
                 {recoveryData.recoveryLink}
               </a>
             </div>
+            <p className="text-xs text-muted-foreground">Visible for up to 5 minutes after issuance.</p>
             <p className="text-xs text-muted-foreground">Request ID: {recoveryData.requestId}</p>
             <p className="text-xs text-muted-foreground">{recoveryData.message}</p>
             {recoveryData.deprecatedActionUsed && (
@@ -624,6 +679,23 @@ export default function TenantDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={confirmRecoveryOpen} onOpenChange={setConfirmRecoveryOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Issue Recovery Link</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will generate a password recovery link for the tenant owner ({tenant.email || 'no email'}). Existing login sessions aren't revoked. Continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={issuingRecovery}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleIssueRecoveryLink} disabled={issuingRecovery}>
+              {issuingRecovery ? 'Issuing...' : 'Generate'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
