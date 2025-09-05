@@ -72,10 +72,10 @@ function App() {
         <ThemeProvider>
           <BrowserRouter>
             <TenantBrandingProvider>
-              <ModeProvider>
-                <NavigationProvider>
-                  <FullscreenProvider>
-                    <AuthProvider>
+              <AuthProvider>
+                <ModeProvider>
+                  <NavigationProvider>
+                    <FullscreenProvider>
                       <TooltipProvider>
                         <div className="min-h-screen bg-gray-50">
                           <Suspense fallback={<LoadingFallback />}>
@@ -126,10 +126,10 @@ function App() {
                           <Sonner />
                         </div>
                       </TooltipProvider>
-                    </AuthProvider>
-                  </FullscreenProvider>
-                </NavigationProvider>
-              </ModeProvider>
+                    </FullscreenProvider>
+                  </NavigationProvider>
+                </ModeProvider>
+              </AuthProvider>
             </TenantBrandingProvider>
           </BrowserRouter>
         </ThemeProvider>
