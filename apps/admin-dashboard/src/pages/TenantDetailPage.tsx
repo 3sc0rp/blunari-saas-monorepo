@@ -30,6 +30,7 @@ import { TenantFeaturesTab } from "@/components/admin/TenantFeaturesTab";
 import { TenantBillingTab } from "@/components/tenant/TenantBillingTab";
 import { TenantApiKeysPanel } from "@/components/tenant/TenantApiKeysPanel";
 import { TenantUsageOverview } from "@/components/tenant/TenantUsageOverview";
+import { TenantSecurityExtended } from "@/components/tenant/TenantSecurityExtended";
 import { LoadingState, ErrorState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
 import type { TenantData } from "@/types/admin";
@@ -638,6 +639,15 @@ export default function TenantDetailPage() {
 
         <TabsContent value="security" className="space-y-6">
           <TenantApiKeysPanel tenantId={tenant.id} />
+          <Card>
+            <CardHeader>
+              <CardTitle>Staff & Recovery History</CardTitle>
+              <CardDescription>Staff accounts and recent password/recovery events</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TenantSecurityExtended tenantId={tenant.id} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="usage">
