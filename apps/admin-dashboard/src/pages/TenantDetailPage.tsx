@@ -49,6 +49,7 @@ export default function TenantDetailPage() {
   const { getTenant, resendWelcomeEmail, issuePasswordSetupLink } = useAdminAPI() as any;
   const [sendingSetupEmail, setSendingSetupEmail] = useState(false);
   const [lastSetupRequest, setLastSetupRequest] = useState<null | { mode: string; requestId: string; at: number }>(null);
+  const [passwordSetupRate, setPasswordSetupRate] = useState<null | { remaining: number; tenantRemaining: number; adminRemaining: number; limited: boolean }>(null);
 
   const [tenant, setTenant] = useState<TenantData | null>(null);
   const [loadingPage, setLoadingPage] = useState(true);
@@ -72,7 +73,7 @@ export default function TenantDetailPage() {
   const [issuingRecovery, setIssuingRecovery] = useState(false);
   const [recoveryData, setRecoveryData] = useState<null | { ownerEmail: string; recoveryLink: string; requestId: string; message: string; deprecatedActionUsed?: boolean; rateLimit?: any; issuedAt: number }>(null);
   const [confirmRecoveryOpen, setConfirmRecoveryOpen] = useState(false);
-  const [rateInfo, setRateInfo] = useState<null | { tenantCount: number; tenantLimit: number; adminCount: number; adminLimit: number; tenantWindowSec: number; adminWindowSec: number }>(null);
+  const [rateInfo, setRateInfo] = useState<null | { tenantCount: number; tenantLimit: number; adminCount: number; adminLimit: number; tenantWindowSec: number; adminWindowSec: number; tenantRemaining?: number; adminRemaining?: number }>(null);
   const recoveryDisplayTTLms = 5 * 60 * 1000; // 5 minutes
 
   const fetchTenant = useCallback(async () => {
@@ -201,13 +202,16 @@ export default function TenantDetailPage() {
         throw new Error(data?.error?.message || error?.message || "Failed");
       }
       if (data?.rateLimit) {
+        const rl = data.rateLimit;
         setRateInfo({
-          tenantCount: data.rateLimit.tenantCount,
-          tenantLimit: data.rateLimit.tenantLimit,
-          adminCount: data.rateLimit.adminCount,
-          adminLimit: data.rateLimit.adminLimit,
-          tenantWindowSec: data.rateLimit.tenantWindowSec,
-          adminWindowSec: data.rateLimit.adminWindowSec,
+          tenantCount: rl.tenantCount,
+          tenantLimit: rl.tenantLimit,
+          adminCount: rl.adminCount,
+          adminLimit: rl.adminLimit,
+          tenantWindowSec: rl.tenantWindowSec,
+          adminWindowSec: rl.adminWindowSec,
+          tenantRemaining: typeof rl.tenantRemaining === 'number' ? rl.tenantRemaining : (rl.tenantLimit - rl.tenantCount),
+          adminRemaining: typeof rl.adminRemaining === 'number' ? rl.adminRemaining : (rl.adminLimit - rl.adminCount),
         });
       }
       setRecoveryData({
@@ -362,13 +366,26 @@ export default function TenantDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            disabled={sendingSetupEmail}
+            disabled={sendingSetupEmail || passwordSetupRate?.limited || passwordSetupRate?.remaining === 0}
             onClick={async () => {
               if (!tenantId) return;
               try {
                 setSendingSetupEmail(true);
                 const resp = await issuePasswordSetupLink(tenantId, { sendEmail: true, ownerNameOverride: tenant?.name });
                 setLastSetupRequest({ mode: (resp as any).mode, requestId: (resp as any).requestId, at: Date.now() });
+                const rl = (resp as any).rateLimit;
+                if (rl) {
+                  const remaining = Math.min(
+                    typeof rl.tenantRemaining === 'number' ? rl.tenantRemaining : 999,
+                    typeof rl.adminRemaining === 'number' ? rl.adminRemaining : 999,
+                  );
+                  setPasswordSetupRate({
+                    remaining,
+                    tenantRemaining: rl.tenantRemaining ?? remaining,
+                    adminRemaining: rl.adminRemaining ?? remaining,
+                    limited: !!rl.limited,
+                  });
+                }
                 toast({ title: 'Password Setup Email Sent', description: `Mode: ${(resp as any).mode}` });
               } catch (e) {
                 toast({ title: 'Failed to send setup email', description: e instanceof Error ? e.message : 'Unknown error', variant: 'destructive' });
@@ -376,18 +393,45 @@ export default function TenantDetailPage() {
                 setSendingSetupEmail(false);
               }
             }}
+            className="relative"
           >
             <Mail className="h-4 w-4 mr-2" />
             {sendingSetupEmail ? 'Sending...' : 'Password Setup Email'}
+            {passwordSetupRate && (
+              <span
+                className={`ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground border ${passwordSetupRate.remaining === 0 || passwordSetupRate.limited ? 'border-destructive/40 text-destructive' : 'border-border'}`}
+              >
+                {passwordSetupRate.remaining} left
+              </span>
+            )}
           </Button>
           <Button
             variant="outline"
             size="sm"
-            disabled={issuingRecovery}
+            disabled={(() => {
+              if (issuingRecovery) return true;
+              if (!rateInfo) return false;
+              const tenantRem = rateInfo.tenantRemaining ?? (rateInfo.tenantLimit - rateInfo.tenantCount);
+              const adminRem = rateInfo.adminRemaining ?? (rateInfo.adminLimit - rateInfo.adminCount);
+              return tenantRem <= 0 || adminRem <= 0;
+            })()}
             onClick={() => setConfirmRecoveryOpen(true)}
+            className="relative"
           >
             <Shield className="h-4 w-4 mr-2" />
             {issuingRecovery ? "Issuing..." : "Recovery Link"}
+            {rateInfo && (
+              (() => {
+                const tenantRem = rateInfo.tenantRemaining ?? (rateInfo.tenantLimit - rateInfo.tenantCount);
+                const adminRem = rateInfo.adminRemaining ?? (rateInfo.adminLimit - rateInfo.adminCount);
+                const remaining = Math.min(tenantRem, adminRem);
+                return (
+                  <span className={`ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground border ${remaining === 0 ? 'border-destructive/40 text-destructive' : 'border-border'}`}>
+                    {remaining} left
+                  </span>
+                );
+              })()
+            )}
           </Button>
         </div>
       </div>
