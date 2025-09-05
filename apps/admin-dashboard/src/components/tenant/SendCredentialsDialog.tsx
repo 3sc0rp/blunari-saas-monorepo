@@ -17,6 +17,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   tenantName: string;
   defaultEmail?: string | null;
+  onSent?: () => void;
 }
 
 export function SendCredentialsDialog({
@@ -24,6 +25,7 @@ export function SendCredentialsDialog({
   onOpenChange,
   tenantName,
   defaultEmail,
+  onSent,
 }: Props) {
   const { toast } = useToast();
   const [ownerName, setOwnerName] = useState("");
@@ -70,10 +72,11 @@ export function SendCredentialsDialog({
         throw new Error(data?.error || error?.message || "Failed to send");
       }
 
-      toast({
+  toast({
         title: "Credentials Sent",
         description: `Login details sent to ${ownerEmail}`,
       });
+  onSent?.();
       onOpenChange(false);
     } catch (err) {
       console.error("send-credentials-email error", err);

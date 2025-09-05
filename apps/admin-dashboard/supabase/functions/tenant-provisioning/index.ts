@@ -45,12 +45,33 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
+  // Preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Allow only POST requests
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: {
+          code: "METHOD_NOT_ALLOWED",
+          message: "Only POST is allowed",
+        },
+      }),
+      {
+        status: 405,
+        headers: { ...corsHeaders, "Content-Type": "application/json", Allow: "POST, OPTIONS" },
+      },
+    );
+  }
+
   try {
-  const supabase = createClient(
+    // Generate a request id for tracing
+    const requestId = crypto.randomUUID();
+
+    const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
@@ -64,7 +85,7 @@ serve(async (req: Request) => {
           error: {
             code: "UNAUTHORIZED",
             message: "Missing Authorization header",
-            requestId: crypto.randomUUID(),
+            requestId,
           },
         }),
         {
@@ -73,7 +94,7 @@ serve(async (req: Request) => {
         },
       );
     }
-    const token = authHeader.replace("Bearer ", "");
+    const token = authHeader.replace(/^Bearer\s+/i, "");
     const {
       data: { user },
       error: authError,
@@ -125,7 +146,7 @@ serve(async (req: Request) => {
               .map((i: { message: string }) => i.message)
               .join("; "),
             details: parsed.error.issues,
-            requestId: crypto.randomUUID(),
+            requestId,
           },
         }),
         {
@@ -134,7 +155,6 @@ serve(async (req: Request) => {
         },
       );
     }
-    const requestId = crypto.randomUUID();
 
     console.log("Tenant provisioning request:", {
       requestId,
@@ -185,7 +205,7 @@ serve(async (req: Request) => {
               user_metadata: { role: "owner" },
             });
           if (createErr) throw createErr;
-          ownerUserId = created.user?.id ?? null;
+          ownerUserId = created?.user?.id ?? null;
         }
       } catch (e) {
         console.warn("Owner user create/get failed (continuing):", e);
@@ -258,17 +278,17 @@ serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("Tenant provisioning error:", error);
-
-    const requestId = crypto.randomUUID();
+    // Use a new requestId here since the previous block failed before creation in rare cases
+    const errId = crypto.randomUUID();
     return new Response(
       JSON.stringify({
         success: false,
         error: {
           code: "PROVISIONING_FAILED",
           message: error instanceof Error ? error.message : "Unknown error",
-          requestId,
+          requestId: errId,
         },
-        requestId,
+        requestId: errId,
       }),
       {
         status: 500,

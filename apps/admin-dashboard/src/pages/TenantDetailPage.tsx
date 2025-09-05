@@ -47,6 +47,14 @@ export default function TenantDetailPage() {
     | { id: string; status: string; created_at: string; updated_at?: string | null }
     | null
   >(null);
+  const [emailHistory, setEmailHistory] = useState<
+    Array<{
+      id: string;
+      job_type: string;
+      status: string;
+      created_at: string;
+    }>
+  >([]);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTenant = useCallback(async () => {
@@ -73,48 +81,57 @@ export default function TenantDetailPage() {
     }
   }, [tenantId, fetchTenant]);
 
-  // Fetch last welcome email job for this tenant
-  useEffect(() => {
-    const fetchLastWelcome = async () => {
-      if (!tenantId) return;
-      try {
-        setLoadingEmailStatus(true);
-        const { data, error } = await supabase
-          .from("background_jobs")
-          .select("id, job_type, status, created_at, updated_at")
-          .eq("tenant_id", tenantId)
-          .in("job_type", ["WELCOME_EMAIL", "NOTIFICATION_EMAIL"] as const) // covers welcome pack path
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .returns<Array<{
-            id: string;
-            job_type: string;
-            status: string;
-            created_at: string;
-            updated_at: string | null;
-          }>>();
-        if (error) throw error;
-        const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
-        setLastWelcomeJob(
-          row
-            ? {
-                id: row.id as string,
-                status: row.status as string,
-                created_at: row.created_at as string,
-                updated_at: (row as any).updated_at ?? null,
-              }
-            : null,
-        );
-      } catch (e) {
-        console.warn("Failed to fetch last welcome job", e);
-        setLastWelcomeJob(null);
-      } finally {
-        setLoadingEmailStatus(false);
-      }
-    };
-    fetchLastWelcome();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Fetch email status + history
+  const refreshEmailStatus = useCallback(async () => {
+    if (!tenantId) return;
+    try {
+      setLoadingEmailStatus(true);
+      const { data, error } = await (supabase as any)
+        .from("background_jobs")
+        .select("id, job_type, status, created_at, updated_at")
+        .eq("tenant_id", tenantId)
+        .in("job_type", ["WELCOME_EMAIL", "NOTIFICATION_EMAIL"])
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      const list = (Array.isArray(data) ? data : []) as Array<{
+        id: string;
+        job_type: string;
+        status: string;
+        created_at: string;
+        updated_at: string | null;
+      }>;
+      setEmailHistory(
+        list.map((r) => ({
+          id: r.id,
+          job_type: r.job_type,
+          status: r.status,
+          created_at: r.created_at,
+        })),
+      );
+      const first = list[0] || null;
+      setLastWelcomeJob(
+        first
+          ? {
+              id: first.id,
+              status: first.status,
+              created_at: first.created_at,
+              updated_at: first.updated_at,
+            }
+          : null,
+      );
+    } catch (e) {
+      console.warn("Failed to fetch email history", e);
+      setLastWelcomeJob(null);
+      setEmailHistory([]);
+    } finally {
+      setLoadingEmailStatus(false);
+    }
   }, [tenantId]);
+
+  useEffect(() => {
+    refreshEmailStatus();
+  }, [refreshEmailStatus]);
 
   const handleResendWelcomeEmail = async () => {
     if (!tenant) return;
@@ -283,6 +300,14 @@ export default function TenantDetailPage() {
           onClick={() => navigate("/admin/operations")}
         >
           View Jobs
+        </Button>
+        <Button
+          variant="link"
+          size="sm"
+          className="px-1"
+          onClick={refreshEmailStatus}
+        >
+          Reload
         </Button>
       </div>
 
@@ -476,13 +501,43 @@ export default function TenantDetailPage() {
         onOpenChange={setOpenWelcomeDialog}
         tenantName={tenant.name}
         defaultEmail={tenant.email || null}
+        onSent={refreshEmailStatus}
       />
       <SendCredentialsDialog
         open={openCredentialsDialog}
         onOpenChange={setOpenCredentialsDialog}
         tenantName={tenant.name}
         defaultEmail={tenant.email || null}
+        onSent={refreshEmailStatus}
       />
+
+      {/* Email History */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Email History</CardTitle>
+          <CardDescription>Last 10 welcome-related jobs</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingEmailStatus ? (
+            <p className="text-muted-foreground">Loading…</p>
+          ) : emailHistory.length === 0 ? (
+            <p className="text-muted-foreground">No email jobs yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {emailHistory.map((j) => (
+                <li key={j.id} className="flex items-center justify-between">
+                  <span className="font-mono text-xs">{j.id.slice(0, 8)}</span>
+                  <span className="text-sm">{j.job_type}</span>
+                  <span className="text-sm font-medium">{j.status}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {new Date(j.created_at).toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

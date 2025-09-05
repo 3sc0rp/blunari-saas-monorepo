@@ -69,7 +69,6 @@ import { cn } from "@/lib/utils";
 const pageTitles: Record<string, { title: string; parent?: string }> = {
   "/admin/dashboard": { title: "Dashboard" },
   "/admin/tenants": { title: "Tenants", parent: "Tenant Management" },
-  "/admin/tenants/new": { title: "New Tenant", parent: "Tenants" },
   "/admin/tenants/provision": { title: "Provision", parent: "Tenants" },
   "/admin/analytics": { title: "Analytics" },
   "/admin/billing": { title: "Billing" },
@@ -209,7 +208,7 @@ export function AdminHeader() {
     (action: string) => {
       switch (action) {
         case "new-tenant":
-          navigate("/admin/tenants/new");
+          navigate("/admin/tenants/provision");
           break;
         case "new-employee":
           navigate("/admin/employees");
