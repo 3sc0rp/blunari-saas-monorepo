@@ -12,7 +12,9 @@ if (dsn && (env === 'production' || env === 'staging')) {
     tracePropagationTargets: [
       'localhost',
       /^https:\/\/[a-zA-Z0-9.-]+\.blunari\.(ai|io|dev)/,
-      /^https:\/\/.*\.(supabase|ingest\.sentry)\.(co|io|in)/,
+      // Do NOT propagate tracing headers to Supabase Functions to avoid CORS preflight header requirements
+      // /^https:\/\/.*\.(supabase)\.(co|io|in)/, // intentionally excluded
+      /^https:\/\/.*\.(ingest\.sentry)\.(co|io|in)/,
     ],
     environment: env,
   });

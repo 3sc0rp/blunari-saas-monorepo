@@ -45,15 +45,16 @@ function assertIncludes(actual, required) {
   return missing;
 }
 
-async function checkOne({ url, origin, reqMethod = 'POST' }) {
+async function checkOne({ url, origin, reqMethod = 'POST', requiredHeaders }) {
+  const acrh = requiredHeaders.join(', ');
   const res = await request('OPTIONS', url, {
     Origin: origin,
     'Access-Control-Request-Method': reqMethod,
-    'Access-Control-Request-Headers': 'authorization, content-type, sentry-trace, baggage',
+    'Access-Control-Request-Headers': acrh,
   });
   const allowHeaders = (res.headers['access-control-allow-headers'] || '').toString().toLowerCase();
   const allowOrigin = (res.headers['access-control-allow-origin'] || '').toString();
-  const missing = assertIncludes(allowHeaders, ['authorization', 'content-type', 'sentry-trace', 'baggage']);
+  const missing = assertIncludes(allowHeaders, requiredHeaders);
   const ok = res.status >= 200 && res.status < 400 && missing.length === 0 && (!!allowOrigin);
   return { ok, res, missing };
 }
@@ -61,6 +62,10 @@ async function checkOne({ url, origin, reqMethod = 'POST' }) {
 (async () => {
   const origin = process.env.PREFLIGHT_ORIGIN || 'https://admin.blunari.ai';
   const endpoints = (process.env.PREFLIGHT_ENDPOINTS || '').split(',').map(s => s.trim()).filter(Boolean);
+  const requiredHeaders = (process.env.REQUIRED_HEADERS || 'authorization,content-type')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
   if (endpoints.length === 0) {
     console.error('No PREFLIGHT_ENDPOINTS provided');
     process.exit(2);
@@ -68,7 +73,7 @@ async function checkOne({ url, origin, reqMethod = 'POST' }) {
 
   let failures = 0;
   for (const url of endpoints) {
-    const { ok, res, missing } = await checkOne({ url, origin });
+    const { ok, res, missing } = await checkOne({ url, origin, requiredHeaders });
     if (!ok) {
       failures++;
       console.error(`[FAIL] ${url} -> status=${res.status} origin=${res.headers['access-control-allow-origin']} missing=${missing.join(',')}`);

@@ -13,6 +13,12 @@ if (dsn) {
     dsn,
     environment: import.meta.env.MODE,
     release: `${__APP_VERSION__}@${__COMMIT_HASH__}`,
+    tracePropagationTargets: [
+      'localhost',
+      /^https:\/\/[a-zA-Z0-9.-]+\.blunari\.(ai|io|dev)/,
+      // Exclude Supabase Functions from trace propagation to avoid CORS header requirements
+      // /^https:\/\/.*\.(supabase)\.(co|io|in)/, // intentionally excluded
+    ],
     // Keep minimal setup as per screenshot (Error Monitoring only)
     // You can enable performance or session replay later.
     // tracesSampleRate: 0.1,
