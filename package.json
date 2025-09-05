@@ -15,6 +15,9 @@
     "lint:fix": "turbo run lint:fix",
     "test": "turbo run test",
     "type-check": "turbo run type-check",
+  "preview": "turbo run preview --parallel",
+  "preview:client": "npm run preview --workspace=apps/client-dashboard",
+  "preview:admin": "npm run preview --workspace=apps/admin-dashboard",
     "clean": "turbo run clean && rm -rf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -26,7 +29,8 @@
     "setup": "node dev.js setup",
     "quality:check": "node dev.js quality:check",
     "quality:fix": "node dev.js quality:fix",
-    "secrets:setup": "node scripts/setup-secrets.js"
+  "secrets:setup": "node scripts/setup-secrets.js",
+  "verify:admin-live": "node scripts/live-admin-login-check.mjs"
   },
   "devDependencies": {
     "@turbo/gen": "^1.10.12",

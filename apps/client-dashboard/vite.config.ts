@@ -109,9 +109,9 @@ export default defineConfig(({ mode }) => {
     },
 
     preview: {
-      port: 3001,
+      port: 4174,
       host: true,
-      strictPort: true
+      strictPort: false
     },
 
     esbuild: {
