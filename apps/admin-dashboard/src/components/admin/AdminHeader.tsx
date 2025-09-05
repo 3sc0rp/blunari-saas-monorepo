@@ -12,10 +12,6 @@ import {
   Search,
   Plus,
   HelpCircle,
-  RefreshCw,
-  Save,
-  Wifi,
-  WifiOff,
   Building2,
   Zap,
   Command,
@@ -79,12 +75,6 @@ const pageTitles: Record<string, { title: string; parent?: string }> = {
   "/admin/profile": { title: "Profile" },
 };
 
-interface SystemStatus {
-  online: boolean;
-  lastSync: Date;
-  pendingActions: number;
-}
-
 export function AdminHeader() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,11 +82,6 @@ export function AdminHeader() {
   const { user, profile, signOut } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [systemStatus, setSystemStatus] = useState<SystemStatus>({
-    online: true,
-    lastSync: new Date(),
-    pendingActions: 0,
-  });
   const {
     notifications,
     getTimeAgo,
@@ -104,30 +89,7 @@ export function AdminHeader() {
     getNotificationColor,
   } = useNotifications();
 
-  // Simulate system status updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSystemStatus((prev) => ({
-        ...prev,
-        lastSync: new Date(),
-        online: navigator.onLine,
-      }));
-    }, 30000);
-
-    const handleOnline = () =>
-      setSystemStatus((prev) => ({ ...prev, online: true }));
-    const handleOffline = () =>
-      setSystemStatus((prev) => ({ ...prev, online: false }));
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
+  // (removed system status; keep header lean)
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -135,14 +97,6 @@ export function AdminHeader() {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
         document.getElementById("admin-search")?.focus();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        handleQuickSave();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "r") {
-        e.preventDefault();
-        handleRefresh();
       }
     };
 
@@ -195,14 +149,7 @@ export function AdminHeader() {
     navigate("/admin/notifications");
   }, [navigate]);
 
-  const handleRefresh = useCallback(() => {
-    window.location.reload();
-  }, []);
-
-  const handleQuickSave = useCallback(() => {
-    // Implement quick save functionality
-    console.log("Quick save triggered");
-  }, []);
+  // Removed refresh/save quick actions from header
 
   const handleQuickAction = useCallback(
     (action: string) => {
@@ -259,14 +206,7 @@ export function AdminHeader() {
                 <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
                   <Building2 className="h-5 w-5 text-white" />
                 </div>
-                <div className="hidden sm:block">
-                  <h1 className="text-lg font-semibold text-white">
-                    Blunari Admin
-                  </h1>
-                  <p className="text-xs text-slate-400 -mt-1">
-                    Restaurant Platform
-                  </p>
-                </div>
+                {/* Removed branding text to declutter header */}
               </div>
             </div>
 
@@ -305,7 +245,7 @@ export function AdminHeader() {
           </div>
 
           {/* Center Section - Enhanced Search */}
-          <div className="flex-1 max-w-md mx-8">
+          <div className="flex-1 max-w-xl mx-6">
             <div className="relative group">
               <Search
                 className={cn(
@@ -337,71 +277,7 @@ export function AdminHeader() {
 
           {/* Right Section - Enhanced Action Bar */}
           <div className="flex items-center gap-2">
-            {/* System Status & Quick Actions */}
-            <div className="hidden lg:flex items-center gap-2 mr-4">
-              {/* System Status Indicator */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                    {systemStatus.online ? (
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-                        <Wifi className="h-4 w-4 text-green-400" />
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
-                        <WifiOff className="h-4 w-4 text-red-400" />
-                      </div>
-                    )}
-                    <span className="text-xs text-slate-400">
-                      {systemStatus.online ? "Online" : "Offline"}
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <div className="text-center">
-                    <p className="font-medium">System Status</p>
-                    <p className="text-xs text-muted-foreground">
-                      Last sync: {systemStatus.lastSync.toLocaleTimeString()}
-                    </p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-
-              {/* Quick Actions */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleRefresh}
-                    className="h-9 px-3 text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  Refresh <kbd className="ml-1 text-xs">Ctrl+R</kbd>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleQuickSave}
-                    className="h-9 px-3 text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200"
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  Quick Save <kbd className="ml-1 text-xs">Ctrl+S</kbd>
-                </TooltipContent>
-              </Tooltip>
-            </div>
+            {/* (removed system status and refresh/save cluster) */}
 
             {/* Enhanced Quick Create Menu */}
             <DropdownMenu>
@@ -741,38 +617,7 @@ export function AdminHeader() {
           </div>
         </div>
 
-        {/* Secondary Info Bar (Mobile-responsive) */}
-        <div className="md:hidden px-6 py-2 bg-slate-800/30 border-t border-slate-700/30">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <div className="flex items-center gap-4">
-              {currentPage && (
-                <span className="text-slate-200 font-medium">
-                  {currentPage.title}
-                </span>
-              )}
-              {systemStatus.online && (
-                <div className="flex items-center gap-1">
-                  <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                  <span>Online</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleRefresh}
-                className="p-1 rounded hover:bg-slate-700/50"
-              >
-                <RefreshCw className="h-3 w-3" />
-              </button>
-              <button
-                onClick={handleQuickSave}
-                className="p-1 rounded hover:bg-slate-700/50"
-              >
-                <Save className="h-3 w-3" />
-              </button>
-            </div>
-          </div>
-        </div>
+  {/* (removed secondary mobile info bar) */}
       </header>
     </TooltipProvider>
   );
