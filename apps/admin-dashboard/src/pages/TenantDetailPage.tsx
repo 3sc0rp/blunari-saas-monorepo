@@ -21,6 +21,7 @@ import {
   Settings,
   RefreshCw,
   Key,
+  Shield,
 } from "lucide-react";
 import { useAdminAPI } from "@/hooks/useAdminAPI";
 import { SendWelcomePackDialog } from "@/components/tenant/SendWelcomePackDialog";
@@ -56,6 +57,8 @@ export default function TenantDetailPage() {
     }>
   >([]);
   const [error, setError] = useState<string | null>(null);
+  const [issuingRecovery, setIssuingRecovery] = useState(false);
+  const [recoveryData, setRecoveryData] = useState<null | { ownerEmail: string; recoveryLink: string; requestId: string; message: string; deprecatedActionUsed?: boolean }>(null);
 
   const fetchTenant = useCallback(async () => {
     if (!tenantId) return;
@@ -163,6 +166,40 @@ export default function TenantDetailPage() {
       });
     } finally {
       setResending(false);
+    }
+  };
+
+  const handleIssueRecoveryLink = async () => {
+    if (!tenantId) return;
+    setIssuingRecovery(true);
+    setRecoveryData(null);
+    try {
+      const { data, error } = await (supabase as any).functions.invoke(
+        "tenant-owner-credentials",
+        { body: { tenantId, action: "issue-recovery" } },
+      );
+      if (error || data?.error) {
+        throw new Error(data?.error?.message || error?.message || "Failed");
+      }
+      setRecoveryData({
+        ownerEmail: data.ownerEmail,
+        recoveryLink: data.recoveryLink,
+        requestId: data.requestId,
+        message: data.message,
+        deprecatedActionUsed: data.deprecatedActionUsed,
+      });
+      toast({
+        title: "Recovery Link Issued",
+        description: "Share it securely with the tenant owner.",
+      });
+    } catch (e) {
+      toast({
+        title: "Failed to issue link",
+        description: e instanceof Error ? e.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIssuingRecovery(false);
     }
   };
 
@@ -277,6 +314,15 @@ export default function TenantDetailPage() {
           >
             <Key className="h-4 w-4 mr-2" />
             Send Credentials
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={issuingRecovery}
+            onClick={handleIssueRecoveryLink}
+          >
+            <Shield className="h-4 w-4 mr-2" />
+            {issuingRecovery ? "Issuing..." : "Recovery Link"}
           </Button>
         </div>
       </div>
@@ -539,6 +585,45 @@ export default function TenantDetailPage() {
           )}
         </CardContent>
       </Card>
+      {recoveryData && (
+        <Card className="border-warning/40">
+          <CardHeader>
+            <CardTitle>Owner Recovery Link</CardTitle>
+            <CardDescription>
+              This link lets the owner set a new password. Treat it as sensitive.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-wide text-muted-foreground">Owner Email</label>
+              <p className="font-mono break-all text-sm">{recoveryData.ownerEmail}</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs uppercase tracking-wide text-muted-foreground">Recovery Link</label>
+              <a
+                href={recoveryData.recoveryLink}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline break-all text-sm"
+              >
+                {recoveryData.recoveryLink}
+              </a>
+            </div>
+            <p className="text-xs text-muted-foreground">Request ID: {recoveryData.requestId}</p>
+            <p className="text-xs text-muted-foreground">{recoveryData.message}</p>
+            {recoveryData.deprecatedActionUsed && (
+              <p className="text-xs text-amber-600">Legacy action used; UI should be updated if this persists.</p>
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setRecoveryData(null)}
+            >
+              Dismiss
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
