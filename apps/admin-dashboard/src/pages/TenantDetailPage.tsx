@@ -22,6 +22,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useAdminAPI } from "@/hooks/useAdminAPI";
+import { SendWelcomePackDialog } from "@/components/tenant/SendWelcomePackDialog";
 import { TenantFeaturesTab } from "@/components/admin/TenantFeaturesTab";
 import { LoadingState, ErrorState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +37,7 @@ export default function TenantDetailPage() {
   const [tenant, setTenant] = useState<TenantData | null>(null);
   const [loadingPage, setLoadingPage] = useState(true);
   const [resending, setResending] = useState(false);
+  const [openWelcomeDialog, setOpenWelcomeDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTenant = useCallback(async () => {
@@ -193,15 +195,10 @@ export default function TenantDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleResendWelcomeEmail}
-            disabled={resending}
+            onClick={() => setOpenWelcomeDialog(true)}
           >
-            {resending ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Mail className="h-4 w-4 mr-2" />
-            )}
-            Resend Welcome Email
+            <Mail className="h-4 w-4 mr-2" />
+            Send Welcome Email
           </Button>
         </div>
       </div>
@@ -389,6 +386,14 @@ export default function TenantDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Send Welcome Email Dialog */}
+      <SendWelcomePackDialog
+        open={openWelcomeDialog}
+        onOpenChange={setOpenWelcomeDialog}
+        tenantName={tenant.name}
+        defaultEmail={tenant.email || null}
+      />
     </div>
   );
 }

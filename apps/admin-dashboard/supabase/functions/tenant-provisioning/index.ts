@@ -233,56 +233,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // Send emails if requested
-    if (requestData.owner?.sendInvite && requestData.owner?.email) {
-      // Use client app URL for onboarding
-      const baseUrl =
-        Deno.env.get("CLIENT_BASE_URL") ??
-        Deno.env.get("APP_BASE_URL") ??
-        "https://app.blunari.ai";
-      const restaurantName = requestData.basics.name;
-
-      // Fire-and-forget; do not block provisioning on email transport
-      try {
-        await supabase.functions.invoke("send-welcome-email", {
-          body: {
-            ownerName: restaurantName,
-            ownerEmail: requestData.owner.email,
-            restaurantName,
-            loginUrl: baseUrl,
-          },
-        });
-      } catch {
-        /* ignore email errors */
-      }
-      try {
-        await supabase.functions.invoke("send-welcome-pack", {
-          body: {
-            ownerName: restaurantName,
-            ownerEmail: requestData.owner.email,
-            restaurantName,
-            loginUrl: baseUrl,
-          },
-        });
-      } catch {
-        /* ignore email errors */
-      }
-
-  // Also trigger a magic link via Supabase Auth (non-blocking) for immediate access
-      try {
-        if (ownerEmail) {
-          await supabase.auth.admin.generateLink({
-    type: "magiclink",
-            email: ownerEmail,
-            options: {
-              redirectTo: `${baseUrl}/auth`,
-            },
-          });
-        }
-      } catch {
-        /* ignore auth email errors */
-      }
-    }
+  // Manual email sending: disabled automatic emails. Use Admin UI button instead.
 
     const responseData = {
       runId: crypto.randomUUID(),
