@@ -2,8 +2,27 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Inline CORS utilities
+const getAllowedOrigins = () => {
+  return [
+    'https://admin.blunari.ai',
+    'https://services.blunari.ai',
+    'https://blunari.ai',
+    'https://www.blunari.ai',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000',
+  ];
+};
+
+const createOriginHeader = (requestOrigin: string | null) => {
+  const allowedOrigins = getAllowedOrigins();
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) return requestOrigin;
+  return allowedOrigins[0]; // Default to admin.blunari.ai
+};
+
 const createCorsHeaders = (requestOrigin: string | null = null) => ({
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': createOriginHeader(requestOrigin),
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key, accept, accept-language, content-length, sentry-trace, baggage',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
   'Access-Control-Allow-Credentials': 'true',
