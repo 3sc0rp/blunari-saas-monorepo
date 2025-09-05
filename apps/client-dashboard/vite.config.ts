@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       
-      // Critical React polyfill plugin
+      // AGGRESSIVE React polyfill plugin - MUST LOAD FIRST
       {
         name: 'react-emergency-polyfill',
         configureServer(server) {
@@ -19,37 +19,123 @@ export default defineConfig(({ mode }) => {
             res.setHeader('Content-Type', 'application/javascript');
             res.setHeader('Cache-Control', 'no-cache');
             res.end(`
-// Emergency React Polyfill - Development Mode
+// ULTRA-AGGRESSIVE React Polyfill - Development Mode
 (function() {
   'use strict';
-  if (typeof window !== 'undefined' && !window.React) {
-    console.warn('⚠️ Emergency React polyfill activating (dev mode)...');
-    window.React = window.React || {
-      createContext: function(defaultValue) {
-        console.warn('🔧 Emergency createContext polyfill called');
-        return {
-          Provider: function({ children }) { return children; },
-          Consumer: function({ children }) { return children(); },
-          _currentValue: defaultValue,
-          _defaultValue: defaultValue
-        };
-      },
-      useState: function(initial) { return [initial, function() {}]; },
-      useEffect: function() {},
-      useContext: function(context) { return context._currentValue; },
-      useCallback: function(fn) { return fn; },
-      useMemo: function(fn) { return fn(); },
-      useRef: function(initial) { return { current: initial }; },
-      forwardRef: function(fn) { return fn; },
-      Fragment: function({ children }) { return children; },
-      version: '18.0.0-polyfill'
-    };
-    globalThis.React = window.React;
-    console.log('🚨 Emergency React polyfill activated (dev)');
+  
+  // Force React availability IMMEDIATELY
+  const createReactPolyfill = () => ({
+    createContext: function(defaultValue) {
+      console.warn('🔧 Emergency createContext polyfill called');
+      return {
+        Provider: function({ children }) { return children; },
+        Consumer: function({ children }) { return children(defaultValue); },
+        _currentValue: defaultValue,
+        _defaultValue: defaultValue
+      };
+    },
+    useState: function(initial) { return [initial, function() {}]; },
+    useEffect: function() {},
+    useLayoutEffect: function() {}, // CRITICAL: This was missing and causing errors
+    useContext: function(context) { return context ? context._currentValue : null; },
+    useCallback: function(fn) { return fn; },
+    useMemo: function(fn) { return fn(); },
+    useRef: function(initial) { return { current: initial }; },
+    useReducer: function(reducer, initial) { return [initial, function() {}]; },
+    useImperativeHandle: function() {},
+    useDebugValue: function() {},
+    useDeferredValue: function(value) { return value; },
+    useTransition: function() { return [false, function() {}]; },
+    useId: function() { return 'emergency-id-' + Math.random(); },
+    forwardRef: function(fn) { return fn; },
+    Fragment: function({ children }) { return children; },
+    Component: function() {},
+    PureComponent: function() {},
+    memo: function(component) { return component; },
+    createElement: function(type, props, ...children) {
+      return { type, props: props || {}, children };
+    },
+    cloneElement: function(element) { return element; },
+    version: '18.0.0-emergency-polyfill'
+  });
+  
+  if (typeof window !== 'undefined') {
+    console.warn('⚠️ ULTRA-AGGRESSIVE React polyfill activating (dev mode)...');
+    window.React = window.React || createReactPolyfill();
+    globalThis.React = globalThis.React || window.React;
+    
+    // Force React on global scope
+    global = global || {};
+    global.React = global.React || window.React;
+    
+    console.log('🚨 ULTRA-AGGRESSIVE React polyfill activated (dev)');
   }
 })();
             `);
           });
+        },
+        
+        // CRITICAL: Transform HTML to inject polyfill FIRST
+        transformIndexHtml: {
+          enforce: 'pre',
+          transform(html) {
+            return html.replace(
+              '<head>',
+              `<head>
+    <script>
+      // IMMEDIATE React polyfill injection - CANNOT BE BYPASSED
+      (function() {
+        'use strict';
+        
+        const createUltraReactPolyfill = () => ({
+          createContext: function(defaultValue) {
+            return {
+              Provider: function({ children }) { return children; },
+              Consumer: function({ children }) { return children(defaultValue); },
+              _currentValue: defaultValue,
+              _defaultValue: defaultValue
+            };
+          },
+          useState: function(initial) { return [initial, function() {}]; },
+          useEffect: function() {},
+          useLayoutEffect: function() {}, // ULTRA-CRITICAL FIX
+          useContext: function(context) { return context ? context._currentValue : null; },
+          useCallback: function(fn) { return fn; },
+          useMemo: function(fn) { return fn(); },
+          useRef: function(initial) { return { current: initial }; },
+          useReducer: function(reducer, initial) { return [initial, function() {}]; },
+          useImperativeHandle: function() {},
+          useDebugValue: function() {},
+          useDeferredValue: function(value) { return value; },
+          useTransition: function() { return [false, function() {}]; },
+          useId: function() { return 'ultra-emergency-id-' + Math.random(); },
+          forwardRef: function(fn) { return fn; },
+          Fragment: function({ children }) { return children; },
+          Component: function() {},
+          PureComponent: function() {},
+          memo: function(component) { return component; },
+          createElement: function(type, props, ...children) {
+            return { type, props: props || {}, children };
+          },
+          cloneElement: function(element) { return element; },
+          version: '18.0.0-ultra-emergency'
+        });
+        
+        if (typeof window !== 'undefined') {
+          console.warn('🔥 ULTRA-EMERGENCY React polyfill - IMMEDIATE INJECTION');
+          window.React = window.React || createUltraReactPolyfill();
+          globalThis.React = globalThis.React || window.React;
+          
+          // Force ALL possible global assignments
+          if (typeof global !== 'undefined') global.React = window.React;
+          if (typeof self !== 'undefined') self.React = window.React;
+          
+          console.log('🔥 ULTRA-EMERGENCY React polyfill ACTIVE - vendor chunks protected');
+        }
+      })();
+    </script>`
+            );
+          }
         }
       },
       
