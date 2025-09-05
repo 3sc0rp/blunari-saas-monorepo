@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -80,6 +80,18 @@ export function TenantProvisioningWizard({
   const navigate = useNavigate();
   const { provisionTenant } = useAdminAPI();
   const { toast } = useToast();
+  const steps = useMemo(
+    () => [
+      { key: "basics", title: "Basic Information", icon: Building2 },
+      { key: "contact", title: "Contact & Address", icon: Mail },
+      { key: "owner", title: "Owner Account", icon: User },
+      { key: "config", title: "Configuration", icon: Settings },
+      { key: "billing", title: "Billing & SMS", icon: CreditCard },
+      { key: "review", title: "Review & Submit", icon: Eye },
+    ],
+    [],
+  );
+  const [currentStep, setCurrentStep] = useState(0);
 
   const [formData, setFormData] = useState<ExtendedProvisioningRequestData>({
     basics: {
@@ -139,6 +151,42 @@ export function TenantProvisioningWizard({
       handleInputChange("basics", "slug", slug);
     }
   }, [formData.basics.name]);
+
+  const validateStep = (index: number): boolean => {
+    // Minimal step-level validation; final submission uses full zod schema
+    const sKey = steps[index]?.key;
+    if (sKey === "basics") {
+      const ok = !!formData.basics.name?.trim() && !!formData.basics.slug?.trim();
+      if (!ok) {
+        toast({
+          title: "Missing required fields",
+          description: "Please provide Restaurant Name and Slug.",
+          variant: "destructive",
+        });
+      }
+      return ok;
+    }
+    if (sKey === "owner") {
+      const email = formData.owner.email?.trim();
+      const ok = !!email && /[^\s@]+@[^\s@]+\.[^\s@]+/.test(email);
+      if (!ok) {
+        toast({
+          title: "Invalid owner email",
+          description: "Please provide a valid owner email address.",
+          variant: "destructive",
+        });
+      }
+      return ok;
+    }
+    return true;
+  };
+
+  const goNext = () => {
+    if (!validateStep(currentStep)) return;
+    setCurrentStep((s) => Math.min(s + 1, steps.length - 1));
+  };
+
+  const goBack = () => setCurrentStep((s) => Math.max(s - 1, 0));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,14 +329,13 @@ export function TenantProvisioningWizard({
     );
   }
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-6">
+  const StepHeader = () => {
+    const CurrentIcon = steps[currentStep].icon;
+    return (
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Tenant Provisioning</h1>
-          <p className="text-muted-foreground">
-            Create and configure a new restaurant tenant
-          </p>
+          <p className="text-muted-foreground">Step {currentStep + 1} of {steps.length} • {steps[currentStep].title}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={handleCancel}>
@@ -297,439 +344,480 @@ export function TenantProvisioningWizard({
           </Button>
         </div>
       </div>
+    );
+  };
+
+  const BasicsStep = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building2 className="h-5 w-5" />
+          Basic Information
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="name">Restaurant Name *</Label>
+            <Input
+              id="name"
+              value={formData.basics.name}
+              onChange={(e) => handleInputChange("basics", "name", e.target.value)}
+              placeholder="Amazing Restaurant"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="slug">Slug *</Label>
+            <Input
+              id="slug"
+              value={formData.basics.slug}
+              onChange={(e) => handleInputChange("basics", "slug", e.target.value)}
+              placeholder="amazing-restaurant"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="timezone">Timezone</Label>
+            <Select
+              value={formData.basics.timezone}
+              onValueChange={(value) => handleInputChange("basics", "timezone", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="America/New_York">Eastern Time</SelectItem>
+                <SelectItem value="America/Chicago">Central Time</SelectItem>
+                <SelectItem value="America/Denver">Mountain Time</SelectItem>
+                <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="currency">Currency</Label>
+            <Select
+              value={formData.basics.currency}
+              onValueChange={(value) => handleInputChange("basics", "currency", value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="USD">USD ($)</SelectItem>
+                <SelectItem value="EUR">EUR (€)</SelectItem>
+                <SelectItem value="GBP">GBP (£)</SelectItem>
+                <SelectItem value="CAD">CAD (C$)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            value={formData.basics.description || ""}
+            onChange={(e) => handleInputChange("basics", "description", e.target.value)}
+            placeholder="A demo restaurant for testing"
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const ContactStep = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Globe className="h-5 w-5" />
+          Contact & Address
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="email">Business Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={(formData.basics as { email?: string }).email || ""}
+              onChange={(e) => handleInputChange("basics", "email", e.target.value)}
+              placeholder="contact@restaurant.com"
+            />
+          </div>
+          <div>
+            <Label htmlFor="phone">Phone</Label>
+            <Input
+              id="phone"
+              value={(formData.basics as { phone?: string }).phone || ""}
+              onChange={(e) => handleInputChange("basics", "phone", e.target.value)}
+              placeholder="+1 555 123 4567"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="street">Street</Label>
+            <Input
+              id="street"
+              value={formData.basics.address?.street || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  basics: {
+                    ...prev.basics,
+                    address: { ...(prev.basics.address || {}), street: e.target.value },
+                  },
+                }))
+              }
+            />
+          </div>
+          <div>
+            <Label htmlFor="city">City</Label>
+            <Input
+              id="city"
+              value={formData.basics.address?.city || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  basics: {
+                    ...prev.basics,
+                    address: { ...(prev.basics.address || {}), city: e.target.value },
+                  },
+                }))
+              }
+            />
+          </div>
+          <div>
+            <Label htmlFor="state">State</Label>
+            <Input
+              id="state"
+              value={formData.basics.address?.state || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  basics: {
+                    ...prev.basics,
+                    address: { ...(prev.basics.address || {}), state: e.target.value },
+                  },
+                }))
+              }
+            />
+          </div>
+          <div>
+            <Label htmlFor="zip">ZIP</Label>
+            <Input
+              id="zip"
+              value={formData.basics.address?.zipCode || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  basics: {
+                    ...prev.basics,
+                    address: { ...(prev.basics.address || {}), zipCode: e.target.value },
+                  },
+                }))
+              }
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const OwnerStep = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <User className="h-5 w-5" />
+          Owner Account
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <Label htmlFor="owner-email">Owner Email *</Label>
+          <Input
+            id="owner-email"
+            type="email"
+            value={formData.owner.email}
+            onChange={(e) => handleInputChange("owner", "email", e.target.value)}
+            placeholder="owner@restaurant.com"
+            required
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Send Welcome Email</Label>
+            <p className="text-sm text-muted-foreground">Send setup instructions to the owner</p>
+          </div>
+          <Switch
+            checked={formData.owner.sendInvite}
+            onCheckedChange={(checked) => handleInputChange("owner", "sendInvite", checked)}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const ConfigStep = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Settings className="h-5 w-5" />
+          Configuration
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div>
+          <Label>Access Mode</Label>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <Button
+              type="button"
+              variant={formData.access.mode === "standard" ? "default" : "outline"}
+              onClick={() => handleInputChange("access", "mode", "standard")}
+              className="justify-start"
+            >
+              Standard
+            </Button>
+            <Button
+              type="button"
+              variant={formData.access.mode === "premium" ? "default" : "outline"}
+              onClick={() => handleInputChange("access", "mode", "premium")}
+              className="justify-start"
+            >
+              Premium
+            </Button>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Enable Deposit Policy</Label>
+              <p className="text-sm text-muted-foreground">Require deposits for reservations (default: OFF)</p>
+            </div>
+            <Switch
+              checked={formData.seed.enableDepositPolicy}
+              onCheckedChange={(checked) => handleInputChange("seed", "enableDepositPolicy", checked)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Enable Pacing</Label>
+              <p className="text-sm text-muted-foreground">Intelligent table pacing and optimization</p>
+            </div>
+            <Switch
+              checked={formData.seed.enablePacing}
+              onCheckedChange={(checked) => handleInputChange("seed", "enablePacing", checked)}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const BillingStep = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CreditCard className="h-5 w-5" />
+          Billing & SMS
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div>
+          <Label>Plan</Label>
+          <Select
+            value={formData.billing.plan}
+            onValueChange={(value) => handleInputChange("billing", "plan", value)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="basic">Basic Plan</SelectItem>
+              <SelectItem value="professional">Professional Plan</SelectItem>
+              <SelectItem value="enterprise">Enterprise Plan</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Create Subscription</Label>
+            <p className="text-sm text-muted-foreground">Automatically create billing subscription</p>
+          </div>
+          <Switch
+            checked={formData.billing.createSubscription}
+            onCheckedChange={(checked) => handleInputChange("billing", "createSubscription", checked)}
+          />
+        </div>
+
+        <Separator />
+
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Start SMS Registration</Label>
+            <p className="text-sm text-muted-foreground">Enable SMS notifications for this tenant</p>
+          </div>
+          <Switch
+            checked={formData.sms.startRegistration}
+            onCheckedChange={(checked) => handleInputChange("sms", "startRegistration", checked)}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const ReviewStep = (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Eye className="h-5 w-5" />
+          Review & Submit
+        </CardTitle>
+        <CardDescription>Double-check details before creating the tenant.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <Label className="text-muted-foreground">Name</Label>
+            <div>{formData.basics.name}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Slug</Label>
+            <div>/{formData.basics.slug}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Timezone</Label>
+            <div>{formData.basics.timezone}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Currency</Label>
+            <div>{formData.basics.currency}</div>
+          </div>
+          {(formData.basics as { email?: string }).email && (
+            <div>
+              <Label className="text-muted-foreground">Email</Label>
+              <div>{(formData.basics as { email?: string }).email}</div>
+            </div>
+          )}
+          {(formData.basics as { phone?: string }).phone && (
+            <div>
+              <Label className="text-muted-foreground">Phone</Label>
+              <div>{(formData.basics as { phone?: string }).phone}</div>
+            </div>
+          )}
+          <div className="col-span-2">
+            <Label className="text-muted-foreground">Address</Label>
+            <div>
+              {[formData.basics.address?.street, formData.basics.address?.city, formData.basics.address?.state, formData.basics.address?.zipCode]
+                .filter(Boolean)
+                .join(", ") || "—"}
+            </div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Owner Email</Label>
+            <div>{formData.owner.email}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Send Invite</Label>
+            <div>{formData.owner.sendInvite ? "Yes" : "No"}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Access Mode</Label>
+            <div className="capitalize">{formData.access.mode}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Deposit Policy</Label>
+            <div>{formData.seed.enableDepositPolicy ? "Enabled" : "Disabled"}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Pacing</Label>
+            <div>{formData.seed.enablePacing ? "Enabled" : "Disabled"}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Plan</Label>
+            <div className="capitalize">{formData.billing.plan}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Create Subscription</Label>
+            <div>{formData.billing.createSubscription ? "Yes" : "No"}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground">Start SMS Registration</Label>
+            <div>{formData.sms.startRegistration ? "Yes" : "No"}</div>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-sm font-medium">Idempotency Key</Label>
+            <p className="text-xs text-muted-foreground font-mono">{idempotencyKey}</p>
+          </div>
+          <Badge variant="outline">Unique Request</Badge>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep = () => {
+    switch (steps[currentStep].key) {
+      case "basics":
+        return BasicsStep;
+      case "contact":
+        return ContactStep;
+      case "owner":
+        return OwnerStep;
+      case "config":
+        return ConfigStep;
+      case "billing":
+        return BillingStep;
+      case "review":
+        return ReviewStep;
+      default:
+        return BasicsStep;
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <StepHeader />
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Basic Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">Restaurant Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.basics.name}
-                  onChange={(e) =>
-                    handleInputChange("basics", "name", e.target.value)
-                  }
-                  placeholder="Amazing Restaurant"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="slug">Slug *</Label>
-                <Input
-                  id="slug"
-                  value={formData.basics.slug}
-                  onChange={(e) =>
-                    handleInputChange("basics", "slug", e.target.value)
-                  }
-                  placeholder="amazing-restaurant"
-                  required
-                />
-              </div>
-            </div>
+        {renderStep()}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="timezone">Timezone</Label>
-                <Select
-                  value={formData.basics.timezone}
-                  onValueChange={(value) =>
-                    handleInputChange("basics", "timezone", value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="America/New_York">
-                      Eastern Time
-                    </SelectItem>
-                    <SelectItem value="America/Chicago">
-                      Central Time
-                    </SelectItem>
-                    <SelectItem value="America/Denver">
-                      Mountain Time
-                    </SelectItem>
-                    <SelectItem value="America/Los_Angeles">
-                      Pacific Time
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="currency">Currency</Label>
-                <Select
-                  value={formData.basics.currency}
-                  onValueChange={(value) =>
-                    handleInputChange("basics", "currency", value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                    <SelectItem value="GBP">GBP (£)</SelectItem>
-                    <SelectItem value="CAD">CAD (C$)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.basics.description || ""}
-                onChange={(e) =>
-                  handleInputChange("basics", "description", e.target.value)
-                }
-                placeholder="A demo restaurant for testing"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="email">Business Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={(formData.basics as { email?: string }).email || ""}
-                  onChange={(e) =>
-                    handleInputChange("basics", "email", e.target.value)
-                  }
-                  placeholder="contact@restaurant.com"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={(formData.basics as { phone?: string }).phone || ""}
-                  onChange={(e) =>
-                    handleInputChange("basics", "phone", e.target.value)
-                  }
-                  placeholder="+1 555 123 4567"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Owner Account */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Owner Account
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="owner-email">Owner Email *</Label>
-              <Input
-                id="owner-email"
-                type="email"
-                value={formData.owner.email}
-                onChange={(e) =>
-                  handleInputChange("owner", "email", e.target.value)
-                }
-                placeholder="owner@restaurant.com"
-                required
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Send Welcome Email</Label>
-                <p className="text-sm text-muted-foreground">
-                  Send setup instructions to the owner
-                </p>
-              </div>
-              <Switch
-                checked={formData.owner.sendInvite}
-                onCheckedChange={(checked) =>
-                  handleInputChange("owner", "sendInvite", checked)
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Address */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              Address
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="street">Street</Label>
-                <Input
-                  id="street"
-                  value={formData.basics.address?.street || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      basics: {
-                        ...prev.basics,
-                        address: {
-                          ...(prev.basics.address || {}),
-                          street: e.target.value,
-                        },
-                      },
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={formData.basics.address?.city || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      basics: {
-                        ...prev.basics,
-                        address: {
-                          ...(prev.basics.address || {}),
-                          city: e.target.value,
-                        },
-                      },
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="state">State</Label>
-                <Input
-                  id="state"
-                  value={formData.basics.address?.state || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      basics: {
-                        ...prev.basics,
-                        address: {
-                          ...(prev.basics.address || {}),
-                          state: e.target.value,
-                        },
-                      },
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="zip">ZIP</Label>
-                <Input
-                  id="zip"
-                  value={formData.basics.address?.zipCode || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      basics: {
-                        ...prev.basics,
-                        address: {
-                          ...(prev.basics.address || {}),
-                          zipCode: e.target.value,
-                        },
-                      },
-                    }))
-                  }
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Configuration */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <Label>Access Mode</Label>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <Button
-                  type="button"
-                  variant={
-                    formData.access.mode === "standard" ? "default" : "outline"
-                  }
-                  onClick={() =>
-                    handleInputChange("access", "mode", "standard")
-                  }
-                  className="justify-start"
-                >
-                  Standard
-                </Button>
-                <Button
-                  type="button"
-                  variant={
-                    formData.access.mode === "premium" ? "default" : "outline"
-                  }
-                  onClick={() => handleInputChange("access", "mode", "premium")}
-                  className="justify-start"
-                >
-                  Premium
-                </Button>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Enable Deposit Policy</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Require deposits for reservations (default: OFF)
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.seed.enableDepositPolicy}
-                  onCheckedChange={(checked) =>
-                    handleInputChange("seed", "enableDepositPolicy", checked)
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Enable Pacing</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Intelligent table pacing and optimization
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.seed.enablePacing}
-                  onCheckedChange={(checked) =>
-                    handleInputChange("seed", "enablePacing", checked)
-                  }
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Billing */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Billing Setup
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Plan</Label>
-              <Select
-                value={formData.billing.plan}
-                onValueChange={(value) =>
-                  handleInputChange("billing", "plan", value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="basic">Basic Plan</SelectItem>
-                  <SelectItem value="professional">
-                    Professional Plan
-                  </SelectItem>
-                  <SelectItem value="enterprise">Enterprise Plan</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Create Subscription</Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatically create billing subscription
-                </p>
-              </div>
-              <Switch
-                checked={formData.billing.createSubscription}
-                onCheckedChange={(checked) =>
-                  handleInputChange("billing", "createSubscription", checked)
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* SMS & Communications */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Phone className="h-5 w-5" />
-              Communications
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Start SMS Registration</Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable SMS notifications for this tenant
-                </p>
-              </div>
-              <Switch
-                checked={formData.sms.startRegistration}
-                onCheckedChange={(checked) =>
-                  handleInputChange("sms", "startRegistration", checked)
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Idempotency Key Display */}
-        <Card className="bg-muted/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm font-medium">Idempotency Key</Label>
-                <p className="text-xs text-muted-foreground font-mono">
-                  {idempotencyKey}
-                </p>
-              </div>
-              <Badge variant="outline">Unique Request</Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Submit */}
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={handleCancel}>
-            Cancel
+        <div className="flex justify-between">
+          <Button type="button" variant="outline" onClick={goBack} disabled={currentStep === 0 || loading}>
+            Back
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Provisioning...
-              </>
-            ) : (
-              "Create Tenant"
-            )}
-          </Button>
+          {currentStep < steps.length - 1 ? (
+            <Button type="button" onClick={goNext} disabled={loading}>
+              Next
+            </Button>
+          ) : (
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Provisioning...
+                </>
+              ) : (
+                "Create Tenant"
+              )}
+            </Button>
+          )}
         </div>
       </form>
     </div>
