@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test Page</title>
+    <script>
+        console.log('🔍 Debug page loading...');
+        
+        // Check if main page loads
+        fetch('http://localhost:8080/')
+            .then(response => {
+                console.log('✅ Main page response:', response.status);
+                return response.text();
+            })
+            .then(html => {
+                console.log('📄 HTML length:', html.length);
+                console.log('📄 HTML preview:', html.substring(0, 500));
+                
+                // Check for React
+                if (html.includes('React') || html.includes('react')) {
+                    console.log('✅ React references found in HTML');
+                } else {
+                    console.log('❌ No React references found');
+                }
+                
+                // Check for errors
+                if (html.includes('error') || html.includes('Error')) {
+                    console.log('⚠️ Error text found in HTML');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Failed to fetch main page:', error);
+            });
+    </script>
+</head>
+<body>
+    <h1>Debug Test - Check Console</h1>
+    <p>Open developer console to see debug information</p>
+</body>
+</html>

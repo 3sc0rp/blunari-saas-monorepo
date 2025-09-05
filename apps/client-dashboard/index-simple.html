@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blunari - Restaurant Management Dashboard</title>
+    <link rel="icon" href="/logo.png" type="image/png">
+    
+    <!-- Typography: Inter font with optimized loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    
+    <meta name="description" content="Professional restaurant management dashboard for bookings, tables, and customer management." />
+    
+    <style>
+      /* Prevent flash of white content */
+      body {
+        margin: 0;
+        background: #f8fafc;
+        font-family: 'Inter', sans-serif;
+      }
+      
+      /* Loading spinner */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      
+      .loading-content {
+        text-align: center;
+        color: white;
+      }
+      
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255,255,255,0.3);
+        border-top: 4px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Loading screen that will be hidden once React loads -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <h2>Loading Blunari...</h2>
+        <p>Initializing restaurant management system</p>
+      </div>
+    </div>
+    
+    <!-- React app root -->
+    <div id="root"></div>
+    
+    <script>
+      // Hide loading screen once React has rendered
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+          }
+        }, 1000);
+      });
+      
+      // Error handling
+      window.addEventListener('error', (event) => {
+        console.error('Global error:', event.error);
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.innerHTML = `
+            <div class="loading-content">
+              <h2 style="color: #ff6b6b;">⚠️ Loading Error</h2>
+              <p>Failed to load application</p>
+              <p style="font-size: 14px; opacity: 0.8;">${event.message}</p>
+              <button onclick="window.location.reload()" 
+                      style="padding: 10px 20px; margin-top: 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                Reload Page
+              </button>
+            </div>
+          `;
+        }
+      });
+    </script>
+    
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
