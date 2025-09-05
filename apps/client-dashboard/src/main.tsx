@@ -2,6 +2,8 @@
 import './polyfills/react-global';
 
 import React from 'react';
+// Initialize monitoring early
+import '@/monitoring/sentry';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 

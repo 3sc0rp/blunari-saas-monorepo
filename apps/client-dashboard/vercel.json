@@ -8,7 +8,7 @@
         { "key": "x-content-type-options", "value": "nosniff" },
         { "key": "x-frame-options", "value": "DENY" },
         { "key": "referrer-policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "content-security-policy", "value": "default-src 'self'; connect-src 'self' https://*.supabase.co; img-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'none';" }
+  { "key": "content-security-policy", "value": "default-src 'self'; connect-src 'self' https://*.supabase.co https://o*.ingest.sentry.io https://*.sentry.io; img-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'none';" }
       ]
     },
     {
