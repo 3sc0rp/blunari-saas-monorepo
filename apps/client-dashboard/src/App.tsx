@@ -1,3 +1,4 @@
+import React, { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -55,7 +56,6 @@ import APIIntegrationHub from "./components/integrations/APIIntegrationHub";
 import MobileAppCenter from "./components/mobile/MobileAppCenter";
 import AutomationWorkflows from "./components/automation/AutomationWorkflows";
 import MultiLocationManagement from "./components/multi-location/MultiLocationManagement";
-import { Suspense, lazy } from "react";
 import { SkeletonPage } from "@/components/ui/skeleton-components";
 import { DesignQAProvider } from "@/components/dev/DesignQAProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";

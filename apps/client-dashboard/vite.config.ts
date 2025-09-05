@@ -71,6 +71,7 @@ export default defineConfig(({ mode }) => {
       include: [
         'react',
         'react-dom',
+        'react/jsx-runtime',
         'react-router-dom',
         '@supabase/supabase-js',
         '@tanstack/react-query',
@@ -139,13 +140,25 @@ export default defineConfig(({ mode }) => {
 
       // Rollup-specific options
       rollupOptions: {
+        // External React for better compatibility
+        external: (id) => {
+          // Don't externalize React in production builds
+          return false;
+        },
+        
         // Code splitting strategy
         output: {
+          // Ensure React is available globally
+          globals: {
+            'react': 'React',
+            'react-dom': 'ReactDOM'
+          },
+          
           // Smart dynamic chunk splitting
           manualChunks: (id) => {
             // Only split vendor chunks if they actually exist in node_modules
             if (id.includes('node_modules')) {
-              // React and related
+              // React and related - keep together for compatibility
               if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
                 return 'vendor-react';
               }
