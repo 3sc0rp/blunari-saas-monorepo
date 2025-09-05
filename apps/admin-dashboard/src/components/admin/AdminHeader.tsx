@@ -200,14 +200,7 @@ export function AdminHeader() {
             {/* Sidebar Toggle & Logo */}
             <div className="flex items-center gap-4">
               <SidebarTrigger className="h-9 w-9 rounded-lg hover:bg-slate-700/50 transition-all duration-200 text-slate-300 hover:text-white" />
-
-              {/* Logo & Brand */}
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                  <Building2 className="h-5 w-5 text-white" />
-                </div>
-                {/* Removed branding text to declutter header */}
-              </div>
+              {/* Removed logo/brand block */}
             </div>
 
             {/* Breadcrumb Navigation */}
