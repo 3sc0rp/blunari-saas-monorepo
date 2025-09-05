@@ -89,7 +89,8 @@ export default function TenantDetailPage() {
       const { data, error } = await (supabase as any)
         .from("background_jobs")
         .select("id, job_type, status, created_at, updated_at")
-        .eq("tenant_id", tenantId)
+  // Filter by payload JSON field since background_jobs has no tenant_id column
+  .contains("payload", { tenantId })
         .in("job_type", ["WELCOME_EMAIL", "NOTIFICATION_EMAIL"])
         .order("created_at", { ascending: false })
         .limit(10);

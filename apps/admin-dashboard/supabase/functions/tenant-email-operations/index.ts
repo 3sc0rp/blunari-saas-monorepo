@@ -118,28 +118,32 @@ serve(async (req) => {
       );
     }
 
-    // Optionally send the email immediately via the dedicated function (if SMTP is configured)
-    let emailDispatch: any = null;
-    try {
-      const sendResp = await supabaseClient.functions.invoke(
-        "send-welcome-email",
-        {
-          body: {
-            ownerName: tenant.name,
-            ownerEmail: tenant.email,
-            restaurantName: tenant.name,
-            loginUrl:
-              Deno.env.get("ADMIN_BASE_URL") ?? "https://admin.blunari.ai",
+    // Optionally send the email immediately via the dedicated function (if explicitly enabled)
+    // Default is disabled to avoid unintended automatic emails after provisioning.
+    const allowImmediateSend = (Deno.env.get("TENANT_EMAIL_IMMEDIATE_SEND") || "false").toLowerCase() === "true";
+    let emailDispatch: any = { success: false, skipped: true, reason: "immediate send disabled" };
+    if (allowImmediateSend) {
+      try {
+        const sendResp = await supabaseClient.functions.invoke(
+          "send-welcome-email",
+          {
+            body: {
+              ownerName: tenant.name,
+              ownerEmail: tenant.email,
+              restaurantName: tenant.name,
+              loginUrl:
+                Deno.env.get("ADMIN_BASE_URL") ?? "https://admin.blunari.ai",
+            },
           },
-        },
-      );
-      emailDispatch = sendResp.data;
-    } catch (e) {
-      // Soft-fail: keep the job queued even if direct send fails
-      emailDispatch = {
-        success: false,
-        error: e instanceof Error ? e.message : "Email dispatch failed",
-      };
+        );
+        emailDispatch = sendResp.data;
+      } catch (e) {
+        // Soft-fail: keep the job queued even if direct send fails
+        emailDispatch = {
+          success: false,
+          error: e instanceof Error ? e.message : "Email dispatch failed",
+        };
+      }
     }
 
     // Log the email operation
