@@ -4,7 +4,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.56.0";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key, accept, accept-language, content-length, sentry-trace, baggage",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+  "Access-Control-Max-Age": "86400",
 };
 
 interface TenantProvisionRequest {
@@ -110,7 +112,7 @@ serve(async (req) => {
 
     if (existingProvisioning?.tenant_id) {
       console.log("Tenant already exists for user");
-      return new Response(
+    return new Response(
         JSON.stringify({
           success: true,
           tenant_id: existingProvisioning.tenant_id,
@@ -118,7 +120,7 @@ serve(async (req) => {
           message: "Tenant already exists",
         }),
         {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         },
       );
@@ -182,7 +184,7 @@ serve(async (req) => {
       },
     });
 
-    return new Response(
+  return new Response(
       JSON.stringify({
         success: true,
         tenant_id: tenantId,
@@ -191,20 +193,20 @@ serve(async (req) => {
         message: "Tenant provisioned successfully",
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       },
     );
   } catch (error) {
     console.error("Tenant provisioning error:", error);
-
-    return new Response(
+  const message = error instanceof Error ? error.message : "Internal server error";
+  return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || "Internal server error",
+    error: message,
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       },
     );
