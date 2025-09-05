@@ -20,9 +20,11 @@ import {
   Calendar,
   Settings,
   RefreshCw,
+  Key,
 } from "lucide-react";
 import { useAdminAPI } from "@/hooks/useAdminAPI";
 import { SendWelcomePackDialog } from "@/components/tenant/SendWelcomePackDialog";
+import { SendCredentialsDialog } from "@/components/tenant/SendCredentialsDialog";
 import { TenantFeaturesTab } from "@/components/admin/TenantFeaturesTab";
 import { LoadingState, ErrorState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +40,7 @@ export default function TenantDetailPage() {
   const [loadingPage, setLoadingPage] = useState(true);
   const [resending, setResending] = useState(false);
   const [openWelcomeDialog, setOpenWelcomeDialog] = useState(false);
+  const [openCredentialsDialog, setOpenCredentialsDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTenant = useCallback(async () => {
@@ -199,6 +202,14 @@ export default function TenantDetailPage() {
           >
             <Mail className="h-4 w-4 mr-2" />
             Send Welcome Email
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setOpenCredentialsDialog(true)}
+          >
+            <Key className="h-4 w-4 mr-2" />
+            Send Credentials
           </Button>
         </div>
       </div>
@@ -391,6 +402,12 @@ export default function TenantDetailPage() {
       <SendWelcomePackDialog
         open={openWelcomeDialog}
         onOpenChange={setOpenWelcomeDialog}
+        tenantName={tenant.name}
+        defaultEmail={tenant.email || null}
+      />
+      <SendCredentialsDialog
+        open={openCredentialsDialog}
+        onOpenChange={setOpenCredentialsDialog}
         tenantName={tenant.name}
         defaultEmail={tenant.email || null}
       />
