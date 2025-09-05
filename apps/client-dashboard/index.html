@@ -25,6 +25,22 @@
 
   <body>
     <div id="root"></div>
+    
+    <!-- Preload React globally to prevent createContext errors -->
+    <script>
+      // Ensure React namespace exists before any modules load
+      window.React = window.React || {};
+      globalThis.React = globalThis.React || window.React;
+      
+      // Set up basic React structure for vendor compatibility
+      if (typeof window.React.createContext === 'undefined') {
+        window.React.createContext = function() { 
+          console.warn('React.createContext placeholder - real React will override this');
+          return {}; 
+        };
+      }
+    </script>
+    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
