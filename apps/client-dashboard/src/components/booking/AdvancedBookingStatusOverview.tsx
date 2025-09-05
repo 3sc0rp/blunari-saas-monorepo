@@ -88,8 +88,8 @@ const AdvancedBookingStatusOverview: React.FC<
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
-  // Status configuration with colors and icons
-  const statusConfig = {
+  // Status configuration with colors and icons - memoized to prevent re-renders
+  const statusConfig = useMemo(() => ({
     all: {
       label: "All Bookings",
       color: "hsl(var(--muted))",
@@ -132,7 +132,7 @@ const AdvancedBookingStatusOverview: React.FC<
       icon: UserX,
       gradient: "from-red-600 to-red-700",
     },
-  };
+  }), []);
 
   // Advanced analytics calculations
   const analytics = useMemo(() => {

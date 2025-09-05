@@ -11,7 +11,6 @@ export default defineConfig({
     toHaveScreenshot: {
       // Make visual tests more stable
       threshold: 0.3,
-      mode: "css",
       animations: "disabled",
     },
   },
@@ -28,6 +27,12 @@ export default defineConfig({
   },
 
   projects: [
+    // Include E2E tests for Command Center
+    {
+      name: "command-center-e2e",
+      testDir: "./e2e",
+      use: { ...devices["Desktop Chrome"] },
+    },
     {
       name: "chromium",
       use: {

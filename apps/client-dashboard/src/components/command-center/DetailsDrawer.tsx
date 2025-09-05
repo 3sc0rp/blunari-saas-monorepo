@@ -24,6 +24,7 @@ import {
   Star
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRealtimeCommandCenterContext } from "@/contexts/RealtimeCommandCenterContext";
 import type { BookingData, TableData, WaitlistData } from "./utils/drawer-state";
 
 interface DetailsDrawerProps {
@@ -47,6 +48,7 @@ const DetailsDrawer: React.FC<DetailsDrawerProps> = ({
   data = drawerState.data
 }) => {
   const [localIsOpen, setLocalIsOpen] = useState(isOpen);
+  const { metrics } = useRealtimeCommandCenterContext();
 
   useEffect(() => {
     setLocalIsOpen(isOpen);
@@ -58,59 +60,20 @@ const DetailsDrawer: React.FC<DetailsDrawerProps> = ({
     onClose?.();
   };
 
-  // Mock data for demonstration
-  const mockBookingData = {
-    id: '1',
-    customerName: 'Sarah Johnson',
-    email: 'sarah.j@email.com',
-    phone: '+1 (555) 123-4567',
-    avatarUrl: '',
-    partySize: 4,
-    bookingTime: '2024-01-15T19:30:00Z',
-    duration: 120,
-    tableNumber: '7',
-    status: 'confirmed',
-    specialRequests: 'Birthday celebration - please prepare cake',
-    customerNotes: 'Regular customer, prefers quiet tables',
-    source: 'website',
-    confirmationSent: true,
-    reminderSent: false,
-    estimatedRevenue: 180,
-    previousVisits: 5
-  };
-
-  const mockTableData = {
-    id: '7',
-    number: '7',
-    seats: 4,
-    section: 'Main',
-    status: 'occupied',
-    currentBooking: mockBookingData,
-    nextBooking: null,
-    timeRemaining: 45,
-    totalTurns: 2,
-    todayRevenue: 320
-  };
-
-  const mockWaitlistData = {
-    id: '1',
-    customerName: 'Mike Rodriguez',
-    phone: '+1 (555) 987-6543',
-    partySize: 2,
-    waitTime: 25,
-    estimatedWait: 15,
-    priority: 'high',
-    status: 'waiting',
-    specialRequests: 'Wheelchair accessible table needed',
-    quotedTime: '7:45 PM'
-  };
-
-  // Select data based on type
-  const selectedData = data || (
-    type === 'booking' ? mockBookingData :
-    type === 'table' ? mockTableData :
-    mockWaitlistData
-  );
+  // If no data provided, try to get from real data
+  const selectedData = data || (() => {
+    if (type === 'booking') {
+      // For booking, we'll need to pass actual booking data from parent
+      return null;
+    } else if (type === 'table') {
+      // For table, we'll need to pass actual table data from parent
+      return null;
+    } else if (type === 'waitlist') {
+      // For waitlist, we could use the first item from real waitlist data
+      return metrics?.waitlistData?.[0] || null;
+    }
+    return null;
+  })();
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -152,7 +115,17 @@ const DetailsDrawer: React.FC<DetailsDrawerProps> = ({
 
   const renderBookingDetails = () => {
     const booking = type === 'booking' ? selectedData as BookingData : null;
-    if (!booking) return null;
+    if (!booking) {
+      return (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <Calendar className="w-12 h-12 text-muted-foreground mb-4" />
+          <h3 className="font-semibold text-lg mb-2">No Booking Data</h3>
+          <p className="text-sm text-muted-foreground">
+            No booking information available to display.
+          </p>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-6">
@@ -268,7 +241,17 @@ const DetailsDrawer: React.FC<DetailsDrawerProps> = ({
 
   const renderTableDetails = () => {
     const table = type === 'table' ? selectedData as TableData : null;
-    if (!table) return null;
+    if (!table) {
+      return (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <Utensils className="w-12 h-12 text-muted-foreground mb-4" />
+          <h3 className="font-semibold text-lg mb-2">No Table Data</h3>
+          <p className="text-sm text-muted-foreground">
+            No table information available to display.
+          </p>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-6">
@@ -352,7 +335,17 @@ const DetailsDrawer: React.FC<DetailsDrawerProps> = ({
 
   const renderWaitlistDetails = () => {
     const waitlist = type === 'waitlist' ? selectedData as WaitlistData : null;
-    if (!waitlist) return null;
+    if (!waitlist) {
+      return (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <Clock className="w-12 h-12 text-muted-foreground mb-4" />
+          <h3 className="font-semibold text-lg mb-2">No Waitlist Data</h3>
+          <p className="text-sm text-muted-foreground">
+            No waitlist information available to display.
+          </p>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-6">
