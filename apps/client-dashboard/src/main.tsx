@@ -1,3 +1,6 @@
+// Load React polyfill first to ensure global availability
+import "./polyfills/react-global";
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
