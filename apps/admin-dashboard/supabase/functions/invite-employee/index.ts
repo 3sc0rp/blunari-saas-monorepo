@@ -1,11 +1,8 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+// @ts-ignore - Deno remote import
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore - Deno remote import
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createCorsHeaders } from "../_shared/cors";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -21,7 +18,7 @@ interface InviteEmployeeRequest {
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -72,8 +69,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Check if email is already registered
     const { data: existingUser } =
-      await supabase.auth.admin.getUserByEmail(email);
-    if (existingUser.user) {
+      await (supabase.auth.admin as any).getUserByEmail(email);
+    if (existingUser?.user) {
       throw new Error("User with this email already exists");
     }
 
@@ -113,7 +110,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Create user account with temporary password
     const tempPassword = crypto.randomUUID();
     const { data: newUser, error: createUserError } =
-      await supabase.auth.admin.createUser({
+      await (supabase.auth.admin as any).createUser({
         email,
         password: tempPassword,
         email_confirm: true,
@@ -124,7 +121,7 @@ const handler = async (req: Request): Promise<Response> => {
         },
       });
 
-    if (createUserError) {
+    if (createUserError || !newUser?.user) {
       throw createUserError;
     }
 
@@ -132,7 +129,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { error: employeeCreateError } = await supabase
       .from("employees")
       .insert({
-        user_id: newUser.user.id,
+  user_id: newUser.user.id,
         employee_id: employeeId,
         role,
         status: "PENDING",
@@ -142,19 +139,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (employeeCreateError) {
       // Cleanup: delete the user if employee creation fails
-      await supabase.auth.admin.deleteUser(newUser.user.id);
+  await (supabase.auth.admin as any).deleteUser(newUser.user.id);
       throw employeeCreateError;
     }
 
     // Send invitation email
     try {
       // Get inviter's profile info
-      const { data: inviterProfile } = await supabase.auth.admin.getUserById(
+      const { data: inviterProfile } = await (supabase.auth.admin as any).getUserById(
         user.id,
       );
       const inviterName =
-        inviterProfile.user?.user_metadata?.full_name ||
-        `${inviterProfile.user?.user_metadata?.first_name || "Team"} ${inviterProfile.user?.user_metadata?.last_name || "Member"}`;
+        inviterProfile?.user?.user_metadata?.full_name ||
+        `${inviterProfile?.user?.user_metadata?.first_name || "Team"} ${inviterProfile?.user?.user_metadata?.last_name || "Member"}`;
 
       const emailResult = await supabase.functions.invoke(
         "send-invitation-email",
@@ -180,7 +177,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Send password reset email (this will allow them to set their password)
-    const { error: resetError } = await supabase.auth.admin.generateLink({
+  const { error: resetError } = await (supabase.auth.admin as any).generateLink({
       type: "recovery",
       email,
       options: {
@@ -219,7 +216,7 @@ const handler = async (req: Request): Promise<Response> => {
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          ...corsHeaders,
+          ...createCorsHeaders(req.headers.get("Origin")),
         },
       },
     );
@@ -234,7 +231,7 @@ const handler = async (req: Request): Promise<Response> => {
         status: 400,
         headers: {
           "Content-Type": "application/json",
-          ...corsHeaders,
+          ...createCorsHeaders(req.headers.get("Origin")),
         },
       },
     );

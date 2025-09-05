@@ -1,15 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { createCorsHeaders } from "../_shared/cors";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -25,7 +20,7 @@ serve(async (req) => {
         JSON.stringify({ error: "No authorization header" }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
@@ -38,7 +33,7 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       });
     }
 
@@ -61,16 +56,16 @@ serve(async (req) => {
 
         if (selectError) {
           console.error("Error selecting jobs:", selectError);
-          return new Response(
-            JSON.stringify({
-              error: "Failed to select jobs",
-              details: selectError.message,
-            }),
-            {
-              status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
-          );
+            return new Response(
+              JSON.stringify({
+                error: "Failed to select jobs",
+                details: selectError.message,
+              }),
+              {
+                status: 500,
+                headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+              },
+            );
         }
 
         console.log(`Found ${corruptedJobs?.length || 0} jobs in database`);
@@ -93,7 +88,7 @@ serve(async (req) => {
             }),
             {
               status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
             },
           );
         }
@@ -108,7 +103,7 @@ serve(async (req) => {
           }),
           {
             status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
           },
         );
       } catch (cleanupError) {
@@ -116,11 +111,11 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             error: "Cleanup failed",
-            details: cleanupError.message,
+            details: (cleanupError as any).message,
           }),
           {
             status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
           },
         );
       }
@@ -145,7 +140,7 @@ serve(async (req) => {
             }),
             {
               status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
             },
           );
         }
@@ -162,7 +157,7 @@ serve(async (req) => {
           }),
           {
             status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
           },
         );
       } catch (debugError) {
@@ -170,11 +165,11 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             error: "Debug failed",
-            details: debugError.message,
+            details: (debugError as any).message,
           }),
           {
             status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
           },
         );
       }
@@ -207,14 +202,14 @@ serve(async (req) => {
                 details: dbError.message,
               }),
               {
-                status: 500,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
               },
             );
           }
 
           // Transform database format to API format
-          const transformedJobs = (jobs || []).map((job) => ({
+      const transformedJobs = (jobs || []).map((job: any) => ({
             id: job.id,
             type: job.job_type,
             status: job.status,
@@ -234,7 +229,7 @@ serve(async (req) => {
             }),
             {
               status: 200,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
             },
           );
         } catch (error) {
@@ -242,11 +237,11 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({
               error: "Database connection failed",
-              details: error.message,
+              details: (error as any).message,
             }),
             {
               status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
             },
           );
         }
@@ -275,7 +270,7 @@ serve(async (req) => {
               }),
               {
                 status: 500,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
               },
             );
           }
@@ -292,18 +287,18 @@ serve(async (req) => {
 
           return new Response(JSON.stringify(transformedJob), {
             status: 201,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
           });
         } catch (error) {
           console.error("Error creating job:", error);
           return new Response(
             JSON.stringify({
               error: "Failed to create job",
-              details: error.message,
+              details: (error as any).message,
             }),
             {
               status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
             },
           );
         }
@@ -327,7 +322,7 @@ serve(async (req) => {
               }),
               {
                 status: 500,
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
               },
             );
           }
@@ -336,7 +331,7 @@ serve(async (req) => {
             JSON.stringify({ success: true, job: updatedJob }),
             {
               status: 200,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
             },
           );
         } catch (error) {
@@ -344,26 +339,26 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({
               error: "Failed to cancel job",
-              details: error.message,
+              details: (error as any).message,
             }),
             {
               status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
             },
           );
         }
       }
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "Using database for background operations",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Using database for background operations",
+          }),
+          {
+            status: 200,
+            headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+          },
+        );
     }
 
     let endpoint = "/api/v1/jobs";
@@ -399,7 +394,7 @@ serve(async (req) => {
       default:
         return new Response(JSON.stringify({ error: "Invalid action" }), {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         });
     }
 
@@ -429,7 +424,7 @@ serve(async (req) => {
         }),
         {
           status: response.status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
@@ -438,7 +433,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify(data), {
       status: response.status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Jobs API error:", error);
@@ -449,7 +444,7 @@ serve(async (req) => {
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   }
