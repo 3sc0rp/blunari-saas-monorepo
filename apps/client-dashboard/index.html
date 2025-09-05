@@ -24,10 +24,13 @@
     <meta name="twitter:site" content="@blunari" />
     <meta name="twitter:image" content="/logo.png" />
     
-    <!-- NUCLEAR: Load React polyfill BEFORE anything else -->
+    <!-- 🔥 STEP 1: React Singleton Enforcer - MUST LOAD FIRST -->
+    <script src="/react-singleton-enforcer.js"></script>
+    
+    <!-- 🚨 STEP 2: Nuclear React polyfill backup -->
     <script src="/nuclear-react-polyfill.js"></script>
     
-    <!-- CRITICAL: Emergency React polyfill MUST load first -->
+    <!-- ⚡ STEP 3: Emergency fallback polyfill -->
     <script src="/react-emergency-polyfill.js"></script>
   </head>
 

@@ -150,7 +150,7 @@ export default defineConfig(({ mode }) => {
       }
     ],
 
-    // Path resolution
+    // Path resolution with smart React deduplication
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
@@ -161,7 +161,10 @@ export default defineConfig(({ mode }) => {
         '@pages': path.resolve(__dirname, 'src/pages'),
         '@integrations': path.resolve(__dirname, 'src/integrations'),
         '@lib': path.resolve(__dirname, 'src/lib')
-      }
+      },
+      
+      // NUCLEAR: Force deduplication at the resolution level
+      dedupe: ['react', 'react-dom', 'scheduler', '@types/react', '@types/react-dom']
     },
 
     // Development server configuration
@@ -195,13 +198,15 @@ export default defineConfig(({ mode }) => {
       __COMMIT_HASH__: JSON.stringify(process.env.VITE_COMMIT_HASH || 'dev')
     },
 
-    // Dependency optimization
+    // Dependency optimization with NUCLEAR React handling
     optimizeDeps: {
       // Include dependencies that should be pre-bundled
       include: [
         'react',
         'react-dom',
         'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        'scheduler',
         './src/polyfills/react-global.ts',
         'react-router-dom',
         '@supabase/supabase-js',
