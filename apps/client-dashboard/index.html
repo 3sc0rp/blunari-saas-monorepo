@@ -24,6 +24,9 @@
     <meta name="twitter:site" content="@blunari" />
     <meta name="twitter:image" content="/logo.png" />
     
+    <!-- NUCLEAR: Load React polyfill BEFORE anything else -->
+    <script src="/nuclear-react-polyfill.js"></script>
+    
     <!-- CRITICAL: Emergency React polyfill MUST load first -->
     <script src="/react-emergency-polyfill.js"></script>
   </head>
