@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { createCorsHeaders } from "../_shared/cors";
 
 const smtp = new SMTPClient({
   connection: {
@@ -13,11 +14,7 @@ const smtp = new SMTPClient({
   },
 });
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const corsHeaders = createCorsHeaders();
 
 interface WelcomeEmailRequest {
   ownerName: string;
@@ -29,7 +26,7 @@ interface WelcomeEmailRequest {
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -46,7 +43,7 @@ const handler = async (req: Request): Promise<Response> => {
         }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...createCorsHeaders(req.headers.get("Origin")) },
         },
       );
     }
@@ -68,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
         }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...createCorsHeaders(req.headers.get("Origin")) },
         },
       );
     }
@@ -202,7 +199,7 @@ const handler = async (req: Request): Promise<Response> => {
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          ...corsHeaders,
+          ...createCorsHeaders(req.headers.get("Origin")),
         },
       },
     );
@@ -229,7 +226,7 @@ const handler = async (req: Request): Promise<Response> => {
       }),
       {
         status,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { "Content-Type": "application/json", ...createCorsHeaders(req.headers.get("Origin")) },
       },
     );
   }

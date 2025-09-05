@@ -1,15 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createCorsHeaders } from "../_shared/cors";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const corsHeaders = createCorsHeaders();
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -97,18 +94,18 @@ serve(async (req) => {
 
     return new Response(JSON.stringify(response), {
       status: response.success ? 200 : 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Webhook processing error:", error);
-    return new Response(
+  return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+    error: error instanceof Error ? error.message : "Internal error",
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   }
