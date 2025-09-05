@@ -26,47 +26,8 @@ function err(code: string, message: string, status: number, origin: string | nul
   return json(<ErrorPayload>{ error: { code, message, requestId, meta } }, status, origin);
 }
 
-async function getRateLimitInfo(supabase: any, tenantId: string, adminUserId: string) {
-  const now = new Date();
-  const tenantWindowSec = 30 * 60; // 30m
-  const adminWindowSec = 60 * 60; // 1h
-  const tenantLimit = 3;
-  const adminLimit = 5;
-  const tenantSince = new Date(now.getTime() - tenantWindowSec * 1000).toISOString();
-  const adminSince = new Date(now.getTime() - adminWindowSec * 1000).toISOString();
-
-  const tQuery = await supabase
-    .from("activity_logs")
-    .select("id", { count: "exact", head: true })
-    .eq("resource_id", tenantId)
-    .eq("action", "owner_password_setup_link_issued")
-    .gte("created_at", tenantSince);
-  const aQuery = await supabase
-    .from("activity_logs")
-    .select("id", { count: "exact", head: true })
-    .eq("employee_id", adminUserId)
-    .eq("action", "owner_password_setup_link_issued")
-    .gte("created_at", adminSince);
-
-  const tenantCount = tQuery.count ?? 0;
-  const adminCount = aQuery.count ?? 0;
-  const limitedTenant = tenantCount >= tenantLimit;
-  const limitedAdmin = adminCount >= adminLimit;
-  return {
-    tenantCount,
-    tenantLimit,
-    tenantWindowSec,
-    adminCount,
-    adminLimit,
-    adminWindowSec,
-    limited: limitedTenant || limitedAdmin,
-    limitedReason: limitedTenant
-      ? "Tenant limit reached (3 / 30m)"
-      : limitedAdmin
-        ? "Admin limit reached (5 / 1h)"
-        : null,
-  };
-}
+// Placeholder retained for backward compatibility if needed; no longer used.
+async function getRateLimitInfo() { return null; }
 
 serve(async (req) => {
   const origin = req.headers.get("Origin");
@@ -108,8 +69,7 @@ serve(async (req) => {
     if (tenantErr || !tenant) return err("TENANT_NOT_FOUND", "Tenant not found", 404, origin, requestId);
     if (!tenant.email) return err("NO_OWNER_EMAIL", "Tenant has no owner email", 400, origin, requestId);
 
-    const rate = await getRateLimitInfo(supabase, tenant.id, user.id);
-    if (rate.limited) return err("RATE_LIMITED", rate.limitedReason || "Rate limited", 429, origin, requestId, { rate });
+  // Rate limiting now handled atomically via RPC post-generation (we optimistically get link then record; alternatively record first then generate)
 
     // Determine invite vs recovery
     const { data: ownerLookup } = await supabase.auth.admin.getUserByEmail(tenant.email);
@@ -130,14 +90,15 @@ serve(async (req) => {
     }
     if (!actionLink) return err("LINK_GENERATION_FAILED", "Failed to generate setup link", 500, origin, requestId);
 
-    // Audit
-    await supabase.from("activity_logs").insert({
-      action: "owner_password_setup_link_issued",
-      employee_id: user.id,
-      resource_id: tenant.id,
-      resource_type: "tenant",
-      details: { tenantId: tenant.id, tenantEmail: tenant.email, mode, requestId },
-    });
+    // Record event + enforce limits atomically
+    const { data: rateRows, error: rateErr } = await supabase.rpc('record_password_setup_link_event', { p_tenant: tenant.id, p_admin: user.id, p_mode: mode });
+    if (rateErr) {
+      console.warn('Rate limit RPC error', rateErr);
+    }
+    const rate = Array.isArray(rateRows) && rateRows[0] ? rateRows[0] : null;
+    if (rate?.limited) {
+      return err('RATE_LIMITED', rate.limited_reason || 'Rate limited', 429, origin, requestId, { rate });
+    }
 
     let emailSent: boolean | null = null;
     let emailError: string | null = null;
@@ -215,7 +176,7 @@ serve(async (req) => {
       mode,
       link: actionLink,
       email: sendEmail ? { sent: emailSent, error: emailError } : { sent: false, skipped: true },
-      rateLimit: rate,
+  rateLimit: rate,
       message: mode === "invite" ? "Invitation link generated" : "Recovery link generated",
     }, 200, origin);
   } catch (e) {

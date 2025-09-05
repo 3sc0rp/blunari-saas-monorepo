@@ -144,16 +144,14 @@ serve(async (req) => {
     }
 
     // Basic rate limiting guard
-    const rate = await getRateLimitInfo(supabase, tenant.id, user.id);
-    if (rate.limited) {
-      return error(
-        "RATE_LIMITED",
-        rate.limitedReason || "Too many requests",
-        429,
-        origin,
-        requestId,
-        { rate }
-      );
+    // Use same central RPC for rate limiting (record action type 'recovery' for owner credentials)
+    const { data: rateRows, error: rateErr } = await supabase.rpc('record_password_setup_link_event', { p_tenant: tenant.id, p_admin: user.id, p_mode: 'recovery' });
+    if (rateErr) {
+      console.warn('Rate limit RPC error', rateErr);
+    }
+    const rate = Array.isArray(rateRows) && rateRows[0] ? rateRows[0] : null;
+    if (rate?.limited) {
+      return error("RATE_LIMITED", rate.limited_reason || "Too many requests", 429, origin, requestId, { rate });
     }
 
     // Generate recovery link (password reset) so the owner can set a new password themselves.
@@ -190,7 +188,7 @@ serve(async (req) => {
       recoveryLink,
       message: "Send this one-time recovery link to the owner so they can securely set a new password.",
       deprecatedActionUsed: body.action === "generate-temp" || undefined,
-      rateLimit: rate,
+  rateLimit: rate,
     }, 200, origin);
   } catch (e) {
     console.error("tenant-owner-credentials error", e);
