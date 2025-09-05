@@ -5,6 +5,7 @@ const getAllowedOrigins = () => {
   if (environment === 'production') {
     return [
       'https://demo.blunari.ai',
+  'https://app.blunari.ai',
       'https://admin.blunari.ai', 
       'https://services.blunari.ai',
       'https://blunari.ai',
