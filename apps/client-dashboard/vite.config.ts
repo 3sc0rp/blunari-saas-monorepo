@@ -5,11 +5,9 @@ import path from "path";
 // Simplified Vite configuration for production builds
 export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production';
-  
+
   return {
-    plugins: [
-      react()
-    ],
+    plugins: [react()],
 
     // Path resolution
     resolve: {
@@ -22,7 +20,8 @@ export default defineConfig(({ mode }) => {
         '@pages': path.resolve(__dirname, 'src/pages'),
         '@integrations': path.resolve(__dirname, 'src/integrations'),
         '@lib': path.resolve(__dirname, 'src/lib')
-      }
+      },
+      dedupe: ['react', 'react-dom']
     },
 
     // Development server configuration
@@ -71,14 +70,14 @@ export default defineConfig(({ mode }) => {
 
     // Build optimizations
     build: {
-      target: 'es2020',
+    target: 'es2020',
       outDir: 'dist',
       sourcemap: isProduction ? 'hidden' : true,
       minify: isProduction ? 'esbuild' : false,
 
       rollupOptions: {
         output: {
-          manualChunks: (id) => {
+      manualChunks: (id) => {
             if (id.includes('node_modules')) {
               if (id.includes('react') || id.includes('react-dom')) {
                 return 'vendor-react';
@@ -90,10 +89,6 @@ export default defineConfig(({ mode }) => {
                 return 'vendor-ui';
               }
               return 'vendor';
-            }
-            // Ensure React polyfill stays in main bundle for early loading
-            if (id.includes('polyfills/react-global')) {
-              return undefined; // Keep in main chunk
             }
             return undefined;
           },
