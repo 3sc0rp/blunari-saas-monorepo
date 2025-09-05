@@ -29,6 +29,7 @@ import { SendCredentialsDialog } from "@/components/tenant/SendCredentialsDialog
 import { TenantFeaturesTab } from "@/components/admin/TenantFeaturesTab";
 import { TenantBillingTab } from "@/components/tenant/TenantBillingTab";
 import { TenantApiKeysPanel } from "@/components/tenant/TenantApiKeysPanel";
+import { TenantUsageOverview } from "@/components/tenant/TenantUsageOverview";
 import { LoadingState, ErrorState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
 import type { TenantData } from "@/types/admin";
@@ -614,6 +615,7 @@ export default function TenantDetailPage() {
           <TabsTrigger value="features">Features</TabsTrigger>
       <TabsTrigger value="billing">Billing</TabsTrigger>
       <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="usage">Usage</TabsTrigger>
           <TabsTrigger value="domains">Domains</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
@@ -636,6 +638,18 @@ export default function TenantDetailPage() {
 
         <TabsContent value="security" className="space-y-6">
           <TenantApiKeysPanel tenantId={tenant.id} />
+        </TabsContent>
+
+        <TabsContent value="usage">
+          <Card>
+            <CardHeader>
+              <CardTitle>Usage Overview</CardTitle>
+              <CardDescription>Bookings, staff, features & trend window</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TenantUsageOverview tenantId={tenant.id} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="domains">

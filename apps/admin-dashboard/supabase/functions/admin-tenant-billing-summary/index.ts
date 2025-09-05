@@ -19,7 +19,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { tenantId } = await req.json();
+  const { tenantId, refreshInvoices } = await req.json();
     if (!tenantId) return createErrorResponse('MISSING_TENANT_ID', 'tenantId required', 400, undefined, origin);
 
     const { data: tenant, error } = await supabase
@@ -30,6 +30,32 @@ serve(async (req) => {
     if (error || !tenant) return createErrorResponse('TENANT_NOT_FOUND', 'Tenant not found', 404, undefined, origin);
 
     const subscription = await fetchStripeSubscription(tenant.stripe_subscription_id);
+
+    // Optional invoice refresh placeholder (would call Stripe list and upsert)
+    if (refreshInvoices) {
+      // Mock example invoice if none present
+      const { data: existing } = await supabase.from('tenant_invoices_cache').select('stripe_invoice_id').eq('tenant_id', tenantId).limit(1);
+      if (!existing || existing.length === 0) {
+        await supabase.from('tenant_invoices_cache').upsert({
+          tenant_id: tenantId,
+          stripe_invoice_id: 'in_mock_' + crypto.randomUUID().slice(0,8),
+          status: 'paid',
+          amount_due: 15000,
+          amount_paid: 15000,
+          currency: 'usd',
+          hosted_invoice_url: 'https://example.com/invoice',
+          pdf_url: 'https://example.com/invoice.pdf',
+          issued_at: new Date().toISOString(),
+        });
+      }
+    }
+
+    const { data: invoices } = await supabase
+      .from('tenant_invoices_cache')
+      .select('stripe_invoice_id, status, amount_due, amount_paid, currency, hosted_invoice_url, pdf_url, issued_at')
+      .eq('tenant_id', tenantId)
+      .order('issued_at', { ascending: false })
+      .limit(12);
 
     // Basic usage samples (bookings this month, staff count)
     const periodStart = new Date();
@@ -54,7 +80,8 @@ serve(async (req) => {
       stripe: {
         customerId: tenant.stripe_customer_id,
         subscription,
-      },
+  },
+  invoices: invoices || [],
       usage: {
         bookingsThisMonth: bookingAgg?.length ?? 0,
         staffCount: staffAgg?.length ?? 0,
