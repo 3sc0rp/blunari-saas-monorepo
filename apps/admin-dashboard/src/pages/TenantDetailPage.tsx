@@ -777,7 +777,7 @@ export default function TenantDetailPage() {
             <p className="text-muted-foreground">No email jobs yet.</p>
           ) : (
             <ul className="space-y-2">
-              {emailHistory.map((j) => (
+              {(emailHistory || []).map((j) => (
                 <li key={j.id} className="flex items-center justify-between">
                   <span className="font-mono text-xs">{j.id.slice(0, 8)}</span>
                   <span className="text-sm">{j.job_type}</span>
