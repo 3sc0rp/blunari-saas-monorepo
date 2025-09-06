@@ -404,6 +404,34 @@ export const initializeSecurity = (): void => {
     RateLimitCache.cleanup();
   }, 60000); // Cleanup every minute
 
+  // Handle errors from blocked monitoring services (like Sentry when blocked by ad blockers)
+  const handleMonitoringError = (error: ErrorEvent | Event) => {
+    if (error instanceof ErrorEvent) {
+      const errorMessage = error.message?.toLowerCase() || '';
+      const errorSource = error.filename?.toLowerCase() || '';
+      
+      // Check if this is a Sentry or monitoring service error
+      if (errorMessage.includes('sentry') || 
+          errorMessage.includes('blocked') ||
+          errorSource.includes('sentry') ||
+          errorMessage.includes('net::err_blocked_by_client')) {
+        console.debug('Monitoring service request blocked (likely by ad blocker), continuing normally');
+        return; // Don't propagate these errors
+      }
+    }
+  };
+
+  // Add global error handlers for monitoring service errors
+  window.addEventListener('error', handleMonitoringError);
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason?.message?.toLowerCase() || '';
+    if (reason.includes('sentry') || reason.includes('blocked')) {
+      console.debug('Monitoring service promise rejected (likely by ad blocker), continuing normally');
+      event.preventDefault(); // Prevent the error from being logged
+      return;
+    }
+  });
+
   // Add security headers to first‑party requests only (avoid CORS preflights on third‑party APIs)
   const originalFetch = window.fetch;
   window.fetch = (input, init = {}) => {
