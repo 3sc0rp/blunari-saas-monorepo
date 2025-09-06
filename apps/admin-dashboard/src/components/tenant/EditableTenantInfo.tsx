@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,14 +44,31 @@ const EditableField = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
 
+  // Update editValue when value prop changes (after successful database update)
+  useEffect(() => {
+    setEditValue(value);
+  }, [value]);
+
   const handleSave = () => {
-    onUpdate(name, editValue);
+    // Trim whitespace for string values
+    const cleanValue = typeof editValue === 'string' ? editValue.trim() : editValue;
+    onUpdate(name, cleanValue);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
     setEditValue(value);
     setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && type !== 'textarea') {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancel();
+    }
   };
 
   const renderValue = () => {
@@ -77,7 +94,9 @@ const EditableField = ({
         <Textarea
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyDown}
           className="min-h-[80px]"
+          autoFocus
         />
       );
     }
@@ -104,6 +123,9 @@ const EditableField = ({
         type={type}
         value={editValue}
         onChange={(e) => setEditValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        autoFocus
+        placeholder={`Enter ${label.toLowerCase()}`}
       />
     );
   };
@@ -174,21 +196,51 @@ export function EditableTenantInfo({ tenant, onUpdate }: EditableTenantInfoProps
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleFieldUpdate = async (fieldName: string, value: string) => {
+    // Skip update if value hasn't changed
+    const currentValue = tenant[fieldName as keyof TenantData] as string;
+    if (value === currentValue) {
+      return;
+    }
+
+    // Basic validation
+    if (fieldName === 'email' && value && !value.includes('@')) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (fieldName === 'name' && (!value || value.trim().length < 2)) {
+      toast({
+        title: "Invalid Name",
+        description: "Restaurant name must be at least 2 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsUpdating(true);
+      console.log(`Updating ${fieldName} from "${currentValue}" to "${value}"`);
+      
       const updatedTenant = await updateTenant(tenant.id, {
         [fieldName]: value || null,
       });
+      
       onUpdate(updatedTenant);
+      
+      const fieldLabel = fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
       toast({
-        title: "Tenant Updated",
-        description: `${fieldName} has been updated successfully.`,
+        title: "Success",
+        description: `${fieldLabel} has been updated successfully.`,
       });
     } catch (error) {
       console.error("Error updating tenant:", error);
       toast({
         title: "Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update tenant",
+        description: error instanceof Error ? error.message : "Failed to update tenant information",
         variant: "destructive",
       });
     } finally {

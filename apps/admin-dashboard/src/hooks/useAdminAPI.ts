@@ -326,18 +326,75 @@ export const useAdminAPI = () => {
       timezone: string;
       currency: string;
       website: string;
+      status: string;
+      address: any;
     }>): Promise<TenantData> => {
+      // Validate required fields
+      if (!tenantId) {
+        throw new Error("Tenant ID is required");
+      }
+
+      // Clean up updates object - remove undefined values and trim strings
+      const cleanUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+          if (typeof value === 'string') {
+            acc[key] = value.trim();
+          } else {
+            acc[key] = value;
+          }
+        }
+        return acc;
+      }, {} as Record<string, any>);
+
+      if (Object.keys(cleanUpdates).length === 0) {
+        throw new Error("No valid updates provided");
+      }
+
+      // Add updated_at timestamp
+      cleanUpdates.updated_at = new Date().toISOString();
+
+      console.log('Updating tenant:', tenantId, 'with data:', cleanUpdates);
+
+      // Perform the database update
       const { data, error } = await supabase
         .from("tenants")
-        .update(updates)
+        .update(cleanUpdates)
         .eq("id", tenantId)
-        .select()
+        .select(
+          `
+          id,
+          name,
+          slug,
+          status,
+          timezone,
+          currency,
+          description,
+          phone,
+          email,
+          website,
+          address,
+          created_at,
+          updated_at
+        `
+        )
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database update error:', error);
+        throw new Error(`Failed to update tenant: ${error.message}`);
+      }
 
-      // Return the updated tenant data by calling getTenant to get complete data with analytics
-      return getTenant(tenantId);
+      if (!data) {
+        throw new Error("No data returned from update operation");
+      }
+
+      console.log('Tenant updated successfully in database:', data);
+
+      // Verify the update by fetching fresh data with analytics
+      const updatedTenant = await getTenant(tenantId);
+      console.log('Fetched updated tenant with analytics:', updatedTenant);
+      
+      return updatedTenant;
     },
     [getTenant],
   );
