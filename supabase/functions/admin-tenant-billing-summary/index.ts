@@ -123,7 +123,34 @@ serve(async (req) => {
     const { data: tenants, error: tenantsError } = await tenantsQuery;
     
     if (tenantsError) {
-      return createErrorResponse('TENANTS_FETCH_ERROR', tenantsError.message, 500, undefined, origin);
+      console.error('Database error in billing-summary:', tenantsError);
+      return createErrorResponse('TENANTS_FETCH_ERROR', `Database error: ${tenantsError.message}`, 500, undefined, origin);
+    }
+
+    // Fallback if no tenants data
+    if (!tenants) {
+      console.log('No tenants data returned, using empty array');
+      return createCorsResponse({
+        success: true,
+        data: {
+          summary: {
+            totalTenants: 0,
+            activeBilling: 0,
+            pastDue: 0,
+            canceled: 0,
+            freeTrial: 0,
+            monthlyRecurringRevenue: 0,
+            averageRevenuePerUser: 0,
+            churnRate: 0,
+            growthRate: 0,
+          },
+          trends: [],
+          timeRange,
+          generatedAt: new Date().toISOString(),
+          tenantCount: 0,
+        },
+        requestId: crypto.randomUUID(),
+      }, 200, origin);
     }
 
     // Calculate billing summary metrics
