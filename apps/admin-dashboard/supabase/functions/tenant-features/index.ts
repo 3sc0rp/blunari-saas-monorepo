@@ -43,7 +43,7 @@ serve(async (req) => {
       });
     }
 
-    const { action, tenantSlug, featureKey, enabled } = await req.json();
+  const { action, tenantSlug, featureKey, enabled } = await req.json();
 
     // Resolve tenant ID from slug
     const { data: tenant, error: tenantError } = await supabaseClient
@@ -65,106 +65,58 @@ serve(async (req) => {
     const tenantId = tenant.id;
 
     if (action === "get") {
-      // Get tenant features
-      const { data: features, error: featuresError } = await supabaseClient
-        .from("tenant_features")
-        .select("*")
-        .eq("tenant_id", tenantId);
-
-      if (featuresError) {
-        throw featuresError;
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          data: features || [],
-          requestId: crypto.randomUUID(),
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      const { data: flags, error: flagsError } = await supabaseClient
+        .from("tenant_feature_flags")
+        .select("id, feature_key, enabled, enabled_at, enabled_by")
+        .eq("tenant_id", tenantId)
+        .order("feature_key", { ascending: true });
+      if (flagsError) throw flagsError;
+  const payload = (flags || []).map((f: any) => ({
+        id: f.id,
+        feature_key: f.feature_key,
+        enabled: f.enabled,
+        source: "OVERRIDE", // For backward compat with UI expectations
+        enabled_at: f.enabled_at,
+        enabled_by: f.enabled_by,
+      }));
+      return new Response(JSON.stringify({ success: true, data: payload, requestId: crypto.randomUUID() }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (action === "update") {
-      // Update or create feature override
-      const { data: existingFeature } = await supabaseClient
-        .from("tenant_features")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .eq("feature_key", featureKey)
-        .single();
-
-      if (existingFeature) {
-        // Update existing feature
-        const { error: updateError } = await supabaseClient
-          .from("tenant_features")
-          .update({
-            enabled,
-            source: "OVERRIDE",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("tenant_id", tenantId)
-          .eq("feature_key", featureKey);
-
-        if (updateError) {
-          throw updateError;
-        }
-      } else {
-        // Create new feature override
-        const { error: insertError } = await supabaseClient
-          .from("tenant_features")
-          .insert({
-            tenant_id: tenantId,
-            feature_key: featureKey,
-            enabled,
-            source: "OVERRIDE",
-          });
-
-        if (insertError) {
-          throw insertError;
-        }
+      if (!featureKey) {
+        return new Response(JSON.stringify({ error: "featureKey required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      // Upsert flag row
+      const { error: upsertError } = await supabaseClient
+        .from("tenant_feature_flags")
+        .upsert({ tenant_id: tenantId, feature_key: featureKey, enabled, enabled_by: user.id, enabled_at: new Date().toISOString() }, { onConflict: "tenant_id,feature_key" });
+      if (upsertError) throw upsertError;
 
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: `Feature ${featureKey} ${enabled ? "enabled" : "disabled"}`,
-          requestId: crypto.randomUUID(),
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      // Audit log
+      await supabaseClient.from("activity_logs").insert({
+        activity_type: "feature_flag_update",
+        message: `Feature flag ${featureKey} set ${enabled ? "ENABLED" : "DISABLED"}`,
+        user_id: user.id,
+        details: { tenantId, featureKey, enabled },
+      });
+
+      return new Response(JSON.stringify({ success: true, message: `Feature ${featureKey} ${enabled ? "enabled" : "disabled"}`, requestId: crypto.randomUUID() }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (action === "reset-to-plan") {
-      // Remove all overrides, keeping only plan features
-      const { error: deleteError } = await supabaseClient
-        .from("tenant_features")
-        .delete()
-        .eq("tenant_id", tenantId)
-        .eq("source", "OVERRIDE");
-
-      if (deleteError) {
-        throw deleteError;
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message:
-            "All feature overrides removed. Features now match the plan.",
-          requestId: crypto.randomUUID(),
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      // Rather than delete all rows, we disable overrides (set enabled false) preserving history
+      const { error: disableError } = await supabaseClient
+        .from("tenant_feature_flags")
+        .update({ enabled: false })
+        .eq("tenant_id", tenantId);
+      if (disableError) throw disableError;
+      await supabaseClient.from("activity_logs").insert({
+        activity_type: "feature_flags_reset",
+        message: "All feature flags disabled (reset to plan)",
+        user_id: user.id,
+        details: { tenantId },
+      });
+      return new Response(JSON.stringify({ success: true, message: "All feature flags disabled.", requestId: crypto.randomUUID() }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ error: "Invalid action" }), {

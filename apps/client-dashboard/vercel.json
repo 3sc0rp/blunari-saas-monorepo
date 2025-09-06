@@ -1,3 +1,33 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "headers": [
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "cache-control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate" },
+        { "key": "x-content-type-options", "value": "nosniff" },
+        { "key": "x-frame-options", "value": "DENY" },
+        { "key": "referrer-policy", "value": "strict-origin-when-cross-origin" },
+  { "key": "content-security-policy", "value": "default-src 'self'; connect-src 'self' https://*.supabase.co https://o*.ingest.sentry.io https://*.sentry.io; img-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'none';" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "cache-control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/styles/(.*)",
+      "headers": [
+        { "key": "cache-control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/images/(.*)",
+      "headers": [
+        { "key": "cache-control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
 }

@@ -1,0 +1,38 @@
+name: CORS Preflight
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run preflight checks (production)
+        run: node scripts/preflight-check.mjs
+        env:
+          PREFLIGHT_ORIGIN: https://admin.blunari.ai
+          PREFLIGHT_ENDPOINTS: |
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/tenant-provisioning,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/tenant-provision,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/provision-tenant,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/send-credentials-email,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/send-welcome-email,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/background-ops-proxy,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/webhook-handler,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/metrics-api,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/jobs-api,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/create-checkout,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/tenant-email-operations,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/rate-limiter,
+            https://kbfbbkcaxhzlnbqxwgoz.functions.supabase.co/system-health

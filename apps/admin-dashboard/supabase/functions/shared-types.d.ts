@@ -21,6 +21,14 @@ declare module "https://esm.sh/@supabase/supabase-js@2" {
     ): Promise<{ data: any; error: any }>;
     auth: {
       getUser(token: string): Promise<{ data: { user: any }; error: any }>;
+      admin: {
+        getUserByEmail(
+          email: string,
+        ): Promise<{ data: { user: any } | null; error: any }>;
+        createUser(
+          params: Record<string, any>,
+        ): Promise<{ data: { user: any } | null; error: any }>;
+      };
     };
     functions: {
       invoke(functionName: string, options?: { body?: any }): Promise<any>;

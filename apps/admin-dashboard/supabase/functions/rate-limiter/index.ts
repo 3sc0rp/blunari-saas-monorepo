@@ -1,11 +1,8 @@
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.56.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+// @ts-ignore - Deno remote import
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore - Deno remote import
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createCorsHeaders } from "../_shared/cors";
 
 interface RateLimitRequest {
   identifier: string; // IP address or user ID
@@ -47,10 +44,10 @@ const DEFAULT_RULES: Record<string, RateLimitRule> = {
   bulk_action: { action: "bulk_action", limit: 5, windowMs: 5 * 60 * 1000 }, // 5 bulk actions per 5 minutes
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -69,7 +66,7 @@ serve(async (req) => {
         }),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
@@ -79,7 +76,7 @@ serve(async (req) => {
     if (!rule) {
       return new Response(JSON.stringify({ error: "Unknown action type" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       });
     }
 
@@ -99,13 +96,13 @@ serve(async (req) => {
       .gte("created_at", windowStart.toISOString())
       .order("created_at", { ascending: false });
 
-    if (fetchError) {
+  if (fetchError) {
       console.error("Error fetching rate limit records:", fetchError);
       return new Response(
         JSON.stringify({ error: "Failed to check rate limits" }),
         {
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
@@ -135,7 +132,7 @@ serve(async (req) => {
           {
             status: 429,
             headers: {
-              ...corsHeaders,
+              ...createCorsHeaders(req.headers.get("Origin")),
               "Content-Type": "application/json",
               "Retry-After": Math.ceil(
                 (blockUntil.getTime() - now.getTime()) / 1000,
@@ -167,7 +164,7 @@ serve(async (req) => {
         {
           status: 429,
           headers: {
-            ...corsHeaders,
+            ...createCorsHeaders(req.headers.get("Origin")),
             "Content-Type": "application/json",
             "Retry-After": Math.max(retryAfter, 1).toString(),
           },
@@ -203,35 +200,35 @@ serve(async (req) => {
       .delete()
       .lt("created_at", cleanupTime.toISOString());
 
-    return new Response(
-      JSON.stringify({
-        rateLimited: false,
-        requestCount: requestCount + 1,
-        limit: effectiveLimit,
-        remaining: Math.max(0, effectiveLimit - requestCount - 1),
-        resetTime: new Date(now.getTime() + effectiveWindow).toISOString(),
-      }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-          "X-RateLimit-Limit": effectiveLimit.toString(),
-          "X-RateLimit-Remaining": Math.max(
-            0,
-            effectiveLimit - requestCount - 1,
-          ).toString(),
-          "X-RateLimit-Reset": Math.ceil(
-            (now.getTime() + effectiveWindow) / 1000,
-          ).toString(),
+      return new Response(
+        JSON.stringify({
+          rateLimited: false,
+          requestCount: requestCount + 1,
+          limit: effectiveLimit,
+          remaining: Math.max(0, effectiveLimit - requestCount - 1),
+          resetTime: new Date(now.getTime() + effectiveWindow).toISOString(),
+        }),
+        {
+          status: 200,
+          headers: {
+            ...createCorsHeaders(req.headers.get("Origin")),
+            "Content-Type": "application/json",
+            "X-RateLimit-Limit": effectiveLimit.toString(),
+            "X-RateLimit-Remaining": Math.max(
+              0,
+              effectiveLimit - requestCount - 1,
+            ).toString(),
+            "X-RateLimit-Reset": Math.ceil(
+              (now.getTime() + effectiveWindow) / 1000,
+            ).toString(),
+          },
         },
-      },
-    );
+      );
   } catch (error) {
     console.error("Rate limiter error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
     });
   }
 });

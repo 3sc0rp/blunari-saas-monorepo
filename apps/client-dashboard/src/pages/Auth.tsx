@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -63,6 +63,8 @@ const Auth: React.FC = () => {
   const brandLogo = "/logo.png"; // Always use Blunari logo on login
   const brandName = "Blunari"; // Always use Blunari name on login
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/dashboard";
   const { toast } = useToast();
 
   const {
@@ -99,9 +101,9 @@ const Auth: React.FC = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      navigate(from, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, from]);
 
   const onSubmit = async (data: AuthFormData) => {
     setLoading(true);
@@ -120,11 +122,11 @@ const Auth: React.FC = () => {
           variant: "destructive",
         });
       } else {
-        toast({
+  toast({
           title: "Welcome back!",
           description: "You have successfully signed in.",
         });
-        navigate("/dashboard");
+  navigate(from, { replace: true });
       }
     } catch (error) {
       setAuthError("Something went wrong. Please try again.");

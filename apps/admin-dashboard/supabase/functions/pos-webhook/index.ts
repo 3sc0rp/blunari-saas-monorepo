@@ -1,11 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { createCorsHeaders } from "../_shared/cors";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
@@ -14,7 +9,7 @@ const supabase = createClient(
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -90,14 +85,14 @@ serve(async (req) => {
 
     console.log(`Successfully processed ${provider} webhook:`, processedEvent);
 
-    return new Response(
+      return new Response(
       JSON.stringify({
         success: true,
         event_id: processedEvent.event_id,
         processed_at: new Date().toISOString(),
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         status: 200,
       },
     );
@@ -107,11 +102,11 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : "Unknown error",
         timestamp: new Date().toISOString(),
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         status: 400,
       },
     );

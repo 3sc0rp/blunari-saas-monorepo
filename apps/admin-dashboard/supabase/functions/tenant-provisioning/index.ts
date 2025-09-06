@@ -2,6 +2,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createCorsHeaders } from "../_shared/cors";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 interface Address {
@@ -36,20 +37,35 @@ interface TenantProvisioningRequest {
   idempotencyKey?: string;
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Max-Age": "86400",
-};
+const corsHeaders = createCorsHeaders();
 
 serve(async (req: Request) => {
+  // Preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
+  }
+
+  // Allow only POST requests
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: {
+          code: "METHOD_NOT_ALLOWED",
+          message: "Only POST is allowed",
+        },
+      }),
+      {
+        status: 405,
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json", Allow: "POST, OPTIONS" },
+      },
+    );
   }
 
   try {
+    // Generate a request id for tracing
+    const requestId = crypto.randomUUID();
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -64,16 +80,16 @@ serve(async (req: Request) => {
           error: {
             code: "UNAUTHORIZED",
             message: "Missing Authorization header",
-            requestId: crypto.randomUUID(),
+            requestId,
           },
         }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
-    const token = authHeader.replace("Bearer ", "");
+    const token = authHeader.replace(/^Bearer\s+/i, "");
     const {
       data: { user },
       error: authError,
@@ -125,16 +141,15 @@ serve(async (req: Request) => {
               .map((i: { message: string }) => i.message)
               .join("; "),
             details: parsed.error.issues,
-            requestId: crypto.randomUUID(),
+            requestId,
           },
         }),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
-    const requestId = crypto.randomUUID();
 
     console.log("Tenant provisioning request:", {
       requestId,
@@ -168,12 +183,36 @@ serve(async (req: Request) => {
       }
     }
 
-    // Call the provision_tenant database function
+    // Determine or create the owner user account if provided
+    let ownerUserId: string | null = null;
+    const ownerEmail: string | undefined = requestData.owner?.email;
+    if (ownerEmail) {
+      try {
+        const { data: existingUser } =
+          await supabase.auth.admin.getUserByEmail(ownerEmail);
+        if (existingUser?.user) {
+          ownerUserId = existingUser.user.id;
+        } else {
+          const { data: created, error: createErr } =
+            await supabase.auth.admin.createUser({
+              email: ownerEmail,
+              email_confirm: true,
+              user_metadata: { role: "owner" },
+            });
+          if (createErr) throw createErr;
+          ownerUserId = created?.user?.id ?? null;
+        }
+      } catch (e) {
+        console.warn("Owner user create/get failed (continuing):", e);
+      }
+    }
+
+    // Call the provision_tenant database function using owner user if available
     // NOTE: There are multiple overloaded versions in the DB; pass full argument list to disambiguate
     const { data: tenantId, error: provisionError } = await supabase.rpc(
       "provision_tenant",
       {
-        p_user_id: user.id,
+        p_user_id: ownerUserId ?? user.id,
         p_restaurant_name: requestData.basics.name,
         p_restaurant_slug: requestData.basics.slug,
         p_timezone: requestData.basics.timezone,
@@ -209,52 +248,16 @@ serve(async (req: Request) => {
       );
     }
 
-    // Send emails if requested
-    if (requestData.owner?.sendInvite && requestData.owner?.email) {
-      const baseUrl =
-        Deno.env.get("ADMIN_BASE_URL") ?? "https://admin.blunari.ai";
-      const ownerEmail = requestData.owner.email;
-      const restaurantName = requestData.basics.name;
-
-      // Fire-and-forget; do not block provisioning on email transport
-      try {
-        await supabase.functions.invoke("send-welcome-email", {
-          body: {
-            ownerName: restaurantName,
-            ownerEmail,
-            restaurantName,
-            loginUrl: baseUrl,
-          },
-        });
-      } catch {
-        /* ignore email errors */
-      }
-      try {
-        await supabase.functions.invoke("send-welcome-pack", {
-          body: {
-            ownerName: restaurantName,
-            ownerEmail,
-            restaurantName,
-            loginUrl: baseUrl,
-          },
-        });
-      } catch {
-        /* ignore email errors */
-      }
-      try {
-        await supabase.functions.invoke("send-credentials-email", {
-          body: { ownerEmail, tenantName: restaurantName, loginUrl: baseUrl },
-        });
-      } catch {
-        /* ignore email errors */
-      }
-    }
+  // Manual email sending: disabled automatic emails. Use Admin UI button instead.
 
     const responseData = {
       runId: crypto.randomUUID(),
       tenantId,
       slug: requestData.basics.slug,
-      primaryUrl: Deno.env.get("ADMIN_BASE_URL") ?? "https://admin.blunari.ai",
+      primaryUrl:
+        Deno.env.get("CLIENT_BASE_URL") ??
+        Deno.env.get("APP_BASE_URL") ??
+        "https://app.blunari.ai",
       message: "Tenant provisioned successfully",
     };
 
@@ -265,26 +268,26 @@ serve(async (req: Request) => {
         requestId,
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   } catch (error) {
     console.error("Tenant provisioning error:", error);
-
-    const requestId = crypto.randomUUID();
+    // Use a new requestId here since the previous block failed before creation in rare cases
+    const errId = crypto.randomUUID();
     return new Response(
       JSON.stringify({
         success: false,
         error: {
           code: "PROVISIONING_FAILED",
           message: error instanceof Error ? error.message : "Unknown error",
-          requestId,
+          requestId: errId,
         },
-        requestId,
+        requestId: errId,
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   }

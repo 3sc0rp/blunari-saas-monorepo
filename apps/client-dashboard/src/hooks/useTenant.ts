@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { TenantInfo, TenantInfoZ } from '@/lib/contracts';
@@ -41,46 +41,60 @@ export function useTenant() {
 
   const params = useParams<{ slug?: string }>();
   const navigate = useNavigate();
+  // Track in-flight resolution to cancel on unmount/changes
+  const abortRef = useRef<AbortController | null>(null);
+  const timeoutRef = useRef<number | null>(null);
   
-  const resolveTenant = useCallback(async () => {
-    let isMounted = true; // FIX: Track if component is still mounted
-    
-    // Add timeout to prevent infinite loading - REDUCED TIMEOUT for faster response
-    const timeoutId = setTimeout(() => {
-      if (isMounted) {
-        logger.info('Tenant resolution timeout (5s), using fallback tenant', {
-          component: 'useTenant',
-          slug: params.slug
-        });
-        // Use a realistic demo tenant ID that might exist in the database
-        const fallbackTenant: TenantInfo = {
-          id: '99e1607d-da99-4f72-9182-a417072eb629', // Use the tenant ID from the logs
-          slug: 'demo',
-          name: 'Demo Restaurant',
-          timezone: 'America/New_York',
-          currency: 'USD'
-        };
-        setState({
-          tenant: fallbackTenant,
-          loading: false,
-          error: null,
-          requestId: null
-        });
-      }
-    }, 5000); // REDUCED: 5 second timeout instead of 10
-    
+  const resolveTenant = useCallback(async (reason: string = 'resolve') => {
+    // Cancel any previous resolution
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
+
+    // Setup timeout fallback
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    timeoutRef.current = window.setTimeout(() => {
+      if (signal.aborted) return;
+      logger.info('Tenant resolution timeout (5s), using fallback tenant', {
+        component: 'useTenant',
+        slug: params.slug,
+        reason
+      });
+      const fallbackTenant: TenantInfo = {
+        id: '99e1607d-da99-4f72-9182-a417072eb629',
+        slug: 'demo',
+        name: 'Demo Restaurant',
+        timezone: 'America/New_York',
+        currency: 'USD'
+      };
+      setState({
+        tenant: fallbackTenant,
+        loading: false,
+        error: null,
+        requestId: null
+      });
+    }, 5000);
+
     try {
       setState(prev => ({ ...prev, loading: true, error: null, requestId: null }));
 
       // Check cache first (only for user-based resolution, not slug-based)
       if (!params.slug && cachedTenant && Date.now() < cacheExpiry) {
-        if (isMounted) {
+        if (!signal.aborted) {
           setState({
             tenant: cachedTenant,
             loading: false,
             error: null,
             requestId: null
           });
+        }
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
         }
         return;
       }
@@ -132,7 +146,7 @@ export function useTenant() {
             currency: 'USD'
           };
           
-          if (isMounted) {
+          if (!signal.aborted) {
             setState({
               tenant: fallbackTenant,
               loading: false,
@@ -140,10 +154,14 @@ export function useTenant() {
               requestId: null
             });
           }
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
           return;
         }
         
-        if (isMounted) {
+        if (!signal.aborted) {
           setState({
             tenant: null,
             loading: false,
@@ -154,6 +172,10 @@ export function useTenant() {
           if (window.location.pathname !== '/auth') {
             navigate('/auth');
           }
+        }
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
         }
         return;
       }
@@ -169,7 +191,7 @@ export function useTenant() {
       );
 
       // FIX: Check if component is still mounted before updating state
-      if (!isMounted) return;
+  if (signal.aborted) return;
 
       if (functionError) {
         logger.warn('Tenant function error detected', {
@@ -187,7 +209,7 @@ export function useTenant() {
             errorType: 'auth_required'
           });
           
-          if (isMounted) {
+          if (!signal.aborted) {
             setState({
               tenant: null,
               loading: false,
@@ -198,6 +220,10 @@ export function useTenant() {
             if (window.location.pathname !== '/auth') {
               navigate('/auth');
             }
+          }
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
           }
           return;
         }
@@ -217,13 +243,17 @@ export function useTenant() {
             currency: 'USD'
           };
           
-          if (isMounted) {
+          if (!signal.aborted) {
             setState({
               tenant: fallbackTenant,
               loading: false,
               error: null,
               requestId: null
             });
+          }
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
           }
           return;
         }
@@ -244,7 +274,7 @@ export function useTenant() {
               currency: 'USD'
             };
             
-            if (isMounted) {
+            if (!signal.aborted) {
               setState({
                 tenant: fallbackTenant,
                 loading: false,
@@ -252,10 +282,14 @@ export function useTenant() {
                 requestId: null
               });
             }
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+              timeoutRef.current = null;
+            }
             return;
           } else {
             // In production, redirect to auth for 401 errors
-            if (isMounted) {
+            if (!signal.aborted) {
               setState({
                 tenant: null,
                 loading: false,
@@ -263,6 +297,10 @@ export function useTenant() {
                 requestId: null
               });
               navigate('/auth');
+            }
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+              timeoutRef.current = null;
             }
             return;
           }
@@ -283,13 +321,17 @@ export function useTenant() {
           currency: 'USD'
         };
         
-        if (isMounted) {
+        if (!signal.aborted) {
           setState({
             tenant: fallbackTenant,
             loading: false,
             error: null,
             requestId: null
           });
+        }
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
         }
         return;
       }
@@ -312,12 +354,18 @@ export function useTenant() {
           currency: 'USD'
         };
         
-        setState({
-          tenant: fallbackTenant,
-          loading: false,
-          error: null,
-          requestId: null
-        });
+        if (!signal.aborted) {
+          setState({
+            tenant: fallbackTenant,
+            loading: false,
+            error: null,
+            requestId: null
+          });
+        }
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
         return;
       }
 
@@ -331,13 +379,18 @@ export function useTenant() {
           cacheExpiry = Date.now() + CACHE_DURATION;
         }
         
-        setState({
-          tenant,
-          loading: false,
-          error: null,
-          requestId: null
-        });
-        clearTimeout(timeoutId);
+        if (!signal.aborted) {
+          setState({
+            tenant,
+            loading: false,
+            error: null,
+            requestId: null
+          });
+        }
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
         return;
       }
 
@@ -355,15 +408,24 @@ export function useTenant() {
         currency: 'USD'
       };
       
-      setState({
-        tenant: fallbackTenant,
-        loading: false,
-        error: null,
-        requestId: null
-      });
+      if (!signal.aborted) {
+        setState({
+          tenant: fallbackTenant,
+          loading: false,
+          error: null,
+          requestId: null
+        });
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
 
     } catch (error) {
-      clearTimeout(timeoutId);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
       const parsedError = parseError(error);
       
       handleTenantError('useTenant', `Tenant resolution failed: ${parsedError.message}`, {
@@ -372,7 +434,7 @@ export function useTenant() {
       });
       
       // FIX: Always use fallback tenant instead of showing error to user
-      if (isMounted) {
+      if (!signal.aborted) {
         const fallbackTenant: TenantInfo = {
           id: '99e1607d-da99-4f72-9182-a417072eb629',
           slug: params.slug || 'demo',
@@ -388,19 +450,16 @@ export function useTenant() {
           requestId: null
         });
       }
+    } finally {
+      // no-op; timeout cleared in all return paths and catch
     }
-    
-    // FIX: Return cleanup function to handle component unmounting
-    return () => {
-      isMounted = false;
-    };
   }, [params.slug, navigate]);
 
   const refreshTenant = useCallback(() => {
     // Clear cache on refresh
     cachedTenant = null;
     cacheExpiry = 0;
-    resolveTenant();
+    resolveTenant('refresh');
   }, [resolveTenant]);
 
   const clearCache = useCallback(() => {
@@ -410,7 +469,15 @@ export function useTenant() {
 
   // Resolve tenant on mount and slug changes
   useEffect(() => {
-    resolveTenant();
+    resolveTenant('mount-or-slug-change');
+    return () => {
+      // Cancel any in-flight operation and clear timeout
+      abortRef.current?.abort();
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
   }, [resolveTenant]);
 
   // Listen for auth changes to clear cache
@@ -418,7 +485,7 @@ export function useTenant() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         clearCache();
-        resolveTenant();
+        resolveTenant('auth-change');
       } else if (event === 'SIGNED_OUT') {
         clearCache();
         setState({

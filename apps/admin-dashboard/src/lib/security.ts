@@ -325,13 +325,25 @@ export class CSPManager {
 
   static getCSPDirectives(): string {
     const nonce = this.generateNonce();
+    const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL as
+      | string
+      | undefined;
+    let connectSrc = "'self'";
+    try {
+      if (supabaseUrl) {
+        const origin = new URL(supabaseUrl).origin;
+        connectSrc += ` ${origin}`;
+      }
+    } catch {
+      // ignore URL parse errors
+    }
 
     return [
       "default-src 'self'",
       `script-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",
-      "connect-src 'self' https://kbfbbkcaxhzlnbqxwgoz.supabase.co",
+      `connect-src ${connectSrc}`,
       "font-src 'self'",
       "object-src 'none'",
       "media-src 'self'",

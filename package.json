@@ -15,6 +15,11 @@
     "lint:fix": "turbo run lint:fix",
     "test": "turbo run test",
     "type-check": "turbo run type-check",
+  "preview": "turbo run preview --parallel",
+  "preview:client": "npm run preview --workspace=apps/client-dashboard",
+  "preview:admin": "npm run preview --workspace=apps/admin-dashboard",
+  "smoke:provision": "node scripts/preview-provision-smoke.mjs",
+  "ci:smoke": "node scripts/preview-provision-smoke.mjs",
     "clean": "turbo run clean && rm -rf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -26,7 +31,9 @@
     "setup": "node dev.js setup",
     "quality:check": "node dev.js quality:check",
     "quality:fix": "node dev.js quality:fix",
-    "secrets:setup": "node scripts/setup-secrets.js"
+  "secrets:setup": "node scripts/setup-secrets.js",
+  "verify:admin-live": "node scripts/live-admin-login-check.mjs",
+  "preflight": "node scripts/preflight-check.mjs"
   },
   "devDependencies": {
     "@turbo/gen": "^1.10.12",
@@ -38,7 +45,7 @@
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
     "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-import": "^2.28.1"
+  "eslint-plugin-import": "^2.28.1"
   },
   "packageManager": "npm@9.0.0",
   "engines": {

@@ -1,15 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { createCorsHeaders } from "../_shared/cors";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -25,7 +20,7 @@ serve(async (req) => {
         JSON.stringify({ error: "No authorization header" }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
@@ -39,7 +34,7 @@ serve(async (req) => {
       console.error("Health check auth error:", authError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+  headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       });
     }
 
@@ -63,7 +58,7 @@ serve(async (req) => {
     console.log("Using updated environment variables");
 
     // If no background ops URL is configured, return error instead of mock data
-    if (!backgroundOpsUrl) {
+  if (!backgroundOpsUrl) {
       console.log("BACKGROUND_OPS_URL not configured - returning error");
 
       return new Response(
@@ -76,7 +71,7 @@ serve(async (req) => {
         }),
         {
           status: 503,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
@@ -120,7 +115,7 @@ serve(async (req) => {
       }),
       {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   } catch (error) {
@@ -139,7 +134,7 @@ serve(async (req) => {
         metric_unit: "status",
         service_name: "background-ops",
         status_code: 0,
-        metadata: { error: error.message || "Unknown error" },
+  metadata: { error: error instanceof Error ? error.message : "Unknown error" },
       });
     } catch (dbError) {
       console.error("Failed to store error metrics:", dbError);
@@ -153,7 +148,7 @@ serve(async (req) => {
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   }

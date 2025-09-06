@@ -1,23 +1,8 @@
+// @ts-ignore - Deno remote import (valid at runtime)
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// @ts-ignore - Deno remote import (valid at runtime)
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-
-const smtp = new SMTPClient({
-  connection: {
-    hostname: Deno.env.get("FASTMAIL_SMTP_HOST") || "smtp.fastmail.com",
-    port: parseInt(Deno.env.get("FASTMAIL_SMTP_PORT") || "587"),
-    tls: true,
-    auth: {
-      username: Deno.env.get("FASTMAIL_SMTP_USERNAME")!,
-      password: Deno.env.get("FASTMAIL_SMTP_PASSWORD")!,
-    },
-  },
-});
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { createCorsHeaders } from "../_shared/cors";
 
 interface WelcomeEmailRequest {
   ownerName: string;
@@ -29,7 +14,7 @@ interface WelcomeEmailRequest {
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -46,7 +31,7 @@ const handler = async (req: Request): Promise<Response> => {
         }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...createCorsHeaders(req.headers.get("Origin")) },
         },
       );
     }
@@ -68,7 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
         }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...createCorsHeaders(req.headers.get("Origin")) },
         },
       );
     }
@@ -84,7 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
         }),
         {
           status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...createCorsHeaders(req.headers.get("Origin")) },
         },
       );
     }
@@ -103,6 +88,8 @@ const handler = async (req: Request): Promise<Response> => {
     const finalLoginUrl = loginUrl || defaultLoginUrl;
 
     // Check if SMTP credentials are configured
+    const smtpHost = Deno.env.get("FASTMAIL_SMTP_HOST") || "smtp.fastmail.com";
+    const smtpPort = parseInt(Deno.env.get("FASTMAIL_SMTP_PORT") || "587");
     const smtpUsername = Deno.env.get("FASTMAIL_SMTP_USERNAME");
     const smtpPassword = Deno.env.get("FASTMAIL_SMTP_PASSWORD");
 
@@ -116,12 +103,23 @@ const handler = async (req: Request): Promise<Response> => {
         }),
         {
           status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", ...createCorsHeaders(req.headers.get("Origin")) },
         },
       );
     }
 
-    console.log("Attempting to send email with SMTP configuration");
+    // Lazily initialize SMTP client only after verifying credentials
+    const smtp = new SMTPClient({
+      connection: {
+        hostname: smtpHost,
+        port: smtpPort,
+        tls: true,
+        auth: {
+          username: smtpUsername,
+          password: smtpPassword,
+        },
+      },
+    });
 
     const emailResponse = await smtp.send({
       from: "Blunari Team <no-reply@blunari.ai>",
@@ -202,7 +200,7 @@ const handler = async (req: Request): Promise<Response> => {
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          ...corsHeaders,
+          ...createCorsHeaders(req.headers.get("Origin")),
         },
       },
     );
@@ -229,7 +227,7 @@ const handler = async (req: Request): Promise<Response> => {
       }),
       {
         status,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { "Content-Type": "application/json", ...createCorsHeaders(req.headers.get("Origin")) },
       },
     );
   }

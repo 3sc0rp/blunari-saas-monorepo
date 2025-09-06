@@ -247,21 +247,25 @@ const CustomerProfiles: React.FC = () => {
       
       const matchesSegment = (() => {
         switch (selectedSegment) {
-          case "vip":
+          case "vip": {
             return customer.vip_status;
-          case "frequent":
+          }
+          case "frequent": {
             return customer.total_visits >= 20;
-          case "recent":
+          }
+          case "recent": {
             const lastVisit = new Date(customer.last_visit || 0);
             const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
             return lastVisit >= thirtyDaysAgo;
-          case "birthday":
+          }
+          case "birthday": {
             if (!customer.birthday) return false;
             const birthday = new Date(customer.birthday);
             const today = new Date();
             const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
             const thisBirthday = new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate());
             return thisBirthday >= today && thisBirthday <= nextWeek;
+          }
           default:
             return true;
         }
