@@ -40,6 +40,9 @@ const createCorsHeaders = (requestOrigin: string | null = null) => ({
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
   'Access-Control-Allow-Credentials': 'true',
   'Access-Control-Max-Age': '86400',
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0',
 });
 
 const createCorsResponse = (data?: any, status: number = 200, requestOrigin: string | null = null) => {
