@@ -248,7 +248,8 @@ export const useAdminAPI = () => {
   // Enhanced tenant fetching with proper types
   const getTenant = useCallback(
     async (tenantId: string): Promise<TenantData> => {
-      const { data, error } = await supabase
+      // Fetch tenant basic data
+      const { data: tenantData, error: tenantError } = await supabase
         .from("tenants")
         .select(
           `
@@ -271,11 +272,46 @@ export const useAdminAPI = () => {
         .eq("id", tenantId)
         .single();
 
-      if (error) throw error;
+      if (tenantError) throw tenantError;
+
+      // Fetch analytics data in parallel
+      const [bookingsResult, tablesResult] = await Promise.all([
+        // Get total bookings count
+        supabase
+          .from("bookings")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", tenantId),
+        
+        // Get active tables count
+        supabase
+          .from("restaurant_tables")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", tenantId)
+          .eq("active", true),
+      ]);
+
+      const totalBookings = bookingsResult.count || 0;
+      const activeTables = tablesResult.count || 0;
+
+      // Calculate revenue from bookings with deposits
+      const { data: revenueData } = await supabase
+        .from("bookings")
+        .select("deposit_amount")
+        .eq("tenant_id", tenantId)
+        .eq("deposit_paid", true)
+        .not("deposit_amount", "is", null);
+
+      const revenue = revenueData?.reduce((sum, booking) => 
+        sum + (booking.deposit_amount || 0), 0) || 0;
 
       return {
-        ...data,
-        domainsCount: Array.isArray(data.domains) ? data.domains.length : 0,
+        ...tenantData,
+        domainsCount: Array.isArray(tenantData.domains) ? tenantData.domains.length : 0,
+        analytics: {
+          total_bookings: totalBookings,
+          revenue: revenue,
+          active_tables: activeTables,
+        },
       } as TenantData;
     },
     [],
