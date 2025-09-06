@@ -116,13 +116,6 @@ const platformNavigation: NavigationItem[] = [
     description: "Catering orders and menu management",
   },
   {
-    title: "Domains",
-    url: "/admin/domains",
-    icon: Globe,
-    badge: null,
-    description: "Domain management",
-  },
-  {
     title: "Agency Kit",
     url: "/admin/agency-kit",
     icon: Building2,

@@ -2,8 +2,6 @@ import { z } from "zod";
 
 // Enhanced Tenant Types with strict validation
 export const TenantStatus = z.enum(["active", "inactive", "suspended"]);
-export const DomainStatus = z.enum(["ACTIVE", "PENDING", "ERROR"]);
-export const SSLStatus = z.enum(["OK", "PENDING", "FAILED"]);
 
 export interface TenantData {
   id: string;
@@ -25,7 +23,6 @@ export interface TenantData {
   };
   created_at: string;
   updated_at: string;
-  domainsCount: number;
   analytics?: {
     total_bookings: number;
     revenue: number;
@@ -184,7 +181,7 @@ export const ProvisioningRequestSchema = z.object({
 
 export const JobEnqueueSchema = z.object({
   type: z.enum(["WELCOME_EMAIL", "RESERVATION_EMAIL", "ANALYTICS_AGGREGATE"]),
-  payload: z.record(z.any()),
+  payload: z.record(z.string(), z.any()),
   schedule_at: z.string().optional(),
   priority: z.number().int().min(0).max(10).default(5),
   tenant_id: z.string().uuid().optional(),
@@ -196,18 +193,6 @@ export const isValidTenantStatus = (
   status: string,
 ): status is z.infer<typeof TenantStatus> => {
   return TenantStatus.safeParse(status).success;
-};
-
-export const isValidDomainStatus = (
-  status: string,
-): status is z.infer<typeof DomainStatus> => {
-  return DomainStatus.safeParse(status).success;
-};
-
-export const isValidSSLStatus = (
-  status: string,
-): status is z.infer<typeof SSLStatus> => {
-  return SSLStatus.safeParse(status).success;
 };
 
 // Utility functions for safe enum parsing

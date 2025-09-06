@@ -19,6 +19,7 @@ import {
   MapPin,
   Calendar,
   Settings,
+  Activity,
   RefreshCw,
   Key,
   Shield,
@@ -490,10 +491,13 @@ export default function TenantDetailPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
-              <Globe className="h-5 w-5 text-blue-600" />
+              <Activity className="h-5 w-5 text-purple-600" />
               <div>
-                <p className="text-sm text-muted-foreground">Domains</p>
-                <p className="text-2xl font-bold">{tenant.domainsCount || 0}</p>
+                <p className="text-sm text-muted-foreground">Activity Score</p>
+                <p className="text-2xl font-bold">
+                  {Math.round(((tenant.analytics?.total_bookings || 0) + 
+                    (tenant.analytics?.active_tables || 0)) / 2)}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -541,7 +545,6 @@ export default function TenantDetailPage() {
       <TabsTrigger value="billing">Billing</TabsTrigger>
       <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="usage">Usage</TabsTrigger>
-          <TabsTrigger value="domains">Domains</TabsTrigger>
       <TabsTrigger value="operations">Operations</TabsTrigger>
       <TabsTrigger value="integrations">Integrations</TabsTrigger>
       <TabsTrigger value="notes">Notes</TabsTrigger>
@@ -624,22 +627,6 @@ export default function TenantDetailPage() {
 
         <TabsContent value="churn">
           <TenantChurnSignalsPanel tenantId={tenant.id} />
-        </TabsContent>
-
-        <TabsContent value="domains">
-          <Card>
-            <CardHeader>
-              <CardTitle>Domain Management</CardTitle>
-              <CardDescription>
-                Manage custom domains and DNS configuration
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Domain management coming soon...
-              </p>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="analytics">

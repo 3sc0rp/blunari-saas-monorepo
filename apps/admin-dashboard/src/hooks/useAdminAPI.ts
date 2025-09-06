@@ -265,8 +265,7 @@ export const useAdminAPI = () => {
         website,
         address,
         created_at,
-        updated_at,
-        domains:domains(count)
+        updated_at
       `,
         )
         .eq("id", tenantId)
@@ -306,7 +305,6 @@ export const useAdminAPI = () => {
 
       return {
         ...tenantData,
-        domainsCount: Array.isArray(tenantData.domains) ? tenantData.domains.length : 0,
         analytics: {
           total_bookings: totalBookings,
           revenue: revenue,
@@ -416,8 +414,7 @@ export const useAdminAPI = () => {
         currency,
         description,
         created_at,
-        updated_at,
-        domains:domains(count)
+        updated_at
       `,
         { count: "exact" },
       );
@@ -444,7 +441,6 @@ export const useAdminAPI = () => {
 
       const tenants = (data || []).map((tenant) => ({
         ...tenant,
-        domainsCount: Array.isArray(tenant.domains) ? tenant.domains.length : 0,
       })) as TenantData[];
 
       return { tenants, total: count || 0 };

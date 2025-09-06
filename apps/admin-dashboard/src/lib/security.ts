@@ -230,7 +230,7 @@ export class PermissionChecker {
   static canAccessResource(userRole: string, resource: string): boolean {
     const permissions = {
       SUPER_ADMIN: ["*"],
-      ADMIN: ["tenants", "employees", "settings", "domains", "analytics"],
+      ADMIN: ["tenants", "employees", "settings", "analytics"],
       SUPPORT: ["tenants", "employees", "incidents", "logs"],
       OPS: ["tenants", "incidents", "analytics"],
       VIEWER: ["analytics"],

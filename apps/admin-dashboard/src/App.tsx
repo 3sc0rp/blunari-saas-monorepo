@@ -23,7 +23,6 @@ import OperationsPage from "@/pages/OperationsPage";
 import ObservabilityPage from "@/pages/ObservabilityPage";
 import SystemHealthPage from "@/pages/SystemHealthPage";
 import ImpersonationPage from "@/pages/ImpersonationPage";
-import DomainsPage from "@/pages/DomainsPage";
 import AgencyKitPage from "@/pages/AgencyKitPage";
 import ProfilePage from "@/pages/ProfilePage";
 import { IntegrationsPage } from "@/pages/IntegrationsPage";
@@ -93,7 +92,6 @@ function App() {
                       path="system-health"
                       element={<SystemHealthPage />}
                     />
-                    <Route path="domains" element={<DomainsPage />} />
                     <Route path="agency-kit" element={<AgencyKitPage />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="impersonate" element={<ImpersonationPage />} />
