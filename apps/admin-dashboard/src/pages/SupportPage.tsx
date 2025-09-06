@@ -45,6 +45,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SupportTicketDetail } from "@/components/support/SupportTicketDetail";
 import { debounce } from "lodash";
+import { testSupportTicketConnection, createTestTicket } from "@/utils/testSupport";
 
 interface SupportTicket {
   id: string;
@@ -92,6 +93,9 @@ export const SupportPage: React.FC = () => {
   const loadTickets = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
+
+      console.log("Loading tickets with filters:", { statusFilter, priorityFilter, searchQuery });
 
       let query = supabase
         .from("support_tickets")
@@ -114,12 +118,18 @@ export const SupportPage: React.FC = () => {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Supabase query error:", error);
+        throw error;
+      }
+
+      console.log("Loaded tickets:", data?.length || 0);
       setTickets((data as any) || []);
       setError(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error loading tickets:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to load support tickets";
+      const errorMessage = err?.message || "Failed to load support tickets";
       setError(errorMessage);
       setTickets([]);
       toast({
@@ -164,6 +174,56 @@ export const SupportPage: React.FC = () => {
   const handleRefresh = () => {
     setError(null);
     refreshTickets();
+  };
+
+  const handleTestConnection = async () => {
+    try {
+      const result = await testSupportTicketConnection();
+      if (result.success) {
+        toast({
+          title: "Database Connection Test",
+          description: `✅ Connection successful! Found ${result.data.categories} categories, ${result.data.tickets} tickets, ${result.data.tenants} tenants`,
+        });
+      } else {
+        toast({
+          title: "Database Connection Test",
+          description: `❌ Connection failed: ${result.error}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Database Connection Test",
+        description: `❌ Test failed: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateTestTicket = async () => {
+    try {
+      const result = await createTestTicket();
+      if (result.success) {
+        toast({
+          title: "Test Ticket Created",
+          description: `✅ Test ticket ${result.ticketNumber} created successfully!`,
+        });
+        // Refresh tickets to show the new test ticket
+        loadTickets();
+      } else {
+        toast({
+          title: "Test Ticket Creation Failed",
+          description: `❌ Failed to create test ticket: ${result.error}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Test Ticket Creation Failed",
+        description: `❌ Test failed: ${error.message}`,
+        variant: "destructive",
+      });
+    }
   };
 
   // ---------- UI helpers ----------
@@ -249,6 +309,22 @@ export const SupportPage: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestConnection}
+                className="flex items-center gap-2 hover:bg-accent"
+              >
+                🔧 Test DB
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCreateTestTicket}
+                className="flex items-center gap-2 hover:bg-accent"
+              >
+                🧪 Test Create
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -568,28 +644,71 @@ const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess }) => {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.contact_email)) {
+      toast({ title: "Validation Error", description: "Please enter a valid email address", variant: "destructive" });
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log("Creating support ticket with data:", formData);
+      
       const ticketNumber = `TKT-${Date.now().toString().slice(-8)}`;
-      const { error } = await supabase.from("support_tickets").insert({
+      
+      const ticketData = {
         ticket_number: ticketNumber,
-        subject: formData.subject,
-        description: formData.description,
+        subject: formData.subject.trim(),
+        description: formData.description.trim(),
         priority: formData.priority,
-        status: "open",
-        contact_name: formData.contact_name,
-        contact_email: formData.contact_email,
-        contact_phone: formData.contact_phone || null,
+        status: "open" as const,
+        contact_name: formData.contact_name.trim(),
+        contact_email: formData.contact_email.trim().toLowerCase(),
+        contact_phone: formData.contact_phone?.trim() || null,
         tenant_id: formData.tenant_id || null,
         category_id: formData.category_id || null,
-      });
-      if (error) throw error;
+        source: "web" as const,
+      };
 
-      toast({ title: "Success", description: `Ticket ${ticketNumber} created successfully` });
+      console.log("Inserting ticket data:", ticketData);
+
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .insert(ticketData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+
+      console.log("Ticket created successfully:", data);
+      
+      toast({ 
+        title: "Success", 
+        description: `Ticket ${ticketNumber} created successfully`,
+      });
+
+      // Reset form
+      resetForm();
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating ticket:", error);
-      toast({ title: "Error", description: "Failed to create support ticket", variant: "destructive" });
+      
+      let errorMessage = "Failed to create support ticket";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.details) {
+        errorMessage = error.details;
+      }
+      
+      toast({ 
+        title: "Error", 
+        description: errorMessage, 
+        variant: "destructive" 
+      });
     } finally {
       setLoading(false);
     }
