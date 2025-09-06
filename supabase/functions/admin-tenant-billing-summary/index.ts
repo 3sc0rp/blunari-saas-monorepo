@@ -78,7 +78,15 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return createErrorResponse('UNAUTHORIZED', 'Authorization header required', 401, undefined, origin);
 
-    const { timeRange = '30d', tenantIds } = await req.json();
+    // Parse JSON body safely
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (e) {
+      return createErrorResponse('INVALID_JSON', 'Invalid JSON in request body', 400, undefined, origin);
+    }
+
+    const { timeRange = '30d', tenantIds } = requestBody;
     
     // Calculate date range
     const endDate = new Date();
