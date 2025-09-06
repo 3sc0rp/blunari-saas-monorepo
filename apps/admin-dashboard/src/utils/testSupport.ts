@@ -69,34 +69,25 @@ export const testSupportTicketConnection = async () => {
 
 export const createTestTicket = async () => {
   try {
-    console.log("Creating test support ticket...");
+    console.log("Creating test support ticket using admin function...");
     
-    const ticketNumber = `TEST-${Date.now().toString().slice(-8)}`;
-    const ticketData = {
-      ticket_number: ticketNumber,
-      subject: "Test Ticket - Database Connection",
-      description: "This is a test ticket to verify database connectivity and ticket creation functionality.",
-      priority: "medium" as const,
-      status: "open" as const,
-      contact_name: "Test User",
-      contact_email: "test@example.com",
-      contact_phone: "+1234567890",
-      source: "web" as const,
-    };
-
     const { data, error } = await supabase
-      .from("support_tickets")
-      .insert(ticketData)
-      .select()
-      .single();
+      .rpc('create_support_ticket_admin' as any, {
+        p_subject: 'Test Ticket - Admin Function',
+        p_description: 'This is a test ticket created using the admin RPC function to bypass RLS restrictions.',
+        p_contact_name: 'Test Admin User',
+        p_contact_email: 'admin.test@example.com',
+        p_contact_phone: '+1234567890',
+        p_priority: 'medium'
+      });
 
     if (error) {
-      console.error("Create ticket error:", error);
+      console.error("Create ticket RPC error:", error);
       return { success: false, error: error.message };
     }
 
-    console.log("✅ Test ticket created successfully:", data);
-    return { success: true, data, ticketNumber };
+    console.log("✅ Test ticket created successfully with ID:", data);
+    return { success: true, data: { id: data }, ticketId: data };
   } catch (error: any) {
     console.error("Create test ticket failed:", error);
     return { success: false, error: error.message };

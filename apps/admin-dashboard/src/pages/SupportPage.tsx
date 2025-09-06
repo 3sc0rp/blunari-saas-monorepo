@@ -97,35 +97,66 @@ export const SupportPage: React.FC = () => {
 
       console.log("Loading tickets with filters:", { statusFilter, priorityFilter, searchQuery });
 
-      let query = supabase
-        .from("support_tickets")
-        .select(
-          `*,
-          category:support_categories!category_id(name,color),
-          tenant:tenants!tenant_id(name),
-          assignee:employees!assigned_to(id,user_id)
-        `
-        )
-        .order("created_at", { ascending: false });
+      // Try to use the admin RPC function first, fallback to direct query
+      let tickets;
+      try {
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('get_all_support_tickets_admin' as any);
+        
+        if (rpcError) {
+          console.warn("Admin RPC failed, falling back to direct query:", rpcError);
+          throw rpcError;
+        }
+        
+        tickets = rpcData || [];
+        console.log("Loaded tickets via admin RPC:", tickets.length);
+      } catch {
+        // Fallback to direct query
+        console.log("Using direct query fallback...");
+        let query = supabase
+          .from("support_tickets")
+          .select(
+            `*,
+            category:support_categories!category_id(name,color),
+            tenant:tenants!tenant_id(name),
+            assignee:employees!assigned_to(id,user_id)
+          `
+          )
+          .order("created_at", { ascending: false });
 
-      if (statusFilter !== "all") query = query.eq("status", statusFilter);
-      if (priorityFilter !== "all") query = query.eq("priority", priorityFilter);
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error("Supabase query error:", error);
+          throw error;
+        }
+        
+        tickets = data || [];
+        console.log("Loaded tickets via direct query:", tickets.length);
+      }
+
+      // Apply client-side filtering for admin RPC results
+      let filteredTickets = tickets;
+      
+      if (statusFilter !== "all") {
+        filteredTickets = filteredTickets.filter((ticket: any) => ticket.status === statusFilter);
+      }
+      
+      if (priorityFilter !== "all") {
+        filteredTickets = filteredTickets.filter((ticket: any) => ticket.priority === priorityFilter);
+      }
+      
       if (searchQuery) {
-        // use ilike across common text columns
-        query = query.or(
-          `subject.ilike.%${searchQuery}%,ticket_number.ilike.%${searchQuery}%,contact_name.ilike.%${searchQuery}%`
+        const searchLower = searchQuery.toLowerCase();
+        filteredTickets = filteredTickets.filter((ticket: any) => 
+          ticket.subject?.toLowerCase().includes(searchLower) ||
+          ticket.ticket_number?.toLowerCase().includes(searchLower) ||
+          ticket.contact_name?.toLowerCase().includes(searchLower)
         );
       }
 
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error("Supabase query error:", error);
-        throw error;
-      }
-
-      console.log("Loaded tickets:", data?.length || 0);
-      setTickets((data as any) || []);
+      console.log("Filtered tickets:", filteredTickets.length);
+      setTickets(filteredTickets);
       setError(null);
     } catch (err: any) {
       console.error("Error loading tickets:", err);
@@ -206,7 +237,7 @@ export const SupportPage: React.FC = () => {
       if (result.success) {
         toast({
           title: "Test Ticket Created",
-          description: `✅ Test ticket ${result.ticketNumber} created successfully!`,
+          description: `✅ Test ticket ${result.ticketId || 'Unknown ID'} created successfully!`,
         });
         // Refresh tickets to show the new test ticket
         loadTickets();
@@ -673,11 +704,19 @@ const CreateTicketForm: React.FC<CreateTicketFormProps> = ({ onSuccess }) => {
 
       console.log("Inserting ticket data:", ticketData);
 
+      // Use admin RPC function to bypass RLS restrictions
       const { data, error } = await supabase
-        .from("support_tickets")
-        .insert(ticketData)
-        .select()
-        .single();
+        .rpc('create_support_ticket_admin' as any, {
+          p_subject: ticketData.subject,
+          p_description: ticketData.description,
+          p_contact_name: ticketData.contact_name,
+          p_contact_email: ticketData.contact_email,
+          p_contact_phone: ticketData.contact_phone,
+          p_priority: ticketData.priority,
+          p_category_id: ticketData.category_id,
+          p_tenant_id: ticketData.tenant_id,
+          p_user_id: null
+        });
 
       if (error) {
         console.error("Supabase error:", error);
