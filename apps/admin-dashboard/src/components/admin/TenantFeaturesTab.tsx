@@ -350,3 +350,4 @@ export function TenantFeaturesTab({ tenantSlug }: TenantFeaturesTabProps) {
     </div>
   );
 }
+

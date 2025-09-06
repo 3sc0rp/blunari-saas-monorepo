@@ -702,3 +702,4 @@ export const IntegrationsManager: React.FC = () => {
     </div>
   );
 };
+
