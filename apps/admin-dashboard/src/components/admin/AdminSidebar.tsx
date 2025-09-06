@@ -123,13 +123,6 @@ const platformNavigation: NavigationItem[] = [
     description: "Partner and agency tools",
   },
   {
-    title: "Integrations",
-    url: "/admin/integrations",
-    icon: Plug,
-    badge: null,
-    description: "Connect external services",
-  },
-  {
     title: "Support",
     url: "/admin/support",
     icon: LifeBuoy,

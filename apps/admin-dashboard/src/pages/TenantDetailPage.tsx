@@ -31,7 +31,6 @@ import { TenantFeaturesTab } from "@/components/admin/TenantFeaturesTab";
 import { TenantBillingTab } from "@/components/tenant/TenantBillingTab";
 import { TenantApiKeysPanel } from "@/components/tenant/TenantApiKeysPanel";
 import { TenantOperationsPanel } from "@/components/tenant/TenantOperationsPanel";
-import { TenantIntegrationsPanel } from "@/components/tenant/TenantIntegrationsPanel";
 import { TenantInternalNotesPanel } from "@/components/tenant/TenantInternalNotesPanel";
 import { TenantAuditLogPanel } from "@/components/tenant/TenantAuditLogPanel";
 import { TenantChurnSignalsPanel } from "@/components/tenant/TenantChurnSignalsPanel";
@@ -546,7 +545,6 @@ export default function TenantDetailPage() {
       <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="usage">Usage</TabsTrigger>
       <TabsTrigger value="operations">Operations</TabsTrigger>
-      <TabsTrigger value="integrations">Integrations</TabsTrigger>
       <TabsTrigger value="notes">Notes</TabsTrigger>
       <TabsTrigger value="audit">Audit</TabsTrigger>
       <TabsTrigger value="churn">Churn</TabsTrigger>
@@ -611,10 +609,6 @@ export default function TenantDetailPage() {
               <TenantOperationsPanel tenantId={tenant.id} />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="integrations">
-          <TenantIntegrationsPanel tenantId={tenant.id} />
         </TabsContent>
 
         <TabsContent value="notes">

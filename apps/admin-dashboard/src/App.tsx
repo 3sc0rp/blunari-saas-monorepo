@@ -25,7 +25,6 @@ import SystemHealthPage from "@/pages/SystemHealthPage";
 import ImpersonationPage from "@/pages/ImpersonationPage";
 import AgencyKitPage from "@/pages/AgencyKitPage";
 import ProfilePage from "@/pages/ProfilePage";
-import { IntegrationsPage } from "@/pages/IntegrationsPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { AnalyticsPage } from "@/pages/AnalyticsPage";
 import { SupportPage } from "@/pages/SupportPage";
@@ -95,7 +94,6 @@ function App() {
                     <Route path="agency-kit" element={<AgencyKitPage />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="impersonate" element={<ImpersonationPage />} />
-                    <Route path="integrations" element={<IntegrationsPage />} />
                     <Route
                       path="notifications"
                       element={<NotificationsPage />}
