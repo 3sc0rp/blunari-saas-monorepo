@@ -182,13 +182,13 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
       const { data, error } = await supabase
         .rpc('create_support_message_admin' as any, {
           p_ticket_id: ticketId,
-          p_sender_type: "agent",
-          p_sender_id: null,
-          p_sender_name: user.email?.split("@")[0] || "Agent",
-          p_sender_email: user.email,
-          p_message_type: "message",
-          p_content: newMessage,
-          p_is_internal: isInternal
+          p_message: newMessage,
+          p_sender_type: "admin",
+          p_metadata: {
+            sender_name: user.email?.split("@")[0] || "Agent",
+            sender_email: user.email,
+            is_internal: isInternal
+          }
         });
 
       if (error) {
@@ -264,13 +264,13 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
 
         await supabase.rpc('create_support_message_admin' as any, {
           p_ticket_id: ticketId,
+          p_message: `Updated ${changes.join(" and ")}`,
           p_sender_type: "system",
-          p_sender_id: null,
-          p_sender_name: "System",
-          p_sender_email: null,
-          p_message_type: "status_change",
-          p_content: `Updated ${changes.join(" and ")}`,
-          p_is_internal: false
+          p_metadata: {
+            sender_name: "System",
+            message_type: "status_change",
+            is_internal: false
+          }
         });
       }
 
