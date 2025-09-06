@@ -35,7 +35,6 @@ import {
   MessageSquare,
   Cloud,
   Mail,
-  Store,
   BarChart3,
   Settings,
   Plus,
@@ -60,7 +59,6 @@ interface Integration {
     | "communication"
     | "infrastructure"
     | "analytics"
-    | "pos"
     | "email";
   provider: string;
   status: "connected" | "disconnected" | "error" | "pending";
@@ -143,34 +141,6 @@ const availableIntegrations: Integration[] = [
     },
   },
   {
-    id: "toast-pos",
-    name: "Toast POS",
-    type: "pos",
-    provider: "Toast",
-    status: "disconnected",
-    description: "Restaurant POS system integration",
-    icon: Store,
-    features: ["Menu Sync", "Order Management", "Inventory", "Reporting"],
-    endpoints: {
-      webhooks: ["/webhooks/toast"],
-      api: "https://ws-api.toasttab.com",
-    },
-  },
-  {
-    id: "square",
-    name: "Square POS",
-    type: "pos",
-    provider: "Square",
-    status: "disconnected",
-    description: "Square POS system integration",
-    icon: Store,
-    features: ["Payment Processing", "Inventory Management", "Customer Data"],
-    endpoints: {
-      webhooks: ["/webhooks/square"],
-      api: "https://connect.squareup.com",
-    },
-  },
-  {
     id: "analytics",
     name: "Custom Analytics",
     type: "analytics",
@@ -232,7 +202,6 @@ export const IntegrationsManager: React.FC = () => {
       communication: MessageSquare,
       infrastructure: Cloud,
       email: Mail,
-      pos: Store,
       analytics: BarChart3,
     };
     const Icon = icons[type];
@@ -367,7 +336,6 @@ export const IntegrationsManager: React.FC = () => {
           <TabsTrigger value="payment">Payment</TabsTrigger>
           <TabsTrigger value="communication">Communication</TabsTrigger>
           <TabsTrigger value="infrastructure">Infrastructure</TabsTrigger>
-          <TabsTrigger value="pos">POS Systems</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">

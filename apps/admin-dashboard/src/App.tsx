@@ -15,7 +15,6 @@ import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import TenantsPage from "@/pages/TenantsPage";
 import TenantDetailPage from "@/pages/TenantDetailPage";
-import NewTenantPage from "@/pages/NewTenantPage";
 import TenantProvisioningPage from "@/pages/TenantProvisioningPage";
 import { EmployeesPage } from "@/pages/EmployeesPage";
 import SettingsPage from "@/pages/SettingsPage";
@@ -24,7 +23,6 @@ import OperationsPage from "@/pages/OperationsPage";
 import ObservabilityPage from "@/pages/ObservabilityPage";
 import SystemHealthPage from "@/pages/SystemHealthPage";
 import ImpersonationPage from "@/pages/ImpersonationPage";
-import POSSystemsPage from "@/pages/POSSystemsPage";
 import DomainsPage from "@/pages/DomainsPage";
 import AgencyKitPage from "@/pages/AgencyKitPage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -73,7 +71,10 @@ function App() {
                     />
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="tenants" element={<TenantsPage />} />
-                    <Route path="tenants/new" element={<NewTenantPage />} />
+                    <Route
+                      path="tenants/new"
+                      element={<Navigate to="/admin/tenants/provision" replace />}
+                    />
                     <Route
                       path="tenants/provision"
                       element={<TenantProvisioningPage />}
@@ -93,7 +94,6 @@ function App() {
                       path="system-health"
                       element={<SystemHealthPage />}
                     />
-                    <Route path="pos-systems" element={<POSSystemsPage />} />
                     <Route path="domains" element={<DomainsPage />} />
                     <Route path="agency-kit" element={<AgencyKitPage />} />
                     <Route path="profile" element={<ProfilePage />} />

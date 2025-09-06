@@ -23,7 +23,6 @@ import {
   CreditCard,
   Activity,
   Shield,
-  Utensils,
   ChefHat,
   Globe,
   Building2,
@@ -110,13 +109,6 @@ const operationsNavigation: NavigationItem[] = [
 ];
 
 const platformNavigation: NavigationItem[] = [
-  {
-    title: "POS Systems",
-    url: "/admin/pos-systems",
-    icon: Utensils,
-    badge: null,
-    description: "Point of sale integrations",
-  },
   {
     title: "Catering",
     url: "/admin/catering",
