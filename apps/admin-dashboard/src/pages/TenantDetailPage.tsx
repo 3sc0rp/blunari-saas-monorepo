@@ -56,7 +56,7 @@ export default function TenantDetailPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getTenant, resendWelcomeEmail, issuePasswordSetupLink } = useAdminAPI() as any;
+  const { getTenant, resendWelcomeEmail, issuePasswordSetupLink } = useAdminAPI();
   const [sendingSetupEmail, setSendingSetupEmail] = useState(false);
   const [lastSetupRequest, setLastSetupRequest] = useState<null | { mode: string; requestId: string; at: number }>(null);
   const [passwordSetupRate, setPasswordSetupRate] = useState<null | { remaining: number; tenantRemaining: number; adminRemaining: number; limited: boolean }>(null);
@@ -115,11 +115,11 @@ export default function TenantDetailPage() {
     if (!tenantId) return;
     try {
       setLoadingEmailStatus(true);
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("background_jobs")
         .select("id, job_type, status, created_at, updated_at")
-  // Filter by payload JSON field since background_jobs has no tenant_id column
-  .contains("payload", { tenantId })
+        // Filter by payload JSON field since background_jobs has no tenant_id column
+        .contains("payload", { tenantId })
         .in("job_type", ["WELCOME_EMAIL", "NOTIFICATION_EMAIL"])
         .order("created_at", { ascending: false })
         .limit(10);
@@ -152,6 +152,11 @@ export default function TenantDetailPage() {
       );
     } catch (e) {
       console.warn("Failed to fetch email history", e);
+      toast({
+        title: "Email History Error",
+        description: "Failed to load email history. Please try again.",
+        variant: "destructive",
+      });
       setLastWelcomeJob(null);
       setEmailHistory([]);
     } finally {
@@ -200,7 +205,7 @@ export default function TenantDetailPage() {
     setIssuingRecovery(true);
     setRecoveryData(null);
     try {
-      const { data, error } = await (supabase as any).functions.invoke(
+      const { data, error } = await supabase.functions.invoke(
         "tenant-owner-credentials",
         { body: { tenantId, action: "issue-recovery" } },
       );
@@ -252,14 +257,16 @@ export default function TenantDetailPage() {
   // Auto-expire displayed recovery link after TTL
   useEffect(() => {
     if (!recoveryData) return;
+    
     const remaining = recoveryDisplayTTLms - (Date.now() - recoveryData.issuedAt);
     if (remaining <= 0) {
       setRecoveryData(null);
       return;
     }
+    
     const timer = setTimeout(() => setRecoveryData(null), remaining);
     return () => clearTimeout(timer);
-  }, [recoveryData]);
+  }, [recoveryData, recoveryDisplayTTLms]);
 
   if (loadingPage) {
     return (

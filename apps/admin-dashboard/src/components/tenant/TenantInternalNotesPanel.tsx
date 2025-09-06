@@ -18,7 +18,7 @@ export function TenantInternalNotesPanel({ tenantId }: { tenantId: string }) {
   const load = async () => {
     setLoading(true);
     try {
-      const { data: resp, error } = await (supabase as any).functions.invoke('admin-tenant-notes', { body: { tenantId } });
+      const { data: resp, error } = await supabase.functions.invoke('admin-tenant-notes', { body: { tenantId, action: 'list' } });
       if (error || resp?.error) throw new Error(error?.message || resp?.error?.message || 'Failed');
       setData(resp as Resp);
     } catch (e) { toast({ title: 'Notes fetch failed', description: e instanceof Error ? e.message : 'Unknown error', variant: 'destructive' }); }
@@ -31,7 +31,7 @@ export function TenantInternalNotesPanel({ tenantId }: { tenantId: string }) {
     const optimistic: Note = { id: 'optimistic-'+Date.now(), body: draft.trim(), staff_id: 'you', created_at: new Date().toISOString() };
     setData(prev => prev ? { ...prev, notes: [optimistic, ...prev.notes] } : prev);
     try {
-      const { data: resp, error } = await (supabase as any).functions.invoke('admin-tenant-notes', { body: { tenantId, body: draft.trim() } });
+      const { data: resp, error } = await supabase.functions.invoke('admin-tenant-notes', { body: { tenantId, action: 'create', note: draft.trim() } });
       if (error || resp?.error) throw new Error(error?.message || resp?.error?.message || 'Failed');
       setDraft('');
       load();

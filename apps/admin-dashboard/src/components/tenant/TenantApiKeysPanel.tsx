@@ -18,7 +18,7 @@ export function TenantApiKeysPanel({ tenantId }: { tenantId: string }) {
   const list = async () => {
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any).functions.invoke('admin-tenant-api-keys', { body: { action: 'list', tenantId } });
+      const { data, error } = await supabase.functions.invoke('admin-tenant-api-keys', { body: { action: 'list', tenantId } });
       if (error || data?.error) throw new Error(error?.message || data?.error?.message || 'Failed');
       setKeys(data.data || []);
     } catch (e) {
@@ -32,7 +32,7 @@ export function TenantApiKeysPanel({ tenantId }: { tenantId: string }) {
     if (!newName.trim()) return;
     setCreating(true);
     try {
-      const { data, error } = await (supabase as any).functions.invoke('admin-tenant-api-keys', { body: { action: 'create', tenantId, name: newName.trim() } });
+      const { data, error } = await supabase.functions.invoke('admin-tenant-api-keys', { body: { action: 'create', tenantId, name: newName.trim() } });
       if (error || data?.error) throw new Error(error?.message || data?.error?.message || 'Failed');
       setRevealed({ id: data.data.id, apiKey: data.data.apiKey });
       setNewName('');
@@ -44,7 +44,7 @@ export function TenantApiKeysPanel({ tenantId }: { tenantId: string }) {
 
   const revoke = async (id: string) => {
     try {
-      const { data, error } = await (supabase as any).functions.invoke('admin-tenant-api-keys', { body: { action: 'revoke', tenantId, keyId: id } });
+      const { data, error } = await supabase.functions.invoke('admin-tenant-api-keys', { body: { action: 'revoke', tenantId, keyId: id } });
       if (error || data?.error) throw new Error(error?.message || data?.error?.message || 'Failed');
       await list();
     } catch (e) {
