@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Card,
@@ -100,7 +100,7 @@ const POSIntegrations: React.FC = () => {
   );
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const fetchIntegrations = async () => {
+  const fetchIntegrations = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("pos_integrations")
@@ -118,9 +118,9 @@ const POSIntegrations: React.FC = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [tenant?.id]);
 
-  const fetchHealthChecks = async () => {
+  const fetchHealthChecks = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("pos_health_checks")
@@ -134,9 +134,9 @@ const POSIntegrations: React.FC = () => {
     } catch (error) {
       console.error("Error fetching health checks:", error);
     }
-  };
+  }, [tenant?.id]);
 
-  const fetchRecentEvents = async () => {
+  const fetchRecentEvents = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("pos_events")
@@ -152,7 +152,7 @@ const POSIntegrations: React.FC = () => {
       console.error("Error fetching events:", error);
       setLoading(false);
     }
-  };
+  }, [tenant?.id]);
 
   const handleIntegrateProvider = (provider: string) => {
     toast({

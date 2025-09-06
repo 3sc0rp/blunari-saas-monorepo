@@ -3,28 +3,79 @@
 
 import React from 'react';
 
-// Make React available globally immediately
-window.React = React;
-globalThis.React = React;
+// Production-safe React global assignment
+const setupReactGlobally = () => {
+  // Ensure we don't override an existing React instance
+  if (typeof window !== 'undefined') {
+    const w = window as unknown as { React?: typeof React };
+    if (!w.React) {
+      w.React = React;
+    }
+  }
+  
+  if (typeof globalThis !== 'undefined') {
+    const g = globalThis as unknown as { React?: typeof React };
+    if (!g.React) {
+      g.React = React;
+    }
+  }
 
-// Polyfill commonly accessed React methods
-window.React.createContext = React.createContext;
-window.React.useState = React.useState;
-window.React.useEffect = React.useEffect;
-window.React.useLayoutEffect = React.useLayoutEffect; // CRITICAL: Missing hook
-window.React.useContext = React.useContext;
-window.React.useCallback = React.useCallback;
-window.React.useMemo = React.useMemo;
-window.React.useRef = React.useRef;
-window.React.useReducer = React.useReducer;
-window.React.forwardRef = React.forwardRef;
+  // Always ensure the current React instance is available
+  const reactInstance = (
+    typeof window !== 'undefined' && (window as unknown as { React?: typeof React }).React
+  ) || (
+    typeof globalThis !== 'undefined' && (globalThis as unknown as { React?: typeof React }).React
+  ) || React;
 
-// Ensure React is always available for dynamic imports
-if (typeof globalThis.React === 'undefined') {
-  globalThis.React = React;
-}
+  // Polyfill commonly accessed React methods with safety checks
+  if (reactInstance && typeof reactInstance.createContext !== 'function') {
+    reactInstance.createContext = React.createContext;
+  }
+  if (reactInstance && typeof reactInstance.useState !== 'function') {
+    reactInstance.useState = React.useState;
+  }
+  if (reactInstance && typeof reactInstance.useEffect !== 'function') {
+    reactInstance.useEffect = React.useEffect;
+  }
+  if (reactInstance && typeof reactInstance.useLayoutEffect !== 'function') {
+    reactInstance.useLayoutEffect = React.useLayoutEffect;
+  }
+  if (reactInstance && typeof reactInstance.useContext !== 'function') {
+    reactInstance.useContext = React.useContext;
+  }
+  if (reactInstance && typeof reactInstance.useCallback !== 'function') {
+    reactInstance.useCallback = React.useCallback;
+  }
+  if (reactInstance && typeof reactInstance.useMemo !== 'function') {
+    reactInstance.useMemo = React.useMemo;
+  }
+  if (reactInstance && typeof reactInstance.useRef !== 'function') {
+    reactInstance.useRef = React.useRef;
+  }
+  if (reactInstance && typeof reactInstance.useReducer !== 'function') {
+    reactInstance.useReducer = React.useReducer;
+  }
+  if (reactInstance && typeof reactInstance.forwardRef !== 'function') {
+    reactInstance.forwardRef = React.forwardRef;
+  }
+
+  // Final safety assignment
+  if (typeof window !== 'undefined') {
+    (window as unknown as { React?: typeof React }).React = reactInstance;
+  }
+  if (typeof globalThis !== 'undefined') {
+    (globalThis as unknown as { React?: typeof React }).React = reactInstance;
+  }
+  
+  return reactInstance;
+};
+
+// Execute immediately
+const reactGlobal = setupReactGlobally();
 
 // Mark polyfill as loaded
-window.__REACT_POLYFILL_LOADED__ = true;
+if (typeof window !== 'undefined') {
+  window.__REACT_POLYFILL_LOADED__ = true;
+}
 
-export default React;
+export default reactGlobal;

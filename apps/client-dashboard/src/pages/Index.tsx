@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { Loader2, Utensils } from "lucide-react";
+import SentryTestButton from "@/components/dev/SentryTestButton";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -68,6 +69,11 @@ const Index = () => {
             Loading your experience...
           </p>
         </motion.div>
+        {import.meta.env.DEV && (
+          <div className="mb-4 flex justify-center">
+            <SentryTestButton />
+          </div>
+        )}
       </motion.div>
     </div>
   );

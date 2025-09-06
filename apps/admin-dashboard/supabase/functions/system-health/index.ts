@@ -1,15 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { createCorsHeaders } from "../_shared/cors";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -38,12 +33,12 @@ serve(async (req) => {
           ? { error: error.message }
           : { tenant_count: data?.count || 0 },
       });
-    } catch (error) {
+  } catch (error) {
       healthChecks.push({
         service: "Database",
         status: "unhealthy",
         response_time: Date.now() - dbStart,
-        details: { error: error.message },
+    details: { error: (error as any).message },
       });
     }
 
@@ -65,19 +60,19 @@ serve(async (req) => {
         response_time: Date.now() - authStart,
         details: { status_code: response.status },
       });
-    } catch (error) {
+  } catch (error) {
       healthChecks.push({
         service: "Authentication",
         status: "unhealthy",
         response_time: Date.now() - authStart,
-        details: { error: error.message },
+    details: { error: (error as any).message },
       });
     }
 
     // Storage service health check
     const storageStart = Date.now();
     try {
-      const { data, error } = await supabaseClient.storage.listBuckets();
+      const { data, error } = await (supabaseClient as any).storage.listBuckets();
 
       healthChecks.push({
         service: "Storage",
@@ -87,12 +82,12 @@ serve(async (req) => {
           ? { error: error.message }
           : { buckets_count: data?.length || 0 },
       });
-    } catch (error) {
+  } catch (error) {
       healthChecks.push({
         service: "Storage",
         status: "unhealthy",
         response_time: Date.now() - storageStart,
-        details: { error: error.message },
+    details: { error: (error as any).message },
       });
     }
 
@@ -112,12 +107,12 @@ serve(async (req) => {
         response_time: Date.now() - functionsStart,
         details: error ? { error: error.message } : data,
       });
-    } catch (error) {
+  } catch (error) {
       healthChecks.push({
         service: "Edge Functions",
         status: "degraded",
         response_time: Date.now() - functionsStart,
-        details: { error: error.message },
+    details: { error: (error as any).message },
       });
     }
 
@@ -159,7 +154,7 @@ serve(async (req) => {
       }),
       {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   } catch (error) {
@@ -167,12 +162,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: (error as any).message,
         overall_status: "unhealthy",
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   }

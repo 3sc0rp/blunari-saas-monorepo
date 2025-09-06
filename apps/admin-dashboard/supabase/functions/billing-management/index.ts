@@ -1,21 +1,19 @@
+// @ts-ignore - Deno remote import (valid at runtime)
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// @ts-ignore - Deno remote import (valid at runtime)
 import Stripe from "https://esm.sh/stripe@14.21.0";
+// @ts-ignore - Deno remote import (valid at runtime)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { createCorsHeaders } from "../_shared/cors";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : "";
   console.log(`[BILLING-MANAGEMENT] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -88,12 +86,12 @@ serve(async (req) => {
 
         // Use real tenant data - no mock data
         const enhancedTenants =
-          tenants?.map((tenant) => {
+          (tenants as any[])?.map((tenant: any) => {
             const payments =
-              recentPayments?.filter((p) => p.tenant_id === tenant.id) || [];
+              (recentPayments as any[])?.filter((p: any) => p.tenant_id === tenant.id) || [];
             const lastPayment = payments[0];
             const failedPayments = payments.filter(
-              (p) => p.status === "failed",
+              (p: any) => p.status === "failed",
             ).length;
 
             return {
@@ -101,17 +99,17 @@ serve(async (req) => {
               lastPayment,
               failedPayments,
               totalRevenue: payments
-                .filter((p) => p.status === "paid")
-                .reduce((sum, p) => sum + p.amount, 0),
+                .filter((p: any) => p.status === "paid")
+                .reduce((sum: number, p: any) => sum + (p.amount || 0), 0),
             };
           }) || [];
 
         logStep("Fetched restaurants", {
           count: enhancedTenants?.length,
-          tenants: tenants?.map((t) => t.name),
+          tenants: (tenants as any[])?.map((t: any) => t.name),
         });
         return new Response(JSON.stringify({ restaurants: enhancedTenants }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         });
       }
 
@@ -141,7 +139,7 @@ serve(async (req) => {
           tenantId,
         });
         return new Response(JSON.stringify({ payments: payments || [] }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         });
       }
 
@@ -184,7 +182,7 @@ serve(async (req) => {
         });
 
         return new Response(JSON.stringify({ success: true, reminder }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         });
       }
 
@@ -211,20 +209,20 @@ serve(async (req) => {
 
         // Use real data only
         const analytics = {
-          totalRevenue: revenue?.reduce((sum, r) => sum + r.amount, 0) || 0,
-          totalTransactions: revenue?.length || 0,
+          totalRevenue: (revenue as any[])?.reduce((sum: number, r: any) => sum + (r.amount || 0), 0) || 0,
+          totalTransactions: (revenue as any[])?.length || 0,
           revenueByPlan:
-            revenue?.reduce(
-              (acc, r) => {
+            (revenue as any[])?.reduce(
+              (acc: Record<string, number>, r: any) => {
                 // Since we don't have plan info in billing_history, group generically
-                acc["subscription"] = (acc["subscription"] || 0) + r.amount;
+                acc["subscription"] = (acc["subscription"] || 0) + (r.amount || 0);
                 return acc;
               },
               {} as Record<string, number>,
             ) || {},
           subscriptionsByTier:
-            subscriptions?.reduce(
-              (acc, s) => {
+            (subscriptions as any[])?.reduce(
+              (acc: Record<string, number>, s: any) => {
                 const tier = s.subscription_tier || "free";
                 acc[tier] = (acc[tier] || 0) + 1;
                 return acc;
@@ -239,7 +237,7 @@ serve(async (req) => {
           subsCount: subscriptions?.length,
         });
         return new Response(JSON.stringify({ analytics }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         });
       }
 
@@ -317,14 +315,14 @@ serve(async (req) => {
 
         logStep("Updated subscription", { tenant_id, new_plan });
         return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         });
       }
 
       default:
         return new Response(JSON.stringify({ error: "Invalid action" }), {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         });
     }
   } catch (error) {
@@ -332,7 +330,7 @@ serve(async (req) => {
     logStep("ERROR", { message: errorMessage });
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
     });
   }
 });

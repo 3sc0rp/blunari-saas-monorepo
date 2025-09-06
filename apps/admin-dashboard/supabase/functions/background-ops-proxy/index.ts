@@ -1,15 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createCorsHeaders } from "../_shared/cors";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const corsHeaders = createCorsHeaders();
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -21,11 +18,11 @@ serve(async (req) => {
     // Get auth header from request
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
+    return new Response(
         JSON.stringify({ error: "No authorization header" }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
@@ -39,7 +36,7 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       });
     }
 
@@ -64,13 +61,14 @@ serve(async (req) => {
 
     return new Response(JSON.stringify(data), {
       status: response.status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Background ops proxy error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : "Internal error";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
     });
   }
 });

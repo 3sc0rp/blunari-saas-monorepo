@@ -38,6 +38,17 @@
       "dependsOn": ["build", "test", "lint"],
       "cache": false
     },
+    "preview": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["build"],
+      "env": [
+        "NODE_ENV",
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY",
+        "VITE_SENTRY_DSN"
+      ]
+    },
     "clean": {
       "cache": false
     }

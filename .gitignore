@@ -66,6 +66,10 @@ test-results/
 playwright-report/
 coverage/
 
+# Script outputs
+scripts/*.out.json
+scripts/*.log
+
 # Development and debug files
 *debug*.md
 *DEBUG*.md

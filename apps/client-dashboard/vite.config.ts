@@ -1,156 +1,17 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+// @ts-nocheck
+import { defineConfig, PluginOption } from "vite";
+import react from "@vitejs/plugin-react";
 import path from "path";
-import { analyzeBundleSize } from './bundleAnalyzer';
+import inject from '@rollup/plugin-inject';
 
-// Advanced Vite configuration for optimal production performance
+// Simplified Vite configuration for production builds
 export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production';
-  
-  return {
-    plugins: [
-      react(),
-      
-      // AGGRESSIVE React polyfill plugin - MUST LOAD FIRST
-      {
-        name: 'react-emergency-polyfill',
-        configureServer(server) {
-          server.middlewares.use('/react-emergency-polyfill.js', (req, res, next) => {
-            res.setHeader('Content-Type', 'application/javascript');
-            res.setHeader('Cache-Control', 'no-cache');
-            res.end(`
-// ULTRA-AGGRESSIVE React Polyfill - Development Mode
-(function() {
-  'use strict';
-  
-  // Force React availability IMMEDIATELY
-  const createReactPolyfill = () => ({
-    createContext: function(defaultValue) {
-      console.warn('🔧 Emergency createContext polyfill called');
-      return {
-        Provider: function({ children }) { return children; },
-        Consumer: function({ children }) { return children(defaultValue); },
-        _currentValue: defaultValue,
-        _defaultValue: defaultValue
-      };
-    },
-    useState: function(initial) { return [initial, function() {}]; },
-    useEffect: function() {},
-    useLayoutEffect: function() {}, // CRITICAL: This was missing and causing errors
-    useContext: function(context) { return context ? context._currentValue : null; },
-    useCallback: function(fn) { return fn; },
-    useMemo: function(fn) { return fn(); },
-    useRef: function(initial) { return { current: initial }; },
-    useReducer: function(reducer, initial) { return [initial, function() {}]; },
-    useImperativeHandle: function() {},
-    useDebugValue: function() {},
-    useDeferredValue: function(value) { return value; },
-    useTransition: function() { return [false, function() {}]; },
-    useId: function() { return 'emergency-id-' + Math.random(); },
-    forwardRef: function(fn) { return fn; },
-    Fragment: function({ children }) { return children; },
-    Component: function() {},
-    PureComponent: function() {},
-    memo: function(component) { return component; },
-    createElement: function(type, props, ...children) {
-      return { type, props: props || {}, children };
-    },
-    cloneElement: function(element) { return element; },
-    version: '18.0.0-emergency-polyfill'
-  });
-  
-  if (typeof window !== 'undefined') {
-    console.warn('⚠️ ULTRA-AGGRESSIVE React polyfill activating (dev mode)...');
-    window.React = window.React || createReactPolyfill();
-    globalThis.React = globalThis.React || window.React;
-    
-    // Force React on global scope
-    global = global || {};
-    global.React = global.React || window.React;
-    
-    console.log('🚨 ULTRA-AGGRESSIVE React polyfill activated (dev)');
-  }
-})();
-            `);
-          });
-        },
-        
-        // CRITICAL: Transform HTML to inject polyfill FIRST
-        transformIndexHtml: {
-          order: 'pre',
-          handler(html) {
-            return html.replace(
-              '<head>',
-              `<head>
-    <script>
-      // IMMEDIATE React polyfill injection - CANNOT BE BYPASSED
-      (function() {
-        'use strict';
-        
-        const createUltraReactPolyfill = () => ({
-          createContext: function(defaultValue) {
-            return {
-              Provider: function({ children }) { return children; },
-              Consumer: function({ children }) { return children(defaultValue); },
-              _currentValue: defaultValue,
-              _defaultValue: defaultValue
-            };
-          },
-          useState: function(initial) { return [initial, function() {}]; },
-          useEffect: function() {},
-          useLayoutEffect: function() {}, // ULTRA-CRITICAL FIX
-          useContext: function(context) { return context ? context._currentValue : null; },
-          useCallback: function(fn) { return fn; },
-          useMemo: function(fn) { return fn(); },
-          useRef: function(initial) { return { current: initial }; },
-          useReducer: function(reducer, initial) { return [initial, function() {}]; },
-          useImperativeHandle: function() {},
-          useDebugValue: function() {},
-          useDeferredValue: function(value) { return value; },
-          useTransition: function() { return [false, function() {}]; },
-          useId: function() { return 'ultra-emergency-id-' + Math.random(); },
-          forwardRef: function(fn) { return fn; },
-          Fragment: function({ children }) { return children; },
-          Component: function() {},
-          PureComponent: function() {},
-          memo: function(component) { return component; },
-          createElement: function(type, props, ...children) {
-            return { type, props: props || {}, children };
-          },
-          cloneElement: function(element) { return element; },
-          version: '18.0.0-ultra-emergency'
-        });
-        
-        if (typeof window !== 'undefined') {
-          console.warn('🔥 ULTRA-EMERGENCY React polyfill - IMMEDIATE INJECTION');
-          window.React = window.React || createUltraReactPolyfill();
-          globalThis.React = globalThis.React || window.React;
-          
-          // Force ALL possible global assignments
-          if (typeof global !== 'undefined') global.React = window.React;
-          if (typeof self !== 'undefined') self.React = window.React;
-          
-          console.log('🔥 ULTRA-EMERGENCY React polyfill ACTIVE - vendor chunks protected');
-        }
-      })();
-    </script>`
-            );
-          }
-        }
-      },
-      
-      // Custom plugin for bundle analysis
-      {
-        name: 'bundle-analyzer',
-        generateBundle(options, bundle) {
-          if (isProduction) {
-            analyzeBundleSize(bundle);
-          }
-        }
-      }
-    ],
 
-    // Path resolution with smart React deduplication
+  return {
+  plugins: [react() as PluginOption],
+
+    // Path resolution
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
@@ -162,9 +23,7 @@ export default defineConfig(({ mode }) => {
         '@integrations': path.resolve(__dirname, 'src/integrations'),
         '@lib': path.resolve(__dirname, 'src/lib')
       },
-      
-      // NUCLEAR: Force deduplication at the resolution level
-      dedupe: ['react', 'react-dom', 'scheduler', '@types/react', '@types/react-dom']
+      dedupe: ['react', 'react-dom']
     },
 
     // Development server configuration
@@ -177,37 +36,24 @@ export default defineConfig(({ mode }) => {
       },
       fs: {
         strict: false
-      },
-      // Proxy configuration for API calls
-      proxy: {
-        '/api': {
-          target: process.env.VITE_API_URL || 'http://localhost:8000',
-          changeOrigin: true,
-          secure: false
-        }
       }
     },
 
     // Environment variables
     define: {
       global: 'globalThis',
-      // Force React to be available globally
       'process.env.NODE_ENV': JSON.stringify(mode),
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
       __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
       __COMMIT_HASH__: JSON.stringify(process.env.VITE_COMMIT_HASH || 'dev')
     },
 
-    // Dependency optimization with NUCLEAR React handling
+    // Dependency optimization
     optimizeDeps: {
-      // Include dependencies that should be pre-bundled
       include: [
         'react',
         'react-dom',
         'react/jsx-runtime',
-        'react/jsx-dev-runtime',
-        'scheduler',
-        './src/polyfills/react-global.ts',
         'react-router-dom',
         '@supabase/supabase-js',
         '@tanstack/react-query',
@@ -217,208 +63,68 @@ export default defineConfig(({ mode }) => {
         'clsx'
       ],
       
-      // Exclude dependencies from pre-bundling
       exclude: [
         '@huggingface/transformers',
         'chart.js',
         'monaco-editor'
-      ],
-
-      // Force optimization for specific packages
-      force: isProduction
+      ]
     },
 
     // Build optimizations
     build: {
-      // Target modern browsers for smaller bundles
       target: 'es2020',
-      
-      // Output directory
       outDir: 'dist',
-      
-      // Generate source maps for debugging
-      sourcemap: isProduction ? 'hidden' : true,
-      
-      // Minification settings
+      sourcemap: !isProduction, // keep maps in dev only
       minify: isProduction ? 'terser' : false,
-      ...(isProduction && {
-        terserOptions: {
-          compress: {
-            // Remove console.log in production
-            drop_console: true,
-            drop_debugger: true,
-            // Remove unused code
-            dead_code: true,
-            // Optimize boolean expressions
-            booleans_as_integers: false,
-            // Keep function names for better error stacks
-            keep_fnames: false,
-            // Advanced compression
-            passes: 2,
-            pure_funcs: ['console.log', 'console.debug', 'console.trace']
-          },
-          mangle: {
-            // Keep class names for better debugging only in dev builds
-            keep_classnames: false,
-            // Don't keep function names for smaller bundles
-            keep_fnames: false,
-            // Mangle properties for even smaller bundles (be careful)
-            properties: false
-          },
-          format: {
-            // Remove comments
-            comments: false,
-            // ASCII only for better compatibility
-            ascii_only: true
-          }
-        }
-      }),
 
-      // Rollup-specific options
       rollupOptions: {
-        // External React for better compatibility
-        external: (id) => {
-          // Don't externalize React in production builds
-          return false;
-        },
-        
-        // Code splitting strategy
-        output: {
-          // Ensure React is available globally
-          globals: {
-            'react': 'React',
-            'react-dom': 'ReactDOM'
-          },
-          
-          // AGGRESSIVE: Don't split ANY React-related dependencies
-          manualChunks: (id) => {
-            if (id.includes('node_modules')) {
-              
-          // CRITICAL: Keep ALL React-ecosystem libraries together in main vendor
-          // ULTRA-AGGRESSIVE: Prevent ANY React splitting
-          if (id.includes('react') || 
-              id.includes('react-dom') || 
-              id.includes('scheduler') ||
-              id.includes('@radix-ui') ||
-              id.includes('framer-motion') ||
-              id.includes('lucide-react') ||
-              id.includes('@tanstack/react') ||
-              id.includes('react-router') ||
-              id.includes('react-hook-form') ||
-              id.includes('react-day-picker') ||
-              id.includes('react-resizable') ||
-              id.includes('react-window') ||
-              id.includes('next-themes') ||
-              id.includes('sonner') ||
-              id.includes('vaul') ||
-              id.includes('cmdk') ||
-              id.includes('embla-carousel-react') ||
-              id.includes('input-otp') ||
-              id.includes('recharts') ||
-              id.includes('react-smooth') ||
-              id.includes('react-transition-group') ||
-              id.includes('react-remove-scroll') ||
-              id.includes('react-style-singleton') ||
-              id.includes('use-callback-ref') ||
-              id.includes('use-sidecar') ||
-              id.includes('react-composer') ||
-              id.includes('suspend-react') ||
-              id.includes('tunnel-rat') ||
-              id.includes('its-fine') ||
-              id.includes('react-reconciler') ||
-              id.includes('react-use-measure') ||
-              id.includes('@react-spring') ||
-              id.includes('@use-gesture/react') ||
-              id.includes('@react-three') ||
-              id.includes('@react-email') ||
-              id.includes('react-email')) {
-            return 'vendor-react-all';
-          }              // Supabase - completely separate
-              if (id.includes('@supabase') || id.includes('supabase')) {
-                return 'vendor-supabase';
-              }
-              
-              // Pure utilities that don't use React
-              if (id.includes('date-fns') || 
-                  id.includes('clsx') || 
-                  id.includes('class-variance-authority') ||
-                  id.includes('tailwind-merge') ||
-                  id.includes('zod') ||
-                  id.includes('zustand')) {
-                return 'vendor-utils';
-              }
-              
-              // Everything else that's problematic - minimize this
-              return 'vendor-safe';
-            }
-            return undefined;
-          },
-          
-          // Chunk file naming
+        plugins: [
+          inject({
+            React: ['react', 'default']
+          })
+        ],
+  output: {
+          inlineDynamicImports: true,
           chunkFileNames: 'chunks/[name]-[hash].js',
-          
-          // Entry file naming
           entryFileNames: 'assets/[name]-[hash].js',
-          
-          // Asset file naming
           assetFileNames: (assetInfo) => {
             if (!assetInfo.name) return 'assets/[name]-[hash][extname]';
-            
             const info = assetInfo.name.split('.');
             const ext = info[info.length - 1];
-            
-            if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
-              return `images/[name]-[hash].${ext}`;
-            }
-            if (/css/i.test(ext)) {
-              return `styles/[name]-[hash].${ext}`;
-            }
-            if (/woff2?|eot|ttf|otf/i.test(ext)) {
-              return `fonts/[name]-[hash].${ext}`;
-            }
+            if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) return `images/[name]-[hash].${ext}`;
+            if (/css/i.test(ext)) return `styles/[name]-[hash].${ext}`;
+            if (/woff2?|eot|ttf|otf/i.test(ext)) return `fonts/[name]-[hash].${ext}`;
             return `assets/[name]-[hash].${ext}`;
           }
         }
       },
 
-      // Chunk size warnings
-      chunkSizeWarningLimit: 1000,
+      // Drop console/debugger in production when using terser
+      terserOptions: {
+        compress: {
+          drop_console: isProduction,
+          drop_debugger: isProduction
+        }
+      },
 
-      // Build performance optimizations
-      reportCompressedSize: isProduction,
-      
-      // CSS code splitting
-      cssCodeSplit: true,
-      
-      // Copy public assets
-      copyPublicDir: true
+  chunkSizeWarningLimit: 1200,
+  reportCompressedSize: isProduction,
+  cssCodeSplit: true,
+  copyPublicDir: true
     },
 
-    // CSS configuration
     css: {
-      // PostCSS configuration
       postcss: './postcss.config.js'
     },
 
-    // Preview server configuration (for production preview)
     preview: {
-      port: 3001,
+      port: 4174,
       host: true,
-      strictPort: true
+      strictPort: false
     },
 
-    // esbuild configuration
     esbuild: {
-      target: 'es2020',
-      // Remove console logs in production
-      ...(isProduction && {
-        drop: ['console', 'debugger']
-      })
-    },
-
-    // Worker configuration for Web Workers
-    worker: {
-      format: 'es'
+      target: 'es2020'
     }
   };
 });

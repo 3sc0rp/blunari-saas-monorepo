@@ -1,15 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { createCorsHeaders } from "../_shared/cors";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
@@ -25,7 +20,7 @@ serve(async (req) => {
         JSON.stringify({ error: "No authorization header" }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
@@ -39,7 +34,7 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       });
     }
 
@@ -69,7 +64,7 @@ serve(async (req) => {
         JSON.stringify({ error: "Tenant not found", code: "TENANT_NOT_FOUND" }),
         {
           status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
@@ -103,7 +98,7 @@ serve(async (req) => {
       .single();
 
     if (jobError) {
-      console.error("Failed to create background job:", jobError);
+    console.error("Failed to create background job:", jobError);
       const err: any = jobError;
       return new Response(
         JSON.stringify({
@@ -117,34 +112,38 @@ serve(async (req) => {
           requestId: crypto.randomUUID(),
         }),
         {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+      headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
 
-    // Optionally send the email immediately via the dedicated function (if SMTP is configured)
-    let emailDispatch: any = null;
-    try {
-      const sendResp = await supabaseClient.functions.invoke(
-        "send-welcome-email",
-        {
-          body: {
-            ownerName: tenant.name,
-            ownerEmail: tenant.email,
-            restaurantName: tenant.name,
-            loginUrl:
-              Deno.env.get("ADMIN_BASE_URL") ?? "https://admin.blunari.ai",
+    // Optionally send the email immediately via the dedicated function (if explicitly enabled)
+    // Default is disabled to avoid unintended automatic emails after provisioning.
+    const allowImmediateSend = (Deno.env.get("TENANT_EMAIL_IMMEDIATE_SEND") || "false").toLowerCase() === "true";
+    let emailDispatch: any = { success: false, skipped: true, reason: "immediate send disabled" };
+    if (allowImmediateSend) {
+      try {
+        const sendResp = await supabaseClient.functions.invoke(
+          "send-welcome-email",
+          {
+            body: {
+              ownerName: tenant.name,
+              ownerEmail: tenant.email,
+              restaurantName: tenant.name,
+              loginUrl:
+                Deno.env.get("ADMIN_BASE_URL") ?? "https://admin.blunari.ai",
+            },
           },
-        },
-      );
-      emailDispatch = sendResp.data;
-    } catch (e) {
-      // Soft-fail: keep the job queued even if direct send fails
-      emailDispatch = {
-        success: false,
-        error: e instanceof Error ? e.message : "Email dispatch failed",
-      };
+        );
+        emailDispatch = sendResp.data;
+      } catch (e) {
+        // Soft-fail: keep the job queued even if direct send fails
+        emailDispatch = {
+          success: false,
+          error: e instanceof Error ? e.message : "Email dispatch failed",
+        };
+      }
     }
 
     // Log the email operation
@@ -171,7 +170,7 @@ serve(async (req) => {
       }),
       {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   } catch (error) {
@@ -184,7 +183,7 @@ serve(async (req) => {
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   }

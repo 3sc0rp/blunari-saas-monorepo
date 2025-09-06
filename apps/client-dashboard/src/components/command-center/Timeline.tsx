@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import type { TableRow, Reservation } from "@/hooks/useCommandCenterData";
 import { format, addHours, startOfDay, differenceInMinutes } from "date-fns";
@@ -39,7 +39,7 @@ export function Timeline({
   }, []);
 
   // Generate time slots (every 15 minutes from 5 PM to 11 PM)
-  const generateTimeSlots = (): TimeSlot[] => {
+  const generateTimeSlots = useCallback((): TimeSlot[] => {
     const slots: TimeSlot[] = [];
     const today = new Date();
     const startTime = new Date(today);
@@ -57,9 +57,9 @@ export function Timeline({
     }
     
     return slots;
-  };
+  }, [currentTime]);
 
-  const timeSlots = useMemo(() => generateTimeSlots(), [currentTime]);
+  const timeSlots = useMemo(() => generateTimeSlots(), [generateTimeSlots]);
 
   // Calculate table utilization for duration bar
   const getTableUtilization = (tableId: string): number => {

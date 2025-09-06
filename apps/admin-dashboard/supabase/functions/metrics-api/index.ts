@@ -1,19 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { createCorsHeaders } from "../_shared/cors";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
   try {
-    const supabaseClient = createClient(
+  const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
@@ -25,7 +20,7 @@ serve(async (req) => {
         JSON.stringify({ error: "No authorization header" }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
@@ -39,7 +34,7 @@ serve(async (req) => {
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       });
     }
 
@@ -58,7 +53,7 @@ serve(async (req) => {
     ) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+  headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       });
     }
 
@@ -68,7 +63,7 @@ serve(async (req) => {
     // If no background ops URL configured, return database-based metrics
     if (!backgroundOpsUrl) {
       // Get recent system health metrics
-      const { data: healthMetrics } = await supabaseClient
+  const { data: healthMetrics } = await supabaseClient
         .from("system_health_metrics")
         .select("*")
         .gte(
@@ -79,7 +74,7 @@ serve(async (req) => {
         .limit(100);
 
       // Get recent background jobs metrics
-      const { data: jobsData } = await supabaseClient
+  const { data: jobsData } = await supabaseClient
         .from("background_jobs")
         .select("status, created_at, completed_at, started_at")
         .gte(
@@ -88,22 +83,22 @@ serve(async (req) => {
         );
 
       // Calculate job success rate
-      const totalJobs = jobsData?.length || 0;
+      const totalJobs = (jobsData as any[])?.length || 0;
       const successfulJobs =
-        jobsData?.filter((job) => job.status === "completed").length || 0;
+        (jobsData as any[])?.filter((job: any) => job.status === "completed").length || 0;
       const failedJobs =
-        jobsData?.filter((job) => job.status === "failed").length || 0;
+        (jobsData as any[])?.filter((job: any) => job.status === "failed").length || 0;
       const successRate =
         totalJobs > 0 ? (successfulJobs / totalJobs) * 100 : 100;
 
       // Calculate average response times
       const completedJobs =
-        jobsData?.filter(
-          (job) =>
+        (jobsData as any[])?.filter(
+          (job: any) =>
             job.status === "completed" && job.started_at && job.completed_at,
         ) || [];
 
-      const responseTimes = completedJobs.map((job) => {
+  const responseTimes = (completedJobs as any[]).map((job: any) => {
         const start = new Date(job.started_at!).getTime();
         const end = new Date(job.completed_at!).getTime();
         return end - start;
@@ -111,13 +106,13 @@ serve(async (req) => {
 
       const avgResponseTime =
         responseTimes.length > 0
-          ? responseTimes.reduce((sum, time) => sum + time, 0) /
+          ? (responseTimes as number[]).reduce((sum: number, time: number) => sum + time, 0) /
             responseTimes.length
           : 0;
 
       const p95ResponseTime =
         responseTimes.length > 0
-          ? responseTimes.sort((a, b) => a - b)[
+          ? (responseTimes as number[]).sort((a: number, b: number) => a - b)[
               Math.floor(responseTimes.length * 0.95)
             ]
           : 0;
@@ -139,7 +134,7 @@ serve(async (req) => {
         }),
         {
           status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
@@ -174,7 +169,7 @@ serve(async (req) => {
       cpu_usage_percent: data.system?.cpu_usage_percent || 0,
     };
 
-    return new Response(
+  return new Response(
       JSON.stringify({
         success: true,
         source: "background-ops",
@@ -183,7 +178,7 @@ serve(async (req) => {
       }),
       {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   } catch (error) {
@@ -196,7 +191,7 @@ serve(async (req) => {
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
   }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -46,7 +46,7 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
 
   const timezone = tenant.timezone || "UTC";
 
-  const fetchAvailability = async (date: Date) => {
+  const fetchAvailability = useCallback(async (date: Date) => {
     setLoadingSlots(true);
     setError(null);
 
@@ -103,7 +103,7 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
     } finally {
       setLoadingSlots(false);
     }
-  };
+  }, [tenant.tenant_id, partySize]);
 
   useEffect(() => {
     fetchAvailability(selectedDate);
