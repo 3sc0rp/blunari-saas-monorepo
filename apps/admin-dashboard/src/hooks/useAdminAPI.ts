@@ -317,6 +317,31 @@ export const useAdminAPI = () => {
     [],
   );
 
+  const updateTenant = useCallback(
+    async (tenantId: string, updates: Partial<{
+      name: string;
+      description: string;
+      email: string;
+      phone: string;
+      timezone: string;
+      currency: string;
+      website: string;
+    }>): Promise<TenantData> => {
+      const { data, error } = await supabase
+        .from("tenants")
+        .update(updates)
+        .eq("id", tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Return the updated tenant data by calling getTenant to get complete data with analytics
+      return getTenant(tenantId);
+    },
+    [getTenant],
+  );
+
   const listTenants = useCallback(
     async (filters?: {
       search?: string;
@@ -377,6 +402,7 @@ export const useAdminAPI = () => {
     resendWelcomeEmail,
   issuePasswordSetupLink,
     getTenant,
+    updateTenant,
     listTenants,
     // Features Management
     getTenantFeatures,

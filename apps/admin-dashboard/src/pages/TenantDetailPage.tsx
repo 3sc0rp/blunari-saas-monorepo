@@ -37,6 +37,7 @@ import { TenantChurnSignalsPanel } from "@/components/tenant/TenantChurnSignalsP
 import { TenantUsageOverview } from "@/components/tenant/TenantUsageOverview";
 import { TenantSecurityExtended } from "@/components/tenant/TenantSecurityExtended";
 import { TenantAdoptionSnapshot } from "@/components/tenant/TenantAdoptionSnapshot";
+import { EditableTenantInfo } from "@/components/tenant/EditableTenantInfo";
 import { LoadingState, ErrorState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
 import type { TenantData } from "@/types/admin";
@@ -528,100 +529,10 @@ export default function TenantDetailPage() {
       </div>
 
       {/* Tenant Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tenant Information</CardTitle>
-          <CardDescription>
-            Basic tenant configuration and contact details
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                Restaurant Name
-              </label>
-              <p className="text-foreground">{tenant.name}</p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                Slug
-              </label>
-              <p className="font-mono text-sm">/{tenant.slug}</p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                Timezone
-              </label>
-              <p className="text-foreground">{tenant.timezone}</p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                Currency
-              </label>
-              <p className="text-foreground">{tenant.currency}</p>
-            </div>
-
-            {tenant.email && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">
-                  Email
-                </label>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-foreground">{tenant.email}</p>
-                </div>
-              </div>
-            )}
-
-            {tenant.phone && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">
-                  Phone
-                </label>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-foreground">{tenant.phone}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                Created
-              </label>
-              <p className="text-foreground">
-                {tenant.created_at
-                  ? new Date(tenant.created_at).toLocaleString()
-                  : "-"}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                Last Updated
-              </label>
-              <p className="text-foreground">
-                {tenant.updated_at
-                  ? new Date(tenant.updated_at).toLocaleString()
-                  : "-"}
-              </p>
-            </div>
-          </div>
-
-          {tenant.description && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">
-                Description
-              </label>
-              <p className="text-foreground">{tenant.description}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <EditableTenantInfo 
+        tenant={tenant} 
+        onUpdate={(updatedTenant) => setTenant(updatedTenant)} 
+      />
 
       {/* Tabs for different sections */}
   <Tabs defaultValue="features" className="space-y-6">
