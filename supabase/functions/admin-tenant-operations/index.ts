@@ -1,3 +1,6 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 // Environment-aware CORS configuration for admin functions
 const getAllowedOrigins = () => {
   const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
