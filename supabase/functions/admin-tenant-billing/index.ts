@@ -40,6 +40,9 @@ const createCorsHeaders = (requestOrigin: string | null = null) => ({
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
   'Access-Control-Allow-Credentials': 'true',
   'Access-Control-Max-Age': '86400',
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0',
 });
 
 function createCorsResponse(data?: any, status: number = 200, requestOrigin: string | null = null) {
@@ -82,7 +85,15 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { tenantId } = await req.json();
+    // Parse JSON body safely
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (e) {
+      return createErrorResponse('INVALID_JSON', 'Invalid JSON in request body', 400, undefined, origin);
+    }
+
+    const { tenantId } = requestBody;
     if (!tenantId) return createErrorResponse('MISSING_TENANT_ID', 'tenantId required', 400, undefined, origin);
 
     // Fetch tenant billing info
