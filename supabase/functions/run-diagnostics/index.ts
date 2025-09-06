@@ -112,14 +112,12 @@ serve(async (req) => {
       }
     }
 
-    // Storage test
+    // Storage test (optional - won't fail if bucket doesn't exist)
     if (!test_type || test_type === "storage") {
       const startTime = Date.now();
       try {
-        // Test storage bucket access
-        const { data, error } = await supabaseClient.storage
-          .from("test")
-          .list("", { limit: 1 });
+        // Test storage bucket access - use a more generic approach
+        const { data, error } = await supabaseClient.storage.listBuckets();
 
         const executionTime = Date.now() - startTime;
 
@@ -129,8 +127,7 @@ serve(async (req) => {
           status: error ? "warning" : "success",
           execution_time_ms: executionTime,
           result_data: {
-            bucket: "test",
-            files_found: data?.length || 0,
+            buckets_found: data?.length || 0,
             error: error?.message,
           },
           error_message: error?.message,
@@ -152,12 +149,17 @@ serve(async (req) => {
       }
     }
 
-    // Insert diagnostic results
-    for (const diagnostic of diagnostics) {
-      await supabaseClient.from("diagnostic_results").insert({
-        ...diagnostic,
-        service_name: service_name || "system",
-      });
+    // Try to insert diagnostic results (optional - don't fail if table doesn't exist)
+    try {
+      for (const diagnostic of diagnostics) {
+        await supabaseClient.from("diagnostic_results").insert({
+          ...diagnostic,
+          service_name: service_name || "system",
+        });
+      }
+    } catch (error) {
+      console.log("Could not save diagnostic results:", error.message);
+      // Don't fail the whole function if we can't save results
     }
 
     return new Response(

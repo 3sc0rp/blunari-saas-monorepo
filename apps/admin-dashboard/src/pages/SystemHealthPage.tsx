@@ -347,13 +347,83 @@ export default function SystemHealthPage() {
   const runDiagnostics = async () => {
     try {
       setRunningDiagnostics(true);
-      const { error } = await supabase.functions.invoke("run-diagnostics");
+      
+      // Run client-side diagnostics instead of calling Edge Function
+      const diagnostics = [];
+      let overallStatus = "success";
 
-      if (error) throw error;
+      // Database connectivity test
+      const dbStartTime = Date.now();
+      try {
+        const { data, error } = await supabase
+          .from("tenants")
+          .select("count(*)")
+          .single();
+
+        const dbExecutionTime = Date.now() - dbStartTime;
+        
+        if (error) {
+          overallStatus = "error";
+          console.error("Database diagnostic failed:", error);
+        }
+
+        diagnostics.push({
+          test_name: "Database Connectivity",
+          status: error ? "error" : "success",
+          execution_time_ms: dbExecutionTime,
+          error_message: error?.message,
+        });
+      } catch (error) {
+        overallStatus = "error";
+        diagnostics.push({
+          test_name: "Database Connectivity",
+          status: "error",
+          execution_time_ms: Date.now() - dbStartTime,
+          error_message: error.message,
+        });
+      }
+
+      // API response test
+      const apiStartTime = Date.now();
+      try {
+        const { data, error } = await supabase.from("tenants").select("id").limit(1);
+        const apiExecutionTime = Date.now() - apiStartTime;
+        
+        diagnostics.push({
+          test_name: "API Response Time",
+          status: error ? "error" : "success",
+          execution_time_ms: apiExecutionTime,
+          error_message: error?.message,
+        });
+        
+        if (error && overallStatus === "success") {
+          overallStatus = "warning";
+        }
+      } catch (error) {
+        diagnostics.push({
+          test_name: "API Response Time",
+          status: "error",
+          execution_time_ms: Date.now() - apiStartTime,
+          error_message: error.message,
+        });
+        overallStatus = "error";
+      }
+
+      // Report results
+      const successCount = diagnostics.filter(d => d.status === "success").length;
+      const totalTests = diagnostics.length;
 
       toast({
         title: "Diagnostics Complete",
-        description: "System diagnostics completed successfully",
+        description: `${successCount}/${totalTests} tests passed. Overall status: ${overallStatus}`,
+        variant: overallStatus === "error" ? "destructive" : "default"
+      });
+
+      // Log detailed results for debugging
+      console.log("Diagnostics Results:", {
+        overallStatus,
+        tests: diagnostics,
+        summary: `${successCount}/${totalTests} tests passed`
       });
 
       // Refresh data after a short delay
