@@ -82,22 +82,62 @@ serve(async (req) => {
 
     const { tenantId, action, note } = requestBody;
     if (!tenantId) return createErrorResponse('MISSING_TENANT_ID','tenantId required',400,undefined,origin);
+    if (!action) return createErrorResponse('MISSING_ACTION','action required',400,undefined,origin);
 
     const supabase = createClient(Deno.env.get('SUPABASE_URL')||'', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'');
+    
+    // Verify tenant exists first
+    const { data: tenantData, error: tenantError } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('id', tenantId)
+      .single();
+    
+    if (tenantError || !tenantData) {
+      return createErrorResponse('TENANT_NOT_FOUND', 'Tenant not found', 404, undefined, origin);
+    }
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return createErrorResponse('NO_AUTH','Missing Authorization',401,undefined,origin);
     const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ',''));
     if (authErr || !user) return createErrorResponse('UNAUTHORIZED','Unauthorized',401,undefined,origin);
 
     if (action === 'list') {
-      const { data } = await supabase.from('tenant_internal_notes').select('id, note, created_by, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(50);
+      const { data, error } = await supabase
+        .from('tenant_internal_notes')
+        .select('id, note, created_by, created_at')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (error) {
+        // Check if it's a table doesn't exist error
+        if (error.message.includes('relation') && error.message.includes('does not exist')) {
+          return createCorsResponse({ success: true, data: [], message: 'Notes feature not yet available' }, 200, origin);
+        }
+        return createErrorResponse('DB_ERROR', error.message, 500, undefined, origin);
+      }
+      
       return createCorsResponse({ success: true, data: data || [], requestId: crypto.randomUUID() }, 200, origin);
     }
 
     if (action === 'create') {
       if (!note) return createErrorResponse('MISSING_NOTE','note required',400,undefined,origin);
-      const { data, error } = await supabase.from('tenant_internal_notes').insert({ tenant_id: tenantId, note, created_by: user.id }).select('id, note, created_by, created_at').single();
-      if (error) return createErrorResponse('DB', error.message, 500, undefined, origin);
+      
+      const { data, error } = await supabase
+        .from('tenant_internal_notes')
+        .insert({ tenant_id: tenantId, note, created_by: user.id })
+        .select('id, note, created_by, created_at')
+        .single();
+      
+      if (error) {
+        // Check if it's a table doesn't exist error
+        if (error.message.includes('relation') && error.message.includes('does not exist')) {
+          return createErrorResponse('FEATURE_UNAVAILABLE', 'Notes feature not yet available', 503, undefined, origin);
+        }
+        return createErrorResponse('DB_ERROR', error.message, 500, undefined, origin);
+      }
+      
       return createCorsResponse({ success: true, data, requestId: crypto.randomUUID() }, 200, origin);
     }
 
