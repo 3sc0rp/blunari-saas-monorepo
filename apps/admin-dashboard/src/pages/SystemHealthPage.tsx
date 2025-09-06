@@ -355,10 +355,9 @@ export default function SystemHealthPage() {
       // Database connectivity test
       const dbStartTime = Date.now();
       try {
-        const { data, error } = await supabase
+        const { data, error, count } = await supabase
           .from("tenants")
-          .select("count(*)")
-          .single();
+          .select("*", { count: "exact", head: true });
 
         const dbExecutionTime = Date.now() - dbStartTime;
         
@@ -372,6 +371,7 @@ export default function SystemHealthPage() {
           status: error ? "error" : "success",
           execution_time_ms: dbExecutionTime,
           error_message: error?.message,
+          result: count !== null ? `Found ${count} tenants` : "Connection successful",
         });
       } catch (error) {
         overallStatus = "error";
