@@ -33,7 +33,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plug,
-  Rocket,
   LifeBuoy,
 } from "lucide-react";
 import { useDashboardStore } from "@/stores/dashboardStore";
@@ -143,13 +142,6 @@ const platformNavigation: NavigationItem[] = [
     icon: LifeBuoy,
     badge: null,
     description: "Customer support tickets",
-  },
-  {
-    title: "Roadmap",
-    url: "/admin/roadmap",
-    icon: Rocket,
-    badge: null,
-    description: "Feature roadmap",
   },
 ];
 

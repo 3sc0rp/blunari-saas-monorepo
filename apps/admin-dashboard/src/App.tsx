@@ -26,7 +26,6 @@ import ImpersonationPage from "@/pages/ImpersonationPage";
 import DomainsPage from "@/pages/DomainsPage";
 import AgencyKitPage from "@/pages/AgencyKitPage";
 import ProfilePage from "@/pages/ProfilePage";
-import RoadmapPage from "@/pages/RoadmapPage";
 import { IntegrationsPage } from "@/pages/IntegrationsPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { AnalyticsPage } from "@/pages/AnalyticsPage";
@@ -109,7 +108,6 @@ function App() {
                       element={<ComprehensiveCateringManagement />}
                     />
                     <Route path="support" element={<SupportPage />} />
-                    <Route path="roadmap" element={<RoadmapPage />} />
                     <Route path="settings" element={<SettingsPage />} />
                   </Route>
 
