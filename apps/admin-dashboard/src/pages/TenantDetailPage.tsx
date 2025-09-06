@@ -773,7 +773,7 @@ export default function TenantDetailPage() {
         <CardContent>
           {loadingEmailStatus ? (
             <p className="text-muted-foreground">Loading…</p>
-          ) : emailHistory.length === 0 ? (
+          ) : !emailHistory || emailHistory.length === 0 ? (
             <p className="text-muted-foreground">No email jobs yet.</p>
           ) : (
             <ul className="space-y-2">
