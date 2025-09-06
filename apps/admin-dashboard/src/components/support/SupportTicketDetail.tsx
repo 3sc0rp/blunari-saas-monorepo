@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -103,21 +104,41 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
     try {
       setLoading(true);
 
-      // Load ticket details
-      const { data: ticketData, error: ticketError } = await supabase
-        .from("support_tickets")
-        .select(
-          `
-          *,
-          category:support_categories!category_id(name, color),
-          tenant:tenants!tenant_id(name, slug),
-          assignee:employees!assigned_to(id, user_id)
-        `,
-        )
-        .eq("id", ticketId)
-        .single();
+      // Try to load ticket details using admin function first
+      let ticketData;
+      try {
+        const { data: allTickets, error: rpcError } = await supabase
+          .rpc('get_all_support_tickets_admin' as any);
+        
+        if (rpcError) throw rpcError;
+        
+        // Find the specific ticket
+        ticketData = allTickets?.find((t: any) => t.id === ticketId);
+        
+        if (!ticketData) {
+          throw new Error('Ticket not found');
+        }
+        
+        console.log("Loaded ticket via admin RPC:", ticketData);
+      } catch {
+        // Fallback to direct query
+        console.log("Using direct query fallback for ticket detail...");
+        const { data: directTicketData, error: ticketError } = await supabase
+          .from("support_tickets")
+          .select(
+            `
+            *,
+            category:support_categories!category_id(name, color),
+            tenant:tenants!tenant_id(name, slug),
+            assignee:employees!assigned_to(id, user_id)
+          `,
+          )
+          .eq("id", ticketId)
+          .single();
 
-      if (ticketError) throw ticketError;
+        if (ticketError) throw ticketError;
+        ticketData = directTicketData;
+      }
 
       setTicket(ticketData);
       setNewStatus(ticketData.status);
@@ -282,6 +303,10 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
     return (
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Loading Ticket Details</DialogTitle>
+            <DialogDescription>Please wait while we load the ticket information.</DialogDescription>
+          </DialogHeader>
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
@@ -302,6 +327,9 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
             </span>
             <span>{ticket.subject}</span>
           </DialogTitle>
+          <DialogDescription>
+            Support ticket details, messages, and management options.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex gap-6">
