@@ -310,88 +310,150 @@ export const SupportPage: React.FC = () => {
   const stats = getTicketStats();
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Support Tickets</h1>
-          <p className="text-muted-foreground">
-            Manage and respond to customer support requests
-          </p>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Page Header */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Support Tickets
+              </h1>
+              <p className="text-lg text-muted-foreground mt-1">
+                Manage and respond to customer support requests
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="flex items-center gap-2 hover:bg-accent"
+              >
+                {refreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                {refreshing ? "Refreshing..." : "Refresh"}
+              </Button>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow">
+                    <Plus className="h-4 w-4" />
+                    Create Ticket
+                  </Button>
+                </DialogTrigger>
+                <CreateTicketForm onSuccess={() => {
+                  setIsCreateDialogOpen(false);
+                  loadTickets();
+                }} />
+              </Dialog>
+            </div>
+          </div>
+
+          {/* Keyboard Shortcuts Hint */}
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <kbd className="px-2 py-1 bg-muted rounded text-xs">Ctrl+K</kbd>
+              <span>Search</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-2 py-1 bg-muted rounded text-xs">Ctrl+N</kbd>
+              <span>Create</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-2 py-1 bg-muted rounded text-xs">R</kbd>
+              <span>Refresh</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-2 py-1 bg-muted rounded text-xs">Esc</kbd>
+              <span>Close</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
-            <Ticket className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
+        {/* Stats Cards */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Tickets</CardTitle>
+              <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                <Ticket className="h-4 w-4 text-primary" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.total}</div>
+              <p className="text-xs text-muted-foreground mt-1">All time</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Open</CardTitle>
-            <AlertCircle className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.open}</div>
-          </CardContent>
-        </Card>
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Open</CardTitle>
+              <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-blue-600">{stats.open}</div>
+              <p className="text-xs text-muted-foreground mt-1">Need attention</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-            <Clock className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              {stats.in_progress}
-            </div>
-          </CardContent>
-        </Card>
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">In Progress</CardTitle>
+              <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+                <Clock className="h-4 w-4 text-purple-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-purple-600">{stats.in_progress}</div>
+              <p className="text-xs text-muted-foreground mt-1">Being worked on</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Waiting Customer
-            </CardTitle>
-            <User className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600">
-              {stats.waiting_customer}
-            </div>
-          </CardContent>
-        </Card>
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Waiting</CardTitle>
+              <div className="h-8 w-8 bg-amber-100 rounded-full flex items-center justify-center">
+                <User className="h-4 w-4 text-amber-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-amber-600">{stats.waiting_customer}</div>
+              <p className="text-xs text-muted-foreground mt-1">Customer response</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resolved</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {stats.resolved}
-            </div>
-          </CardContent>
-        </Card>
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Resolved</CardTitle>
+              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-600">{stats.resolved}</div>
+              <p className="text-xs text-muted-foreground mt-1">Completed</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Urgent</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {stats.urgent}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Urgent</CardTitle>
+              <div className="h-8 w-8 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-red-600">{stats.urgent}</div>
+              <p className="text-xs text-muted-foreground mt-1">High priority</p>
+            </CardContent>
+          </Card>
+        </div>
 
       <Card>
         <CardHeader>
@@ -629,6 +691,7 @@ export const SupportPage: React.FC = () => {
           onUpdate={loadTickets}
         />
       )}
+      </div>
     </div>
   );
 };
