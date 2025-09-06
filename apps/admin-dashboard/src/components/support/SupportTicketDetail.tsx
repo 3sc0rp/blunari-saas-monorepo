@@ -178,17 +178,25 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
     try {
       setSending(true);
 
-      const { error } = await supabase.from("support_ticket_messages").insert({
-        ticket_id: ticketId,
-        sender_type: "agent",
-        sender_name: user.email?.split("@")[0] || "Agent",
-        sender_email: user.email,
-        content: newMessage,
-        is_internal: isInternal,
-        message_type: "message",
-      });
+      // Use admin RPC function for sending messages
+      const { data, error } = await supabase
+        .rpc('create_support_message_admin' as any, {
+          p_ticket_id: ticketId,
+          p_sender_type: "agent",
+          p_sender_id: null,
+          p_sender_name: user.email?.split("@")[0] || "Agent",
+          p_sender_email: user.email,
+          p_message_type: "message",
+          p_content: newMessage,
+          p_is_internal: isInternal
+        });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Message creation error:', error);
+        throw error;
+      }
+
+      console.log('Message created successfully:', data);
 
       // Update ticket's updated_at timestamp
       await supabase
@@ -254,13 +262,15 @@ export const SupportTicketDetail: React.FC<SupportTicketDetailProps> = ({
         if (newPriority !== ticket.priority)
           changes.push(`priority to ${newPriority}`);
 
-        await supabase.from("support_ticket_messages").insert({
-          ticket_id: ticketId,
-          sender_type: "system",
-          sender_name: "System",
-          content: `Updated ${changes.join(" and ")}`,
-          is_internal: false,
-          message_type: "status_change",
+        await supabase.rpc('create_support_message_admin' as any, {
+          p_ticket_id: ticketId,
+          p_sender_type: "system",
+          p_sender_id: null,
+          p_sender_name: "System",
+          p_sender_email: null,
+          p_message_type: "status_change",
+          p_content: `Updated ${changes.join(" and ")}`,
+          p_is_internal: false
         });
       }
 
