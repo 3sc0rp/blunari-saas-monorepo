@@ -92,8 +92,26 @@ serve(async (req) => {
     
     const supabase = createClient(Deno.env.get('SUPABASE_URL') || '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '');
 
+    // Get user_id for the given tenant (since current schema uses user_id, not tenant_id)
+    const { data: tenantData, error: tenantError } = await supabase
+      .from('tenants')
+      .select('owner_id')
+      .eq('id', tenantId)
+      .single();
+    
+    if (tenantError || !tenantData) {
+      return createErrorResponse('TENANT_NOT_FOUND', 'Tenant not found', 404, undefined, origin);
+    }
+
+    const userId = tenantData.owner_id;
+
     if (action === 'list') {
-      const { data, error } = await supabase.from('api_keys').select('id, name, created_at, last_used_at, revoked_at').eq('tenant_id', tenantId).order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('api_keys')
+        .select('id, key_name as name, created_at, last_used_at, expires_at as revoked_at')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
       if (error) return createErrorResponse('DB_ERROR', error.message, 500, undefined, origin);
       return createCorsResponse({ success: true, data }, 200, origin);
     }
@@ -102,14 +120,31 @@ serve(async (req) => {
       if (!name) return createErrorResponse('MISSING_NAME', 'name required', 400, undefined, origin);
       const raw = 'bln_' + crypto.randomUUID().replace(/-/g,'').slice(0,24);
       const hashed = await hashKey(raw);
-      const { data, error } = await supabase.from('api_keys').insert({ tenant_id: tenantId, name, hashed_key: hashed }).select('id, name, created_at').single();
+      const preview = raw.slice(0, 8) + '...' + raw.slice(-4);
+      
+      const { data, error } = await supabase
+        .from('api_keys')
+        .insert({ 
+          user_id: userId, 
+          key_name: name, 
+          key_hash: hashed, 
+          key_preview: preview,
+          is_active: true 
+        })
+        .select('id, key_name as name, created_at')
+        .single();
+      
       if (error) return createErrorResponse('DB_ERROR', error.message, 500, undefined, origin);
       return createCorsResponse({ success: true, data: { ...data, apiKey: raw } }, 200, origin);
     }
 
     if (action === 'revoke') {
       if (!keyId) return createErrorResponse('MISSING_KEY_ID', 'keyId required', 400, undefined, origin);
-      const { error } = await supabase.from('api_keys').update({ revoked_at: new Date().toISOString() }).eq('id', keyId).eq('tenant_id', tenantId);
+      const { error } = await supabase
+        .from('api_keys')
+        .update({ is_active: false, expires_at: new Date().toISOString() })
+        .eq('id', keyId)
+        .eq('user_id', userId);
       if (error) return createErrorResponse('DB_ERROR', error.message, 500, undefined, origin);
       return createCorsResponse({ success: true }, 200, origin);
     }
