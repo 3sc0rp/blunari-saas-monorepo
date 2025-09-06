@@ -318,42 +318,10 @@ export const SupportPage: React.FC = () => {
             Manage and respond to customer support requests
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={refreshTickets}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Ticket
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Create Support Ticket</DialogTitle>
-                <DialogDescription>
-                  Create a new support ticket for a customer inquiry or issue.
-                </DialogDescription>
-              </DialogHeader>
-              <CreateTicketForm 
-                onSuccess={() => {
-                  setIsCreateDialogOpen(false);
-                  loadTickets();
-                }} 
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
@@ -427,60 +395,19 @@ export const SupportPage: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Support Tickets</CardTitle>
-          <CardDescription>
-            View and manage all support requests from your tenants
-            <span className="hidden sm:inline text-xs ml-2 text-muted-foreground">
-              • Ctrl+K to search • Ctrl+N to create • R to refresh • Esc to close
-            </span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Filters */}
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
-            <div className="flex flex-1 items-center gap-4">
-              <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="ticket-search"
-                  placeholder="Search tickets... (Ctrl+K)"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="waiting_customer">
-                    Waiting Customer
-                  </SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Priority</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Ticket className="h-5 w-5" />
+                Support Tickets
+              </CardTitle>
+              <CardDescription>
+                Manage customer support tickets and requests
+                <span className="hidden sm:inline text-xs ml-2 text-muted-foreground">
+                  • Ctrl+K to search • Ctrl+N to create • R to refresh • Esc to close
+                </span>
+              </CardDescription>
             </div>
-
-            {/* Action Buttons */}
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -508,6 +435,54 @@ export const SupportPage: React.FC = () => {
                   loadTickets();
                 }} />
               </Dialog>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Filters */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="ticket-search"
+                  placeholder="Search tickets... (Ctrl+K)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="waiting_customer">
+                      Waiting Customer
+                    </SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Priority</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -571,9 +546,9 @@ export const SupportPage: React.FC = () => {
                   className="group border rounded-lg p-4 hover:bg-accent/50 cursor-pointer transition-all duration-200 hover:shadow-md"
                   onClick={() => setSelectedTicket(ticket.id)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
                         <span className="font-mono text-sm text-muted-foreground">
                           {ticket.ticket_number}
                         </span>
@@ -583,7 +558,8 @@ export const SupportPage: React.FC = () => {
                         <Badge className={getStatusColor(ticket.status)}>
                           <div className="flex items-center gap-1">
                             {getStatusIcon(ticket.status)}
-                            {ticket.status.replace("_", " ").toUpperCase()}
+                            <span className="hidden sm:inline">{ticket.status.replace("_", " ").toUpperCase()}</span>
+                            <span className="sm:hidden">{ticket.status === "in_progress" ? "IN PROGRESS" : ticket.status.toUpperCase()}</span>
                           </div>
                         </Badge>
                         {ticket.category && (
@@ -596,22 +572,22 @@ export const SupportPage: React.FC = () => {
                         )}
                       </div>
 
-                      <h3 className="font-semibold mb-1 group-hover:text-primary transition-colors">
+                      <h3 className="font-semibold mb-1 group-hover:text-primary transition-colors line-clamp-1">
                         {ticket.subject}
                       </h3>
                       <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                         {ticket.description}
                       </p>
 
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          {ticket.contact_name}
+                          <span className="truncate">{ticket.contact_name}</span>
                         </div>
                         {ticket.tenant && (
                           <div className="flex items-center gap-1">
-                            <span>•</span>
-                            {ticket.tenant.name}
+                            <span className="hidden sm:inline">•</span>
+                            <span className="truncate">{ticket.tenant.name}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-1">
@@ -621,13 +597,13 @@ export const SupportPage: React.FC = () => {
                         {ticket.assignee && (
                           <div className="flex items-center gap-1">
                             <UserCheck className="h-3 w-3" />
-                            Assigned
+                            <span className="hidden sm:inline">Assigned</span>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity sm:opacity-100">
                       <Button variant="ghost" size="sm" onClick={(e) => {
                         e.stopPropagation();
                         setSelectedTicket(ticket.id);
