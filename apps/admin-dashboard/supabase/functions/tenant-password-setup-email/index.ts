@@ -71,22 +71,10 @@ serve(async (req) => {
 
   // Rate limiting now handled atomically via RPC post-generation (we optimistically get link then record; alternatively record first then generate)
 
-    // Determine invite vs recovery - avoid creating users here to minimize automatic emails
-    let ownerUser = null;
-    let mode: "invite" | "recovery" = "invite";
-    
-    try {
-      const { data: ownerLookup, error: lookupErr } = await supabase.auth.admin.getUserByEmail(tenant.email);
-      if (lookupErr) {
-        console.warn("getUserByEmail failed:", lookupErr, "- defaulting to invite mode");
-      } else {
-        ownerUser = ownerLookup?.user || null;
-      }
-      mode = ownerUser ? "recovery" : "invite";
-    } catch (lookupError) {
-      console.warn("Error checking existing user, defaulting to invite mode:", lookupError);
-      mode = "invite";
-    }
+    // Since we no longer auto-create users during provisioning, always use recovery mode
+    // This avoids potential issues with getUserByEmail and simplifies the flow
+    const mode: "recovery" = "recovery";
+    console.log("Using recovery mode for password setup:", { email: tenant.email, requestId });
 
     // For invite mode (new users), we'll use a different approach to minimize emails
 
@@ -171,13 +159,9 @@ serve(async (req) => {
           },
         });
 
-        const subj = mode === "invite" ? `Welcome to Blunari – Activate ${tenant.name}` : `Reset / Set Your ${tenant.name} Password`;
-        const preface = mode === "invite"
-          ? `Your account for <strong>${tenant.name}</strong> is almost ready. Click below to set your password and finish activation.`
-          : `You requested a secure link to set a new password for <strong>${tenant.name}</strong>.`;
-        const securityNote = mode === "invite"
-          ? `If you did not expect this invitation, you can ignore this email.`
-          : `If you did not request this password setup link, you can ignore this email. Your current password remains unchanged until you complete the flow.`;
+        const subj = `Set Your ${tenant.name} Password`;
+        const preface = `Your account for <strong>${tenant.name}</strong> is ready. Click below to set your password and complete setup.`;
+        const securityNote = `If you did not expect this password setup link, you can ignore this email. Your current password remains unchanged until you complete the flow.`;
 
         await smtp.send({
           from: "Blunari Team <no-reply@blunari.ai>",
@@ -188,13 +172,13 @@ serve(async (req) => {
               <div style='max-width:620px;margin:0 auto;padding:32px;background:#ffffff;'>
                 <div style='text-align:center;padding-bottom:24px;border-bottom:1px solid #e2e8f0;'>
                   ${brandLogoUrl ? `<img src='${brandLogoUrl}' style='height:40px;margin-bottom:12px;' alt='Logo'/>` : ''}
-                  <h1 style='margin:0;font-size:24px;color:#1a365d;'>${mode === 'invite' ? 'Activate Your Account' : 'Password Reset / Setup'}</h1>
+                  <h1 style='margin:0;font-size:24px;color:#1a365d;'>Password Setup</h1>
                 </div>
                 <div style='padding:32px 0;'>
                   <p style='font-size:15px;color:#2d3748;'>Hi ${ownerName},</p>
                   <p style='font-size:14px;color:#4a5568;'>${preface}</p>
                   <div style='margin:28px 0;text-align:center;'>
-                    <a href='${actionLink}' style='display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:14px 28px;border-radius:6px;font-weight:600;font-size:15px;'>${mode === 'invite' ? 'Set Password & Activate' : 'Set New Password'}</a>
+                    <a href='${actionLink}' style='display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:14px 28px;border-radius:6px;font-weight:600;font-size:15px;'>Set Password</a>
                   </div>
                   <p style='font-size:12px;color:#718096;'>If the button does not work, copy & paste this URL:<br/><span style='word-break:break-all;color:#1a365d;'>${actionLink}</span></p>
                   <div style='background:#fefce8;border-left:4px solid #eab308;padding:16px 20px;border-radius:4px;margin:28px 0;'>
@@ -248,7 +232,7 @@ serve(async (req) => {
         limited: rate.limited,
         limitedReason: rate.limited_reason,
       } : null,
-      message: mode === "invite" ? "Invitation link generated" : "Recovery link generated",
+      message: "Password setup link generated",
     }, 200, origin);
   } catch (e) {
     console.error("tenant-password-setup-email error", {
