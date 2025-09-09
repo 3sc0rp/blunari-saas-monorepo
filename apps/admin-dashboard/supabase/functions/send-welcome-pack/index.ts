@@ -31,6 +31,20 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // TEMPORARY: Disable this function to test automatic email source
+  console.log("send-welcome-pack function called but temporarily disabled for testing");
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: "Welcome pack function temporarily disabled for testing automatic email issue",
+      disabled: true
+    }),
+    {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    },
+  );
+
   try {
     const requestData: WelcomePackRequest = await req.json();
     const { ownerName, ownerEmail, restaurantName, loginUrl } = requestData;

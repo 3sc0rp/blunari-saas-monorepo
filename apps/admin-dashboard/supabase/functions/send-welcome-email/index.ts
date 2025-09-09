@@ -17,6 +17,20 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
+  // TEMPORARY: Disable this function to test automatic email source
+  console.log("send-welcome-email function called but temporarily disabled for testing");
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: "Email function temporarily disabled for testing automatic email issue",
+      disabled: true
+    }),
+    {
+      headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+      status: 200,
+    },
+  );
+
   try {
     let requestData: WelcomeEmailRequest;
 

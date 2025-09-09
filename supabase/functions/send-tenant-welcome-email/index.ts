@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { createCorsHeaders } from "../_shared/cors";
 
@@ -217,7 +217,7 @@ const createCredentialsSection = (email: string, password: string, locale: strin
   `;
 };
 
-const logEmailActivity = (type: 'success' | 'error' | 'warning', data: any) => {
+const logEmailActivity = (type: 'success' | 'error' | 'warning' | 'info', data: any) => {
   const timestamp = new Date().toISOString();
   const logEntry = {
     timestamp,
@@ -238,6 +238,21 @@ const handler = async (req: Request): Promise<Response> => {
       headers: createCorsHeaders(req.headers.get("Origin")) 
     });
   }
+
+  // TEMPORARY: Disable this function to test automatic email source
+  console.log("send-tenant-welcome-email function called but temporarily disabled for testing");
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: "Tenant welcome email function temporarily disabled for testing automatic email issue",
+      disabled: true,
+      requestId
+    }),
+    {
+      headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+      status: 200,
+    },
+  );
 
   // Only allow POST requests
   if (req.method !== "POST") {
