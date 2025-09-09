@@ -5,7 +5,7 @@ import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore Deno runtime remote import
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-import { createCorsHeaders } from "../_shared/cors";
+import { createCorsHeaders } from "../_shared/cors.ts";
 
 interface RequestBody {
   tenantId: string;
