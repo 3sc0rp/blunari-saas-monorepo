@@ -71,10 +71,12 @@ serve(async (req) => {
 
   // Rate limiting now handled atomically via RPC post-generation (we optimistically get link then record; alternatively record first then generate)
 
-    // Determine invite vs recovery
+    // Determine invite vs recovery - avoid creating users here to minimize automatic emails
     const { data: ownerLookup } = await supabase.auth.admin.getUserByEmail(tenant.email);
     const ownerUser = ownerLookup?.user || null;
     const mode: "invite" | "recovery" = ownerUser ? "recovery" : "invite";
+
+    // For invite mode (new users), we'll use a different approach to minimize emails
 
     let actionLink: string | null = null;
     try {

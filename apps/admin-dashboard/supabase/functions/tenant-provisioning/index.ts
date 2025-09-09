@@ -183,7 +183,8 @@ serve(async (req: Request) => {
       }
     }
 
-    // Determine or create the owner user account if provided
+    // Check if owner user already exists, but don't create new users here
+    // User creation will be handled by the password setup email process to avoid automatic emails
     let ownerUserId: string | null = null;
     const ownerEmail: string | undefined = requestData.owner?.email;
     if (ownerEmail) {
@@ -192,18 +193,14 @@ serve(async (req: Request) => {
           await supabase.auth.admin.getUserByEmail(ownerEmail);
         if (existingUser?.user) {
           ownerUserId = existingUser.user.id;
+          console.log("Found existing user for tenant owner:", ownerUserId);
         } else {
-          const { data: created, error: createErr } =
-            await supabase.auth.admin.createUser({
-              email: ownerEmail,
-              email_confirm: true,
-              user_metadata: { role: "owner" },
-            });
-          if (createErr) throw createErr;
-          ownerUserId = created?.user?.id ?? null;
+          console.log("Owner user will be created during password setup to avoid automatic emails");
+          // Don't create user here - this prevents automatic confirmation emails
+          // User will be created when password setup email is sent manually
         }
       } catch (e) {
-        console.warn("Owner user create/get failed (continuing):", e);
+        console.warn("Owner user lookup failed (continuing):", e);
       }
     }
 
