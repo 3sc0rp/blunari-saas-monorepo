@@ -83,11 +83,13 @@ serve(async (req) => {
     try {
       console.log("Generating link:", { mode, email: tenant.email, requestId });
       
-      // Construct the proper tenant-specific redirect URL
-      const tenantDashboardUrl = `https://app.blunari.ai/client/${tenant.slug}/auth/callback`;
-      const redirectUrl = body.loginRedirectUrl || tenantDashboardUrl;
+      // The client dashboard is deployed to demo.blunari.ai with tenant routing
+      // Use the environment variable or fallback to the production URL
+      const clientBaseUrl = Deno.env.get("CLIENT_BASE_URL") || "https://demo.blunari.ai";
+      const clientDashboardUrl = `${clientBaseUrl}/auth?tenant=${tenant.slug}`;
+      const redirectUrl = body.loginRedirectUrl || clientDashboardUrl;
       
-      console.log("Using redirect URL:", { redirectUrl, tenantSlug: tenant.slug, requestId });
+      console.log("Using redirect URL:", { redirectUrl, clientBaseUrl, tenantSlug: tenant.slug, requestId });
       
       // @ts-ignore dynamic call
       const { data: linkData, error: linkError } = await (supabase.auth as any).admin.generateLink({
@@ -150,8 +152,9 @@ serve(async (req) => {
         const brandLogoUrl = Deno.env.get("BRAND_LOGO_URL") || Deno.env.get("ADMIN_LOGO_URL") || "";
         const ownerName = body.ownerNameOverride || tenant.name || "Owner";
         
-        // Construct tenant-specific dashboard URL
-        const tenantDashboardUrl = `https://app.blunari.ai/client/${tenant.slug}`;
+        // Use the same client base URL for consistency
+        const clientBaseUrl = Deno.env.get("CLIENT_BASE_URL") || "https://demo.blunari.ai";
+        const tenantDashboardUrl = `${clientBaseUrl}?tenant=${tenant.slug}`;
         const finalRedirect = body.loginRedirectUrl || tenantDashboardUrl;
 
         console.log("Attempting SMTP connection:", {
