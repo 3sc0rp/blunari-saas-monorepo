@@ -72,25 +72,51 @@ serve(async (req) => {
   // Rate limiting now handled atomically via RPC post-generation (we optimistically get link then record; alternatively record first then generate)
 
     // Determine invite vs recovery - avoid creating users here to minimize automatic emails
-    const { data: ownerLookup } = await supabase.auth.admin.getUserByEmail(tenant.email);
-    const ownerUser = ownerLookup?.user || null;
-    const mode: "invite" | "recovery" = ownerUser ? "recovery" : "invite";
+    let ownerUser = null;
+    let mode: "invite" | "recovery" = "invite";
+    
+    try {
+      const { data: ownerLookup, error: lookupErr } = await supabase.auth.admin.getUserByEmail(tenant.email);
+      if (lookupErr) {
+        console.warn("getUserByEmail failed:", lookupErr, "- defaulting to invite mode");
+      } else {
+        ownerUser = ownerLookup?.user || null;
+      }
+      mode = ownerUser ? "recovery" : "invite";
+    } catch (lookupError) {
+      console.warn("Error checking existing user, defaulting to invite mode:", lookupError);
+      mode = "invite";
+    }
 
     // For invite mode (new users), we'll use a different approach to minimize emails
 
     let actionLink: string | null = null;
     try {
+      console.log("Generating link:", { mode, email: tenant.email, requestId });
       // @ts-ignore dynamic call
-      const { data: linkData } = await (supabase.auth as any).admin.generateLink({
+      const { data: linkData, error: linkError } = await (supabase.auth as any).admin.generateLink({
         type: mode,
         email: tenant.email,
         options: body.loginRedirectUrl ? { redirectTo: body.loginRedirectUrl } : undefined,
       });
+      
+      if (linkError) {
+        console.error("generateLink error:", linkError);
+        throw linkError;
+      }
+      
       actionLink = linkData?.properties?.action_link || null;
+      console.log("Link generated successfully:", { hasLink: !!actionLink, requestId });
     } catch (linkErr) {
-      console.warn("generateLink failed", linkErr);
+      console.error("generateLink failed:", {
+        error: linkErr instanceof Error ? linkErr.message : String(linkErr),
+        mode,
+        email: tenant.email,
+        requestId
+      });
+      return err("LINK_GENERATION_FAILED", `Failed to generate setup link: ${linkErr instanceof Error ? linkErr.message : String(linkErr)}`, 500, origin, requestId);
     }
-    if (!actionLink) return err("LINK_GENERATION_FAILED", "Failed to generate setup link", 500, origin, requestId);
+    if (!actionLink) return err("LINK_GENERATION_FAILED", "Generated link was empty", 500, origin, requestId);
 
     // Record event + enforce limits atomically
   const { data: rateRows, error: rateErr } = await supabase.rpc('record_password_setup_link_event', { p_tenant: tenant.id, p_admin: user.id, p_mode: mode });
@@ -225,7 +251,17 @@ serve(async (req) => {
       message: mode === "invite" ? "Invitation link generated" : "Recovery link generated",
     }, 200, origin);
   } catch (e) {
-    console.error("tenant-password-setup-email error", e);
+    console.error("tenant-password-setup-email error", {
+      error: e instanceof Error ? e.message : String(e),
+      stack: e instanceof Error ? e.stack : undefined,
+      requestId,
+      env: {
+        hasSupabaseUrl: !!Deno.env.get("SUPABASE_URL"),
+        hasServiceRoleKey: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+        hasSmtpUsername: !!Deno.env.get("FASTMAIL_SMTP_USERNAME"),
+        hasSmtpPassword: !!Deno.env.get("FASTMAIL_SMTP_PASSWORD"),
+      }
+    });
     return err("INTERNAL_ERROR", e instanceof Error ? e.message : "Unknown error", 500, origin, requestId);
   }
 });
