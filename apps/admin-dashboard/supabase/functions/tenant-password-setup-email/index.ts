@@ -1,6 +1,6 @@
 // Issue a password setup (invite or recovery) link for a tenant owner and optionally email it.
 // @ts-ignore Deno runtime remote import
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 // @ts-ignore Deno runtime remote import
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore Deno runtime remote import
@@ -106,13 +106,33 @@ serve(async (req) => {
       try {
         const smtpUser = Deno.env.get("FASTMAIL_SMTP_USERNAME");
         const smtpPass = Deno.env.get("FASTMAIL_SMTP_PASSWORD");
-        if (!smtpUser || !smtpPass) throw new Error("SMTP credentials not configured");
+        
+        console.log("SMTP Config Check:", {
+          hasUsername: !!smtpUser,
+          hasPassword: !!smtpPass,
+          tenantEmail: tenant.email,
+          mode,
+          requestId
+        });
+        
+        if (!smtpUser || !smtpPass) {
+          const errorMsg = "SMTP credentials not configured";
+          console.error(errorMsg, { smtpUser: !!smtpUser, smtpPass: !!smtpPass });
+          throw new Error(errorMsg);
+        }
 
         const smtpHost = Deno.env.get("FASTMAIL_SMTP_HOST") || "smtp.fastmail.com";
         const smtpPort = parseInt(Deno.env.get("FASTMAIL_SMTP_PORT") || "587");
         const brandLogoUrl = Deno.env.get("BRAND_LOGO_URL") || Deno.env.get("ADMIN_LOGO_URL") || "";
         const ownerName = body.ownerNameOverride || tenant.name || "Owner";
         const finalRedirect = body.loginRedirectUrl || "https://app.blunari.ai/auth";
+
+        console.log("Attempting SMTP connection:", {
+          host: smtpHost,
+          port: smtpPort,
+          recipient: tenant.email,
+          requestId
+        });
 
         const smtp = new SMTPClient({
           connection: {
@@ -161,8 +181,20 @@ serve(async (req) => {
             </body></html>`
         });
         emailSent = true;
+        console.log("Email sent successfully:", { 
+          recipient: tenant.email, 
+          mode, 
+          requestId 
+        });
       } catch (e) {
-        console.warn("Email send failed", e);
+        const errorDetails = {
+          message: e instanceof Error ? e.message : String(e),
+          stack: e instanceof Error ? e.stack : undefined,
+          recipient: tenant.email,
+          mode,
+          requestId
+        };
+        console.error("Email send failed:", errorDetails);
         emailSent = false;
         emailError = e instanceof Error ? e.message : String(e);
       }
