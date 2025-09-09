@@ -60,8 +60,8 @@ serve(async (req) => {
 
     console.log("Starting tenant provisioning for:", email, restaurant_name);
 
-    // Step 1: Create user account if it doesn't exist
-    let userId: string;
+    // Step 1: Check if user account exists, but don't create new users here to avoid automatic emails
+    let userId: string | null = null;
 
     // First check if user already exists
     const { data: existingUser, error: getUserError } =
@@ -83,59 +83,45 @@ serve(async (req) => {
         }
       }
     } else {
-      // Create new user
-      const { data: newUser, error: createUserError } =
-        await supabaseAdmin.auth.admin.createUser({
-          email,
-          password,
-          email_confirm: true, // Auto-confirm email for admin-created accounts
-          user_metadata: {
-            created_by_admin: true,
-            admin_user_id,
-          },
-        });
-
-      if (createUserError) {
-        console.error("Error creating user:", createUserError);
-        throw createUserError;
-      }
-
-      if (!newUser?.user) {
-        throw createUserError || new Error("User creation returned no user");
-      }
-      userId = newUser.user.id;
-      console.log("Created new user:", userId);
+      console.log("User will be created during password setup to avoid automatic emails");
+      // Don't create user here - this prevents automatic confirmation emails
+      // User will be created when password setup email is sent manually
+      // For now, use a placeholder - the provision_tenant function will handle this
+      userId = null;
     }
 
-    // Step 2: Check if tenant already exists for this user
-    const { data: existingProvisioning } = await supabaseAdmin
-      .from("auto_provisioning")
-      .select("tenant_id, status")
-      .eq("user_id", userId)
-      .eq("restaurant_slug", restaurant_slug)
-      .single();
+    // Step 2: Check if tenant already exists for this user (skip if no user yet)
+    if (userId) {
+      const { data: existingProvisioning } = await supabaseAdmin
+        .from("auto_provisioning")
+        .select("tenant_id, status")
+        .eq("user_id", userId)
+        .eq("restaurant_slug", restaurant_slug)
+        .single();
 
-    if (existingProvisioning?.tenant_id) {
-      console.log("Tenant already exists for user");
-    return new Response(
-        JSON.stringify({
-          success: true,
-          tenant_id: existingProvisioning.tenant_id,
-          user_id: userId,
-          message: "Tenant already exists",
-        }),
-        {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        },
-      );
+      if (existingProvisioning?.tenant_id) {
+        console.log("Tenant already exists for user");
+        return new Response(
+          JSON.stringify({
+            success: true,
+            tenant_id: existingProvisioning.tenant_id,
+            user_id: userId,
+            message: "Tenant already exists",
+          }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          },
+        );
+      }
     }
 
     // Step 3: Create tenant using the existing function
+    // Use a temporary admin user ID for tenant creation if no user exists yet
     const { data: tenantId, error: provisionError } = await supabaseAdmin.rpc(
       "provision_tenant",
       {
-        p_user_id: userId,
+        p_user_id: userId || admin_user_id || null,
         p_restaurant_name: restaurant_name,
         p_restaurant_slug: restaurant_slug,
         p_timezone: timezone,
@@ -156,22 +142,24 @@ serve(async (req) => {
 
     console.log("Tenant provisioned successfully:", tenantId);
 
-    // Step 4: Create profile entry if it doesn't exist
-    const { error: profileError } = await supabaseAdmin.from("profiles").upsert(
-      {
-        id: userId,
-        email: email,
-        first_name: restaurant_name.split(" ")[0] || "Restaurant",
-        last_name: "Owner",
-      },
-      {
-        onConflict: "id",
-      },
-    );
+    // Step 4: Create profile entry if user exists
+    if (userId) {
+      const { error: profileError } = await supabaseAdmin.from("profiles").upsert(
+        {
+          id: userId,
+          email: email,
+          first_name: restaurant_name.split(" ")[0] || "Restaurant",
+          last_name: "Owner",
+        },
+        {
+          onConflict: "id",
+        },
+      );
 
-    if (profileError) {
-      console.warn("Profile creation warning:", profileError);
-      // Don't fail the whole process for profile errors
+      if (profileError) {
+        console.warn("Profile creation warning:", profileError);
+        // Don't fail the whole process for profile errors
+      }
     }
 
     // Step 5: Log the provisioning event
@@ -186,19 +174,22 @@ serve(async (req) => {
         restaurant_name,
         restaurant_slug,
         created_by_admin: !!admin_user_id,
+        user_created: !!userId,
       },
     });
 
-  return new Response(
+    return new Response(
       JSON.stringify({
         success: true,
         tenant_id: tenantId,
         user_id: userId,
         restaurant_slug,
-        message: "Tenant provisioned successfully",
+        message: userId ? 
+          "Tenant provisioned successfully" : 
+          "Tenant provisioned successfully. User will be created when password setup email is sent.",
       }),
       {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       },
     );
