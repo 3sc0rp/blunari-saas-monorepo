@@ -107,7 +107,6 @@ export function TenantProvisioningWizard({
     },
     owner: {
       email: "",
-      sendInvite: true,
     },
     access: {
       mode: "standard",
@@ -653,17 +652,6 @@ export function TenantProvisioningWizard({
             required
           />
         </div>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <Label>Send Welcome Email</Label>
-            <p className="text-sm text-muted-foreground">Send setup instructions to the owner</p>
-          </div>
-          <Switch
-            checked={formData.owner.sendInvite}
-            onCheckedChange={(checked) => handleInputChange("owner", "sendInvite", checked)}
-          />
-        </div>
       </CardContent>
     </Card>
   );
@@ -831,10 +819,6 @@ export function TenantProvisioningWizard({
           <div>
             <Label className="text-muted-foreground">Owner Email</Label>
             <div>{formData.owner.email}</div>
-          </div>
-          <div>
-            <Label className="text-muted-foreground">Send Invite</Label>
-            <div>{formData.owner.sendInvite ? "Yes" : "No"}</div>
           </div>
           <div>
             <Label className="text-muted-foreground">Access Mode</Label>

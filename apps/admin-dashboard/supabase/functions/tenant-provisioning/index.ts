@@ -28,7 +28,6 @@ interface BasicInfo {
 
 interface OwnerInfo {
   email: string;
-  sendInvite?: boolean;
 }
 
 interface TenantProvisioningRequest {
@@ -125,7 +124,6 @@ serve(async (req: Request) => {
       owner: z
         .object({
           email: z.string().email(),
-          sendInvite: z.boolean().optional(),
         })
         .optional(),
       idempotencyKey: z.string().uuid().optional(),

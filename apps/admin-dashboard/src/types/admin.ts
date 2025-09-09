@@ -93,7 +93,6 @@ export interface ProvisioningRequest {
   };
   owner: {
     email: string;
-    sendInvite: boolean;
   };
   access: {
     mode: "standard" | "premium";
@@ -159,7 +158,6 @@ export const ProvisioningRequestSchema = z.object({
   }),
   owner: z.object({
     email: z.string().email("Invalid email address"),
-    sendInvite: z.boolean(),
   }),
   access: z.object({
     mode: z.enum(["standard", "premium"]),
