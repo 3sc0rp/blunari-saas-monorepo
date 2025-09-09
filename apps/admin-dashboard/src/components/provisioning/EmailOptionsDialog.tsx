@@ -28,33 +28,27 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
   provisioningData,
 }) => {
   const [sendingWelcome, setSendingWelcome] = useState(false);
-  const [sendingCredentials, setSendingCredentials] = useState(false);
   const { toast } = useToast();
 
-  const sendWelcomePack = async () => {
-    console.log("Sending welcome pack email...");
+  const sendWelcomeEmail = async (includeCredentials: boolean = false) => {
+    console.log("Sending tenant welcome email...", { includeCredentials });
     setSendingWelcome(true);
     try {
-      console.log("Invoking send-welcome-pack function with data:", {
-        ownerName: provisioningData.ownerName,
-        ownerEmail: provisioningData.ownerEmail,
-        restaurantName: provisioningData.restaurantName,
-        loginUrl: provisioningData.loginUrl,
-      });
-
       const { data, error } = await supabase.functions.invoke(
-        "send-welcome-pack",
+        "send-tenant-welcome-email",
         {
           body: {
             ownerName: provisioningData.ownerName,
             ownerEmail: provisioningData.ownerEmail,
             restaurantName: provisioningData.restaurantName,
             loginUrl: provisioningData.loginUrl,
+            includeCredentials,
+            temporaryPassword: includeCredentials ? provisioningData.ownerPassword : undefined,
           },
         },
       );
 
-      console.log("Welcome pack response:", { data, error });
+      console.log("Welcome email response:", { data, error });
 
       if (error) {
         console.error("Supabase function error:", error);
@@ -63,16 +57,17 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
 
       if (data?.success) {
         toast({
-          title: "Welcome Pack Sent! 🎉",
-          description: `Welcome pack email sent to ${provisioningData.ownerEmail}`,
+          title: "Welcome Email Sent! 🎉",
+          description: `Welcome email ${includeCredentials ? 'with credentials ' : ''}sent to ${provisioningData.ownerEmail}`,
         });
+        onClose(); // Auto-close dialog after successful send
       } else {
-        throw new Error(data?.error || "Failed to send welcome pack");
+        throw new Error(data?.error || "Failed to send welcome email");
       }
     } catch (error) {
-      console.error("Error sending welcome pack:", error);
+      console.error("Error sending welcome email:", error);
       toast({
-        title: "Failed to Send Welcome Pack",
+        title: "Failed to Send Welcome Email",
         description:
           error instanceof Error
             ? error.message
@@ -84,61 +79,6 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
     }
   };
 
-  const sendCredentials = async () => {
-    console.log("Sending credentials email...");
-    setSendingCredentials(true);
-    try {
-      console.log("Invoking send-credentials-email function with data:", {
-        ownerName: provisioningData.ownerName,
-        ownerEmail: provisioningData.ownerEmail,
-        ownerPassword: "***HIDDEN***",
-        restaurantName: provisioningData.restaurantName,
-        loginUrl: provisioningData.loginUrl,
-      });
-
-      const { data, error } = await supabase.functions.invoke(
-        "send-credentials-email",
-        {
-          body: {
-            ownerName: provisioningData.ownerName,
-            ownerEmail: provisioningData.ownerEmail,
-            ownerPassword: provisioningData.ownerPassword,
-            restaurantName: provisioningData.restaurantName,
-            loginUrl: provisioningData.loginUrl,
-          },
-        },
-      );
-
-      console.log("Credentials response:", { data, error });
-
-      if (error) {
-        console.error("Supabase function error:", error);
-        throw error;
-      }
-
-      if (data?.success) {
-        toast({
-          title: "Credentials Sent! 🔐",
-          description: `Login credentials sent to ${provisioningData.ownerEmail}`,
-        });
-      } else {
-        throw new Error(data?.error || "Failed to send credentials");
-      }
-    } catch (error) {
-      console.error("Error sending credentials:", error);
-      toast({
-        title: "Failed to Send Credentials",
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setSendingCredentials(false);
-    }
-  };
-
   console.log("EmailOptionsDialog rendering with data:", provisioningData);
 
   return (
@@ -147,20 +87,20 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
-            Send Welcome Emails
+            Send Welcome Email
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <p className="text-sm text-muted-foreground">
-            Choose which email(s) to send to{" "}
+            Send a welcome email to{" "}
             <strong>{provisioningData.ownerEmail}</strong> for{" "}
             <strong>{provisioningData.restaurantName}</strong>:
           </p>
 
           <div className="grid gap-3">
             <Button
-              onClick={sendWelcomePack}
+              onClick={() => sendWelcomeEmail(false)}
               disabled={sendingWelcome}
               className="flex items-center gap-2 h-auto py-4 px-4"
               variant="outline"
@@ -171,28 +111,28 @@ export const EmailOptionsDialog: React.FC<EmailOptionsDialogProps> = ({
                 <Package className="h-5 w-5" />
               )}
               <div className="text-left">
-                <div className="font-semibold">Welcome Pack</div>
+                <div className="font-semibold">Welcome Email Only</div>
                 <div className="text-xs text-muted-foreground">
-                  Getting started guide and resources
+                  Getting started guide without login credentials
                 </div>
               </div>
             </Button>
 
             <Button
-              onClick={sendCredentials}
-              disabled={sendingCredentials}
+              onClick={() => sendWelcomeEmail(true)}
+              disabled={sendingWelcome}
               className="flex items-center gap-2 h-auto py-4 px-4"
-              variant="outline"
+              variant="default"
             >
-              {sendingCredentials ? (
+              {sendingWelcome ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <Key className="h-5 w-5" />
               )}
               <div className="text-left">
-                <div className="font-semibold">Confirmation & Credentials</div>
+                <div className="font-semibold">Welcome Email + Credentials</div>
                 <div className="text-xs text-muted-foreground">
-                  Login details and account confirmation
+                  Complete welcome with login details included
                 </div>
               </div>
             </Button>
