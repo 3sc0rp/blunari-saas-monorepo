@@ -118,33 +118,9 @@ serve(async (req) => {
       );
     }
 
-    // Optionally send the email immediately via the dedicated function (if explicitly enabled)
-    // Default is disabled to avoid unintended automatic emails after provisioning.
-    const allowImmediateSend = (Deno.env.get("TENANT_EMAIL_IMMEDIATE_SEND") || "false").toLowerCase() === "true";
-    let emailDispatch: any = { success: false, skipped: true, reason: "immediate send disabled" };
-    if (allowImmediateSend) {
-      try {
-        const sendResp = await supabaseClient.functions.invoke(
-          "send-welcome-email",
-          {
-            body: {
-              ownerName: tenant.name,
-              ownerEmail: tenant.email,
-              restaurantName: tenant.name,
-              loginUrl:
-                Deno.env.get("ADMIN_BASE_URL") ?? "https://admin.blunari.ai",
-            },
-          },
-        );
-        emailDispatch = sendResp.data;
-      } catch (e) {
-        // Soft-fail: keep the job queued even if direct send fails
-        emailDispatch = {
-          success: false,
-          error: e instanceof Error ? e.message : "Email dispatch failed",
-        };
-      }
-    }
+    // Welcome email functionality removed - emails are now sent manually only
+    // No automatic email sending to prevent unwanted emails during tenant provisioning
+    let emailDispatch: any = { success: false, skipped: true, reason: "automatic welcome emails disabled" };
 
     // Log the email operation
     await supabaseClient.from("activity_logs").insert({

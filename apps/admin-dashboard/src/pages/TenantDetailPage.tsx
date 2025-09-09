@@ -25,7 +25,6 @@ import {
   Shield,
 } from "lucide-react";
 import { useAdminAPI } from "@/hooks/useAdminAPI";
-import { SendWelcomePackDialog } from "@/components/tenant/SendWelcomePackDialog";
 import { SendCredentialsDialog } from "@/components/tenant/SendCredentialsDialog";
 import { TenantFeaturesTab } from "@/components/admin/TenantFeaturesTab";
 import { TenantBillingTab } from "@/components/tenant/TenantBillingTab";
@@ -65,7 +64,6 @@ export default function TenantDetailPage() {
   const [tenant, setTenant] = useState<TenantData | null>(null);
   const [loadingPage, setLoadingPage] = useState(true);
   const [resending, setResending] = useState(false);
-  const [openWelcomeDialog, setOpenWelcomeDialog] = useState(false);
   const [openCredentialsDialog, setOpenCredentialsDialog] = useState(false);
   const [loadingEmailStatus, setLoadingEmailStatus] = useState(false);
   const [lastWelcomeJob, setLastWelcomeJob] = useState<
@@ -368,14 +366,6 @@ export default function TenantDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setOpenWelcomeDialog(true)}
-          >
-            <Mail className="h-4 w-4 mr-2" />
-            Send Welcome Email
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
             onClick={() => setOpenCredentialsDialog(true)}
           >
             <Key className="h-4 w-4 mr-2" />
@@ -640,14 +630,6 @@ export default function TenantDetailPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Send Welcome Email Dialog */}
-      <SendWelcomePackDialog
-        open={openWelcomeDialog}
-        onOpenChange={setOpenWelcomeDialog}
-        tenantName={tenant.name}
-        defaultEmail={tenant.email || null}
-        onSent={refreshEmailStatus}
-      />
       <SendCredentialsDialog
         open={openCredentialsDialog}
         onOpenChange={setOpenCredentialsDialog}
