@@ -128,34 +128,22 @@ serve(async (req: Request) => {
 
     logStep("Supabase admin client created");
 
-    // Try to create the owner user account, or get existing user
+    // Check if user already exists, don't create new users automatically
     let userData: any;
-    const { data: createUserData, error: userError } = await supabaseAdmin.auth.admin.createUser({
-      email: requestData.ownerEmail,
-      password: requestData.ownerPassword,
-      email_confirm: true,
-      user_metadata: {
-        first_name: requestData.ownerFirstName,
-        last_name: requestData.ownerLastName,
-        role: "owner",
-      },
-    });
-
-    if (userError && userError.message?.includes("already been registered")) {
-      // Try to get the existing user by email
-      const { data: existingUsers, error: getUserError } = await supabaseAdmin.auth.admin.listUsers();
-      if (getUserError) {
-        throw new Error(`Failed to fetch existing user: ${getUserError.message}`);
-      }
-      const existingUser = existingUsers.users.find((user: any) => user.email === requestData.ownerEmail);
-      if (!existingUser) {
-        throw new Error(`User with email ${requestData.ownerEmail} should exist but was not found`);
-      }
+    
+    // First try to find existing user
+    const { data: existingUsers, error: getUserError } = await supabaseAdmin.auth.admin.listUsers();
+    if (getUserError) {
+      throw new Error(`Failed to check existing users: ${getUserError.message}`);
+    }
+    
+    const existingUser = existingUsers.users.find((user: any) => user.email === requestData.ownerEmail);
+    if (existingUser) {
       userData = { user: existingUser };
-    } else if (userError) {
-      throw new Error(`Failed to create owner account: ${userError.message}`);
+      logStep("Using existing user", { userId: existingUser.id, email: existingUser.email });
     } else {
-      userData = createUserData;
+      // Don't create user automatically - tenant provisioning should be separate from user creation
+      throw new Error(`User with email ${requestData.ownerEmail} does not exist. Please create the user account first using the password setup email feature.`);
     }
 
     // Call the enhanced provision_tenant function
