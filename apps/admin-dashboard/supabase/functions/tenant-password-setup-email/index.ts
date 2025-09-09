@@ -63,11 +63,12 @@ serve(async (req) => {
 
     const { data: tenant, error: tenantErr } = await supabase
       .from("tenants")
-      .select("id, name, email")
+      .select("id, name, email, slug")
       .eq("id", body.tenantId)
       .single();
     if (tenantErr || !tenant) return err("TENANT_NOT_FOUND", "Tenant not found", 404, origin, requestId);
     if (!tenant.email) return err("NO_OWNER_EMAIL", "Tenant has no owner email", 400, origin, requestId);
+    if (!tenant.slug) return err("NO_TENANT_SLUG", "Tenant has no slug configured", 400, origin, requestId);
 
   // Rate limiting now handled atomically via RPC post-generation (we optimistically get link then record; alternatively record first then generate)
 
@@ -81,11 +82,18 @@ serve(async (req) => {
     let actionLink: string | null = null;
     try {
       console.log("Generating link:", { mode, email: tenant.email, requestId });
+      
+      // Construct the proper tenant-specific redirect URL
+      const tenantDashboardUrl = `https://app.blunari.ai/client/${tenant.slug}/auth/callback`;
+      const redirectUrl = body.loginRedirectUrl || tenantDashboardUrl;
+      
+      console.log("Using redirect URL:", { redirectUrl, tenantSlug: tenant.slug, requestId });
+      
       // @ts-ignore dynamic call
       const { data: linkData, error: linkError } = await (supabase.auth as any).admin.generateLink({
         type: mode,
         email: tenant.email,
-        options: body.loginRedirectUrl ? { redirectTo: body.loginRedirectUrl } : undefined,
+        options: { redirectTo: redirectUrl },
       });
       
       if (linkError) {
@@ -141,7 +149,10 @@ serve(async (req) => {
         const smtpPort = parseInt(Deno.env.get("FASTMAIL_SMTP_PORT") || "587");
         const brandLogoUrl = Deno.env.get("BRAND_LOGO_URL") || Deno.env.get("ADMIN_LOGO_URL") || "";
         const ownerName = body.ownerNameOverride || tenant.name || "Owner";
-        const finalRedirect = body.loginRedirectUrl || "https://app.blunari.ai/auth";
+        
+        // Construct tenant-specific dashboard URL
+        const tenantDashboardUrl = `https://app.blunari.ai/client/${tenant.slug}`;
+        const finalRedirect = body.loginRedirectUrl || tenantDashboardUrl;
 
         console.log("Attempting SMTP connection:", {
           host: smtpHost,
@@ -159,35 +170,51 @@ serve(async (req) => {
           },
         });
 
-        const subj = `Set Your ${tenant.name} Password`;
-        const preface = `Your account for <strong>${tenant.name}</strong> is ready. Click below to set your password and complete setup.`;
-        const securityNote = `If you did not expect this password setup link, you can ignore this email. Your current password remains unchanged until you complete the flow.`;
+        const subj = `Access Your ${tenant.name} Dashboard - Set Password`;
+        const preface = `Your <strong>${tenant.name}</strong> dashboard is ready! Click below to set your password and access your restaurant management system.`;
+        const securityNote = `This password setup link was generated for your ${tenant.name} account. If you did not expect this, you can safely ignore this email.`;
 
         await smtp.send({
-          from: "Blunari Team <no-reply@blunari.ai>",
+          from: `${tenant.name} via Blunari <no-reply@blunari.ai>`,
             to: tenant.email,
             subject: subj,
             html: `<!DOCTYPE html><html><head><meta charset='utf-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/><title>${subj}</title></head>
             <body style='font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:0;background:#f8fafc;'>
-              <div style='max-width:620px;margin:0 auto;padding:32px;background:#ffffff;'>
+              <div style='max-width:620px;margin:0 auto;padding:32px;background:#ffffff;border-radius:8px;box-shadow:0 4px 6px rgba(0, 0, 0, 0.1);'>
                 <div style='text-align:center;padding-bottom:24px;border-bottom:1px solid #e2e8f0;'>
-                  ${brandLogoUrl ? `<img src='${brandLogoUrl}' style='height:40px;margin-bottom:12px;' alt='Logo'/>` : ''}
-                  <h1 style='margin:0;font-size:24px;color:#1a365d;'>Password Setup</h1>
+                  ${brandLogoUrl ? `<img src='${brandLogoUrl}' style='height:40px;margin-bottom:12px;' alt='${tenant.name} Logo'/>` : ''}
+                  <h1 style='margin:0;font-size:24px;color:#1a365d;'>${tenant.name} Dashboard Access</h1>
+                  <p style='margin:8px 0 0 0;font-size:14px;color:#64748b;'>Restaurant Management System</p>
                 </div>
                 <div style='padding:32px 0;'>
-                  <p style='font-size:15px;color:#2d3748;'>Hi ${ownerName},</p>
-                  <p style='font-size:14px;color:#4a5568;'>${preface}</p>
-                  <div style='margin:28px 0;text-align:center;'>
-                    <a href='${actionLink}' style='display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:14px 28px;border-radius:6px;font-weight:600;font-size:15px;'>Set Password</a>
+                  <p style='font-size:16px;color:#2d3748;font-weight:600;'>Hi ${ownerName},</p>
+                  <p style='font-size:14px;color:#4a5568;line-height:1.6;'>${preface}</p>
+                  
+                  <div style='background:#f0f9ff;border-left:4px solid #0ea5e9;padding:16px 20px;border-radius:4px;margin:24px 0;'>
+                    <p style='margin:0;font-size:13px;color:#0c4a6e;'><strong>What you'll get access to:</strong></p>
+                    <ul style='margin:8px 0 0 0;font-size:13px;color:#0c4a6e;'>
+                      <li>Table management & reservations</li>
+                      <li>Real-time booking dashboard</li>
+                      <li>Customer communication tools</li>
+                      <li>Analytics & reporting</li>
+                    </ul>
                   </div>
-                  <p style='font-size:12px;color:#718096;'>If the button does not work, copy & paste this URL:<br/><span style='word-break:break-all;color:#1a365d;'>${actionLink}</span></p>
+                  
+                  <div style='margin:32px 0;text-align:center;'>
+                    <a href='${actionLink}' style='display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:16px 32px;border-radius:8px;font-weight:600;font-size:16px;box-shadow:0 2px 4px rgba(37, 99, 235, 0.2);'>Set Password & Access Dashboard</a>
+                  </div>
+                  
+                  <p style='font-size:12px;color:#718096;text-align:center;'>If the button doesn't work, copy & paste this URL into your browser:<br/><span style='word-break:break-all;color:#1a365d;background:#f8fafc;padding:4px 8px;border-radius:4px;'>${actionLink}</span></p>
+                  
                   <div style='background:#fefce8;border-left:4px solid #eab308;padding:16px 20px;border-radius:4px;margin:28px 0;'>
-                    <p style='margin:0;font-size:13px;color:#854d0e;'>${securityNote}</p>
+                    <p style='margin:0;font-size:13px;color:#854d0e;'><strong>Security Note:</strong> ${securityNote}</p>
                   </div>
-                  <p style='font-size:12px;color:#4b5563;'>This link may expire or become invalid after use. Once complete you can log in at <a href='${finalRedirect}' style='color:#2563eb;'>${finalRedirect}</a>.</p>
+                  
+                  <p style='font-size:12px;color:#4b5563;text-align:center;'>After setting your password, you can access your dashboard at:<br/><a href='${finalRedirect}' style='color:#2563eb;font-weight:600;'>${finalRedirect}</a></p>
                 </div>
                 <div style='text-align:center;padding-top:24px;border-top:1px solid #e2e8f0;'>
-                  <p style='margin:0;font-size:12px;color:#64748b;'>© ${new Date().getFullYear()} Blunari. All rights reserved.</p>
+                  <p style='margin:0 0 8px 0;font-size:12px;color:#64748b;'>Need help? Contact our support team</p>
+                  <p style='margin:0;font-size:12px;color:#64748b;'>© ${new Date().getFullYear()} Blunari Restaurant Management System. All rights reserved.</p>
                 </div>
               </div>
             </body></html>`
