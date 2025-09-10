@@ -96,9 +96,9 @@ serve(async (req: Request) => {
     try {
       console.log("Generating link:", { mode, email: tenant.email, requestId });
       
-      // The client dashboard should be deployed to demo.blunari.ai
+      // The client dashboard is deployed to app.blunari.ai with tenant routing
       // Use the environment variable or fallback to the production URL
-      const clientBaseUrl = Deno.env.get("CLIENT_BASE_URL") || "https://demo.blunari.ai";
+      const clientBaseUrl = Deno.env.get("CLIENT_BASE_URL") || "https://app.blunari.ai";
       const clientDashboardUrl = `${clientBaseUrl}/auth?tenant=${tenant.slug}`;
       const redirectUrl = body.loginRedirectUrl || clientDashboardUrl;
       
@@ -166,7 +166,7 @@ serve(async (req: Request) => {
         const ownerName = body.ownerNameOverride || tenant.name || "Owner";
         
         // Use the same client base URL for consistency
-        const clientBaseUrl = Deno.env.get("CLIENT_BASE_URL") || "https://demo.blunari.ai";
+        const clientBaseUrl = Deno.env.get("CLIENT_BASE_URL") || "https://app.blunari.ai";
         const tenantDashboardUrl = `${clientBaseUrl}?tenant=${tenant.slug}`;
         const finalRedirect = body.loginRedirectUrl || tenantDashboardUrl;
 
