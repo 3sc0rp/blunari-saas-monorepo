@@ -5,7 +5,7 @@ import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore Deno runtime remote import
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-import { createCorsHeaders } from "../_shared/cors.ts";
+import { createCorsHeaders } from "../_shared/cors";
 
 interface RequestBody {
   tenantId: string;
@@ -29,7 +29,7 @@ function err(code: string, message: string, status: number, origin: string | nul
 // Placeholder retained for backward compatibility if needed; no longer used.
 async function getRateLimitInfo() { return null; }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   const origin = req.headers.get("Origin");
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: createCorsHeaders(origin) });
