@@ -8,14 +8,22 @@ const createCorsHeaders = (requestOrigin: string | null = null) => {
   let allowedOrigin = '*';
   if (environment === 'production' && requestOrigin) {
     const allowedOrigins = [
+      'https://app.blunari.ai',
       'https://demo.blunari.ai',
-  'https://app.blunari.ai',
       'https://admin.blunari.ai', 
       'https://services.blunari.ai',
       'https://blunari.ai',
       'https://www.blunari.ai'
     ];
-    allowedOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+    
+    console.log('CORS check:', {
+      requestOrigin,
+      allowedOrigins,
+      isAllowed: allowedOrigins.includes(requestOrigin),
+      environment
+    });
+    
+    allowedOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : 'https://app.blunari.ai';
   }
   
   return {
