@@ -301,6 +301,59 @@ serve(async (req: Request) => {
         
         actionLink = linkResponse.data?.properties?.action_link || linkResponse.data?.action_link || null;
         
+        // Generate a unique token for single-use tracking
+        const linkToken = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(); // 48 hours from now
+        
+        console.log("Generated link with tracking:", {
+          hasLink: !!actionLink,
+          linkToken,
+          expiresAt,
+          requestId
+        });
+        
+        // Store link tracking information in database for single-use validation
+        if (actionLink) {
+          try {
+            const { error: trackingError } = await supabase
+              .from('password_setup_links')
+              .insert({
+                token: linkToken,
+                tenant_id: tenant.id,
+                email: tenant.email,
+                expires_at: expiresAt,
+                created_by: user.id,
+                used: false,
+                created_at: new Date().toISOString()
+              });
+              
+            if (trackingError) {
+              console.warn("Failed to store link tracking (proceeding anyway):", trackingError);
+            } else {
+              console.log("Link tracking stored successfully:", { linkToken, requestId });
+              
+              // Append the tracking token to the redirect URL
+              const separator = redirectUrl.includes('?') ? '&' : '?';
+              const trackedRedirectUrl = `${redirectUrl}${separator}linkToken=${linkToken}`;
+              
+              // Update the action link to include our tracking token
+              const linkUrl = new URL(actionLink);
+              const linkParams = new URLSearchParams(linkUrl.hash.substring(1));
+              linkParams.set('redirectTo', trackedRedirectUrl);
+              linkUrl.hash = linkParams.toString();
+              actionLink = linkUrl.toString();
+              
+              console.log("Updated action link with tracking token:", {
+                originalRedirect: redirectUrl,
+                trackedRedirect: trackedRedirectUrl,
+                requestId
+              });
+            }
+          } catch (trackingErr) {
+            console.warn("Link tracking setup failed (proceeding anyway):", trackingErr);
+          }
+        }
+        
       } catch (apiError) {
         console.error("API call failed:", {
           error: apiError,

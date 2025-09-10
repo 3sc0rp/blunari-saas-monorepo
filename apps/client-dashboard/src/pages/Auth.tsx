@@ -21,6 +21,56 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2, Github, Chrome, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+// Function to validate single-use password setup links
+const validatePasswordSetupLink = async (linkToken: string) => {
+  try {
+    console.log("Validating password setup link token:", linkToken);
+    
+    const { data, error } = await supabase.functions.invoke('validate-password-setup-link', {
+      body: {
+        linkToken,
+        action: 'validate' // Just validate, don't consume yet
+      }
+    });
+
+    if (error) {
+      console.error("Link validation API error:", error);
+      throw error;
+    }
+
+    console.log("Link validation response:", data);
+    return data;
+  } catch (error) {
+    console.error("Link validation failed:", error);
+    throw error;
+  }
+};
+
+// Function to consume (mark as used) a password setup link
+const consumePasswordSetupLink = async (linkToken: string) => {
+  try {
+    console.log("Consuming password setup link token:", linkToken);
+    
+    const { data, error } = await supabase.functions.invoke('validate-password-setup-link', {
+      body: {
+        linkToken,
+        action: 'consume' // Mark as used
+      }
+    });
+
+    if (error) {
+      console.error("Link consumption API error:", error);
+      throw error;
+    }
+
+    console.log("Link consumption response:", data);
+    return data;
+  } catch (error) {
+    console.error("Link consumption failed:", error);
+    throw error;
+  }
+};
+
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -130,6 +180,44 @@ const Auth: React.FC = () => {
     const search = window.location.search;
     
     console.log("Checking URL for password setup tokens:", { hash: hash.substring(0, 100), search });
+    
+    // Check for linkToken in search params first (single-use security)
+    const searchParams = new URLSearchParams(search);
+    const linkToken = searchParams.get('linkToken');
+    
+    if (linkToken) {
+      console.log("Single-use link token detected, validating...");
+      
+      // Validate the link token with our security function
+      validatePasswordSetupLink(linkToken)
+        .then((result) => {
+          if (result.valid) {
+            console.log("Link token is valid:", result);
+            setShowPasswordSetup(true);
+            setActiveTab('password-setup');
+            setRecoveryToken(`link_token=${linkToken}`);
+            
+            // Clear the URL parameters for security
+            window.history.replaceState(null, '', window.location.pathname);
+          } else {
+            console.error("Invalid link token:", result);
+            toast({
+              title: "Invalid Link",
+              description: result.message || "This password setup link is invalid or has expired.",
+              variant: "destructive",
+            });
+          }
+        })
+        .catch((error) => {
+          console.error("Link validation error:", error);
+          toast({
+            title: "Validation Error", 
+            description: "Failed to validate password setup link. Please contact support.",
+            variant: "destructive",
+          });
+        });
+      return;
+    }
     
     // Check for tokens in URL hash (primary method)
     if (hash.length > 1) {
@@ -428,6 +516,59 @@ const Auth: React.FC = () => {
     setPasswordSetupLoading(true);
 
     try {
+      // Check if this is a single-use link token
+      if (recoveryToken.startsWith('link_token=')) {
+        const linkToken = recoveryToken.split('=')[1];
+        console.log("Processing single-use link token password setup");
+        
+        // Consume the link token to mark it as used (security measure)
+        try {
+          const consumeResult = await consumePasswordSetupLink(linkToken);
+          if (!consumeResult.valid) {
+            throw new Error(consumeResult.message || "Link token could not be consumed");
+          }
+          console.log("Link token consumed successfully:", consumeResult);
+        } catch (consumeError) {
+          console.error("Failed to consume link token:", consumeError);
+          toast({
+            title: "Security Error",
+            description: "This password setup link could not be validated. Please request a new one.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // User should already be authenticated if they got this far, just update password
+        if (!user) {
+          toast({
+            title: "Authentication Required",
+            description: "Please authenticate first before setting your password.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+          password: data.password,
+        });
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        toast({
+          title: "Password set successfully",
+          description: "Your password has been set. You are now logged in with secure access.",
+        });
+
+        setShowPasswordSetup(false);
+        resetPasswordSetupForm();
+        setRecoveryToken(null);
+        
+        navigate(from, { replace: true });
+        return;
+      }
+      
       // Check if this is a simple authenticated user password setup (fallback case)
       if (recoveryToken === 'authenticated_user_password_setup') {
         console.log("Setting password for already authenticated user");
