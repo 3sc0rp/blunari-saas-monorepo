@@ -96,13 +96,30 @@ serve(async (req: Request) => {
     try {
       console.log("Generating link:", { mode, email: tenant.email, requestId });
       
+      // Debug: Check all environment variables related to URLs
+      const clientBaseUrl = Deno.env.get("CLIENT_BASE_URL");
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      
+      console.log("Environment check:", {
+        CLIENT_BASE_URL: clientBaseUrl,
+        SUPABASE_URL: supabaseUrl,
+        fallback: "https://app.blunari.ai",
+        requestId
+      });
+      
       // The client dashboard is deployed to app.blunari.ai with tenant routing
       // Use the environment variable or fallback to the production URL
-      const clientBaseUrl = Deno.env.get("CLIENT_BASE_URL") || "https://app.blunari.ai";
-      const clientDashboardUrl = `${clientBaseUrl}/auth?tenant=${tenant.slug}`;
+      const finalClientBaseUrl = clientBaseUrl || "https://app.blunari.ai";
+      const clientDashboardUrl = `${finalClientBaseUrl}/auth?tenant=${tenant.slug}`;
       const redirectUrl = body.loginRedirectUrl || clientDashboardUrl;
       
-      console.log("Using redirect URL:", { redirectUrl, clientBaseUrl, tenantSlug: tenant.slug, requestId });
+      console.log("URL generation:", { 
+        finalClientBaseUrl, 
+        clientDashboardUrl, 
+        redirectUrl, 
+        tenantSlug: tenant.slug, 
+        requestId 
+      });
       
       // @ts-ignore dynamic call
       const { data: linkData, error: linkError } = await (supabase.auth as any).admin.generateLink({
@@ -117,7 +134,12 @@ serve(async (req: Request) => {
       }
       
       actionLink = linkData?.properties?.action_link || null;
-      console.log("Link generated successfully:", { hasLink: !!actionLink, requestId });
+      console.log("Link generation result:", { 
+        hasLink: !!actionLink, 
+        linkPreview: actionLink ? actionLink.substring(0, 100) + '...' : null,
+        fullLink: actionLink,
+        requestId 
+      });
     } catch (linkErr) {
       console.error("generateLink failed:", {
         error: linkErr instanceof Error ? linkErr.message : String(linkErr),
