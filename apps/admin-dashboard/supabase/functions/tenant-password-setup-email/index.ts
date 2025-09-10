@@ -72,10 +72,23 @@ serve(async (req: Request) => {
 
   // Rate limiting now handled atomically via RPC post-generation (we optimistically get link then record; alternatively record first then generate)
 
-    // Since we no longer auto-create users during provisioning, always use recovery mode
-    // This avoids potential issues with getUserByEmail and simplifies the flow
-    const mode: "recovery" = "recovery";
-    console.log("Using recovery mode for password setup:", { email: tenant.email, requestId });
+    // Check if user exists in auth to determine the correct mode
+    let mode: "invite" | "recovery" = "invite"; // default to invite for new users
+    try {
+      const { data: existingUser, error: userCheckError } = await supabase.auth.admin.getUserByEmail(tenant.email);
+      if (existingUser?.user && !userCheckError) {
+        mode = "recovery"; // user exists, use recovery
+        console.log("Existing user found, using recovery mode:", { email: tenant.email, userId: existingUser.user.id, requestId });
+      } else {
+        mode = "invite"; // user doesn't exist, use invite
+        console.log("New user, using invite mode:", { email: tenant.email, requestId });
+      }
+    } catch (userErr) {
+      console.log("User check failed, defaulting to invite mode:", { email: tenant.email, error: userErr, requestId });
+      mode = "invite";
+    }
+
+    console.log("Using mode for password setup:", { mode, email: tenant.email, requestId });
 
     // For invite mode (new users), we'll use a different approach to minimize emails
 

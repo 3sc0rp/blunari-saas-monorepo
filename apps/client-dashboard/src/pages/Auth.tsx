@@ -140,8 +140,8 @@ const Auth: React.FC = () => {
         fullHash: hash.substring(0, 100) + (hash.length > 100 ? '...' : '')
       });
       
-      if (accessToken && type === 'recovery') {
-        // Store the complete token information for recovery
+      if (accessToken && (type === 'recovery' || type === 'invite')) {
+        // Store the complete token information for both recovery and invite
         const tokenData = refreshToken ? 
           `access_token=${accessToken}&refresh_token=${refreshToken}&type=${type}` : 
           accessToken;
@@ -394,15 +394,21 @@ const Auth: React.FC = () => {
       // Extract the URL parameters from the recovery token 
       // The recovery token is actually the full URL hash content
       const urlParams = new URLSearchParams(recoveryToken.includes('?') ? recoveryToken.split('?')[1] : recoveryToken);
-      const actualToken = urlParams.get('token') || recoveryToken;
+      const actualToken = urlParams.get('access_token') || urlParams.get('token') || recoveryToken;
       const refreshToken = urlParams.get('refresh_token');
+      const tokenType = urlParams.get('type') || 'recovery';
       
-      console.log("Processing password setup with token:", { hasToken: !!actualToken, hasRefresh: !!refreshToken });
+      console.log("Processing password setup with token:", { 
+        hasToken: !!actualToken, 
+        hasRefresh: !!refreshToken, 
+        type: tokenType 
+      });
 
-      // Try to verify the OTP token and set password
+      // For invite tokens, use verifyOtp with 'invite' type
+      // For recovery tokens, use verifyOtp with 'recovery' type
       const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
         token_hash: actualToken,
-        type: 'recovery'
+        type: tokenType as 'invite' | 'recovery'
       });
 
       if (verifyError) {
