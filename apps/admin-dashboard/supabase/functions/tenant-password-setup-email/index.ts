@@ -5,7 +5,16 @@ import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore Deno runtime remote import
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-import { createCorsHeaders } from "../_shared/cors";
+
+// CORS headers function defined inline to avoid import issues
+function createCorsHeaders(origin: string | null = null) {
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Origin": origin || "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
+  return headers;
+}
 
 interface RequestBody {
   tenantId: string;
