@@ -127,21 +127,25 @@ const Auth: React.FC = () => {
   // Check for password setup tokens in URL hash
   useEffect(() => {
     const hash = window.location.hash;
+    const search = window.location.search;
+    
+    console.log("Checking URL for password setup tokens:", { hash: hash.substring(0, 100), search });
+    
+    // Check for tokens in URL hash (primary method)
     if (hash.length > 1) {
       const urlParams = new URLSearchParams(hash.substring(1));
       const accessToken = urlParams.get('access_token');
       const refreshToken = urlParams.get('refresh_token');
       const type = urlParams.get('type');
       
-      console.log("URL hash parameters:", { 
+      console.log("Hash parameters found:", { 
         hasAccessToken: !!accessToken, 
         hasRefreshToken: !!refreshToken, 
-        type,
-        fullHash: hash.substring(0, 100) + (hash.length > 100 ? '...' : '')
+        type 
       });
       
       if (accessToken && (type === 'recovery' || type === 'invite')) {
-        // Store the complete token information for both recovery and invite
+        console.log("Password setup token detected in hash, setting up form");
         const tokenData = refreshToken ? 
           `access_token=${accessToken}&refresh_token=${refreshToken}&type=${type}` : 
           accessToken;
@@ -150,14 +154,43 @@ const Auth: React.FC = () => {
         setShowPasswordSetup(true);
         setActiveTab('password-setup');
         
-        // Clear the hash from URL for security but don't auto-login yet
+        // Clear the hash from URL for security
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        
-        // Clear any existing session to prevent auto-login bypassing password setup
-        supabase.auth.signOut();
+        return;
       }
     }
+    
+    // Also check for password setup indicators in search params as fallback
+    if (search.includes('passwordSetup=true') || search.includes('type=recovery') || search.includes('type=invite')) {
+      console.log("Password setup indicator found in search params");
+      setShowPasswordSetup(true);
+      setActiveTab('password-setup');
+      // Store a placeholder token since we'll need the user to be authenticated already
+      setRecoveryToken('authenticated_user_password_setup');
+    }
   }, []);
+
+  // Additional effect to check if user was authenticated via password setup link
+  useEffect(() => {
+    // If user becomes authenticated and we have detected password setup tokens,
+    // force them to go through password setup even if they're already logged in
+    if (user && !showPasswordSetup) {
+      const hash = window.location.hash;
+      const search = window.location.search;
+      
+      // Check if this page load was from a password setup link
+      if (hash.includes('type=recovery') || hash.includes('type=invite') || 
+          search.includes('passwordSetup=true')) {
+        console.log("User authenticated via password setup link, forcing password setup form");
+        setShowPasswordSetup(true);
+        setActiveTab('password-setup');
+        setRecoveryToken('authenticated_user_password_setup');
+        
+        // Clear URL parameters
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+  }, [user, showPasswordSetup]);
 
   // Redirect if already authenticated, but not during password setup
   useEffect(() => {
@@ -395,6 +428,32 @@ const Auth: React.FC = () => {
     setPasswordSetupLoading(true);
 
     try {
+      // Check if this is a simple authenticated user password setup (fallback case)
+      if (recoveryToken === 'authenticated_user_password_setup') {
+        console.log("Setting password for already authenticated user");
+        
+        // User is already authenticated, just update their password
+        const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+          password: data.password,
+        });
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        toast({
+          title: "Password set successfully",
+          description: "Your password has been set. You are now logged in.",
+        });
+
+        setShowPasswordSetup(false);
+        resetPasswordSetupForm();
+        setRecoveryToken(null);
+        
+        navigate(from, { replace: true });
+        return;
+      }
+
       // Extract the URL parameters from the recovery token 
       // The recovery token is actually the full URL hash content
       const urlParams = new URLSearchParams(recoveryToken.includes('?') ? recoveryToken.split('?')[1] : recoveryToken);
@@ -407,6 +466,31 @@ const Auth: React.FC = () => {
         hasRefresh: !!refreshToken, 
         type: tokenType 
       });
+
+      // If user is already authenticated from the token, just update password directly
+      if (user) {
+        console.log("User already authenticated, updating password directly");
+        
+        const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+          password: data.password,
+        });
+
+        if (updateError) {
+          throw updateError;
+        }
+
+        toast({
+          title: "Password set successfully",
+          description: "Your password has been set. You are now logged in.",
+        });
+
+        setShowPasswordSetup(false);
+        resetPasswordSetupForm();
+        setRecoveryToken(null);
+        
+        navigate(from, { replace: true });
+        return;
+      }
 
       // For invite tokens, use verifyOtp with 'invite' type
       // For recovery tokens, use verifyOtp with 'recovery' type
