@@ -55,12 +55,6 @@ ALTER TABLE password_setup_links ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Service role can manage password setup links" ON password_setup_links
 FOR ALL USING (auth.role() = 'service_role');
 
--- Policy for admins to view their created links
-CREATE POLICY "Admins can view their created links" ON password_setup_links
-FOR SELECT USING (
-    created_by = auth.uid() AND 
-    EXISTS (
-        SELECT 1 FROM admin_users 
-        WHERE user_id = auth.uid() AND is_active = true
-    )
-);
+-- Policy for users to view their created links
+CREATE POLICY "Users can view their created links" ON password_setup_links
+FOR SELECT USING (created_by = auth.uid());
