@@ -6,15 +6,46 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore Deno runtime remote import
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
-// CORS headers function defined inline to avoid import issues
-function createCorsHeaders(origin: string | null = null) {
-  const headers: Record<string, string> = {
-    "Access-Control-Allow-Origin": origin || "*",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-  };
-  return headers;
-}
+// CORS headers function - comprehensive version to match the original
+const getAllowedOrigins = () => {
+  const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
+
+  if (environment === 'production') {
+    return [
+      'https://admin.blunari.ai',
+      'https://services.blunari.ai',
+      'https://blunari.ai',
+      'https://www.blunari.ai',
+    ];
+  }
+
+  // Development origins
+  return [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:8080',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:8080',
+  ];
+};
+
+const createOriginHeader = (requestOrigin: string | null) => {
+  const allowedOrigins = getAllowedOrigins();
+  const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
+
+  if (environment === 'development') return '*';
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) return requestOrigin;
+  return allowedOrigins[0] || '*';
+};
+
+const createCorsHeaders = (requestOrigin: string | null = null) => ({
+  'Access-Control-Allow-Origin': createOriginHeader(requestOrigin),
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key, accept, accept-language, content-length, sentry-trace, baggage',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+  'Access-Control-Allow-Credentials': 'true',
+  'Access-Control-Max-Age': '86400',
+});
 
 interface RequestBody {
   tenantId: string;
