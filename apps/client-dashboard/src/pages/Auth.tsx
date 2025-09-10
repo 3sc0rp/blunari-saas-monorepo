@@ -127,17 +127,32 @@ const Auth: React.FC = () => {
   // Check for password setup tokens in URL hash
   useEffect(() => {
     const hash = window.location.hash;
-    const urlParams = new URLSearchParams(hash.substring(1));
-    const accessToken = urlParams.get('access_token');
-    const type = urlParams.get('type');
-    
-    if (accessToken && type === 'recovery') {
-      setRecoveryToken(accessToken);
-      setShowPasswordSetup(true);
-      setActiveTab('password-setup');
+    if (hash.length > 1) {
+      const urlParams = new URLSearchParams(hash.substring(1));
+      const accessToken = urlParams.get('access_token');
+      const refreshToken = urlParams.get('refresh_token');
+      const type = urlParams.get('type');
       
-      // Clear the hash from URL for security
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      console.log("URL hash parameters:", { 
+        hasAccessToken: !!accessToken, 
+        hasRefreshToken: !!refreshToken, 
+        type,
+        fullHash: hash.substring(0, 100) + (hash.length > 100 ? '...' : '')
+      });
+      
+      if (accessToken && type === 'recovery') {
+        // Store the complete token information for recovery
+        const tokenData = refreshToken ? 
+          `access_token=${accessToken}&refresh_token=${refreshToken}&type=${type}` : 
+          accessToken;
+        
+        setRecoveryToken(tokenData);
+        setShowPasswordSetup(true);
+        setActiveTab('password-setup');
+        
+        // Clear the hash from URL for security
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
     }
   }, []);
 
@@ -376,26 +391,68 @@ const Auth: React.FC = () => {
     setPasswordSetupLoading(true);
 
     try {
-      // First, exchange the recovery token for a session
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: recoveryToken,
-        refresh_token: recoveryToken, // In some cases, the recovery token serves both purposes
+      // Extract the URL parameters from the recovery token 
+      // The recovery token is actually the full URL hash content
+      const urlParams = new URLSearchParams(recoveryToken.includes('?') ? recoveryToken.split('?')[1] : recoveryToken);
+      const actualToken = urlParams.get('token') || recoveryToken;
+      const refreshToken = urlParams.get('refresh_token');
+      
+      console.log("Processing password setup with token:", { hasToken: !!actualToken, hasRefresh: !!refreshToken });
+
+      // Try to verify the OTP token and set password
+      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: actualToken,
+        type: 'recovery'
       });
 
-      if (sessionError) {
-        throw sessionError;
-      }
+      if (verifyError) {
+        console.error("OTP verification failed, trying alternative approach:", verifyError);
+        
+        // Alternative approach: try to use the token directly for session
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: actualToken,
+          refresh_token: refreshToken || actualToken
+        });
 
-      // Now update the password
-      const { data: userData, error } = await supabase.auth.updateUser({
-        password: data.password,
-      });
+        if (sessionError) {
+          throw new Error("Invalid or expired password setup link. Please request a new one.");
+        }
 
-      if (error) {
-        throw error;
-      }
+        // Now update password with active session
+        const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+          password: data.password,
+        });
 
-      if (userData.user) {
+        if (updateError) {
+          throw updateError;
+        }
+
+        if (updateData.user) {
+          console.log("Password setup successful via session method for user:", updateData.user.id);
+          
+          toast({
+            title: "Password set successfully",
+            description: "Your password has been set. You are now logged in.",
+          });
+
+          setShowPasswordSetup(false);
+          resetPasswordSetupForm();
+          setRecoveryToken(null);
+          
+          navigate(from, { replace: true });
+        }
+      } else if (verifyData.user) {
+        // OTP verification successful, now update password
+        console.log("OTP verification successful for user:", verifyData.user.id);
+        
+        const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+          password: data.password,
+        });
+
+        if (updateError) {
+          throw updateError;
+        }
+
         toast({
           title: "Password set successfully",
           description: "Your password has been set. You are now logged in.",
@@ -405,7 +462,6 @@ const Auth: React.FC = () => {
         resetPasswordSetupForm();
         setRecoveryToken(null);
         
-        // User should be automatically logged in after password update
         navigate(from, { replace: true });
       }
     } catch (error: unknown) {
