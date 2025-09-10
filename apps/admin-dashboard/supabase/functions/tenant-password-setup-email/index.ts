@@ -151,17 +151,54 @@ serve(async (req: Request) => {
 
     // Check if user exists in auth to determine the correct mode
     let mode: "invite" | "recovery" = "invite"; // default to invite for new users
+    
+    console.log("Checking if user exists in auth:", { email: tenant.email, requestId });
+    
     try {
-      const { data: existingUser, error: userCheckError } = await supabase.auth.admin.getUserByEmail(tenant.email);
+      const supabaseAdmin = supabase as any;
+      const { data: existingUser, error: userCheckError } = await supabaseAdmin.auth.admin.getUserByEmail(tenant.email);
+      
+      console.log("User existence check result:", {
+        hasData: !!existingUser,
+        hasUser: !!existingUser?.user,
+        hasError: !!userCheckError,
+        error: userCheckError ? JSON.stringify(userCheckError) : null,
+        userId: existingUser?.user?.id,
+        requestId
+      });
+      
       if (existingUser?.user && !userCheckError) {
         mode = "recovery"; // user exists, use recovery
-        console.log("Existing user found, using recovery mode:", { email: tenant.email, userId: existingUser.user.id, requestId });
-      } else {
+        console.log("User exists - using recovery mode:", { 
+          email: tenant.email, 
+          userId: existingUser.user.id, 
+          mode,
+          requestId 
+        });
+      } else if (userCheckError && userCheckError.message?.includes('not found')) {
         mode = "invite"; // user doesn't exist, use invite
-        console.log("New user, using invite mode:", { email: tenant.email, requestId });
+        console.log("User not found - using invite mode:", { 
+          email: tenant.email, 
+          mode,
+          requestId 
+        });
+      } else {
+        // If there's an error but it's not "not found", still try invite as fallback
+        mode = "invite";
+        console.log("User check inconclusive - defaulting to invite mode:", { 
+          email: tenant.email, 
+          error: userCheckError,
+          mode,
+          requestId 
+        });
       }
     } catch (userErr) {
-      console.log("User check failed, defaulting to invite mode:", { email: tenant.email, error: userErr, requestId });
+      console.log("User check failed with exception - defaulting to invite mode:", { 
+        email: tenant.email, 
+        error: userErr instanceof Error ? userErr.message : String(userErr),
+        mode: "invite",
+        requestId 
+      });
       mode = "invite";
     }
 
@@ -213,11 +250,13 @@ serve(async (req: Request) => {
       try {
         if (mode === 'invite') {
           // For new users, use inviteUserByEmail
+          console.log("Attempting invite for new user...", { email: tenant.email, requestId });
           linkResponse = await supabaseAdmin.auth.admin.inviteUserByEmail(tenant.email, {
             redirectTo: redirectUrl,
           });
         } else {
           // For existing users, use generateLink with recovery type
+          console.log("Attempting recovery for existing user...", { email: tenant.email, requestId });
           linkResponse = await supabaseAdmin.auth.admin.generateLink({
             type: 'recovery',
             email: tenant.email,
@@ -228,13 +267,36 @@ serve(async (req: Request) => {
         console.log("Link generation response:", {
           hasData: !!linkResponse.data,
           hasError: !!linkResponse.error,
-          dataKeys: linkResponse.data ? Object.keys(linkResponse.data) : [],
+          mode,
           requestId
         });
         
         if (linkResponse.error) {
-          console.error("Supabase link generation error:", linkResponse.error);
-          throw new Error(`Supabase error: ${JSON.stringify(linkResponse.error)}`);
+          // Check if it's an "email_exists" error and retry with recovery mode
+          if (mode === 'invite' && linkResponse.error.code === 'email_exists') {
+            console.log("Email exists error during invite - switching to recovery mode...", { 
+              email: tenant.email, 
+              requestId 
+            });
+            
+            // Retry with recovery mode
+            linkResponse = await supabaseAdmin.auth.admin.generateLink({
+              type: 'recovery',
+              email: tenant.email,
+              options: { redirectTo: redirectUrl },
+            });
+            
+            console.log("Recovery retry response:", {
+              hasData: !!linkResponse.data,
+              hasError: !!linkResponse.error,
+              requestId
+            });
+          }
+          
+          if (linkResponse.error) {
+            console.error("Supabase link generation error:", linkResponse.error);
+            throw new Error(`Supabase error: ${JSON.stringify(linkResponse.error)}`);
+          }
         }
         
         actionLink = linkResponse.data?.properties?.action_link || linkResponse.data?.action_link || null;
