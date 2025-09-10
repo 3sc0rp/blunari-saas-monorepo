@@ -150,18 +150,22 @@ const Auth: React.FC = () => {
         setShowPasswordSetup(true);
         setActiveTab('password-setup');
         
-        // Clear the hash from URL for security
+        // Clear the hash from URL for security but don't auto-login yet
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        
+        // Clear any existing session to prevent auto-login bypassing password setup
+        supabase.auth.signOut();
       }
     }
   }, []);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated, but not during password setup
   useEffect(() => {
-    if (user && !showPasswordSetup) {
+    // Only redirect if user is authenticated AND we're not in password setup mode AND no password setup token
+    if (user && !showPasswordSetup && !recoveryToken) {
       navigate(from, { replace: true });
     }
-  }, [user, navigate, from, showPasswordSetup]);
+  }, [user, navigate, from, showPasswordSetup, recoveryToken]);
 
   const onSubmit = async (data: AuthFormData) => {
     setLoading(true);
