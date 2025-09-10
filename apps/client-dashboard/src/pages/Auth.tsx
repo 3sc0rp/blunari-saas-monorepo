@@ -18,7 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantBranding } from "@/contexts/TenantBrandingContext";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Loader2, Github, Chrome } from "lucide-react";
+import { Eye, EyeOff, Loader2, Github, Chrome, KeyRound } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -28,6 +29,16 @@ const authSchema = z.object({
 const resetSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
 });
+
+const passwordSetupSchema = z
+  .object({
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string().min(8, "Password must be at least 8 characters"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 const codeVerifySchema = z
   .object({
@@ -46,17 +57,22 @@ const codeVerifySchema = z
 type AuthFormData = z.infer<typeof authSchema>;
 type ResetFormData = z.infer<typeof resetSchema>;
 type CodeVerifyFormData = z.infer<typeof codeVerifySchema>;
+type PasswordSetupFormData = z.infer<typeof passwordSetupSchema>;
 
 const Auth: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [codeLoading, setCodeLoading] = useState(false);
+  const [passwordSetupLoading, setPasswordSetupLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
   const [showCodeForm, setShowCodeForm] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [showPasswordSetup, setShowPasswordSetup] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
+  const [recoveryToken, setRecoveryToken] = useState<string | null>(null);
   const { signIn, user } = useAuth();
   const { logoUrl, restaurantName } = useTenantBranding();
   // Use Blunari branding for login page with fallbacks to tenant branding
@@ -98,12 +114,39 @@ const Auth: React.FC = () => {
     mode: "onSubmit",
   });
 
+  const {
+    register: registerPasswordSetup,
+    handleSubmit: handlePasswordSetupSubmit,
+    formState: { errors: passwordSetupErrors },
+    reset: resetPasswordSetupForm,
+  } = useForm<PasswordSetupFormData>({
+    resolver: zodResolver(passwordSetupSchema),
+    mode: "onSubmit",
+  });
+
+  // Check for password setup tokens in URL hash
+  useEffect(() => {
+    const hash = window.location.hash;
+    const urlParams = new URLSearchParams(hash.substring(1));
+    const accessToken = urlParams.get('access_token');
+    const type = urlParams.get('type');
+    
+    if (accessToken && type === 'recovery') {
+      setRecoveryToken(accessToken);
+      setShowPasswordSetup(true);
+      setActiveTab('password-setup');
+      
+      // Clear the hash from URL for security
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, []);
+
   // Redirect if already authenticated
   useEffect(() => {
-    if (user) {
+    if (user && !showPasswordSetup) {
       navigate(from, { replace: true });
     }
-  }, [user, navigate, from]);
+  }, [user, navigate, from, showPasswordSetup]);
 
   const onSubmit = async (data: AuthFormData) => {
     setLoading(true);
@@ -320,6 +363,65 @@ const Auth: React.FC = () => {
     }
   };
 
+  const onPasswordSetupSubmit = async (data: PasswordSetupFormData) => {
+    if (!recoveryToken) {
+      toast({
+        title: "Error",
+        description: "Invalid password setup link. Please request a new one.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPasswordSetupLoading(true);
+
+    try {
+      // First, exchange the recovery token for a session
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: recoveryToken,
+        refresh_token: recoveryToken, // In some cases, the recovery token serves both purposes
+      });
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      // Now update the password
+      const { data: userData, error } = await supabase.auth.updateUser({
+        password: data.password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (userData.user) {
+        toast({
+          title: "Password set successfully",
+          description: "Your password has been set. You are now logged in.",
+        });
+
+        setShowPasswordSetup(false);
+        resetPasswordSetupForm();
+        setRecoveryToken(null);
+        
+        // User should be automatically logged in after password update
+        navigate(from, { replace: true });
+      }
+    } catch (error: unknown) {
+      const errorObj = error as Error;
+      console.error("Password setup error:", errorObj);
+      toast({
+        title: "Error",
+        description:
+          errorObj.message || "Failed to set password. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPasswordSetupLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface via-surface-2 to-surface-3 dark:from-surface dark:via-surface-2 dark:to-surface-3 flex items-center justify-center p-4">
       <motion.div
@@ -347,10 +449,19 @@ const Auth: React.FC = () => {
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2 bg-surface-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="reset">Reset Password</TabsTrigger>
-            </TabsList>
+            {!showPasswordSetup ? (
+              <>
+                <TabsList className="grid w-full grid-cols-2 bg-surface-2">
+                  <TabsTrigger value="signin">Sign In</TabsTrigger>
+                  <TabsTrigger value="reset">Reset Password</TabsTrigger>
+                </TabsList>
+              </>
+            ) : (
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-semibold text-text">Set Your Password</h2>
+                <p className="text-text-muted">Create a secure password for your account</p>
+              </div>
+            )}
 
             <TabsContent value="signin" className="space-y-5">
               <CardHeader>
@@ -731,6 +842,93 @@ const Auth: React.FC = () => {
                     </div>
                   </form>
                 )}
+              </CardContent>
+            </TabsContent>
+
+            <TabsContent value="password-setup" className="space-y-5">
+              <CardContent className="space-y-5">
+                <form onSubmit={handlePasswordSetupSubmit(onPasswordSetupSubmit)} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-text">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter your password"
+                        className="pr-10 bg-surface-2 border-surface-3 text-text placeholder:text-text-muted h-11"
+                        {...registerPasswordSetup("password")}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-text-muted" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-text-muted" />
+                        )}
+                      </Button>
+                    </div>
+                    {passwordSetupErrors.password && (
+                      <p className="text-sm text-red-500">
+                        {passwordSetupErrors.password.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword" className="text-text">
+                      Confirm Password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Confirm your password"
+                        className="pr-10 bg-surface-2 border-surface-3 text-text placeholder:text-text-muted h-11"
+                        {...registerPasswordSetup("confirmPassword")}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-text-muted" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-text-muted" />
+                        )}
+                      </Button>
+                    </div>
+                    {passwordSetupErrors.confirmPassword && (
+                      <p className="text-sm text-red-500">
+                        {passwordSetupErrors.confirmPassword.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground"
+                    disabled={passwordSetupLoading}
+                  >
+                    {passwordSetupLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Setting Password...
+                      </>
+                    ) : (
+                      "Set Password"
+                    )}
+                  </Button>
+                </form>
               </CardContent>
             </TabsContent>
           </Tabs>
