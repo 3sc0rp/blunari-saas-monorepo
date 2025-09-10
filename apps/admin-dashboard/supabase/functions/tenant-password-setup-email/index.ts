@@ -110,7 +110,8 @@ serve(async (req: Request) => {
       // The client dashboard is deployed to app.blunari.ai with tenant routing
       // Use the environment variable or fallback to the production URL
       const finalClientBaseUrl = clientBaseUrl || "https://app.blunari.ai";
-      const clientDashboardUrl = `${finalClientBaseUrl}/auth?tenant=${tenant.slug}`;
+      // Add passwordSetup=true parameter to help client detect this is a password setup flow
+      const clientDashboardUrl = `${finalClientBaseUrl}/auth?tenant=${tenant.slug}&passwordSetup=true`;
       const redirectUrl = body.loginRedirectUrl || clientDashboardUrl;
       
       console.log("URL generation:", { 
