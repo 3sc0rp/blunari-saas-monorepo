@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 interface ModeSwitchProps {
   className?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   variant?: "default" | "compact";
 }
 
@@ -52,6 +52,7 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
   }
 
   const sizeClasses = {
+    xs: "px-1.5 py-1 text-xs",
     sm: "px-2 py-1.5 text-xs",
     md: "px-4 py-2",
     lg: "px-6 py-3 text-lg"
@@ -140,17 +141,17 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
                 className={cn(
                   "relative z-10 inline-flex items-center justify-center rounded-full transition-all duration-300",
                   sizeClasses[size],
-                  size === "sm" ? "min-w-[90px] font-medium" : "min-w-[120px] font-medium",
+                  size === "xs" ? "min-w-[70px] font-medium" : size === "sm" ? "min-w-[90px] font-medium" : "min-w-[120px] font-medium",
                   isOperationsMode
                     ? "text-white shadow-lg"
                     : "text-text-muted hover:text-text hover:bg-surface-2/50"
                 )}
                 disabled={isOperationsMode}
               >
-                <Monitor className={cn("mr-2", size === "sm" ? "h-3 w-3" : "h-4 w-4")} />
+                <Monitor className={cn("mr-2", size === "xs" ? "h-3 w-3" : size === "sm" ? "h-3 w-3" : "h-4 w-4")} />
                 Operations
                 {isOperationsMode && (
-                  <Badge className={cn("ml-2 bg-white/20 text-white px-1.5 py-0.5", size === "sm" ? "text-xs" : "text-xs")}>
+                  <Badge className={cn("ml-2 bg-white/20 text-white px-1.5 py-0.5", size === "xs" || size === "sm" ? "text-xs" : "text-xs")}>
                     ACTIVE
                   </Badge>
                 )}
@@ -177,17 +178,17 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
                 className={cn(
                   "relative z-10 inline-flex items-center justify-center rounded-full transition-all duration-300",
                   sizeClasses[size],
-                  size === "sm" ? "min-w-[90px] font-medium" : "min-w-[120px] font-medium",
+                  size === "xs" ? "min-w-[70px] font-medium" : size === "sm" ? "min-w-[90px] font-medium" : "min-w-[120px] font-medium",
                   isManagementMode
                     ? "text-white shadow-lg"
                     : "text-text-muted hover:text-text hover:bg-surface-2/50"
                 )}
                 disabled={isManagementMode}
               >
-                <Settings2 className={cn("mr-2", size === "sm" ? "h-3 w-3" : "h-4 w-4")} />
+                <Settings2 className={cn("mr-2", size === "xs" ? "h-3 w-3" : size === "sm" ? "h-3 w-3" : "h-4 w-4")} />
                 Management
                 {isManagementMode && (
-                  <Badge className={cn("ml-2 bg-white/20 text-white px-1.5 py-0.5", size === "sm" ? "text-xs" : "text-xs")}>
+                  <Badge className={cn("ml-2 bg-white/20 text-white px-1.5 py-0.5", size === "xs" || size === "sm" ? "text-xs" : "text-xs")}>
                     ACTIVE
                   </Badge>
                 )}

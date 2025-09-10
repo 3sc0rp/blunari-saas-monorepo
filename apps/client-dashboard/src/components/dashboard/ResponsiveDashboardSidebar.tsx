@@ -226,9 +226,9 @@ export function ResponsiveDashboardSidebar() {
 
         {/* Mode Switch - Only show when not collapsed */}
         {!collapsed && (
-          <div className="px-3 pb-4">
-            <div className="bg-surface-2/20 backdrop-blur-sm rounded-lg p-2 border border-surface-2/30">
-              <ModeSwitch size="sm" />
+          <div className="px-2 pb-4">
+            <div className="bg-surface-2/20 backdrop-blur-sm rounded-lg p-1.5 border border-surface-2/30">
+              <ModeSwitch size="xs" />
             </div>
           </div>
         )}
