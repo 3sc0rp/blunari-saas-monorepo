@@ -78,20 +78,45 @@ serve(async (req: Request) => {
   if (req.method !== "POST") return err("METHOD_NOT_ALLOWED", "Only POST allowed", 405, origin, requestId);
 
   try {
+    console.log("Function started with request ID:", requestId);
+    
     const body: RequestBody = await req.json().catch(() => ({} as any));
+    console.log("Request body received:", { 
+      hasTenantId: !!body.tenantId, 
+      sendEmail: body.sendEmail,
+      requestId 
+    });
+    
     if (!body.tenantId) return err("VALIDATION_ERROR", "tenantId required", 400, origin, requestId);
     const sendEmail = body.sendEmail !== false; // default true
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
-    );
+    // Check environment variables first
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    console.log("Environment variables check:", {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceRoleKey: !!serviceRoleKey,
+      requestId
+    });
+    
+    if (!supabaseUrl || !serviceRoleKey) {
+      return err("CONFIG_ERROR", "Missing required environment variables", 500, origin, requestId);
+    }
 
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    console.log("Checking admin authorization...", { requestId });
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return err("UNAUTHORIZED", "Missing Authorization", 401, origin, requestId);
     const token = authHeader.replace(/^Bearer\s+/i, "");
+    
     const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-    if (authErr || !user) return err("UNAUTHORIZED", "Invalid admin session", 401, origin, requestId);
+    if (authErr || !user) {
+      console.error("Auth error:", authErr);
+      return err("UNAUTHORIZED", "Invalid admin session", 401, origin, requestId);
+    }
+    console.log("User authenticated:", { userId: user.id, requestId });
 
     const { data: adminRecord } = await supabase
       .from("admin_users")
@@ -100,13 +125,25 @@ serve(async (req: Request) => {
       .eq("is_active", true)
       .single();
     if (!adminRecord) return err("FORBIDDEN", "Admin access required", 403, origin, requestId);
+    console.log("Admin verified:", { adminId: adminRecord.id, role: adminRecord.role, requestId });
 
+    console.log("Looking up tenant:", { tenantId: body.tenantId, requestId });
     const { data: tenant, error: tenantErr } = await supabase
       .from("tenants")
       .select("id, name, email, slug")
       .eq("id", body.tenantId)
       .single();
-    if (tenantErr || !tenant) return err("TENANT_NOT_FOUND", "Tenant not found", 404, origin, requestId);
+    if (tenantErr || !tenant) {
+      console.error("Tenant lookup error:", tenantErr);
+      return err("TENANT_NOT_FOUND", "Tenant not found", 404, origin, requestId);
+    }
+    console.log("Tenant found:", { 
+      tenantId: tenant.id, 
+      tenantName: tenant.name, 
+      hasEmail: !!tenant.email, 
+      hasSlug: !!tenant.slug, 
+      requestId 
+    });
     if (!tenant.email) return err("NO_OWNER_EMAIL", "Tenant has no owner email", 400, origin, requestId);
     if (!tenant.slug) return err("NO_TENANT_SLUG", "Tenant has no slug configured", 400, origin, requestId);
 
@@ -162,19 +199,55 @@ serve(async (req: Request) => {
         requestId 
       });
       
-      // @ts-ignore dynamic call
-      const { data: linkData, error: linkError } = await (supabase.auth as any).admin.generateLink({
-        type: mode,
+      // Generate the authentication link using Supabase admin API
+      console.log("Attempting to generate link with params:", {
+        mode,
         email: tenant.email,
-        options: { redirectTo: redirectUrl },
+        redirectUrl,
+        requestId
       });
       
-      if (linkError) {
-        console.error("generateLink error:", linkError);
-        throw linkError;
-      }
+      const supabaseAdmin = supabase as any; // Type assertion for admin methods
+      let linkResponse;
       
-      actionLink = linkData?.properties?.action_link || null;
+      try {
+        if (mode === 'invite') {
+          // For new users, use inviteUserByEmail
+          linkResponse = await supabaseAdmin.auth.admin.inviteUserByEmail(tenant.email, {
+            redirectTo: redirectUrl,
+          });
+        } else {
+          // For existing users, use generateLink with recovery type
+          linkResponse = await supabaseAdmin.auth.admin.generateLink({
+            type: 'recovery',
+            email: tenant.email,
+            options: { redirectTo: redirectUrl },
+          });
+        }
+        
+        console.log("Link generation response:", {
+          hasData: !!linkResponse.data,
+          hasError: !!linkResponse.error,
+          dataKeys: linkResponse.data ? Object.keys(linkResponse.data) : [],
+          requestId
+        });
+        
+        if (linkResponse.error) {
+          console.error("Supabase link generation error:", linkResponse.error);
+          throw new Error(`Supabase error: ${JSON.stringify(linkResponse.error)}`);
+        }
+        
+        actionLink = linkResponse.data?.properties?.action_link || linkResponse.data?.action_link || null;
+        
+      } catch (apiError) {
+        console.error("API call failed:", {
+          error: apiError,
+          mode,
+          email: tenant.email,
+          requestId
+        });
+        throw apiError;
+      }
       console.log("Link generation result:", { 
         hasLink: !!actionLink, 
         linkPreview: actionLink ? actionLink.substring(0, 100) + '...' : null,
