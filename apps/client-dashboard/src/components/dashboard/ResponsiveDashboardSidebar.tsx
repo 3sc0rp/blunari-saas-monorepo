@@ -25,7 +25,6 @@ import {
   UserCircle,
   UtensilsCrossed,
   Receipt,
-  Target,
   Brain,
   Globe,
   Smartphone,
@@ -95,14 +94,12 @@ const managementNavigation = [
       { title: "Waitlist Management", url: "/dashboard/waitlist-management", icon: Clock },
       { title: "Tables", url: "/dashboard/tables", icon: TableProperties },
       { title: "Customers", url: "/dashboard/customers", icon: Users },
-      { title: "Reviews & Feedback", url: "/dashboard/review-feedback", icon: MessageSquare },
       { title: "Catering", url: "/dashboard/catering", icon: ChefHat },
     ],
   },
   {
     section: "AI & Intelligence",
     items: [
-      { title: "Competitive Intelligence", url: "/dashboard/competitive-intelligence", icon: Target },
       { title: "AI Business Insights", url: "/dashboard/ai-business-insights", icon: Brain },
     ],
   },

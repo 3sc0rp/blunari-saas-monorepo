@@ -29,13 +29,11 @@ const Tables = lazy(() => import("./pages/Tables"));
 const CommandCenter = lazy(() => import("./pages/CommandCenter"));
 const WaitlistManagement = lazy(() => import("./pages/WaitlistManagement"));
 const CustomerProfiles = lazy(() => import("./pages/CustomerProfiles"));
-const ReviewFeedbackSystem = lazy(() => import("./pages/ReviewFeedbackSystem"));
 const Catering = lazy(() => import("./pages/Catering"));
 const Messages = lazy(() => import("./pages/Messages"));
 const KitchenDisplaySystem = lazy(() => import("./pages/KitchenDisplaySystem"));
 const StaffManagement = lazy(() => import("./pages/StaffManagement"));
 const InventoryManagement = lazy(() => import("./pages/InventoryManagement"));
-const CompetitiveIntelligence = lazy(() => import("./pages/CompetitiveIntelligence"));
 const AIBusinessInsights = lazy(() => import("./pages/AIBusinessInsights"));
 const WidgetManagement = lazy(() => import("./pages/WidgetManagement"));
 const DashboardHome = lazy(() => import("./pages/DashboardHome"));
@@ -125,14 +123,12 @@ function App() {
                                 <Route path="waitlist-management" element={<WaitlistManagement />} />
                                 <Route path="tables" element={<Tables />} />
                                 <Route path="customers" element={<CustomerProfiles />} />
-                                <Route path="review-feedback" element={<ReviewFeedbackSystem />} />
                                 <Route path="catering" element={<Catering />} />
                                 <Route path="messages" element={<Messages />} />
                                 <Route path="kitchen-display" element={<KitchenDisplaySystem />} />
                                 <Route path="staff-management" element={<StaffManagement />} />
                                 <Route path="inventory-management" element={<InventoryManagement />} />
                                 <Route path="analytics" element={<Analytics />} />
-                                <Route path="competitive-intelligence" element={<CompetitiveIntelligence />} />
                                 <Route path="ai-business-insights" element={<AIBusinessInsights />} />
                                 <Route path="widget-management" element={<WidgetManagement />} />
                                 <Route path="settings" element={<Settings />} />
