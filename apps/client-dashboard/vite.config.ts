@@ -82,8 +82,14 @@ export default defineConfig(({ mode }) => {
             React: ['react', 'default']
           })
         ],
-  output: {
-          inlineDynamicImports: true,
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'react-router-dom'],
+            ui: ['lucide-react', 'framer-motion'],
+            supabase: ['@supabase/supabase-js'],
+            charts: ['recharts'],
+            utils: ['date-fns', 'clsx', 'class-variance-authority']
+          },
           chunkFileNames: 'chunks/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
