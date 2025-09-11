@@ -112,13 +112,6 @@ const managementNavigation = [
     ],
   },
   {
-    section: "Analytics & Reporting",
-    items: [
-      { title: "Financial Reports", url: "/dashboard/financial-reporting", icon: FileText },
-      { title: "Performance Optimization", url: "/dashboard/performance-optimization", icon: TrendingUp },
-    ],
-  },
-  {
     section: "AI & Intelligence",
     items: [
       { title: "Competitive Intelligence", url: "/dashboard/competitive-intelligence", icon: Target },

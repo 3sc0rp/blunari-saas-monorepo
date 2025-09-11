@@ -37,8 +37,6 @@ const MenuManagement = lazy(() => import("./pages/MenuManagement"));
 const KitchenDisplaySystem = lazy(() => import("./pages/KitchenDisplaySystem"));
 const StaffManagement = lazy(() => import("./pages/StaffManagement"));
 const InventoryManagement = lazy(() => import("./pages/InventoryManagement"));
-const FinancialReporting = lazy(() => import("./pages/FinancialReporting"));
-const PerformanceOptimization = lazy(() => import("./pages/PerformanceOptimization"));
 const CompetitiveIntelligence = lazy(() => import("./pages/CompetitiveIntelligence"));
 const AIBusinessInsights = lazy(() => import("./pages/AIBusinessInsights"));
 const WidgetManagement = lazy(() => import("./pages/WidgetManagement"));
@@ -138,8 +136,6 @@ function App() {
                                 <Route path="staff-management" element={<StaffManagement />} />
                                 <Route path="inventory-management" element={<InventoryManagement />} />
                                 <Route path="analytics" element={<Analytics />} />
-                                <Route path="financial-reporting" element={<FinancialReporting />} />
-                                <Route path="performance-optimization" element={<PerformanceOptimization />} />
                                 <Route path="competitive-intelligence" element={<CompetitiveIntelligence />} />
                                 <Route path="ai-business-insights" element={<AIBusinessInsights />} />
                                 <Route path="widget-management" element={<WidgetManagement />} />
