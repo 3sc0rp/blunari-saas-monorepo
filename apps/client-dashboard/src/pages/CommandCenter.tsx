@@ -52,10 +52,6 @@ export default function CommandCenter() {
   const [filters, setFilters] = useState<FiltersState>({});
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
   const [focusTableId, setFocusTableId] = useState<string | undefined>();
-  const [advancedMode, setAdvancedMode] = useState<boolean>(
-    localStorage.getItem('commandCenter.advancedMode') === 'true'
-  );
-
   // Convert FiltersState to contracts.Filters
   const contractFilters = useMemo<FiltersType>(() => ({
     section: 'all', // Current FiltersState doesn't have section, defaulting to 'all'
@@ -74,12 +70,6 @@ export default function CommandCenter() {
     cancelReservationAction,
     isAnyLoading: isActionLoading
   } = useReservationActions();
-
-  // Persist advanced mode preference
-  const handleAdvancedModeChange = (mode: boolean) => {
-    setAdvancedMode(mode);
-    localStorage.setItem('commandCenter.advancedMode', mode.toString());
-  };
 
   const handleNewReservation = async () => {
     try {
@@ -331,8 +321,6 @@ export default function CommandCenter() {
           selectedDate={selectedDate}
           onNewReservation={handleNewReservation}
           onExport={handleExport}
-          advancedMode={advancedMode}
-          onAdvancedModeChange={handleAdvancedModeChange}
         />
 
         {/* Debug Component - Remove in production */}

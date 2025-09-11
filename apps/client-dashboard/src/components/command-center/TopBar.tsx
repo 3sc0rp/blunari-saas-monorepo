@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Search, 
   Plus, 
@@ -33,18 +34,15 @@ interface TopBarProps {
   selectedDate?: string;
   onNewReservation?: () => void;
   onExport?: () => void;
-  advancedMode?: boolean;
-  onAdvancedModeChange?: (enabled: boolean) => void;
 }
 
 export function TopBar({ 
   onDateChange, 
   selectedDate = new Date().toISOString().split('T')[0], 
   onNewReservation = () => {},
-  onExport = () => {},
-  advancedMode = false,
-  onAdvancedModeChange = () => {}
+  onExport = () => {}
 }: TopBarProps) {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState("demo-restaurant");
@@ -55,6 +53,11 @@ export function TopBar({
       onDateChange(format(date, 'yyyy-MM-dd'));
       setDatePickerOpen(false);
     }
+  };
+
+  const handleAdvanceModeClick = () => {
+    // Navigate to the dashboard (management section)
+    navigate('/dashboard');
   };
 
   const formatDisplayDate = (dateString: string) => {
@@ -151,7 +154,7 @@ export function TopBar({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onAdvancedModeChange(!advancedMode)}
+            onClick={handleAdvanceModeClick}
             className="
               relative overflow-hidden group
               bg-gradient-to-r from-accent/10 to-accent/5 
@@ -169,7 +172,7 @@ export function TopBar({
             
             <Focus className="w-4 h-4 mr-2 transition-transform duration-300 group-hover:scale-110" />
             <span className="relative font-medium">
-              {advancedMode ? 'Basic Mode' : 'Advance Mode'}
+              Advance Mode
             </span>
             
             {/* Subtle glow effect */}
