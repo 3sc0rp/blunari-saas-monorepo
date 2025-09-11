@@ -28,6 +28,26 @@ import NotFound from "./pages/NotFound";
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Tables = lazy(() => import("./pages/Tables"));
 const CommandCenter = lazy(() => import("./pages/CommandCenter"));
+const AdvancedReservationSystem = lazy(() => import("./pages/AdvancedReservationSystem"));
+const Waitlist = lazy(() => import("./pages/Waitlist"));
+const WaitlistManagement = lazy(() => import("./pages/WaitlistManagement"));
+const CustomerProfiles = lazy(() => import("./pages/CustomerProfiles"));
+const ReviewFeedbackSystem = lazy(() => import("./pages/ReviewFeedbackSystem"));
+const Catering = lazy(() => import("./pages/Catering"));
+const Staff = lazy(() => import("./pages/Staff"));
+const Messages = lazy(() => import("./pages/Messages"));
+const MenuManagement = lazy(() => import("./pages/MenuManagement"));
+const KitchenDisplaySystem = lazy(() => import("./pages/KitchenDisplaySystem"));
+const StaffManagement = lazy(() => import("./pages/StaffManagement"));
+const InventoryManagement = lazy(() => import("./pages/InventoryManagement"));
+const AdvancedAnalyticsDashboard = lazy(() => import("./pages/AdvancedAnalyticsDashboard"));
+const FinancialReporting = lazy(() => import("./pages/FinancialReporting"));
+const PerformanceOptimization = lazy(() => import("./pages/PerformanceOptimization"));
+const CompetitiveIntelligence = lazy(() => import("./pages/CompetitiveIntelligence"));
+const AIBusinessInsights = lazy(() => import("./pages/AIBusinessInsights"));
+const WidgetManagement = lazy(() => import("./pages/WidgetManagement"));
+const POSIntegrations = lazy(() => import("./pages/POSIntegrations"));
+const DashboardHome = lazy(() => import("./pages/DashboardHome"));
 
 // Create QueryClient instance
 const queryClient = new QueryClient({
@@ -109,12 +129,32 @@ function App() {
                                 } 
                               >
                                 <Route index element={<Dashboard />} />
+                                <Route path="home" element={<DashboardHome />} />
                                 <Route path="bookings" element={<Bookings />} />
-                                <Route path="customers" element={<Customers />} />
-                                <Route path="analytics" element={<Analytics />} />
+                                <Route path="advanced-reservations" element={<AdvancedReservationSystem />} />
+                                <Route path="waitlist" element={<Waitlist />} />
+                                <Route path="waitlist-management" element={<WaitlistManagement />} />
                                 <Route path="tables" element={<Tables />} />
-                                <Route path="command-center" element={<CommandCenter />} />
+                                <Route path="customer-profiles" element={<CustomerProfiles />} />
+                                <Route path="review-feedback" element={<ReviewFeedbackSystem />} />
+                                <Route path="catering" element={<Catering />} />
+                                <Route path="customers" element={<Customers />} />
+                                <Route path="staff" element={<Staff />} />
+                                <Route path="messages" element={<Messages />} />
+                                <Route path="menu-management" element={<MenuManagement />} />
+                                <Route path="kitchen-display" element={<KitchenDisplaySystem />} />
+                                <Route path="staff-management" element={<StaffManagement />} />
+                                <Route path="inventory-management" element={<InventoryManagement />} />
+                                <Route path="analytics" element={<Analytics />} />
+                                <Route path="advanced-analytics" element={<AdvancedAnalyticsDashboard />} />
+                                <Route path="financial-reporting" element={<FinancialReporting />} />
+                                <Route path="performance-optimization" element={<PerformanceOptimization />} />
+                                <Route path="competitive-intelligence" element={<CompetitiveIntelligence />} />
+                                <Route path="ai-business-insights" element={<AIBusinessInsights />} />
+                                <Route path="widget-management" element={<WidgetManagement />} />
+                                <Route path="pos-integrations" element={<POSIntegrations />} />
                                 <Route path="settings" element={<Settings />} />
+                                <Route path="command-center" element={<CommandCenter />} />
                               </Route>
                               
                               {/* Legacy routes for backwards compatibility */}
