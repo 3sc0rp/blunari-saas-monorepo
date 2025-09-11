@@ -28,6 +28,8 @@ import {
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useUIMode } from "@/lib/ui-mode";
+import { useModeTransition } from "@/contexts/ModeTransitionContext";
 
 interface TopBarProps {
   onDateChange?: (date: string) => void;
@@ -47,7 +49,10 @@ export function TopBar({
   onAdvancedModeChange = () => {}
 }: TopBarProps) {
   const navigate = useNavigate();
+  const { setMode } = useUIMode();
+  const { triggerModeTransition } = useModeTransition();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState("demo-restaurant");
   const [contextFilter, setContextFilter] = useState("all");
@@ -187,14 +192,44 @@ export function TopBar({
               advancedMode 
                 ? 'bg-accent hover:bg-accent/80 text-white' 
                 : 'text-white/90'
-            }`}
-            onClick={() => {
+            } ${isTransitioning ? 'cursor-wait opacity-75' : ''}`}
+            disabled={isTransitioning}
+            onClick={async () => {
+              if (isTransitioning) return;
+              
               if (advancedMode) {
-                // If already in advanced mode, toggle back to focus mode
-                onAdvancedModeChange(false);
+                // If already in advanced mode, toggle back to focus mode with transition
+                setIsTransitioning(true);
+                try {
+                  // Trigger the enhanced global transition
+                  await triggerModeTransition("management", "operations");
+                  
+                  // Update the mode
+                  await setMode("operations");
+                  
+                  // Navigate back to command center
+                  navigate('/command-center');
+                  
+                  // Update local state
+                  onAdvancedModeChange(false);
+                } finally {
+                  setIsTransitioning(false);
+                }
               } else {
-                // Navigate to full dashboard
-                navigate('/dashboard/home');
+                // Switch to Management mode with enhanced transition
+                setIsTransitioning(true);
+                try {
+                  // Trigger the enhanced global transition
+                  await triggerModeTransition("operations", "management");
+                  
+                  // Update the mode
+                  await setMode("management");
+                  
+                  // Navigate to dashboard
+                  navigate('/dashboard');
+                } finally {
+                  setIsTransitioning(false);
+                }
               }
             }}
           >

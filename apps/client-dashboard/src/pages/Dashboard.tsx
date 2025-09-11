@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { useTenant } from "@/hooks/useTenant";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useAlertSystem } from "@/hooks/useAlertSystem";
+import { useUIMode } from "@/lib/ui-mode";
+import { useModeTransition } from "@/contexts/ModeTransitionContext";
 import TenantAccessDisplay from "@/components/dashboard/TenantAccessDisplay";
 import TodaysBookings from "@/components/dashboard/TodaysBookings";
 import QuickActions from "@/components/dashboard/QuickActions";
@@ -28,6 +30,9 @@ import {
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { setMode } = useUIMode();
+  const { triggerModeTransition } = useModeTransition();
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const { tenant, accessType, tenantSlug } = useTenant();
   const { metrics, performanceTrends, isLoading } = useDashboardMetrics(
     tenant?.id,
@@ -48,8 +53,27 @@ const Dashboard: React.FC = () => {
       >
         <Button
           variant="outline"
-          onClick={() => navigate('/command-center')}
-          className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20 hover:text-gray-800 transition-all duration-200"
+          disabled={isTransitioning}
+          onClick={async () => {
+            if (isTransitioning) return;
+            
+            setIsTransitioning(true);
+            try {
+              // Trigger the enhanced global transition
+              await triggerModeTransition("management", "operations");
+              
+              // Update the mode
+              await setMode("operations");
+              
+              // Navigate to command center
+              navigate('/command-center');
+            } finally {
+              setIsTransitioning(false);
+            }
+          }}
+          className={`bg-white/10 border-white/20 text-gray-700 hover:bg-white/20 hover:text-gray-800 transition-all duration-200 ${
+            isTransitioning ? 'cursor-wait opacity-75' : ''
+          }`}
         >
           <Focus className="w-4 h-4 mr-2" />
           Focus Mode
