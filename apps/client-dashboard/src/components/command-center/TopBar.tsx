@@ -6,7 +6,8 @@ import {
   Bell, 
   Calendar,
   ChevronDown,
-  MoreVertical
+  MoreVertical,
+  Focus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,13 +33,17 @@ interface TopBarProps {
   selectedDate?: string;
   onNewReservation?: () => void;
   onExport?: () => void;
+  advancedMode?: boolean;
+  onAdvancedModeChange?: (enabled: boolean) => void;
 }
 
 export function TopBar({ 
   onDateChange, 
   selectedDate = new Date().toISOString().split('T')[0], 
   onNewReservation = () => {},
-  onExport = () => {}
+  onExport = () => {},
+  advancedMode = false,
+  onAdvancedModeChange = () => {}
 }: TopBarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -142,6 +147,35 @@ export function TopBar({
 
         {/* Right Group - Actions */}
         <div className="flex items-center gap-3">
+          {/* Focus Mode Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onAdvancedModeChange(!advancedMode)}
+            className="
+              relative overflow-hidden group
+              bg-gradient-to-r from-accent/10 to-accent/5 
+              border-accent/20 text-accent 
+              hover:from-accent/20 hover:to-accent/10 
+              hover:border-accent/30 hover:text-accent
+              transition-all duration-300
+              backdrop-blur-sm shadow-sm
+              hover:shadow-accent/20 hover:shadow-lg
+              h-10 px-4
+            "
+          >
+            {/* Subtle animated background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            <Focus className="w-4 h-4 mr-2 transition-transform duration-300 group-hover:scale-110" />
+            <span className="relative font-medium">
+              {advancedMode ? 'Basic Mode' : 'Advance Mode'}
+            </span>
+            
+            {/* Subtle glow effect */}
+            <div className="absolute inset-0 rounded-lg bg-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm" />
+          </Button>
+
           {/* New Reservation */}
           <Button
             onClick={onNewReservation}
