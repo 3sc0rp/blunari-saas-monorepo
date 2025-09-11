@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUIMode } from "@/lib/ui-mode";
+import { useModeTransition } from "@/contexts/ModeTransitionContext";
 import { 
   Search, 
   Plus, 
@@ -43,6 +45,8 @@ export function TopBar({
   onExport = () => {}
 }: TopBarProps) {
   const navigate = useNavigate();
+  const { setMode } = useUIMode();
+  const { triggerModeTransition } = useModeTransition();
   const [searchQuery, setSearchQuery] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState("demo-restaurant");
@@ -55,9 +59,21 @@ export function TopBar({
     }
   };
 
-  const handleAdvanceModeClick = () => {
-    // Navigate to the dashboard (management section)
-    navigate('/dashboard');
+  const handleAdvanceModeClick = async () => {
+    try {
+      // Trigger the global transition animation
+      await triggerModeTransition("operations", "management");
+      
+      // Switch to management mode
+      await setMode("management");
+      
+      // Navigate to the dashboard (management section)
+      navigate('/dashboard');
+    } catch (error) {
+      console.error("Error switching to management mode:", error);
+      // Fallback navigation even if mode switching fails
+      navigate('/dashboard');
+    }
   };
 
   const formatDisplayDate = (dateString: string) => {

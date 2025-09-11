@@ -62,7 +62,6 @@ const operationsNavigation = [
     section: "Kitchen Operations",
     items: [
       { title: "Kitchen Display", url: "/dashboard/kitchen-display", icon: UtensilsCrossed },
-      { title: "Menu Management", url: "/dashboard/menu-management", icon: MenuIcon },
       { title: "Inventory", url: "/dashboard/inventory-management", icon: Package },
     ],
   },
@@ -79,18 +78,16 @@ const managementNavigation = [
   {
     section: "Overview",
     items: [
-      { title: "Command Center", url: "/command-center", icon: Monitor },
       { title: "Dashboard", url: "/dashboard/home", icon: Home },
       { title: "Analytics", url: "/dashboard/analytics", icon: BarChart3 },
     ],
   },
   {
-    section: "Restaurant Operations",
+    section: "Restaurant Management",
     items: [
       { title: "Menu Management", url: "/dashboard/menu-management", icon: MenuIcon },
-      { title: "Kitchen Display", url: "/dashboard/kitchen-display", icon: UtensilsCrossed },
       { title: "Staff Management", url: "/dashboard/staff-management", icon: UserCircle },
-      { title: "Inventory", url: "/dashboard/inventory-management", icon: Package },
+      { title: "Settings", url: "/dashboard/settings", icon: Settings },
     ],
   },
   {
@@ -102,12 +99,6 @@ const managementNavigation = [
       { title: "Customers", url: "/dashboard/customers", icon: Users },
       { title: "Reviews & Feedback", url: "/dashboard/review-feedback", icon: MessageSquare },
       { title: "Catering", url: "/dashboard/catering", icon: ChefHat },
-    ],
-  },
-  {
-    section: "Management",
-    items: [
-      { title: "Messages", url: "/dashboard/messages", icon: MessageSquare },
     ],
   },
   {
@@ -125,12 +116,6 @@ const managementNavigation = [
         url: "/dashboard/widget-management",
         icon: Cog,
       },
-    ],
-  },
-  {
-    section: "Admin",
-    items: [
-      { title: "Settings", url: "/dashboard/settings", icon: Settings },
     ],
   },
 ];
