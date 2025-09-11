@@ -37,22 +37,20 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
     const currentMode = isOperationsMode ? "operations" : "management";
     
     try {
-      // Trigger the enhanced global transition
-      await triggerModeTransition(currentMode, newMode);
-      
-      // Update the mode
-      await setMode(newMode);
-
-      // Navigate based on mode
+      // Start navigation immediately to prevent white flash
       if (newMode === "operations") {
-        // Switch to Operations - navigate to Command Center
         navigate("/command-center");
       } else {
-        // Switch to Management - navigate to dashboard
         if (location.pathname === "/command-center") {
           navigate("/dashboard");
         }
       }
+      
+      // Trigger the enhanced global transition after navigation starts
+      await triggerModeTransition(currentMode, newMode);
+      
+      // Update the mode
+      await setMode(newMode);
     } finally {
       // Reset transition state faster
       setIsTransitioning(false);

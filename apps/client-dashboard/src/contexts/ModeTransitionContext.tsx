@@ -33,12 +33,12 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
       setIsTransitioning(true);
       setTransitionData({ fromMode, toMode });
       
-      // Complete transition faster for better responsiveness
+      // Shorter transition to prevent white flash
       setTimeout(() => {
         setIsTransitioning(false);
         setTransitionData(null);
         resolve();
-      }, 600);
+      }, 400);
     });
   }, []);
 
@@ -50,11 +50,11 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
       <AnimatePresence>
         {isTransitioning && transitionData && (
           <motion.div
-            className="fixed inset-0 z-[9999] pointer-events-none"
+            className="fixed inset-0 z-[9999] pointer-events-none bg-gray-900"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.15 }}
           >
             {/* Animated background */}
             <motion.div
@@ -69,7 +69,7 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
                   ? "linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95))"
                   : "linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95))"
               }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.2 }}
             />
 
             {/* Central transition animation */}

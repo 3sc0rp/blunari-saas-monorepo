@@ -59,14 +59,14 @@ const Dashboard: React.FC = () => {
             
             setIsTransitioning(true);
             try {
+              // Navigate first to prevent white flash
+              navigate('/command-center');
+              
               // Trigger the enhanced global transition
               await triggerModeTransition("management", "operations");
               
               // Update the mode
               await setMode("operations");
-              
-              // Navigate to command center
-              navigate('/command-center');
             } finally {
               setIsTransitioning(false);
             }

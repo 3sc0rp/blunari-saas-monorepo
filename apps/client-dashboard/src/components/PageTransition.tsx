@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 
@@ -27,7 +27,7 @@ const pageVariants = {
 const pageTransition = {
   type: "tween" as const,
   ease: "easeOut" as const,
-  duration: 0.25,
+  duration: 0.2,
 };
 
 // Special transitions for mode switching
@@ -36,55 +36,50 @@ const modeTransitionVariants = {
   operationsEntry: {
     initial: {
       opacity: 0,
-      scale: 0.95,
-      y: 20,
-      filter: "blur(4px)",
+      scale: 0.96,
+      y: 15,
     },
     in: {
       opacity: 1,
       scale: 1,
       y: 0,
-      filter: "blur(0px)",
     },
     out: {
       opacity: 0,
-      scale: 1.05,
-      y: -20,
-      filter: "blur(4px)",
+      scale: 1.04,
+      y: -15,
     },
   },
   // Management mode (Dashboard) entry
   managementEntry: {
     initial: {
       opacity: 0,
-      scale: 1.05,
-      y: -20,
-      filter: "blur(4px)",
+      scale: 1.04,
+      y: -15,
     },
     in: {
       opacity: 1,
       scale: 1,
       y: 0,
-      filter: "blur(0px)",
     },
     out: {
       opacity: 0,
-      scale: 0.95,
-      y: 20,
-      filter: "blur(4px)",
+      scale: 0.96,
+      y: 15,
     },
   },
 };
 
 const modeTransition = {
-  type: "spring" as const,
-  damping: 25,
-  stiffness: 400,
-  duration: 0.4,
+  type: "tween" as const,
+  ease: "easeOut" as const,
+  duration: 0.2,
 };
 
 export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
   const location = useLocation();
+  const [displayLocation, setDisplayLocation] = useState(location);
+  const [transitionStage, setTransitionStage] = useState("in");
   
   // Determine if this is a mode transition
   const isCommandCenter = location.pathname === "/command-center";
@@ -107,20 +102,34 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
     return pageTransition;
   };
 
+  useEffect(() => {
+    if (location !== displayLocation) {
+      setTransitionStage("out");
+      const timer = setTimeout(() => {
+        setDisplayLocation(location);
+        setTransitionStage("in");
+      }, 100); // Very short delay to prevent white flash
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location, displayLocation]);
+
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial="initial"
-        animate="in"
-        exit="out"
-        variants={getAnimationVariant()}
-        transition={getTransitionConfig()}
-        className="w-full h-full"
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      key={displayLocation.pathname}
+      initial="initial"
+      animate={transitionStage === "in" ? "in" : "out"}
+      variants={getAnimationVariant()}
+      transition={getTransitionConfig()}
+      className="w-full h-full min-h-screen bg-gray-50"
+      style={{ 
+        position: transitionStage === "out" ? "absolute" : "relative",
+        width: "100%",
+        minHeight: "100vh"
+      }}
+    >
+      {children}
+    </motion.div>
   );
 };
 

@@ -201,14 +201,14 @@ export function TopBar({
                 // If already in advanced mode, toggle back to focus mode with transition
                 setIsTransitioning(true);
                 try {
+                  // Navigate first to prevent white flash
+                  navigate('/command-center');
+                  
                   // Trigger the enhanced global transition
                   await triggerModeTransition("management", "operations");
                   
                   // Update the mode
                   await setMode("operations");
-                  
-                  // Navigate back to command center
-                  navigate('/command-center');
                   
                   // Update local state
                   onAdvancedModeChange(false);
@@ -219,14 +219,14 @@ export function TopBar({
                 // Switch to Management mode with enhanced transition
                 setIsTransitioning(true);
                 try {
+                  // Navigate first to prevent white flash
+                  navigate('/dashboard');
+                  
                   // Trigger the enhanced global transition
                   await triggerModeTransition("operations", "management");
                   
                   // Update the mode
                   await setMode("management");
-                  
-                  // Navigate to dashboard
-                  navigate('/dashboard');
                 } finally {
                   setIsTransitioning(false);
                 }
