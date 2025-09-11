@@ -134,15 +134,6 @@ const managementNavigation = [
     ],
   },
   {
-    section: "Enterprise",
-    items: [
-      { title: "API Integrations", url: "/dashboard/api-integrations", icon: Globe },
-      { title: "Mobile Apps", url: "/dashboard/mobile-apps", icon: Smartphone },
-      { title: "Automation", url: "/dashboard/automation", icon: Zap },
-      { title: "Multi-Location", url: "/dashboard/multi-location", icon: Building },
-    ],
-  },
-  {
     section: "Tools",
     items: [
       {

@@ -5,12 +5,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ScrollToTop from "@/components/ScrollToTop";
+import PageTransition from "@/components/PageTransition";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantBrandingProvider } from "@/contexts/TenantBrandingContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { FullscreenProvider } from "@/contexts/FullscreenContext";
 import { ModeProvider } from "@/lib/ui-mode";
+import { ModeTransitionProvider } from "@/contexts/ModeTransitionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -76,22 +78,33 @@ function App() {
             <TenantBrandingProvider>
               <AuthProvider>
                 <ModeProvider>
-                  <NavigationProvider>
-                    <FullscreenProvider>
-                      <TooltipProvider>
+                  <ModeTransitionProvider>
+                    <NavigationProvider>
+                      <FullscreenProvider>
+                        <TooltipProvider>
                         <div className="min-h-screen bg-gray-50">
                           <ScrollToTop />
                           <Suspense fallback={<LoadingFallback />}>
                             <Routes>
-                              <Route path="/" element={<Index />} />
-                              <Route path="/auth/*" element={<Auth />} />
+                              <Route path="/" element={
+                                <PageTransition>
+                                  <Index />
+                                </PageTransition>
+                              } />
+                              <Route path="/auth/*" element={
+                                <PageTransition>
+                                  <Auth />
+                                </PageTransition>
+                              } />
                               
                               {/* Protected dashboard routes */}
                               <Route 
                                 path="/dashboard/*" 
                                 element={
                                   <ProtectedRoute>
-                                    <DashboardLayout />
+                                    <PageTransition>
+                                      <DashboardLayout />
+                                    </PageTransition>
                                   </ProtectedRoute>
                                 } 
                               >
@@ -107,26 +120,38 @@ function App() {
                               {/* Legacy routes for backwards compatibility */}
                               <Route path="/bookings" element={
                                 <ProtectedRoute>
-                                  <Bookings />
+                                  <PageTransition>
+                                    <Bookings />
+                                  </PageTransition>
                                 </ProtectedRoute>
                               } />
                               <Route path="/customers" element={
                                 <ProtectedRoute>
-                                  <Customers />
+                                  <PageTransition>
+                                    <Customers />
+                                  </PageTransition>
                                 </ProtectedRoute>
                               } />
                               <Route path="/settings" element={
                                 <ProtectedRoute>
-                                  <Settings />
+                                  <PageTransition>
+                                    <Settings />
+                                  </PageTransition>
                                 </ProtectedRoute>
                               } />
                               <Route path="/command-center" element={
                                 <ProtectedRoute>
-                                  <CommandCenter />
+                                  <PageTransition>
+                                    <CommandCenter />
+                                  </PageTransition>
                                 </ProtectedRoute>
                               } />
                               
-                              <Route path="*" element={<NotFound />} />
+                              <Route path="*" element={
+                                <PageTransition>
+                                  <NotFound />
+                                </PageTransition>
+                              } />
                             </Routes>
                           </Suspense>
                           
@@ -134,9 +159,10 @@ function App() {
                           <Toaster />
                           <Sonner />
                         </div>
-                      </TooltipProvider>
-                    </FullscreenProvider>
-                  </NavigationProvider>
+                        </TooltipProvider>
+                      </FullscreenProvider>
+                    </NavigationProvider>
+                  </ModeTransitionProvider>
                 </ModeProvider>
               </AuthProvider>
             </TenantBrandingProvider>

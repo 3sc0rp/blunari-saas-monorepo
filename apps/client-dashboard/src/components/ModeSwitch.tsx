@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Badge } from "@/components/ui/badge";
 import { Monitor, Settings2, ArrowRight, Zap } from "lucide-react";
 import { useUIMode } from "@/lib/ui-mode";
+import { useModeTransition } from "@/contexts/ModeTransitionContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
   variant = "default" 
 }) => {
   const { mode, setMode, ready } = useUIMode();
+  const { triggerModeTransition } = useModeTransition();
   const navigate = useNavigate();
   const location = useLocation();
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -32,9 +34,13 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
     
     setIsTransitioning(true);
     const newMode = isOperationsMode ? "management" : "operations";
+    const currentMode = isOperationsMode ? "operations" : "management";
     
-    // Add a slight delay to show the transition animation
-    setTimeout(async () => {
+    try {
+      // Trigger the enhanced global transition
+      await triggerModeTransition(currentMode, newMode);
+      
+      // Update the mode
       await setMode(newMode);
 
       // Navigate based on mode
@@ -42,16 +48,15 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
         // Switch to Operations - navigate to Command Center
         navigate("/command-center");
       } else {
-        // Switch to Management - stay put and expand sidebar
-        // The sidebar will automatically expand in management mode
+        // Switch to Management - navigate to dashboard
         if (location.pathname === "/command-center") {
           navigate("/dashboard");
         }
       }
-      
-      // Reset transition state after navigation
-      setTimeout(() => setIsTransitioning(false), 300);
-    }, 150);
+    } finally {
+      // Reset transition state
+      setIsTransitioning(false);
+    }
   };
 
   if (!ready) {
