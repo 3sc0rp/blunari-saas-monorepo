@@ -55,7 +55,7 @@ const operationsNavigation = [
   {
     section: "Command Center", 
     items: [
-      { title: "Command Center", url: "/dashboard/command-center", icon: Monitor },
+      { title: "Command Center", url: "/command-center", icon: Monitor },
       { title: "Live Floor", url: "/dashboard/tables", icon: MapPin },
       { title: "Timeline", url: "/dashboard/bookings", icon: Clock },
     ],
@@ -82,7 +82,7 @@ const managementNavigation = [
   {
     section: "Overview",
     items: [
-      { title: "Command Center", url: "/dashboard/command-center", icon: Monitor },
+      { title: "Command Center", url: "/command-center", icon: Monitor },
       { title: "Dashboard", url: "/dashboard/home", icon: Home },
       { title: "Analytics", url: "/dashboard/analytics", icon: BarChart3 },
     ],
@@ -185,8 +185,8 @@ export function ResponsiveDashboardSidebar() {
     if (path === "/dashboard") {
       return currentPath === "/dashboard";
     }
-    if (path === "/dashboard/command-center") {
-      return currentPath === "/dashboard/command-center";
+    if (path === "/command-center") {
+      return currentPath === "/command-center";
     }
     return currentPath.startsWith(path);
   };

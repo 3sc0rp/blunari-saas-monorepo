@@ -48,7 +48,7 @@ const Dashboard: React.FC = () => {
       >
         <Button
           variant="outline"
-          onClick={() => navigate('/dashboard/command-center')}
+          onClick={() => navigate('/command-center')}
           className="bg-white/10 border-white/20 text-gray-700 hover:bg-white/20 hover:text-gray-800 transition-all duration-200"
         >
           <Focus className="w-4 h-4 mr-2" />

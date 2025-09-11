@@ -130,7 +130,7 @@ const Auth: React.FC = () => {
   const brandName = "Blunari"; // Always use Blunari name on login
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/dashboard/command-center";
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/command-center";
   const { toast } = useToast();
 
   const {
