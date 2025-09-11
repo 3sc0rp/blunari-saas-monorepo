@@ -45,7 +45,6 @@ const routeMap: Record<string, { title: string; icon?: React.ComponentType<{ cla
     "/dashboard/customers": { title: "Customers" },
     "/dashboard/staff": { title: "Staff" },
     "/dashboard/messages": { title: "Messages" },
-    "/dashboard/menu-management": { title: "Menu Management" },
     "/dashboard/kitchen-display": { title: "Kitchen Display" },
     "/dashboard/staff-management": { title: "Staff Management" },
     "/dashboard/inventory-management": { title: "Inventory Management" },

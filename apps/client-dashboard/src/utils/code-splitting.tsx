@@ -28,12 +28,6 @@ export const Bookings = lazy(() =>
   }).catch(() => import('@/pages/Dashboard')) // Fallback to Dashboard
 );
 
-export const MenuManagement = lazy(() => 
-  import('@/pages/MenuManagement').then(module => {
-    return module;
-  }).catch(() => import('@/pages/Dashboard')) // Fallback to Dashboard
-);
-
 // Medium-priority pages (lazy loaded)
 export const Analytics = lazy(() => import('@/pages/Analytics'));
 export const Settings = lazy(() => import('@/pages/Settings'));
@@ -111,9 +105,6 @@ export const preloadStrategy = {
     switch (routeName) {
       case 'analytics':
         import('@/pages/Analytics');
-        break;
-      case 'menu':
-        import('@/pages/MenuManagement').catch(() => import('@/pages/Dashboard'));
         break;
       case 'settings':
         import('@/pages/Settings');

@@ -21,7 +21,6 @@ import {
   TrendingUp,
   FileText,
   Settings2,
-  MenuIcon,
   Package,
   UserCircle,
   UtensilsCrossed,
@@ -85,7 +84,6 @@ const managementNavigation = [
   {
     section: "Restaurant Management",
     items: [
-      { title: "Menu Management", url: "/dashboard/menu-management", icon: MenuIcon },
       { title: "Staff Management", url: "/dashboard/staff-management", icon: UserCircle },
       { title: "Settings", url: "/dashboard/settings", icon: Settings },
     ],

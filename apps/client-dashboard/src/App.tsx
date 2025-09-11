@@ -32,7 +32,6 @@ const CustomerProfiles = lazy(() => import("./pages/CustomerProfiles"));
 const ReviewFeedbackSystem = lazy(() => import("./pages/ReviewFeedbackSystem"));
 const Catering = lazy(() => import("./pages/Catering"));
 const Messages = lazy(() => import("./pages/Messages"));
-const MenuManagement = lazy(() => import("./pages/MenuManagement"));
 const KitchenDisplaySystem = lazy(() => import("./pages/KitchenDisplaySystem"));
 const StaffManagement = lazy(() => import("./pages/StaffManagement"));
 const InventoryManagement = lazy(() => import("./pages/InventoryManagement"));
@@ -129,7 +128,6 @@ function App() {
                                 <Route path="review-feedback" element={<ReviewFeedbackSystem />} />
                                 <Route path="catering" element={<Catering />} />
                                 <Route path="messages" element={<Messages />} />
-                                <Route path="menu-management" element={<MenuManagement />} />
                                 <Route path="kitchen-display" element={<KitchenDisplaySystem />} />
                                 <Route path="staff-management" element={<StaffManagement />} />
                                 <Route path="inventory-management" element={<InventoryManagement />} />
