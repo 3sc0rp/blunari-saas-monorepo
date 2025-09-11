@@ -55,18 +55,19 @@ const LoadingFallback = () => (
     justifyContent: 'center', 
     alignItems: 'center', 
     height: '100vh',
-    flexDirection: 'column'
+    flexDirection: 'column',
+    backgroundColor: '#0B0B45'
   }}>
     <div style={{ 
       width: '40px', 
       height: '40px', 
-      border: '4px solid #f3f3f3', 
-      borderTop: '4px solid #3498db', 
+      border: '4px solid rgba(255, 255, 255, 0.3)', 
+      borderTop: '4px solid #ffffff', 
       borderRadius: '50%', 
       animation: 'spin 1s linear infinite',
       marginBottom: '20px'
     }}></div>
-    <p>Loading...</p>
+    <p style={{ color: '#ffffff' }}>Loading...</p>
     <style>{`
       @keyframes spin {
         0% { transform: rotate(0deg); }
