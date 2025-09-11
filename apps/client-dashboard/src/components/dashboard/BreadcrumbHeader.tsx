@@ -11,11 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  RefreshCw,
-  Save,
   ChevronRight,
   Home,
-  Bell,
   Settings2,
   Focus,
   User,
@@ -75,15 +72,6 @@ const BreadcrumbHeader: React.FC = () => {
   const currentRoute = routeMap[location.pathname];
   const isHomePage = location.pathname === "/dashboard";
   const isCommandCenter = location.pathname === "/command-center";
-
-  const handleRefresh = () => {
-    window.location.reload();
-  };
-
-  const handleQuickSave = () => {
-    // Implement quick save functionality
-    console.log("Quick save triggered");
-  };
 
   const handleLogout = async () => {
     try {
@@ -205,80 +193,6 @@ const BreadcrumbHeader: React.FC = () => {
 
         {/* Enhanced Status & Actions */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Professional Status Dashboard */}
-          <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-surface-2/30 to-surface-2/20 backdrop-blur-sm border border-surface-2/40 rounded-xl shadow-elev-1">
-            {/* Connection Status */}
-            <div
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg transition-all duration-300 ${
-                isConnected
-                  ? "bg-success/15 text-success border border-success/20"
-                  : "bg-destructive/15 text-destructive border border-destructive/20"
-              }`}
-            >
-              <div
-                className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                  isConnected 
-                    ? "bg-success animate-pulse shadow-glow-success" 
-                    : "bg-destructive animate-pulse shadow-glow-destructive"
-                }`}
-              />
-              <span className="text-xs font-semibold">
-                {isConnected ? "LIVE" : "OFFLINE"}
-              </span>
-            </div>
-            
-            {/* Capacity Indicator */}
-            <div className="text-center px-2">
-              <div className="text-sm font-bold text-text leading-none">87%</div>
-              <div className="text-xs text-text-subtle leading-none mt-0.5">Capacity</div>
-            </div>
-          </div>
-
-          {/* Professional Action Buttons */}
-          <div className="flex items-center gap-1 bg-surface-2/20 backdrop-blur-sm rounded-xl p-1 border border-surface-2/30">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-              className="h-8 w-8 p-0 hover:bg-surface-2/60 transition-all duration-200 hover:scale-105 rounded-lg"
-              title="Refresh Data"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 hover:bg-surface-2/60 transition-all duration-200 hover:scale-105 rounded-lg"
-              title="Notifications"
-            >
-              <Bell className="h-4 w-4" />
-            </Button>
-
-            {!isMobile && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleQuickSave}
-                  className="h-8 w-8 p-0 hover:bg-surface-2/60 transition-all duration-200 hover:scale-105 rounded-lg"
-                  title="Quick Save"
-                >
-                  <Save className="h-4 w-4" />
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 hover:bg-surface-2/60 transition-all duration-200 hover:scale-105 rounded-lg"
-                  title="Settings"
-                >
-                  <Settings2 className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
-
           {/* Enhanced User Profile Dropdown */}
           <div className="hidden lg:flex items-center">
             <DropdownMenu>
