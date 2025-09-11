@@ -20,7 +20,6 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Bookings from "./pages/Bookings";
-import Customers from "./pages/Customers";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -126,10 +125,9 @@ function App() {
                                 <Route path="bookings" element={<Bookings />} />
                                 <Route path="waitlist-management" element={<WaitlistManagement />} />
                                 <Route path="tables" element={<Tables />} />
-                                <Route path="customer-profiles" element={<CustomerProfiles />} />
+                                <Route path="customers" element={<CustomerProfiles />} />
                                 <Route path="review-feedback" element={<ReviewFeedbackSystem />} />
                                 <Route path="catering" element={<Catering />} />
-                                <Route path="customers" element={<Customers />} />
                                 <Route path="messages" element={<Messages />} />
                                 <Route path="menu-management" element={<MenuManagement />} />
                                 <Route path="kitchen-display" element={<KitchenDisplaySystem />} />
@@ -148,13 +146,6 @@ function App() {
                                 <ProtectedRoute>
                                   <PageTransition>
                                     <Bookings />
-                                  </PageTransition>
-                                </ProtectedRoute>
-                              } />
-                              <Route path="/customers" element={
-                                <ProtectedRoute>
-                                  <PageTransition>
-                                    <Customers />
                                   </PageTransition>
                                 </ProtectedRoute>
                               } />

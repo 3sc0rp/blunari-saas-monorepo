@@ -99,7 +99,7 @@ const managementNavigation = [
       { title: "Bookings", url: "/dashboard/bookings", icon: Calendar },
       { title: "Waitlist Management", url: "/dashboard/waitlist-management", icon: Clock },
       { title: "Tables", url: "/dashboard/tables", icon: TableProperties },
-      { title: "Customer Profiles", url: "/dashboard/customer-profiles", icon: Users },
+      { title: "Customers", url: "/dashboard/customers", icon: Users },
       { title: "Reviews & Feedback", url: "/dashboard/review-feedback", icon: MessageSquare },
       { title: "Catering", url: "/dashboard/catering", icon: ChefHat },
     ],
@@ -107,7 +107,6 @@ const managementNavigation = [
   {
     section: "Management",
     items: [
-      { title: "Customers", url: "/dashboard/customers", icon: Users },
       { title: "Messages", url: "/dashboard/messages", icon: MessageSquare },
     ],
   },

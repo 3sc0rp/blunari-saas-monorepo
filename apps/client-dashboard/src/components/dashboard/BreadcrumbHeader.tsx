@@ -31,7 +31,6 @@ const routeMap: Record<string, { title: string; icon?: React.ComponentType<{ cla
     "/dashboard/waitlist": { title: "Waitlist" },
     "/dashboard/waitlist-management": { title: "Waitlist Management" },
     "/dashboard/tables": { title: "Tables" },
-    "/dashboard/customer-profiles": { title: "Customer Profiles" },
     "/dashboard/review-feedback": { title: "Reviews & Feedback" },
     "/dashboard/catering": { title: "Catering" },
     "/dashboard/customers": { title: "Customers" },
