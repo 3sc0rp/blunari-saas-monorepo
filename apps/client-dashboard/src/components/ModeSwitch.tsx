@@ -54,7 +54,7 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
         }
       }
     } finally {
-      // Reset transition state
+      // Reset transition state faster
       setIsTransitioning(false);
     }
   };
@@ -182,15 +182,15 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
             scale: isTransitioning ? 1.02 : 1,
             boxShadow: isTransitioning 
               ? (isOperationsMode 
-                  ? "0 0 30px rgba(59, 130, 246, 0.3)" 
-                  : "0 0 30px rgba(245, 158, 11, 0.3)")
-              : "0 10px 25px -5px rgba(0, 0, 0, 0.1)"
+                  ? "0 0 20px rgba(59, 130, 246, 0.2)" 
+                  : "0 0 20px rgba(245, 158, 11, 0.2)")
+              : "0 8px 20px -4px rgba(0, 0, 0, 0.1)"
           }}
           transition={{ 
             type: "spring", 
-            damping: 20, 
-            stiffness: 300,
-            duration: 0.4
+            damping: 30, 
+            stiffness: 400,
+            duration: 0.3
           }}
         >
           {/* Enhanced Background slider with transition effects */}
@@ -206,13 +206,13 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
             animate={{
               left: isOperationsMode ? 4 : "50%",
               width: isOperationsMode ? "calc(50% - 4px)" : "calc(50% - 4px)",
-              scale: isTransitioning ? 1.05 : 1,
+              scale: isTransitioning ? 1.02 : 1,
             }}
             transition={{ 
               type: "spring", 
-              damping: 25, 
-              stiffness: 300,
-              scale: { duration: 0.2 }
+              damping: 30, 
+              stiffness: 400,
+              scale: { duration: 0.15 }
             }}
           />
 
@@ -228,16 +228,16 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
               >
                 <motion.div
                   className={cn(
-                    "absolute top-1/2 left-1/2 w-4 h-4 rounded-full",
+                    "absolute top-1/2 left-1/2 w-3 h-3 rounded-full",
                     isOperationsMode ? "bg-blue-300" : "bg-amber-300"
                   )}
                   initial={{ scale: 0, x: "-50%", y: "-50%" }}
                   animate={{ 
-                    scale: [0, 1.5, 0],
+                    scale: [0, 1.2, 0],
                     opacity: [0, 0.8, 0]
                   }}
                   transition={{ 
-                    duration: 0.6,
+                    duration: 0.4,
                     ease: "easeOut"
                   }}
                 />
@@ -245,10 +245,10 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
                   className="absolute inset-0 flex items-center justify-center"
                   initial={{ rotate: 0, opacity: 0 }}
                   animate={{ 
-                    rotate: 360,
+                    rotate: 180,
                     opacity: [0, 1, 0]
                   }}
-                  transition={{ duration: 0.5 }}
+                  transition={{ duration: 0.3 }}
                 >
                   <Zap className={cn(
                     "w-4 h-4",

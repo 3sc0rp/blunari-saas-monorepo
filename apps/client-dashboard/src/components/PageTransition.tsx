@@ -26,8 +26,8 @@ const pageVariants = {
 
 const pageTransition = {
   type: "tween" as const,
-  ease: "anticipate" as const,
-  duration: 0.4,
+  ease: "easeOut" as const,
+  duration: 0.25,
 };
 
 // Special transitions for mode switching
@@ -36,9 +36,9 @@ const modeTransitionVariants = {
   operationsEntry: {
     initial: {
       opacity: 0,
-      scale: 0.9,
-      y: 30,
-      filter: "blur(10px)",
+      scale: 0.95,
+      y: 20,
+      filter: "blur(4px)",
     },
     in: {
       opacity: 1,
@@ -48,18 +48,18 @@ const modeTransitionVariants = {
     },
     out: {
       opacity: 0,
-      scale: 1.1,
-      y: -30,
-      filter: "blur(10px)",
+      scale: 1.05,
+      y: -20,
+      filter: "blur(4px)",
     },
   },
   // Management mode (Dashboard) entry
   managementEntry: {
     initial: {
       opacity: 0,
-      scale: 1.1,
-      y: -30,
-      filter: "blur(10px)",
+      scale: 1.05,
+      y: -20,
+      filter: "blur(4px)",
     },
     in: {
       opacity: 1,
@@ -69,18 +69,18 @@ const modeTransitionVariants = {
     },
     out: {
       opacity: 0,
-      scale: 0.9,
-      y: 30,
-      filter: "blur(10px)",
+      scale: 0.95,
+      y: 20,
+      filter: "blur(4px)",
     },
   },
 };
 
 const modeTransition = {
   type: "spring" as const,
-  damping: 20,
-  stiffness: 300,
-  duration: 0.6,
+  damping: 25,
+  stiffness: 400,
+  duration: 0.4,
 };
 
 export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {

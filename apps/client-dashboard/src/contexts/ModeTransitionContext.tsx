@@ -33,12 +33,12 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
       setIsTransitioning(true);
       setTransitionData({ fromMode, toMode });
       
-      // Complete transition after animation
+      // Complete transition faster for better responsiveness
       setTimeout(() => {
         setIsTransitioning(false);
         setTransitionData(null);
         resolve();
-      }, 1000);
+      }, 600);
     });
   }, []);
 
@@ -54,7 +54,7 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2 }}
           >
             {/* Animated background */}
             <motion.div
@@ -69,24 +69,24 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
                   ? "linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95))"
                   : "linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95))"
               }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.3 }}
             />
 
             {/* Central transition animation */}
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.div
                 className="text-center text-white"
-                initial={{ scale: 0.8, opacity: 0, y: 20 }}
+                initial={{ scale: 0.9, opacity: 0, y: 10 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 1.2, opacity: 0, y: -20 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+                exit={{ scale: 1.1, opacity: 0, y: -10 }}
+                transition={{ duration: 0.3, delay: 0.05 }}
               >
                 {/* From Mode Icon */}
                 <motion.div
                   className="flex items-center justify-center mb-4"
                   initial={{ x: 0, opacity: 1 }}
-                  animate={{ x: -100, opacity: 0 }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
+                  animate={{ x: -50, opacity: 0 }}
+                  transition={{ duration: 0.2, delay: 0.1 }}
                 >
                   {transitionData.fromMode === "operations" ? (
                     <Monitor className="w-16 h-16" />
@@ -99,8 +99,8 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
                 <motion.div
                   className="flex items-center justify-center mb-4"
                   initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: [0, 1.5, 1], opacity: [0, 1, 1] }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
+                  animate={{ scale: [0, 1.2, 1], opacity: [0, 1, 1] }}
+                  transition={{ duration: 0.3, delay: 0.15 }}
                 >
                   <Zap className="w-8 h-8 text-yellow-300" />
                 </motion.div>
@@ -108,9 +108,9 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
                 {/* To Mode Icon */}
                 <motion.div
                   className="flex items-center justify-center mb-6"
-                  initial={{ x: 100, opacity: 0 }}
+                  initial={{ x: 50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.5 }}
+                  transition={{ duration: 0.2, delay: 0.25 }}
                 >
                   {transitionData.toMode === "operations" ? (
                     <Monitor className="w-16 h-16" />
@@ -121,9 +121,9 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
 
                 {/* Text */}
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.6 }}
+                  transition={{ duration: 0.25, delay: 0.3 }}
                 >
                   <h2 className="text-2xl font-bold mb-2">
                     Switching to {transitionData.toMode === "operations" ? "Operations" : "Management"} Mode
@@ -138,12 +138,12 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
               </motion.div>
             </div>
 
-            {/* Animated particles */}
+            {/* Optimized animated particles */}
             <div className="absolute inset-0 overflow-hidden">
-              {Array.from({ length: 20 }).map((_, i) => (
+              {Array.from({ length: 12 }).map((_, i) => (
                 <motion.div
                   key={i}
-                  className="absolute w-2 h-2 bg-white/30 rounded-full"
+                  className="absolute w-1.5 h-1.5 bg-white/40 rounded-full"
                   initial={{
                     x: Math.random() * window.innerWidth,
                     y: window.innerHeight + 10,
@@ -152,11 +152,11 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
                   animate={{
                     y: -10,
                     scale: [0, 1, 0],
-                    opacity: [0, 1, 0],
+                    opacity: [0, 0.8, 0],
                   }}
                   transition={{
-                    duration: 2,
-                    delay: Math.random() * 0.5,
+                    duration: 1.2,
+                    delay: Math.random() * 0.3,
                     ease: "easeOut",
                   }}
                 />
