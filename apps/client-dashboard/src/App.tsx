@@ -25,6 +25,7 @@ import NotFound from "./pages/NotFound";
 // Code splitting for heavy pages
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Tables = lazy(() => import("./pages/Tables"));
+const CommandCenter = lazy(() => import("./pages/CommandCenter"));
 
 // Create QueryClient instance
 const queryClient = new QueryClient({
@@ -99,6 +100,7 @@ function App() {
                                 <Route path="customers" element={<Customers />} />
                                 <Route path="analytics" element={<Analytics />} />
                                 <Route path="tables" element={<Tables />} />
+                                <Route path="command-center" element={<CommandCenter />} />
                                 <Route path="settings" element={<Settings />} />
                               </Route>
                               
@@ -116,6 +118,11 @@ function App() {
                               <Route path="/settings" element={
                                 <ProtectedRoute>
                                   <Settings />
+                                </ProtectedRoute>
+                              } />
+                              <Route path="/command-center" element={
+                                <ProtectedRoute>
+                                  <CommandCenter />
                                 </ProtectedRoute>
                               } />
                               

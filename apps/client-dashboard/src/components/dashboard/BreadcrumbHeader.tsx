@@ -20,6 +20,7 @@ import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 const routeMap: Record<string, { title: string; icon?: React.ComponentType<{ className?: string }> }> =
   {
     "/dashboard": { title: "Dashboard", icon: Home },
+    "/dashboard/command-center": { title: "Command Center" },
     "/dashboard/bookings": { title: "Bookings" },
     "/dashboard/tables": { title: "Tables" },
     "/dashboard/customers": { title: "Customers" },
