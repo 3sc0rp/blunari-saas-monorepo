@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { 
   Search, 
   Plus, 
@@ -7,8 +6,7 @@ import {
   Bell, 
   Calendar,
   ChevronDown,
-  MoreVertical,
-  Settings
+  MoreVertical
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,31 +26,21 @@ import {
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useUIMode } from "@/lib/ui-mode";
-import { useModeTransition } from "@/contexts/ModeTransitionContext";
 
 interface TopBarProps {
   onDateChange?: (date: string) => void;
   selectedDate?: string;
   onNewReservation?: () => void;
   onExport?: () => void;
-  advancedMode?: boolean;
-  onAdvancedModeChange?: (mode: boolean) => void;
 }
 
 export function TopBar({ 
   onDateChange, 
   selectedDate = new Date().toISOString().split('T')[0], 
   onNewReservation = () => {},
-  onExport = () => {},
-  advancedMode = false,
-  onAdvancedModeChange = () => {}
+  onExport = () => {}
 }: TopBarProps) {
-  const navigate = useNavigate();
-  const { setMode } = useUIMode();
-  const { triggerModeTransition } = useModeTransition();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState("demo-restaurant");
   const [contextFilter, setContextFilter] = useState("all");
@@ -184,58 +172,6 @@ export function TopBar({
               LIVE
             </span>
           </div>
-
-          {/* Advanced Mode Toggle */}
-          <Button
-            variant={advancedMode ? "default" : "secondary"}
-            className={`glass border-white/10 h-10 px-4 hover:bg-white/5 ${
-              advancedMode 
-                ? 'bg-accent hover:bg-accent/80 text-white' 
-                : 'text-white/90'
-            } ${isTransitioning ? 'cursor-wait opacity-75' : ''}`}
-            disabled={isTransitioning}
-            onClick={async () => {
-              if (isTransitioning) return;
-              
-              if (advancedMode) {
-                // If already in advanced mode, toggle back to focus mode with transition
-                setIsTransitioning(true);
-                try {
-                  // Navigate first to prevent white flash
-                  navigate('/command-center');
-                  
-                  // Trigger the enhanced global transition
-                  await triggerModeTransition("management", "operations");
-                  
-                  // Update the mode
-                  await setMode("operations");
-                  
-                  // Update local state
-                  onAdvancedModeChange(false);
-                } finally {
-                  setIsTransitioning(false);
-                }
-              } else {
-                // Switch to Management mode with enhanced transition
-                setIsTransitioning(true);
-                try {
-                  // Navigate first to prevent white flash
-                  navigate('/dashboard');
-                  
-                  // Trigger the enhanced global transition
-                  await triggerModeTransition("operations", "management");
-                  
-                  // Update the mode
-                  await setMode("management");
-                } finally {
-                  setIsTransitioning(false);
-                }
-              }
-            }}
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            {advancedMode ? "Focus Mode" : "Advanced Mode"}
-          </Button>
 
           {/* Notification Bell */}
           <div className="relative">

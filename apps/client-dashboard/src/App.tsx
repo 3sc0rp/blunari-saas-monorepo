@@ -46,7 +46,6 @@ const PerformanceOptimization = lazy(() => import("./pages/PerformanceOptimizati
 const CompetitiveIntelligence = lazy(() => import("./pages/CompetitiveIntelligence"));
 const AIBusinessInsights = lazy(() => import("./pages/AIBusinessInsights"));
 const WidgetManagement = lazy(() => import("./pages/WidgetManagement"));
-const POSIntegrations = lazy(() => import("./pages/POSIntegrations"));
 const DashboardHome = lazy(() => import("./pages/DashboardHome"));
 
 // Create QueryClient instance
@@ -131,15 +130,12 @@ function App() {
                                 <Route index element={<Dashboard />} />
                                 <Route path="home" element={<DashboardHome />} />
                                 <Route path="bookings" element={<Bookings />} />
-                                <Route path="advanced-reservations" element={<AdvancedReservationSystem />} />
-                                <Route path="waitlist" element={<Waitlist />} />
                                 <Route path="waitlist-management" element={<WaitlistManagement />} />
                                 <Route path="tables" element={<Tables />} />
                                 <Route path="customer-profiles" element={<CustomerProfiles />} />
                                 <Route path="review-feedback" element={<ReviewFeedbackSystem />} />
                                 <Route path="catering" element={<Catering />} />
                                 <Route path="customers" element={<Customers />} />
-                                <Route path="staff" element={<Staff />} />
                                 <Route path="messages" element={<Messages />} />
                                 <Route path="menu-management" element={<MenuManagement />} />
                                 <Route path="kitchen-display" element={<KitchenDisplaySystem />} />
@@ -152,7 +148,6 @@ function App() {
                                 <Route path="competitive-intelligence" element={<CompetitiveIntelligence />} />
                                 <Route path="ai-business-insights" element={<AIBusinessInsights />} />
                                 <Route path="widget-management" element={<WidgetManagement />} />
-                                <Route path="pos-integrations" element={<POSIntegrations />} />
                                 <Route path="settings" element={<Settings />} />
                                 <Route path="command-center" element={<CommandCenter />} />
                               </Route>

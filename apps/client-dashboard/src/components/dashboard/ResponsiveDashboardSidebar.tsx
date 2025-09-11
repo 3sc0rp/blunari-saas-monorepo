@@ -10,7 +10,6 @@ import {
   Settings,
   TableProperties,
   UserCheck,
-  CreditCard,
   Building,
   ChefHat,
   Cog,
@@ -70,7 +69,6 @@ const operationsNavigation = [
   {
     section: "Service",
     items: [
-      { title: "Waitlist", url: "/dashboard/waitlist", icon: UserCheck },
       { title: "Staff Management", url: "/dashboard/staff-management", icon: UserCircle },
       { title: "Messages", url: "/dashboard/messages", icon: MessageSquare },
     ],
@@ -99,8 +97,6 @@ const managementNavigation = [
     section: "Customer Experience",
     items: [
       { title: "Bookings", url: "/dashboard/bookings", icon: Calendar },
-      { title: "Advanced Reservations", url: "/dashboard/advanced-reservations", icon: CalendarCheck },
-      { title: "Waitlist", url: "/dashboard/waitlist", icon: UserCheck },
       { title: "Waitlist Management", url: "/dashboard/waitlist-management", icon: Clock },
       { title: "Tables", url: "/dashboard/tables", icon: TableProperties },
       { title: "Customer Profiles", url: "/dashboard/customer-profiles", icon: Users },
@@ -112,7 +108,6 @@ const managementNavigation = [
     section: "Management",
     items: [
       { title: "Customers", url: "/dashboard/customers", icon: Users },
-      { title: "Staff", url: "/dashboard/staff", icon: Building },
       { title: "Messages", url: "/dashboard/messages", icon: MessageSquare },
     ],
   },
@@ -145,11 +140,6 @@ const managementNavigation = [
     section: "Admin",
     items: [
       { title: "Settings", url: "/dashboard/settings", icon: Settings },
-      {
-        title: "POS Integration",
-        url: "/dashboard/pos-integrations",
-        icon: CreditCard,
-      },
     ],
   },
 ];

@@ -1,12 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { useNavigate } from "react-router-dom";
 import { useTenant } from "@/hooks/useTenant";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 import { useAlertSystem } from "@/hooks/useAlertSystem";
-import { useUIMode } from "@/lib/ui-mode";
-import { useModeTransition } from "@/contexts/ModeTransitionContext";
 import TenantAccessDisplay from "@/components/dashboard/TenantAccessDisplay";
 import TodaysBookings from "@/components/dashboard/TodaysBookings";
 import QuickActions from "@/components/dashboard/QuickActions";
@@ -14,7 +11,6 @@ import TableStatus from "@/components/dashboard/TableStatus";
 import MetricsCard from "@/components/dashboard/MetricsCard";
 import PerformanceTrendsChart from "@/components/dashboard/PerformanceTrendsChart";
 import AlertSystem from "@/components/dashboard/AlertSystem";
-import { Button } from "@/components/ui/button";
 import {
   Users,
   Calendar,
@@ -24,15 +20,10 @@ import {
   Target,
   UserX,
   AlertTriangle,
-  Focus,
   type LucideIcon,
 } from "lucide-react";
 
 const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
-  const { setMode } = useUIMode();
-  const { triggerModeTransition } = useModeTransition();
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const { tenant, accessType, tenantSlug } = useTenant();
   const { metrics, performanceTrends, isLoading } = useDashboardMetrics(
     tenant?.id,
@@ -44,42 +35,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 w-full min-h-screen">
-      {/* Focus Mode Button */}
-      <motion.div
-        initial={prefersReducedMotion ? false : { opacity: 0, y: -20 }}
-        animate={prefersReducedMotion ? false : { opacity: 1, y: 0 }}
-        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.3 }}
-        className="flex justify-end"
-      >
-        <Button
-          variant="outline"
-          disabled={isTransitioning}
-          onClick={async () => {
-            if (isTransitioning) return;
-            
-            setIsTransitioning(true);
-            try {
-              // Navigate first to prevent white flash
-              navigate('/command-center');
-              
-              // Trigger the enhanced global transition
-              await triggerModeTransition("management", "operations");
-              
-              // Update the mode
-              await setMode("operations");
-            } finally {
-              setIsTransitioning(false);
-            }
-          }}
-          className={`bg-white/10 border-white/20 text-gray-700 hover:bg-white/20 hover:text-gray-800 transition-all duration-200 ${
-            isTransitioning ? 'cursor-wait opacity-75' : ''
-          }`}
-        >
-          <Focus className="w-4 h-4 mr-2" />
-          Focus Mode
-        </Button>
-      </motion.div>
-
       {/* Tenant Access Information */}
       <motion.div
         initial={prefersReducedMotion ? false : { opacity: 0 }}

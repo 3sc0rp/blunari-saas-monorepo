@@ -1,5 +1,5 @@
-import React from "react";
-import { useLocation } from "react-router-dom";
+import React, { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,12 +9,15 @@ import {
   Home,
   Bell,
   Settings2,
+  Focus,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantBranding } from "@/contexts/TenantBrandingContext";
 import { useRealtimeBookings } from "@/hooks/useRealtimeBookings";
 import { useTenant } from "@/hooks/useTenant";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
+import { useUIMode } from "@/lib/ui-mode";
+import { useModeTransition } from "@/contexts/ModeTransitionContext";
 
 // Route mapping for breadcrumbs
 const routeMap: Record<string, { title: string; icon?: React.ComponentType<{ className?: string }> }> =
@@ -46,20 +49,24 @@ const routeMap: Record<string, { title: string; icon?: React.ComponentType<{ cla
     "/dashboard/ai-business-insights": { title: "AI Business Insights" },
     "/dashboard/widget-management": { title: "Widget Management" },
     "/dashboard/widget-preview": { title: "Booking Widget" },
-    "/dashboard/pos-integrations": { title: "POS Integrations" },
     "/dashboard/settings": { title: "Settings" },
   };
 
 const BreadcrumbHeader: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { restaurantName } = useTenantBranding();
   const { tenant } = useTenant();
   const { isConnected } = useRealtimeBookings(tenant?.id);
   const { actualLayout, isMobile } = useResponsiveLayout();
+  const { setMode } = useUIMode();
+  const { triggerModeTransition } = useModeTransition();
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const currentRoute = routeMap[location.pathname];
   const isHomePage = location.pathname === "/dashboard";
+  const isCommandCenter = location.pathname === "/command-center";
 
   const handleRefresh = () => {
     window.location.reload();
@@ -68,6 +75,27 @@ const BreadcrumbHeader: React.FC = () => {
   const handleQuickSave = () => {
     // Implement quick save functionality
     console.log("Quick save triggered");
+  };
+
+  const handleFocusMode = async () => {
+    if (isTransitioning) return;
+    
+    setIsTransitioning(true);
+    try {
+      if (isCommandCenter) {
+        // From Command Center (operations) to Dashboard (management)
+        navigate('/dashboard');
+        await triggerModeTransition("operations", "management");
+        await setMode("management");
+      } else {
+        // From any dashboard page to Command Center (operations)
+        navigate('/command-center');
+        await triggerModeTransition("management", "operations");
+        await setMode("operations");
+      }
+    } finally {
+      setIsTransitioning(false);
+    }
   };
 
   return (
@@ -106,6 +134,37 @@ const BreadcrumbHeader: React.FC = () => {
               {restaurantName || tenant?.name || "Restaurant"}
             </span>
           </div>
+        </div>
+
+        {/* Enhanced Focus Mode Button */}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isTransitioning}
+            onClick={handleFocusMode}
+            className={`
+              relative overflow-hidden group
+              bg-gradient-to-r from-brand/10 to-brand/5 
+              border-brand/20 text-brand 
+              hover:from-brand/20 hover:to-brand/10 
+              hover:border-brand/30 hover:text-brand
+              transition-all duration-300
+              backdrop-blur-sm shadow-sm
+              ${isTransitioning ? 'cursor-wait opacity-75' : 'hover:shadow-brand/20 hover:shadow-lg'}
+            `}
+          >
+            {/* Subtle animated background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-brand/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            <Focus className={`w-4 h-4 mr-2 transition-transform duration-300 ${isTransitioning ? 'animate-pulse' : 'group-hover:scale-110'}`} />
+            <span className="relative font-medium">
+              {isTransitioning ? 'Switching...' : (isCommandCenter ? 'Management' : 'Focus Mode')}
+            </span>
+            
+            {/* Subtle glow effect */}
+            <div className="absolute inset-0 rounded-lg bg-brand/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm" />
+          </Button>
         </div>
 
         {/* Enhanced Status & Actions */}
