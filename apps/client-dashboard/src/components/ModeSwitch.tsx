@@ -186,9 +186,9 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
           }}
           transition={{ 
             type: "spring", 
-            damping: 30, 
-            stiffness: 400,
-            duration: 0.3
+            damping: 25, 
+            stiffness: 350,
+            duration: 0.5
           }}
         >
           {/* Enhanced Background slider with transition effects */}
@@ -208,9 +208,9 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
             }}
             transition={{ 
               type: "spring", 
-              damping: 30, 
-              stiffness: 400,
-              scale: { duration: 0.15 }
+              damping: 25, 
+              stiffness: 350,
+              scale: { duration: 0.25 }
             }}
           />
 
@@ -235,7 +235,7 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
                     opacity: [0, 0.8, 0]
                   }}
                   transition={{ 
-                    duration: 0.4,
+                    duration: 0.5,
                     ease: "easeOut"
                   }}
                 />
@@ -246,7 +246,7 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
                     rotate: 180,
                     opacity: [0, 1, 0]
                   }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration: 0.4 }}
                 >
                   <Zap className={cn(
                     "w-4 h-4",

@@ -27,7 +27,7 @@ const pageVariants = {
 const pageTransition = {
   type: "tween" as const,
   ease: "easeOut" as const,
-  duration: 0.2,
+  duration: 0.4,
 };
 
 // Special transitions for mode switching
@@ -73,7 +73,7 @@ const modeTransitionVariants = {
 const modeTransition = {
   type: "tween" as const,
   ease: "easeOut" as const,
-  duration: 0.2,
+  duration: 0.5,
 };
 
 export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
@@ -108,7 +108,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
       const timer = setTimeout(() => {
         setDisplayLocation(location);
         setTransitionStage("in");
-      }, 100); // Very short delay to prevent white flash
+      }, 200); // Slightly longer delay for smoother transition
       
       return () => clearTimeout(timer);
     }
