@@ -265,7 +265,7 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
                 className={cn(
                   "relative z-10 inline-flex items-center justify-center rounded-full transition-all duration-500",
                   sizeClasses[size],
-                  size === "xs" ? "min-w-[70px] font-medium" : size === "sm" ? "min-w-[90px] font-medium" : "min-w-[120px] font-medium",
+                  size === "xs" ? "min-w-[85px] font-medium" : size === "sm" ? "min-w-[105px] font-medium" : "min-w-[135px] font-medium",
                   isOperationsMode
                     ? "text-white shadow-lg"
                     : "text-text-muted hover:text-text hover:bg-surface-2/50",
@@ -305,7 +305,7 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: "spring", damping: 15, stiffness: 300 }}
                     >
-                      <Badge className={cn("ml-2 bg-white/20 text-white px-1.5 py-0.5", size === "xs" || size === "sm" ? "text-xs" : "text-xs")}>
+                      <Badge className={cn("ml-1 bg-white/20 text-white px-1 py-0.5", size === "xs" ? "text-[10px]" : size === "sm" ? "text-xs" : "text-xs")}>
                         ACTIVE
                       </Badge>
                     </motion.div>
@@ -334,7 +334,7 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
                 className={cn(
                   "relative z-10 inline-flex items-center justify-center rounded-full transition-all duration-500",
                   sizeClasses[size],
-                  size === "xs" ? "min-w-[70px] font-medium" : size === "sm" ? "min-w-[90px] font-medium" : "min-w-[120px] font-medium",
+                  size === "xs" ? "min-w-[85px] font-medium" : size === "sm" ? "min-w-[105px] font-medium" : "min-w-[135px] font-medium",
                   isManagementMode
                     ? "text-white shadow-lg"
                     : "text-text-muted hover:text-text hover:bg-surface-2/50",
@@ -374,7 +374,7 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: "spring", damping: 15, stiffness: 300 }}
                     >
-                      <Badge className={cn("ml-2 bg-white/20 text-white px-1.5 py-0.5", size === "xs" || size === "sm" ? "text-xs" : "text-xs")}>
+                      <Badge className={cn("ml-1 bg-white/20 text-white px-1 py-0.5", size === "xs" ? "text-[10px]" : size === "sm" ? "text-xs" : "text-xs")}>
                         ACTIVE
                       </Badge>
                     </motion.div>

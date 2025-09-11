@@ -3,6 +3,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   RefreshCw,
   Save,
   ChevronRight,
@@ -10,6 +18,10 @@ import {
   Bell,
   Settings2,
   Focus,
+  User,
+  LogOut,
+  UserCircle,
+  Palette,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenantBranding } from "@/contexts/TenantBrandingContext";
@@ -51,7 +63,7 @@ const routeMap: Record<string, { title: string; icon?: React.ComponentType<{ cla
 const BreadcrumbHeader: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { restaurantName } = useTenantBranding();
   const { tenant } = useTenant();
   const { isConnected } = useRealtimeBookings(tenant?.id);
@@ -71,6 +83,34 @@ const BreadcrumbHeader: React.FC = () => {
   const handleQuickSave = () => {
     // Implement quick save functionality
     console.log("Quick save triggered");
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const getUserDisplayName = () => {
+    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
+      return `${user.user_metadata.first_name} ${user.user_metadata.last_name}`;
+    }
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    }
+    return user?.email?.split('@')[0] || 'User';
+  };
+
+  const getUserInitials = () => {
+    const displayName = getUserDisplayName();
+    const names = displayName.split(' ');
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[1][0]}`.toUpperCase();
+    }
+    return displayName.substring(0, 2).toUpperCase();
   };
 
   const handleFocusMode = async () => {
@@ -240,16 +280,156 @@ const BreadcrumbHeader: React.FC = () => {
             )}
           </div>
 
-          {/* User Avatar - Premium Touch */}
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-brand/10 to-brand/5 backdrop-blur-sm rounded-xl border border-brand/20">
-            <div className="w-6 h-6 bg-gradient-to-br from-brand to-brand/80 rounded-full flex items-center justify-center shadow-elev-2">
-              <span className="text-xs font-bold text-brand-foreground">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            </div>
-            <span className="text-xs font-medium text-text truncate max-w-20">
-              {user?.email?.split('@')[0] || 'User'}
-            </span>
+          {/* Enhanced User Profile Dropdown */}
+          <div className="hidden lg:flex items-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-2 px-3 py-1.5 h-auto bg-gradient-to-r from-brand/10 to-brand/5 backdrop-blur-sm rounded-xl border border-brand/20 hover:from-brand/20 hover:to-brand/10 hover:border-brand/30 transition-all duration-300"
+                >
+                  <div className="w-6 h-6 bg-gradient-to-br from-brand to-brand/80 rounded-full flex items-center justify-center shadow-elev-2">
+                    <span className="text-xs font-bold text-brand-foreground">
+                      {getUserInitials()}
+                    </span>
+                  </div>
+                  <span className="text-xs font-medium text-text truncate max-w-20">
+                    {getUserDisplayName()}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 bg-surface/95 backdrop-blur-sm border-surface-2">
+                <DropdownMenuLabel className="pb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-brand to-brand/80 rounded-full flex items-center justify-center shadow-elev-2">
+                      <span className="text-sm font-bold text-brand-foreground">
+                        {getUserInitials()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-text truncate">
+                        {getUserDisplayName()}
+                      </p>
+                      <p className="text-xs text-text-muted truncate">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                
+                <DropdownMenuSeparator className="bg-surface-2/50" />
+                
+                <DropdownMenuItem 
+                  onClick={() => navigate('/dashboard/settings')}
+                  className="cursor-pointer hover:bg-surface-2/50 focus:bg-surface-2/50"
+                >
+                  <UserCircle className="mr-3 h-4 w-4 text-text-muted" />
+                  <span>Profile Settings</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem 
+                  onClick={() => navigate('/dashboard/settings')}
+                  className="cursor-pointer hover:bg-surface-2/50 focus:bg-surface-2/50"
+                >
+                  <Settings2 className="mr-3 h-4 w-4 text-text-muted" />
+                  <span>Account Settings</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem 
+                  onClick={() => navigate('/dashboard/settings')}
+                  className="cursor-pointer hover:bg-surface-2/50 focus:bg-surface-2/50"
+                >
+                  <Palette className="mr-3 h-4 w-4 text-text-muted" />
+                  <span>Appearance</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator className="bg-surface-2/50" />
+                
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="cursor-pointer hover:bg-destructive/10 focus:bg-destructive/10 text-destructive focus:text-destructive"
+                >
+                  <LogOut className="mr-3 h-4 w-4" />
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Mobile User Profile Dropdown */}
+          <div className="lg:hidden flex items-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-surface-2/60 transition-all duration-200 hover:scale-105 rounded-lg"
+                  title="User Menu"
+                >
+                  <div className="w-5 h-5 bg-gradient-to-br from-brand to-brand/80 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-brand-foreground">
+                      {getUserInitials()}
+                    </span>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 bg-surface/95 backdrop-blur-sm border-surface-2">
+                <DropdownMenuLabel className="pb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-brand to-brand/80 rounded-full flex items-center justify-center shadow-elev-2">
+                      <span className="text-sm font-bold text-brand-foreground">
+                        {getUserInitials()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-text truncate">
+                        {getUserDisplayName()}
+                      </p>
+                      <p className="text-xs text-text-muted truncate">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                
+                <DropdownMenuSeparator className="bg-surface-2/50" />
+                
+                <DropdownMenuItem 
+                  onClick={() => navigate('/dashboard/settings')}
+                  className="cursor-pointer hover:bg-surface-2/50 focus:bg-surface-2/50"
+                >
+                  <UserCircle className="mr-3 h-4 w-4 text-text-muted" />
+                  <span>Profile Settings</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem 
+                  onClick={() => navigate('/dashboard/settings')}
+                  className="cursor-pointer hover:bg-surface-2/50 focus:bg-surface-2/50"
+                >
+                  <Settings2 className="mr-3 h-4 w-4 text-text-muted" />
+                  <span>Account Settings</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem 
+                  onClick={() => navigate('/dashboard/settings')}
+                  className="cursor-pointer hover:bg-surface-2/50 focus:bg-surface-2/50"
+                >
+                  <Palette className="mr-3 h-4 w-4 text-text-muted" />
+                  <span>Appearance</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator className="bg-surface-2/50" />
+                
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="cursor-pointer hover:bg-destructive/10 focus:bg-destructive/10 text-destructive focus:text-destructive"
+                >
+                  <LogOut className="mr-3 h-4 w-4" />
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
