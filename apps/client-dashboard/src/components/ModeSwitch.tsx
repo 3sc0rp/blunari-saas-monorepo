@@ -395,56 +395,6 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
             </TooltipContent>
           </Tooltip>
         </motion.div>
-
-        {/* Enhanced mode indicator with transition effects */}
-        <motion.div 
-          className="ml-3 flex items-center gap-2"
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ 
-            opacity: 1, 
-            x: 0,
-            scale: isTransitioning ? 1.1 : 1
-          }}
-          transition={{ 
-            delay: 0.2,
-            scale: { duration: 0.3 }
-          }}
-        >
-          <motion.div 
-            className={cn(
-              "w-2 h-2 rounded-full",
-              isOperationsMode ? "bg-blue-500" : "bg-amber-500"
-            )}
-            animate={{
-              scale: isTransitioning ? [1, 1.5, 1] : [1, 1.2, 1],
-              opacity: isTransitioning ? [1, 0.5, 1] : [1, 0.8, 1]
-            }}
-            transition={{
-              duration: isTransitioning ? 0.5 : 2,
-              repeat: isTransitioning ? 1 : Infinity,
-              ease: "easeInOut"
-            }}
-          />
-          <motion.span 
-            className="text-xs text-muted-foreground hidden sm:inline"
-            animate={{
-              opacity: isTransitioning ? 0.5 : 1
-            }}
-            transition={{ duration: 0.3 }}
-          >
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={isOperationsMode ? "operations" : "management"}
-                initial={{ y: 10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: -10, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                {isOperationsMode ? "Live Operations" : "Management View"}
-              </motion.span>
-            </AnimatePresence>
-          </motion.span>
-        </motion.div>
       </div>
     </TooltipProvider>
   );
