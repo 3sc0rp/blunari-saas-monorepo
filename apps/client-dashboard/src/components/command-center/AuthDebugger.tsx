@@ -109,9 +109,10 @@ export function AuthDebugger() {
                 console.log('Testing tenant function...');
                 const result = await supabase.functions.invoke('tenant', {
                   headers: {
-                    'Authorization': `Bearer ${session.access_token}`
-                  },
-                  body: {}
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json'
+                  }
+                  // Remove empty body to avoid JSON parsing issues
                 });
                 console.log('Tenant function result:', result);
               } catch (error) {

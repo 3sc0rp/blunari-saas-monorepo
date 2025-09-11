@@ -322,9 +322,12 @@ export const authManager = new SupabaseAuthManager();
 
 // Convenience function for calling tenant edge function
 export async function callTenantFunction(body?: any) {
+  // Ensure we always send valid JSON, even for empty requests
+  const requestBody = body && Object.keys(body).length > 0 ? body : undefined;
+  
   return authManager.callEdgeFunction({
     functionName: 'tenant',
-    body,
+    body: requestBody,
     retries: 2, // Fewer retries for tenant function
     timeout: 8000 // Longer timeout for tenant resolution
   });

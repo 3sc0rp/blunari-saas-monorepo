@@ -162,19 +162,29 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
+    // Parse request body with enhanced error handling
     let body: TenantRequest = {};
-    try {
-      body = await req.json();
-    } catch (jsonError) {
-      console.error('JSON parse error:', jsonError);
-      return createErrorResponse(
-        'INVALID_JSON', 
-        'Invalid JSON in request body', 
-        400, 
-        requestId,
-        requestOrigin
-      );
+    
+    // Check if there's actually content to parse
+    const contentLength = req.headers.get('content-length');
+    const hasBody = contentLength && parseInt(contentLength) > 0;
+    
+    if (hasBody) {
+      try {
+        const bodyText = await req.text();
+        if (bodyText.trim()) {
+          body = JSON.parse(bodyText);
+        }
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError);
+        return createErrorResponse(
+          'INVALID_JSON', 
+          'Invalid JSON in request body', 
+          400, 
+          requestId,
+          requestOrigin
+        );
+      }
     }
 
     let tenantData;
