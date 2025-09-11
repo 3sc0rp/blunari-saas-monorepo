@@ -80,13 +80,28 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
   const location = useLocation();
   const [displayLocation, setDisplayLocation] = useState(location);
   const [transitionStage, setTransitionStage] = useState("in");
+  const [previousLocation, setPreviousLocation] = useState(location);
   
-  // Determine if this is a mode transition
+  // Determine if this is a mode transition between Focus Mode and Advanced Mode
   const isCommandCenter = location.pathname === "/command-center";
   const isDashboard = location.pathname === "/dashboard" || location.pathname.startsWith("/dashboard/");
+  const wasCommandCenter = previousLocation.pathname === "/command-center";
+  const wasDashboard = previousLocation.pathname === "/dashboard" || previousLocation.pathname.startsWith("/dashboard/");
   
-  // Choose animation variant based on the page
+  // Only animate transitions between Focus Mode (Dashboard) and Advanced Mode (Command Center)
+  const isModeSwitch = (isCommandCenter && wasDashboard) || (isDashboard && wasCommandCenter);
+  
+  // Choose animation variant based on the page (only for mode switches)
   const getAnimationVariant = () => {
+    if (!isModeSwitch) {
+      // No animation for regular page changes
+      return {
+        initial: { opacity: 1 },
+        in: { opacity: 1 },
+        out: { opacity: 1 }
+      };
+    }
+    
     if (isCommandCenter) {
       return modeTransitionVariants.operationsEntry;
     } else if (isDashboard) {
@@ -96,6 +111,11 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
   };
   
   const getTransitionConfig = () => {
+    if (!isModeSwitch) {
+      // Instant transition for regular page changes
+      return { duration: 0 };
+    }
+    
     if (isCommandCenter || isDashboard) {
       return modeTransition;
     }
@@ -104,15 +124,24 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
 
   useEffect(() => {
     if (location !== displayLocation) {
-      setTransitionStage("out");
-      const timer = setTimeout(() => {
+      setPreviousLocation(displayLocation);
+      
+      if (isModeSwitch) {
+        // Only delay for mode switches
+        setTransitionStage("out");
+        const timer = setTimeout(() => {
+          setDisplayLocation(location);
+          setTransitionStage("in");
+        }, 250);
+        
+        return () => clearTimeout(timer);
+      } else {
+        // Instant update for regular page changes
         setDisplayLocation(location);
         setTransitionStage("in");
-      }, 250); // Slightly longer delay for smoother transition
-      
-      return () => clearTimeout(timer);
+      }
     }
-  }, [location, displayLocation]);
+  }, [location, displayLocation, isModeSwitch]);
 
   return (
     <motion.div
@@ -123,7 +152,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
       transition={getTransitionConfig()}
       className="w-full h-full min-h-screen bg-gray-50"
       style={{ 
-        position: transitionStage === "out" ? "absolute" : "relative",
+        position: (!isModeSwitch || transitionStage === "in") ? "relative" : "absolute",
         width: "100%",
         minHeight: "100vh"
       }}
