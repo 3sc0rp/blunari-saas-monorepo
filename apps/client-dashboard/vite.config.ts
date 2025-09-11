@@ -59,14 +59,18 @@ export default defineConfig(({ mode }) => {
         'framer-motion',
         'lucide-react',
         'date-fns',
-        'clsx'
+        'clsx',
+        'zustand'
       ],
       
       exclude: [
         '@huggingface/transformers',
         'chart.js',
         'monaco-editor'
-      ]
+      ],
+      
+      // Force pre-bundling of these deps
+      force: true
     },
 
     // Build optimizations

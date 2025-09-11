@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +15,7 @@ import { ModeTransitionProvider } from "@/contexts/ModeTransitionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { registerServiceWorker } from "@/utils/serviceWorker";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -77,6 +78,11 @@ const LoadingFallback = () => (
 
 function App() {
   console.log('🎯 App component rendering with full providers...');
+  
+  // Register service worker for static asset caching
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
   
   return (
     <ErrorBoundary>
