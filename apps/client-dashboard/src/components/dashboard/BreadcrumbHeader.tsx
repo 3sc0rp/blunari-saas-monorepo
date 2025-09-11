@@ -249,11 +249,10 @@ const BreadcrumbHeader: React.FC = () => {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 relative hover:bg-surface-2/60 transition-all duration-200 hover:scale-105 rounded-lg"
+              className="h-8 w-8 p-0 hover:bg-surface-2/60 transition-all duration-200 hover:scale-105 rounded-lg"
               title="Notifications"
             >
               <Bell className="h-4 w-4" />
-              <Badge className="absolute -top-1 -right-1 h-3 w-3 p-0 bg-destructive border-2 border-surface text-xs animate-pulse" />
             </Button>
 
             {!isMobile && (
