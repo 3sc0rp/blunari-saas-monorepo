@@ -33,11 +33,11 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
     // Navigate based on mode
     if (newMode === "operations") {
       // Switch to Operations - navigate to Command Center
-      navigate("/command-center");
+      navigate("/dashboard/command-center");
     } else {
       // Switch to Management - stay put and expand sidebar
       // The sidebar will automatically expand in management mode
-      if (location.pathname === "/command-center") {
+      if (location.pathname === "/dashboard/command-center" || location.pathname === "/command-center") {
         navigate("/dashboard");
       }
     }
