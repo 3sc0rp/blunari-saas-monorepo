@@ -186,9 +186,9 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
           }}
           transition={{ 
             type: "spring", 
-            damping: 25, 
-            stiffness: 350,
-            duration: 0.5
+            damping: 20, 
+            stiffness: 300,
+            duration: 0.6
           }}
         >
           {/* Enhanced Background slider with transition effects */}
@@ -208,9 +208,9 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
             }}
             transition={{ 
               type: "spring", 
-              damping: 25, 
-              stiffness: 350,
-              scale: { duration: 0.25 }
+              damping: 20, 
+              stiffness: 300,
+              scale: { duration: 0.3 }
             }}
           />
 

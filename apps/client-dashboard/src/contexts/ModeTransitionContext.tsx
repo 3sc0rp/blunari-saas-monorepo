@@ -38,7 +38,7 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
         setIsTransitioning(false);
         setTransitionData(null);
         resolve();
-      }, 800);
+      }, 1000);
     });
   }, []);
 
@@ -54,7 +54,7 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.4 }}
           >
             {/* Animated background */}
             <motion.div
@@ -69,7 +69,7 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
                   ? "linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95))"
                   : "linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95))"
               }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.6 }}
             />
 
             {/* Central transition animation */}
@@ -79,14 +79,14 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
                 initial={{ scale: 0.9, opacity: 0, y: 10 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 1.1, opacity: 0, y: -10 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
+                transition={{ duration: 0.5, delay: 0.15 }}
               >
                 {/* From Mode Icon */}
                 <motion.div
                   className="flex items-center justify-center mb-4"
                   initial={{ x: 0, opacity: 1 }}
                   animate={{ x: -50, opacity: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
+                  transition={{ duration: 0.4, delay: 0.25 }}
                 >
                   {transitionData.fromMode === "operations" ? (
                     <Monitor className="w-16 h-16" />
@@ -100,7 +100,7 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
                   className="flex items-center justify-center mb-4"
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: [0, 1.2, 1], opacity: [0, 1, 1] }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
+                  transition={{ duration: 0.6, delay: 0.35 }}
                 >
                   <Zap className="w-8 h-8 text-yellow-300" />
                 </motion.div>
@@ -110,7 +110,7 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
                   className="flex items-center justify-center mb-6"
                   initial={{ x: 50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  transition={{ duration: 0.3, delay: 0.4 }}
+                  transition={{ duration: 0.4, delay: 0.5 }}
                 >
                   {transitionData.toMode === "operations" ? (
                     <Monitor className="w-16 h-16" />
@@ -123,7 +123,7 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.5 }}
+                  transition={{ duration: 0.4, delay: 0.6 }}
                 >
                   <h2 className="text-2xl font-bold mb-2">
                     Switching to {transitionData.toMode === "operations" ? "Operations" : "Management"} Mode
@@ -155,8 +155,8 @@ export const ModeTransitionProvider: React.FC<ModeTransitionProviderProps> = ({ 
                     opacity: [0, 0.8, 0],
                   }}
                   transition={{
-                    duration: 1.5,
-                    delay: Math.random() * 0.4,
+                    duration: 1.8,
+                    delay: Math.random() * 0.5,
                     ease: "easeOut",
                   }}
                 />
