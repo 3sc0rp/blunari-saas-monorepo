@@ -15,7 +15,7 @@ import { ModeTransitionProvider } from "@/contexts/ModeTransitionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { registerServiceWorker } from "@/utils/serviceWorker";
+import { connectionManager } from "@/utils/supabaseConnection";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -79,9 +79,9 @@ const LoadingFallback = () => (
 function App() {
   console.log('🎯 App component rendering with full providers...');
   
-  // Register service worker for static asset caching
+  // Initialize Supabase connection manager
   useEffect(() => {
-    registerServiceWorker();
+    connectionManager.ensureConnection();
   }, []);
   
   return (
