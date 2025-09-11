@@ -143,7 +143,7 @@ export function ResponsiveDashboardSidebar() {
 
   const getNavClassName = (path: string) => {
     const baseClasses =
-      "w-full justify-start transition-all duration-300 hover:bg-surface-2/70 backdrop-blur-sm rounded-lg group";
+      "w-full justify-start hover:bg-surface-2/70 backdrop-blur-sm rounded-lg group";
     return isActive(path)
       ? `${baseClasses} bg-gradient-to-r from-brand/15 to-brand/10 text-brand border border-brand/20 font-medium shadow-brand`
       : `${baseClasses} text-text-muted hover:text-text hover:border-surface-2/50 border border-transparent`;
@@ -212,7 +212,7 @@ export function ResponsiveDashboardSidebar() {
                             className={getNavClassName(item.url)}
                             title={collapsed ? item.title : undefined}
                           >
-                            <item.icon className="h-4 w-4 flex-shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                            <item.icon className="h-4 w-4 flex-shrink-0" />
                             {!collapsed && (
                               <span className="ml-3 flex-1 text-sm">
                                 {item.title}
