@@ -114,7 +114,6 @@ const managementNavigation = [
   {
     section: "Analytics & Reporting",
     items: [
-      { title: "Advanced Analytics", url: "/dashboard/advanced-analytics", icon: BarChart3 },
       { title: "Financial Reports", url: "/dashboard/financial-reporting", icon: FileText },
       { title: "Performance Optimization", url: "/dashboard/performance-optimization", icon: TrendingUp },
     ],

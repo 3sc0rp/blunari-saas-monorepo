@@ -28,19 +28,15 @@ import NotFound from "./pages/NotFound";
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Tables = lazy(() => import("./pages/Tables"));
 const CommandCenter = lazy(() => import("./pages/CommandCenter"));
-const AdvancedReservationSystem = lazy(() => import("./pages/AdvancedReservationSystem"));
-const Waitlist = lazy(() => import("./pages/Waitlist"));
 const WaitlistManagement = lazy(() => import("./pages/WaitlistManagement"));
 const CustomerProfiles = lazy(() => import("./pages/CustomerProfiles"));
 const ReviewFeedbackSystem = lazy(() => import("./pages/ReviewFeedbackSystem"));
 const Catering = lazy(() => import("./pages/Catering"));
-const Staff = lazy(() => import("./pages/Staff"));
 const Messages = lazy(() => import("./pages/Messages"));
 const MenuManagement = lazy(() => import("./pages/MenuManagement"));
 const KitchenDisplaySystem = lazy(() => import("./pages/KitchenDisplaySystem"));
 const StaffManagement = lazy(() => import("./pages/StaffManagement"));
 const InventoryManagement = lazy(() => import("./pages/InventoryManagement"));
-const AdvancedAnalyticsDashboard = lazy(() => import("./pages/AdvancedAnalyticsDashboard"));
 const FinancialReporting = lazy(() => import("./pages/FinancialReporting"));
 const PerformanceOptimization = lazy(() => import("./pages/PerformanceOptimization"));
 const CompetitiveIntelligence = lazy(() => import("./pages/CompetitiveIntelligence"));
@@ -142,7 +138,6 @@ function App() {
                                 <Route path="staff-management" element={<StaffManagement />} />
                                 <Route path="inventory-management" element={<InventoryManagement />} />
                                 <Route path="analytics" element={<Analytics />} />
-                                <Route path="advanced-analytics" element={<AdvancedAnalyticsDashboard />} />
                                 <Route path="financial-reporting" element={<FinancialReporting />} />
                                 <Route path="performance-optimization" element={<PerformanceOptimization />} />
                                 <Route path="competitive-intelligence" element={<CompetitiveIntelligence />} />
