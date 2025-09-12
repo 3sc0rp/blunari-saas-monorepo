@@ -59,6 +59,8 @@ import {
   RefreshCw,
   Check,
   ExternalLink,
+  Mail,
+  Camera,
 } from 'lucide-react';
 
 interface WidgetConfig {
@@ -1876,23 +1878,140 @@ const WidgetManagement: React.FC = () => {
                   </Button>
                 </div>
                 
-                {/* Widget URL for testing */}
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="font-medium text-blue-900 mb-2">Direct Widget URL</h4>
-                  <p className="text-sm text-blue-700 mb-2">
-                    Test your widget directly before embedding:
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-white p-2 rounded border text-sm">
-                      {generateWidgetUrl(activeWidgetType)}
-                    </code>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(generateWidgetUrl(activeWidgetType), '_blank')}
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
+                {/* Enhanced Tenant-Specific Testing */}
+                <div className="space-y-4">
+                  {/* Primary Testing URL */}
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-blue-900">Tenant-Specific Testing URL</h4>
+                      <Badge variant="outline" className="text-blue-700">
+                        Tenant: {resolvedTenantSlug}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-blue-700 mb-3">
+                      Test your {activeWidgetType} widget with your specific tenant configuration:
+                    </p>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 bg-white p-2 rounded border text-sm">
+                          {generateWidgetUrl(activeWidgetType)}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(generateWidgetUrl(activeWidgetType), 'Widget URL')}
+                          disabled={isLoading}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => window.open(generateWidgetUrl(activeWidgetType), '_blank')}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          Test Now
+                        </Button>
+                      </div>
+                      
+                      {/* Testing Instructions */}
+                      <div className="bg-blue-25 p-3 rounded border border-blue-200">
+                        <p className="text-xs text-blue-600 font-medium mb-1">Testing Checklist:</p>
+                        <ul className="text-xs text-blue-600 space-y-1">
+                          <li>✓ Verify {activeWidgetType} flow works end-to-end</li>
+                          <li>✓ Check responsive design on mobile/tablet</li>
+                          <li>✓ Test all configured features and settings</li>
+                          <li>✓ Confirm tenant branding and colors display correctly</li>
+                          {activeWidgetType === 'booking' && (
+                            <>
+                              <li>✓ Test table selection and availability</li>
+                              <li>✓ Verify special requests functionality</li>
+                              {currentConfig.requireDeposit && <li>✓ Test deposit payment flow</li>}
+                            </>
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Alternative Testing URLs */}
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <h4 className="font-medium text-green-900 mb-2">Alternative Testing Options</h4>
+                    <div className="space-y-3">
+                      {/* Mobile Preview URL */}
+                      <div>
+                        <p className="text-sm text-green-700 mb-2">Mobile Preview (forced mobile view):</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-white p-2 rounded border text-xs">
+                            {generateWidgetUrl(activeWidgetType)}&mobile=true&viewport=375x667
+                          </code>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(generateWidgetUrl(activeWidgetType) + '&mobile=true&viewport=375x667', '_blank')}
+                          >
+                            <Smartphone className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Debug Mode URL */}
+                      <div>
+                        <p className="text-sm text-green-700 mb-2">Debug Mode (with console logging):</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-white p-2 rounded border text-xs">
+                            {generateWidgetUrl(activeWidgetType)}&debug=true&console=verbose
+                          </code>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(generateWidgetUrl(activeWidgetType) + '&debug=true&console=verbose', '_blank')}
+                          >
+                            <Settings className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Demo Data URL */}
+                      <div>
+                        <p className="text-sm text-green-700 mb-2">With Demo Data (for testing purposes):</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 bg-white p-2 rounded border text-xs">
+                            {generateWidgetUrl(activeWidgetType)}&demo=true&test_data=enabled
+                          </code>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(generateWidgetUrl(activeWidgetType) + '&demo=true&test_data=enabled', '_blank')}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* QR Code for Mobile Testing */}
+                  <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-purple-900 mb-1">Mobile Testing QR Code</h4>
+                        <p className="text-sm text-purple-700">
+                          Scan with your phone to test the widget on a real mobile device
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(generateWidgetUrl(activeWidgetType))}`;
+                          window.open(qrUrl, '_blank');
+                        }}
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Generate QR
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 
@@ -2009,63 +2128,213 @@ const WidgetManagement: React.FC = () => {
             </Card>
           </div>
 
-          {/* Testing recommendations */}
+          {/* Enhanced Testing & Validation */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="w-5 h-5" />
-                Testing & Validation
+                Tenant-Specific Testing & Validation
               </CardTitle>
+              <CardDescription>
+                Comprehensive testing guide for {tenant?.name || resolvedTenantSlug} ({activeWidgetType} widget)
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
-                    1
+              <div className="space-y-4">
+                {/* Testing Steps */}
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
+                      1
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">Test Tenant-Specific Widget URL</p>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Verify your {activeWidgetType} widget loads correctly with tenant "{resolvedTenantSlug}" configuration
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(generateWidgetUrl(activeWidgetType), '_blank')}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          Test Primary URL
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(generateWidgetUrl(activeWidgetType) + '&mobile=true', '_blank')}
+                        >
+                          <Smartphone className="w-4 h-4 mr-1" />
+                          Test Mobile
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(generateWidgetUrl(activeWidgetType) + '&debug=true', '_blank')}
+                        >
+                          <Settings className="w-4 h-4 mr-1" />
+                          Debug Mode
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">Test the direct widget URL</p>
-                    <p className="text-sm text-muted-foreground">
-                      Click the external link icon above to test your widget in a new tab
-                    </p>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
+                      2
+                    </div>
+                    <div>
+                      <p className="font-medium">Verify Tenant Branding & Configuration</p>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>✓ Confirm primary color ({currentConfig.primaryColor}) displays correctly</p>
+                        <p>✓ Check welcome message: "{currentConfig.welcomeMessage}"</p>
+                        <p>✓ Verify button text: "{currentConfig.buttonText}"</p>
+                        <p>✓ Test theme: {currentConfig.theme} mode</p>
+                        <p>✓ Validate dimensions: {currentConfig.width}x{currentConfig.height}px</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
-                    2
-                  </div>
-                  <div>
-                    <p className="font-medium">Verify mobile responsiveness</p>
-                    <p className="text-sm text-muted-foreground">
-                      Test the widget on different screen sizes using browser dev tools
-                    </p>
-                  </div>
-                </div>
-                
-                {activeWidgetType === 'booking' && (
+                  
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
                       3
                     </div>
                     <div>
-                      <p className="font-medium">Test complete booking flow</p>
-                      <p className="text-sm text-muted-foreground">
-                        Go through the entire booking process: Customer Details → Date & Time → Table Selection → Confirmation
-                      </p>
+                      <p className="font-medium">Test Responsive Design</p>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>✓ Desktop view (1200px+): Full widget display</p>
+                        <p>✓ Tablet view (768-1024px): Optimized layout</p>
+                        <p>✓ Mobile view (320-767px): Touch-friendly interface</p>
+                        <p>✓ Test portrait and landscape orientations</p>
+                      </div>
                     </div>
                   </div>
-                )}
-                
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
-                    {activeWidgetType === 'booking' ? '4' : '3'}
+                  
+                  {activeWidgetType === 'booking' && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
+                        4
+                      </div>
+                      <div>
+                        <p className="font-medium">Complete Booking Flow Testing</p>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>✓ Customer details form validation</p>
+                          <p>✓ Date & time selection with availability</p>
+                          <p>✓ Party size selection (max: {currentConfig.maxPartySize})</p>
+                          {currentConfig.enableTableOptimization && <p>✓ Table optimization functionality</p>}
+                          {currentConfig.enableSpecialRequests && <p>✓ Special requests field</p>}
+                          {currentConfig.requireDeposit && <p>✓ Deposit payment processing</p>}
+                          <p>✓ Booking confirmation and receipt</p>
+                          <p>✓ Email notifications (if configured)</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
+                      {activeWidgetType === 'booking' ? '5' : '4'}
+                    </div>
+                    <div>
+                      <p className="font-medium">Performance & Analytics Validation</p>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>✓ Widget load time (should be &lt;3 seconds)</p>
+                        <p>✓ Analytics tracking functionality</p>
+                        <p>✓ Error handling and user feedback</p>
+                        <p>✓ Cross-browser compatibility testing</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">Monitor analytics</p>
-                    <p className="text-sm text-muted-foreground">
-                      Check the Analytics tab regularly to track performance and optimize
-                    </p>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
+                      {activeWidgetType === 'booking' ? '6' : '5'}
+                    </div>
+                    <div>
+                      <p className="font-medium">Integration Testing</p>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>✓ Test embed code in staging environment</p>
+                        <p>✓ Verify widget works within iframe</p>
+                        <p>✓ Check for CSS conflicts with parent site</p>
+                        <p>✓ Test with different content management systems</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Test Actions */}
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3">Quick Test Actions</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        const url = generateWidgetUrl(activeWidgetType);
+                        copyToClipboard(url, 'Test URL');
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-1" />
+                      Copy URL
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(generateWidgetUrl(activeWidgetType))}`;
+                        window.open(qrUrl, '_blank');
+                      }}
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      QR Code
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        const mailtoUrl = `mailto:?subject=Test ${activeWidgetType} Widget - ${resolvedTenantSlug}&body=Please test our ${activeWidgetType} widget at: ${generateWidgetUrl(activeWidgetType)}`;
+                        window.location.href = mailtoUrl;
+                      }}
+                    >
+                      <Mail className="w-4 h-4 mr-1" />
+                      Email Link
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => window.open(generateWidgetUrl(activeWidgetType) + '&screenshot=true', '_blank')}
+                    >
+                      <Camera className="w-4 h-4 mr-1" />
+                      Screenshot
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Tenant-Specific Test Data */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">Tenant Test Configuration</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Tenant ID:</span> {tenant?.id || 'N/A'}
+                    </div>
+                    <div>
+                      <span className="font-medium">Tenant Slug:</span> {resolvedTenantSlug}
+                    </div>
+                    <div>
+                      <span className="font-medium">Widget Type:</span> {activeWidgetType}
+                    </div>
+                    <div>
+                      <span className="font-medium">Configuration Version:</span> 2.0
+                    </div>
                   </div>
                 </div>
               </div>
