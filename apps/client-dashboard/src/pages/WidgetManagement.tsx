@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTenant } from '@/hooks/useTenant';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -22,7 +22,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/components/ui/alert';
 import {
   Settings2 as Settings,
   Calendar,
@@ -32,17 +43,85 @@ import {
   Code2 as Code,
   Copy,
   Loader2,
+  Save,
+  RotateCcw,
+  Download,
+  Upload,
+  Palette,
+  Type,
+  Layout,
+  Zap,
+  Monitor,
+  Smartphone,
+  Tablet,
+  CheckCircle,
+  AlertCircle,
+  RefreshCw,
+  Check,
 } from 'lucide-react';
 
 interface WidgetConfig {
-  theme: 'light' | 'dark';
+  // Appearance
+  theme: 'light' | 'dark' | 'auto';
   primaryColor: string;
+  secondaryColor: string;
   backgroundColor: string;
   textColor: string;
   borderRadius: number;
+  borderWidth: number;
+  borderColor: string;
+  shadowIntensity: number;
+  
+  // Typography
+  fontFamily: 'system' | 'inter' | 'roboto' | 'open-sans' | 'lato';
+  fontSize: number;
+  fontWeight: 'normal' | 'medium' | 'semibold' | 'bold';
+  lineHeight: number;
+  
+  // Content
   welcomeMessage: string;
+  description: string;
   buttonText: string;
+  footerText: string;
+  
+  // Layout
+  width: number;
+  height: number;
+  padding: number;
+  spacing: number;
+  alignment: 'left' | 'center' | 'right';
+  
+  // Features
   showLogo: boolean;
+  showDescription: boolean;
+  showFooter: boolean;
+  compactMode: boolean;
+  enableAnimations: boolean;
+  animationType: 'none' | 'fade' | 'slide' | 'bounce' | 'scale';
+  
+  // Advanced
+  customCss: string;
+  customJs: string;
+  isEnabled: boolean;
+  
+  // Behavior
+  autoFocus: boolean;
+  closeOnOutsideClick: boolean;
+  showCloseButton: boolean;
+}
+
+interface WidgetAnalytics {
+  totalViews: number;
+  totalClicks: number;
+  conversionRate: number;
+  avgSessionDuration: number;
+  topSources: Array<{ source: string; count: number }>;
+  dailyStats: Array<{ date: string; views: number; clicks: number }>;
+}
+
+interface ValidationError {
+  field: string;
+  message: string;
 }
 
 const WidgetManagement: React.FC = () => {
@@ -51,41 +130,196 @@ const WidgetManagement: React.FC = () => {
   
   const [activeWidgetType, setActiveWidgetType] = useState<'booking' | 'catering'>('booking');
   const [selectedTab, setSelectedTab] = useState('configure');
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
 
-  const [bookingConfig, setBookingConfig] = useState<WidgetConfig>({
-    theme: 'light',
-    primaryColor: '#3b82f6',
+  // Default widget configuration
+  const getDefaultConfig = useCallback((type: 'booking' | 'catering'): WidgetConfig => ({
+    // Appearance
+    theme: 'light' as const,
+    primaryColor: type === 'booking' ? '#3b82f6' : '#f97316',
+    secondaryColor: type === 'booking' ? '#1e40af' : '#ea580c',
     backgroundColor: '#ffffff',
     textColor: '#1f2937',
     borderRadius: 8,
-    welcomeMessage: 'Book your table with us!',
-    buttonText: 'Reserve Now',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowIntensity: 2,
+    
+    // Typography
+    fontFamily: 'system' as const,
+    fontSize: 14,
+    fontWeight: 'normal' as const,
+    lineHeight: 1.5,
+    
+    // Content
+    welcomeMessage: type === 'booking' ? 'Book your table with us!' : 'Order catering for your event!',
+    description: type === 'booking' ? 'Reserve your perfect dining experience' : 'Delicious catering for any occasion',
+    buttonText: type === 'booking' ? 'Reserve Now' : 'Order Catering',
+    footerText: 'Powered by Blunari',
+    
+    // Layout
+    width: 400,
+    height: 600,
+    padding: 20,
+    spacing: 16,
+    alignment: 'center' as const,
+    
+    // Features
     showLogo: true,
-  });
+    showDescription: true,
+    showFooter: true,
+    compactMode: false,
+    enableAnimations: true,
+    animationType: 'fade' as const,
+    
+    // Advanced
+    customCss: '',
+    customJs: '',
+    isEnabled: true,
+    
+    // Behavior
+    autoFocus: true,
+    closeOnOutsideClick: true,
+    showCloseButton: true,
+  }), []);
 
-  const [cateringConfig, setCateringConfig] = useState<WidgetConfig>({
-    theme: 'light',
-    primaryColor: '#f97316',
-    backgroundColor: '#ffffff',
-    textColor: '#1f2937',
-    borderRadius: 8,
-    welcomeMessage: 'Order catering for your event!',
-    buttonText: 'Order Catering',
-    showLogo: true,
-  });
+  const [bookingConfig, setBookingConfig] = useState<WidgetConfig>(() => getDefaultConfig('booking'));
+  const [cateringConfig, setCateringConfig] = useState<WidgetConfig>(() => getDefaultConfig('catering'));
 
-  const generateWidgetUrl = (type: 'booking' | 'catering') => {
+  // Additional component state
+  const mockWidgetId = `widget_${Date.now()}`;
+
+  // Configuration management
+  const currentConfig = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
+  const setCurrentConfig = activeWidgetType === 'booking' ? setBookingConfig : setCateringConfig;
+
+  // Generate embed code based on current config
+  const embedCode = `<iframe src="https://yourdomain.com/widget/${mockWidgetId}" width="${currentConfig.width}" height="${currentConfig.height}" frameborder="0"></iframe>`;
+
+  // Validation
+  const validateConfig = useCallback((config: WidgetConfig): ValidationError[] => {
+    const errors: ValidationError[] = [];
+
+    if (!config.welcomeMessage.trim()) {
+      errors.push({ field: 'welcomeMessage', message: 'Welcome message is required' });
+    }
+    if (!config.buttonText.trim()) {
+      errors.push({ field: 'buttonText', message: 'Button text is required' });
+    }
+    if (config.width < 300 || config.width > 800) {
+      errors.push({ field: 'width', message: 'Width must be between 300 and 800 pixels' });
+    }
+    if (config.height < 400 || config.height > 1000) {
+      errors.push({ field: 'height', message: 'Height must be between 400 and 1000 pixels' });
+    }
+    if (config.fontSize < 10 || config.fontSize > 24) {
+      errors.push({ field: 'fontSize', message: 'Font size must be between 10 and 24 pixels' });
+    }
+
+    return errors;
+  }, []);
+
+  // Update configuration with validation
+  const updateConfig = useCallback((updates: Partial<WidgetConfig>) => {
+    const newConfig = { ...currentConfig, ...updates };
+    setCurrentConfig(newConfig);
+    setHasUnsavedChanges(true);
+    
+    // Validate in real-time
+    const errors = validateConfig(newConfig);
+    setValidationErrors(errors);
+  }, [currentConfig, setCurrentConfig, validateConfig]);
+
+  // Save configuration
+  const saveConfiguration = useCallback(async () => {
+    const errors = validateConfig(currentConfig);
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      toast({
+        title: "Validation Error",
+        description: `Please fix ${errors.length} error(s) before saving`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Save to localStorage
+      const storageKey = `widget-config-${activeWidgetType}-${tenant?.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(currentConfig));
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setHasUnsavedChanges(false);
+      toast({
+        title: "Configuration Saved",
+        description: `${activeWidgetType} widget configuration has been saved successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Save Failed",
+        description: "Failed to save configuration. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [currentConfig, activeWidgetType, tenant?.id, validateConfig, toast]);
+
+  // Load configuration from localStorage
+  useEffect(() => {
+    if (tenant?.id) {
+      const storageKey = `widget-config-${activeWidgetType}-${tenant.id}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          const parsedConfig = JSON.parse(saved);
+          setCurrentConfig(parsedConfig);
+        } catch (error) {
+          console.warn('Failed to load saved configuration:', error);
+        }
+      }
+    }
+  }, [activeWidgetType, tenant?.id, setCurrentConfig]);
+
+  // Widget URL and embed code generation
+  const generateWidgetUrl = useCallback((type: 'booking' | 'catering') => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/widget/${type}?tenant=${tenant?.id}`;
-  };
+    const config = type === 'booking' ? bookingConfig : cateringConfig;
+    const configParams = new URLSearchParams({
+      tenant: tenant?.id || '',
+      theme: config.theme,
+      primaryColor: config.primaryColor,
+      backgroundColor: config.backgroundColor,
+      textColor: config.textColor,
+      borderRadius: config.borderRadius.toString(),
+      welcomeMessage: config.welcomeMessage,
+      buttonText: config.buttonText,
+      showLogo: config.showLogo.toString(),
+    });
+    return `${baseUrl}/widget/${type}?${configParams.toString()}`;
+  }, [bookingConfig, cateringConfig, tenant?.id]);
 
-  const generateEmbedCode = (type: 'booking' | 'catering') => {
+  const generateEmbedCode = useCallback((type: 'booking' | 'catering') => {
     const url = generateWidgetUrl(type);
-    return `<iframe src="${url}" width="400" height="600" frameborder="0"></iframe>`;
-  };
+    const config = type === 'booking' ? bookingConfig : cateringConfig;
+    return `<iframe 
+  src="${url}" 
+  width="${config.width}" 
+  height="${config.height}" 
+  frameborder="0"
+  style="border-radius: ${config.borderRadius}px; box-shadow: 0 ${config.shadowIntensity * 2}px ${config.shadowIntensity * 4}px rgba(0,0,0,0.1);"
+  title="${config.welcomeMessage}">
+</iframe>`;
+  }, [generateWidgetUrl, bookingConfig, cateringConfig]);
 
-  const copyToClipboard = async (text: string, label: string) => {
+  const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {
       setIsLoading(true);
       await navigator.clipboard.writeText(text);
@@ -102,9 +336,37 @@ const WidgetManagement: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
-  const currentConfig = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
+  // Mock analytics data
+  const mockAnalytics = useMemo((): WidgetAnalytics => ({
+    totalViews: Math.floor(Math.random() * 10000) + 1000,
+    totalClicks: Math.floor(Math.random() * 1000) + 100,
+    conversionRate: Math.round((Math.random() * 15 + 5) * 100) / 100,
+    avgSessionDuration: Math.round((Math.random() * 180 + 60) * 100) / 100,
+    topSources: [
+      { source: 'Direct', count: Math.floor(Math.random() * 500) + 200 },
+      { source: 'Google', count: Math.floor(Math.random() * 400) + 150 },
+      { source: 'Social Media', count: Math.floor(Math.random() * 300) + 100 },
+      { source: 'Email', count: Math.floor(Math.random() * 200) + 50 },
+    ],
+    dailyStats: Array.from({ length: 7 }, (_, i) => ({
+      date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      views: Math.floor(Math.random() * 200) + 50,
+      clicks: Math.floor(Math.random() * 50) + 10,
+    })).reverse(),
+  }), []);
+
+  // Reset to defaults
+  const resetToDefaults = useCallback(() => {
+    setCurrentConfig(getDefaultConfig(activeWidgetType));
+    setHasUnsavedChanges(true);
+    setValidationErrors([]);
+    toast({
+      title: "Reset to Defaults",
+      description: "Configuration has been reset to default values.",
+    });
+  }, [activeWidgetType, setCurrentConfig, getDefaultConfig, toast]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -122,33 +384,82 @@ const WidgetManagement: React.FC = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
-          <Label htmlFor="widget-type">Active Widget:</Label>
-          <Select value={activeWidgetType} onValueChange={(value: 'booking' | 'catering') => setActiveWidgetType(value)}>
-            <SelectTrigger id="widget-type" className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="booking">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Booking
-                </div>
-              </SelectItem>
-              <SelectItem value="catering">
-                <div className="flex items-center gap-2">
-                  <ChefHat className="w-4 h-4" />
-                  Catering
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-4">
+          {/* Unsaved changes indicator */}
+          {hasUnsavedChanges && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              Unsaved Changes
+            </Badge>
+          )}
+          
+          {/* Widget type selector */}
+          <div className="flex items-center gap-2">
+            <Label htmlFor="widget-type">Active Widget:</Label>
+            <Select value={activeWidgetType} onValueChange={(value: 'booking' | 'catering') => setActiveWidgetType(value)}>
+              <SelectTrigger id="widget-type" className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="booking">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Booking Widget
+                  </div>
+                </SelectItem>
+                <SelectItem value="catering">
+                  <div className="flex items-center gap-2">
+                    <ChefHat className="w-4 h-4" />
+                    Catering Widget
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={resetToDefaults}>
+              <RotateCcw className="w-4 h-4 mr-1" />
+              Reset
+            </Button>
+            <Button 
+              size="sm" 
+              onClick={saveConfiguration}
+              disabled={isSaving || validationErrors.length > 0}
+              className="min-w-20"
+            >
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-1" />
+                  Save
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
+      {/* Validation errors */}
+      {validationErrors.length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Configuration Errors</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc list-inside space-y-1">
+              {validationErrors.map((error, index) => (
+                <li key={index}>{error.message}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Main Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="configure" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
             Configure
@@ -157,117 +468,724 @@ const WidgetManagement: React.FC = () => {
             <Eye className="w-4 h-4" />
             Preview
           </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Analytics
+          </TabsTrigger>
           <TabsTrigger value="embed" className="flex items-center gap-2">
             <Code className="w-4 h-4" />
-            Embed
+            Deploy
           </TabsTrigger>
         </TabsList>
 
         {/* Configuration Tab */}
         <TabsContent value="configure" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Widget Configuration</CardTitle>
-              <CardDescription>
-                Customize your {activeWidgetType} widget settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Content Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Type className="w-4 h-4" />
+                  Content & Text
+                </CardTitle>
+                <CardDescription>
+                  Configure the text content and messaging
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Welcome Message</Label>
-                  <input
-                    className="w-full p-2 border rounded"
+                  <Label htmlFor="welcome-message">Welcome Message</Label>
+                  <Input
+                    id="welcome-message"
                     value={currentConfig.welcomeMessage}
-                    onChange={(e) => {
-                      if (activeWidgetType === 'booking') {
-                        setBookingConfig({...bookingConfig, welcomeMessage: e.target.value});
-                      } else {
-                        setCateringConfig({...cateringConfig, welcomeMessage: e.target.value});
-                      }
-                    }}
+                    onChange={(e) => updateConfig({ welcomeMessage: e.target.value })}
+                    placeholder="Enter welcome message"
+                    className={validationErrors.find(e => e.field === 'welcomeMessage') ? 'border-red-500' : ''}
                   />
                 </div>
+                
                 <div className="space-y-2">
-                  <Label>Button Text</Label>
-                  <input
-                    className="w-full p-2 border rounded"
-                    value={currentConfig.buttonText}
-                    onChange={(e) => {
-                      if (activeWidgetType === 'booking') {
-                        setBookingConfig({...bookingConfig, buttonText: e.target.value});
-                      } else {
-                        setCateringConfig({...cateringConfig, buttonText: e.target.value});
-                      }
-                    }}
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={currentConfig.description}
+                    onChange={(e) => updateConfig({ description: e.target.value })}
+                    placeholder="Enter widget description"
+                    rows={2}
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="button-text">Button Text</Label>
+                  <Input
+                    id="button-text"
+                    value={currentConfig.buttonText}
+                    onChange={(e) => updateConfig({ buttonText: e.target.value })}
+                    placeholder="Enter button text"
+                    className={validationErrors.find(e => e.field === 'buttonText') ? 'border-red-500' : ''}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="footer-text">Footer Text</Label>
+                  <Input
+                    id="footer-text"
+                    value={currentConfig.footerText}
+                    onChange={(e) => updateConfig({ footerText: e.target.value })}
+                    placeholder="Enter footer text"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Appearance Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="w-4 h-4" />
+                  Appearance & Colors
+                </CardTitle>
+                <CardDescription>
+                  Customize the visual appearance
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Theme</Label>
+                  <Select value={currentConfig.theme} onValueChange={(value: 'light' | 'dark' | 'auto') => updateConfig({ theme: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                      <SelectItem value="auto">Auto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Primary Color</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="color"
+                        value={currentConfig.primaryColor}
+                        onChange={(e) => updateConfig({ primaryColor: e.target.value })}
+                        className="w-12 h-10 p-1 rounded border"
+                      />
+                      <Input
+                        value={currentConfig.primaryColor}
+                        onChange={(e) => updateConfig({ primaryColor: e.target.value })}
+                        placeholder="#3b82f6"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Secondary Color</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="color"
+                        value={currentConfig.secondaryColor}
+                        onChange={(e) => updateConfig({ secondaryColor: e.target.value })}
+                        className="w-12 h-10 p-1 rounded border"
+                      />
+                      <Input
+                        value={currentConfig.secondaryColor}
+                        onChange={(e) => updateConfig({ secondaryColor: e.target.value })}
+                        placeholder="#1e40af"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Background Color</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="color"
+                        value={currentConfig.backgroundColor}
+                        onChange={(e) => updateConfig({ backgroundColor: e.target.value })}
+                        className="w-12 h-10 p-1 rounded border"
+                      />
+                      <Input
+                        value={currentConfig.backgroundColor}
+                        onChange={(e) => updateConfig({ backgroundColor: e.target.value })}
+                        placeholder="#ffffff"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Text Color</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="color"
+                        value={currentConfig.textColor}
+                        onChange={(e) => updateConfig({ textColor: e.target.value })}
+                        className="w-12 h-10 p-1 rounded border"
+                      />
+                      <Input
+                        value={currentConfig.textColor}
+                        onChange={(e) => updateConfig({ textColor: e.target.value })}
+                        placeholder="#1f2937"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Layout Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Layout className="w-4 h-4" />
+                  Layout & Dimensions
+                </CardTitle>
+                <CardDescription>
+                  Configure size and spacing
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Width (px)</Label>
+                    <Input
+                      type="number"
+                      value={currentConfig.width}
+                      onChange={(e) => updateConfig({ width: parseInt(e.target.value) || 400 })}
+                      min="300"
+                      max="800"
+                      className={validationErrors.find(e => e.field === 'width') ? 'border-red-500' : ''}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Height (px)</Label>
+                    <Input
+                      type="number"
+                      value={currentConfig.height}
+                      onChange={(e) => updateConfig({ height: parseInt(e.target.value) || 600 })}
+                      min="400"
+                      max="1000"
+                      className={validationErrors.find(e => e.field === 'height') ? 'border-red-500' : ''}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Border Radius: {currentConfig.borderRadius}px</Label>
+                  <Slider
+                    value={[currentConfig.borderRadius]}
+                    onValueChange={([value]) => updateConfig({ borderRadius: value })}
+                    max={50}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Shadow Intensity: {currentConfig.shadowIntensity}</Label>
+                  <Slider
+                    value={[currentConfig.shadowIntensity]}
+                    onValueChange={([value]) => updateConfig({ shadowIntensity: value })}
+                    max={10}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Content Alignment</Label>
+                  <Select value={currentConfig.alignment} onValueChange={(value: 'left' | 'center' | 'right') => updateConfig({ alignment: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="left">Left</SelectItem>
+                      <SelectItem value="center">Center</SelectItem>
+                      <SelectItem value="right">Right</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Typography & Features */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  Typography & Features
+                </CardTitle>
+                <CardDescription>
+                  Font settings and widget features
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Font Family</Label>
+                  <Select value={currentConfig.fontFamily} onValueChange={(value: any) => updateConfig({ fontFamily: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="system">System Default</SelectItem>
+                      <SelectItem value="inter">Inter</SelectItem>
+                      <SelectItem value="roboto">Roboto</SelectItem>
+                      <SelectItem value="open-sans">Open Sans</SelectItem>
+                      <SelectItem value="lato">Lato</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Font Size: {currentConfig.fontSize}px</Label>
+                  <Slider
+                    value={[currentConfig.fontSize]}
+                    onValueChange={([value]) => updateConfig({ fontSize: value })}
+                    min={10}
+                    max={24}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-logo">Show Logo</Label>
+                    <Switch
+                      id="show-logo"
+                      checked={currentConfig.showLogo}
+                      onCheckedChange={(checked) => updateConfig({ showLogo: checked })}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-description">Show Description</Label>
+                    <Switch
+                      id="show-description"
+                      checked={currentConfig.showDescription}
+                      onCheckedChange={(checked) => updateConfig({ showDescription: checked })}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="enable-animations">Enable Animations</Label>
+                    <Switch
+                      id="enable-animations"
+                      checked={currentConfig.enableAnimations}
+                      onCheckedChange={(checked) => updateConfig({ enableAnimations: checked })}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="compact-mode">Compact Mode</Label>
+                    <Switch
+                      id="compact-mode"
+                      checked={currentConfig.compactMode}
+                      onCheckedChange={(checked) => updateConfig({ compactMode: checked })}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Preview Tab */}
         <TabsContent value="preview" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Widget Preview</h3>
+              <p className="text-sm text-muted-foreground">
+                Preview your {activeWidgetType} widget across different devices
+              </p>
+            </div>
+            
+            {/* Device selector */}
+            <div className="flex items-center gap-2">
+              <Label>Device:</Label>
+              <Select value={previewDevice} onValueChange={(value: 'desktop' | 'tablet' | 'mobile') => setPreviewDevice(value)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desktop">
+                    <div className="flex items-center gap-2">
+                      <Monitor className="w-4 h-4" />
+                      Desktop
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="tablet">
+                    <div className="flex items-center gap-2">
+                      <Tablet className="w-4 h-4" />
+                      Tablet
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="mobile">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4" />
+                      Mobile
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
           <Card>
-            <CardHeader>
-              <CardTitle>Widget Preview</CardTitle>
-              <CardDescription>
-                Preview your {activeWidgetType} widget
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-lg p-4 bg-gray-50 text-center">
-                <h3 className="text-lg font-semibold mb-2">{currentConfig.welcomeMessage}</h3>
-                <Button style={{backgroundColor: currentConfig.primaryColor}}>
-                  {currentConfig.buttonText}
-                </Button>
+            <CardContent className="p-8">
+              <div className="flex justify-center">
+                <div 
+                  className={`
+                    transition-all duration-300 border rounded-lg bg-gray-50 flex items-center justify-center
+                    ${previewDevice === 'desktop' ? 'w-full max-w-4xl h-96' : ''}
+                    ${previewDevice === 'tablet' ? 'w-80 h-96' : ''}
+                    ${previewDevice === 'mobile' ? 'w-64 h-96' : ''}
+                  `}
+                >
+                  {/* Widget preview */}
+                  <div 
+                    className="rounded-lg shadow-lg transition-all duration-300"
+                    style={{
+                      width: currentConfig.width,
+                      height: currentConfig.height,
+                      backgroundColor: currentConfig.backgroundColor,
+                      borderRadius: currentConfig.borderRadius,
+                      border: `${currentConfig.borderWidth}px solid ${currentConfig.borderColor}`,
+                      boxShadow: `0 ${currentConfig.shadowIntensity * 2}px ${currentConfig.shadowIntensity * 4}px rgba(0,0,0,0.1)`,
+                      padding: currentConfig.padding,
+                      fontFamily: currentConfig.fontFamily === 'system' ? 'system-ui' : currentConfig.fontFamily,
+                      fontSize: currentConfig.fontSize,
+                      color: currentConfig.textColor,
+                      textAlign: currentConfig.alignment,
+                      transform: previewDevice === 'mobile' ? 'scale(0.8)' : previewDevice === 'tablet' ? 'scale(0.9)' : 'scale(1)',
+                    }}
+                  >
+                    <div className="flex flex-col h-full justify-between">
+                      {/* Header */}
+                      <div className="space-y-4">
+                        {currentConfig.showLogo && (
+                          <div className="flex justify-center">
+                            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                              <span className="text-white font-bold text-lg">B</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div>
+                          <h3 className="font-semibold mb-2" style={{ fontSize: currentConfig.fontSize * 1.5 }}>
+                            {currentConfig.welcomeMessage}
+                          </h3>
+                          {currentConfig.showDescription && currentConfig.description && (
+                            <p className="text-sm opacity-80 mb-4">{currentConfig.description}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Main content area */}
+                      <div className="flex-1 flex items-center justify-center py-8">
+                        <div className="text-center space-y-4">
+                          <div className="w-full h-24 bg-gray-200 rounded-lg flex items-center justify-center">
+                            <span className="text-gray-500 text-sm">Widget Content Area</span>
+                          </div>
+                          
+                          <Button
+                            size="lg"
+                            className="w-full"
+                            style={{
+                              backgroundColor: currentConfig.primaryColor,
+                              borderRadius: currentConfig.borderRadius / 2,
+                            }}
+                          >
+                            {currentConfig.buttonText}
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Footer */}
+                      {currentConfig.showFooter && currentConfig.footerText && (
+                        <div className="text-center">
+                          <p className="text-xs opacity-60">{currentConfig.footerText}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Embed Tab */}
-        <TabsContent value="embed" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Widget Integration</CardTitle>
-              <CardDescription>
-                Copy and paste this code to embed the {activeWidgetType} widget
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Widget URL</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1 p-3 bg-gray-50 border rounded font-mono text-sm break-all">
-                    {generateWidgetUrl(activeWidgetType)}
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold">Widget Analytics</h3>
+            <p className="text-sm text-muted-foreground">
+              Performance metrics for your {activeWidgetType} widget
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Metrics cards */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Views</p>
+                    <p className="text-2xl font-bold">{mockAnalytics.totalViews.toLocaleString()}</p>
                   </div>
+                  <Eye className="w-8 h-8 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Clicks</p>
+                    <p className="text-2xl font-bold">{mockAnalytics.totalClicks.toLocaleString()}</p>
+                  </div>
+                  <Copy className="w-8 h-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Conversion Rate</p>
+                    <p className="text-2xl font-bold">{mockAnalytics.conversionRate}%</p>
+                  </div>
+                  <BarChart3 className="w-8 h-8 text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Avg. Session</p>
+                    <p className="text-2xl font-bold">{mockAnalytics.avgSessionDuration}s</p>
+                  </div>
+                  <RefreshCw className="w-8 h-8 text-orange-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top sources */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Traffic Sources</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {mockAnalytics.topSources.map((source, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <span className="text-sm">{source.source}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-500 rounded-full"
+                            style={{ width: `${(source.count / mockAnalytics.topSources[0].count) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium w-8 text-right">{source.count}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Daily stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Daily Performance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {mockAnalytics.dailyStats.map((day, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <span>{new Date(day.date).toLocaleDateString()}</span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-blue-600">{day.views} views</span>
+                        <span className="text-green-600">{day.clicks} clicks</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Deploy Tab */}
+        <TabsContent value="embed" className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold">Deploy Widget</h3>
+            <p className="text-sm text-muted-foreground">
+              Get your embed code and deployment instructions
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Embed code */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Embed Code</CardTitle>
+                <CardDescription>
+                  Copy this code to your website where you want the widget to appear
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="relative">
+                  <Textarea
+                    value={embedCode}
+                    readOnly
+                    className="font-mono text-sm resize-none h-32"
+                  />
                   <Button
-                    variant="outline"
                     size="sm"
-                    onClick={() => copyToClipboard(generateWidgetUrl(activeWidgetType), 'Widget URL')}
-                    disabled={isLoading}
+                    className="absolute top-2 right-2"
+                    onClick={() => {
+                      navigator.clipboard.writeText(embedCode);
+                      // You could add a toast notification here
+                    }}
                   >
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
+                    <Copy className="w-4 h-4" />
                   </Button>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Embed Code</Label>
-                <div className="flex gap-2">
-                  <pre className="flex-1 p-3 bg-gray-50 border rounded text-xs overflow-auto">
-                    {generateEmbedCode(activeWidgetType)}
-                  </pre>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(generateEmbedCode(activeWidgetType), 'Embed Code')}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
-                  </Button>
+                
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    checked={currentConfig.isEnabled}
+                    onCheckedChange={(checked) => setCurrentConfig(prev => ({ ...prev, isEnabled: checked }))}
+                  />
+                  <Label>Widget enabled</Label>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Deployment options */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Deployment Options</CardTitle>
+                <CardDescription>
+                  Choose how to integrate your widget
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="p-3 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">HTML/JavaScript</p>
+                        <p className="text-sm text-muted-foreground">Direct embed in any website</p>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        Copy Code
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">WordPress Plugin</p>
+                        <p className="text-sm text-muted-foreground">Easy installation for WordPress sites</p>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">React Component</p>
+                        <p className="text-sm text-muted-foreground">For React applications</p>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        View Docs
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-3">
+                  <h4 className="font-medium">Advanced Settings</h4>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Widget ID</Label>
+                      <Badge variant="secondary">{mockWidgetId}</Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label>API Endpoint</Label>
+                      <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                        /api/widgets/{mockWidgetId}
+                      </code>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label>Last Updated</Label>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date().toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Deployment status */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Deployment Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="w-12 h-12 mx-auto mb-2 bg-green-100 rounded-full flex items-center justify-center">
+                    <Check className="w-6 h-6 text-green-600" />
+                  </div>
+                  <p className="font-medium">Configuration</p>
+                  <p className="text-sm text-muted-foreground">Complete</p>
+                </div>
+                
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="w-12 h-12 mx-auto mb-2 bg-green-100 rounded-full flex items-center justify-center">
+                    <Check className="w-6 h-6 text-green-600" />
+                  </div>
+                  <p className="font-medium">Testing</p>
+                  <p className="text-sm text-muted-foreground">Passed</p>
+                </div>
+                
+                <div className="text-center p-4 border rounded-lg">
+                  <div className="w-12 h-12 mx-auto mb-2 bg-blue-100 rounded-full flex items-center justify-center">
+                    <RefreshCw className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <p className="font-medium">Deployment</p>
+                  <p className="text-sm text-muted-foreground">Ready</p>
                 </div>
               </div>
             </CardContent>
