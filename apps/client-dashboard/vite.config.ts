@@ -47,7 +47,7 @@ export default defineConfig(({ mode }) => {
       // Dependency optimization - enhanced for performance
       optimizeDeps: {
         include: [
-          // Core React libraries
+          // Core React libraries - force bundling together
           'react',
           'react-dom',
           'react/jsx-runtime',
@@ -67,21 +67,9 @@ export default defineConfig(({ mode }) => {
           
           // Supabase (pre-bundle for faster loading)
           '@supabase/supabase-js'
-        ],      exclude: [
-        // Exclude heavy libraries from pre-bundling to enable lazy loading
-        '@huggingface/transformers',
-        'chart.js',
-        'recharts',
-        '@tanstack/react-table',
-        'monaco-editor',
-        'd3',
-        'd3-*',
-        
-        // Heavy UI components that should be lazy loaded
-        'framer-motion',
-        '@radix-ui/react-select',
-        '@radix-ui/react-dropdown-menu'
-      ],
+        ],
+        // Don't exclude anything to prevent chunk reference issues
+        exclude: [],
       
       // Force pre-bundling of critical deps
       force: true,
@@ -103,29 +91,21 @@ export default defineConfig(({ mode }) => {
       minify: isProduction ? 'terser' : false,
 
       rollupOptions: {
+        external: [],
         output: {
-          // Simplified code splitting to prevent function reference issues
+          // Ultra-simplified chunking to prevent function reference errors
           manualChunks: (id) => {
-            // Core React ecosystem - keep together to prevent conflicts
-            if (id.includes('node_modules/react') || 
-                id.includes('node_modules/react-dom') || 
-                id.includes('node_modules/scheduler') ||
-                id.includes('node_modules/react-router')) {
-              return 'react-vendor';
-            }
-            
-            // UI libraries - group together
-            if (id.includes('node_modules/@radix-ui') || 
-                id.includes('node_modules/lucide-react') ||
-                id.includes('node_modules/framer-motion')) {
-              return 'ui-vendor';
-            }
-            
-            // All other vendor dependencies
+            // Put ALL vendor dependencies in a single chunk to prevent cross-chunk function references
             if (id.includes('node_modules/')) {
               return 'vendor';
             }
           },
+          // Ensure proper module format
+          format: 'es',
+          // Preserve module structure
+          preserveModules: false,
+          // Interop settings to prevent function binding issues
+          interop: 'compat',
           chunkFileNames: 'chunks/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
