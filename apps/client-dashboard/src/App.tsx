@@ -109,7 +109,7 @@ function App() {
                                 <Route path="inventory-management" element={<InventoryManagement />} />
                                 <Route path="analytics" element={<Analytics />} />
                                 <Route path="ai-business-insights" element={<AIBusinessInsights />} />
-                                <Route path="widget-management-test" element={<WidgetManagementTest />} />
+                                <Route path="widget-management" element={<WidgetManagementTest />} />
                                 <Route path="settings" element={<Settings />} />
                                 <Route path="command-center" element={<CommandCenter />} />
                               </Route>
