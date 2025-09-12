@@ -3,7 +3,6 @@
  * Implements error boundaries, validation, safe operations, and fallback states
  */
 import React, { useState, useCallback, useMemo, useEffect, Suspense } from 'react';
-import { motion } from 'framer-motion';
 import { useTenant } from '@/hooks/useTenant';
 import { useToast } from '@/hooks/use-toast';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -485,29 +484,15 @@ const WidgetManagement: React.FC = () => {
 
   return (
     <ErrorBoundary fallback={ErrorFallback}>
-      <motion.div 
-        className="container mx-auto p-6 space-y-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
+      <div className="container mx-auto p-6 space-y-6">
         {/* Enhanced Header */}
-        <motion.div 
-          className="space-y-4"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.5 }}
-        >
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <motion.div
-                  className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
+                <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
                   <Settings className="w-6 h-6 text-white" />
-                </motion.div>
+                </div>
                 <div>
                   <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     Widget Management
@@ -583,7 +568,7 @@ const WidgetManagement: React.FC = () => {
               Widget service is connected and ready
             </AlertDescription>
           </Alert>
-        </motion.div>
+        </div>
 
         {/* Main Tabbed Interface */}
         <Tabs value={selectedTab} onValueChange={handleTabChange} className="space-y-6">
@@ -717,7 +702,7 @@ const WidgetManagement: React.FC = () => {
             </Card>
           </TabsContent>
         </Tabs>
-      </motion.div>
+      </div>
     </ErrorBoundary>
   );
 };

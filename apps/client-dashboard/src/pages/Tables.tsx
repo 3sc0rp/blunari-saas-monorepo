@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,10 @@ import { useTenant } from "@/hooks/useTenant";
 import { useTableManagement, Table } from "@/hooks/useTableManagement";
 import { FloorPlan3DManager } from "@/components/tables/FloorPlan3D";
 import FloorPlanManager from "@/components/tables/FloorPlanManager";
-import FloorPlanViewer3D from "@/components/tables/FloorPlanViewer3D";
 import FloorPlanViewer2D from "@/components/tables/FloorPlanViewer2D";
+
+// Lazy load the 3D component to prevent scheduler conflicts
+const FloorPlanViewer3D = lazy(() => import("@/components/tables/FloorPlanViewer3D"));
 import {
   Grid3X3,
   Plus,
@@ -277,7 +279,18 @@ const Tables: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0 relative">
-            <FloorPlanViewer3D />
+            <Suspense 
+              fallback={
+                <div className="h-[400px] flex items-center justify-center">
+                  <div className="text-center">
+                    <Skeleton className="h-8 w-8 mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">Loading 3D view...</p>
+                  </div>
+                </div>
+              }
+            >
+              <FloorPlanViewer3D />
+            </Suspense>
 
             {/* Control Hints Overlay */}
             <div className="absolute top-4 left-4 bg-surface/90 backdrop-blur-sm rounded-lg border border-surface-3 p-3 shadow-elev-1">

@@ -11,21 +11,19 @@ export default defineConfig(({ mode }) => {
   plugins: [react() as PluginOption],
 
     // Path resolution
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, 'src'),
-        '@components': path.resolve(__dirname, 'src/components'),
-        '@utils': path.resolve(__dirname, 'src/utils'),
-        '@hooks': path.resolve(__dirname, 'src/hooks'),
-        '@types': path.resolve(__dirname, 'src/types'),
-        '@pages': path.resolve(__dirname, 'src/pages'),
-        '@integrations': path.resolve(__dirname, 'src/integrations'),
-        '@lib': path.resolve(__dirname, 'src/lib')
-      },
-      dedupe: ['react', 'react-dom']
-    },
-
-    // Development server configuration
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, 'src'),
+          '@components': path.resolve(__dirname, 'src/components'),
+          '@utils': path.resolve(__dirname, 'src/utils'),
+          '@hooks': path.resolve(__dirname, 'src/hooks'),
+          '@types': path.resolve(__dirname, 'src/types'),
+          '@pages': path.resolve(__dirname, 'src/pages'),
+          '@integrations': path.resolve(__dirname, 'src/integrations'),
+          '@lib': path.resolve(__dirname, 'src/lib')
+        },
+        dedupe: ['react', 'react-dom', 'scheduler']
+      },    // Development server configuration
     server: {
       host: "::",
       port: 8080,
@@ -47,31 +45,30 @@ export default defineConfig(({ mode }) => {
       __COMMIT_HASH__: JSON.stringify(process.env.VITE_COMMIT_HASH || 'dev')
     },
 
-    // Dependency optimization - enhanced for performance
-    optimizeDeps: {
-      include: [
-        // Core React libraries
-        'react',
-        'react-dom',
-        'react/jsx-runtime',
-        'react-router-dom',
-        
-        // Essential UI libraries
-        'lucide-react',
-        'clsx',
-        'class-variance-authority',
-        
-        // Utilities
-        'date-fns',
-        'date-fns/format',
-        'date-fns/parseISO',
-        'zustand',
-        
-        // Supabase (pre-bundle for faster loading)
-        '@supabase/supabase-js'
-      ],
-      
-      exclude: [
+      // Dependency optimization - enhanced for performance
+      optimizeDeps: {
+        include: [
+          // Core React libraries
+          'react',
+          'react-dom',
+          'react/jsx-runtime',
+          'react-router-dom',
+          'scheduler',
+          
+          // Essential UI libraries
+          'lucide-react',
+          'clsx',
+          'class-variance-authority',
+          
+          // Utilities
+          'date-fns',
+          'date-fns/format',
+          'date-fns/parseISO',
+          'zustand',
+          
+          // Supabase (pre-bundle for faster loading)
+          '@supabase/supabase-js'
+        ],      exclude: [
         // Exclude heavy libraries from pre-bundling to enable lazy loading
         '@huggingface/transformers',
         'chart.js',
@@ -115,8 +112,9 @@ export default defineConfig(({ mode }) => {
         output: {
           // Aggressive code splitting for better performance
           manualChunks: (id) => {
-            // Core React dependencies
-            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            // Core React dependencies - include scheduler to prevent conflicts
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || 
+                id.includes('node_modules/scheduler')) {
               return 'react-core';
             }
             
