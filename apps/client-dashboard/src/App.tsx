@@ -31,6 +31,7 @@ import Dashboard from "./pages/Dashboard";
 import Bookings from "./pages/Bookings";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import BookingPage from "./pages/BookingPage";
 
 // Lazy load heavy components with prefetch hints
 const Analytics = lazy(() => 
@@ -120,6 +121,10 @@ function App() {
                             {/* Non-protected routes with minimal loading */}
                             <Route path="/" element={<Index />} />
                             <Route path="/auth/*" element={<Auth />} />
+                            
+                            {/* Public widget routes */}
+                            <Route path="/book/:slug" element={<BookingPage />} />
+                            <Route path="/catering/:slug" element={<BookingPage />} />
                             
                             {/* Protected dashboard routes with optimized Suspense */}
                             <Route 
