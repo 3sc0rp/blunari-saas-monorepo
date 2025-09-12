@@ -1,6 +1,5 @@
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
-import LoadingFallback from '@/components/LoadingFallback';
 import '@/monitoring/sentry';
 import './index.css';
 
@@ -16,7 +15,7 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <Suspense fallback={<LoadingFallback />}>
+    <Suspense fallback={<div>Loading...</div>}>
       <App />
     </Suspense>
   </React.StrictMode>

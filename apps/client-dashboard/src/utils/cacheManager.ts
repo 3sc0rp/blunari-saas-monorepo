@@ -40,17 +40,21 @@ class CacheManager {
     enableMetrics: true
   };
 
+  // Interval references for cleanup
+  private cleanupInterval: NodeJS.Timeout | null = null;
+  private metricsInterval: NodeJS.Timeout | null = null;
+
   constructor(config?: Partial<CacheConfig>) {
     if (config) {
       this.config = { ...this.config, ...config };
     }
 
     // Cleanup interval
-    setInterval(() => this.cleanup(), 60000); // Every minute
+    this.cleanupInterval = setInterval(() => this.cleanup(), 60000); // Every minute
     
     // Memory monitoring
     if (this.config.enableMetrics) {
-      setInterval(() => this.updateMemoryMetrics(), 30000); // Every 30 seconds
+      this.metricsInterval = setInterval(() => this.updateMemoryMetrics(), 30000); // Every 30 seconds
     }
 
     logger.info('Cache manager initialized', {
@@ -443,6 +447,27 @@ class CacheManager {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Clean up resources and stop intervals
+   */
+  destroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    
+    if (this.metricsInterval) {
+      clearInterval(this.metricsInterval);
+      this.metricsInterval = null;
+    }
+    
+    this.cache.clear();
+    
+    logger.info('Cache manager destroyed', {
+      component: 'CacheManager'
+    });
   }
 }
 

@@ -6,6 +6,22 @@ export class SupabaseConnectionManager {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000; // Start with 1 second
+  
+  // Event handler references for cleanup
+  private visibilityChangeHandler = () => {
+    if (document.visibilityState === 'visible') {
+      this.handlePageVisible();
+    }
+  };
+  
+  private onlineHandler = () => {
+    console.log('🌐 Network online, attempting to reconnect Supabase');
+    this.handleNetworkReconnect();
+  };
+  
+  private offlineHandler = () => {
+    console.log('📴 Network offline');
+  };
 
   private constructor() {
     this.setupConnectionHandlers();
@@ -33,21 +49,12 @@ export class SupabaseConnectionManager {
     });
 
     // Listen for page visibility changes
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        this.handlePageVisible();
-      }
-    });
+    document.addEventListener('visibilitychange', this.visibilityChangeHandler);
 
     // Listen for online/offline events
-    window.addEventListener('online', () => {
-      console.log('🌐 Network online, attempting to reconnect Supabase');
-      this.handleNetworkReconnect();
-    });
+    window.addEventListener('online', this.onlineHandler);
 
-    window.addEventListener('offline', () => {
-      console.log('📴 Network offline');
-    });
+    window.addEventListener('offline', this.offlineHandler);
   }
 
   private handlePageVisible(): void {
@@ -135,6 +142,24 @@ export class SupabaseConnectionManager {
       console.error('❌ Error creating realtime channel:', error);
       return null;
     }
+  }
+
+  /**
+   * Clean up event listeners and connections
+   */
+  public destroy(): void {
+    // Remove event listeners
+    document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+    window.removeEventListener('online', this.onlineHandler);
+    window.removeEventListener('offline', this.offlineHandler);
+    
+    // Disconnect realtime
+    this.disconnectRealtime();
+    
+    // Reset singleton instance
+    SupabaseConnectionManager.instance = null as any;
+    
+    console.log('🧹 Supabase connection manager destroyed');
   }
 }
 
