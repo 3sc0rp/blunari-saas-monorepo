@@ -12,6 +12,27 @@ dist
 dist-ssr
 *.local
 
+# Build and cache directories
+.turbo/
+playwright-report/
+test-results/
+
+# Temporary and debug files
+*.tmp
+*.temp
+health-check.js
+test-production-widget.js
+
+# Temporary documentation files (keep only main docs)
+*_FIX_*.md
+*_HOTFIX*.md
+*_ANALYSIS*.md
+*_SUMMARY*.md
+*_TEST_REPORT*.md
+*_RESULTS*.md
+WHITE_PAGE_*.md
+REACT_CREATECONTEXT_*.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
