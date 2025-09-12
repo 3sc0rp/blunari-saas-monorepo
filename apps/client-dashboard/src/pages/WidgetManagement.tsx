@@ -99,36 +99,45 @@ const WidgetManagement: React.FC = () => {
     spacing: 1
   });
 
-  // Mock analytics data
-  const analyticsData = useMemo(() => ({
-    totalViews: Math.floor(Math.random() * 10000) + 1000,
-    totalInteractions: Math.floor(Math.random() * 5000) + 500,
-    totalConversions: Math.floor(Math.random() * 500) + 50,
-    conversionRate: Math.random() * 10 + 2,
-    avgSessionDuration: Math.floor(Math.random() * 300) + 60,
-    bounceRate: Math.random() * 40 + 20,
-    topSources: [
-      { source: 'Direct', views: 2840, conversions: 45 },
-      { source: 'Google', views: 1920, conversions: 32 },
-      { source: 'Social Media', views: 1240, conversions: 18 },
-      { source: 'Email', views: 860, conversions: 15 }
-    ],
-    deviceBreakdown: [
-      { device: 'Mobile', percentage: 65 },
-      { device: 'Desktop', percentage: 28 },
-      { device: 'Tablet', percentage: 7 }
-    ],
-    hourlyData: Array.from({ length: 24 }, (_, i) => ({
-      hour: `${i}:00`,
-      views: Math.floor(Math.random() * 100) + 10,
-      conversions: Math.floor(Math.random() * 10) + 1
-    })),
-    weeklyData: Array.from({ length: 7 }, (_, i) => ({
-      day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
-      views: Math.floor(Math.random() * 500) + 100,
-      conversions: Math.floor(Math.random() * 50) + 10
-    }))
-  }), [analyticsTimeRange]);
+  // Mock analytics data - use time range as seed for consistent data
+  const analyticsData = useMemo(() => {
+    const seed = analyticsTimeRange === '24h' ? 1 : analyticsTimeRange === '7d' ? 2 : analyticsTimeRange === '30d' ? 3 : 4;
+    const random = (index: number) => {
+      // Simple seeded random function
+      const x = Math.sin(seed * 9999 + index) * 10000;
+      return x - Math.floor(x);
+    };
+    
+    return {
+      totalViews: Math.floor(random(1) * 10000) + 1000,
+      totalInteractions: Math.floor(random(2) * 5000) + 500,
+      totalConversions: Math.floor(random(3) * 500) + 50,
+      conversionRate: random(4) * 10 + 2,
+      avgSessionDuration: Math.floor(random(5) * 300) + 60,
+      bounceRate: random(6) * 40 + 20,
+      topSources: [
+        { source: 'Direct', views: Math.floor(random(7) * 2000) + 1000, conversions: Math.floor(random(8) * 50) + 20 },
+        { source: 'Google', views: Math.floor(random(9) * 1500) + 500, conversions: Math.floor(random(10) * 40) + 15 },
+        { source: 'Social Media', views: Math.floor(random(11) * 1000) + 300, conversions: Math.floor(random(12) * 25) + 10 },
+        { source: 'Email', views: Math.floor(random(13) * 800) + 200, conversions: Math.floor(random(14) * 20) + 5 }
+      ],
+      deviceBreakdown: [
+        { device: 'Mobile', percentage: Math.floor(random(15) * 30) + 50 },
+        { device: 'Desktop', percentage: Math.floor(random(16) * 20) + 20 },
+        { device: 'Tablet', percentage: Math.floor(random(17) * 15) + 5 }
+      ],
+      hourlyData: Array.from({ length: 24 }, (_, i) => ({
+        hour: `${i}:00`,
+        views: Math.floor(random(18 + i) * 100) + 10,
+        conversions: Math.floor(random(42 + i) * 10) + 1
+      })),
+      weeklyData: Array.from({ length: 7 }, (_, i) => ({
+        day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
+        views: Math.floor(random(50 + i) * 500) + 100,
+        conversions: Math.floor(random(57 + i) * 50) + 10
+      }))
+    };
+  }, [analyticsTimeRange]);
 
   // Validation functions
   const validateConfig = useCallback((config: any) => {

@@ -2,18 +2,13 @@
  * Enhanced Widget Configuration Panel Component
  * Professional UI/UX with advanced state management and real-time preview
  */
-import React, { useState, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { 
   Palette, 
   Type, 
   Layout, 
-  Smartphone, 
-  Monitor, 
-  Tablet,
   Settings2,
-  Eye,
-  EyeOff,
   RotateCcw,
   Save,
   Wand2,
@@ -134,7 +129,6 @@ const WidgetConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 }) => {
   const [activeSection, setActiveSection] = useState<string>('appearance');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [previewMode, setPreviewMode] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
 
   const handleConfigUpdate = useCallback((updates: Partial<WidgetConfig>) => {
     onConfigChange({ ...config, ...updates });

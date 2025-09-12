@@ -2,22 +2,19 @@
  * Enhanced Widget Preview Component
  * Real-time interactive preview with device simulation
  */
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { 
   Monitor, 
   Smartphone, 
   Tablet, 
   RotateCcw, 
-  Maximize2, 
   Eye,
   Zap,
   Wifi,
   ExternalLink,
   Download,
-  Share2,
-  Settings,
-  Palette
+  Share2
 } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
   TooltipContent,
