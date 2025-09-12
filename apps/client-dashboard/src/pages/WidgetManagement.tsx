@@ -247,9 +247,13 @@ const WidgetManagement: React.FC = () => {
       const result = await toggleWidgetActive(type);
       
       if (result.success) {
+        // Get the updated widget status from the current state
+        const updatedWidget = getWidgetByType(type);
+        const isNowActive = result.data?.is_active ?? updatedWidget?.is_active ?? false;
+        
         toast({
           title: "Widget Status Updated",
-          description: `${type} widget has been ${result.isActive ? 'activated' : 'deactivated'}.`,
+          description: `${type.charAt(0).toUpperCase() + type.slice(1)} widget has been ${isNowActive ? 'activated' : 'deactivated'}.`,
           variant: "default"
         });
       } else {
@@ -263,7 +267,7 @@ const WidgetManagement: React.FC = () => {
         variant: "destructive"
       });
     }
-  }, [toggleWidgetActive, toast]);
+  }, [toggleWidgetActive, getWidgetByType, toast]);
 
   // Generate embed codes with better error handling
   const generateEmbedCode = useCallback((type: 'booking' | 'catering') => {
