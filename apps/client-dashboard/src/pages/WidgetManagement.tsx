@@ -112,10 +112,18 @@ const WidgetManagement: React.FC = () => {
   // Load existing configurations with error handling
   useEffect(() => {
     const initializeConfigurations = async () => {
+      console.log('Widget initialization starting:', {
+        tenantId: tenant?.id,
+        loading,
+        widgetsLength: widgets?.length,
+        isInitializing
+      });
+      
       try {
         setInitError(null);
 
         if (!tenant?.id) {
+          console.log('No tenant ID found, setting error');
           setInitError('No tenant selected. Please select a tenant to manage widgets.');
           setIsInitializing(false);
           return;
@@ -123,14 +131,21 @@ const WidgetManagement: React.FC = () => {
 
         // Wait for widgets to load
         if (loading) {
+          console.log('Still loading widgets, setting initializing to true');
           setIsInitializing(true);
           return;
         }
 
+        console.log('Starting widget configuration initialization');
         setIsInitializing(true);
 
         const bookingWidget = getWidgetByType('booking');
         const cateringWidget = getWidgetByType('catering');
+
+        console.log('Found widgets:', {
+          booking: !!bookingWidget,
+          catering: !!cateringWidget
+        });
 
         if (bookingWidget?.config) {
           setBookingConfig(prev => ({ 
@@ -156,6 +171,7 @@ const WidgetManagement: React.FC = () => {
           }));
         }
 
+        console.log('Widget initialization completed');
         setIsInitializing(false);
 
       } catch (err) {
@@ -324,6 +340,15 @@ const WidgetManagement: React.FC = () => {
 
   // Show loading state during initialization
   if (isInitializing || loading) {
+    // Add debugging information
+    console.log('WidgetManagement Loading State:', {
+      isInitializing,
+      loading,
+      tenant: tenant?.id,
+      widgets: widgets?.length,
+      error
+    });
+    
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
@@ -334,6 +359,14 @@ const WidgetManagement: React.FC = () => {
               <p className="text-sm text-muted-foreground">
                 {isInitializing ? 'Initializing configurations...' : 'Loading widget data...'}
               </p>
+              {/* Debug information */}
+              <div className="text-xs text-gray-400 mt-4 space-y-1">
+                <p>Tenant ID: {tenant?.id || 'None'}</p>
+                <p>Loading: {loading ? 'Yes' : 'No'}</p>
+                <p>Initializing: {isInitializing ? 'Yes' : 'No'}</p>
+                <p>Widgets: {widgets ? widgets.length : 'None'}</p>
+                {error && <p className="text-red-400">Error: {error}</p>}
+              </div>
             </div>
           </div>
         </div>
