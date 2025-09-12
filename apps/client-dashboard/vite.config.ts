@@ -1,7 +1,6 @@
 import { defineConfig, PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import inject from '@rollup/plugin-inject';
 
 // Simplified Vite configuration for production builds
 export default defineConfig(({ mode }) => {
@@ -104,68 +103,27 @@ export default defineConfig(({ mode }) => {
       minify: isProduction ? 'terser' : false,
 
       rollupOptions: {
-        plugins: [
-          inject({
-            React: ['react', 'default']
-          })
-        ],
         output: {
-          // Aggressive code splitting for better performance
+          // Simplified code splitting to prevent function reference issues
           manualChunks: (id) => {
-            // Core React dependencies - include scheduler to prevent conflicts
-            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || 
-                id.includes('node_modules/scheduler')) {
-              return 'react-core';
+            // Core React ecosystem - keep together to prevent conflicts
+            if (id.includes('node_modules/react') || 
+                id.includes('node_modules/react-dom') || 
+                id.includes('node_modules/scheduler') ||
+                id.includes('node_modules/react-router')) {
+              return 'react-vendor';
             }
             
-            // Router
-            if (id.includes('node_modules/react-router')) {
-              return 'router';
+            // UI libraries - group together
+            if (id.includes('node_modules/@radix-ui') || 
+                id.includes('node_modules/lucide-react') ||
+                id.includes('node_modules/framer-motion')) {
+              return 'ui-vendor';
             }
             
-            // Supabase and auth
-            if (id.includes('@supabase') || id.includes('supabase')) {
-              return 'supabase';
-            }
-            
-            // Charts library (separate chunk for lazy loading)
-            if (id.includes('recharts') || id.includes('chart') || id.includes('d3')) {
-              return 'charts';
-            }
-            
-            // Data tables (separate chunk for lazy loading)
-            if (id.includes('@tanstack/react-table') || id.includes('table') || 
-                id.includes('DataTable') || id.includes('Tables')) {
-              return 'data-tables';
-            }
-            
-            // UI components
-            if (id.includes('lucide-react') || id.includes('framer-motion') || 
-                id.includes('@radix-ui') || id.includes('ui/')) {
-              return 'ui-components';
-            }
-            
-            // Date and utility libraries
-            if (id.includes('date-fns') || id.includes('clsx') || 
-                id.includes('class-variance-authority') || id.includes('zod')) {
-              return 'utilities';
-            }
-            
-            // Analytics and AI features (lazy load)
-            if (id.includes('Analytics') || id.includes('AIBusinessInsights') || 
-                id.includes('ai-') || id.includes('ml-')) {
-              return 'analytics';
-            }
-            
-            // Heavy dashboard pages (lazy load)
-            if (id.includes('CommandCenter') || id.includes('KitchenDisplay') || 
-                id.includes('InventoryManagement')) {
-              return 'heavy-features';
-            }
-            
-            // Other vendor dependencies
+            // All other vendor dependencies
             if (id.includes('node_modules/')) {
-              return 'vendor-misc';
+              return 'vendor';
             }
           },
           chunkFileNames: 'chunks/[name]-[hash].js',
