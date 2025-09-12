@@ -1197,3 +1197,4 @@ const WidgetManagement: React.FC = () => {
 };
 
 export default WidgetManagement;
+
