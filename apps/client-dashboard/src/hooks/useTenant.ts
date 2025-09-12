@@ -498,7 +498,7 @@ export function useTenant() {
     });
 
     return () => subscription.unsubscribe();
-  }, [resolveTenant, clearCache]);
+  }, [resolveTenant, clearCache]); 
 
   return {
     tenant: state.tenant,
