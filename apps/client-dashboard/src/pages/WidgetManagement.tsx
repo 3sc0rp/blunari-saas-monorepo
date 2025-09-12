@@ -152,7 +152,7 @@ interface ValidationError {
 }
 
 const WidgetManagement: React.FC = () => {
-  const { tenant } = useTenant();
+  const { tenant, tenantSlug, loading: tenantLoading, error: tenantError } = useTenant();
   const { toast } = useToast();
   
   const [activeWidgetType, setActiveWidgetType] = useState<'booking' | 'catering'>('booking');
@@ -162,6 +162,15 @@ const WidgetManagement: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+
+  // Comprehensive tenant slug resolution with fallbacks
+  const resolvedTenantSlug = useMemo(() => {
+    // Priority order for slug resolution:
+    // 1. URL slug parameter (from useTenant)
+    // 2. Tenant object slug
+    // 3. Fallback to 'demo' for development/testing
+    return tenantSlug || tenant?.slug || 'demo';
+  }, [tenantSlug, tenant?.slug]);
 
   // Helper function for safe numeric parsing
   const safeParseInt = useCallback((value: string, fallback: number, min?: number, max?: number): number => {
@@ -326,7 +335,7 @@ const WidgetManagement: React.FC = () => {
     }
   }, [currentConfig, setCurrentConfig, validateConfig, toast]);
 
-  // Save configuration
+  // Enhanced save configuration with better error handling
   const saveConfiguration = useCallback(async () => {
     const errors = validateConfig(currentConfig);
     if (errors.length > 0) {
@@ -339,21 +348,41 @@ const WidgetManagement: React.FC = () => {
       return;
     }
 
+    if (!tenant?.id && !resolvedTenantSlug) {
+      toast({
+        title: "Save Error",
+        description: "Unable to save: tenant information not available. Please refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSaving(true);
     try {
-      // Save to localStorage
-      const storageKey = `widget-config-${activeWidgetType}-${tenant?.id}`;
-      localStorage.setItem(storageKey, JSON.stringify(currentConfig));
+      // Use tenant ID if available, otherwise use resolved slug
+      const tenantIdentifier = tenant?.id || resolvedTenantSlug;
+      const storageKey = `widget-config-${activeWidgetType}-${tenantIdentifier}`;
       
-      // Simulate API call
+      // Create a clean configuration object for storage
+      const configToSave = {
+        ...currentConfig,
+        lastSaved: new Date().toISOString(),
+        version: '2.0'
+      };
+      
+      localStorage.setItem(storageKey, JSON.stringify(configToSave));
+      
+      // Simulate API call for future backend integration
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setHasUnsavedChanges(false);
+      setValidationErrors([]);
       toast({
         title: "Configuration Saved",
         description: `${activeWidgetType} widget configuration has been saved successfully.`,
       });
     } catch (error) {
+      console.error('Save configuration error:', error);
       toast({
         title: "Save Failed",
         description: "Failed to save configuration. Please try again.",
@@ -362,14 +391,17 @@ const WidgetManagement: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
-  }, [currentConfig, activeWidgetType, tenant?.id, validateConfig, toast]);
+  }, [currentConfig, activeWidgetType, tenant?.id, resolvedTenantSlug, validateConfig, toast]);
 
-  // Load configuration from localStorage
+  // Enhanced configuration loading with better error handling
   useEffect(() => {
-    if (tenant?.id) {
+    if (tenant?.id || resolvedTenantSlug) {
       try {
-        const storageKey = `widget-config-${activeWidgetType}-${tenant.id}`;
+        // Use tenant ID if available, otherwise use resolved slug
+        const tenantIdentifier = tenant?.id || resolvedTenantSlug;
+        const storageKey = `widget-config-${activeWidgetType}-${tenantIdentifier}`;
         const saved = localStorage.getItem(storageKey);
+        
         if (saved) {
           const parsedConfig = JSON.parse(saved);
           
@@ -378,11 +410,21 @@ const WidgetManagement: React.FC = () => {
             // Merge with defaults to ensure all required properties exist
             const defaultConfig = getDefaultConfig(activeWidgetType);
             const mergedConfig = { ...defaultConfig, ...parsedConfig };
-            setCurrentConfig(mergedConfig);
+            
+            // Additional validation for critical fields
+            if (mergedConfig.width && mergedConfig.height && mergedConfig.primaryColor) {
+              setCurrentConfig(mergedConfig);
+            } else {
+              console.warn('Loaded configuration missing critical fields, using defaults');
+              setCurrentConfig(getDefaultConfig(activeWidgetType));
+            }
           } else {
             console.warn('Invalid configuration format, using defaults');
             setCurrentConfig(getDefaultConfig(activeWidgetType));
           }
+        } else {
+          // No saved configuration, use defaults
+          setCurrentConfig(getDefaultConfig(activeWidgetType));
         }
       } catch (error) {
         console.warn('Failed to load saved configuration:', error);
@@ -394,13 +436,23 @@ const WidgetManagement: React.FC = () => {
         setCurrentConfig(getDefaultConfig(activeWidgetType));
       }
     }
-  }, [activeWidgetType, tenant?.id, setCurrentConfig, getDefaultConfig, toast]);
+  }, [activeWidgetType, tenant?.id, resolvedTenantSlug, setCurrentConfig, getDefaultConfig, toast]);
 
-  // Widget URL and embed code generation
+  // Widget URL and embed code generation with enhanced error handling
   const generateWidgetUrl = useCallback((type: 'booking' | 'catering') => {
     try {
-      if (!tenant?.slug) {
-        console.warn('No tenant slug available for URL generation');
+      // Enhanced tenant slug resolution with multiple fallbacks
+      const effectiveSlug = resolvedTenantSlug;
+      
+      if (!effectiveSlug) {
+        console.warn('No tenant slug available for URL generation, using fallback');
+        // In development, use a demo slug; in production, show a user-friendly message
+        if (import.meta.env.MODE === 'development') {
+          const fallbackSlug = 'demo';
+          const baseUrl = window.location.origin;
+          const widgetPath = type === 'booking' ? '/book' : '/catering';
+          return `${baseUrl}${widgetPath}/${fallbackSlug}?source=widget-demo&widget_version=2.0`;
+        }
         return '';
       }
       
@@ -409,49 +461,75 @@ const WidgetManagement: React.FC = () => {
       
       if (!config) {
         console.warn('No configuration available for URL generation');
-        return '';
+        // Return basic URL without configuration parameters
+        const widgetPath = type === 'booking' ? '/book' : '/catering';
+        return `${baseUrl}${widgetPath}/${effectiveSlug}?source=widget&widget_version=2.0`;
       }
       
       // Use the actual booking system routes
       const widgetPath = type === 'booking' ? '/book' : '/catering';
-      const configParams = new URLSearchParams({
-        // Tenant identification
-        slug: tenant.slug,
-        
-        // Widget configuration parameters - with fallbacks
-        theme: config.theme || 'light',
-        primaryColor: encodeURIComponent(config.primaryColor || '#3b82f6'),
-        secondaryColor: encodeURIComponent(config.secondaryColor || '#1e40af'),
-        backgroundColor: encodeURIComponent(config.backgroundColor || '#ffffff'),
-        textColor: encodeURIComponent(config.textColor || '#1f2937'),
-        
-        // Layout parameters - with safe defaults
-        borderRadius: (config.borderRadius || 8).toString(),
-        width: (config.width || 400).toString(),
-        height: (config.height || 600).toString(),
-        
-        // Content parameters - with safe encoding
-        welcomeMessage: encodeURIComponent(config.welcomeMessage || ''),
-        buttonText: encodeURIComponent(config.buttonText || ''),
-        
-        // Feature flags - with proper boolean handling
-        showLogo: (config.showLogo ?? true).toString(),
-        showDescription: (config.showDescription ?? true).toString(),
-        showFooter: (config.showFooter ?? true).toString(),
-        enableAnimations: (config.enableAnimations ?? true).toString(),
-        animationType: config.animationType || 'fade',
-        
-        // Source tracking for analytics
-        source: 'widget',
-        widget_version: '2.0'
-      });
       
-      return `${baseUrl}${widgetPath}/${tenant.slug}?${configParams.toString()}`;
+      // Build configuration parameters with comprehensive fallbacks
+      const configParams = new URLSearchParams();
+      
+      // Essential parameters
+      configParams.set('slug', effectiveSlug);
+      configParams.set('source', 'widget');
+      configParams.set('widget_version', '2.0');
+      
+      // Appearance parameters with safe fallbacks
+      configParams.set('theme', config.theme || 'light');
+      configParams.set('primaryColor', encodeURIComponent(config.primaryColor || '#3b82f6'));
+      configParams.set('secondaryColor', encodeURIComponent(config.secondaryColor || '#1e40af'));
+      configParams.set('backgroundColor', encodeURIComponent(config.backgroundColor || '#ffffff'));
+      configParams.set('textColor', encodeURIComponent(config.textColor || '#1f2937'));
+      
+      // Layout parameters with safe defaults
+      configParams.set('borderRadius', (config.borderRadius || 8).toString());
+      configParams.set('width', (config.width || 400).toString());
+      configParams.set('height', (config.height || 600).toString());
+      
+      // Content parameters with safe encoding
+      if (config.welcomeMessage) {
+        configParams.set('welcomeMessage', encodeURIComponent(config.welcomeMessage));
+      }
+      if (config.buttonText) {
+        configParams.set('buttonText', encodeURIComponent(config.buttonText));
+      }
+      
+      // Feature flags with proper boolean handling
+      configParams.set('showLogo', (config.showLogo ?? true).toString());
+      configParams.set('showDescription', (config.showDescription ?? true).toString());
+      configParams.set('showFooter', (config.showFooter ?? true).toString());
+      configParams.set('enableAnimations', (config.enableAnimations ?? true).toString());
+      configParams.set('animationType', config.animationType || 'fade');
+      
+      // Booking-specific parameters
+      if (type === 'booking') {
+        if (config.enableTableOptimization !== undefined) {
+          configParams.set('enableTableOptimization', config.enableTableOptimization.toString());
+        }
+        if (config.maxPartySize) {
+          configParams.set('maxPartySize', config.maxPartySize.toString());
+        }
+        if (config.requireDeposit !== undefined) {
+          configParams.set('requireDeposit', config.requireDeposit.toString());
+        }
+        if (config.enableSpecialRequests !== undefined) {
+          configParams.set('enableSpecialRequests', config.enableSpecialRequests.toString());
+        }
+      }
+      
+      return `${baseUrl}${widgetPath}/${effectiveSlug}?${configParams.toString()}`;
     } catch (error) {
       console.error('Error generating widget URL:', error);
-      return '';
+      // Return a basic functional URL as fallback
+      const baseUrl = window.location.origin;
+      const widgetPath = type === 'booking' ? '/book' : '/catering';
+      const fallbackSlug = resolvedTenantSlug || 'demo';
+      return `${baseUrl}${widgetPath}/${fallbackSlug}?source=widget-error&widget_version=2.0`;
     }
-  }, [bookingConfig, cateringConfig, tenant?.slug]);
+  }, [bookingConfig, cateringConfig, resolvedTenantSlug]);
 
   const generateEmbedCode = useCallback((type: 'booking' | 'catering') => {
     try {
@@ -647,6 +725,52 @@ const WidgetManagement: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6" role="main" aria-label="Widget Management Dashboard">
+      {/* Tenant Loading State */}
+      {tenantLoading && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center space-x-2">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              <span>Loading tenant information...</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Tenant Error State */}
+      {tenantError && !tenantLoading && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Tenant Loading Error</AlertTitle>
+          <AlertDescription>
+            Unable to load tenant information. Using demo configuration for widget preview.
+            <br />
+            <span className="text-sm text-muted-foreground mt-2 block">
+              Current tenant slug: {resolvedTenantSlug}
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {/* Tenant Status Information */}
+      {!tenantLoading && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-green-500" />
+            <span>
+              Active Tenant: <strong>{tenant?.name || resolvedTenantSlug}</strong> 
+              ({resolvedTenantSlug})
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span>Widget URLs will use:</span>
+            <code className="bg-background px-2 py-1 rounded text-xs">
+              /{activeWidgetType === 'booking' ? 'book' : 'catering'}/{resolvedTenantSlug}
+            </code>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
