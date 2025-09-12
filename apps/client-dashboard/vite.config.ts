@@ -91,11 +91,15 @@ export default defineConfig(({ mode }) => {
       minify: isProduction ? 'terser' : false,
 
       rollupOptions: {
-        external: [],
         output: {
-          // Ultra-simplified chunking to prevent function reference errors
-          manualChunks: (id) => {
-            // Put ALL vendor dependencies in a single chunk to prevent cross-chunk function references
+          // Simplified chunking strategy
+          manualChunks(id) {
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/scheduler')) {
+              return 'react-vendor';
+            }
+            if (id.includes('node_modules/@radix-ui') || id.includes('node_modules/lucide-react')) {
+              return 'ui-vendor';
+            }
             if (id.includes('node_modules/')) {
               return 'vendor';
             }
