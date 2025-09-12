@@ -1,9 +1,8 @@
 /**
- * Widget Management Test Page - Mock Integration Testing
- * Tests the hook-based architecture before database implementation
+ * Widget Management Page - Production Widget Configuration
+ * Manage booking and catering widgets for the restaurant
  */
-import React, { useState, useEffect } from "react";
-import { useMockWidgetManagement } from '@/hooks/useMockWidgetManagement';
+import React, { useState, useEffect, useCallback } from "react";
 import { useWidgetManagement } from '@/hooks/useWidgetManagement';
 import { useTenant } from '@/hooks/useTenant';
 import { useToast } from "@/hooks/use-toast";
@@ -15,12 +14,17 @@ import {
   WifiOff,
   Activity,
   Save,
-  TestTube,
   Eye,
-  BarChart3,
+  ExternalLink,
+  Copy,
+  Palette,
+  Type,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Globe,
+  Smartphone,
+  Monitor
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,471 +35,783 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const WidgetManagementTest: React.FC = () => {
+const WidgetManagement: React.FC = () => {
   const { tenant } = useTenant();
   const { toast } = useToast();
-  const [useMockMode, setUseMockMode] = useState(true);
-  const [testConfig, setTestConfig] = useState({
+  
+  // Widget configuration states
+  const [bookingConfig, setBookingConfig] = useState({
     primaryColor: '#3b82f6',
-    welcomeMessage: 'Test widget configuration'
-  });
-  const [databaseStatus, setDatabaseStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
-
-  // Switch between mock and real hooks for testing
-  const mockHook = useMockWidgetManagement({
-    autoSave: true,
-    autoSaveInterval: 5000, // Faster for testing
-    enableAnalytics: true,
-    simulateNetworkDelay: true,
-    simulateErrors: false
+    backgroundColor: '#ffffff',
+    textColor: '#1f2937',
+    borderRadius: 8,
+    welcomeMessage: 'Book your table with us!',
+    buttonText: 'Reserve Now',
+    showLogo: true,
+    compactMode: false,
+    theme: 'light' as 'light' | 'dark'
   });
 
-  // Try real hook (will fail until database is ready)
-  const realHook = useWidgetManagement({
-    autoSave: true,
-    autoSaveInterval: 30000,
-    enableAnalytics: true
+  const [cateringConfig, setCateringConfig] = useState({
+    primaryColor: '#f97316',
+    backgroundColor: '#ffffff', 
+    textColor: '#1f2937',
+    borderRadius: 8,
+    welcomeMessage: 'Order catering for your event!',
+    buttonText: 'Order Catering',
+    showLogo: true,
+    compactMode: false,
+    theme: 'light' as 'light' | 'dark'
   });
 
-  // Check database availability on mount
-  useEffect(() => {
-    const checkDatabase = async () => {
-      try {
-        setDatabaseStatus('checking');
-        // Try to fetch widgets to test database availability
-        const result = await realHook.refetchWidgets();
-        setDatabaseStatus('available');
-        if (useMockMode) {
-          toast({
-            title: "Database Available!",
-            description: "Widget tables detected. You can now switch to Real Mode.",
-            variant: "default"
-          });
-        }
-      } catch (error) {
-        setDatabaseStatus('unavailable');
-        console.log('Database not ready yet:', error);
-      }
-    };
-
-    if (tenant?.id) {
-      checkDatabase();
-    }
-  }, [tenant?.id, toast, useMockMode]);
-
-  const currentHook = (useMockMode || databaseStatus !== 'available') ? mockHook : realHook;
-
+  // Real widget management hook
   const {
     widgets,
     loading,
     error,
     connected,
-    analyticsConnected,
-    analytics,
     isSaving,
     lastSaved,
     hasUnsavedChanges,
     getWidgetByType,
     saveWidgetConfig,
-    markConfigChanged,
     toggleWidgetActive,
-    getAnalyticsSummary,
     isOnline
-  } = currentHook;
+  } = useWidgetManagement({
+    autoSave: false, // Disabled auto-save to prevent API spam
+    enableAnalytics: true
+  });
+
+  // Load existing configurations
+  useEffect(() => {
+    const bookingWidget = getWidgetByType('booking');
+    const cateringWidget = getWidgetByType('catering');
+
+    if (bookingWidget?.config) {
+      setBookingConfig(prev => ({ ...prev, ...bookingWidget.config }));
+    }
+    
+    if (cateringWidget?.config) {
+      setCateringConfig(prev => ({ ...prev, ...cateringWidget.config }));
+    }
+  }, [widgets, getWidgetByType]);
 
   const bookingWidget = getWidgetByType('booking');
   const cateringWidget = getWidgetByType('catering');
 
-  const handleTestSave = async (type: 'booking' | 'catering') => {
-    const result = await saveWidgetConfig(type, testConfig);
+  // Save handlers
+  const handleSaveBooking = async () => {
+    const result = await saveWidgetConfig('booking', bookingConfig);
     
     if (result.success) {
       toast({
-        title: "Test Save Successful",
-        description: `${type} widget configuration saved successfully`,
+        title: "Booking Widget Saved",
+        description: "Your booking widget configuration has been updated successfully.",
         variant: "default"
       });
     } else {
       toast({
-        title: "Test Save Failed",
-        description: result.error || 'Unknown error',
+        title: "Save Failed",
+        description: result.error || 'Failed to save booking widget configuration',
         variant: "destructive"
       });
     }
   };
 
-  const handleMarkChanged = (type: 'booking' | 'catering') => {
-    markConfigChanged(type, testConfig);
+  const handleSaveCatering = async () => {
+    const result = await saveWidgetConfig('catering', cateringConfig);
+    
+    if (result.success) {
+      toast({
+        title: "Catering Widget Saved",
+        description: "Your catering widget configuration has been updated successfully.",
+        variant: "default"
+      });
+    } else {
+      toast({
+        title: "Save Failed", 
+        description: result.error || 'Failed to save catering widget configuration',
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Generate embed codes
+  const generateEmbedCode = (type: 'booking' | 'catering') => {
+    const baseUrl = window.location.origin;
+    return `<iframe src="${baseUrl}/widget/${type}/${tenant?.id}" width="400" height="600" frameborder="0"></iframe>`;
+  };
+
+  const copyEmbedCode = (type: 'booking' | 'catering') => {
+    const code = generateEmbedCode(type);
+    navigator.clipboard.writeText(code);
     toast({
-      title: "Configuration Marked as Changed",
-      description: `${type} widget marked as having unsaved changes`,
+      title: "Embed Code Copied",
+      description: `${type} widget embed code copied to clipboard`,
       variant: "default"
     });
   };
 
-  const handleToggleActive = async (type: 'booking' | 'catering') => {
-    const result = await toggleWidgetActive(type);
-    
-    if (result.success) {
-      toast({
-        title: "Widget Status Updated",
-        description: `${type} widget active status toggled`,
-        variant: "default"
-      });
-    }
-  };
+  if (loading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Clock className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p>Loading widget configurations...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Widget Management Testing</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Widget Management</h1>
           <p className="text-muted-foreground">
-            Testing hook-based architecture before database implementation
+            Configure and manage your booking and catering widgets
           </p>
         </div>
         
         <div className="flex items-center gap-4">
-          {/* Database Status */}
-          <Badge variant={databaseStatus === 'available' ? "default" : databaseStatus === 'checking' ? "secondary" : "outline"}>
-            {databaseStatus === 'checking' && <Clock className="w-3 h-3 mr-1 animate-spin" />}
-            {databaseStatus === 'available' && <CheckCircle className="w-3 h-3 mr-1" />}
-            {databaseStatus === 'unavailable' && <AlertCircle className="w-3 h-3 mr-1" />}
-            Database: {databaseStatus === 'checking' ? 'Checking...' : databaseStatus === 'available' ? 'Ready' : 'Not Ready'}
-          </Badge>
-          
-          {/* Mode Switcher */}
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="mock-mode">Mock Mode</Label>
-            <Switch
-              id="mock-mode"
-              checked={useMockMode}
-              onCheckedChange={setUseMockMode}
-              disabled={databaseStatus !== 'available'}
-            />
-          </div>
-          
           {/* Connection Status */}
-          <Badge variant={isOnline ? "default" : "destructive"}>
-            {isOnline ? (
+          <Badge variant={connected && isOnline ? "default" : "destructive"}>
+            {connected && isOnline ? (
               <Wifi className="w-3 h-3 mr-1" />
             ) : (
               <WifiOff className="w-3 h-3 mr-1" />
             )}
-            {isOnline ? "Connected" : "Disconnected"}
+            {connected && isOnline ? "Connected" : "Disconnected"}
           </Badge>
+          
+          {/* Save Status */}
+          {hasUnsavedChanges && (
+            <Badge variant="secondary">
+              <AlertCircle className="w-3 h-3 mr-1" />
+              Unsaved Changes
+            </Badge>
+          )}
+          
+          {lastSaved && (
+            <Badge variant="outline">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Saved {lastSaved.toLocaleTimeString()}
+            </Badge>
+          )}
         </div>
       </div>
 
-      {/* Status Alerts */}
+      {/* Error Alert */}
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>Connection Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      {useMockMode && (
-        <Alert>
-          <TestTube className="h-4 w-4" />
-          <AlertTitle>Mock Mode Active</AlertTitle>
-          <AlertDescription>
-            Testing with simulated data. 
-            {databaseStatus === 'available' 
-              ? ' Switch to Real Mode to test with your database.' 
-              : ' Database not ready - run the migration first.'}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!useMockMode && databaseStatus === 'available' && (
-        <Alert>
-          <CheckCircle className="h-4 w-4" />
-          <AlertTitle>Real Mode Active</AlertTitle>
-          <AlertDescription>
-            Connected to your database with real-time WebSocket subscriptions.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Hook Status Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="w-5 h-5" />
-            Hook Status & Metrics
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Connection Status</Label>
-            <div className="flex items-center gap-2">
-              {connected ? (
-                <CheckCircle className="w-4 h-4 text-green-500" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-red-500" />
-              )}
-              <span className="text-sm">{connected ? "Connected" : "Disconnected"}</span>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Analytics Status</Label>
-            <div className="flex items-center gap-2">
-              {analyticsConnected ? (
-                <CheckCircle className="w-4 h-4 text-green-500" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-red-500" />
-              )}
-              <span className="text-sm">{analyticsConnected ? "Active" : "Inactive"}</span>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Widgets Loaded</Label>
-            <div className="text-lg font-semibold">{widgets.length}</div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label className="text-sm text-muted-foreground">Analytics Events</Label>
-            <div className="text-lg font-semibold">{analytics.length}</div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Tabs defaultValue="widgets" className="space-y-4">
+      <Tabs defaultValue="booking" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="widgets">Widget Testing</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics Testing</TabsTrigger>
-          <TabsTrigger value="autosave">Auto-save Testing</TabsTrigger>
+          <TabsTrigger value="booking">Booking Widget</TabsTrigger>
+          <TabsTrigger value="catering">Catering Widget</TabsTrigger>
+          <TabsTrigger value="embed">Embed Codes</TabsTrigger>
         </TabsList>
 
-        {/* Widget Testing Tab */}
-        <TabsContent value="widgets" className="space-y-4">
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Booking Widget Test */}
+        {/* Booking Widget Tab */}
+        <TabsContent value="booking" className="space-y-4">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Configuration Panel */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-blue-500" />
-                  Booking Widget Test
+                  Booking Widget Configuration
                 </CardTitle>
                 <CardDescription>
-                  Test booking widget configuration and state management
+                  Customize the appearance and behavior of your booking widget
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {bookingWidget ? (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Status:</span>
-                      <Badge variant={bookingWidget.is_active ? "default" : "secondary"}>
-                        {bookingWidget.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="booking-color">Primary Color</Label>
-                      <Input
-                        id="booking-color"
-                        type="color"
-                        value={testConfig.primaryColor}
-                        onChange={(e) => setTestConfig(prev => ({ ...prev, primaryColor: e.target.value }))}
-                        className="w-20 h-10"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="booking-message">Welcome Message</Label>
-                      <Input
-                        id="booking-message"
-                        value={testConfig.welcomeMessage}
-                        onChange={(e) => setTestConfig(prev => ({ ...prev, welcomeMessage: e.target.value }))}
-                        placeholder="Enter welcome message"
-                      />
-                    </div>
-                    
-                    <Separator />
-                    
+              <CardContent className="space-y-6">
+                {/* Theme Selection */}
+                <div className="space-y-2">
+                  <Label>Theme</Label>
+                  <Select
+                    value={bookingConfig.theme}
+                    onValueChange={(value: 'light' | 'dark') => 
+                      setBookingConfig(prev => ({ ...prev, theme: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Colors */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="booking-primary">Primary Color</Label>
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleMarkChanged('booking')}
-                      >
-                        Mark Changed
-                      </Button>
-                      <Button 
-                        size="sm"
-                        onClick={() => handleTestSave('booking')}
-                        disabled={isSaving}
-                      >
-                        {isSaving ? <Save className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                        Test Save
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="secondary"
-                        onClick={() => handleToggleActive('booking')}
-                      >
-                        Toggle Active
-                      </Button>
+                      <Input
+                        id="booking-primary"
+                        type="color"
+                        value={bookingConfig.primaryColor}
+                        onChange={(e) => setBookingConfig(prev => ({ 
+                          ...prev, 
+                          primaryColor: e.target.value 
+                        }))}
+                        className="w-16 h-10"
+                      />
+                      <Input
+                        value={bookingConfig.primaryColor}
+                        onChange={(e) => setBookingConfig(prev => ({ 
+                          ...prev, 
+                          primaryColor: e.target.value 
+                        }))}
+                        placeholder="#3b82f6"
+                      />
                     </div>
-                  </>
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground">
-                    No booking widget found
                   </div>
-                )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="booking-bg">Background Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="booking-bg"
+                        type="color"
+                        value={bookingConfig.backgroundColor}
+                        onChange={(e) => setBookingConfig(prev => ({ 
+                          ...prev, 
+                          backgroundColor: e.target.value 
+                        }))}
+                        className="w-16 h-10"
+                      />
+                      <Input
+                        value={bookingConfig.backgroundColor}
+                        onChange={(e) => setBookingConfig(prev => ({ 
+                          ...prev, 
+                          backgroundColor: e.target.value 
+                        }))}
+                        placeholder="#ffffff"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Text Content */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="booking-welcome">Welcome Message</Label>
+                    <Textarea
+                      id="booking-welcome"
+                      value={bookingConfig.welcomeMessage}
+                      onChange={(e) => setBookingConfig(prev => ({ 
+                        ...prev, 
+                        welcomeMessage: e.target.value 
+                      }))}
+                      placeholder="Book your table with us!"
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="booking-button">Button Text</Label>
+                    <Input
+                      id="booking-button"
+                      value={bookingConfig.buttonText}
+                      onChange={(e) => setBookingConfig(prev => ({ 
+                        ...prev, 
+                        buttonText: e.target.value 
+                      }))}
+                      placeholder="Reserve Now"
+                    />
+                  </div>
+                </div>
+
+                {/* Options */}
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="booking-logo"
+                      checked={bookingConfig.showLogo}
+                      onCheckedChange={(checked) => setBookingConfig(prev => ({ 
+                        ...prev, 
+                        showLogo: checked 
+                      }))}
+                    />
+                    <Label htmlFor="booking-logo">Show Restaurant Logo</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="booking-compact"
+                      checked={bookingConfig.compactMode}
+                      onCheckedChange={(checked) => setBookingConfig(prev => ({ 
+                        ...prev, 
+                        compactMode: checked 
+                      }))}
+                    />
+                    <Label htmlFor="booking-compact">Compact Mode</Label>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Widget Status & Actions */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Widget Status</Label>
+                    <Badge variant={bookingWidget?.is_active ? "default" : "secondary"}>
+                      {bookingWidget?.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSaveBooking}
+                      disabled={isSaving}
+                      className="flex-1"
+                    >
+                      {isSaving ? (
+                        <Save className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <Save className="w-4 h-4 mr-2" />
+                      )}
+                      Save Configuration
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => toggleWidgetActive('booking')}
+                      disabled={isSaving}
+                    >
+                      {bookingWidget?.is_active ? 'Deactivate' : 'Activate'}
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Catering Widget Test */}
+            {/* Preview Panel */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="w-5 h-5" />
+                  Live Preview
+                </CardTitle>
+                <CardDescription>
+                  See how your booking widget will appear to customers
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="border rounded-lg p-4" style={{
+                  backgroundColor: bookingConfig.backgroundColor,
+                  color: bookingConfig.textColor
+                }}>
+                  <div className="space-y-4">
+                    {bookingConfig.showLogo && (
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto flex items-center justify-center">
+                          Logo
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="text-center">
+                      <h3 className="text-lg font-semibold mb-2">
+                        {bookingConfig.welcomeMessage}
+                      </h3>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input placeholder="Date" />
+                        <Input placeholder="Time" />
+                      </div>
+                      <Input placeholder="Party Size" />
+                      <Input placeholder="Name" />
+                      <Input placeholder="Phone" />
+                    </div>
+                    
+                    <Button
+                      style={{ backgroundColor: bookingConfig.primaryColor }}
+                      className="w-full"
+                    >
+                      {bookingConfig.buttonText}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Catering Widget Tab */}
+        <TabsContent value="catering" className="space-y-4">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Configuration Panel */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ChefHat className="w-5 h-5 text-orange-500" />
-                  Catering Widget Test
+                  Catering Widget Configuration
                 </CardTitle>
                 <CardDescription>
-                  Test catering widget configuration and state management
+                  Customize the appearance and behavior of your catering widget
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {cateringWidget ? (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Status:</span>
-                      <Badge variant={cateringWidget.is_active ? "default" : "secondary"}>
-                        {cateringWidget.is_active ? "Active" : "Inactive"}
-                      </Badge>
+              <CardContent className="space-y-6">
+                {/* Similar configuration options as booking widget */}
+                <div className="space-y-2">
+                  <Label>Theme</Label>
+                  <Select
+                    value={cateringConfig.theme}
+                    onValueChange={(value: 'light' | 'dark') => 
+                      setCateringConfig(prev => ({ ...prev, theme: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="catering-primary">Primary Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="catering-primary"
+                        type="color"
+                        value={cateringConfig.primaryColor}
+                        onChange={(e) => setCateringConfig(prev => ({ 
+                          ...prev, 
+                          primaryColor: e.target.value 
+                        }))}
+                        className="w-16 h-10"
+                      />
+                      <Input
+                        value={cateringConfig.primaryColor}
+                        onChange={(e) => setCateringConfig(prev => ({ 
+                          ...prev, 
+                          primaryColor: e.target.value 
+                        }))}
+                        placeholder="#f97316"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="catering-bg">Background Color</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="catering-bg"
+                        type="color"
+                        value={cateringConfig.backgroundColor}
+                        onChange={(e) => setCateringConfig(prev => ({ 
+                          ...prev, 
+                          backgroundColor: e.target.value 
+                        }))}
+                        className="w-16 h-10"
+                      />
+                      <Input
+                        value={cateringConfig.backgroundColor}
+                        onChange={(e) => setCateringConfig(prev => ({ 
+                          ...prev, 
+                          backgroundColor: e.target.value 
+                        }))}
+                        placeholder="#ffffff"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="catering-welcome">Welcome Message</Label>
+                    <Textarea
+                      id="catering-welcome"
+                      value={cateringConfig.welcomeMessage}
+                      onChange={(e) => setCateringConfig(prev => ({ 
+                        ...prev, 
+                        welcomeMessage: e.target.value 
+                      }))}
+                      placeholder="Order catering for your event!"
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="catering-button">Button Text</Label>
+                    <Input
+                      id="catering-button"
+                      value={cateringConfig.buttonText}
+                      onChange={(e) => setCateringConfig(prev => ({ 
+                        ...prev, 
+                        buttonText: e.target.value 
+                      }))}
+                      placeholder="Order Catering"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="catering-logo"
+                      checked={cateringConfig.showLogo}
+                      onCheckedChange={(checked) => setCateringConfig(prev => ({ 
+                        ...prev, 
+                        showLogo: checked 
+                      }))}
+                    />
+                    <Label htmlFor="catering-logo">Show Restaurant Logo</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="catering-compact"
+                      checked={cateringConfig.compactMode}
+                      onCheckedChange={(checked) => setCateringConfig(prev => ({ 
+                        ...prev, 
+                        compactMode: checked 
+                      }))}
+                    />
+                    <Label htmlFor="catering-compact">Compact Mode</Label>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Widget Status</Label>
+                    <Badge variant={cateringWidget?.is_active ? "default" : "secondary"}>
+                      {cateringWidget?.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSaveCatering}
+                      disabled={isSaving}
+                      className="flex-1"
+                    >
+                      {isSaving ? (
+                        <Save className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <Save className="w-4 h-4 mr-2" />
+                      )}
+                      Save Configuration
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      onClick={() => toggleWidgetActive('catering')}
+                      disabled={isSaving}
+                    >
+                      {cateringWidget?.is_active ? 'Deactivate' : 'Activate'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Preview Panel */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="w-5 h-5" />
+                  Live Preview
+                </CardTitle>
+                <CardDescription>
+                  See how your catering widget will appear to customers
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="border rounded-lg p-4" style={{
+                  backgroundColor: cateringConfig.backgroundColor,
+                  color: cateringConfig.textColor
+                }}>
+                  <div className="space-y-4">
+                    {cateringConfig.showLogo && (
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto flex items-center justify-center">
+                          Logo
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="text-center">
+                      <h3 className="text-lg font-semibold mb-2">
+                        {cateringConfig.welcomeMessage}
+                      </h3>
                     </div>
                     
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleMarkChanged('catering')}
-                      >
-                        Mark Changed
-                      </Button>
-                      <Button 
-                        size="sm"
-                        onClick={() => handleTestSave('catering')}
-                        disabled={isSaving}
-                      >
-                        {isSaving ? <Save className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                        Test Save
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="secondary"
-                        onClick={() => handleToggleActive('catering')}
-                      >
-                        Toggle Active
-                      </Button>
+                    <div className="space-y-3">
+                      <Input placeholder="Event Date" />
+                      <Input placeholder="Number of Guests" />
+                      <Input placeholder="Event Type" />
+                      <Input placeholder="Contact Name" />
+                      <Input placeholder="Phone Number" />
                     </div>
-                  </>
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground">
-                    No catering widget found
+                    
+                    <Button
+                      style={{ backgroundColor: cateringConfig.primaryColor }}
+                      className="w-full"
+                    >
+                      {cateringConfig.buttonText}
+                    </Button>
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        {/* Analytics Testing Tab */}
-        <TabsContent value="analytics" className="space-y-4">
+        {/* Embed Codes Tab */}
+        <TabsContent value="embed" className="space-y-4">
           <div className="grid gap-6 md:grid-cols-2">
-            {widgets.map(widget => {
-              const analyticsSummary = getAnalyticsSummary(widget.id);
-              return (
-                <Card key={widget.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5" />
-                      {widget.widget_type} Analytics
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {analyticsSummary ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold">{analyticsSummary.totalViews}</div>
-                          <div className="text-sm text-muted-foreground">Views</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold">{analyticsSummary.totalInteractions}</div>
-                          <div className="text-sm text-muted-foreground">Interactions</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold">{analyticsSummary.totalConversions}</div>
-                          <div className="text-sm text-muted-foreground">Conversions</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold">{analyticsSummary.conversionRate.toFixed(1)}%</div>
-                          <div className="text-sm text-muted-foreground">Conversion Rate</div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4 text-muted-foreground">
-                        No analytics data available
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </TabsContent>
+            {/* Booking Widget Embed */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-blue-500" />
+                  Booking Widget Embed
+                </CardTitle>
+                <CardDescription>
+                  Copy this code to embed the booking widget on your website
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Embed Code</Label>
+                  <div className="relative">
+                    <Textarea
+                      value={generateEmbedCode('booking')}
+                      readOnly
+                      rows={4}
+                      className="font-mono text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute top-2 right-2"
+                      onClick={() => copyEmbedCode('booking')}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Badge variant={bookingWidget?.is_active ? "default" : "secondary"}>
+                    {bookingWidget?.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                  {bookingWidget?.is_active && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(`/widget/booking/${tenant?.id}`, '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Test Widget
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Auto-save Testing Tab */}
-        <TabsContent value="autosave" className="space-y-4">
+            {/* Catering Widget Embed */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ChefHat className="w-5 h-5 text-orange-500" />
+                  Catering Widget Embed
+                </CardTitle>
+                <CardDescription>
+                  Copy this code to embed the catering widget on your website
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Embed Code</Label>
+                  <div className="relative">
+                    <Textarea
+                      value={generateEmbedCode('catering')}
+                      readOnly
+                      rows={4}
+                      className="font-mono text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute top-2 right-2"
+                      onClick={() => copyEmbedCode('catering')}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Badge variant={cateringWidget?.is_active ? "default" : "secondary"}>
+                    {cateringWidget?.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                  {cateringWidget?.is_active && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(`/widget/catering/${tenant?.id}`, '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Test Widget
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Integration Instructions */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                Auto-save Status
+                <Globe className="w-5 h-5" />
+                Integration Instructions
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-lg font-semibold">
-                    {hasUnsavedChanges ? "Yes" : "No"}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Unsaved Changes</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-lg font-semibold">
-                    {isSaving ? "Saving..." : "Idle"}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Save Status</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="text-lg font-semibold">
-                    {lastSaved ? lastSaved.toLocaleTimeString() : "Never"}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Last Saved</div>
-                </div>
-              </div>
-              
-              <Separator />
+              <Alert>
+                <Monitor className="h-4 w-4" />
+                <AlertTitle>Website Integration</AlertTitle>
+                <AlertDescription>
+                  Copy the embed code above and paste it into your website's HTML where you want the widget to appear.
+                  The widget is responsive and will adapt to mobile devices automatically.
+                </AlertDescription>
+              </Alert>
               
               <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertTitle>Auto-save Testing</AlertTitle>
+                <Smartphone className="h-4 w-4" />
+                <AlertTitle>Mobile Optimization</AlertTitle>
                 <AlertDescription>
-                  Make changes using the "Mark Changed" buttons above to test auto-save functionality.
-                  Changes should auto-save after 5 seconds in mock mode.
+                  The widgets are optimized for mobile devices and will automatically adjust their layout.
+                  Enable "Compact Mode" for better mobile experience in tight spaces.
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -506,4 +822,4 @@ const WidgetManagementTest: React.FC = () => {
   );
 };
 
-export default WidgetManagementTest;
+export default WidgetManagement;
