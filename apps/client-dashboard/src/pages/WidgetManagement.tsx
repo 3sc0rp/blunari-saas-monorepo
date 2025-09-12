@@ -2,7 +2,7 @@
  * Widget Management Page - Production Widget Configuration
  * Manage booking and catering widgets for the restaurant
  */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useWidgetManagement } from '@/hooks/useWidgetManagement';
 import { useTenant } from '@/hooks/useTenant';
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +43,10 @@ const WidgetManagement: React.FC = () => {
   const { tenant } = useTenant();
   const { toast } = useToast();
   
+  // Loading and error states
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
+  
   // Widget configuration states
   const [bookingConfig, setBookingConfig] = useState({
     primaryColor: '#3b82f6',
@@ -68,7 +72,29 @@ const WidgetManagement: React.FC = () => {
     theme: 'light' as 'light' | 'dark'
   });
 
-  // Real widget management hook
+  // Validation functions
+  const validateConfig = useCallback((config: any) => {
+    if (!config.welcomeMessage?.trim()) {
+      return 'Welcome message is required';
+    }
+    if (!config.buttonText?.trim()) {
+      return 'Button text is required';
+    }
+    if (!/^#[0-9A-F]{6}$/i.test(config.primaryColor)) {
+      return 'Primary color must be a valid hex color';
+    }
+    if (!/^#[0-9A-F]{6}$/i.test(config.backgroundColor)) {
+      return 'Background color must be a valid hex color';
+    }
+    return null;
+  }, []);
+
+  // Real widget management hook with error handling
+  const hookOptions = useMemo(() => ({
+    autoSave: false, // Disabled auto-save to prevent API spam
+    enableAnalytics: true
+  }), []);
+
   const {
     widgets,
     loading,
@@ -81,90 +107,249 @@ const WidgetManagement: React.FC = () => {
     saveWidgetConfig,
     toggleWidgetActive,
     isOnline
-  } = useWidgetManagement({
-    autoSave: false, // Disabled auto-save to prevent API spam
-    enableAnalytics: true
-  });
+  } = useWidgetManagement(hookOptions);
 
-  // Load existing configurations
+  // Load existing configurations with error handling
   useEffect(() => {
-    const bookingWidget = getWidgetByType('booking');
-    const cateringWidget = getWidgetByType('catering');
+    const initializeConfigurations = async () => {
+      try {
+        setIsInitializing(true);
+        setInitError(null);
 
-    if (bookingWidget?.config) {
-      setBookingConfig(prev => ({ ...prev, ...bookingWidget.config }));
+        if (!tenant?.id) {
+          setInitError('No tenant selected. Please select a tenant to manage widgets.');
+          return;
+        }
+
+        // Wait for widgets to load
+        if (loading) return;
+
+        const bookingWidget = getWidgetByType('booking');
+        const cateringWidget = getWidgetByType('catering');
+
+        if (bookingWidget?.config) {
+          setBookingConfig(prev => ({ 
+            ...prev, 
+            ...bookingWidget.config,
+            // Ensure required fields have defaults
+            welcomeMessage: bookingWidget.config.welcomeMessage || prev.welcomeMessage,
+            buttonText: bookingWidget.config.buttonText || prev.buttonText,
+            primaryColor: bookingWidget.config.primaryColor || prev.primaryColor,
+            backgroundColor: bookingWidget.config.backgroundColor || prev.backgroundColor
+          }));
+        }
+        
+        if (cateringWidget?.config) {
+          setCateringConfig(prev => ({ 
+            ...prev, 
+            ...cateringWidget.config,
+            // Ensure required fields have defaults
+            welcomeMessage: cateringWidget.config.welcomeMessage || prev.welcomeMessage,
+            buttonText: cateringWidget.config.buttonText || prev.buttonText,
+            primaryColor: cateringWidget.config.primaryColor || prev.primaryColor,
+            backgroundColor: cateringWidget.config.backgroundColor || prev.backgroundColor
+          }));
+        }
+
+      } catch (err) {
+        console.error('Failed to initialize widget configurations:', err);
+        setInitError('Failed to load widget configurations. Please refresh the page.');
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initializeConfigurations();
+  }, [widgets, getWidgetByType, loading, tenant?.id]);
+
+  // Handle connection errors
+  useEffect(() => {
+    if (error && !initError) {
+      setInitError(`Connection error: ${error}`);
     }
-    
-    if (cateringWidget?.config) {
-      setCateringConfig(prev => ({ ...prev, ...cateringWidget.config }));
-    }
-  }, [widgets, getWidgetByType]);
+  }, [error, initError]);
 
   const bookingWidget = getWidgetByType('booking');
   const cateringWidget = getWidgetByType('catering');
 
-  // Save handlers
-  const handleSaveBooking = async () => {
-    const result = await saveWidgetConfig('booking', bookingConfig);
-    
-    if (result.success) {
-      toast({
-        title: "Booking Widget Saved",
-        description: "Your booking widget configuration has been updated successfully.",
-        variant: "default"
-      });
-    } else {
+  // Save handlers with validation
+  const handleSaveBooking = useCallback(async () => {
+    try {
+      // Validate configuration
+      const validationError = validateConfig(bookingConfig);
+      if (validationError) {
+        toast({
+          title: "Validation Error",
+          description: validationError,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const result = await saveWidgetConfig('booking', bookingConfig);
+      
+      if (result.success) {
+        toast({
+          title: "Booking Widget Saved",
+          description: "Your booking widget configuration has been updated successfully.",
+          variant: "default"
+        });
+      } else {
+        throw new Error(result.error || 'Failed to save booking widget configuration');
+      }
+    } catch (err) {
+      console.error('Error saving booking widget:', err);
       toast({
         title: "Save Failed",
-        description: result.error || 'Failed to save booking widget configuration',
+        description: err instanceof Error ? err.message : 'Failed to save booking widget configuration',
         variant: "destructive"
       });
     }
-  };
+  }, [bookingConfig, saveWidgetConfig, validateConfig, toast]);
 
-  const handleSaveCatering = async () => {
-    const result = await saveWidgetConfig('catering', cateringConfig);
-    
-    if (result.success) {
+  const handleSaveCatering = useCallback(async () => {
+    try {
+      // Validate configuration
+      const validationError = validateConfig(cateringConfig);
+      if (validationError) {
+        toast({
+          title: "Validation Error",
+          description: validationError,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const result = await saveWidgetConfig('catering', cateringConfig);
+      
+      if (result.success) {
+        toast({
+          title: "Catering Widget Saved",
+          description: "Your catering widget configuration has been updated successfully.",
+          variant: "default"
+        });
+      } else {
+        throw new Error(result.error || 'Failed to save catering widget configuration');
+      }
+    } catch (err) {
+      console.error('Error saving catering widget:', err);
       toast({
-        title: "Catering Widget Saved",
-        description: "Your catering widget configuration has been updated successfully.",
+        title: "Save Failed",
+        description: err instanceof Error ? err.message : 'Failed to save catering widget configuration',
+        variant: "destructive"
+      });
+    }
+  }, [cateringConfig, saveWidgetConfig, validateConfig, toast]);
+
+  // Toggle widget active status with error handling
+  const handleToggleWidget = useCallback(async (type: 'booking' | 'catering') => {
+    try {
+      const result = await toggleWidgetActive(type);
+      
+      if (result.success) {
+        toast({
+          title: "Widget Status Updated",
+          description: `${type} widget has been ${result.isActive ? 'activated' : 'deactivated'}.`,
+          variant: "default"
+        });
+      } else {
+        throw new Error(result.error || `Failed to toggle ${type} widget status`);
+      }
+    } catch (err) {
+      console.error(`Error toggling ${type} widget:`, err);
+      toast({
+        title: "Toggle Failed",
+        description: err instanceof Error ? err.message : `Failed to toggle ${type} widget status`,
+        variant: "destructive"
+      });
+    }
+  }, [toggleWidgetActive, toast]);
+
+  // Generate embed codes with better error handling
+  const generateEmbedCode = useCallback((type: 'booking' | 'catering') => {
+    if (!tenant?.id) {
+      return '<!-- Please select a tenant to generate embed code -->';
+    }
+    
+    const baseUrl = window.location.origin;
+    return `<iframe 
+  src="${baseUrl}/widget/${type}/${tenant.id}" 
+  width="400" 
+  height="600" 
+  frameborder="0"
+  title="${type.charAt(0).toUpperCase() + type.slice(1)} Widget"
+  style="border: none; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"
+  allowtransparency="true">
+</iframe>`;
+  }, [tenant?.id]);
+
+  const copyEmbedCode = useCallback(async (type: 'booking' | 'catering') => {
+    try {
+      const code = generateEmbedCode(type);
+      
+      if (code.includes('Please select a tenant')) {
+        toast({
+          title: "Cannot Copy Embed Code",
+          description: "Please select a tenant first.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(code);
+      toast({
+        title: "Embed Code Copied",
+        description: `${type.charAt(0).toUpperCase() + type.slice(1)} widget embed code copied to clipboard`,
         variant: "default"
       });
-    } else {
+    } catch (err) {
+      console.error('Failed to copy embed code:', err);
       toast({
-        title: "Save Failed", 
-        description: result.error || 'Failed to save catering widget configuration',
+        title: "Copy Failed",
+        description: "Failed to copy embed code to clipboard",
         variant: "destructive"
       });
     }
-  };
+  }, [generateEmbedCode, toast]);
 
-  // Generate embed codes
-  const generateEmbedCode = (type: 'booking' | 'catering') => {
-    const baseUrl = window.location.origin;
-    return `<iframe src="${baseUrl}/widget/${type}/${tenant?.id}" width="400" height="600" frameborder="0"></iframe>`;
-  };
-
-  const copyEmbedCode = (type: 'booking' | 'catering') => {
-    const code = generateEmbedCode(type);
-    navigator.clipboard.writeText(code);
-    toast({
-      title: "Embed Code Copied",
-      description: `${type} widget embed code copied to clipboard`,
-      variant: "default"
-    });
-  };
-
-  if (loading) {
+  // Show loading state during initialization
+  if (isInitializing || loading) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <Clock className="w-8 h-8 animate-spin mx-auto mb-4" />
-            <p>Loading widget configurations...</p>
+          <div className="text-center space-y-4">
+            <Clock className="w-8 h-8 animate-spin mx-auto text-blue-500" />
+            <div className="space-y-2">
+              <p className="text-lg font-medium">Loading Widget Management</p>
+              <p className="text-sm text-muted-foreground">
+                {isInitializing ? 'Initializing configurations...' : 'Loading widget data...'}
+              </p>
+            </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Show initialization error
+  if (initError) {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Initialization Error</AlertTitle>
+          <AlertDescription className="mt-2">
+            {initError}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => window.location.reload()}
+            >
+              Refresh Page
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -218,10 +403,22 @@ const WidgetManagement: React.FC = () => {
       )}
 
       <Tabs defaultValue="booking" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="booking">Booking Widget</TabsTrigger>
-          <TabsTrigger value="catering">Catering Widget</TabsTrigger>
-          <TabsTrigger value="embed">Embed Codes</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="booking" className="text-xs sm:text-sm">
+            <Calendar className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Booking Widget</span>
+            <span className="sm:hidden">Booking</span>
+          </TabsTrigger>
+          <TabsTrigger value="catering" className="text-xs sm:text-sm">
+            <ChefHat className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Catering Widget</span>
+            <span className="sm:hidden">Catering</span>
+          </TabsTrigger>
+          <TabsTrigger value="embed" className="text-xs sm:text-sm">
+            <Globe className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Embed Codes</span>
+            <span className="sm:hidden">Embed</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Booking Widget Tab */}
@@ -241,15 +438,15 @@ const WidgetManagement: React.FC = () => {
               <CardContent className="space-y-6">
                 {/* Theme Selection */}
                 <div className="space-y-2">
-                  <Label>Theme</Label>
+                  <Label htmlFor="booking-theme">Theme</Label>
                   <Select
                     value={bookingConfig.theme}
                     onValueChange={(value: 'light' | 'dark') => 
                       setBookingConfig(prev => ({ ...prev, theme: value }))
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger id="booking-theme" aria-label="Select booking widget theme">
+                      <SelectValue placeholder="Select theme" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="light">Light</SelectItem>
@@ -393,7 +590,7 @@ const WidgetManagement: React.FC = () => {
                     
                     <Button
                       variant="outline"
-                      onClick={() => toggleWidgetActive('booking')}
+                      onClick={() => handleToggleWidget('booking')}
                       disabled={isSaving}
                     >
                       {bookingWidget?.is_active ? 'Deactivate' : 'Activate'}
@@ -474,15 +671,15 @@ const WidgetManagement: React.FC = () => {
               <CardContent className="space-y-6">
                 {/* Similar configuration options as booking widget */}
                 <div className="space-y-2">
-                  <Label>Theme</Label>
+                  <Label htmlFor="catering-theme">Theme</Label>
                   <Select
                     value={cateringConfig.theme}
                     onValueChange={(value: 'light' | 'dark') => 
                       setCateringConfig(prev => ({ ...prev, theme: value }))
                     }
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger id="catering-theme" aria-label="Select catering widget theme">
+                      <SelectValue placeholder="Select theme" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="light">Light</SelectItem>
@@ -622,7 +819,7 @@ const WidgetManagement: React.FC = () => {
                     
                     <Button
                       variant="outline"
-                      onClick={() => toggleWidgetActive('catering')}
+                      onClick={() => handleToggleWidget('catering')}
                       disabled={isSaving}
                     >
                       {cateringWidget?.is_active ? 'Deactivate' : 'Activate'}
