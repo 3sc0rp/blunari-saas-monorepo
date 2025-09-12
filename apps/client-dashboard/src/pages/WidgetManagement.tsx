@@ -113,16 +113,21 @@ const WidgetManagement: React.FC = () => {
   useEffect(() => {
     const initializeConfigurations = async () => {
       try {
-        setIsInitializing(true);
         setInitError(null);
 
         if (!tenant?.id) {
           setInitError('No tenant selected. Please select a tenant to manage widgets.');
+          setIsInitializing(false);
           return;
         }
 
         // Wait for widgets to load
-        if (loading) return;
+        if (loading) {
+          setIsInitializing(true);
+          return;
+        }
+
+        setIsInitializing(true);
 
         const bookingWidget = getWidgetByType('booking');
         const cateringWidget = getWidgetByType('catering');
@@ -151,10 +156,11 @@ const WidgetManagement: React.FC = () => {
           }));
         }
 
+        setIsInitializing(false);
+
       } catch (err) {
         console.error('Failed to initialize widget configurations:', err);
         setInitError('Failed to load widget configurations. Please refresh the page.');
-      } finally {
         setIsInitializing(false);
       }
     };
