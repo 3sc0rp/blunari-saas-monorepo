@@ -195,14 +195,16 @@ const WidgetManagement: React.FC = () => {
 
       const result = await saveWidgetConfig('booking', bookingConfig);
       
-      if (result.success) {
+      if (result && result.success) {
         toast({
           title: "Booking Widget Saved",
           description: "Your booking widget configuration has been updated successfully.",
           variant: "default"
         });
       } else {
-        throw new Error(result.error || 'Failed to save booking widget configuration');
+        // Handle the case where result is null/undefined or not successful
+        const errorMessage = (result as any)?.error || 'Failed to save booking widget configuration';
+        throw new Error(errorMessage);
       }
     } catch (err) {
       console.error('Error saving booking widget:', err);
@@ -229,14 +231,16 @@ const WidgetManagement: React.FC = () => {
 
       const result = await saveWidgetConfig('catering', cateringConfig);
       
-      if (result.success) {
+      if (result && result.success) {
         toast({
           title: "Catering Widget Saved",
           description: "Your catering widget configuration has been updated successfully.",
           variant: "default"
         });
       } else {
-        throw new Error(result.error || 'Failed to save catering widget configuration');
+        // Handle the case where result is null/undefined or not successful
+        const errorMessage = (result as any)?.error || 'Failed to save catering widget configuration';
+        throw new Error(errorMessage);
       }
     } catch (err) {
       console.error('Error saving catering widget:', err);
@@ -253,7 +257,7 @@ const WidgetManagement: React.FC = () => {
     try {
       const result = await toggleWidgetActive(type);
       
-      if (result.success) {
+      if (result && result.success) {
         // Get the updated widget status from the current state
         const updatedWidget = getWidgetByType(type);
         const isNowActive = result.data?.is_active ?? updatedWidget?.is_active ?? false;
@@ -264,7 +268,8 @@ const WidgetManagement: React.FC = () => {
           variant: "default"
         });
       } else {
-        throw new Error(result.error || `Failed to toggle ${type} widget status`);
+        // Handle the case where result is null/undefined or not successful
+        throw new Error(`Failed to toggle ${type} widget status`);
       }
     } catch (err) {
       console.error(`Error toggling ${type} widget:`, err);

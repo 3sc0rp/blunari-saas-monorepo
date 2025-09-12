@@ -15,7 +15,16 @@ import { ModeTransitionProvider } from "@/contexts/ModeTransitionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { connectionManager } from "@/utils/supabaseConnection";
+import { useMemoryCleanup, usePerformanceMonitoring, useBundleMonitoring } from "@/hooks/usePerformance";
+import LazyLoadingFallback, { 
+  TableLoadingFallback, 
+  AnalyticsLoadingFallback, 
+  DashboardLoadingFallback 
+} from "@/components/LazyLoadingFallback";
+
+// Immediate load components (small, essential)
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -23,27 +32,57 @@ import Bookings from "./pages/Bookings";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
-// Code splitting for heavy pages
-const Analytics = lazy(() => import("./pages/Analytics"));
-const Tables = lazy(() => import("./pages/Tables"));
-const CommandCenter = lazy(() => import("./pages/CommandCenter"));
-const WaitlistManagement = lazy(() => import("./pages/WaitlistManagement"));
-const CustomerProfiles = lazy(() => import("./pages/CustomerProfiles"));
-const Catering = lazy(() => import("./pages/Catering"));
-const Messages = lazy(() => import("./pages/Messages"));
-const KitchenDisplaySystem = lazy(() => import("./pages/KitchenDisplaySystem"));
-const StaffManagement = lazy(() => import("./pages/StaffManagement"));
-const InventoryManagement = lazy(() => import("./pages/InventoryManagement"));
-const AIBusinessInsights = lazy(() => import("./pages/AIBusinessInsights"));
-const WidgetManagement = lazy(() => import("./pages/WidgetManagement"));
-const DashboardHome = lazy(() => import("./pages/DashboardHome"));
+// Lazy load heavy components with prefetch hints
+const Analytics = lazy(() => 
+  import(/* webpackChunkName: "analytics" */ "./pages/Analytics")
+);
+const Tables = lazy(() => 
+  import(/* webpackChunkName: "tables" */ "./pages/Tables")
+);
+const CommandCenter = lazy(() => 
+  import(/* webpackChunkName: "command-center" */ "./pages/CommandCenter")
+);
+const WaitlistManagement = lazy(() => 
+  import(/* webpackChunkName: "waitlist" */ "./pages/WaitlistManagement")
+);
+const CustomerProfiles = lazy(() => 
+  import(/* webpackChunkName: "customers" */ "./pages/CustomerProfiles")
+);
+const Catering = lazy(() => 
+  import(/* webpackChunkName: "catering" */ "./pages/Catering")
+);
+const Messages = lazy(() => 
+  import(/* webpackChunkName: "messages" */ "./pages/Messages")
+);
+const KitchenDisplaySystem = lazy(() => 
+  import(/* webpackChunkName: "kitchen" */ "./pages/KitchenDisplaySystem")
+);
+const StaffManagement = lazy(() => 
+  import(/* webpackChunkName: "staff" */ "./pages/StaffManagement")
+);
+const InventoryManagement = lazy(() => 
+  import(/* webpackChunkName: "inventory" */ "./pages/InventoryManagement")
+);
+const AIBusinessInsights = lazy(() => 
+  import(/* webpackChunkName: "ai-insights" */ "./pages/AIBusinessInsights")
+);
+const WidgetManagement = lazy(() => 
+  import(/* webpackChunkName: "widgets" */ "./pages/WidgetManagement")
+);
+const DashboardHome = lazy(() => 
+  import(/* webpackChunkName: "dashboard-home" */ "./pages/DashboardHome")
+);
 
-// Create QueryClient instance
+// Optimized QueryClient with better defaults for performance
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000, // 1 minute
-      gcTime: 10 * 60 * 1000, // 10 minutes (gcTime replaced cacheTime in newer versions)
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 15 * 60 * 1000, // 15 minutes
+      retry: 2, // Reduced retries for faster failure handling
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+      refetchOnWindowFocus: false, // Reduce unnecessary refetches
+      refetchOnReconnect: true,
     },
   },
 });
@@ -52,6 +91,11 @@ const queryClient = new QueryClient({
 
 function App() {
   console.log('🎯 App component rendering with full providers...');
+  
+  // Performance monitoring and optimization hooks
+  useMemoryCleanup();
+  usePerformanceMonitoring('App');
+  useBundleMonitoring();
   
   // Initialize Supabase connection manager
   useEffect(() => {
@@ -72,46 +116,104 @@ function App() {
                         <TooltipProvider>
                         <div className="min-h-screen bg-gray-50">
                           <ScrollToTop />
-                          <Suspense fallback={<div>Loading...</div>}>
-                            <Routes>
-                              <Route path="/" element={
-                                <>
-                                  <Index />
-                                </>
-                              } />
-                              <Route path="/auth/*" element={
-                                <>
-                                  <Auth />
-                                </>
+                          <Routes>
+                            {/* Non-protected routes with minimal loading */}
+                            <Route path="/" element={<Index />} />
+                            <Route path="/auth/*" element={<Auth />} />
+                            
+                            {/* Protected dashboard routes with optimized Suspense */}
+                            <Route 
+                              path="/dashboard/*" 
+                              element={
+                                <ProtectedRoute>
+                                  <DashboardLayout />
+                                </ProtectedRoute>
+                              } 
+                            >
+                              {/* Immediate load routes */}
+                              <Route index element={<Dashboard />} />
+                              <Route path="bookings" element={<Bookings />} />
+                              <Route path="settings" element={<Settings />} />
+                              
+                              {/* Lazy loaded routes with specific fallbacks */}
+                              <Route path="home" element={
+                                <Suspense fallback={<DashboardLoadingFallback />}>
+                                  <DashboardHome />
+                                </Suspense>
                               } />
                               
-                              {/* Protected dashboard routes */}
-                              <Route 
-                                path="/dashboard/*" 
-                                element={
-                                  <ProtectedRoute>
-                                    <>
-                                      <DashboardLayout />
-                                    </>
-                                  </ProtectedRoute>
-                                } 
-                              >
-                                <Route index element={<Dashboard />} />
-                                <Route path="home" element={<DashboardHome />} />
-                                <Route path="bookings" element={<Bookings />} />
-                                <Route path="waitlist-management" element={<WaitlistManagement />} />
-                                <Route path="tables" element={<Tables />} />
-                                <Route path="customers" element={<CustomerProfiles />} />
-                                <Route path="catering" element={<Catering />} />
-                                <Route path="messages" element={<Messages />} />
-                                <Route path="kitchen-display" element={<KitchenDisplaySystem />} />
-                                <Route path="staff-management" element={<StaffManagement />} />
-                                <Route path="inventory-management" element={<InventoryManagement />} />
-                                <Route path="analytics" element={<Analytics />} />
-                                <Route path="ai-business-insights" element={<AIBusinessInsights />} />
-                                <Route path="widget-management" element={<WidgetManagement />} />
-                                <Route path="settings" element={<Settings />} />
-                                <Route path="command-center" element={<CommandCenter />} />
+                              <Route path="tables" element={
+                                <Suspense fallback={<TableLoadingFallback />}>
+                                  <Tables />
+                                </Suspense>
+                              } />
+                              
+                              <Route path="analytics" element={
+                                <Suspense fallback={<AnalyticsLoadingFallback />}>
+                                  <Analytics />
+                                </Suspense>
+                              } />
+                              
+                              <Route path="ai-business-insights" element={
+                                <Suspense fallback={<AnalyticsLoadingFallback />}>
+                                  <AIBusinessInsights />
+                                </Suspense>
+                              } />
+                              
+                              {/* Standard lazy loaded routes */}
+                              <Route path="waitlist-management" element={
+                                <Suspense fallback={<LazyLoadingFallback component="Waitlist Management" />}>
+                                  <WaitlistManagement />
+                                </Suspense>
+                              } />
+                              
+                              <Route path="customers" element={
+                                <Suspense fallback={<LazyLoadingFallback component="Customer Profiles" />}>
+                                  <CustomerProfiles />
+                                </Suspense>
+                              } />
+                              
+                              <Route path="catering" element={
+                                <Suspense fallback={<LazyLoadingFallback component="Catering Management" />}>
+                                  <Catering />
+                                </Suspense>
+                              } />
+                              
+                              <Route path="messages" element={
+                                <Suspense fallback={<LazyLoadingFallback component="Messages" />}>
+                                  <Messages />
+                                </Suspense>
+                              } />
+                              
+                              <Route path="kitchen-display" element={
+                                <Suspense fallback={<LazyLoadingFallback component="Kitchen Display" />}>
+                                  <KitchenDisplaySystem />
+                                </Suspense>
+                              } />
+                              
+                              <Route path="staff-management" element={
+                                <Suspense fallback={<LazyLoadingFallback component="Staff Management" />}>
+                                  <StaffManagement />
+                                </Suspense>
+                              } />
+                              
+                              <Route path="inventory-management" element={
+                                <Suspense fallback={<LazyLoadingFallback component="Inventory Management" />}>
+                                  <InventoryManagement />
+                                </Suspense>
+                              } />
+                              
+                              <Route path="widget-management" element={
+                                <Suspense fallback={<LazyLoadingFallback component="Widget Management" />}>
+                                  <WidgetManagement />
+                                </Suspense>
+                              } />
+                              
+                              <Route path="command-center" element={
+                                <Suspense fallback={<LazyLoadingFallback component="Command Center" />}>
+                                  <CommandCenter />
+                                </Suspense>
+                              } />
                               </Route>
                               
                               {/* Legacy routes for backwards compatibility */}
@@ -143,11 +245,11 @@ function App() {
                                 </>
                               } />
                             </Routes>
-                          </Suspense>
                           
                           {/* Toast notifications */}
                           <Toaster />
                           <Sonner />
+                          <PerformanceMonitor />
                         </div>
                         </TooltipProvider>
                       </FullscreenProvider>
