@@ -841,84 +841,241 @@ const WidgetManagement: React.FC = () => {
             </div>
           </div>
           
-          <Card>
-            <CardContent className="p-8">
-              <div className="flex justify-center">
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-0">
+              {/* Device Frame Background */}
+              <div className="min-h-[600px] bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-8">
+                {/* Device Frame */}
                 <div 
                   className={`
-                    transition-all duration-300 border rounded-lg bg-gray-50 flex items-center justify-center
-                    ${previewDevice === 'desktop' ? 'w-full max-w-4xl h-96' : ''}
-                    ${previewDevice === 'tablet' ? 'w-80 h-96' : ''}
-                    ${previewDevice === 'mobile' ? 'w-64 h-96' : ''}
+                    transition-all duration-500 ease-in-out relative
+                    ${previewDevice === 'desktop' ? 'max-w-6xl w-full' : ''}
+                    ${previewDevice === 'tablet' ? 'w-96' : ''}
+                    ${previewDevice === 'mobile' ? 'w-80' : ''}
                   `}
                 >
-                  {/* Widget preview */}
+                  {/* Device chrome/frame */}
                   <div 
-                    className="rounded-lg shadow-lg transition-all duration-300"
-                    style={{
-                      width: currentConfig.width,
-                      height: currentConfig.height,
-                      backgroundColor: currentConfig.backgroundColor,
-                      borderRadius: currentConfig.borderRadius,
-                      border: `${currentConfig.borderWidth}px solid ${currentConfig.borderColor}`,
-                      boxShadow: `0 ${currentConfig.shadowIntensity * 2}px ${currentConfig.shadowIntensity * 4}px rgba(0,0,0,0.1)`,
-                      padding: currentConfig.padding,
-                      fontFamily: currentConfig.fontFamily === 'system' ? 'system-ui' : currentConfig.fontFamily,
-                      fontSize: currentConfig.fontSize,
-                      color: currentConfig.textColor,
-                      textAlign: currentConfig.alignment,
-                      transform: previewDevice === 'mobile' ? 'scale(0.8)' : previewDevice === 'tablet' ? 'scale(0.9)' : 'scale(1)',
-                    }}
+                    className={`
+                      relative transition-all duration-500
+                      ${previewDevice === 'desktop' ? 'rounded-lg border-2 border-gray-300 bg-gray-900 p-6 shadow-2xl' : ''}
+                      ${previewDevice === 'tablet' ? 'rounded-2xl border-4 border-gray-400 bg-black p-4 shadow-2xl' : ''}
+                      ${previewDevice === 'mobile' ? 'rounded-3xl border-4 border-gray-800 bg-black p-2 shadow-2xl' : ''}
+                    `}
                   >
-                    <div className="flex flex-col h-full justify-between">
-                      {/* Header */}
-                      <div className="space-y-4">
-                        {currentConfig.showLogo && (
-                          <div className="flex justify-center">
-                            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                              <span className="text-white font-bold text-lg">B</span>
+                    {/* Screen/viewport */}
+                    <div 
+                      className={`
+                        relative overflow-hidden bg-white transition-all duration-500
+                        ${previewDevice === 'desktop' ? 'rounded min-h-96' : ''}
+                        ${previewDevice === 'tablet' ? 'rounded-xl aspect-[4/3]' : ''}
+                        ${previewDevice === 'mobile' ? 'rounded-2xl aspect-[9/16]' : ''}
+                      `}
+                    >
+                      {/* Widget container with proper centering */}
+                      <div className="h-full flex items-center justify-center p-4 bg-gray-50">
+                        {/* Actual Widget Preview */}
+                        <div 
+                          className={`
+                            rounded-lg shadow-lg transition-all duration-300 overflow-hidden relative
+                            ${previewDevice === 'desktop' ? 'scale-100' : ''}
+                            ${previewDevice === 'tablet' ? 'scale-75' : ''}
+                            ${previewDevice === 'mobile' ? 'scale-50' : ''}
+                          `}
+                          style={{
+                            width: Math.min(currentConfig.width, previewDevice === 'mobile' ? 280 : previewDevice === 'tablet' ? 350 : 450),
+                            height: Math.min(currentConfig.height, previewDevice === 'mobile' ? 400 : previewDevice === 'tablet' ? 500 : 600),
+                            backgroundColor: currentConfig.backgroundColor,
+                            borderRadius: currentConfig.borderRadius,
+                            border: `${currentConfig.borderWidth}px solid ${currentConfig.borderColor}`,
+                            boxShadow: `0 ${currentConfig.shadowIntensity * 2}px ${currentConfig.shadowIntensity * 4}px rgba(0,0,0,0.1)`,
+                            fontFamily: currentConfig.fontFamily === 'system' ? 'system-ui' : currentConfig.fontFamily,
+                            color: currentConfig.textColor,
+                          }}
+                        >
+                          {/* Widget Content */}
+                          <div className="h-full flex flex-col" style={{ padding: currentConfig.padding }}>
+                            {/* Header Section */}
+                            <div className={`space-y-${Math.floor(currentConfig.spacing / 4)} mb-${Math.floor(currentConfig.spacing / 4)}`}>
+                              {currentConfig.showLogo && (
+                                <div className={`flex ${currentConfig.alignment === 'left' ? 'justify-start' : currentConfig.alignment === 'right' ? 'justify-end' : 'justify-center'}`}>
+                                  <div 
+                                    className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center"
+                                    style={{ 
+                                      width: currentConfig.fontSize * 2.5, 
+                                      height: currentConfig.fontSize * 2.5 
+                                    }}
+                                  >
+                                    <span 
+                                      className="text-white font-bold"
+                                      style={{ fontSize: currentConfig.fontSize * 0.8 }}
+                                    >
+                                      B
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              <div style={{ textAlign: currentConfig.alignment }}>
+                                <h3 
+                                  className={`font-${currentConfig.fontWeight} mb-2`}
+                                  style={{ 
+                                    fontSize: currentConfig.fontSize * 1.3,
+                                    lineHeight: currentConfig.lineHeight,
+                                  }}
+                                >
+                                  {currentConfig.welcomeMessage}
+                                </h3>
+                                {currentConfig.showDescription && currentConfig.description && (
+                                  <p 
+                                    className="opacity-80 mb-4"
+                                    style={{ 
+                                      fontSize: currentConfig.fontSize * 0.85,
+                                      lineHeight: currentConfig.lineHeight,
+                                    }}
+                                  >
+                                    {currentConfig.description}
+                                  </p>
+                                )}
+                              </div>
                             </div>
+                            
+                            {/* Main Content Area */}
+                            <div className="flex-1 flex items-center justify-center py-4">
+                              <div className="text-center space-y-4 w-full max-w-sm">
+                                {/* Interactive content placeholder */}
+                                <div 
+                                  className="w-full bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg flex items-center justify-center transition-all duration-300 hover:from-gray-200 hover:to-gray-300"
+                                  style={{ 
+                                    height: currentConfig.fontSize * 4,
+                                    borderRadius: currentConfig.borderRadius / 2 
+                                  }}
+                                >
+                                  <span 
+                                    className="text-gray-500 font-medium"
+                                    style={{ fontSize: currentConfig.fontSize * 0.75 }}
+                                  >
+                                    {activeWidgetType === 'booking' ? '📅 Select Date & Time' : '🍽️ Browse Menu'}
+                                  </span>
+                                </div>
+                                
+                                {/* CTA Button with hover effect */}
+                                <button
+                                  className="w-full font-medium transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+                                  style={{
+                                    backgroundColor: currentConfig.primaryColor,
+                                    color: 'white',
+                                    borderRadius: currentConfig.borderRadius / 2,
+                                    padding: `${currentConfig.fontSize * 0.6}px ${currentConfig.fontSize * 1.2}px`,
+                                    fontSize: currentConfig.fontSize,
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = currentConfig.secondaryColor;
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = currentConfig.primaryColor;
+                                  }}
+                                >
+                                  {currentConfig.buttonText}
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {/* Footer Section */}
+                            {currentConfig.showFooter && currentConfig.footerText && (
+                              <div className="text-center mt-auto">
+                                <p 
+                                  className="opacity-60"
+                                  style={{ 
+                                    fontSize: currentConfig.fontSize * 0.7,
+                                    textAlign: currentConfig.alignment 
+                                  }}
+                                >
+                                  {currentConfig.footerText}
+                                </p>
+                              </div>
+                            )}
                           </div>
-                        )}
-                        
-                        <div>
-                          <h3 className="font-semibold mb-2" style={{ fontSize: currentConfig.fontSize * 1.5 }}>
-                            {currentConfig.welcomeMessage}
-                          </h3>
-                          {currentConfig.showDescription && currentConfig.description && (
-                            <p className="text-sm opacity-80 mb-4">{currentConfig.description}</p>
+                          
+                          {/* Loading overlay for animations */}
+                          {currentConfig.enableAnimations && (
+                            <div className="absolute inset-0 pointer-events-none">
+                              <div 
+                                className={`
+                                  w-full h-full
+                                  ${currentConfig.animationType === 'fade' ? 'animate-pulse' : ''}
+                                  ${currentConfig.animationType === 'scale' ? 'animate-bounce' : ''}
+                                  ${currentConfig.animationType === 'slide' ? 'animate-pulse' : ''}
+                                `}
+                              />
+                            </div>
                           )}
                         </div>
                       </div>
                       
-                      {/* Main content area */}
-                      <div className="flex-1 flex items-center justify-center py-8">
-                        <div className="text-center space-y-4">
-                          <div className="w-full h-24 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <span className="text-gray-500 text-sm">Widget Content Area</span>
-                          </div>
-                          
-                          <Button
-                            size="lg"
-                            className="w-full"
-                            style={{
-                              backgroundColor: currentConfig.primaryColor,
-                              borderRadius: currentConfig.borderRadius / 2,
-                            }}
-                          >
-                            {currentConfig.buttonText}
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Footer */}
-                      {currentConfig.showFooter && currentConfig.footerText && (
-                        <div className="text-center">
-                          <p className="text-xs opacity-60">{currentConfig.footerText}</p>
+                      {/* Device status bar for mobile */}
+                      {previewDevice === 'mobile' && (
+                        <div className="absolute top-0 left-0 right-0 h-6 bg-black rounded-t-2xl flex items-center justify-center">
+                          <div className="w-12 h-1 bg-white rounded-full opacity-30"></div>
                         </div>
                       )}
                     </div>
+                    
+                    {/* Device home indicator for mobile */}
+                    {previewDevice === 'mobile' && (
+                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-white rounded-full opacity-40"></div>
+                    )}
                   </div>
+                  
+                  {/* Device labels */}
+                  <div className="mt-4 text-center">
+                    <Badge variant="secondary" className="text-xs">
+                      {previewDevice === 'desktop' && '🖥️ Desktop View (1200px+)'}
+                      {previewDevice === 'tablet' && '📱 Tablet View (768px - 1024px)'}
+                      {previewDevice === 'mobile' && '📱 Mobile View (320px - 767px)'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Preview Controls */}
+          <Card className="border-dashed">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span className="text-sm text-muted-foreground">Live Preview</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Updates automatically as you configure
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      // Trigger a re-render to show animation
+                      const widget = document.querySelector('[data-widget-preview]');
+                      if (widget) {
+                        widget.classList.add('animate-pulse');
+                        setTimeout(() => widget.classList.remove('animate-pulse'), 1000);
+                      }
+                    }}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-1" />
+                    Refresh
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Download className="w-4 h-4 mr-1" />
+                    Screenshot
+                  </Button>
                 </div>
               </div>
             </CardContent>
