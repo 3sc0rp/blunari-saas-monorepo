@@ -62,96 +62,13 @@ import {
   Mail,
   Camera,
 } from 'lucide-react';
+import { useWidgetConfig } from '@/widgets/management/useWidgetConfig';
+import { WidgetConfig, WidgetAnalytics } from '@/widgets/management/types';
+import { getDefaultConfig } from '@/widgets/management/defaults';
+import { validateConfig } from '@/widgets/management/validation';
+import { copyText } from '@/utils/clipboard';
 
-interface WidgetConfig {
-  // Appearance
-  theme: 'light' | 'dark' | 'auto';
-  primaryColor: string;
-  secondaryColor: string;
-  backgroundColor: string;
-  textColor: string;
-  borderRadius: number;
-  borderWidth: number;
-  borderColor: string;
-  shadowIntensity: number;
-  
-  // Typography
-  fontFamily: 'system' | 'inter' | 'roboto' | 'open-sans' | 'lato';
-  fontSize: number;
-  fontWeight: 'normal' | 'medium' | 'semibold' | 'bold';
-  lineHeight: number;
-  
-  // Content
-  welcomeMessage: string;
-  description: string;
-  buttonText: string;
-  footerText: string;
-  
-  // Layout
-  width: number;
-  height: number;
-  padding: number;
-  spacing: number;
-  alignment: 'left' | 'center' | 'right';
-  size: 'small' | 'medium' | 'large';
-  
-  // Features
-  showLogo: boolean;
-  showDescription: boolean;
-  showFooter: boolean;
-  compactMode: boolean;
-  enableAnimations: boolean;
-  animationType: 'none' | 'fade' | 'slide' | 'bounce' | 'scale';
-  
-  // Booking-specific features
-  enableTableOptimization: boolean;
-  showAvailabilityIndicator: boolean;
-  requireDeposit: boolean;
-  enableSpecialRequests: boolean;
-  showDurationSelector: boolean;
-  enablePhoneBooking: boolean;
-  maxPartySize: number;
-  minAdvanceBooking: number; // hours
-  maxAdvanceBooking: number; // days
-  
-  // Advanced
-  customCss: string;
-  customJs: string;
-  isEnabled: boolean;
-  bookingSource: 'widget' | 'website' | 'social' | 'partner';
-  
-  // Behavior
-  autoFocus: boolean;
-  closeOnOutsideClick: boolean;
-  showCloseButton: boolean;
-}
-
-interface WidgetAnalytics {
-  totalViews: number;
-  totalClicks: number;
-  conversionRate: number;
-  avgSessionDuration: number;
-  
-  // Booking-specific metrics
-  totalBookings?: number;
-  completionRate?: number;
-  avgPartySize?: number;
-  peakHours?: string[];
-  
-  topSources: Array<{ source: string; count: number }>;
-  dailyStats: Array<{ 
-    date: string; 
-    views: number; 
-    clicks: number;
-    bookings?: number;
-    revenue?: number;
-  }>;
-}
-
-interface ValidationError {
-  field: string;
-  message: string;
-}
+// Types now imported from widgets/management/types
 
 const WidgetManagement: React.FC = () => {
   const { tenant, tenantSlug, loading: tenantLoading, error: tenantError } = useTenant();
@@ -161,9 +78,6 @@ const WidgetManagement: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState('configure');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
 
   // Comprehensive tenant slug resolution with fallbacks
   const resolvedTenantSlug = useMemo(() => {
@@ -174,271 +88,60 @@ const WidgetManagement: React.FC = () => {
     return tenantSlug || tenant?.slug || 'demo';
   }, [tenantSlug, tenant?.slug]);
 
-  // Helper function for safe numeric parsing
-  const safeParseInt = useCallback((value: string, fallback: number, min?: number, max?: number): number => {
-    const parsed = parseInt(value, 10);
-    if (isNaN(parsed)) return fallback;
-    if (min !== undefined && parsed < min) return min;
-    if (max !== undefined && parsed > max) return max;
-    return parsed;
-  }, []);
+  // Use centralized widget config hook for robustness
+  const {
+    bookingConfig,
+    cateringConfig,
+    currentConfig,
+    setCurrentConfig,
+    hasUnsavedChanges,
+    validationErrors,
+    updateConfig,
+    saveConfiguration,
+    resetToDefaults: resetDefaultsFromHook,
+    safeParseInt,
+    setActiveWidgetType: setTypeFromHook,
+  } = useWidgetConfig('booking', tenant?.id ?? null, resolvedTenantSlug ?? null);
 
-  // Default widget configuration
-  const getDefaultConfig = useCallback((type: 'booking' | 'catering'): WidgetConfig => ({
-    // Appearance
-    theme: 'light' as const,
-    primaryColor: type === 'booking' ? '#3b82f6' : '#f97316',
-    secondaryColor: type === 'booking' ? '#1e40af' : '#ea580c',
-    backgroundColor: '#ffffff',
-    textColor: '#1f2937',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowIntensity: 2,
-    
-    // Typography
-    fontFamily: 'system' as const,
-    fontSize: 14,
-    fontWeight: 'normal' as const,
-    lineHeight: 1.5,
-    
-    // Content
-    welcomeMessage: type === 'booking' ? 'Book your table with us!' : 'Order catering for your event!',
-    description: type === 'booking' ? 'Reserve your perfect dining experience' : 'Delicious catering for any occasion',
-    buttonText: type === 'booking' ? 'Reserve Now' : 'Order Catering',
-    footerText: 'Powered by Blunari',
-    
-    // Layout
-    width: 400,
-    height: 600,
-    padding: 20,
-    spacing: 16,
-    alignment: 'center' as const,
-    size: 'medium' as const,
-    
-    // Features
-    showLogo: true,
-    showDescription: true,
-    showFooter: true,
-    compactMode: false,
-    enableAnimations: true,
-    animationType: 'fade' as const,
-    
-    // Booking-specific features
-    enableTableOptimization: type === 'booking',
-    showAvailabilityIndicator: true,
-    requireDeposit: false,
-    enableSpecialRequests: true,
-    showDurationSelector: type === 'booking',
-    enablePhoneBooking: true,
-    maxPartySize: type === 'booking' ? 12 : 50,
-    minAdvanceBooking: 1, // 1 hour minimum
-    maxAdvanceBooking: 30, // 30 days maximum
-    
-    // Advanced
-    customCss: '',
-    customJs: '',
-    isEnabled: true,
-    bookingSource: 'widget' as const,
-    
-    // Behavior
-    autoFocus: true,
-    closeOnOutsideClick: true,
-    showCloseButton: true,
-  }), []);
+  // Keep local activeWidgetType in sync with hook state
+  useEffect(() => {
+    setTypeFromHook(activeWidgetType);
+  }, [activeWidgetType, setTypeFromHook]);
 
-  const [bookingConfig, setBookingConfig] = useState<WidgetConfig>(() => getDefaultConfig('booking'));
-  const [cateringConfig, setCateringConfig] = useState<WidgetConfig>(() => getDefaultConfig('catering'));
+  // Local saving spinner state wrapping hook save
+  const [isSaving, setIsSaving] = useState(false);
+  const resetToDefaults = useCallback(() => {
+    resetDefaultsFromHook();
+  }, [resetDefaultsFromHook]);
+  const handleSave = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      await saveConfiguration();
+    } finally {
+      setIsSaving(false);
+    }
+  }, [saveConfiguration]);
+
+  // Defaults now centralized in widgets/management/defaults
 
   // Additional component state
   const mockWidgetId = `widget_${Date.now()}`;
 
-  // Configuration management
-  const currentConfig = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
-  const setCurrentConfig = activeWidgetType === 'booking' ? setBookingConfig : setCateringConfig;
+  // Configuration management now handled by useWidgetConfig
 
   // Generate embed code based on current config
   const embedCode = `<iframe src="https://yourdomain.com/widget/${mockWidgetId}" width="${currentConfig.width}" height="${currentConfig.height}" frameborder="0"></iframe>`;
 
-  // Validation
-  const validateConfig = useCallback((config: WidgetConfig): ValidationError[] => {
-    const errors: ValidationError[] = [];
-
-    // Required text fields
-    if (!config.welcomeMessage?.trim()) {
-      errors.push({ field: 'welcomeMessage', message: 'Welcome message is required' });
-    }
-    if (!config.buttonText?.trim()) {
-      errors.push({ field: 'buttonText', message: 'Button text is required' });
-    }
-    
-    // Numeric validations with proper bounds checking
-    if (!config.width || config.width < 300 || config.width > 800) {
-      errors.push({ field: 'width', message: 'Width must be between 300 and 800 pixels' });
-    }
-    if (!config.height || config.height < 400 || config.height > 1000) {
-      errors.push({ field: 'height', message: 'Height must be between 400 and 1000 pixels' });
-    }
-    if (!config.fontSize || config.fontSize < 10 || config.fontSize > 24) {
-      errors.push({ field: 'fontSize', message: 'Font size must be between 10 and 24 pixels' });
-    }
-    
-    // Color validations
-    const colorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-    if (!colorRegex.test(config.primaryColor)) {
-      errors.push({ field: 'primaryColor', message: 'Primary color must be a valid hex color' });
-    }
-    if (!colorRegex.test(config.secondaryColor)) {
-      errors.push({ field: 'secondaryColor', message: 'Secondary color must be a valid hex color' });
-    }
-    if (!colorRegex.test(config.backgroundColor)) {
-      errors.push({ field: 'backgroundColor', message: 'Background color must be a valid hex color' });
-    }
-    if (!colorRegex.test(config.textColor)) {
-      errors.push({ field: 'textColor', message: 'Text color must be a valid hex color' });
-    }
-    
-    // Booking-specific validations
-    if (!config.maxPartySize || config.maxPartySize < 1 || config.maxPartySize > 100) {
-      errors.push({ field: 'maxPartySize', message: 'Max party size must be between 1 and 100' });
-    }
-    if (config.minAdvanceBooking < 0 || config.minAdvanceBooking > 48) {
-      errors.push({ field: 'minAdvanceBooking', message: 'Min advance booking must be between 0 and 48 hours' });
-    }
-    if (!config.maxAdvanceBooking || config.maxAdvanceBooking < 1 || config.maxAdvanceBooking > 365) {
-      errors.push({ field: 'maxAdvanceBooking', message: 'Max advance booking must be between 1 and 365 days' });
-    }
-    
-    // Cross-field validations
-    if (config.minAdvanceBooking >= (config.maxAdvanceBooking * 24)) {
-      errors.push({ field: 'minAdvanceBooking', message: 'Min advance booking must be less than max advance booking' });
-    }
-
-    return errors;
-  }, []);
+  // Validation now centralized in widgets/management/validation
 
   // Update configuration with validation
-  const updateConfig = useCallback((updates: Partial<WidgetConfig>) => {
-    try {
-      const newConfig = { ...currentConfig, ...updates };
-      setCurrentConfig(newConfig);
-      setHasUnsavedChanges(true);
-      
-      // Validate in real-time
-      const errors = validateConfig(newConfig);
-      setValidationErrors(errors);
-    } catch (error) {
-      console.error('Error updating configuration:', error);
-      toast({
-        title: "Configuration Error",
-        description: "Failed to update configuration. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [currentConfig, setCurrentConfig, validateConfig, toast]);
+  // updateConfig provided by hook
 
   // Enhanced save configuration with better error handling
-  const saveConfiguration = useCallback(async () => {
-    const errors = validateConfig(currentConfig);
-    if (errors.length > 0) {
-      setValidationErrors(errors);
-      toast({
-        title: "Validation Error",
-        description: `Please fix ${errors.length} error(s) before saving`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!tenant?.id && !resolvedTenantSlug) {
-      toast({
-        title: "Save Error",
-        description: "Unable to save: tenant information not available. Please refresh the page.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      // Use tenant ID if available, otherwise use resolved slug
-      const tenantIdentifier = tenant?.id || resolvedTenantSlug;
-      const storageKey = `widget-config-${activeWidgetType}-${tenantIdentifier}`;
-      
-      // Create a clean configuration object for storage
-      const configToSave = {
-        ...currentConfig,
-        lastSaved: new Date().toISOString(),
-        version: '2.0'
-      };
-      
-      localStorage.setItem(storageKey, JSON.stringify(configToSave));
-      
-      // Simulate API call for future backend integration
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setHasUnsavedChanges(false);
-      setValidationErrors([]);
-      toast({
-        title: "Configuration Saved",
-        description: `${activeWidgetType} widget configuration has been saved successfully.`,
-      });
-    } catch (error) {
-      console.error('Save configuration error:', error);
-      toast({
-        title: "Save Failed",
-        description: "Failed to save configuration. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  }, [currentConfig, activeWidgetType, tenant?.id, resolvedTenantSlug, validateConfig, toast]);
+  // saveConfiguration provided by hook
 
   // Enhanced configuration loading with better error handling
-  useEffect(() => {
-    if (tenant?.id || resolvedTenantSlug) {
-      try {
-        // Use tenant ID if available, otherwise use resolved slug
-        const tenantIdentifier = tenant?.id || resolvedTenantSlug;
-        const storageKey = `widget-config-${activeWidgetType}-${tenantIdentifier}`;
-        const saved = localStorage.getItem(storageKey);
-        
-        if (saved) {
-          const parsedConfig = JSON.parse(saved);
-          
-          // Validate loaded config structure
-          if (parsedConfig && typeof parsedConfig === 'object') {
-            // Merge with defaults to ensure all required properties exist
-            const defaultConfig = getDefaultConfig(activeWidgetType);
-            const mergedConfig = { ...defaultConfig, ...parsedConfig };
-            
-            // Additional validation for critical fields
-            if (mergedConfig.width && mergedConfig.height && mergedConfig.primaryColor) {
-              setCurrentConfig(mergedConfig);
-            } else {
-              console.warn('Loaded configuration missing critical fields, using defaults');
-              setCurrentConfig(getDefaultConfig(activeWidgetType));
-            }
-          } else {
-            console.warn('Invalid configuration format, using defaults');
-            setCurrentConfig(getDefaultConfig(activeWidgetType));
-          }
-        } else {
-          // No saved configuration, use defaults
-          setCurrentConfig(getDefaultConfig(activeWidgetType));
-        }
-      } catch (error) {
-        console.warn('Failed to load saved configuration:', error);
-        toast({
-          title: "Configuration Load Warning",
-          description: "Failed to load saved configuration. Using defaults.",
-          variant: "default",
-        });
-        setCurrentConfig(getDefaultConfig(activeWidgetType));
-      }
-    }
-  }, [activeWidgetType, tenant?.id, resolvedTenantSlug, setCurrentConfig, getDefaultConfig, toast]);
+  // loading/saving now handled by hook on mount and when identifiers change
 
   // Widget URL and embed code generation with enhanced error handling
   const generateWidgetUrl = useCallback((type: 'booking' | 'catering') => {
@@ -607,17 +310,10 @@ const WidgetManagement: React.FC = () => {
   const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {
       setIsLoading(true);
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Copied!",
-        description: `${label} copied to clipboard`,
-      });
+      await copyText(text);
+      toast({ title: 'Copied!', description: `${label} copied to clipboard` });
     } catch (error) {
-      toast({
-        title: "Copy Failed",
-        description: "Failed to copy to clipboard",
-        variant: "destructive",
-      });
+      toast({ title: 'Copy Failed', description: 'Failed to copy to clipboard', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -649,23 +345,7 @@ const WidgetManagement: React.FC = () => {
     })).reverse(),
   }), []);
 
-  // Reset to defaults
-  const resetToDefaults = useCallback(() => {
-    if (hasUnsavedChanges) {
-      const confirmed = window.confirm(
-        'You have unsaved changes. Are you sure you want to reset to defaults? This action cannot be undone.'
-      );
-      if (!confirmed) return;
-    }
-    
-    setCurrentConfig(getDefaultConfig(activeWidgetType));
-    setHasUnsavedChanges(true);
-    setValidationErrors([]);
-    toast({
-      title: "Reset to Defaults",
-      description: "Configuration has been reset to default values.",
-    });
-  }, [activeWidgetType, setCurrentConfig, getDefaultConfig, toast, hasUnsavedChanges]);
+  // Reset to defaults handled by hook via resetToDefaults
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -680,7 +360,7 @@ const WidgetManagement: React.FC = () => {
           case 's':
             event.preventDefault();
             if (!isSaving && validationErrors.length === 0) {
-              saveConfiguration();
+              handleSave();
             }
             break;
           case 'r':
@@ -838,7 +518,7 @@ const WidgetManagement: React.FC = () => {
             </Button>
             <Button 
               size="sm" 
-              onClick={saveConfiguration}
+              onClick={handleSave}
               disabled={isSaving || validationErrors.length > 0}
               className="min-w-20"
               aria-label={`Save configuration (Ctrl+S)${validationErrors.length > 0 ? ' - Fix validation errors first' : ''}`}
