@@ -49,54 +49,75 @@ export function useMemoryCleanup() {
   const previousLocation = useRef(location.pathname);
 
   useEffect(() => {
-    // Clean up when navigating away from heavy pages
-    const currentPath = location.pathname;
-    const previousPath = previousLocation.current;
+    try {
+      // Clean up when navigating away from heavy pages
+      const currentPath = location.pathname;
+      const previousPath = previousLocation.current;
 
-    if (previousPath !== currentPath) {
-      // Force garbage collection on heavy pages
-      const heavyPages = ['/dashboard/tables', '/dashboard/analytics', '/dashboard/ai-business-insights'];
-      
-      if (heavyPages.some(page => previousPath.includes(page))) {
-        // Clear any lingering timers
-        const timerId = setTimeout(() => {}, 0);
-        clearTimeout(timerId);
-        
-        // Request garbage collection if available (Chrome DevTools)
-        if (typeof (window as any).gc === 'function') {
-          setTimeout(() => (window as any).gc(), 1000);
+      if (previousPath !== currentPath) {
+        // Force garbage collection on heavy pages
+        const heavyPages = ['/dashboard/tables', '/dashboard/analytics', '/dashboard/ai-business-insights'];
+
+        if (heavyPages.some(page => previousPath.includes(page))) {
+          // Clear any lingering timers
+          const timerId = setTimeout(() => {}, 0);
+          clearTimeout(timerId);
+
+          // Request garbage collection if available (Chrome DevTools)
+          if (typeof window !== 'undefined' && typeof (window as any).gc === 'function') {
+            setTimeout(() => (window as any).gc(), 1000);
+          }
         }
       }
-    }
 
-    previousLocation.current = currentPath;
+      previousLocation.current = currentPath;
+    } catch (error) {
+      // Silently fail memory cleanup in environments where it's not available
+      console.warn('[MemoryCleanup] Failed to clean up memory:', error);
+    }
   }, [location.pathname]);
 }
 
 // Performance monitoring hook
 export function usePerformanceMonitoring(componentName: string) {
-  const startTime = useRef(performance.now());
+  const startTime = useRef(typeof performance !== 'undefined' ? performance.now() : Date.now());
   const location = useLocation();
 
   useEffect(() => {
-    const endTime = performance.now();
-    const renderTime = endTime - startTime.current;
+    try {
+      // Check if performance API is available
+      if (typeof performance === 'undefined' || typeof performance.now !== 'function') {
+        return;
+      }
 
-    // Log performance metrics for debugging
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Performance] ${componentName}:`, {
-        renderTime: `${renderTime.toFixed(2)}ms`,
-        path: location.pathname,
-        memory: (performance as any).memory ? {
-          used: `${((performance as any).memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
-          total: `${((performance as any).memory.totalJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
-          limit: `${((performance as any).memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`
-        } : 'Not available'
-      });
+      const endTime = performance.now();
+      const renderTime = endTime - startTime.current;
+
+      // Validate render time is reasonable (not negative or extremely large)
+      if (renderTime < 0 || renderTime > 10000) {
+        console.warn(`[Performance] Invalid render time for ${componentName}: ${renderTime}ms`);
+        return;
+      }
+
+      // Log performance metrics for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Performance] ${componentName}:`, {
+          renderTime: `${renderTime.toFixed(2)}ms`,
+          path: location.pathname,
+          memory: (performance as any).memory ? {
+            used: `${((performance as any).memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
+            total: `${((performance as any).memory.totalJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
+            limit: `${((performance as any).memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`
+          } : 'Not available'
+        });
+      }
+
+      // Reset timer for next render
+      startTime.current = performance.now();
+    } catch (error) {
+      // Silently fail performance monitoring in environments where it's not available
+      console.warn(`[Performance] Failed to monitor ${componentName}:`, error);
     }
-
-    // Reset timer for next render
-    startTime.current = performance.now();
   });
 
   return {
@@ -167,20 +188,25 @@ export function usePrefetch() {
 // Bundle size monitoring
 export function useBundleMonitoring() {
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      // Monitor bundle loading
-      const originalLog = console.log;
-      console.log = (...args) => {
-        if (args[0]?.includes?.('chunk')) {
-          originalLog('[Bundle Loading]', ...args);
-        } else {
-          originalLog(...args);
-        }
-      };
+    try {
+      if (process.env.NODE_ENV === 'development' && typeof console !== 'undefined') {
+        // Monitor bundle loading
+        const originalLog = console.log;
+        console.log = (...args) => {
+          if (args[0]?.includes?.('chunk')) {
+            originalLog('[Bundle Loading]', ...args);
+          } else {
+            originalLog(...args);
+          }
+        };
 
-      return () => {
-        console.log = originalLog;
-      };
+        return () => {
+          console.log = originalLog;
+        };
+      }
+    } catch (error) {
+      // Silently fail bundle monitoring in environments where it's not available
+      console.warn('[BundleMonitoring] Failed to monitor bundles:', error);
     }
   }, []);
 }
