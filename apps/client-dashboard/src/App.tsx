@@ -87,26 +87,26 @@ const queryClient = new QueryClient({
   },
 });
 
-
-
-function App() {
-  console.log('🎯 App component rendering with full providers...');
-  
-  // Performance monitoring and optimization hooks
+// Local component to safely run router-dependent hooks after BrowserRouter context exists
+function RouterInstrumentation() {
   useMemoryCleanup();
   usePerformanceMonitoring('App');
   useBundleMonitoring();
-  
-  // Initialize Supabase connection manager
+  return null;
+}
+
+function App() {
+  console.log('🎯 App component rendering with full providers...');
+  // Remove direct calls to router-dependent hooks here (now inside RouterInstrumentation)
   useEffect(() => {
     connectionManager.ensureConnection();
   }, []);
-  
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <BrowserRouter>
+            <RouterInstrumentation />
             <TenantBrandingProvider>
               <AuthProvider>
                 <ModeProvider>
