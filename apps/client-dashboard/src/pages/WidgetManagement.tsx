@@ -1,5 +1,24 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Utility function to prevent unnecessary re-renders
+const deepEqual = (obj1: any, obj2: any): boolean => {
+  if (obj1 === obj2) return true;
+  if (obj1 == null || obj2 == null) return false;
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return false;
+  
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  for (const key of keys1) {
+    if (!keys2.includes(key)) return false;
+    if (!deepEqual(obj1[key], obj2[key])) return false;
+  }
+  
+  return true;
+};
 import {
   ExternalLink,
   Monitor,
@@ -150,6 +169,97 @@ interface ConfigHistory {
   user: string;
 }
 
+// Default configurations - moved outside component to prevent re-creation
+const DEFAULT_BOOKING_CONFIG: BookingConfig = {
+  // Core Settings
+  theme: "light",
+  primaryColor: "#3b82f6",
+  borderRadius: "8",
+  fontFamily: "system",
+
+  // Functionality
+  showAvailability: true,
+  showPricing: false,
+  requirePhone: true,
+  allowCancellation: true,
+  maxAdvanceBooking: 30,
+  timeSlotInterval: 30,
+  enableWaitlist: true,
+  enableNotifications: true,
+  showReviews: false,
+
+  // Advanced Features
+  enableGuestCheckout: true,
+  requireDeposit: false,
+  depositAmount: 0,
+  cancellationPolicy: "flexible",
+  autoConfirm: true,
+  enableReminders: true,
+  maxPartySize: 12,
+  minimumAge: 0,
+
+  // Customization
+  welcomeMessage: "",
+  confirmationMessage: "",
+  customCSS: "",
+  customFields: [],
+
+  // Integration
+  googleAnalyticsId: "",
+  facebookPixelId: "",
+  enableChatbot: false,
+
+  // Performance
+  lazyLoading: true,
+  prefetchData: true,
+  cacheTimeout: 300,
+};
+
+const DEFAULT_CATERING_CONFIG: CateringConfig = {
+  // Core Settings
+  theme: "light",
+  primaryColor: "#3b82f6",
+  borderRadius: "8",
+  fontFamily: "system",
+
+  // Functionality
+  showPackages: true,
+  showCustomOrders: true,
+  enableQuotes: true,
+  showGallery: true,
+  packageFilters: true,
+  minOrderDays: 3,
+  requirePhone: true,
+  enableNotifications: true,
+  showTestimonials: false,
+
+  // Advanced Features
+  enableBulkOrders: true,
+  requireDeposit: true,
+  depositPercentage: 25,
+  enableMenuCustomization: true,
+  showNutritionalInfo: false,
+  enableAllergyFilters: true,
+  maxOrderValue: 10000,
+  minOrderValue: 100,
+
+  // Customization
+  welcomeMessage: "",
+  quotingMessage: "",
+  customCSS: "",
+  customFields: [],
+
+  // Integration
+  googleAnalyticsId: "",
+  facebookPixelId: "",
+  enableChatbot: false,
+
+  // Performance
+  lazyLoading: true,
+  prefetchData: true,
+  cacheTimeout: 300,
+};
+
 const WidgetManagement: React.FC = () => {
   const { tenant, loading } = useTenant();
   const { toast } = useToast();
@@ -157,6 +267,8 @@ const WidgetManagement: React.FC = () => {
   // Refs for cleanup and memoization
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMountedRef = useRef(true);
+  const initializedRef = useRef(false);
+  const previousConfigRef = useRef<{ booking: BookingConfig; catering: CateringConfig } | null>(null);
 
   // Core State Management
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
@@ -197,96 +309,9 @@ const WidgetManagement: React.FC = () => {
   // Configuration History
   const [configHistory, setConfigHistory] = useState<ConfigHistory[]>([]);
 
-  // Enhanced Widget Configuration with proper typing
-  const [bookingConfig, setBookingConfig] = useState<BookingConfig>({
-    // Core Settings
-    theme: "light",
-    primaryColor: "#3b82f6",
-    borderRadius: "8",
-    fontFamily: "system",
-
-    // Functionality
-    showAvailability: true,
-    showPricing: false,
-    requirePhone: true,
-    allowCancellation: true,
-    maxAdvanceBooking: 30,
-    timeSlotInterval: 30,
-    enableWaitlist: true,
-    enableNotifications: true,
-    showReviews: false,
-
-    // Advanced Features
-    enableGuestCheckout: true,
-    requireDeposit: false,
-    depositAmount: 0,
-    cancellationPolicy: "flexible",
-    autoConfirm: true,
-    enableReminders: true,
-    maxPartySize: 12,
-    minimumAge: 0,
-
-    // Customization
-    welcomeMessage: "",
-    confirmationMessage: "",
-    customCSS: "",
-    customFields: [],
-
-    // Integration
-    googleAnalyticsId: "",
-    facebookPixelId: "",
-    enableChatbot: false,
-
-    // Performance
-    lazyLoading: true,
-    prefetchData: true,
-    cacheTimeout: 300,
-  });
-
-  const [cateringConfig, setCateringConfig] = useState<CateringConfig>({
-    // Core Settings
-    theme: "light",
-    primaryColor: "#3b82f6",
-    borderRadius: "8",
-    fontFamily: "system",
-
-    // Functionality
-    showPackages: true,
-    showCustomOrders: true,
-    enableQuotes: true,
-    showGallery: true,
-    packageFilters: true,
-    minOrderDays: 3,
-    requirePhone: true,
-    enableNotifications: true,
-    showTestimonials: false,
-
-    // Advanced Features
-    enableBulkOrders: true,
-    requireDeposit: true,
-    depositPercentage: 25,
-    enableMenuCustomization: true,
-    showNutritionalInfo: false,
-    enableAllergyFilters: true,
-    maxOrderValue: 10000,
-    minOrderValue: 100,
-
-    // Customization
-    welcomeMessage: "",
-    quotingMessage: "",
-    customCSS: "",
-    customFields: [],
-
-    // Integration
-    googleAnalyticsId: "",
-    facebookPixelId: "",
-    enableChatbot: false,
-
-    // Performance
-    lazyLoading: true,
-    prefetchData: true,
-    cacheTimeout: 300,
-  });
+  // Enhanced Widget Configuration with proper typing - initialized with defaults
+  const [bookingConfig, setBookingConfig] = useState<BookingConfig>(() => ({ ...DEFAULT_BOOKING_CONFIG }));
+  const [cateringConfig, setCateringConfig] = useState<CateringConfig>(() => ({ ...DEFAULT_CATERING_CONFIG }));
 
   // Get current config based on widget type with proper typing
   const currentConfig = widgetType === "booking" ? bookingConfig : cateringConfig;
@@ -319,6 +344,18 @@ const WidgetManagement: React.FC = () => {
       }
     };
   }, []);
+
+  // Initialize component and mark as ready
+  useEffect(() => {
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      // Store initial config to compare against
+      previousConfigRef.current = {
+        booking: { ...bookingConfig },
+        catering: { ...cateringConfig }
+      };
+    }
+  }, [bookingConfig, cateringConfig]);
 
   // Advanced handlers
   const handleAutoSave = useCallback(async () => {
@@ -378,13 +415,25 @@ const WidgetManagement: React.FC = () => {
     };
   }, [hasUnsavedChanges, isOnline, handleAutoSave]);
 
-  // Configuration change tracking - debounced to prevent excessive updates
+  // Configuration change tracking - only track after initialization with deep comparison
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setHasUnsavedChanges(true);
-    }, 500); // Debounce for 500ms
+    if (!initializedRef.current || !previousConfigRef.current) return; 
+    
+    const currentConfig = { booking: bookingConfig, catering: cateringConfig };
+    
+    // Only mark as changed if there's actually a difference
+    if (!deepEqual(currentConfig, previousConfigRef.current)) {
+      const timeoutId = setTimeout(() => {
+        setHasUnsavedChanges(true);
+        // Update the previous config reference
+        previousConfigRef.current = {
+          booking: { ...bookingConfig },
+          catering: { ...cateringConfig }
+        };
+      }, 500); // Debounce for 500ms
 
-    return () => clearTimeout(timeoutId);
+      return () => clearTimeout(timeoutId);
+    }
   }, [bookingConfig, cateringConfig]);
 
   // Memoized computations with SSR safety
@@ -454,6 +503,12 @@ const WidgetManagement: React.FC = () => {
         setLastSaved(new Date());
         setHasUnsavedChanges(false);
 
+        // Update previous config reference to current saved state
+        previousConfigRef.current = {
+          booking: { ...bookingConfig },
+          catering: { ...cateringConfig }
+        };
+
         if (!skipToast) {
           toast({
             title: "Configuration Saved",
@@ -477,17 +532,24 @@ const WidgetManagement: React.FC = () => {
   );
 
   const handleRevertChanges = useCallback(() => {
-    // Reset to last saved state (simplified for demo)
+    // Reset to default configuration
     if (widgetType === "booking") {
-      setBookingConfig((prev) => ({ ...prev }));
+      setBookingConfig({ ...DEFAULT_BOOKING_CONFIG });
     } else {
-      setCateringConfig((prev) => ({ ...prev }));
+      setCateringConfig({ ...DEFAULT_CATERING_CONFIG });
     }
+    
+    // Update previous config reference to prevent false change detection
+    previousConfigRef.current = {
+      booking: { ...DEFAULT_BOOKING_CONFIG },
+      catering: { ...DEFAULT_CATERING_CONFIG }
+    };
+    
     setHasUnsavedChanges(false);
 
     toast({
       title: "Changes Reverted",
-      description: "Configuration reverted to last saved state",
+      description: "Configuration reverted to default state",
     });
   }, [widgetType, toast]);
 
