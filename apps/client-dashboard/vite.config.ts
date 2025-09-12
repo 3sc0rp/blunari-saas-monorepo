@@ -83,33 +83,20 @@ export default defineConfig(({ mode }) => {
       }
     },
 
-    // Build optimizations
+    // Build optimizations (debug-friendly for production error diagnosis)
     build: {
       target: 'es2020',
       outDir: 'dist',
-      sourcemap: !isProduction, // keep maps in dev only
-      minify: isProduction ? 'terser' : false,
-
+      // Force source maps even in production to map minified stack traces
+      sourcemap: true,
+      // Use esbuild for now (faster & simpler) while diagnosing runtime function errors
+      minify: isProduction ? 'esbuild' : false,
       rollupOptions: {
         output: {
-          // Simplified chunking strategy
+          // Collapse to single vendor chunk temporarily to rule out cross-chunk call issues
           manualChunks(id) {
-            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/scheduler')) {
-              return 'react-vendor';
-            }
-            if (id.includes('node_modules/@radix-ui') || id.includes('node_modules/lucide-react')) {
-              return 'ui-vendor';
-            }
-            if (id.includes('node_modules/')) {
-              return 'vendor';
-            }
+            if (id.includes('node_modules/')) return 'vendor';
           },
-          // Ensure proper module format
-          format: 'es',
-          // Preserve module structure
-          preserveModules: false,
-          // Interop settings to prevent function binding issues
-          interop: 'compat',
           chunkFileNames: 'chunks/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
@@ -123,36 +110,21 @@ export default defineConfig(({ mode }) => {
           }
         }
       },
-
-      // Enhanced Terser optimization
+      // Keep terserOptions field harmless (unused when esbuild minify) for later re-enable
       terserOptions: {
         compress: {
-          drop_console: isProduction,
-          drop_debugger: isProduction,
-          pure_funcs: isProduction ? ['console.log', 'console.info', 'console.debug'] : [],
-          passes: 2,
-          unsafe_arrows: true,
-          unsafe_methods: true,
-          unsafe_proto: true,
-          unsafe_regexp: true,
-          reduce_vars: true,
-          collapse_vars: true
+          drop_console: false,
+          drop_debugger: false
         },
-        mangle: {
-          safari10: true,
-          properties: {
-            regex: /^_/
-          }
-        },
-        format: {
-          comments: false
-        }
+        mangle: false,
+        format: { comments: true }
       },
-
-  chunkSizeWarningLimit: 500, // Reduced from 1200 to force better splitting
-  reportCompressedSize: isProduction,
-  cssCodeSplit: true,
-  copyPublicDir: true
+      chunkSizeWarningLimit: 1200,
+      reportCompressedSize: false,
+      cssCodeSplit: true,
+      copyPublicDir: true,
+      // Embed sources for better debugging
+      assetsInlineLimit: 0
     },
 
     css: {
