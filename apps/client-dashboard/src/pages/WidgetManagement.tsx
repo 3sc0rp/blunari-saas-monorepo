@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-// @ts-nocheck - Temporary suppression for Widget Management type issues
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ExternalLink,
@@ -71,7 +70,63 @@ import { useTenant } from "@/hooks/useTenant";
 import { useToast } from "@/hooks/use-toast";
 import BookingDebugger from "@/components/booking/BookingDebugger";
 
-// Widget Configuration Types
+// Widget Configuration Types with proper typing
+interface WidgetConfigBase {
+  theme: "light" | "dark" | "auto";
+  primaryColor: string;
+  borderRadius: string;
+  fontFamily: string;
+  requirePhone: boolean;
+  enableNotifications: boolean;
+  enableChatbot: boolean;
+  lazyLoading: boolean;
+  prefetchData: boolean;
+  cacheTimeout: number;
+  welcomeMessage: string;
+  customCSS: string;
+  customFields: string[];
+  googleAnalyticsId: string;
+  facebookPixelId: string;
+}
+
+interface BookingConfig extends WidgetConfigBase {
+  showAvailability: boolean;
+  showPricing: boolean;
+  allowCancellation: boolean;
+  maxAdvanceBooking: number;
+  timeSlotInterval: number;
+  enableWaitlist: boolean;
+  showReviews: boolean;
+  enableGuestCheckout: boolean;
+  requireDeposit: boolean;
+  depositAmount: number;
+  cancellationPolicy: string;
+  autoConfirm: boolean;
+  enableReminders: boolean;
+  maxPartySize: number;
+  minimumAge: number;
+  confirmationMessage: string;
+}
+
+interface CateringConfig extends WidgetConfigBase {
+  showPackages: boolean;
+  showCustomOrders: boolean;
+  enableQuotes: boolean;
+  showGallery: boolean;
+  packageFilters: boolean;
+  minOrderDays: number;
+  showTestimonials: boolean;
+  enableBulkOrders: boolean;
+  requireDeposit: boolean;
+  depositPercentage: number;
+  enableMenuCustomization: boolean;
+  showNutritionalInfo: boolean;
+  enableAllergyFilters: boolean;
+  maxOrderValue: number;
+  minOrderValue: number;
+  quotingMessage: string;
+}
+
 interface WidgetAnalytics {
   views: number;
   conversions: number;
@@ -98,15 +153,17 @@ interface ConfigHistory {
 const WidgetManagement: React.FC = () => {
   const { tenant, loading } = useTenant();
   const { toast } = useToast();
+  
+  // Refs for cleanup and memoization
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   // Core State Management
-  const [previewDevice, setPreviewDevice] = useState<
-    "desktop" | "tablet" | "mobile"
-  >("desktop");
-  const [widgetType, setWidgetType] = useState<"booking" | "catering">(
-    "booking",
+  const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [widgetType, setWidgetType] = useState<"booking" | "catering">("booking");
+  const [isOnline, setIsOnline] = useState(() => 
+    typeof navigator !== 'undefined' ? navigator.onLine : true
   );
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -140,11 +197,11 @@ const WidgetManagement: React.FC = () => {
   // Configuration History
   const [configHistory, setConfigHistory] = useState<ConfigHistory[]>([]);
 
-  // Enhanced Widget Configuration with Validation
-  const [bookingConfig, setBookingConfig] = useState({
+  // Enhanced Widget Configuration with proper typing
+  const [bookingConfig, setBookingConfig] = useState<BookingConfig>({
     // Core Settings
-    theme: "light" as "light" | "dark" | "auto",
-    primaryColor: "#3b82f6", // tenant?.primary_color ||
+    theme: "light",
+    primaryColor: "#3b82f6",
     borderRadius: "8",
     fontFamily: "system",
 
@@ -186,10 +243,10 @@ const WidgetManagement: React.FC = () => {
     cacheTimeout: 300,
   });
 
-  const [cateringConfig, setCateringConfig] = useState({
+  const [cateringConfig, setCateringConfig] = useState<CateringConfig>({
     // Core Settings
-    theme: "light" as "light" | "dark" | "auto",
-    primaryColor: "#3b82f6", // tenant?.primary_color ||
+    theme: "light",
+    primaryColor: "#3b82f6",
     borderRadius: "8",
     fontFamily: "system",
 
@@ -231,14 +288,16 @@ const WidgetManagement: React.FC = () => {
     cacheTimeout: 300,
   });
 
-  // Get current config based on widget type
-  const currentConfig =
-    widgetType === "booking" ? bookingConfig : cateringConfig;
-  const setCurrentConfig =
-    widgetType === "booking" ? setBookingConfig : setCateringConfig;
+  // Get current config based on widget type with proper typing
+  const currentConfig = widgetType === "booking" ? bookingConfig : cateringConfig;
+  const setCurrentConfig = widgetType === "booking" 
+    ? (updater: BookingConfig | ((prev: BookingConfig) => BookingConfig)) => setBookingConfig(updater)
+    : (updater: CateringConfig | ((prev: CateringConfig) => CateringConfig)) => setCateringConfig(updater);
 
-  // Network Status Monitor
+  // Network Status Monitor with proper cleanup
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
@@ -251,38 +310,97 @@ const WidgetManagement: React.FC = () => {
     };
   }, []);
 
-  // Auto-save functionality  
+  // Component unmount cleanup
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Advanced handlers
+  const handleAutoSave = useCallback(async () => {
+    if (!isOnline || !isMountedRef.current) return;
+
+    try {
+      setIsSaving(true);
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      
+      if (isMountedRef.current) {
+        setLastSaved(new Date());
+        setHasUnsavedChanges(false);
+
+        toast({
+          title: "Auto-saved",
+          description: "Configuration automatically saved",
+          duration: 2000,
+        });
+      }
+    } catch (error) {
+      console.error("Auto-save failed:", error);
+      if (isMountedRef.current) {
+        toast({
+          title: "Auto-save failed",
+          description: "Failed to automatically save changes",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsSaving(false);
+      }
+    }
+  }, [isOnline, toast]);
+
+  // Fixed auto-save functionality
   useEffect(() => {
     if (!hasUnsavedChanges || !isOnline) return;
 
-    const autoSaveTimer = setTimeout(() => {
-      if (hasUnsavedChanges && isOnline) {
-        // Call handleAutoSave function defined later
-        setTimeout(() => {
-          // This ensures handleAutoSave is defined before being called
-          if (typeof window !== 'undefined' && (window as any).handleAutoSave) {
-            (window as any).handleAutoSave();
-          }
-        }, 0);
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Set new timeout
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      if (hasUnsavedChanges && isOnline && isMountedRef.current) {
+        handleAutoSave();
       }
     }, 30000); // Auto-save every 30 seconds
 
-    return () => clearTimeout(autoSaveTimer);
-  }, [hasUnsavedChanges, isOnline]);
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [hasUnsavedChanges, isOnline, handleAutoSave]);
 
-  // Configuration change tracking
+  // Configuration change tracking - debounced to prevent excessive updates
   useEffect(() => {
-    setHasUnsavedChanges(true);
+    const timeoutId = setTimeout(() => {
+      setHasUnsavedChanges(true);
+    }, 500); // Debounce for 500ms
+
+    return () => clearTimeout(timeoutId);
   }, [bookingConfig, cateringConfig]);
 
-  // Memoized computations
-  const widgetUrls = useMemo(
-    () => ({
-      booking: tenant?.slug ? `${window.location.origin}/book/${tenant.slug}` : null,
-      catering: tenant?.slug ? `${window.location.origin}/catering/${tenant.slug}` : null,
-    }),
-    [tenant?.slug],
-  );
+  // Memoized computations with SSR safety
+  const widgetUrls = useMemo(() => {
+    if (typeof window === 'undefined' || !tenant?.slug) {
+      return {
+        booking: null,
+        catering: null,
+      };
+    }
+    
+    return {
+      booking: `${window.location.origin}/book/${tenant.slug}`,
+      catering: `${window.location.origin}/catering/${tenant.slug}`,
+    };
+  }, [tenant?.slug]);
 
   const currentUrl = widgetUrls[widgetType];
 
@@ -306,29 +424,6 @@ const WidgetManagement: React.FC = () => {
 
     return errors;
   }, [currentConfig, widgetType]);
-
-  // Advanced handlers
-  const handleAutoSave = useCallback(async () => {
-    if (!isOnline) return;
-
-    try {
-      setIsSaving(true);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setLastSaved(new Date());
-      setHasUnsavedChanges(false);
-
-      toast({
-        title: "Auto-saved",
-        description: "Configuration automatically saved",
-        duration: 2000,
-      });
-    } catch (error) {
-      console.error("Auto-save failed:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [isOnline, toast]);
 
   const handleConfigurationSave = useCallback(
     async (skipToast = false) => {
@@ -550,6 +645,17 @@ const WidgetManagement: React.FC = () => {
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="text-muted-foreground">Loading widget management...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tenant) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <div className="text-center space-y-4">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
+          <p className="text-muted-foreground">Unable to load tenant information</p>
         </div>
       </div>
     );
@@ -925,8 +1031,8 @@ const WidgetManagement: React.FC = () => {
                         </Label>
                         <Select
                           value={currentConfig.theme}
-                          onValueChange={(value: string) =>
-                            setCurrentConfig((prev: any) => ({
+                          onValueChange={(value) =>
+                            setCurrentConfig((prev) => ({
                               ...prev,
                               theme: value as "light" | "dark" | "auto",
                             }))
@@ -949,8 +1055,8 @@ const WidgetManagement: React.FC = () => {
                         </Label>
                         <Select
                           value={currentConfig.fontFamily}
-                          onValueChange={(value: string) =>
-                            setCurrentConfig((prev: any) => ({
+                          onValueChange={(value) =>
+                            setCurrentConfig((prev) => ({
                               ...prev,
                               fontFamily: value,
                             }))
