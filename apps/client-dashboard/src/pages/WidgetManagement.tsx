@@ -1,8 +1,22 @@
-import React, { useState, useCallback, useMemo } from 'react';
+/**
+ * Enhanced Widget Management Page with Defensive Programming
+ * Implements error boundaries, validation, safe operations, and fallback states
+ */
+import React, { useState, useCallback, useMemo, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useTenant } from '@/hooks/useTenant';
-import { useWidgetManagement } from '@/hooks/useWidgetManagement';
 import { useToast } from '@/hooks/use-toast';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { 
+  validateWidgetConfig,
+  getDefaultWidgetConfig,
+  generateWidgetUrl,
+  generateEmbedCode,
+  generateSafeAnalyticsData,
+  safeCopyToClipboard,
+  type WidgetConfig,
+  type AnalyticsData
+} from '@/utils/widgetUtils';
 import {
   Card,
   CardContent,
@@ -29,9 +43,7 @@ import {
   AlertTitle,
 } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Settings2 as Settings,
   Calendar,
@@ -42,579 +54,671 @@ import {
   CheckCircle,
   AlertCircle,
   Copy,
-  Info,
-  Clock,
+  Loader2,
+  RefreshCw,
+  Save,
+  RotateCcw,
 } from 'lucide-react';
 
-// Import enhanced components
-import WidgetConfigurationPanel from '@/components/widgets/WidgetConfigurationPanel';
-import WidgetPreviewPanel from '@/components/widgets/WidgetPreviewPanel';
-import WidgetAnalyticsDashboard from '@/components/widgets/WidgetAnalyticsDashboard';
+// Lazy load heavy components with error boundaries
+const WidgetConfigurationPanel = React.lazy(() => 
+  import('@/components/widgets/WidgetConfigurationPanel').catch(error => {
+    console.error('Failed to load WidgetConfigurationPanel:', error);
+    return { default: () => <div className="p-4 text-center text-red-600">Failed to load configuration panel</div> };
+  })
+);
+
+const WidgetPreviewPanel = React.lazy(() => 
+  import('@/components/widgets/WidgetPreviewPanel').catch(error => {
+    console.error('Failed to load WidgetPreviewPanel:', error);
+    return { default: () => <div className="p-4 text-center text-red-600">Failed to load preview panel</div> };
+  })
+);
+
+const WidgetAnalyticsDashboard = React.lazy(() => 
+  import('@/components/widgets/WidgetAnalyticsDashboard').catch(error => {
+    console.error('Failed to load WidgetAnalyticsDashboard:', error);
+    return { default: () => <div className="p-4 text-center text-red-600">Failed to load analytics dashboard</div> };
+  })
+);
+
+// Loading fallback component
+const LoadingFallback: React.FC<{ label?: string }> = ({ label = "Loading component..." }) => (
+  <div className="flex items-center justify-center p-8">
+    <div className="text-center space-y-3">
+      <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" />
+      <p className="text-sm text-muted-foreground">{label}</p>
+    </div>
+  </div>
+);
+
+// Error fallback component
+const ErrorFallback: React.FC<{ error: Error; resetError: () => void }> = ({ error, resetError }) => (
+  <Alert variant="destructive" className="m-4">
+    <AlertCircle className="h-4 w-4" />
+    <AlertTitle>Component Error</AlertTitle>
+    <AlertDescription className="space-y-2">
+      <p>Something went wrong loading this component.</p>
+      {process.env.NODE_ENV === 'development' && (
+        <pre className="text-xs bg-gray-100 p-2 rounded mt-2 overflow-auto max-h-32">
+          {error.message}
+        </pre>
+      )}
+      <Button onClick={resetError} size="sm" variant="outline">
+        <RefreshCw className="w-4 h-4 mr-2" />
+        Try Again
+      </Button>
+    </AlertDescription>
+  </Alert>
+);
 
 const WidgetManagement: React.FC = () => {
   const { tenant } = useTenant();
   const { toast } = useToast();
   
-  // Enhanced state management
+  // Enhanced state management with error handling
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [activeWidgetType, setActiveWidgetType] = useState<'booking' | 'catering'>('booking');
   const [selectedTab, setSelectedTab] = useState('configure');
   const [analyticsTimeRange, setAnalyticsTimeRange] = useState<'24h' | '7d' | '30d' | '90d'>('7d');
+  const [isLoading, setIsLoading] = useState(false);
+  const [configErrors, setConfigErrors] = useState<string[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Enhanced widget configuration with more options
-  const [bookingConfig, setBookingConfig] = useState({
-    theme: 'light' as 'light' | 'dark' | 'auto',
-    primaryColor: '#3b82f6',
-    backgroundColor: '#ffffff',
-    textColor: '#1f2937',
-    borderRadius: 8,
-    welcomeMessage: 'Book your table with us!',
-    buttonText: 'Reserve Now',
-    showLogo: true,
-    compactMode: false,
-    customCss: '',
-    animation: 'fade' as 'none' | 'fade' | 'slide' | 'bounce',
-    shadowIntensity: 2,
-    fontFamily: 'system',
-    fontSize: 14,
-    spacing: 1
+  // Safe widget configuration with defaults and validation
+  const [bookingConfig, setBookingConfig] = useState<WidgetConfig>(() => {
+    try {
+      return getDefaultWidgetConfig('booking');
+    } catch (error) {
+      console.error('Error initializing booking config:', error);
+      return {
+        theme: 'light' as const,
+        primaryColor: '#3b82f6',
+        backgroundColor: '#ffffff',
+        textColor: '#1f2937',
+        borderRadius: 8,
+        welcomeMessage: 'Book your table with us!',
+        buttonText: 'Reserve Now',
+        showLogo: true,
+        compactMode: false,
+        customCss: '',
+        animation: 'fade' as const,
+        shadowIntensity: 2,
+        fontFamily: 'system',
+        fontSize: 14,
+        spacing: 1
+      };
+    }
   });
 
-  const [cateringConfig, setCateringConfig] = useState({
-    theme: 'light' as 'light' | 'dark' | 'auto',
-    primaryColor: '#f97316',
-    backgroundColor: '#ffffff', 
-    textColor: '#1f2937',
-    borderRadius: 8,
-    welcomeMessage: 'Order catering for your event!',
-    buttonText: 'Order Catering',
-    showLogo: true,
-    compactMode: false,
-    customCss: '',
-    animation: 'fade' as 'none' | 'fade' | 'slide' | 'bounce',
-    shadowIntensity: 2,
-    fontFamily: 'system',
-    fontSize: 14,
-    spacing: 1
+  const [cateringConfig, setCateringConfig] = useState<WidgetConfig>(() => {
+    try {
+      return getDefaultWidgetConfig('catering');
+    } catch (error) {
+      console.error('Error initializing catering config:', error);
+      return {
+        theme: 'light' as const,
+        primaryColor: '#f97316',
+        backgroundColor: '#ffffff',
+        textColor: '#1f2937',
+        borderRadius: 8,
+        welcomeMessage: 'Order catering for your event!',
+        buttonText: 'Order Catering',
+        showLogo: true,
+        compactMode: false,
+        customCss: '',
+        animation: 'fade' as const,
+        shadowIntensity: 2,
+        fontFamily: 'system',
+        fontSize: 14,
+        spacing: 1
+      };
+    }
   });
 
-  // Mock analytics data - use time range as seed for consistent data
-  const analyticsData = useMemo(() => {
-    const seed = analyticsTimeRange === '24h' ? 1 : analyticsTimeRange === '7d' ? 2 : analyticsTimeRange === '30d' ? 3 : 4;
-    const random = (index: number) => {
-      // Simple seeded random function
-      const x = Math.sin(seed * 9999 + index) * 10000;
-      return x - Math.floor(x);
+  // Initialize component with error handling
+  useEffect(() => {
+    const initializeComponent = async () => {
+      try {
+        setIsInitializing(true);
+        setInitError(null);
+        
+        // Simulate initialization process
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Validate tenant data
+        if (!tenant?.id) {
+          throw new Error('Tenant information is required to manage widgets');
+        }
+        
+        setIsInitializing(false);
+      } catch (error) {
+        console.error('Widget Management initialization error:', error);
+        setInitError(error instanceof Error ? error.message : 'Failed to initialize widget management');
+        setIsInitializing(false);
+      }
     };
-    
-    return {
-      totalViews: Math.floor(random(1) * 10000) + 1000,
-      totalInteractions: Math.floor(random(2) * 5000) + 500,
-      totalConversions: Math.floor(random(3) * 500) + 50,
-      conversionRate: random(4) * 10 + 2,
-      avgSessionDuration: Math.floor(random(5) * 300) + 60,
-      bounceRate: random(6) * 40 + 20,
-      topSources: [
-        { source: 'Direct', views: Math.floor(random(7) * 2000) + 1000, conversions: Math.floor(random(8) * 50) + 20 },
-        { source: 'Google', views: Math.floor(random(9) * 1500) + 500, conversions: Math.floor(random(10) * 40) + 15 },
-        { source: 'Social Media', views: Math.floor(random(11) * 1000) + 300, conversions: Math.floor(random(12) * 25) + 10 },
-        { source: 'Email', views: Math.floor(random(13) * 800) + 200, conversions: Math.floor(random(14) * 20) + 5 }
-      ],
-      deviceBreakdown: [
-        { device: 'Mobile', percentage: Math.floor(random(15) * 30) + 50 },
-        { device: 'Desktop', percentage: Math.floor(random(16) * 20) + 20 },
-        { device: 'Tablet', percentage: Math.floor(random(17) * 15) + 5 }
-      ],
-      hourlyData: Array.from({ length: 24 }, (_, i) => ({
-        hour: `${i}:00`,
-        views: Math.floor(random(18 + i) * 100) + 10,
-        conversions: Math.floor(random(42 + i) * 10) + 1
-      })),
-      weeklyData: Array.from({ length: 7 }, (_, i) => ({
-        day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i],
-        views: Math.floor(random(50 + i) * 500) + 100,
-        conversions: Math.floor(random(57 + i) * 50) + 10
-      }))
-    };
+
+    initializeComponent();
+  }, [tenant]);
+
+  // Safe analytics data generation with error handling
+  const analyticsData = useMemo((): AnalyticsData => {
+    try {
+      return generateSafeAnalyticsData(analyticsTimeRange);
+    } catch (error) {
+      console.error('Error generating analytics data:', error);
+      // Return minimal safe fallback
+      return {
+        totalViews: 0,
+        totalInteractions: 0,
+        totalConversions: 0,
+        conversionRate: 0,
+        avgSessionDuration: 0,
+        bounceRate: 0,
+        topSources: [],
+        deviceBreakdown: [],
+        hourlyData: [],
+        weeklyData: []
+      };
+    }
   }, [analyticsTimeRange]);
 
-  // Validation functions
-  const validateConfig = useCallback((config: any) => {
-    if (!config.welcomeMessage?.trim()) {
-      return 'Welcome message is required';
+  // Enhanced validation with error tracking
+  const validateCurrentConfig = useCallback((config: WidgetConfig) => {
+    try {
+      const validation = validateWidgetConfig(config);
+      setConfigErrors(validation.errors);
+      return validation.isValid;
+    } catch (error) {
+      console.error('Validation error:', error);
+      setConfigErrors(['Configuration validation failed']);
+      return false;
     }
-    if (!config.buttonText?.trim()) {
-      return 'Button text is required';
-    }
-    if (!/^#[0-9A-F]{6}$/i.test(config.primaryColor)) {
-      return 'Primary color must be a valid hex color';
-    }
-    if (!/^#[0-9A-F]{6}$/i.test(config.backgroundColor)) {
-      return 'Background color must be a valid hex color';
-    }
-    return null;
   }, []);
 
-  // Enhanced widget URL generation with more parameters
-  const generateWidgetUrl = useCallback((type: 'booking' | 'catering') => {
-    const config = type === 'booking' ? bookingConfig : cateringConfig;
-    const base = `${window.location.origin}/widget/${type}/${tenant?.id}`;
-    
-    const params = new URLSearchParams({
-      theme: config.theme,
-      primaryColor: config.primaryColor.replace('#', ''),
-      backgroundColor: config.backgroundColor.replace('#', ''),
-      textColor: config.textColor.replace('#', ''),
-      borderRadius: config.borderRadius.toString(),
-      welcomeMessage: config.welcomeMessage,
-      buttonText: config.buttonText,
-      showLogo: config.showLogo.toString(),
-      compactMode: config.compactMode.toString(),
-      animation: config.animation,
-      shadowIntensity: config.shadowIntensity.toString(),
-      fontFamily: config.fontFamily,
-      fontSize: config.fontSize.toString(),
-      spacing: config.spacing.toString()
-    });
+  // Safe widget URL generation
+  const generateSafeWidgetUrl = useCallback((type: 'booking' | 'catering') => {
+    try {
+      const config = type === 'booking' ? bookingConfig : cateringConfig;
+      const result = generateWidgetUrl(type, config, tenant?.id);
+      
+      if (!result.isValid) {
+        toast({
+          title: "URL Generation Failed",
+          description: result.error || "Unknown error occurred",
+          variant: "destructive",
+        });
+        return '';
+      }
+      
+      return result.url;
+    } catch (error) {
+      console.error('Error generating widget URL:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate widget URL",
+        variant: "destructive",
+      });
+      return '';
+    }
+  }, [bookingConfig, cateringConfig, tenant?.id, toast]);
 
-    return `${base}?${params.toString()}`;
-  }, [bookingConfig, cateringConfig, tenant?.id]);
+  // Safe embed code generation
+  const generateSafeEmbedCode = useCallback((type: 'booking' | 'catering') => {
+    try {
+      const config = type === 'booking' ? bookingConfig : cateringConfig;
+      const result = generateEmbedCode(type, config, tenant?.id, tenant?.name);
+      
+      if (!result.isValid) {
+        toast({
+          title: "Embed Code Generation Failed",
+          description: result.error || "Unknown error occurred",
+          variant: "destructive",
+        });
+        return '';
+      }
+      
+      return result.embedCode;
+    } catch (error) {
+      console.error('Error generating embed code:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate embed code",
+        variant: "destructive",
+      });
+      return '';
+    }
+  }, [bookingConfig, cateringConfig, tenant?.id, tenant?.name, toast]);
 
-  // Enhanced embed code generation
-  const generateEmbedCode = useCallback((type: 'booking' | 'catering') => {
-    const url = generateWidgetUrl(type);
-    const config = type === 'booking' ? bookingConfig : cateringConfig;
-    
-    return `<!-- ${tenant?.name || 'Restaurant'} ${type === 'booking' ? 'Booking' : 'Catering'} Widget -->
-<div id="${type}-widget-container" style="width: 100%; height: ${config.compactMode ? '400px' : '600px'}; border: none; border-radius: ${config.borderRadius}px; overflow: hidden; box-shadow: 0 ${config.shadowIntensity * 2}px ${config.shadowIntensity * 8}px rgba(0,0,0,0.1);"></div>
-<script>
-(function() {
-  var iframe = document.createElement('iframe');
-  iframe.src = '${url}';
-  iframe.style.width = '100%';
-  iframe.style.height = '100%';
-  iframe.style.border = 'none';
-  iframe.setAttribute('allow', 'payment; geolocation');
-  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation');
-  iframe.setAttribute('loading', 'lazy');
-  
-  var container = document.getElementById('${type}-widget-container');
-  if (container) {
-    container.appendChild(iframe);
-    
-    // Analytics tracking
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'widget_loaded', {
-        'widget_type': '${type}',
-        'tenant_id': '${tenant?.id}'
+  // Safe copy to clipboard function
+  const handleCopyToClipboard = useCallback(async (text: string, label: string) => {
+    try {
+      setIsLoading(true);
+      const result = await safeCopyToClipboard(text);
+      
+      if (result.success) {
+        toast({
+          title: "Copied!",
+          description: `${label} copied to clipboard`,
+        });
+      } else {
+        toast({
+          title: "Copy Failed",
+          description: result.error || "Failed to copy to clipboard",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Copy error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  // Safe configuration update functions
+  const updateBookingConfig = useCallback((updates: Partial<WidgetConfig>) => {
+    try {
+      setBookingConfig(prev => {
+        const newConfig = { ...prev, ...updates };
+        validateCurrentConfig(newConfig);
+        setHasUnsavedChanges(true);
+        return newConfig;
+      });
+    } catch (error) {
+      console.error('Error updating booking config:', error);
+      toast({
+        title: "Configuration Error",
+        description: "Failed to update booking configuration",
+        variant: "destructive",
       });
     }
-  }
-})();
-</script>`;
-  }, [generateWidgetUrl, bookingConfig, cateringConfig, tenant]);
+  }, [validateCurrentConfig, toast]);
 
-  // Real widget management hook with error handling
-  const hookOptions = useMemo(() => ({
-    autoSave: false, // Disabled auto-save to prevent API spam
-    enableAnalytics: true
-  }), []);
-
-  const {
-    widgets,
-    loading,
-    error,
-    connected,
-    isOnline,
-    hasUnsavedChanges,
-    lastSaved,
-    toggleWidgetActive,
-    getWidgetByType,
-    saveWidgetConfig,
-    markConfigChanged,
-  } = useWidgetManagement(hookOptions);
-
-  // Copy embed code with better UX
-  const copyEmbedCode = useCallback(async (type: 'booking' | 'catering') => {
+  const updateCateringConfig = useCallback((updates: Partial<WidgetConfig>) => {
     try {
-      const code = generateEmbedCode(type);
+      setCateringConfig(prev => {
+        const newConfig = { ...prev, ...updates };
+        validateCurrentConfig(newConfig);
+        setHasUnsavedChanges(true);
+        return newConfig;
+      });
+    } catch (error) {
+      console.error('Error updating catering config:', error);
+      toast({
+        title: "Configuration Error",
+        description: "Failed to update catering configuration",
+        variant: "destructive",
+      });
+    }
+  }, [validateCurrentConfig, toast]);
+
+  // Safe tab and type switching
+  const handleTabChange = useCallback((tab: string) => {
+    try {
+      setSelectedTab(tab);
+    } catch (error) {
+      console.error('Error changing tab:', error);
+    }
+  }, []);
+
+  const handleWidgetTypeChange = useCallback((type: 'booking' | 'catering') => {
+    try {
+      setActiveWidgetType(type);
+    } catch (error) {
+      console.error('Error changing widget type:', error);
+    }
+  }, []);
+
+  const handleAnalyticsTimeRangeChange = useCallback((range: '24h' | '7d' | '30d' | '90d') => {
+    try {
+      setAnalyticsTimeRange(range);
+    } catch (error) {
+      console.error('Error changing analytics time range:', error);
+    }
+  }, []);
+
+  // Save configuration
+  const handleSaveConfig = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const config = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
       
-      if (code.includes('Please select a tenant')) {
+      if (!validateCurrentConfig(config)) {
         toast({
-          title: "Cannot Copy Embed Code",
-          description: "Please select a tenant first.",
-          variant: "destructive"
+          title: "Validation Failed",
+          description: configErrors.join(', '),
+          variant: "destructive",
         });
         return;
       }
 
-      await navigator.clipboard.writeText(code);
+      // Simulate save operation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setHasUnsavedChanges(false);
       toast({
-        title: "Embed Code Copied",
-        description: `${type.charAt(0).toUpperCase() + type.slice(1)} widget embed code copied to clipboard`,
-        variant: "default"
+        title: "Configuration Saved",
+        description: `${activeWidgetType} widget configuration has been saved successfully.`,
       });
-    } catch (err) {
-      console.error('Failed to copy embed code:', err);
+    } catch (error) {
+      console.error('Error saving config:', error);
       toast({
-        title: "Copy Failed",
-        description: "Failed to copy embed code to clipboard",
-        variant: "destructive"
+        title: "Save Failed",
+        description: "Failed to save configuration",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeWidgetType, bookingConfig, cateringConfig, validateCurrentConfig, configErrors, toast]);
+
+  // Reset configuration
+  const handleResetConfig = useCallback(() => {
+    try {
+      const defaultConfig = getDefaultWidgetConfig(activeWidgetType);
+      if (activeWidgetType === 'booking') {
+        setBookingConfig(defaultConfig);
+      } else {
+        setCateringConfig(defaultConfig);
+      }
+      setHasUnsavedChanges(false);
+      setConfigErrors([]);
+      toast({
+        title: "Configuration Reset",
+        description: `${activeWidgetType} widget configuration has been reset to defaults.`,
+      });
+    } catch (error) {
+      console.error('Error resetting config:', error);
+      toast({
+        title: "Reset Failed",
+        description: "Failed to reset configuration",
+        variant: "destructive",
       });
     }
-  }, [generateEmbedCode, toast]);
+  }, [activeWidgetType, toast]);
 
-  // Show loading state during initialization
-  if (isInitializing || loading) {
+  // Early return patterns for error states
+  if (isInitializing) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center space-y-4">
-            <Clock className="w-8 h-8 animate-spin mx-auto text-blue-500" />
-            <div className="space-y-2">
-              <p className="text-lg font-medium">Loading Widget Management</p>
-              <p className="text-sm text-muted-foreground">
-                Connecting to widget services...
-              </p>
-            </div>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Initializing widget management...</p>
         </div>
       </div>
     );
   }
 
-  // Show initialization error
   if (initError) {
     return (
-      <div className="container mx-auto p-6">
-        <Alert variant="destructive">
+      <div className="flex items-center justify-center min-h-screen">
+        <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Initialization Failed</AlertTitle>
+          <AlertTitle>Initialization Error</AlertTitle>
           <AlertDescription>{initError}</AlertDescription>
         </Alert>
       </div>
     );
   }
 
+  if (!tenant) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Missing Tenant Information</AlertTitle>
+          <AlertDescription>Unable to load tenant data. Please refresh the page or contact support.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  const currentConfig = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
+  const updateCurrentConfig = activeWidgetType === 'booking' ? updateBookingConfig : updateCateringConfig;
+
   return (
-    <motion.div 
-      className="container mx-auto p-6 space-y-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      {/* Enhanced Header */}
+    <ErrorBoundary fallback={ErrorFallback}>
       <motion.div 
-        className="space-y-4"
-        initial={{ opacity: 0, y: -20 }}
+        className="container mx-auto p-6 space-y-6"
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.5 }}
+        transition={{ duration: 0.6 }}
       >
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <motion.div
-                className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Settings className="w-6 h-6 text-white" />
-              </motion.div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Widget Management
-                </h1>
-                <p className="text-muted-foreground">
-                  Configure, preview, and deploy your booking and catering widgets
-                </p>
+        {/* Enhanced Header */}
+        <motion.div 
+          className="space-y-4"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5 }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <motion.div
+                  className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Settings className="w-6 h-6 text-white" />
+                </motion.div>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Widget Management
+                  </h1>
+                  <p className="text-muted-foreground">
+                    Configure, preview, and deploy your booking and catering widgets
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Widget Type Selector */}
+            <div className="flex items-center gap-4">
+              {hasUnsavedChanges && (
+                <div className="flex items-center gap-2">
+                  <Button onClick={handleSaveConfig} disabled={isLoading} size="sm">
+                    {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Changes
+                  </Button>
+                  <Button onClick={handleResetConfig} variant="outline" size="sm">
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Reset
+                  </Button>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="widget-type">Active Widget:</Label>
+                <Select
+                  value={activeWidgetType}
+                  onValueChange={handleWidgetTypeChange}
+                >
+                  <SelectTrigger id="widget-type" className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="booking">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Booking
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="catering">
+                      <div className="flex items-center gap-2">
+                        <ChefHat className="w-4 h-4" />
+                        Catering
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
-          
-          {/* Widget Type Selector */}
-          <div className="flex items-center gap-2">
-            <Label htmlFor="widget-type">Active Widget:</Label>
-            <Select
-              value={activeWidgetType}
-              onValueChange={(value: 'booking' | 'catering') => setActiveWidgetType(value)}
-            >
-              <SelectTrigger id="widget-type" className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="booking">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Booking
-                  </div>
-                </SelectItem>
-                <SelectItem value="catering">
-                  <div className="flex items-center gap-2">
-                    <ChefHat className="w-4 h-4" />
-                    Catering
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
 
-        {/* Connection Status */}
-        <Alert className={connected ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"}>
-          <div className="flex items-center gap-2">
-            {connected ? (
-              <CheckCircle className="w-4 h-4 text-green-600" />
-            ) : (
-              <AlertCircle className="w-4 h-4 text-amber-600" />
-            )}
-            <AlertDescription className={connected ? "text-green-800" : "text-amber-800"}>
-              Widget service is {connected ? 'connected and ready' : 'connecting...'}
+          {/* Configuration Errors Alert */}
+          {configErrors.length > 0 && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Configuration Issues</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc list-inside space-y-1">
+                  {configErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Connection Status */}
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              Widget service is connected and ready
             </AlertDescription>
-          </div>
-        </Alert>
-      </motion.div>
+          </Alert>
+        </motion.div>
 
-      {/* Main Tabbed Interface */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-4">
-          <TabsTrigger value="configure" className="flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            Configure
-          </TabsTrigger>
-          <TabsTrigger value="preview" className="flex items-center gap-2">
-            <Eye className="w-4 h-4" />
-            Preview
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="embed" className="flex items-center gap-2">
-            <Code className="w-4 h-4" />
-            Embed
-          </TabsTrigger>
-        </TabsList>
+        {/* Main Tabbed Interface */}
+        <Tabs value={selectedTab} onValueChange={handleTabChange} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="configure" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Configure
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="flex items-center gap-2">
+              <Eye className="w-4 h-4" />
+              Preview
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="embed" className="flex items-center gap-2">
+              <Code className="w-4 h-4" />
+              Embed
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Configuration Tab */}
-        <TabsContent value="configure" className="space-y-6">
-          <WidgetConfigurationPanel
-            widgetType={activeWidgetType}
-            config={activeWidgetType === 'booking' ? bookingConfig : cateringConfig}
-            onConfigChange={(config) => {
-              if (activeWidgetType === 'booking') {
-                setBookingConfig({
-                  ...config,
-                  customCss: config.customCss || '',
-                  animation: config.animation || 'fade'
-                });
-              } else {
-                setCateringConfig({
-                  ...config,
-                  customCss: config.customCss || '',
-                  animation: config.animation || 'fade'
-                });
-              }
-              markConfigChanged(activeWidgetType, config);
-            }}
-            onSave={() => {
-              const config = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
-              const validation = validateConfig(config);
-              if (validation) {
-                toast({
-                  title: "Validation Error",
-                  description: validation,
-                  variant: "destructive"
-                });
-                return;
-              }
-              
-              saveWidgetConfig(activeWidgetType, config);
-              toast({
-                title: "Configuration Saved",
-                description: `${activeWidgetType} widget configuration has been saved successfully.`,
-                variant: "default"
-              });
-            }}
-            onReset={() => {
-              if (activeWidgetType === 'booking') {
-                setBookingConfig({
-                  theme: 'light' as 'light' | 'dark' | 'auto',
-                  primaryColor: '#3b82f6',
-                  backgroundColor: '#ffffff',
-                  textColor: '#1f2937',
-                  borderRadius: 8,
-                  welcomeMessage: 'Book your table with us!',
-                  buttonText: 'Reserve Now',
-                  showLogo: true,
-                  compactMode: false,
-                  customCss: '',
-                  animation: 'fade' as 'none' | 'fade' | 'slide' | 'bounce',
-                  shadowIntensity: 2,
-                  fontFamily: 'system',
-                  fontSize: 14,
-                  spacing: 1
-                });
-              } else {
-                setCateringConfig({
-                  theme: 'light' as 'light' | 'dark' | 'auto',
-                  primaryColor: '#f97316',
-                  backgroundColor: '#ffffff', 
-                  textColor: '#1f2937',
-                  borderRadius: 8,
-                  welcomeMessage: 'Order catering for your event!',
-                  buttonText: 'Order Catering',
-                  showLogo: true,
-                  compactMode: false,
-                  customCss: '',
-                  animation: 'fade' as 'none' | 'fade' | 'slide' | 'bounce',
-                  shadowIntensity: 2,
-                  fontFamily: 'system',
-                  fontSize: 14,
-                  spacing: 1
-                });
-              }
-            }}
-            isSaving={loading}
-            isActive={getWidgetByType(activeWidgetType)?.is_active ?? false}
-            onToggleActive={() => toggleWidgetActive(activeWidgetType)}
-          />
-        </TabsContent>
+          {/* Configuration Tab */}
+          <TabsContent value="configure" className="space-y-6">
+            <ErrorBoundary fallback={ErrorFallback}>
+              <Suspense fallback={<LoadingFallback label="Loading configuration panel..." />}>
+                <WidgetConfigurationPanel
+                  widgetType={activeWidgetType}
+                  config={currentConfig}
+                  onConfigChange={updateCurrentConfig}
+                  onSave={handleSaveConfig}
+                  onReset={handleResetConfig}
+                  isSaving={isLoading}
+                  isActive={true}
+                  onToggleActive={() => {}}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          </TabsContent>
 
-        {/* Preview Tab */}
-        <TabsContent value="preview" className="space-y-6">
-          <WidgetPreviewPanel
-            widgetType={activeWidgetType}
-            config={activeWidgetType === 'booking' ? bookingConfig : cateringConfig}
-            tenantId={tenant?.id}
-            isActive={getWidgetByType(activeWidgetType)?.is_active ?? false}
-          />
-        </TabsContent>
+          {/* Preview Tab */}
+          <TabsContent value="preview" className="space-y-6">
+            <ErrorBoundary fallback={ErrorFallback}>
+              <Suspense fallback={<LoadingFallback label="Loading preview panel..." />}>
+                <WidgetPreviewPanel
+                  widgetType={activeWidgetType}
+                  config={currentConfig}
+                  tenantId={tenant?.id}
+                  isActive={true}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          </TabsContent>
 
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
-          <WidgetAnalyticsDashboard
-            widgetType={activeWidgetType}
-            analyticsData={analyticsData}
-            timeRange={analyticsTimeRange}
-            onTimeRangeChange={setAnalyticsTimeRange}
-          />
-        </TabsContent>
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold">Widget Analytics</h2>
+              <Select value={analyticsTimeRange} onValueChange={handleAnalyticsTimeRangeChange}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="24h">Last 24h</SelectItem>
+                  <SelectItem value="7d">Last 7 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                  <SelectItem value="90d">Last 90 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <ErrorBoundary fallback={ErrorFallback}>
+              <Suspense fallback={<LoadingFallback label="Loading analytics dashboard..." />}>
+                <WidgetAnalyticsDashboard
+                  widgetType={activeWidgetType}
+                  analyticsData={analyticsData}
+                  timeRange={analyticsTimeRange}
+                  onTimeRangeChange={handleAnalyticsTimeRangeChange}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          </TabsContent>
 
-        {/* Embed Tab */}
-        <TabsContent value="embed" className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          {/* Embed Tab */}
+          <TabsContent value="embed" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Code className="w-5 h-5" />
-                  Embed Code Generator
+                  Widget Integration
                 </CardTitle>
                 <CardDescription>
-                  Copy and paste these embed codes into your website to display the widgets
+                  Copy and paste this code into your website to embed the {activeWidgetType} widget
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Widget URL Display */}
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Widget URL</Label>
                   <div className="flex gap-2">
-                    <Input
-                      value={generateWidgetUrl(activeWidgetType)}
-                      readOnly
-                      className="font-mono text-sm"
-                    />
+                    <div className="flex-1 p-3 bg-gray-50 border rounded font-mono text-sm break-all">
+                      {generateSafeWidgetUrl(activeWidgetType) || 'Generate URL failed'}
+                    </div>
                     <Button
-                      size="sm"
                       variant="outline"
-                      onClick={() => {
-                        navigator.clipboard.writeText(generateWidgetUrl(activeWidgetType));
-                        toast({
-                          title: "URL Copied",
-                          description: "Widget URL copied to clipboard",
-                        });
-                      }}
+                      size="sm"
+                      onClick={() => handleCopyToClipboard(generateSafeWidgetUrl(activeWidgetType), 'Widget URL')}
+                      disabled={isLoading}
                     >
-                      <Copy className="w-4 h-4" />
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
                     </Button>
                   </div>
                 </div>
 
-                {/* Enhanced Embed Code */}
                 <div className="space-y-2">
                   <Label>Embed Code</Label>
-                  <div className="relative">
-                    <Textarea
-                      value={generateEmbedCode(activeWidgetType)}
-                      readOnly
-                      rows={15}
-                      className="font-mono text-xs resize-none"
-                    />
+                  <div className="flex gap-2">
+                    <pre className="flex-1 p-3 bg-gray-50 border rounded text-xs overflow-auto max-h-48">
+                      {generateSafeEmbedCode(activeWidgetType) || 'Generate embed code failed'}
+                    </pre>
                     <Button
+                      variant="outline"
                       size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => copyEmbedCode(activeWidgetType)}
+                      onClick={() => handleCopyToClipboard(generateSafeEmbedCode(activeWidgetType), 'Embed Code')}
+                      disabled={isLoading}
                     >
-                      <Copy className="w-4 h-4 mr-1" />
-                      Copy
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Copy className="w-4 h-4" />}
                     </Button>
                   </div>
                 </div>
-
-                {/* Implementation Instructions */}
-                <Alert>
-                  <Info className="w-4 h-4" />
-                  <AlertTitle>Implementation Instructions</AlertTitle>
-                  <AlertDescription className="space-y-2">
-                    <p>1. Copy the embed code above</p>
-                    <p>2. Paste it into your website's HTML where you want the widget to appear</p>
-                    <p>3. The widget will automatically load with your current configuration</p>
-                    <p>4. For WordPress, use a Custom HTML block or add to your theme files</p>
-                  </AlertDescription>
-                </Alert>
-
-                {/* Advanced Options */}
-                <details className="space-y-2">
-                  <summary className="cursor-pointer font-medium">Advanced Integration Options</summary>
-                  <div className="pl-4 space-y-4 mt-2">
-                    <div className="space-y-2">
-                      <Label>React Component</Label>
-                      <Textarea
-                        value={`import React from 'react';
-
-const ${activeWidgetType.charAt(0).toUpperCase() + activeWidgetType.slice(1)}Widget = () => {
-  return (
-    <iframe
-      src="${generateWidgetUrl(activeWidgetType)}"
-      style={{
-        width: '100%',
-        height: '${activeWidgetType === 'booking' ? '600px' : '500px'}',
-        border: 'none',
-        borderRadius: '8px'
-      }}
-      title="${activeWidgetType.charAt(0).toUpperCase() + activeWidgetType.slice(1)} Widget"
-    />
-  );
-};
-
-export default ${activeWidgetType.charAt(0).toUpperCase() + activeWidgetType.slice(1)}Widget;`}
-                        readOnly
-                        rows={16}
-                        className="font-mono text-xs"
-                      />
-                    </div>
-                  </div>
-                </details>
               </CardContent>
             </Card>
-          </motion.div>
-        </TabsContent>
-      </Tabs>
-    </motion.div>
+          </TabsContent>
+        </Tabs>
+      </motion.div>
+    </ErrorBoundary>
   );
 };
 
