@@ -58,6 +58,7 @@ import {
   AlertCircle,
   RefreshCw,
   Check,
+  ExternalLink,
 } from 'lucide-react';
 
 interface WidgetConfig {
@@ -90,6 +91,7 @@ interface WidgetConfig {
   padding: number;
   spacing: number;
   alignment: 'left' | 'center' | 'right';
+  size: 'small' | 'medium' | 'large';
   
   // Features
   showLogo: boolean;
@@ -99,10 +101,22 @@ interface WidgetConfig {
   enableAnimations: boolean;
   animationType: 'none' | 'fade' | 'slide' | 'bounce' | 'scale';
   
+  // Booking-specific features
+  enableTableOptimization: boolean;
+  showAvailabilityIndicator: boolean;
+  requireDeposit: boolean;
+  enableSpecialRequests: boolean;
+  showDurationSelector: boolean;
+  enablePhoneBooking: boolean;
+  maxPartySize: number;
+  minAdvanceBooking: number; // hours
+  maxAdvanceBooking: number; // days
+  
   // Advanced
   customCss: string;
   customJs: string;
   isEnabled: boolean;
+  bookingSource: 'widget' | 'website' | 'social' | 'partner';
   
   // Behavior
   autoFocus: boolean;
@@ -115,8 +129,21 @@ interface WidgetAnalytics {
   totalClicks: number;
   conversionRate: number;
   avgSessionDuration: number;
+  
+  // Booking-specific metrics
+  totalBookings?: number;
+  completionRate?: number;
+  avgPartySize?: number;
+  peakHours?: string[];
+  
   topSources: Array<{ source: string; count: number }>;
-  dailyStats: Array<{ date: string; views: number; clicks: number }>;
+  dailyStats: Array<{ 
+    date: string; 
+    views: number; 
+    clicks: number;
+    bookings?: number;
+    revenue?: number;
+  }>;
 }
 
 interface ValidationError {
@@ -135,6 +162,15 @@ const WidgetManagement: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+
+  // Helper function for safe numeric parsing
+  const safeParseInt = useCallback((value: string, fallback: number, min?: number, max?: number): number => {
+    const parsed = parseInt(value, 10);
+    if (isNaN(parsed)) return fallback;
+    if (min !== undefined && parsed < min) return min;
+    if (max !== undefined && parsed > max) return max;
+    return parsed;
+  }, []);
 
   // Default widget configuration
   const getDefaultConfig = useCallback((type: 'booking' | 'catering'): WidgetConfig => ({
@@ -167,6 +203,7 @@ const WidgetManagement: React.FC = () => {
     padding: 20,
     spacing: 16,
     alignment: 'center' as const,
+    size: 'medium' as const,
     
     // Features
     showLogo: true,
@@ -176,10 +213,22 @@ const WidgetManagement: React.FC = () => {
     enableAnimations: true,
     animationType: 'fade' as const,
     
+    // Booking-specific features
+    enableTableOptimization: type === 'booking',
+    showAvailabilityIndicator: true,
+    requireDeposit: false,
+    enableSpecialRequests: true,
+    showDurationSelector: type === 'booking',
+    enablePhoneBooking: true,
+    maxPartySize: type === 'booking' ? 12 : 50,
+    minAdvanceBooking: 1, // 1 hour minimum
+    maxAdvanceBooking: 30, // 30 days maximum
+    
     // Advanced
     customCss: '',
     customJs: '',
     isEnabled: true,
+    bookingSource: 'widget' as const,
     
     // Behavior
     autoFocus: true,
@@ -204,20 +253,54 @@ const WidgetManagement: React.FC = () => {
   const validateConfig = useCallback((config: WidgetConfig): ValidationError[] => {
     const errors: ValidationError[] = [];
 
-    if (!config.welcomeMessage.trim()) {
+    // Required text fields
+    if (!config.welcomeMessage?.trim()) {
       errors.push({ field: 'welcomeMessage', message: 'Welcome message is required' });
     }
-    if (!config.buttonText.trim()) {
+    if (!config.buttonText?.trim()) {
       errors.push({ field: 'buttonText', message: 'Button text is required' });
     }
-    if (config.width < 300 || config.width > 800) {
+    
+    // Numeric validations with proper bounds checking
+    if (!config.width || config.width < 300 || config.width > 800) {
       errors.push({ field: 'width', message: 'Width must be between 300 and 800 pixels' });
     }
-    if (config.height < 400 || config.height > 1000) {
+    if (!config.height || config.height < 400 || config.height > 1000) {
       errors.push({ field: 'height', message: 'Height must be between 400 and 1000 pixels' });
     }
-    if (config.fontSize < 10 || config.fontSize > 24) {
+    if (!config.fontSize || config.fontSize < 10 || config.fontSize > 24) {
       errors.push({ field: 'fontSize', message: 'Font size must be between 10 and 24 pixels' });
+    }
+    
+    // Color validations
+    const colorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    if (!colorRegex.test(config.primaryColor)) {
+      errors.push({ field: 'primaryColor', message: 'Primary color must be a valid hex color' });
+    }
+    if (!colorRegex.test(config.secondaryColor)) {
+      errors.push({ field: 'secondaryColor', message: 'Secondary color must be a valid hex color' });
+    }
+    if (!colorRegex.test(config.backgroundColor)) {
+      errors.push({ field: 'backgroundColor', message: 'Background color must be a valid hex color' });
+    }
+    if (!colorRegex.test(config.textColor)) {
+      errors.push({ field: 'textColor', message: 'Text color must be a valid hex color' });
+    }
+    
+    // Booking-specific validations
+    if (!config.maxPartySize || config.maxPartySize < 1 || config.maxPartySize > 100) {
+      errors.push({ field: 'maxPartySize', message: 'Max party size must be between 1 and 100' });
+    }
+    if (config.minAdvanceBooking < 0 || config.minAdvanceBooking > 48) {
+      errors.push({ field: 'minAdvanceBooking', message: 'Min advance booking must be between 0 and 48 hours' });
+    }
+    if (!config.maxAdvanceBooking || config.maxAdvanceBooking < 1 || config.maxAdvanceBooking > 365) {
+      errors.push({ field: 'maxAdvanceBooking', message: 'Max advance booking must be between 1 and 365 days' });
+    }
+    
+    // Cross-field validations
+    if (config.minAdvanceBooking >= (config.maxAdvanceBooking * 24)) {
+      errors.push({ field: 'minAdvanceBooking', message: 'Min advance booking must be less than max advance booking' });
     }
 
     return errors;
@@ -225,14 +308,23 @@ const WidgetManagement: React.FC = () => {
 
   // Update configuration with validation
   const updateConfig = useCallback((updates: Partial<WidgetConfig>) => {
-    const newConfig = { ...currentConfig, ...updates };
-    setCurrentConfig(newConfig);
-    setHasUnsavedChanges(true);
-    
-    // Validate in real-time
-    const errors = validateConfig(newConfig);
-    setValidationErrors(errors);
-  }, [currentConfig, setCurrentConfig, validateConfig]);
+    try {
+      const newConfig = { ...currentConfig, ...updates };
+      setCurrentConfig(newConfig);
+      setHasUnsavedChanges(true);
+      
+      // Validate in real-time
+      const errors = validateConfig(newConfig);
+      setValidationErrors(errors);
+    } catch (error) {
+      console.error('Error updating configuration:', error);
+      toast({
+        title: "Configuration Error",
+        description: "Failed to update configuration. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [currentConfig, setCurrentConfig, validateConfig, toast]);
 
   // Save configuration
   const saveConfiguration = useCallback(async () => {
@@ -275,48 +367,161 @@ const WidgetManagement: React.FC = () => {
   // Load configuration from localStorage
   useEffect(() => {
     if (tenant?.id) {
-      const storageKey = `widget-config-${activeWidgetType}-${tenant.id}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
+      try {
+        const storageKey = `widget-config-${activeWidgetType}-${tenant.id}`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
           const parsedConfig = JSON.parse(saved);
-          setCurrentConfig(parsedConfig);
-        } catch (error) {
-          console.warn('Failed to load saved configuration:', error);
+          
+          // Validate loaded config structure
+          if (parsedConfig && typeof parsedConfig === 'object') {
+            // Merge with defaults to ensure all required properties exist
+            const defaultConfig = getDefaultConfig(activeWidgetType);
+            const mergedConfig = { ...defaultConfig, ...parsedConfig };
+            setCurrentConfig(mergedConfig);
+          } else {
+            console.warn('Invalid configuration format, using defaults');
+            setCurrentConfig(getDefaultConfig(activeWidgetType));
+          }
         }
+      } catch (error) {
+        console.warn('Failed to load saved configuration:', error);
+        toast({
+          title: "Configuration Load Warning",
+          description: "Failed to load saved configuration. Using defaults.",
+          variant: "default",
+        });
+        setCurrentConfig(getDefaultConfig(activeWidgetType));
       }
     }
-  }, [activeWidgetType, tenant?.id, setCurrentConfig]);
+  }, [activeWidgetType, tenant?.id, setCurrentConfig, getDefaultConfig, toast]);
 
   // Widget URL and embed code generation
   const generateWidgetUrl = useCallback((type: 'booking' | 'catering') => {
-    const baseUrl = window.location.origin;
-    const config = type === 'booking' ? bookingConfig : cateringConfig;
-    const configParams = new URLSearchParams({
-      tenant: tenant?.id || '',
-      theme: config.theme,
-      primaryColor: config.primaryColor,
-      backgroundColor: config.backgroundColor,
-      textColor: config.textColor,
-      borderRadius: config.borderRadius.toString(),
-      welcomeMessage: config.welcomeMessage,
-      buttonText: config.buttonText,
-      showLogo: config.showLogo.toString(),
-    });
-    return `${baseUrl}/widget/${type}?${configParams.toString()}`;
-  }, [bookingConfig, cateringConfig, tenant?.id]);
+    try {
+      if (!tenant?.slug) {
+        console.warn('No tenant slug available for URL generation');
+        return '';
+      }
+      
+      const baseUrl = window.location.origin;
+      const config = type === 'booking' ? bookingConfig : cateringConfig;
+      
+      if (!config) {
+        console.warn('No configuration available for URL generation');
+        return '';
+      }
+      
+      // Use the actual booking system routes
+      const widgetPath = type === 'booking' ? '/book' : '/catering';
+      const configParams = new URLSearchParams({
+        // Tenant identification
+        slug: tenant.slug,
+        
+        // Widget configuration parameters - with fallbacks
+        theme: config.theme || 'light',
+        primaryColor: encodeURIComponent(config.primaryColor || '#3b82f6'),
+        secondaryColor: encodeURIComponent(config.secondaryColor || '#1e40af'),
+        backgroundColor: encodeURIComponent(config.backgroundColor || '#ffffff'),
+        textColor: encodeURIComponent(config.textColor || '#1f2937'),
+        
+        // Layout parameters - with safe defaults
+        borderRadius: (config.borderRadius || 8).toString(),
+        width: (config.width || 400).toString(),
+        height: (config.height || 600).toString(),
+        
+        // Content parameters - with safe encoding
+        welcomeMessage: encodeURIComponent(config.welcomeMessage || ''),
+        buttonText: encodeURIComponent(config.buttonText || ''),
+        
+        // Feature flags - with proper boolean handling
+        showLogo: (config.showLogo ?? true).toString(),
+        showDescription: (config.showDescription ?? true).toString(),
+        showFooter: (config.showFooter ?? true).toString(),
+        enableAnimations: (config.enableAnimations ?? true).toString(),
+        animationType: config.animationType || 'fade',
+        
+        // Source tracking for analytics
+        source: 'widget',
+        widget_version: '2.0'
+      });
+      
+      return `${baseUrl}${widgetPath}/${tenant.slug}?${configParams.toString()}`;
+    } catch (error) {
+      console.error('Error generating widget URL:', error);
+      return '';
+    }
+  }, [bookingConfig, cateringConfig, tenant?.slug]);
 
   const generateEmbedCode = useCallback((type: 'booking' | 'catering') => {
-    const url = generateWidgetUrl(type);
-    const config = type === 'booking' ? bookingConfig : cateringConfig;
-    return `<iframe 
-  src="${url}" 
-  width="${config.width}" 
-  height="${config.height}" 
+    try {
+      const url = generateWidgetUrl(type);
+      
+      if (!url) {
+        return '<!-- Error: Unable to generate widget URL. Please check your configuration. -->';
+      }
+      
+      const config = type === 'booking' ? bookingConfig : cateringConfig;
+      
+      if (!config) {
+        return '<!-- Error: Widget configuration not found -->';
+      }
+      
+      const widgetId = `blunari-${type}-widget-${Date.now()}`;
+      
+      return `<!-- Blunari ${type.charAt(0).toUpperCase() + type.slice(1)} Widget -->
+<script>
+  (function() {
+    try {
+      var widget = document.createElement('div');
+      widget.id = '${widgetId}';
+      widget.style.cssText = 'width: ${config.width || 400}px; height: ${config.height || 600}px; max-width: 100%; margin: 0 auto; border-radius: ${config.borderRadius || 8}px; overflow: hidden; box-shadow: 0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1);';
+      
+      var iframe = document.createElement('iframe');
+      iframe.src = '${url}';
+      iframe.style.cssText = 'width: 100%; height: 100%; border: none; display: block;';
+      iframe.frameBorder = '0';
+      iframe.allowTransparency = 'true';
+      iframe.scrolling = 'auto';
+      iframe.title = '${(config.welcomeMessage || '').replace(/'/g, "\\'")}';
+      
+      // Error handling
+      iframe.onerror = function() {
+        console.error('Failed to load Blunari ${type} widget');
+        widget.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Unable to load widget. Please try again later.</div>';
+      };
+      
+      // Success callback
+      iframe.onload = function() {
+        console.log('Blunari ${type} widget loaded successfully');
+      };
+      
+      widget.appendChild(iframe);
+      
+      // Insert widget
+      var targetElement = document.currentScript ? document.currentScript.parentNode : document.body;
+      var nextSibling = document.currentScript ? document.currentScript.nextSibling : null;
+      targetElement.insertBefore(widget, nextSibling);
+    } catch (error) {
+      console.error('Error initializing Blunari widget:', error);
+    }
+  })();
+</script>
+
+<!-- Alternative: Simple iframe embed -->
+<iframe 
+  src="${url}"
+  width="${config.width || 400}" 
+  height="${config.height || 600}" 
   frameborder="0"
-  style="border-radius: ${config.borderRadius}px; box-shadow: 0 ${config.shadowIntensity * 2}px ${config.shadowIntensity * 4}px rgba(0,0,0,0.1);"
-  title="${config.welcomeMessage}">
+  style="border-radius: ${config.borderRadius || 8}px; box-shadow: 0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1); max-width: 100%;"
+  title="${(config.welcomeMessage || '').replace(/"/g, '&quot;')}"
+  onerror="this.style.display='none'; console.error('Failed to load Blunari widget');">
 </iframe>`;
+    } catch (error) {
+      console.error('Error generating embed code:', error);
+      return '<!-- Error: Unable to generate embed code. Please check your configuration and try again. -->';
+    }
   }, [generateWidgetUrl, bookingConfig, cateringConfig]);
 
   const copyToClipboard = useCallback(async (text: string, label: string) => {
@@ -338,12 +543,17 @@ const WidgetManagement: React.FC = () => {
     }
   }, [toast]);
 
-  // Mock analytics data
+  // Mock analytics data with booking-specific metrics
   const mockAnalytics = useMemo((): WidgetAnalytics => ({
     totalViews: Math.floor(Math.random() * 10000) + 1000,
     totalClicks: Math.floor(Math.random() * 1000) + 100,
     conversionRate: Math.round((Math.random() * 15 + 5) * 100) / 100,
     avgSessionDuration: Math.round((Math.random() * 180 + 60) * 100) / 100,
+    // Booking-specific metrics
+    totalBookings: Math.floor(Math.random() * 500) + 50,
+    completionRate: Math.round((Math.random() * 30 + 70) * 100) / 100,
+    avgPartySize: Math.round((Math.random() * 2 + 2) * 100) / 100,
+    peakHours: ['6:00 PM', '7:00 PM', '8:00 PM'],
     topSources: [
       { source: 'Direct', count: Math.floor(Math.random() * 500) + 200 },
       { source: 'Google', count: Math.floor(Math.random() * 400) + 150 },
@@ -354,11 +564,20 @@ const WidgetManagement: React.FC = () => {
       date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       views: Math.floor(Math.random() * 200) + 50,
       clicks: Math.floor(Math.random() * 50) + 10,
+      bookings: Math.floor(Math.random() * 20) + 5,
+      revenue: Math.floor(Math.random() * 1000) + 200,
     })).reverse(),
   }), []);
 
   // Reset to defaults
   const resetToDefaults = useCallback(() => {
+    if (hasUnsavedChanges) {
+      const confirmed = window.confirm(
+        'You have unsaved changes. Are you sure you want to reset to defaults? This action cannot be undone.'
+      );
+      if (!confirmed) return;
+    }
+    
     setCurrentConfig(getDefaultConfig(activeWidgetType));
     setHasUnsavedChanges(true);
     setValidationErrors([]);
@@ -366,14 +585,72 @@ const WidgetManagement: React.FC = () => {
       title: "Reset to Defaults",
       description: "Configuration has been reset to default values.",
     });
-  }, [activeWidgetType, setCurrentConfig, getDefaultConfig, toast]);
+  }, [activeWidgetType, setCurrentConfig, getDefaultConfig, toast, hasUnsavedChanges]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyboardShortcuts = (event: KeyboardEvent) => {
+      // Only handle shortcuts when not in input fields
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey) {
+        switch (event.key) {
+          case 's':
+            event.preventDefault();
+            if (!isSaving && validationErrors.length === 0) {
+              saveConfiguration();
+            }
+            break;
+          case 'r':
+            event.preventDefault();
+            resetToDefaults();
+            break;
+          case '1':
+            event.preventDefault();
+            setSelectedTab('configure');
+            break;
+          case '2':
+            event.preventDefault();
+            setSelectedTab('preview');
+            break;
+          case '3':
+            event.preventDefault();
+            setSelectedTab('analytics');
+            break;
+          case '4':
+            event.preventDefault();
+            setSelectedTab('embed');
+            break;
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyboardShortcuts);
+    return () => document.removeEventListener('keydown', handleKeyboardShortcuts);
+  }, [isSaving, validationErrors.length, saveConfiguration, resetToDefaults, setSelectedTab]);
+
+  // Warn about unsaved changes before page unload
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        event.preventDefault();
+        event.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return event.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6" role="main" aria-label="Widget Management Dashboard">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg" aria-hidden="true">
             <Settings className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -387,7 +664,7 @@ const WidgetManagement: React.FC = () => {
         <div className="flex items-center gap-4">
           {/* Unsaved changes indicator */}
           {hasUnsavedChanges && (
-            <Badge variant="secondary" className="flex items-center gap-1">
+            <Badge variant="secondary" className="flex items-center gap-1" aria-live="polite">
               <AlertCircle className="w-3 h-3" />
               Unsaved Changes
             </Badge>
@@ -396,20 +673,24 @@ const WidgetManagement: React.FC = () => {
           {/* Widget type selector */}
           <div className="flex items-center gap-2">
             <Label htmlFor="widget-type">Active Widget:</Label>
-            <Select value={activeWidgetType} onValueChange={(value: 'booking' | 'catering') => setActiveWidgetType(value)}>
+            <Select 
+              value={activeWidgetType} 
+              onValueChange={(value: 'booking' | 'catering') => setActiveWidgetType(value)}
+              aria-label="Select widget type"
+            >
               <SelectTrigger id="widget-type" className="w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="booking">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
+                    <Calendar className="w-4 h-4" aria-hidden="true" />
                     Booking Widget
                   </div>
                 </SelectItem>
                 <SelectItem value="catering">
                   <div className="flex items-center gap-2">
-                    <ChefHat className="w-4 h-4" />
+                    <ChefHat className="w-4 h-4" aria-hidden="true" />
                     Catering Widget
                   </div>
                 </SelectItem>
@@ -419,8 +700,14 @@ const WidgetManagement: React.FC = () => {
 
           {/* Action buttons */}
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={resetToDefaults}>
-              <RotateCcw className="w-4 h-4 mr-1" />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={resetToDefaults}
+              aria-label="Reset configuration to defaults (Ctrl+R)"
+              title="Reset configuration to defaults (Ctrl+R)"
+            >
+              <RotateCcw className="w-4 h-4 mr-1" aria-hidden="true" />
               Reset
             </Button>
             <Button 
@@ -428,12 +715,14 @@ const WidgetManagement: React.FC = () => {
               onClick={saveConfiguration}
               disabled={isSaving || validationErrors.length > 0}
               className="min-w-20"
+              aria-label={`Save configuration (Ctrl+S)${validationErrors.length > 0 ? ' - Fix validation errors first' : ''}`}
+              title={`Save configuration (Ctrl+S)${validationErrors.length > 0 ? ' - Fix validation errors first' : ''}`}
             >
               {isSaving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-1" />
+                  <Save className="w-4 h-4 mr-1" aria-hidden="true" />
                   Save
                 </>
               )}
@@ -444,13 +733,13 @@ const WidgetManagement: React.FC = () => {
 
       {/* Validation errors */}
       {validationErrors.length > 0 && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" role="alert" aria-live="assertive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Configuration Errors</AlertTitle>
           <AlertDescription>
-            <ul className="list-disc list-inside space-y-1">
+            <ul className="list-disc list-inside space-y-1" role="list">
               {validationErrors.map((error, index) => (
-                <li key={index}>{error.message}</li>
+                <li key={index} role="listitem">{error.message}</li>
               ))}
             </ul>
           </AlertDescription>
@@ -660,7 +949,7 @@ const WidgetManagement: React.FC = () => {
                     <Input
                       type="number"
                       value={currentConfig.width}
-                      onChange={(e) => updateConfig({ width: parseInt(e.target.value) || 400 })}
+                      onChange={(e) => updateConfig({ width: safeParseInt(e.target.value, 400, 300, 800) })}
                       min="300"
                       max="800"
                       className={validationErrors.find(e => e.field === 'width') ? 'border-red-500' : ''}
@@ -672,7 +961,7 @@ const WidgetManagement: React.FC = () => {
                     <Input
                       type="number"
                       value={currentConfig.height}
-                      onChange={(e) => updateConfig({ height: parseInt(e.target.value) || 600 })}
+                      onChange={(e) => updateConfig({ height: safeParseInt(e.target.value, 600, 400, 1000) })}
                       min="400"
                       max="1000"
                       className={validationErrors.find(e => e.field === 'height') ? 'border-red-500' : ''}
@@ -794,6 +1083,131 @@ const WidgetManagement: React.FC = () => {
                       onCheckedChange={(checked) => updateConfig({ compactMode: checked })}
                     />
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Booking-Specific Features */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  {activeWidgetType === 'booking' ? 'Booking' : 'Catering'} Features
+                </CardTitle>
+                <CardDescription>
+                  Advanced features specific to your {activeWidgetType} widget
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {activeWidgetType === 'booking' && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="table-optimization">Smart Table Optimization</Label>
+                      <Switch
+                        id="table-optimization"
+                        checked={currentConfig.enableTableOptimization}
+                        onCheckedChange={(checked) => updateConfig({ enableTableOptimization: checked })}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="duration-selector">Show Duration Selector</Label>
+                      <Switch
+                        id="duration-selector"
+                        checked={currentConfig.showDurationSelector}
+                        onCheckedChange={(checked) => updateConfig({ showDurationSelector: checked })}
+                      />
+                    </div>
+                  </>
+                )}
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="availability-indicator">Show Availability Indicator</Label>
+                  <Switch
+                    id="availability-indicator"
+                    checked={currentConfig.showAvailabilityIndicator}
+                    onCheckedChange={(checked) => updateConfig({ showAvailabilityIndicator: checked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="special-requests">Enable Special Requests</Label>
+                  <Switch
+                    id="special-requests"
+                    checked={currentConfig.enableSpecialRequests}
+                    onCheckedChange={(checked) => updateConfig({ enableSpecialRequests: checked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="phone-booking">Enable Phone Booking</Label>
+                  <Switch
+                    id="phone-booking"
+                    checked={currentConfig.enablePhoneBooking}
+                    onCheckedChange={(checked) => updateConfig({ enablePhoneBooking: checked })}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="require-deposit">Require Deposit</Label>
+                  <Switch
+                    id="require-deposit"
+                    checked={currentConfig.requireDeposit}
+                    onCheckedChange={(checked) => updateConfig({ requireDeposit: checked })}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Max Party Size</Label>
+                    <Input
+                      type="number"
+                      value={currentConfig.maxPartySize}
+                      onChange={(e) => updateConfig({ maxPartySize: parseInt(e.target.value) || 1 })}
+                      min="1"
+                      max="100"
+                      className={validationErrors.find(e => e.field === 'maxPartySize') ? 'border-red-500' : ''}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Min Advance (hours)</Label>
+                    <Input
+                      type="number"
+                      value={currentConfig.minAdvanceBooking}
+                      onChange={(e) => updateConfig({ minAdvanceBooking: parseInt(e.target.value) || 0 })}
+                      min="0"
+                      max="48"
+                      className={validationErrors.find(e => e.field === 'minAdvanceBooking') ? 'border-red-500' : ''}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Max Advance Booking (days)</Label>
+                  <Input
+                    type="number"
+                    value={currentConfig.maxAdvanceBooking}
+                    onChange={(e) => updateConfig({ maxAdvanceBooking: parseInt(e.target.value) || 30 })}
+                    min="1"
+                    max="365"
+                    className={validationErrors.find(e => e.field === 'maxAdvanceBooking') ? 'border-red-500' : ''}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Booking Source</Label>
+                  <Select value={currentConfig.bookingSource} onValueChange={(value: any) => updateConfig({ bookingSource: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="widget">Widget</SelectItem>
+                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="social">Social Media</SelectItem>
+                      <SelectItem value="partner">Partner Site</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
@@ -943,23 +1357,52 @@ const WidgetManagement: React.FC = () => {
                             {/* Main Content Area */}
                             <div className="flex-1 flex items-center justify-center py-4">
                               <div className="text-center space-y-4 w-full max-w-sm">
-                                {/* Interactive content placeholder */}
-                                <div 
-                                  className="w-full bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg flex items-center justify-center transition-all duration-300 hover:from-gray-200 hover:to-gray-300"
-                                  style={{ 
-                                    height: currentConfig.fontSize * 4,
-                                    borderRadius: currentConfig.borderRadius / 2 
-                                  }}
-                                >
-                                  <span 
-                                    className="text-gray-500 font-medium"
-                                    style={{ fontSize: currentConfig.fontSize * 0.75 }}
-                                  >
-                                    {activeWidgetType === 'booking' ? '📅 Select Date & Time' : '🍽️ Browse Menu'}
-                                  </span>
+                                {/* Interactive content placeholder showing real booking flow */}
+                                <div className="space-y-3">
+                                  {/* Step indicator */}
+                                  <div className="flex items-center justify-center gap-2 mb-4">
+                                    <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium">1</div>
+                                    <div className="w-8 h-0.5 bg-gray-200"></div>
+                                    <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">2</div>
+                                    <div className="w-8 h-0.5 bg-gray-200"></div>
+                                    <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">3</div>
+                                    <div className="w-8 h-0.5 bg-gray-200"></div>
+                                    <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">4</div>
+                                  </div>
+                                  
+                                  {/* Current step content */}
+                                  {activeWidgetType === 'booking' ? (
+                                    <div className="space-y-3">
+                                      <div className="text-sm font-medium text-left">Customer Details</div>
+                                      <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className="p-2 bg-gray-100 rounded border text-left">Guest Name</div>
+                                        <div className="p-2 bg-gray-100 rounded border text-left">Party Size</div>
+                                      </div>
+                                      <div className="p-2 bg-gray-100 rounded border text-left text-xs">Email Address</div>
+                                      {currentConfig.enableSpecialRequests && (
+                                        <div className="p-2 bg-gray-100 rounded border text-left text-xs">Special Requests</div>
+                                      )}
+                                      {currentConfig.showAvailabilityIndicator && (
+                                        <div className="flex items-center gap-2 text-xs text-green-600">
+                                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                          <span>Available slots found</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-3">
+                                      <div className="text-sm font-medium text-left">Catering Details</div>
+                                      <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className="p-2 bg-gray-100 rounded border text-left">Event Date</div>
+                                        <div className="p-2 bg-gray-100 rounded border text-left">Guest Count</div>
+                                      </div>
+                                      <div className="p-2 bg-gray-100 rounded border text-left text-xs">Menu Preferences</div>
+                                      <div className="p-2 bg-gray-100 rounded border text-left text-xs">Delivery Address</div>
+                                    </div>
+                                  )}
                                 </div>
                                 
-                                {/* CTA Button with hover effect */}
+                                {/* CTA Button with booking-specific styling */}
                                 <button
                                   className="w-full font-medium transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
                                   style={{
@@ -980,6 +1423,21 @@ const WidgetManagement: React.FC = () => {
                                 >
                                   {currentConfig.buttonText}
                                 </button>
+                                
+                                {/* Additional booking features */}
+                                {currentConfig.enableTableOptimization && activeWidgetType === 'booking' && (
+                                  <div className="text-xs text-blue-600 flex items-center gap-1">
+                                    <span>⚡</span>
+                                    <span>Smart table optimization enabled</span>
+                                  </div>
+                                )}
+                                
+                                {currentConfig.requireDeposit && (
+                                  <div className="text-xs text-orange-600 flex items-center gap-1">
+                                    <span>💳</span>
+                                    <span>Deposit required for booking</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             
@@ -1109,10 +1567,12 @@ const WidgetManagement: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Clicks</p>
-                    <p className="text-2xl font-bold">{mockAnalytics.totalClicks.toLocaleString()}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {activeWidgetType === 'booking' ? 'Total Bookings' : 'Total Orders'}
+                    </p>
+                    <p className="text-2xl font-bold">{mockAnalytics.totalBookings?.toLocaleString() || '0'}</p>
                   </div>
-                  <Copy className="w-8 h-8 text-green-500" />
+                  <Calendar className="w-8 h-8 text-green-500" />
                 </div>
               </CardContent>
             </Card>
@@ -1121,8 +1581,8 @@ const WidgetManagement: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Conversion Rate</p>
-                    <p className="text-2xl font-bold">{mockAnalytics.conversionRate}%</p>
+                    <p className="text-sm text-muted-foreground">Completion Rate</p>
+                    <p className="text-2xl font-bold">{mockAnalytics.completionRate?.toFixed(1) || '0'}%</p>
                   </div>
                   <BarChart3 className="w-8 h-8 text-purple-500" />
                 </div>
@@ -1133,8 +1593,15 @@ const WidgetManagement: React.FC = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Avg. Session</p>
-                    <p className="text-2xl font-bold">{mockAnalytics.avgSessionDuration}s</p>
+                    <p className="text-sm text-muted-foreground">
+                      {activeWidgetType === 'booking' ? 'Avg Party Size' : 'Avg Order Value'}
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {activeWidgetType === 'booking' 
+                        ? mockAnalytics.avgPartySize?.toFixed(1) || '0'
+                        : `$${Math.floor(Math.random() * 200 + 100)}`
+                      }
+                    </p>
                   </div>
                   <RefreshCw className="w-8 h-8 text-orange-500" />
                 </div>
@@ -1168,63 +1635,141 @@ const WidgetManagement: React.FC = () => {
               </CardContent>
             </Card>
             
-            {/* Daily stats */}
+            {/* Performance metrics */}
             <Card>
               <CardHeader>
-                <CardTitle>Daily Performance</CardTitle>
+                <CardTitle>
+                  {activeWidgetType === 'booking' ? 'Booking Performance' : 'Order Performance'}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {mockAnalytics.dailyStats.map((day, index) => (
-                    <div key={index} className="flex items-center justify-between text-sm">
-                      <span>{new Date(day.date).toLocaleDateString()}</span>
-                      <div className="flex items-center gap-4">
-                        <span className="text-blue-600">{day.views} views</span>
-                        <span className="text-green-600">{day.clicks} clicks</span>
+                <div className="space-y-4">
+                  {activeWidgetType === 'booking' && mockAnalytics.peakHours && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">Peak Booking Hours</p>
+                      <div className="flex flex-wrap gap-2">
+                        {mockAnalytics.peakHours.map((hour, index) => (
+                          <Badge key={index} variant="secondary">{hour}</Badge>
+                        ))}
                       </div>
                     </div>
-                  ))}
+                  )}
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Conversion Rate</span>
+                      <span className="font-medium text-green-600">{mockAnalytics.conversionRate}%</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Avg Session Duration</span>
+                      <span className="font-medium">{mockAnalytics.avgSessionDuration}s</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Completion Rate</span>
+                      <span className="font-medium text-blue-600">{mockAnalytics.completionRate?.toFixed(1) || '0'}%</span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
+          
+          {/* Daily performance chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Daily Performance (Last 7 Days)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {mockAnalytics.dailyStats.map((day, index) => (
+                  <div key={index} className="grid grid-cols-2 md:grid-cols-4 gap-4 p-3 border rounded-lg">
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Date</p>
+                      <p className="font-medium">{new Date(day.date).toLocaleDateString()}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Views</p>
+                      <p className="font-medium text-blue-600">{day.views}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">
+                        {activeWidgetType === 'booking' ? 'Bookings' : 'Orders'}
+                      </p>
+                      <p className="font-medium text-green-600">{day.bookings || 0}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Revenue</p>
+                      <p className="font-medium text-purple-600">${day.revenue || 0}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Deploy Tab */}
         <TabsContent value="embed" className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold">Deploy Widget</h3>
+            <h3 className="text-lg font-semibold">Deploy Your Widget</h3>
             <p className="text-sm text-muted-foreground">
-              Get your embed code and deployment instructions
+              Copy and paste the embed code to integrate your {activeWidgetType} widget into your website
             </p>
           </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Embed code */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Embed Code</CardTitle>
-                <CardDescription>
-                  Copy this code to your website where you want the widget to appear
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+
+          {/* Generated embed code */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Code className="w-5 h-5" />
+                Embed Code
+              </CardTitle>
+              <CardDescription>
+                Add this code to your website where you want the widget to appear
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
                 <div className="relative">
-                  <Textarea
-                    value={embedCode}
-                    readOnly
-                    className="font-mono text-sm resize-none h-32"
-                  />
+                  <pre className="bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto border">
+                    <code>{generateEmbedCode(activeWidgetType)}</code>
+                  </pre>
                   <Button
+                    variant="outline"
                     size="sm"
                     className="absolute top-2 right-2"
-                    onClick={() => {
-                      navigator.clipboard.writeText(embedCode);
-                      // You could add a toast notification here
-                    }}
+                    onClick={() => copyToClipboard(generateEmbedCode(activeWidgetType), 'Embed code')}
+                    disabled={isLoading}
                   >
-                    <Copy className="w-4 h-4" />
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copy
+                      </>
+                    )}
                   </Button>
+                </div>
+                
+                {/* Widget URL for testing */}
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-900 mb-2">Direct Widget URL</h4>
+                  <p className="text-sm text-blue-700 mb-2">
+                    Test your widget directly before embedding:
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 bg-white p-2 rounded border text-sm">
+                      {generateWidgetUrl(activeWidgetType)}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(generateWidgetUrl(activeWidgetType), '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-2">
@@ -1234,86 +1779,175 @@ const WidgetManagement: React.FC = () => {
                   />
                   <Label>Widget enabled</Label>
                 </div>
-              </CardContent>
-            </Card>
-            
-            {/* Deployment options */}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Implementation guide and configuration summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Implementation guide */}
             <Card>
               <CardHeader>
-                <CardTitle>Deployment Options</CardTitle>
-                <CardDescription>
-                  Choose how to integrate your widget
-                </CardDescription>
+                <CardTitle>Implementation Guide</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="p-3 border rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">HTML/JavaScript</p>
-                        <p className="text-sm text-muted-foreground">Direct embed in any website</p>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        Copy Code
-                      </Button>
-                    </div>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">1. Basic Implementation</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Simply paste the embed code into your HTML where you want the widget to appear.
+                    </p>
                   </div>
                   
-                  <div className="p-3 border rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">WordPress Plugin</p>
-                        <p className="text-sm text-muted-foreground">Easy installation for WordPress sites</p>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        Download
-                      </Button>
-                    </div>
+                  <div>
+                    <h4 className="font-medium mb-2">2. WordPress Integration</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Add the embed code to a Custom HTML block or use the Text widget in your theme.
+                    </p>
                   </div>
                   
-                  <div className="p-3 border rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">React Component</p>
-                        <p className="text-sm text-muted-foreground">For React applications</p>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        View Docs
-                      </Button>
-                    </div>
+                  <div>
+                    <h4 className="font-medium mb-2">3. Shopify Integration</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Add the code to your theme's liquid files or use a Custom HTML section.
+                    </p>
                   </div>
+                  
+                  {activeWidgetType === 'booking' && (
+                    <div>
+                      <h4 className="font-medium mb-2">4. Booking System Features</h4>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <p>• Real-time availability checking</p>
+                        <p>• Table optimization and management</p>
+                        <p>• Customer details collection</p>
+                        <p>• Special requests handling</p>
+                        {currentConfig.requireDeposit && <p>• Deposit payment processing</p>}
+                        {currentConfig.enableSpecialRequests && <p>• Special requirements collection</p>}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                
-                <Separator />
-                
-                <div className="space-y-3">
-                  <h4 className="font-medium">Advanced Settings</h4>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>Widget ID</Label>
-                      <Badge variant="secondary">{mockWidgetId}</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label>API Endpoint</Label>
-                      <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-                        /api/widgets/{mockWidgetId}
-                      </code>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label>Last Updated</Label>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date().toLocaleDateString()}
-                      </span>
+              </CardContent>
+            </Card>
+
+            {/* Configuration summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Current Configuration</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Widget Type:</span>
+                    <span className="capitalize">{activeWidgetType}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Primary Color:</span>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-4 h-4 rounded border"
+                        style={{ backgroundColor: currentConfig.primaryColor }}
+                      />
+                      <span>{currentConfig.primaryColor}</span>
                     </div>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Theme:</span>
+                    <span className="capitalize">{currentConfig.theme}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Size:</span>
+                    <span className="capitalize">{currentConfig.size}</span>
+                  </div>
+                  
+                  {activeWidgetType === 'booking' && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Max Party Size:</span>
+                        <span>{currentConfig.maxPartySize || 'No limit'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Table Optimization:</span>
+                        <span>{currentConfig.enableTableOptimization ? 'Enabled' : 'Disabled'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Deposit Required:</span>
+                        <span>{currentConfig.requireDeposit ? 'Yes' : 'No'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Special Requests:</span>
+                        <span>{currentConfig.enableSpecialRequests ? 'Enabled' : 'Disabled'}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
-          
+
+          {/* Testing recommendations */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5" />
+                Testing & Validation
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-medium">Test the direct widget URL</p>
+                    <p className="text-sm text-muted-foreground">
+                      Click the external link icon above to test your widget in a new tab
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-medium">Verify mobile responsiveness</p>
+                    <p className="text-sm text-muted-foreground">
+                      Test the widget on different screen sizes using browser dev tools
+                    </p>
+                  </div>
+                </div>
+                
+                {activeWidgetType === 'booking' && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
+                      3
+                    </div>
+                    <div>
+                      <p className="font-medium">Test complete booking flow</p>
+                      <p className="text-sm text-muted-foreground">
+                        Go through the entire booking process: Customer Details → Date & Time → Table Selection → Confirmation
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-0.5">
+                    {activeWidgetType === 'booking' ? '4' : '3'}
+                  </div>
+                  <div>
+                    <p className="font-medium">Monitor analytics</p>
+                    <p className="text-sm text-muted-foreground">
+                      Check the Analytics tab regularly to track performance and optimize
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Deployment status */}
           <Card>
             <CardHeader>
@@ -1333,8 +1967,12 @@ const WidgetManagement: React.FC = () => {
                   <div className="w-12 h-12 mx-auto mb-2 bg-green-100 rounded-full flex items-center justify-center">
                     <Check className="w-6 h-6 text-green-600" />
                   </div>
-                  <p className="font-medium">Testing</p>
-                  <p className="text-sm text-muted-foreground">Passed</p>
+                  <p className="font-medium">
+                    {activeWidgetType === 'booking' ? 'Booking Integration' : 'Testing'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {activeWidgetType === 'booking' ? 'Connected' : 'Passed'}
+                  </p>
                 </div>
                 
                 <div className="text-center p-4 border rounded-lg">
