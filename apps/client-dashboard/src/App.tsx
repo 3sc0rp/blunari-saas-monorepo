@@ -36,6 +36,7 @@ const StaffManagement = lazy(() => import("./pages/StaffManagement"));
 const InventoryManagement = lazy(() => import("./pages/InventoryManagement"));
 const AIBusinessInsights = lazy(() => import("./pages/AIBusinessInsights"));
 const WidgetManagement = lazy(() => import("./pages/WidgetManagement"));
+const WidgetManagementTest = lazy(() => import("./pages/WidgetManagementTest"));
 const DashboardHome = lazy(() => import("./pages/DashboardHome"));
 
 // Create QueryClient instance
@@ -110,6 +111,7 @@ function App() {
                                 <Route path="analytics" element={<Analytics />} />
                                 <Route path="ai-business-insights" element={<AIBusinessInsights />} />
                                 <Route path="widget-management" element={<WidgetManagement />} />
+                                <Route path="widget-management-test" element={<WidgetManagementTest />} />
                                 <Route path="settings" element={<Settings />} />
                                 <Route path="command-center" element={<CommandCenter />} />
                               </Route>
