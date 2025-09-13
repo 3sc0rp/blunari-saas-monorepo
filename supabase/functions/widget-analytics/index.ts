@@ -69,38 +69,6 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client with service role for full access
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get authorization header (but make it optional for debugging)
-    const authHeader = req.headers.get('Authorization');
-    console.log('Auth header present:', !!authHeader);
-    
-    // For debugging - let's skip auth validation temporarily
-    let user = null;
-    if (authHeader) {
-      // Verify JWT token
-      const token = authHeader.replace('Bearer ', '');
-      console.log('Attempting to verify token...');
-      
-      try {
-        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
-        
-        if (authError) {
-          console.error('Auth error:', authError);
-          // Don't fail - just log for debugging
-        } else if (authUser) {
-          console.log('User authenticated:', authUser.id);
-          user = authUser;
-        }
-      } catch (authException) {
-        console.error('Exception during auth:', authException);
-        // Don't fail - just log for debugging
-      }
-    } else {
-      console.log('No auth header - proceeding for debugging');
-    }
-
     // Parse request body
     let requestBody;
     try {
@@ -134,20 +102,74 @@ serve(async (req) => {
       );
     }
 
+    // Create Supabase clients
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Get authorization header and validate it properly
+    const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
+    if (!authHeader) {
+      console.error('Missing authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify JWT token using the anon client for proper auth validation
+    const token = authHeader.replace('Bearer ', '');
+    console.log('Attempting to verify token...');
+    
+    let user = null;
+    try {
+      // Use supabase auth client for token validation
+      const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser(token);
+      
+      if (authError) {
+        console.error('Auth error:', authError);
+        return new Response(
+          JSON.stringify({ error: 'Authentication failed', details: authError.message }),
+          { status: 401, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (!authUser) {
+        console.error('No user found for token');
+        return new Response(
+          JSON.stringify({ error: 'Invalid or expired token' }),
+          { status: 401, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log('User authenticated:', authUser.id);
+      user = authUser;
+    } catch (authException) {
+      console.error('Exception during auth:', authException);
+      return new Response(
+        JSON.stringify({ error: 'Authentication exception', details: String(authException) }),
+        { status: 401, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Proceeding with analytics generation...');
+
     // Calculate date range
     const now = new Date();
     const daysBack = timeRange === '30d' ? 30 : timeRange === '7d' ? 7 : 1;
     const startDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
 
-    // Fetch real analytics data based on widget type
+    // Fetch real analytics data based on widget type using admin client
     const analytics: WidgetAnalytics = await generateRealAnalytics(
-      supabase, 
+      supabaseAdmin, 
       tenantId, 
       widgetType, 
       startDate, 
       now
     );
 
+    console.log('Analytics generated successfully');
     return new Response(
       JSON.stringify({ data: analytics }),
       { 
