@@ -40,11 +40,13 @@ serve(async (req) => {
   const origin = req.headers.get('origin');
   const responseHeaders = getCorsHeaders(origin || undefined);
   
+  // Handle CORS preflight requests FIRST - before any other logic
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
-      status: 200,
+    console.log('Handling OPTIONS request from origin:', origin);
+    return new Response(null, { 
+      status: 204, // Use 204 No Content for OPTIONS
       headers: responseHeaders 
-    })
+    });
   }
 
   try {
