@@ -42,7 +42,7 @@ export function useWidgetAnalytics({
 
   const isAvailable = Boolean(tenantId && tenantSlug);
 
-  const fetchAnalytics = useCallback(async (): Promise<void> => {
+  const fetchAnalytics = useCallback(async (timeRange: string = '7d'): Promise<void> => {
     if (!tenantId || !tenantSlug) {
       setState(prev => ({
         ...prev,
@@ -78,12 +78,29 @@ export function useWidgetAnalytics({
       console.log('Successfully loaded real analytics data');
     } catch (error) {
       console.error('Failed to fetch real analytics:', error);
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch real analytics data',
-        data: null, // Don't fall back to mock data
-      }));
+      
+      // Enhanced error handling with fallback attempt
+      try {
+        console.log('Attempting direct database fallback...');
+        const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
+        
+        setState({
+          data: fallbackData,
+          loading: false,
+          error: null, // Clear error since fallback worked
+          lastUpdated: new Date(),
+        });
+        
+        console.log('Successfully loaded analytics via database fallback');
+      } catch (fallbackError) {
+        console.error('Database fallback also failed:', fallbackError);
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Unable to load analytics data - please try again later',
+          data: null,
+        }));
+      }
     }
   }, [tenantId, tenantSlug, widgetType]);
 
