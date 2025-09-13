@@ -145,6 +145,11 @@ async function fetchRealWidgetAnalytics(
   
   console.log('Calling real analytics Edge Function...');
   console.log('Request details:', { tenantId, widgetType, timeRange });
+  console.log('Access token info:', {
+    present: !!accessToken,
+    length: accessToken?.length || 0,
+    startsWithEyJ: accessToken?.startsWith('eyJ') || false
+  });
   
   try {
     // Call the widget-analytics Edge Function with real data queries
@@ -169,6 +174,29 @@ async function fetchRealWidgetAnalytics(
 
     if (response.error) {
       console.error('Real analytics function error:', response.error);
+      
+      // If it's a 400 error, try without authentication header
+      if (response.error.message?.includes('400') || response.error.message?.includes('Bad Request')) {
+        console.log('Retrying Edge Function without authentication header...');
+        
+        try {
+          const retryResponse = await supabase.functions.invoke('widget-analytics', {
+            body: {
+              tenantId,
+              widgetType,
+              timeRange
+            }
+            // No headers - let it run in anonymous mode
+          });
+          
+          if (!retryResponse.error && retryResponse.data?.success) {
+            console.log('✅ Retry without auth succeeded!');
+            return retryResponse.data.data;
+          }
+        } catch (retryError) {
+          console.warn('Retry without auth also failed:', retryError);
+        }
+      }
       
       // If Edge Function fails, try direct database query as fallback
       console.log('Attempting direct database fallback due to Edge Function error...');
