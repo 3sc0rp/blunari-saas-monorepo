@@ -71,6 +71,7 @@ class EnterpriseLogger {
   private readonly environment: string;
   private readonly version: string;
   private readonly correlationId: string;
+  private inErrorPrint = false; // reentrancy guard to avoid console.patch recursion in tests
   private readonly sensitiveFields = new Set([
     'password', 'token', 'secret', 'key', 'authorization', 'cookie', 'jwt'
   ]);
@@ -184,11 +185,21 @@ class EnterpriseLogger {
     }
     
     if (entry.error) {
-      console.error('❌ Error:', entry.error);
-      if (entry.error.stack) {
-        console.groupCollapsed('📚 Stack Trace');
-        console.error(entry.error.stack);
-        console.groupEnd();
+      if (!this.inErrorPrint) {
+        try {
+          this.inErrorPrint = true;
+          console.error('❌ Error:', entry.error);
+          if (entry.error.stack) {
+            console.groupCollapsed('📚 Stack Trace');
+            console.error(entry.error.stack);
+            console.groupEnd();
+          }
+        } finally {
+          this.inErrorPrint = false;
+        }
+      } else {
+        // Fallback minimal output to prevent infinite recursion
+        console.log('Error (suppressed recursive logging):', entry.error.message);
       }
     }
     

@@ -22,6 +22,11 @@ export interface AnalyticsState {
   mode?: 'edge' | 'direct-db' | 'synthetic';
   correlationId?: string;
   lastErrorCode?: string | null;
+  meta?: {
+    estimation?: boolean;
+    version?: string;
+    timeRange?: string;
+  } | null;
 }
 
 /**
@@ -33,7 +38,7 @@ export function useWidgetAnalytics({
   widgetType,
   refreshInterval = 300000, // 5 minutes default
 }: UseWidgetAnalyticsOptions): AnalyticsState & {
-  refresh: () => Promise<void>;
+  refresh: (timeRange?: string) => Promise<void>;
   isAvailable: boolean;
 } {
   const [state, setState] = useState<AnalyticsState>({
@@ -43,7 +48,8 @@ export function useWidgetAnalytics({
     lastUpdated: null,
     mode: undefined,
     correlationId: undefined,
-    lastErrorCode: null
+    lastErrorCode: null,
+    meta: null
   });
 
   const sessionCheckedRef = useRef(false);
@@ -77,7 +83,7 @@ export function useWidgetAnalytics({
       return;
     }
 
-    setState(prev => ({ ...prev, loading: true, error: null, lastErrorCode: null }));
+  setState(prev => ({ ...prev, loading: true, error: null, lastErrorCode: null }));
 
     try {
       console.log(`Fetching REAL analytics for tenant ${tenantId}, widget ${widgetType}`);
@@ -86,15 +92,16 @@ export function useWidgetAnalytics({
       if (tenantId.includes('demo') || tenantId.includes('test') || !tenantId.match(/^[0-9a-f-]{36}$/i)) {
         console.log('🎭 Demo tenant detected, using database fallback');
         const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
-        setState({
-          data: fallbackData,
-          loading: false,
-          error: null,
-          lastUpdated: new Date(),
-          mode: 'direct-db',
-          correlationId: correlationBase.current + ':demo',
-          lastErrorCode: null
-        });
+          setState({
+            data: fallbackData,
+            loading: false,
+            error: null,
+            lastUpdated: new Date(),
+            mode: 'direct-db',
+            correlationId: correlationBase.current + ':demo',
+            lastErrorCode: null,
+            meta: { estimation: true, timeRange }
+          });
         return;
       }
       
@@ -112,7 +119,9 @@ export function useWidgetAnalytics({
           error: null,
           lastUpdated: new Date(),
           mode: 'direct-db',
-          correlationId: correlationBase.current + ':noauth'
+          correlationId: correlationBase.current + ':noauth',
+          lastErrorCode: null,
+          meta: { estimation: true, timeRange }
         });
         return;
       }
@@ -124,15 +133,21 @@ export function useWidgetAnalytics({
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const cid = `${correlationBase.current}:a${attempt}`;
         try {
-          analytics = await fetchRealWidgetAnalytics(tenantId, widgetType, session.access_token, '7d', cid);
+          const realResult = await fetchRealWidgetAnalytics(tenantId, widgetType, session.access_token, timeRange, cid);
+          analytics = realResult.data;
           setState({
-            data: analytics,
+            data: realResult.data,
             loading: false,
             error: null,
             lastUpdated: new Date(),
             mode: 'edge',
             correlationId: cid,
-            lastErrorCode: null
+            lastErrorCode: null,
+            meta: {
+              estimation: realResult.meta?.estimation,
+              version: realResult.meta?.version,
+              timeRange
+            }
           });
           console.log('✅ Successfully loaded real analytics data (attempt', attempt, ')');
           break;
@@ -155,7 +170,8 @@ export function useWidgetAnalytics({
           lastUpdated: new Date(),
           mode: 'direct-db',
           correlationId: correlationBase.current + ':fallback',
-          lastErrorCode: lastErr?.code || null
+          lastErrorCode: lastErr?.code || null,
+          meta: { estimation: true, timeRange }
         });
       }
     } catch (error) {
@@ -169,11 +185,12 @@ export function useWidgetAnalytics({
         setState({
           data: fallbackData,
           loading: false,
-          error: null, // Clear error since fallback worked
+            error: null, // Clear error since fallback worked
           lastUpdated: new Date(),
           mode: 'direct-db',
           correlationId: correlationBase.current + ':catch-fallback',
-          lastErrorCode: error?.code || null
+          lastErrorCode: (error as any)?.code || null,
+          meta: { estimation: true, timeRange }
         });
         
         console.log('✅ Successfully loaded analytics via database fallback');
@@ -186,7 +203,8 @@ export function useWidgetAnalytics({
           data: null,
           mode: 'synthetic',
           correlationId: correlationBase.current + ':synthetic',
-          lastErrorCode: fallbackError?.code || null
+          lastErrorCode: (fallbackError as any)?.code || null,
+          meta: { estimation: true, timeRange }
         }));
       }
     }
@@ -252,7 +270,7 @@ async function fetchRealWidgetAnalytics(
   accessToken: string,
   timeRange: string = '7d',
   correlationId?: string
-): Promise<WidgetAnalytics> {
+): Promise<{ data: WidgetAnalytics; meta?: { estimation?: boolean; version?: string } }> {
   
   console.log('Calling real analytics Edge Function...');
   console.log('Request details:', { tenantId, widgetType, timeRange });
@@ -316,7 +334,7 @@ async function fetchRealWidgetAnalytics(
           
           if (!retryResponse.error && retryResponse.data?.success) {
             console.log('✅ Retry without auth succeeded!');
-            return retryResponse.data.data;
+            return { data: retryResponse.data.data, meta: retryResponse.data.meta };
           }
         } catch (retryError) {
           console.warn('Retry without auth also failed:', retryError);
@@ -336,7 +354,7 @@ async function fetchRealWidgetAnalytics(
 
     console.log('Real analytics data received successfully from Edge Function');
     console.log('Auth method used:', response.data.meta?.authMethod || 'unknown');
-    return response.data.data;
+  return { data: response.data.data, meta: response.data.meta };
     
   } catch (err) {
     console.error('Edge Function request failed:', err, 'cid:', correlationId);

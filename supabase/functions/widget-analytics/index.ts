@@ -114,13 +114,14 @@ interface WidgetEvent {
 }
 
 // Function build/version marker (manually bump if making structural changes)
-const FUNCTION_VERSION = '2025-09-13.3';
+const FUNCTION_VERSION = '2025-09-13.4';
 
 serve(async (req) => {
   const t0 = performance.now();
   const correlationId = req.headers.get('x-correlation-id') || generateId();
   // Get origin for CORS handling
-  const origin = req.headers.get('origin');
+  const originRaw = req.headers.get('origin');
+  const origin = originRaw ? originRaw.replace(/\/$/, '') : originRaw;
   const responseHeaders = { ...createCorsHeaders(origin || null), 'x-correlation-id': correlationId };
   const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || null;
   const loggingEnabled = (Deno.env.get('WIDGET_ANALYTICS_LOG_ENABLED') || '1') !== '0';
@@ -190,6 +191,23 @@ serve(async (req) => {
       });
       const durationMs = Math.round(performance.now() - t0);
       logOutcome({ success: false, durationMs, errorCode: 'METHOD_NOT_ALLOWED', errorMessage: 'Method not allowed' });
+      return resp;
+    }
+
+    // Content-Type must be application/json
+    const contentType = req.headers.get('content-type') || '';
+    if (!contentType.toLowerCase().includes('application/json')) {
+      console.warn('Unsupported media type:', contentType, 'cid:', correlationId);
+      const resp = makeErrorResponse({
+        status: 415,
+        code: 'UNSUPPORTED_MEDIA_TYPE',
+        message: 'Content-Type must be application/json',
+        details: { received: contentType },
+        correlationId,
+        headers: responseHeaders
+      });
+      const durationMs = Math.round(performance.now() - t0);
+      logOutcome({ success: false, durationMs, errorCode: 'UNSUPPORTED_MEDIA_TYPE', errorMessage: 'Content-Type must be application/json' });
       return resp;
     }
 
@@ -272,7 +290,7 @@ serve(async (req) => {
     }
 
     // Extract and validate parameters with detailed logging
-    const { tenantId, widgetType, timeRange = '7d' } = requestBody;
+  const { tenantId, widgetType, timeRange = '7d' } = requestBody;
     console.log('Parameter validation:');
     console.log('- tenantId:', tenantId, typeof tenantId);
     console.log('- widgetType:', widgetType, typeof widgetType);
@@ -326,7 +344,7 @@ serve(async (req) => {
       return resp;
     }
 
-    // Validate widgetType with case-insensitive check
+  // Validate widgetType with case-insensitive check
     const validWidgetTypes = ['booking', 'catering'];
     const normalizedWidgetType = String(widgetType).toLowerCase().trim();
     
@@ -345,10 +363,28 @@ serve(async (req) => {
       return resp;
     }
 
+    // timeRange validation (allowed discrete windows)
+    const allowedTimeRanges = ['1d', '7d', '30d'];
+    const normalizedTimeRange = typeof timeRange === 'string' ? timeRange.trim().toLowerCase() : '7d';
+    if (!allowedTimeRanges.includes(normalizedTimeRange)) {
+      console.error('Invalid timeRange:', timeRange, 'cid:', correlationId);
+      const resp = makeErrorResponse({
+        status: 400,
+        code: 'INVALID_TIME_RANGE',
+        message: 'Invalid timeRange. Must be one of 1d, 7d, 30d',
+        details: { received: timeRange, allowed: allowedTimeRanges },
+        correlationId,
+        headers: responseHeaders
+      });
+      const durationMs = Math.round(performance.now() - t0);
+      logOutcome({ success: false, tenantId, durationMs, errorCode: 'INVALID_TIME_RANGE', errorMessage: 'Invalid timeRange' });
+      return resp;
+    }
+
     console.log('✅ Parameters validated successfully');
 
     // ------------ Rate Limiting ---------------
-    const rateLimitMax = parseInt(Deno.env.get('WIDGET_ANALYTICS_RATE_LIMIT') || '120'); // default 120 req/hour bucket
+  const rateLimitMax = parseInt(Deno.env.get('WIDGET_ANALYTICS_RATE_LIMIT') || '120'); // default 120 req/hour bucket
     const rateLimitEnabled = rateLimitMax > 0;
     if (rateLimitEnabled) {
       try {
@@ -402,7 +438,7 @@ serve(async (req) => {
             headers: { ...responseHeaders, 'Retry-After': '60' }
           });
           const durationMs = Math.round(performance.now() - t0);
-            logOutcome({ success: false, tenantId, widgetType: normalizedWidgetType, timeRange, durationMs, errorCode: 'RATE_LIMIT_EXCEEDED', errorMessage: 'Too many requests' });
+            logOutcome({ success: false, tenantId, widgetType: normalizedWidgetType, timeRange: normalizedTimeRange, durationMs, errorCode: 'RATE_LIMIT_EXCEEDED', errorMessage: 'Too many requests' });
           return resp;
         }
       } catch(rateErr) {
@@ -464,13 +500,13 @@ serve(async (req) => {
 
     // Calculate date range
     const now = new Date();
-    const daysBack = timeRange === '30d' ? 30 : timeRange === '7d' ? 7 : 1;
+  const daysBack = normalizedTimeRange === '30d' ? 30 : normalizedTimeRange === '7d' ? 7 : 1;
     const startDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
 
     console.log(`📊 Fetching analytics for tenant ${tenantId}, widget ${normalizedWidgetType}, date range: ${startDate.toISOString()} to ${now.toISOString()}`);
 
     // Fetch real analytics data based on widget type using admin client
-    const analytics: WidgetAnalytics = await generateRealAnalytics(
+    const { analytics, estimation } = await generateRealAnalytics(
       supabaseAdmin, 
       tenantId, 
       normalizedWidgetType as 'booking' | 'catering', 
@@ -491,13 +527,14 @@ serve(async (req) => {
     const successResponse = makeSuccessResponse(analytics, {
       tenantId,
       widgetType: normalizedWidgetType,
-      timeRange,
+  timeRange: normalizedTimeRange,
       authMethod: authValidated ? 'authenticated' : 'anonymous',
       generatedAt: new Date().toISOString(),
       durationMs,
-      version: FUNCTION_VERSION
+      version: FUNCTION_VERSION,
+      estimation
     }, correlationId, responseHeaders);
-    logOutcome({ success: true, tenantId, widgetType: normalizedWidgetType, timeRange, authMethod: authValidated ? 'authenticated' : 'anonymous', durationMs });
+  logOutcome({ success: true, tenantId, widgetType: normalizedWidgetType, timeRange: normalizedTimeRange, authMethod: authValidated ? 'authenticated' : 'anonymous', durationMs });
     return successResponse;
 
   } catch (error: any) {
@@ -542,7 +579,7 @@ async function generateRealAnalytics(
   widgetType: 'booking' | 'catering',
   startDate: Date,
   endDate: Date
-): Promise<WidgetAnalytics> {
+): Promise<{ analytics: WidgetAnalytics; estimation: Record<string, boolean> }> {
   
   console.log(`Generating real analytics for tenant ${tenantId}, widget ${widgetType}, period: ${startDate.toISOString()} to ${endDate.toISOString()}`);
 
@@ -627,12 +664,12 @@ async function generateRealAnalytics(
   ).length;
 
   // Views calculation (from widget events or estimated from orders)
-  const totalViews = typedWidgetEvents.filter((event: WidgetEvent) => event.event_type === 'view').length || 
-                    Math.max(totalOrders * 15, 100); // Estimate if no tracking
+  const realViews = typedWidgetEvents.filter((event: WidgetEvent) => event.event_type === 'view').length;
+  const totalViews = realViews || Math.max(totalOrders * 15, 100); // Estimate if no tracking
 
   // Clicks calculation (from widget events or estimated)
-  const totalClicks = typedWidgetEvents.filter((event: WidgetEvent) => event.event_type === 'click').length || 
-                     Math.max(totalOrders * 3, 20); // Estimate if no tracking
+  const realClicks = typedWidgetEvents.filter((event: WidgetEvent) => event.event_type === 'click').length;
+  const totalClicks = realClicks || Math.max(totalOrders * 3, 20); // Estimate if no tracking
 
   // Conversion rate (completed orders / total views)
   const conversionRate = totalViews > 0 ? ((completedOrders / totalViews) * 100) : 0;
@@ -751,16 +788,25 @@ async function generateRealAnalytics(
   }
 
   return {
-    totalViews,
-    totalClicks,
-    conversionRate: Math.round(conversionRate * 100) / 100,
-    avgSessionDuration: Math.round(avgSessionDuration * 100) / 100,
-    totalBookings: totalOrders,
-    completionRate: Math.round(completionRate * 100) / 100,
-    avgPartySize: avgPartySize ? Math.round(avgPartySize * 10) / 10 : undefined,
-    avgOrderValue: avgOrderValue ? Math.round(avgOrderValue * 100) / 100 : undefined,
-    peakHours,
-    topSources,
-    dailyStats
+    analytics: {
+      totalViews,
+      totalClicks,
+      conversionRate: Math.round(conversionRate * 100) / 100,
+      avgSessionDuration: Math.round(avgSessionDuration * 100) / 100,
+      totalBookings: totalOrders,
+      completionRate: Math.round(completionRate * 100) / 100,
+      avgPartySize: avgPartySize ? Math.round(avgPartySize * 10) / 10 : undefined,
+      avgOrderValue: avgOrderValue ? Math.round(avgOrderValue * 100) / 100 : undefined,
+      peakHours,
+      topSources,
+      dailyStats
+    },
+    estimation: {
+      viewsEstimated: realViews === 0,
+      clicksEstimated: realClicks === 0,
+      sessionDurationEstimated: sessionDurations.length === 0,
+      avgOrderValueEstimated: widgetType === 'catering' && (avgOrderValue === 150),
+      avgPartySizeEstimated: widgetType === 'booking' && (avgPartySize === 2.5)
+    }
   };
 }

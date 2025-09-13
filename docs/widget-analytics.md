@@ -1,6 +1,6 @@
 # Widget Analytics Edge Function
 
-Version: 2025-09-13.3
+Version: 2025-09-13.4
 
 ## Purpose
 Provides aggregated analytics for embeddable booking or catering widgets with optional authentication. Anonymous access is explicitly enabled (config: `verify_jwt = false`).
@@ -62,6 +62,8 @@ POST https://<project-ref>.functions.supabase.co/widget-analytics
 | INVALID_WIDGET_TYPE | Not booking/catering | Use supported enum |
 | RATE_LIMIT_EXCEEDED | Per-hour request cap hit | Backoff & retry after delay |
 | ORIGIN_NOT_ALLOWED | Origin not in allowlist | Add to allowlist / configure env |
+| INVALID_TIME_RANGE | timeRange not 1d/7d/30d | Use supported value |
+| UNSUPPORTED_MEDIA_TYPE | Content-Type not JSON | Set application/json |
 | INTERNAL_ERROR | Unexpected exception | Check logs using correlationId |
 
 ## Analytics Fields (`data`)
@@ -80,6 +82,16 @@ POST https://<project-ref>.functions.supabase.co/widget-analytics
 | dailyStats | Per-day aggregates in requested window |
 
 `dailyStats` length matches requested window up to max 30 days.
+
+### Estimation Flags (meta.estimation)
+The `meta.estimation` object indicates which metrics were synthesized due to missing direct data:
+| Flag | Meaning |
+|------|---------|
+| viewsEstimated | No raw view events; heuristic applied |
+| clicksEstimated | No raw click events; heuristic applied |
+| sessionDurationEstimated | No session_duration events; default 180s used |
+| avgOrderValueEstimated | Catering: default 150 used (no amounts) |
+| avgPartySizeEstimated | Booking: default 2.5 used (no party sizes) |
 
 ## Correlation IDs
 Every response includes `x-correlation-id` header and JSON field. Pass a custom ID via request header to stitch client ↔ server logs.
@@ -122,6 +134,7 @@ node scripts/diagnose-widget-analytics.mjs <project-ref> <tenant-id> booking 7d
 - Introduce redaction if sensitive fields added in future.
 
 ## Changelog
+- 2025-09-13.4: Added timeRange validation (INVALID_TIME_RANGE), content-type validation (UNSUPPORTED_MEDIA_TYPE), estimation flags in meta, version bump.
 - 2025-09-13.3: Added DB logging table, rate limiting, origin allowlist enforcement, new error codes (RATE_LIMIT_EXCEEDED, ORIGIN_NOT_ALLOWED).
 - 2025-09-13.2: Logging scaffolding (internal), validation enhancements.
 - 2025-09-13.1: Added dynamic dailyStats, timing, version meta, config.toml (anonymous), diagnostic script.

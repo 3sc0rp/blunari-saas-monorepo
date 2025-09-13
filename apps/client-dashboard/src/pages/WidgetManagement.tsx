@@ -102,7 +102,9 @@ const WidgetManagement: React.FC = () => {
   const [activeWidgetType, setActiveWidgetType] = useState<'booking' | 'catering'>('booking');
   const [selectedTab, setSelectedTab] = useState('configure');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // generic spinner (saving etc.)
+  const [copyBusy, setCopyBusy] = useState(false); // copy-to-clipboard only
+  const [analyticsRange, setAnalyticsRange] = useState<'1d' | '7d' | '30d'>('7d');
 
   // Tenant slug resolution - no demo fallbacks
   const resolvedTenantSlug = useMemo(() => {
@@ -265,6 +267,7 @@ const WidgetManagement: React.FC = () => {
     }
   }, [bookingConfig, cateringConfig, resolvedTenantSlug, tenant?.timezone, tenant?.currency]);
 
+  const escapeAttr = (val: string) => (val || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const generateEmbedCode = useCallback((type: 'booking' | 'catering') => {
     try {
       const url = generateWidgetUrl(type);
@@ -279,7 +282,8 @@ const WidgetManagement: React.FC = () => {
         return '<!-- Error: Widget configuration not found -->';
       }
       
-      const widgetId = `blunari-${type}-widget-${Date.now()}`;
+  const widgetId = `blunari-${type}-widget-${Date.now()}`;
+  const safeWelcome = escapeAttr(config.welcomeMessage || '');
       
       return `<!-- Blunari ${type.charAt(0).toUpperCase() + type.slice(1)} Widget with PostMessage Communication -->
 <script>
@@ -295,7 +299,7 @@ const WidgetManagement: React.FC = () => {
     iframe.frameBorder = '0';
     iframe.allowTransparency = 'true';
     iframe.scrolling = 'auto';
-    iframe.title = '${(config.welcomeMessage || '').replace(/'/g, "\\'")} - ${type} widget';
+  iframe.title = '${safeWelcome.replace(/'/g, "\\'")} - ${type} widget';
     iframe.setAttribute('data-widget-type', '${type}');
     iframe.setAttribute('data-widget-id', '${widgetId}');
     
@@ -400,7 +404,7 @@ const WidgetManagement: React.FC = () => {
   height="${config.height || 600}" 
   frameborder="0"
   style="border-radius: ${config.borderRadius || 8}px; box-shadow: 0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1); max-width: 100%;"
-  title="${(config.welcomeMessage || '').replace(/"/g, '&quot;')} - ${type} widget"
+  title="${safeWelcome} - ${type} widget"
   data-widget-type="${type}"
   onload="console.log('Blunari ${type} widget loaded');"
   onerror="this.style.display='none'; console.error('Failed to load Blunari widget');">
@@ -422,13 +426,13 @@ Content-Security-Policy:
 
   const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {
-      setIsLoading(true);
+      setCopyBusy(true);
       await copyText(text);
       toast({ title: 'Copied!', description: `${label} copied to clipboard` });
     } catch (error) {
       toast({ title: 'Copy Failed', description: 'Failed to copy to clipboard', variant: 'destructive' });
     } finally {
-      setIsLoading(false);
+      setCopyBusy(false);
     }
   }, [toast]);
 
@@ -438,12 +442,21 @@ Content-Security-Policy:
     loading: analyticsLoading, 
     error: analyticsError,
     refresh: refreshAnalytics,
-    isAvailable: analyticsAvailable 
+    isAvailable: analyticsAvailable,
+    meta: analyticsMeta
   } = useWidgetAnalytics({
     tenantId: tenant?.id || null,
     tenantSlug: resolvedTenantSlug || null,
     widgetType: activeWidgetType,
   });
+
+  // Re-fetch analytics when range changes or widget type changes
+  useEffect(() => {
+    if (!analyticsAvailable) return;
+    // Skip duplicate initial fetch when default range and no data yet (hook already fetching)
+    if (analyticsRange === '7d' && !analyticsData) return;
+    (refreshAnalytics as any)(analyticsRange);
+  }, [analyticsAvailable, analyticsRange, activeWidgetType, refreshAnalytics, analyticsData]);
 
   // Reset to defaults handled by hook via resetToDefaults
 
@@ -1456,25 +1469,44 @@ Content-Security-Policy:
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold">Widget Analytics</h3>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-lg font-semibold">Widget Analytics</h3>
+                {analyticsMeta?.timeRange && (
+                  <Badge variant="secondary" className="text-xs">Range: {analyticsMeta.timeRange}</Badge>
+                )}
+                {analyticsMeta?.estimation && (
+                  <Badge variant="outline" className="text-xs border-amber-300 text-amber-600">Estimated</Badge>
+                )}
+                {analyticsMeta?.version && (
+                  <Badge variant="outline" className="text-xs">v{analyticsMeta.version}</Badge>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">
                 Performance metrics for your {activeWidgetType} widget
                 {!analyticsAvailable && " (Real analytics data unavailable - connect tenant for live metrics)"}
+                {analyticsMeta?.estimation && ' – some values inferred from limited data.'}
               </p>
             </div>
-            
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              <Select value={analyticsRange} onValueChange={(v: any) => setAnalyticsRange(v)}>
+                <SelectTrigger className="w-28 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1d">Last 24h</SelectItem>
+                  <SelectItem value="7d">7 Days</SelectItem>
+                  <SelectItem value="30d">30 Days</SelectItem>
+                </SelectContent>
+              </Select>
               {analyticsError && (
-                <Badge variant="destructive" className="text-xs">
-                  Error loading data
-                </Badge>
+                <Badge variant="destructive" className="text-xs">Error</Badge>
               )}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={refreshAnalytics}
+                onClick={() => (refreshAnalytics as any)(analyticsRange)}
                 disabled={analyticsLoading}
               >
                 {analyticsLoading ? (
@@ -1753,9 +1785,9 @@ Content-Security-Policy:
                     size="sm"
                     className="absolute top-2 right-2"
                     onClick={() => copyToClipboard(generateEmbedCode(activeWidgetType), 'Embed code')}
-                    disabled={isLoading}
+                    disabled={copyBusy}
                   >
-                    {isLoading ? (
+                    {copyBusy ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>

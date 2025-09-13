@@ -101,13 +101,24 @@ class TestUtilsClass {
 
     // Setup global error handling
     const originalError = console.error;
+    let inPatchedConsoleError = false;
     console.error = (...args: any[]) => {
-      const logContext = { 
-        component: 'test-utils',
-        metadata: { args } 
-      };
-      (this.logger as any).error('Test console error', logContext);
-      originalError.apply(console, args);
+      if (inPatchedConsoleError) {
+        // Already handling an error from logger output; avoid recursion
+        return originalError.apply(console, args);
+      }
+      inPatchedConsoleError = true;
+      try {
+        const logContext = { 
+          component: 'test-utils',
+          metadata: { args } 
+        };
+        // Use debug level to avoid console.error inside logger again
+        (this.logger as any).debug('Test console error', logContext);
+        originalError.apply(console, args);
+      } finally {
+        inPatchedConsoleError = false;
+      }
     };
 
     this.logger.info('Test environment initialized');
