@@ -76,6 +76,12 @@ scripts/*.log
 *REPORT*.md
 *ANALYSIS*.md
 *.timestamp-*
+*-test.html
+test-*.html
+*-demo.html
+*-temp.*
+*.backup
+*.bak
 
 # Performance audit files
 performance-audit*.json
@@ -85,7 +91,16 @@ performance-audit*.cjs
 *-fix-only.sql
 demo-*.sql
 temp-*.sql
+*-migration.sql
+migrate-*.sql
 
 # Build artifacts
 *.tsbuildinfo
 .turbo/
+
+# Empty or placeholder files
+MIGRATION_INSTRUCTIONS.md
+SENIOR_DEVELOPER_CODE_REVIEW.md
+widget-migration-verification.md
+*TESTING_PLAN.md
+*TESTING_STATUS.md
