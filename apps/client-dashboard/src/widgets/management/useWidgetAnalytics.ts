@@ -623,6 +623,8 @@ async function fetchRealWidgetAnalytics(
       widgetType,
       timeRange,
       headers: Object.keys(requestHeaders),
+      hasAuthHeader: Boolean(requestHeaders['Authorization']),
+      correlationId,
       tenantIdLength: tenantId?.length,
       tenantIdContainsDash: tenantId?.includes('-'),
       tenantIdContainsUnderscore: tenantId?.includes('_')
@@ -630,9 +632,9 @@ async function fetchRealWidgetAnalytics(
 
     const response = await supabase.functions.invoke('widget-analytics', {
       body: {
-        tenantId, // Use camelCase to match Edge Function expectation
-        widgetType,
-        timeRange,
+        tenant_id: tenantId,
+        widget_type: widgetType,
+        time_range: timeRange,
         version: '2.0'
       },
       headers: requestHeaders
@@ -646,7 +648,13 @@ async function fetchRealWidgetAnalytics(
     });
 
     if (response.error) {
-  console.error('Real analytics function error:', response.error, 'cid:', correlationId);
+      console.error('Edge Function error details:', {
+        name: response.error.name,
+        message: response.error.message,
+        status: (response.error as any)?.context?.response?.status || (response.error as any)?.status,
+        context: (response.error as any)?.context
+      });
+      console.error('Real analytics function error:', response.error, 'cid:', correlationId);
       
       // If it's a 400 error, try with anon key authentication
       if (response.error.message?.includes('400') || response.error.message?.includes('Bad Request')) {
@@ -666,9 +674,10 @@ async function fetchRealWidgetAnalytics(
           
           const retryResponse = await supabase.functions.invoke('widget-analytics', {
             body: {
-              tenantId,
-              widgetType,
-              timeRange
+              tenant_id: tenantId,
+              widget_type: widgetType,
+              time_range: timeRange,
+              version: '2.0'
             },
             headers: retryHeaders
           });
