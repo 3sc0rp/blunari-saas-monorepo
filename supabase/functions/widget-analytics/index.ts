@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsHeaders } from "../_shared/cors";
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -24,6 +24,23 @@ interface WidgetAnalytics {
     bookings?: number;
     revenue?: number;
   }>;
+}
+
+interface BookingOrder {
+  id: string;
+  created_at: string;
+  booking_time?: string;
+  party_size?: number;
+  status: string;
+  total_amount?: number;
+  source?: string;
+}
+
+interface WidgetEvent {
+  id: string;
+  event_type: string;
+  session_duration?: number;
+  created_at: string;
 }
 
 serve(async (req) => {
@@ -91,12 +108,12 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Widget analytics error:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Internal server error',
-        details: error.message 
+        details: error?.message || 'Unknown error'
       }),
       { 
         status: 500, 
@@ -126,12 +143,14 @@ async function generateRealAnalytics(
     .lte('created_at', endDate.toISOString())
     .order('created_at', { ascending: false });
 
+  const typedWidgetEvents: WidgetEvent[] = widgetEvents || [];
+
   if (eventsError) {
     console.warn('Widget events table not found, using booking/order data directly');
   }
 
   // Fetch booking/order data based on widget type
-  let ordersData = [];
+  let ordersData: BookingOrder[] = [];
   let ordersError = null;
 
   if (widgetType === 'booking') {
@@ -187,11 +206,11 @@ async function generateRealAnalytics(
   ).length;
 
   // Views calculation (from widget events or estimated from orders)
-  const totalViews = widgetEvents?.filter(event => event.event_type === 'view').length || 
+  const totalViews = typedWidgetEvents.filter((event: WidgetEvent) => event.event_type === 'view').length || 
                     Math.max(totalOrders * 15, 100); // Estimate if no tracking
 
   // Clicks calculation (from widget events or estimated)
-  const totalClicks = widgetEvents?.filter(event => event.event_type === 'click').length || 
+  const totalClicks = typedWidgetEvents.filter((event: WidgetEvent) => event.event_type === 'click').length || 
                      Math.max(totalOrders * 3, 20); // Estimate if no tracking
 
   // Conversion rate (completed orders / total views)
@@ -201,10 +220,10 @@ async function generateRealAnalytics(
   const completionRate = totalOrders > 0 ? ((completedOrders / totalOrders) * 100) : 0;
 
   // Average session duration (from widget events or estimated)
-  const sessionDurations = widgetEvents?.filter(event => event.session_duration)
-    .map(event => event.session_duration) || [];
+  const sessionDurations = typedWidgetEvents.filter((event: WidgetEvent) => event.session_duration)
+    .map((event: WidgetEvent) => event.session_duration!);
   const avgSessionDuration = sessionDurations.length > 0 
-    ? sessionDurations.reduce((a, b) => a + b, 0) / sessionDurations.length
+    ? sessionDurations.reduce((a: number, b: number) => a + b, 0) / sessionDurations.length
     : 180; // Default 3 minutes
 
   // Calculate type-specific metrics
@@ -215,16 +234,17 @@ async function generateRealAnalytics(
   if (widgetType === 'booking') {
     // Average party size for bookings
     const partySizes = ordersData
-      .filter(booking => booking.party_size)
-      .map(booking => booking.party_size);
+      .filter((booking: BookingOrder) => booking.party_size)
+      .map((booking: BookingOrder) => booking.party_size!)
+      .filter((size): size is number => size !== undefined);
     
     avgPartySize = partySizes.length > 0 
-      ? partySizes.reduce((a, b) => a + b, 0) / partySizes.length
+      ? partySizes.reduce((a: number, b: number) => a + b, 0) / partySizes.length
       : 2.5;
 
     // Peak booking hours
     const hourCounts: { [hour: string]: number } = {};
-    ordersData.forEach(booking => {
+    ordersData.forEach((booking: BookingOrder) => {
       if (booking.booking_time) {
         const hour = new Date(booking.booking_time).getHours();
         const hourStr = `${hour}:00`;
@@ -239,17 +259,18 @@ async function generateRealAnalytics(
   } else {
     // Average order value for catering
     const orderValues = ordersData
-      .filter(order => order.total_amount && order.total_amount > 0)
-      .map(order => order.total_amount);
+      .filter((order: BookingOrder) => order.total_amount && order.total_amount > 0)
+      .map((order: BookingOrder) => order.total_amount!)
+      .filter((amount): amount is number => amount !== undefined);
     
     avgOrderValue = orderValues.length > 0 
-      ? orderValues.reduce((a, b) => a + b, 0) / orderValues.length
+      ? orderValues.reduce((a: number, b: number) => a + b, 0) / orderValues.length
       : 150; // Default estimate
   }
 
   // Traffic sources analysis
   const sourceCounts: { [source: string]: number } = {};
-  ordersData.forEach(order => {
+  ordersData.forEach((order: BookingOrder) => {
     const source = order.source || 'direct';
     sourceCounts[source] = (sourceCounts[source] || 0) + 1;
   });
@@ -276,24 +297,24 @@ async function generateRealAnalytics(
     const date = new Date(endDate.getTime() - (i * dayMs));
     const dateStr = date.toISOString().split('T')[0];
     
-    const dayOrders = ordersData.filter(order => {
+    const dayOrders = ordersData.filter((order: BookingOrder) => {
       const orderDate = new Date(order.created_at).toISOString().split('T')[0];
       return orderDate === dateStr;
     });
 
-    const dayViews = widgetEvents?.filter(event => {
+    const dayViews = typedWidgetEvents.filter((event: WidgetEvent) => {
       const eventDate = new Date(event.created_at).toISOString().split('T')[0];
       return eventDate === dateStr && event.event_type === 'view';
     }).length || Math.max(dayOrders.length * 15, 10);
 
-    const dayClicks = widgetEvents?.filter(event => {
+    const dayClicks = typedWidgetEvents.filter((event: WidgetEvent) => {
       const eventDate = new Date(event.created_at).toISOString().split('T')[0];
       return eventDate === dateStr && event.event_type === 'click';
     }).length || Math.max(dayOrders.length * 3, 2);
 
     const dayRevenue = dayOrders
-      .filter(order => order.total_amount)
-      .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+      .filter((order: BookingOrder) => order.total_amount)
+      .reduce((sum: number, order: BookingOrder) => sum + (order.total_amount || 0), 0);
 
     dailyStats.push({
       date: dateStr,

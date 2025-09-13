@@ -1675,7 +1675,7 @@ Content-Security-Policy:
           </div>
 
           <RealtimeAnalyticsDashboard 
-            widgetId={config.widgetId}
+            widgetId={realWidgetId}
             className="space-y-6"
           />
         </TabsContent>
@@ -1690,7 +1690,7 @@ Content-Security-Policy:
           </div>
 
           <WidgetVersionManagement 
-            widgetId={config.widgetId}
+            widgetId={realWidgetId}
             className="space-y-6"
           />
         </TabsContent>

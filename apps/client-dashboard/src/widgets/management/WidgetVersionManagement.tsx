@@ -120,7 +120,7 @@ const WidgetVersionManagement: React.FC<WidgetVersionManagementProps> = ({
   const [newVersion, setNewVersion] = useState({
     version_number: '',
     changelog: '',
-    deployment_strategy: 'immediate' as const,
+    deployment_strategy: 'immediate' as 'immediate' | 'gradual' | 'scheduled' | 'canary',
     rollout_percentage: 100,
     feature_flags: {} as Record<string, any>
   })
