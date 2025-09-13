@@ -64,17 +64,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     const errorId = this.state.errorId || 'unknown';
 
     // Log to enterprise logging system with error boundary utility
-    logger.fatal('🚨 React Error Boundary caught error', {
+    const logContext = {
       component,
       operation: 'error_boundary',
       metadata: {
         componentStack: errorInfo.componentStack,
         errorBoundary: component
       }
-    }, error);
+    };
+    (logger as any).error('🚨 React Error Boundary caught error', logContext, error);
     
     // Additional detailed logging
-    logger.fatal('🚨 Component Error Boundary Triggered', {
+    const detailedLogContext = {
       component,
       operation: 'error_boundary_catch',
       correlationId: errorId,
@@ -90,24 +91,24 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         errorName: error.name,
         errorMessage: error.message
       }
-    }, error);
+    };
+    (logger as any).error('🚨 Component Error Boundary Triggered', detailedLogContext, error);
 
     // Update state with error info
     this.setState({ errorInfo });
 
     // Call custom error handler if provided
-    if (onError) {
-      try {
-        onError(error, errorInfo);
-      } catch (handlerError) {
-        logger.error('Error in custom error handler', {
-          component,
-          operation: 'error_handler_failure'
-        }, handlerError as Error);
-      }
-    }
-
-    // Send to external monitoring
+      if (onError) {
+        try {
+          onError(error, errorInfo);
+        } catch (handlerError) {
+          const handlerLogContext = {
+            component,
+            operation: 'error_handler_failure'
+          };
+          (logger as any).error('Error in custom error handler', handlerLogContext, handlerError as Error);
+        }
+      }    // Send to external monitoring
     this.sendToMonitoring(error, errorInfo, errorId);
   }
 
@@ -158,10 +159,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         navigator.sendBeacon('/api/analytics/error-boundary', payload);
       }
     } catch (monitoringError) {
-      logger.warn('Failed to send error to monitoring service', {
+      const monitoringLogContext = {
         component: this.props.component || 'error-boundary',
         operation: 'monitoring_failure'
-      }, monitoringError as Error);
+      };
+      (logger as any).warn('Failed to send error to monitoring service', monitoringLogContext, monitoringError as Error);
     }
   };
 
@@ -169,19 +171,21 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     const { retryCount } = this.state;
     
     if (retryCount >= this.maxRetries) {
-      logger.warn('Maximum retry attempts reached', {
+      const maxRetriesLogContext = {
         component: this.props.component || 'error-boundary',
         operation: 'max_retries_reached',
         metadata: { maxRetries: this.maxRetries, retryCount }
-      });
+      };
+      (logger as any).warn('Maximum retry attempts reached', maxRetriesLogContext);
       return;
     }
 
-    logger.info(`🔄 Attempting error recovery (${retryCount + 1}/${this.maxRetries})`, {
+    const recoveryLogContext = {
       component: this.props.component || 'error-boundary',
       operation: 'error_recovery_attempt',
       metadata: { retryCount: retryCount + 1 }
-    });
+    };
+    (logger as any).info(`🔄 Attempting error recovery (${retryCount + 1}/${this.maxRetries})`, recoveryLogContext);
 
     this.setState(prevState => ({
       hasError: false,
@@ -203,10 +207,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   };
 
   private handleReload = (): void => {
-    logger.info('🔄 User initiated page reload from error boundary', {
+    const reloadLogContext = {
       component: this.props.component || 'error-boundary',
       operation: 'user_page_reload'
-    });
+    };
+    (logger as any).info('🔄 User initiated page reload from error boundary', reloadLogContext);
     
     window.location.reload();
   };
@@ -214,11 +219,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   private handleReportBug = (): void => {
     const { error, errorInfo, errorId } = this.state;
     
-    logger.info('🐛 User reporting bug from error boundary', {
+    const bugReportLogContext = {
       component: this.props.component || 'error-boundary',
       operation: 'user_bug_report',
       correlationId: errorId
-    });
+    };
+    (logger as any).info('🐛 User reporting bug from error boundary', bugReportLogContext);
 
     // Open bug report with pre-filled data
     const reportData = {
@@ -372,11 +378,12 @@ export const withErrorBoundary = <P extends object>(
 export const useErrorHandler = () => {
   const handleError = React.useCallback((error: Error, errorInfo?: { componentStack?: string }) => {
     // This would work with a context provider that manages error state
-    logger.error('Manual error report', {
+    const hookLogContext = {
       component: 'error-handler-hook',
       operation: 'manual_error_report',
       metadata: errorInfo
-    }, error);
+    };
+    (logger as any).error('Manual error report', hookLogContext, error);
 
     // You can also throw to trigger the nearest error boundary
     throw error;
