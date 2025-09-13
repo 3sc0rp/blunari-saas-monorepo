@@ -92,15 +92,31 @@ serve(async (req) => {
       );
     }
 
-    // Parse request
-    const url = new URL(req.url);
-    const tenantId = url.searchParams.get('tenantId');
-    const widgetType = url.searchParams.get('widgetType') as 'booking' | 'catering';
-    const timeRange = url.searchParams.get('timeRange') || '7d';
+    // Parse request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
+    const { tenantId, widgetType, timeRange = '7d' } = requestBody;
+
+    // Validate required parameters
     if (!tenantId || !widgetType) {
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters: tenantId, widgetType' }),
+        JSON.stringify({ error: 'Missing required parameters: tenantId and widgetType' }),
+        { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate widgetType
+    if (!['booking', 'catering'].includes(widgetType)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid widgetType. Must be "booking" or "catering"' }),
         { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
       );
     }
