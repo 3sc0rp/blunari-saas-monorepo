@@ -144,10 +144,11 @@ async function fetchRealWidgetAnalytics(
 ): Promise<WidgetAnalytics> {
   
   console.log('Calling real analytics Edge Function...');
+  console.log('Request details:', { tenantId, widgetType, timeRange });
   
   try {
     // Call the widget-analytics Edge Function with real data queries
-    const { data, error } = await supabase.functions.invoke('widget-analytics', {
+    const response = await supabase.functions.invoke('widget-analytics', {
       body: {
         tenantId,
         widgetType,
@@ -159,21 +160,27 @@ async function fetchRealWidgetAnalytics(
       }
     });
 
-    if (error) {
-      console.error('Real analytics function error:', error);
+    console.log('Edge Function response:', {
+      error: response.error,
+      data: response.data ? 'received' : 'null',
+      status: 'unknown' // Unfortunately, Supabase client doesn't expose status code
+    });
+
+    if (response.error) {
+      console.error('Real analytics function error:', response.error);
       
       // If Edge Function fails, try direct database query as fallback
-      console.log('Attempting direct database fallback...');
+      console.log('Attempting direct database fallback due to Edge Function error...');
       return await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
     }
 
-    if (!data?.data) {
+    if (!response.data?.data) {
       console.warn('No data from Edge Function, using direct database fallback');
       return await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
     }
 
-    console.log('Real analytics data received:', data.data);
-    return data.data;
+    console.log('Real analytics data received successfully from Edge Function');
+    return response.data.data;
     
   } catch (err) {
     console.error('Edge Function request failed:', err);
