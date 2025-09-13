@@ -1,6 +1,6 @@
 # Widget Analytics Edge Function
 
-Version: 2025-09-13.1
+Version: 2025-09-13.3
 
 ## Purpose
 Provides aggregated analytics for embeddable booking or catering widgets with optional authentication. Anonymous access is explicitly enabled (config: `verify_jwt = false`).
@@ -60,6 +60,8 @@ POST https://<project-ref>.functions.supabase.co/widget-analytics
 | INVALID_TENANT_ID | tenantId not a UUID | Use canonical UUID (v4) |
 | MISSING_WIDGET_TYPE | `widgetType` absent/blank | Provide widget type |
 | INVALID_WIDGET_TYPE | Not booking/catering | Use supported enum |
+| RATE_LIMIT_EXCEEDED | Per-hour request cap hit | Backoff & retry after delay |
+| ORIGIN_NOT_ALLOWED | Origin not in allowlist | Add to allowlist / configure env |
 | INTERNAL_ERROR | Unexpected exception | Check logs using correlationId |
 
 ## Analytics Fields (`data`)
@@ -82,6 +84,18 @@ POST https://<project-ref>.functions.supabase.co/widget-analytics
 ## Correlation IDs
 Every response includes `x-correlation-id` header and JSON field. Pass a custom ID via request header to stitch client ↔ server logs.
 
+## Logging & Observability
+Structured outcomes (success & failures) are persisted to `widget_analytics_logs` (table created via migration). Fields:
+- correlation_id, tenant_id, widget_type, time_range, auth_method, duration_ms, success, error_code, request_origin, ip_address
+
+Disable logging by setting env `WIDGET_ANALYTICS_LOG_ENABLED=0` before deploy.
+
+## Rate Limiting
+Environment variable `WIDGET_ANALYTICS_RATE_LIMIT` (default 120) sets max requests per hour per bucket (tenantId + ip + widgetType). Exceeding returns `429` with code `RATE_LIMIT_EXCEEDED` and a `Retry-After` header. Set to `0` to disable.
+
+## Origin Allowlist
+Enforced when `WIDGET_ANALYTICS_STRICT_ORIGIN=1` (default). Provide a comma-separated list in `WIDGET_ANALYTICS_ALLOWED_ORIGINS` (supports `*` and wildcard segments like `https://*.blunari.ai`). Disallowed origins receive `403` with `ORIGIN_NOT_ALLOWED`.
+
 ## Auth Mode
 Anonymous allowed (config). If Authorization header with valid JWT present, the function records `authMethod="authenticated"`; otherwise `anonymous`.
 
@@ -103,9 +117,11 @@ node scripts/diagnose-widget-analytics.mjs <project-ref> <tenant-id> booking 7d
 - Manual version string (`FUNCTION_VERSION`) helps correlate deploys.
 
 ## Safety & Future Hardening
-- Consider adding origin validation strict allowlist and rejecting `*` in production.
-- Add rate limiting (e.g., via middleware or API gateway).
-- If public analytics become sensitive, toggle `verify_jwt` back to true and serve a redacted public variant.
+- Consider adaptive/dynamic rate limits (burst + sustained windows).
+- Add structured tracing export to external log sink (e.g., Logflare).
+- Introduce redaction if sensitive fields added in future.
 
 ## Changelog
+- 2025-09-13.3: Added DB logging table, rate limiting, origin allowlist enforcement, new error codes (RATE_LIMIT_EXCEEDED, ORIGIN_NOT_ALLOWED).
+- 2025-09-13.2: Logging scaffolding (internal), validation enhancements.
 - 2025-09-13.1: Added dynamic dailyStats, timing, version meta, config.toml (anonymous), diagnostic script.

@@ -37,29 +37,33 @@ function makeSuccessResponse(data: any, meta: Record<string, unknown>, correlati
 // CORS headers for cross-origin requests
 const createCorsHeaders = (requestOrigin: string | null = null) => {
   const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
-  
+  const envAllowlist = (Deno.env.get('WIDGET_ANALYTICS_ALLOWED_ORIGINS') || '').split(',').map(o => o.trim()).filter(Boolean);
   let allowedOrigin = '*';
-  if (environment === 'production' && requestOrigin) {
-    const allowedOrigins = [
+  let effectiveList: string[] = [];
+  if (environment === 'production') {
+    effectiveList = envAllowlist.length > 0 ? envAllowlist : [
       'https://app.blunari.ai',
       'https://blunari.ai',
       'https://*.blunari.ai'
     ];
-    
-    const isAllowed = allowedOrigins.some(allowed => {
+  } else {
+    effectiveList = envAllowlist; // in dev allow custom list (or *)
+  }
+
+  if (requestOrigin && effectiveList.length > 0) {
+    const isAllowed = effectiveList.some(allowed => {
+      if (allowed === '*') return true;
       if (allowed.includes('*')) {
-        const pattern = allowed.replace('*', '.*');
+        const pattern = '^' + allowed.split('*').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$';
         return new RegExp(pattern).test(requestOrigin);
       }
       return allowed === requestOrigin;
     });
-    
-    allowedOrigin = isAllowed ? requestOrigin : '*';
+    allowedOrigin = isAllowed ? requestOrigin : 'null';
   }
-  
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    // Include x-correlation-id so browser preflight allows it, plus explicit standard headers
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version, x-correlation-id',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
     'Access-Control-Max-Age': '86400',
@@ -110,7 +114,7 @@ interface WidgetEvent {
 }
 
 // Function build/version marker (manually bump if making structural changes)
-const FUNCTION_VERSION = '2025-09-13.1';
+const FUNCTION_VERSION = '2025-09-13.3';
 
 serve(async (req) => {
   const t0 = performance.now();
@@ -118,6 +122,8 @@ serve(async (req) => {
   // Get origin for CORS handling
   const origin = req.headers.get('origin');
   const responseHeaders = { ...createCorsHeaders(origin || null), 'x-correlation-id': correlationId };
+  const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || null;
+  const loggingEnabled = (Deno.env.get('WIDGET_ANALYTICS_LOG_ENABLED') || '1') !== '0';
   
   // Handle CORS preflight requests FIRST - before any other logic
   if (req.method === 'OPTIONS') {
@@ -134,10 +140,47 @@ serve(async (req) => {
     console.log('Origin:', origin);
     console.log('Headers:', Object.fromEntries(req.headers.entries()));
 
+    // Create Supabase admin client early so we can log even validation failures
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    interface LogParams {
+      success: boolean;
+      tenantId?: string;
+      widgetType?: string;
+      timeRange?: string;
+      authMethod?: string;
+      durationMs: number;
+      errorCode?: string;
+      errorMessage?: string;
+    }
+
+    function logOutcome(params: LogParams) {
+      if (!loggingEnabled) return;
+      const { success, tenantId, widgetType, timeRange, authMethod, durationMs, errorCode, errorMessage } = params;
+      supabaseAdmin.from('widget_analytics_logs').insert({
+        correlation_id: correlationId,
+        tenant_id: tenantId || null,
+        widget_type: widgetType || null,
+        time_range: timeRange || null,
+        auth_method: authMethod || null,
+        duration_ms: durationMs,
+        success,
+        error_code: errorCode || null,
+        error_message: errorMessage || null,
+        request_origin: origin || null,
+        ip_address: ip || null
+      }).then(() => {
+        console.log('📝 Logged analytics outcome (success:', success, ') cid:', correlationId);
+      }).catch((err: unknown) => {
+        const msg = (err as any)?.message || String(err);
+        console.warn('Failed to log analytics outcome cid:', correlationId, msg);
+      });
+    }
+
     // Validate request method
     if (req.method !== 'POST') {
       console.log('Invalid method:', req.method, 'cid:', correlationId);
-      return makeErrorResponse({
+      const resp = makeErrorResponse({
         status: 405,
         code: 'METHOD_NOT_ALLOWED',
         message: 'Method not allowed',
@@ -145,6 +188,29 @@ serve(async (req) => {
         correlationId,
         headers: responseHeaders
       });
+      const durationMs = Math.round(performance.now() - t0);
+      logOutcome({ success: false, durationMs, errorCode: 'METHOD_NOT_ALLOWED', errorMessage: 'Method not allowed' });
+      return resp;
+    }
+
+    // Origin allowlist enforcement (after method check, before parsing body)
+    const strictOrigin = (Deno.env.get('WIDGET_ANALYTICS_STRICT_ORIGIN') || '1') === '1';
+    if (strictOrigin && origin) {
+      const allowHeader = responseHeaders['Access-Control-Allow-Origin'];
+      if (allowHeader === 'null') {
+        console.warn('Origin not allowed:', origin, 'cid:', correlationId);
+        const resp = makeErrorResponse({
+          status: 403,
+          code: 'ORIGIN_NOT_ALLOWED',
+          message: 'Origin not allowed',
+          details: { origin },
+          correlationId,
+          headers: responseHeaders
+        });
+        const durationMs = Math.round(performance.now() - t0);
+        logOutcome({ success: false, durationMs, errorCode: 'ORIGIN_NOT_ALLOWED', errorMessage: 'Origin not allowed' });
+        return resp;
+      }
     }
 
     // Parse request body with better error handling
@@ -155,7 +221,7 @@ serve(async (req) => {
       
       if (!bodyText || bodyText.trim() === '') {
         console.error('Empty or whitespace-only request body', correlationId);
-        return makeErrorResponse({
+        const resp = makeErrorResponse({
           status: 400,
           code: 'EMPTY_BODY',
           message: 'Request body is required',
@@ -163,6 +229,9 @@ serve(async (req) => {
           correlationId,
           headers: responseHeaders
         });
+        const durationMs = Math.round(performance.now() - t0);
+        logOutcome({ success: false, durationMs, errorCode: 'EMPTY_BODY', errorMessage: 'Request body is required' });
+        return resp;
       }
       
       requestBody = JSON.parse(bodyText);
@@ -171,7 +240,7 @@ serve(async (req) => {
       // Validate that requestBody is an object
       if (!requestBody || typeof requestBody !== 'object' || Array.isArray(requestBody)) {
         console.error('Request body not an object:', typeof requestBody, correlationId);
-        return makeErrorResponse({
+        const resp = makeErrorResponse({
           status: 400,
           code: 'INVALID_BODY',
           message: 'Request body must be a JSON object',
@@ -179,10 +248,13 @@ serve(async (req) => {
           correlationId,
           headers: responseHeaders
         });
+        const durationMs = Math.round(performance.now() - t0);
+        logOutcome({ success: false, durationMs, errorCode: 'INVALID_BODY', errorMessage: 'Request body must be a JSON object' });
+        return resp;
       }
     } catch (parseError) {
       console.error('Failed JSON parse', parseError, correlationId);
-      return makeErrorResponse({
+      const resp = makeErrorResponse({
         status: 400,
         code: 'JSON_PARSE_ERROR',
         message: 'Invalid JSON in request body',
@@ -194,6 +266,9 @@ serve(async (req) => {
         correlationId,
         headers: responseHeaders
       });
+      const durationMs = Math.round(performance.now() - t0);
+      logOutcome({ success: false, durationMs, errorCode: 'JSON_PARSE_ERROR', errorMessage: 'Invalid JSON in request body' });
+      return resp;
     }
 
     // Extract and validate parameters with detailed logging
@@ -206,7 +281,7 @@ serve(async (req) => {
     // Validate required parameters with specific error messages
     if (!tenantId || typeof tenantId !== 'string' || tenantId.trim() === '') {
       console.error('Missing/invalid tenantId:', tenantId, correlationId);
-      return makeErrorResponse({
+      const resp = makeErrorResponse({
         status: 400,
         code: 'MISSING_TENANT_ID',
         message: 'Missing or invalid required parameter: tenantId',
@@ -214,13 +289,16 @@ serve(async (req) => {
         correlationId,
         headers: responseHeaders
       });
+      const durationMs = Math.round(performance.now() - t0);
+      logOutcome({ success: false, durationMs, errorCode: 'MISSING_TENANT_ID', errorMessage: 'Missing or invalid tenantId' });
+      return resp;
     }
 
     // UUID format validation (simple regex) – if it fails, provide a distinct error code
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(tenantId)) {
       console.error('Invalid tenantId format (expected UUID v4):', tenantId, correlationId);
-      return makeErrorResponse({
+      const resp = makeErrorResponse({
         status: 400,
         code: 'INVALID_TENANT_ID',
         message: 'Invalid tenantId format – must be a UUID',
@@ -228,11 +306,14 @@ serve(async (req) => {
         correlationId,
         headers: responseHeaders
       });
+      const durationMs = Math.round(performance.now() - t0);
+      logOutcome({ success: false, tenantId, durationMs, errorCode: 'INVALID_TENANT_ID', errorMessage: 'Invalid tenantId format' });
+      return resp;
     }
 
     if (!widgetType || typeof widgetType !== 'string' || widgetType.trim() === '') {
       console.error('Missing/invalid widgetType:', widgetType, correlationId);
-      return makeErrorResponse({
+      const resp = makeErrorResponse({
         status: 400,
         code: 'MISSING_WIDGET_TYPE',
         message: 'Missing or invalid required parameter: widgetType',
@@ -240,6 +321,9 @@ serve(async (req) => {
         correlationId,
         headers: responseHeaders
       });
+      const durationMs = Math.round(performance.now() - t0);
+      logOutcome({ success: false, tenantId, durationMs, errorCode: 'MISSING_WIDGET_TYPE', errorMessage: 'Missing or invalid widgetType' });
+      return resp;
     }
 
     // Validate widgetType with case-insensitive check
@@ -248,7 +332,7 @@ serve(async (req) => {
     
     if (!validWidgetTypes.includes(normalizedWidgetType)) {
       console.error('Invalid widgetType enum:', widgetType, correlationId);
-      return makeErrorResponse({
+      const resp = makeErrorResponse({
         status: 400,
         code: 'INVALID_WIDGET_TYPE',
         message: 'Invalid widgetType. Must be "booking" or "catering"',
@@ -256,12 +340,76 @@ serve(async (req) => {
         correlationId,
         headers: responseHeaders
       });
+      const durationMs = Math.round(performance.now() - t0);
+      logOutcome({ success: false, tenantId, durationMs, errorCode: 'INVALID_WIDGET_TYPE', errorMessage: 'Invalid widgetType enum' });
+      return resp;
     }
 
     console.log('✅ Parameters validated successfully');
 
-    // Create Supabase client with service role for database operations
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    // ------------ Rate Limiting ---------------
+    const rateLimitMax = parseInt(Deno.env.get('WIDGET_ANALYTICS_RATE_LIMIT') || '120'); // default 120 req/hour bucket
+    const rateLimitEnabled = rateLimitMax > 0;
+    if (rateLimitEnabled) {
+      try {
+        const hourStart = new Date();
+        hourStart.setMinutes(0,0,0);
+        const bucket = `${tenantId}:${ip || 'noip'}:${normalizedWidgetType}`;
+        const { data: rlRow, error: rlSelectError } = await supabaseAdmin
+          .from('widget_analytics_rate_limits')
+          .select('*')
+          .eq('bucket', bucket)
+          .eq('window_start', hourStart.toISOString())
+          .maybeSingle();
+        let currentCount = rlRow?.count || 0;
+        if (!rlRow) {
+          const { error: insertErr } = await supabaseAdmin
+            .from('widget_analytics_rate_limits')
+            .insert({ bucket, window_start: hourStart.toISOString(), count: 1 });
+          if (insertErr && insertErr.code === '23505') {
+            // race, refetch
+            const { data: retryRow } = await supabaseAdmin
+              .from('widget_analytics_rate_limits')
+              .select('*')
+              .eq('bucket', bucket)
+              .eq('window_start', hourStart.toISOString())
+              .maybeSingle();
+            currentCount = (retryRow?.count || 0) + 1;
+            await supabaseAdmin
+              .from('widget_analytics_rate_limits')
+              .update({ count: currentCount })
+              .eq('bucket', bucket)
+              .eq('window_start', hourStart.toISOString());
+          } else if (!insertErr) {
+            currentCount = 1;
+          }
+        } else {
+          currentCount = currentCount + 1;
+          await supabaseAdmin
+            .from('widget_analytics_rate_limits')
+            .update({ count: currentCount })
+            .eq('bucket', bucket)
+            .eq('window_start', hourStart.toISOString());
+        }
+        if (currentCount > rateLimitMax) {
+          console.warn('Rate limit exceeded bucket:', bucket, 'count:', currentCount, 'limit:', rateLimitMax, 'cid:', correlationId);
+          const resp = makeErrorResponse({
+            status: 429,
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Too many requests – slow down',
+            details: { limitPerHour: rateLimitMax, bucket },
+            correlationId,
+            headers: { ...responseHeaders, 'Retry-After': '60' }
+          });
+          const durationMs = Math.round(performance.now() - t0);
+            logOutcome({ success: false, tenantId, widgetType: normalizedWidgetType, timeRange, durationMs, errorCode: 'RATE_LIMIT_EXCEEDED', errorMessage: 'Too many requests' });
+          return resp;
+        }
+      } catch(rateErr) {
+        console.warn('Rate limit logic failure (non-fatal):', rateErr);
+      }
+    }
+    // ----------- End Rate Limiting ------------
 
     // Get authorization header with improved handling
     const authHeader = req.headers.get('Authorization');
@@ -340,7 +488,7 @@ serve(async (req) => {
       version: FUNCTION_VERSION
     });
 
-    return makeSuccessResponse(analytics, {
+    const successResponse = makeSuccessResponse(analytics, {
       tenantId,
       widgetType: normalizedWidgetType,
       timeRange,
@@ -349,12 +497,14 @@ serve(async (req) => {
       durationMs,
       version: FUNCTION_VERSION
     }, correlationId, responseHeaders);
+    logOutcome({ success: true, tenantId, widgetType: normalizedWidgetType, timeRange, authMethod: authValidated ? 'authenticated' : 'anonymous', durationMs });
+    return successResponse;
 
   } catch (error: any) {
     const durationMs = Math.round(performance.now() - t0);
     console.error('❌ Widget analytics error:', error, 'cid:', correlationId, 'durationMs:', durationMs, 'version:', FUNCTION_VERSION);
     console.error('Error stack:', error?.stack);
-    return makeErrorResponse({
+    const resp = makeErrorResponse({
       status: 500,
       code: 'INTERNAL_ERROR',
       message: 'Internal server error',
@@ -362,6 +512,27 @@ serve(async (req) => {
       correlationId,
       headers: responseHeaders
     });
+    try {
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+      if ((Deno.env.get('WIDGET_ANALYTICS_LOG_ENABLED') || '1') !== '0') {
+        supabaseAdmin.from('widget_analytics_logs').insert({
+          correlation_id: correlationId,
+          tenant_id: null,
+            widget_type: null,
+            time_range: null,
+            auth_method: null,
+            duration_ms: durationMs,
+            success: false,
+            error_code: 'INTERNAL_ERROR',
+            error_message: error?.message || 'Unknown error',
+            request_origin: req.headers.get('origin') || null,
+            ip_address: (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || null
+        }).catch(() => {});
+      }
+    } catch (_) {
+      // ignore logging failure
+    }
+    return resp;
   }
 });
 
