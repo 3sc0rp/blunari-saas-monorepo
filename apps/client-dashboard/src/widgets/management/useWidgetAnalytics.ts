@@ -6,6 +6,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { WidgetAnalytics, WidgetType } from './types';
+import { AnalyticsError, EdgeFunctionError, DatabaseError, AnalyticsErrorCode } from './analytics/errors';
+import { analyticsErrorReporter } from './analytics/errorReporting';
+import type { AnalyticsMeta, AnalyticsTimeRange, AnalyticsResponse } from './analytics/types';
 
 export interface UseWidgetAnalyticsOptions {
   tenantId?: string | null;
@@ -22,11 +25,7 @@ export interface AnalyticsState {
   mode?: 'edge' | 'direct-db' | 'synthetic';
   correlationId?: string;
   lastErrorCode?: string | null;
-  meta?: {
-    estimation?: boolean;
-    version?: string;
-    timeRange?: string;
-  } | null;
+  meta?: AnalyticsMeta | null;
 }
 
 /**
@@ -38,7 +37,7 @@ export function useWidgetAnalytics({
   widgetType,
   refreshInterval = 300000, // 5 minutes default
 }: UseWidgetAnalyticsOptions): AnalyticsState & {
-  refresh: (timeRange?: string) => Promise<void>;
+  refresh: (timeRange?: AnalyticsTimeRange) => Promise<void>;
   isAvailable: boolean;
 } {
   const [state, setState] = useState<AnalyticsState>({
@@ -60,7 +59,7 @@ export function useWidgetAnalytics({
 
   const isAvailable = Boolean(tenantId && tenantSlug);
 
-  const fetchAnalytics = useCallback(async (timeRange: string = '7d'): Promise<void> => {
+  const fetchAnalytics = useCallback(async (timeRange: AnalyticsTimeRange = '7d'): Promise<void> => {
     console.log('🔍 Analytics hook parameters:', {
       tenantId,
       tenantSlug,
@@ -69,6 +68,19 @@ export function useWidgetAnalytics({
       isAvailable
     });
 
+    // First guard: not available case
+    if (!isAvailable) {
+      console.log('Analytics not available, skipping fetch');
+      setState(prev => ({
+        ...prev,
+        data: null,
+        loading: false,
+        error: null
+      }));
+      return;
+    }
+
+    // Second guard: missing tenant info
     if (!tenantId || !tenantSlug) {
       console.warn('⚠️ Analytics fetch skipped - missing tenant information:', {
         tenantId: !!tenantId,
@@ -100,7 +112,7 @@ export function useWidgetAnalytics({
             mode: 'direct-db',
             correlationId: correlationBase.current + ':demo',
             lastErrorCode: null,
-            meta: { estimation: true, timeRange }
+            meta: { estimation: true, time_range: timeRange }
           });
         return;
       }
@@ -177,6 +189,20 @@ export function useWidgetAnalytics({
     } catch (error) {
       console.error('❌ Failed to fetch real analytics:', error);
       
+      // Create an analytics error for tracking
+      const analyticsError = error instanceof AnalyticsError ? error : new AnalyticsError(
+        'Failed to fetch analytics',
+        AnalyticsErrorCode.UNKNOWN_ERROR,
+        {
+          tenantId,
+          widgetType,
+          timeRange
+        },
+        error instanceof Error ? error : undefined
+      );
+      
+      analyticsErrorReporter.reportError(analyticsError);
+      
       // Enhanced error handling with fallback attempt
       try {
         console.log('🔄 Attempting direct database fallback...');
@@ -185,12 +211,12 @@ export function useWidgetAnalytics({
         setState({
           data: fallbackData,
           loading: false,
-            error: null, // Clear error since fallback worked
+          error: null, // Clear error since fallback worked
           lastUpdated: new Date(),
           mode: 'direct-db',
           correlationId: correlationBase.current + ':catch-fallback',
-          lastErrorCode: (error as any)?.code || null,
-          meta: { estimation: true, timeRange }
+          lastErrorCode: analyticsError.code,
+          meta: { estimation: true, time_range: timeRange }
         });
         
         console.log('✅ Successfully loaded analytics via database fallback');
@@ -219,13 +245,19 @@ export function useWidgetAnalytics({
       widgetType
     });
 
+    // Guard against recursive fetch attempts
+    if (state.loading) {
+      console.log('Already fetching analytics, skipping');
+      return;
+    }
+
     if (!isAvailable) {
-      console.log('🚫 Analytics not available - setting error state');
+      console.log('🚫 Analytics not available - setting empty state');
       setState(prev => ({
         ...prev,
         data: null,
         loading: false,
-        error: 'Real tenant information required - no demo mode available',
+        error: null,
       }));
       return;
     }
@@ -241,11 +273,24 @@ export function useWidgetAnalytics({
     }
 
     console.log('✅ Starting analytics fetch...');
-    // Initial fetch
-    fetchAnalytics();
+    // Initial fetch with error handling
+    fetchAnalytics().catch(err => {
+      console.error('Failed to fetch analytics:', err);
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Failed to load analytics - please try again later',
+        data: null
+      }));
+    });
 
     // Set up refresh interval for real-time updates
-    const interval = setInterval(fetchAnalytics, refreshInterval);
+    const interval = setInterval(() => {
+      // Only trigger refresh if not currently loading
+      if (!state.loading) {
+        fetchAnalytics().catch(console.error);
+      }
+    }, refreshInterval);
 
     return () => {
       console.log('🧹 Cleaning up analytics interval');
@@ -268,9 +313,9 @@ async function fetchRealWidgetAnalytics(
   tenantId: string,
   widgetType: WidgetType,
   accessToken: string,
-  timeRange: string = '7d',
+  timeRange: AnalyticsTimeRange = '7d',
   correlationId?: string
-): Promise<{ data: WidgetAnalytics; meta?: { estimation?: boolean; version?: string } }> {
+): Promise<AnalyticsResponse> {
   
   console.log('Calling real analytics Edge Function...');
   console.log('Request details:', { tenantId, widgetType, timeRange });
@@ -297,14 +342,16 @@ async function fetchRealWidgetAnalytics(
     console.log('📡 Invoking Edge Function with body:', { tenantId, widgetType, timeRange });
     const response = await supabase.functions.invoke('widget-analytics', {
       body: {
-        tenantId,
-        widgetType,
-        timeRange
+        tenant_id: tenantId, // Fix parameter name to match Edge Function expectation
+        widget_type: widgetType,
+        time_range: timeRange,
+        version: '2.0'
       },
       headers: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Authorization': accessToken ? `Bearer ${accessToken}` : undefined,
         'Content-Type': 'application/json',
-        'x-correlation-id': correlationId || ''
+        'x-correlation-id': correlationId || '',
+        'x-widget-version': '2.0'
       }
     });
 
@@ -341,15 +388,70 @@ async function fetchRealWidgetAnalytics(
         }
       }
       
-      // If Edge Function fails, try direct database query as fallback
+      // Enhanced error handling with analytics error reporting
+      const edgeError = new EdgeFunctionError(
+        'Edge Function failed',
+        response.error.message?.includes('400') ? 
+          AnalyticsErrorCode.VALIDATION_ERROR : 
+          AnalyticsErrorCode.EDGE_FUNCTION_ERROR,
+        response,
+        {
+          tenantId,
+          widgetType,
+          timeRange,
+          correlationId
+        }
+      );
+      
+      analyticsErrorReporter.reportError(edgeError);
+      
+      // Check if we should attempt database fallback
+      if (response.error.message?.includes('400')) {
+        console.log('Bad request - switching to empty data');
+        return { 
+          data: {
+            totalViews: 0,
+            totalClicks: 0,
+            conversionRate: 0,
+            avgSessionDuration: 0,
+            totalBookings: 0,
+            completionRate: 0,
+            topSources: [],
+            dailyStats: []
+          },
+          meta: { 
+            estimation: true,
+            version: '2.0',
+            time_range: timeRange 
+          }
+        };
+      }
+      
+      // For other errors, try database fallback
       console.log('Attempting direct database fallback due to Edge Function error...');
       throw Object.assign(new Error('Edge function error'), { code: response.error.name || 'EDGE_ERROR' });
     }
 
     // Check if Edge Function returned success
     if (!response.data?.success || !response.data?.data) {
-      console.warn('Edge Function returned unsuccessful response, using direct database fallback');
-      throw Object.assign(new Error('Edge function unsuccessful response'), { code: 'EDGE_UNSUCCESSFUL' });
+      console.warn('Edge Function returned unsuccessful response');
+      return { 
+        data: response.data?.data || {
+          totalViews: 0,
+          totalClicks: 0,
+          conversionRate: 0,
+          avgSessionDuration: 0,
+          totalBookings: 0,
+          completionRate: 0,
+          topSources: [],
+          dailyStats: []
+        },
+        meta: { 
+          estimation: true,
+          version: '2.0',
+          time_range: timeRange
+        }
+      };
     }
 
     console.log('Real analytics data received successfully from Edge Function');
@@ -368,7 +470,7 @@ async function fetchRealWidgetAnalytics(
 async function fetchAnalyticsDirectly(
   tenantId: string,
   widgetType: WidgetType,
-  timeRange: string = '7d'
+  timeRange: AnalyticsTimeRange = '7d'
 ): Promise<WidgetAnalytics> {
   
   console.log('Fetching analytics directly from database...');
@@ -462,6 +564,24 @@ async function fetchAnalyticsDirectly(
     
   } catch (error) {
     console.error('Direct database query failed:', error);
+    
+    // Report database error
+    const dbError = new DatabaseError(
+      'Database analytics query failed',
+      AnalyticsErrorCode.DATABASE_ERROR,
+      {
+        tenantId,
+        widgetType,
+        timeRange,
+        table: widgetType === 'booking' ? 'bookings' : 'catering_orders'
+      },
+      {
+        attempt: 'fallback',
+        error: error instanceof Error ? error.message : String(error)
+      }
+    );
+    
+    analyticsErrorReporter.reportError(dbError);
     
     // Ultimate fallback with minimal data
     return {
