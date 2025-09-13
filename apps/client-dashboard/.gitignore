@@ -17,6 +17,16 @@ dist-ssr
 playwright-report/
 test-results/
 
+# Playwright and testing artifacts
+auth-page-analysis.png
+authenticated-simulation.png
+potential-auth-bypass.png
+unexpected-page-analysis.png
+playwright.config.production.ts
+*-fixed.spec.ts
+diagnostic.spec.ts
+production-auth.spec.ts
+
 # Temporary and debug files
 *.tmp
 *.temp
