@@ -289,8 +289,10 @@ serve(async (req) => {
       return resp;
     }
 
-    // Extract and validate parameters with detailed logging
-  const { tenantId, widgetType, timeRange = '7d' } = requestBody;
+    // Extract and validate parameters with detailed logging (support both camelCase and snake_case)
+  const tenantId = (requestBody.tenantId ?? requestBody.tenant_id) as string | undefined;
+  const widgetType = (requestBody.widgetType ?? requestBody.widget_type) as string | undefined;
+  const timeRange = (requestBody.timeRange ?? requestBody.time_range ?? '7d') as string;
     console.log('Parameter validation:');
     console.log('- tenantId:', tenantId, typeof tenantId);
     console.log('- widgetType:', widgetType, typeof widgetType);

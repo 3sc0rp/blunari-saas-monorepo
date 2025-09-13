@@ -306,8 +306,13 @@ export function useWidgetAnalytics({
     try {
       console.log(`Fetching REAL analytics for tenant ${tenantId}, widget ${widgetType}`);
       
-      // For development/demo purposes, use direct database fallback if tenantId looks like a demo ID
-      if (tenantId.includes('demo') || tenantId.includes('test') || !tenantId.match(/^[0-9a-f-]{36}$/i)) {
+      // For development/demo purposes, use direct database fallback if tenant looks like demo/test or tenantId not UUID
+      if (
+        tenantId.includes('demo') ||
+        tenantId.includes('test') ||
+        (tenantSlug && /demo|test/i.test(tenantSlug)) ||
+        !tenantId.match(/^[0-9a-f-]{36}$/i)
+      ) {
         console.log('🎭 Demo tenant detected, using database fallback');
         const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
           setState({
@@ -632,9 +637,9 @@ async function fetchRealWidgetAnalytics(
 
     const response = await supabase.functions.invoke('widget-analytics', {
       body: {
-        tenant_id: tenantId,
-        widget_type: widgetType,
-        time_range: timeRange,
+        tenantId,
+        widgetType,
+        timeRange,
         version: '2.0'
       },
       headers: requestHeaders
@@ -654,6 +659,15 @@ async function fetchRealWidgetAnalytics(
         status: (response.error as any)?.context?.response?.status || (response.error as any)?.status,
         context: (response.error as any)?.context
       });
+      try {
+        const res: any = (response.error as any)?.context?.response;
+        if (res && typeof res.text === 'function') {
+          const bodyText = await (res.clone ? res.clone() : res).text();
+          console.error('Edge Function error body:', bodyText?.slice(0, 2000));
+        }
+      } catch (e) {
+        console.warn('Failed to read Edge Function error body', e);
+      }
       console.error('Real analytics function error:', response.error, 'cid:', correlationId);
       
       // If it's a 400 error, try with anon key authentication
@@ -674,9 +688,9 @@ async function fetchRealWidgetAnalytics(
           
           const retryResponse = await supabase.functions.invoke('widget-analytics', {
             body: {
-              tenant_id: tenantId,
-              widget_type: widgetType,
-              time_range: timeRange,
+              tenantId,
+              widgetType,
+              timeRange,
               version: '2.0'
             },
             headers: retryHeaders
