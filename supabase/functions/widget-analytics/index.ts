@@ -314,13 +314,21 @@ serve(async (req) => {
 
     // Basic format validation - allow any reasonable tenant ID format
     // Database will validate if the tenant actually exists
-    const reservedWords = ['null', 'undefined', 'void', 'empty', 'test', 'admin', 'system'];
+    const reservedWords = ['null', 'undefined', 'void', 'empty'];
     const isReservedWord = reservedWords.includes(tenantId.toLowerCase());
     const hasValidFormat = /^[a-zA-Z0-9_-]+$/.test(tenantId);
-    const hasProperLength = tenantId.length >= 8 && tenantId.length <= 100;
-    const containsDashOrUnderscore = /[-_]/.test(tenantId);
+    const hasProperLength = tenantId.length >= 4 && tenantId.length <= 100;
     
-    if (isReservedWord || !hasValidFormat || !hasProperLength || !containsDashOrUnderscore) {
+    // Log validation details for debugging
+    console.log('Tenant ID validation:', {
+      tenantId,
+      isReservedWord,
+      hasValidFormat,
+      hasProperLength,
+      correlationId
+    });
+    
+    if (isReservedWord || !hasValidFormat || !hasProperLength) {
       console.error('Invalid tenantId format (basic validation):', tenantId, correlationId);
       const resp = makeErrorResponse({
         status: 400,
@@ -328,11 +336,10 @@ serve(async (req) => {
         message: 'Invalid tenantId format – must be alphanumeric with dashes/underscores, not reserved words',
         details: { 
           received: tenantId, 
-          allowedPattern: 'alphanumeric with dashes/underscores, 8-100 chars, not reserved words',
+          allowedPattern: 'alphanumeric with dashes/underscores, 4-100 chars, not reserved words',
           isReservedWord,
           hasValidFormat,
-          hasProperLength,
-          containsDashOrUnderscore
+          hasProperLength
         },
         correlationId,
         headers: responseHeaders

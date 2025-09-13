@@ -618,6 +618,16 @@ async function fetchRealWidgetAnalytics(
       }
     }
 
+    console.log('🚀 About to call Edge Function with:', {
+      tenantId,
+      widgetType,
+      timeRange,
+      headers: Object.keys(requestHeaders),
+      tenantIdLength: tenantId?.length,
+      tenantIdContainsDash: tenantId?.includes('-'),
+      tenantIdContainsUnderscore: tenantId?.includes('_')
+    });
+
     const response = await supabase.functions.invoke('widget-analytics', {
       body: {
         tenantId, // Use camelCase to match Edge Function expectation
