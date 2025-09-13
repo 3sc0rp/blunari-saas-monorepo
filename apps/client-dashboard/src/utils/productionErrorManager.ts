@@ -17,6 +17,7 @@ class ProductionErrorManager {
   private suppressedWarnings = new Set<string>();
   private errorCounts = new Map<string, number>();
   private lastErrorTime = new Map<string, number>();
+  private patternCounts = new Map<string, number>();
 
   // Error patterns that should be suppressed in production
   private readonly SUPPRESSED_PATTERNS = [
@@ -53,17 +54,23 @@ class ProductionErrorManager {
     const key = `${component}:${message}`;
     
     // Check if this warning should be suppressed
-    const shouldSuppress = this.SUPPRESSED_PATTERNS.some(pattern => pattern.test(message));
-    
-    if (shouldSuppress) {
-      // Only log the first occurrence
+    const matchedPattern = this.SUPPRESSED_PATTERNS.find(pattern => pattern.test(message));
+    if (matchedPattern) {
+      const patternKey = matchedPattern.toString();
+      const count = (this.patternCounts.get(patternKey) || 0) + 1;
+      this.patternCounts.set(patternKey, count);
+      // Allow first 3 occurrences for visibility
+      if (count <= 3) {
+        logger.warn('Transient warning (not yet suppressed)', { component, occurrence: count, message });
+        return false;
+      }
       if (!this.suppressedWarnings.has(key)) {
         this.suppressedWarnings.add(key);
-        logger.info('Production mode: Suppressing warning noise', {
+        logger.info('Production mode: Suppressing repetitive warning', {
           component,
-          originalMessage: message,
-          context,
-          suppressed: true
+            originalMessage: message,
+            context,
+            suppressedAfter: count
         });
       }
       return true;

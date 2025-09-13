@@ -1,6 +1,39 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Lightweight UUID v4 generator (avoids extra deps in Edge Function)
+function generateId() {
+  // Not cryptographically strong – acceptable for correlation IDs/log tracing
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+interface ErrorResponseOptions {
+  status: number;
+  code: string;
+  message: string;
+  details?: unknown;
+  correlationId: string;
+  headers: Record<string, string>;
+}
+
+function makeErrorResponse({ status, code, message, details, correlationId, headers }: ErrorResponseOptions) {
+  return new Response(
+    JSON.stringify({ success: false, code, error: message, details, correlationId }),
+    { status, headers: { ...headers, 'Content-Type': 'application/json', 'x-correlation-id': correlationId } }
+  );
+}
+
+function makeSuccessResponse(data: any, meta: Record<string, unknown>, correlationId: string, headers: Record<string,string>) {
+  return new Response(
+    JSON.stringify({ success: true, data, meta: { ...meta, correlationId } }),
+    { status: 200, headers: { ...headers, 'Content-Type': 'application/json', 'x-correlation-id': correlationId } }
+  );
+}
+
 // CORS headers for cross-origin requests
 const createCorsHeaders = (requestOrigin: string | null = null) => {
   const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
@@ -75,9 +108,10 @@ interface WidgetEvent {
 }
 
 serve(async (req) => {
+  const correlationId = req.headers.get('x-correlation-id') || generateId();
   // Get origin for CORS handling
   const origin = req.headers.get('origin');
-  const responseHeaders = createCorsHeaders(origin || null);
+  const responseHeaders = { ...createCorsHeaders(origin || null), 'x-correlation-id': correlationId };
   
   // Handle CORS preflight requests FIRST - before any other logic
   if (req.method === 'OPTIONS') {
@@ -96,14 +130,15 @@ serve(async (req) => {
 
     // Validate request method
     if (req.method !== 'POST') {
-      console.log('Invalid method:', req.method);
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { 
-          status: 405, 
-          headers: { ...responseHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      console.log('Invalid method:', req.method, 'cid:', correlationId);
+      return makeErrorResponse({
+        status: 405,
+        code: 'METHOD_NOT_ALLOWED',
+        message: 'Method not allowed',
+        details: { method: req.method },
+        correlationId,
+        headers: responseHeaders
+      });
     }
 
     // Parse request body with better error handling
@@ -113,15 +148,15 @@ serve(async (req) => {
       console.log('Raw request body:', bodyText);
       
       if (!bodyText || bodyText.trim() === '') {
-        console.error('Empty or whitespace-only request body');
-        return new Response(
-          JSON.stringify({ 
-            success: false,
-            error: 'Request body is required',
-            details: 'Please provide tenantId and widgetType in the request body'
-          }),
-          { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
-        );
+        console.error('Empty or whitespace-only request body', correlationId);
+        return makeErrorResponse({
+          status: 400,
+          code: 'EMPTY_BODY',
+          message: 'Request body is required',
+          details: 'Provide tenantId and widgetType',
+          correlationId,
+          headers: responseHeaders
+        });
       }
       
       requestBody = JSON.parse(bodyText);
@@ -129,26 +164,26 @@ serve(async (req) => {
       
       // Validate that requestBody is an object
       if (!requestBody || typeof requestBody !== 'object' || Array.isArray(requestBody)) {
-        console.error('Request body is not a valid object:', typeof requestBody);
-        return new Response(
-          JSON.stringify({ 
-            success: false,
-            error: 'Request body must be a JSON object',
-            details: 'Expected object with tenantId and widgetType properties'
-          }),
-          { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
-        );
+        console.error('Request body not an object:', typeof requestBody, correlationId);
+        return makeErrorResponse({
+          status: 400,
+          code: 'INVALID_BODY',
+          message: 'Request body must be a JSON object',
+          details: 'Expected object with tenantId and widgetType properties',
+          correlationId,
+          headers: responseHeaders
+        });
       }
     } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Invalid JSON in request body', 
-          details: String(parseError) 
-        }),
-        { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('Failed JSON parse', parseError, correlationId);
+      return makeErrorResponse({
+        status: 400,
+        code: 'JSON_PARSE_ERROR',
+        message: 'Invalid JSON in request body',
+        details: String(parseError),
+        correlationId,
+        headers: responseHeaders
+      });
     }
 
     // Extract and validate parameters with detailed logging
@@ -160,29 +195,27 @@ serve(async (req) => {
 
     // Validate required parameters with specific error messages
     if (!tenantId || typeof tenantId !== 'string' || tenantId.trim() === '') {
-      console.error('Missing or invalid tenantId parameter:', tenantId);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Missing or invalid required parameter: tenantId',
-          details: 'tenantId must be a non-empty string',
-          received: { tenantId, type: typeof tenantId }
-        }),
-        { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('Missing/invalid tenantId:', tenantId, correlationId);
+      return makeErrorResponse({
+        status: 400,
+        code: 'MISSING_TENANT_ID',
+        message: 'Missing or invalid required parameter: tenantId',
+        details: { received: tenantId, type: typeof tenantId },
+        correlationId,
+        headers: responseHeaders
+      });
     }
 
     if (!widgetType || typeof widgetType !== 'string' || widgetType.trim() === '') {
-      console.error('Missing or invalid widgetType parameter:', widgetType);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Missing or invalid required parameter: widgetType',
-          details: 'widgetType must be a non-empty string ("booking" or "catering")',
-          received: { widgetType, type: typeof widgetType }
-        }),
-        { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('Missing/invalid widgetType:', widgetType, correlationId);
+      return makeErrorResponse({
+        status: 400,
+        code: 'MISSING_WIDGET_TYPE',
+        message: 'Missing or invalid required parameter: widgetType',
+        details: { received: widgetType, type: typeof widgetType },
+        correlationId,
+        headers: responseHeaders
+      });
     }
 
     // Validate widgetType with case-insensitive check
@@ -190,17 +223,15 @@ serve(async (req) => {
     const normalizedWidgetType = String(widgetType).toLowerCase().trim();
     
     if (!validWidgetTypes.includes(normalizedWidgetType)) {
-      console.error('Invalid widgetType:', widgetType, 'normalized:', normalizedWidgetType);
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Invalid widgetType. Must be "booking" or "catering"',
-          details: `Received "${widgetType}", expected one of: ${validWidgetTypes.join(', ')}`,
-          received: widgetType,
-          validOptions: validWidgetTypes
-        }),
-        { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('Invalid widgetType enum:', widgetType, correlationId);
+      return makeErrorResponse({
+        status: 400,
+        code: 'INVALID_WIDGET_TYPE',
+        message: 'Invalid widgetType. Must be "booking" or "catering"',
+        details: { received: widgetType, valid: validWidgetTypes },
+        correlationId,
+        headers: responseHeaders
+      });
     }
 
     console.log('✅ Parameters validated successfully');
@@ -282,39 +313,25 @@ serve(async (req) => {
       authMethod: authValidated ? 'authenticated' : 'anonymous'
     });
     
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        data: analytics,
-        meta: {
-          tenantId,
-          widgetType: normalizedWidgetType,
-          timeRange,
-          authMethod: authValidated ? 'authenticated' : 'anonymous',
-          generatedAt: new Date().toISOString()
-        }
-      }),
-      { 
-        status: 200, 
-        headers: { ...responseHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return makeSuccessResponse(analytics, {
+      tenantId,
+      widgetType: normalizedWidgetType,
+      timeRange,
+      authMethod: authValidated ? 'authenticated' : 'anonymous',
+      generatedAt: new Date().toISOString()
+    }, correlationId, responseHeaders);
 
   } catch (error: any) {
-    console.error('❌ Widget analytics error:', error);
+    console.error('❌ Widget analytics error:', error, 'cid:', correlationId);
     console.error('Error stack:', error?.stack);
-    return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: 'Internal server error',
-        details: error?.message || 'Unknown error',
-        timestamp: new Date().toISOString()
-      }),
-      { 
-        status: 500, 
-        headers: { ...responseHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return makeErrorResponse({
+      status: 500,
+      code: 'INTERNAL_ERROR',
+      message: 'Internal server error',
+      details: error?.message || 'Unknown error',
+      correlationId,
+      headers: responseHeaders
+    });
   }
 });
 

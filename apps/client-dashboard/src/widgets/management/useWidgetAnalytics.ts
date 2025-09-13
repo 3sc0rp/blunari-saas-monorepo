@@ -3,7 +3,7 @@
  * Provides ONLY real analytics data from backend APIs - NO mock/demo data
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { WidgetAnalytics, WidgetType } from './types';
 
@@ -19,6 +19,9 @@ export interface AnalyticsState {
   loading: boolean;
   error: string | null;
   lastUpdated: Date | null;
+  mode?: 'edge' | 'direct-db' | 'synthetic';
+  correlationId?: string;
+  lastErrorCode?: string | null;
 }
 
 /**
@@ -38,7 +41,16 @@ export function useWidgetAnalytics({
     loading: false,
     error: null,
     lastUpdated: null,
+    mode: undefined,
+    correlationId: undefined,
+    lastErrorCode: null
   });
+
+  const sessionCheckedRef = useRef(false);
+  const correlationBase = useRef<string>('');
+  if (!correlationBase.current) {
+    correlationBase.current = Math.random().toString(36).slice(2, 10);
+  }
 
   const isAvailable = Boolean(tenantId && tenantSlug);
 
@@ -65,7 +77,7 @@ export function useWidgetAnalytics({
       return;
     }
 
-    setState(prev => ({ ...prev, loading: true, error: null }));
+    setState(prev => ({ ...prev, loading: true, error: null, lastErrorCode: null }));
 
     try {
       console.log(`Fetching REAL analytics for tenant ${tenantId}, widget ${widgetType}`);
@@ -79,12 +91,16 @@ export function useWidgetAnalytics({
           loading: false,
           error: null,
           lastUpdated: new Date(),
+          mode: 'direct-db',
+          correlationId: correlationBase.current + ':demo',
+          lastErrorCode: null
         });
         return;
       }
       
       // Get current session for authentication
-      const { data: { session }, error: authError } = await supabase.auth.getSession();
+  const { data: { session }, error: authError } = await supabase.auth.getSession();
+  sessionCheckedRef.current = true;
       
       if (authError || !session) {
         console.warn('⚠️ No authentication available, using database fallback');
@@ -95,21 +111,53 @@ export function useWidgetAnalytics({
           loading: false,
           error: null,
           lastUpdated: new Date(),
+          mode: 'direct-db',
+          correlationId: correlationBase.current + ':noauth'
         });
         return;
       }
 
-      // Call REAL analytics API endpoint - no mock fallbacks
-      const response = await fetchRealWidgetAnalytics(tenantId, widgetType, session.access_token);
-      
-      setState({
-        data: response,
-        loading: false,
-        error: null,
-        lastUpdated: new Date(),
-      });
-      
-      console.log('✅ Successfully loaded real analytics data');
+      // Retry logic for Edge Function
+      const maxAttempts = 2;
+      let lastErr: any = null;
+      let analytics: WidgetAnalytics | null = null;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const cid = `${correlationBase.current}:a${attempt}`;
+        try {
+          analytics = await fetchRealWidgetAnalytics(tenantId, widgetType, session.access_token, '7d', cid);
+          setState({
+            data: analytics,
+            loading: false,
+            error: null,
+            lastUpdated: new Date(),
+            mode: 'edge',
+            correlationId: cid,
+            lastErrorCode: null
+          });
+          console.log('✅ Successfully loaded real analytics data (attempt', attempt, ')');
+          break;
+        } catch (edgeErr: any) {
+          lastErr = edgeErr;
+          console.warn('Edge analytics attempt failed', { attempt, cid, message: edgeErr?.message });
+          if (attempt < maxAttempts) {
+            await new Promise(r => setTimeout(r, attempt * 250));
+          }
+        }
+      }
+
+      if (!analytics) {
+        console.log('Switching to direct-db fallback after edge retries');
+        const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
+        setState({
+          data: fallbackData,
+          loading: false,
+          error: null,
+          lastUpdated: new Date(),
+          mode: 'direct-db',
+          correlationId: correlationBase.current + ':fallback',
+          lastErrorCode: lastErr?.code || null
+        });
+      }
     } catch (error) {
       console.error('❌ Failed to fetch real analytics:', error);
       
@@ -123,6 +171,9 @@ export function useWidgetAnalytics({
           loading: false,
           error: null, // Clear error since fallback worked
           lastUpdated: new Date(),
+          mode: 'direct-db',
+          correlationId: correlationBase.current + ':catch-fallback',
+          lastErrorCode: error?.code || null
         });
         
         console.log('✅ Successfully loaded analytics via database fallback');
@@ -133,6 +184,9 @@ export function useWidgetAnalytics({
           loading: false,
           error: 'Unable to load analytics data - please try again later',
           data: null,
+          mode: 'synthetic',
+          correlationId: correlationBase.current + ':synthetic',
+          lastErrorCode: fallbackError?.code || null
         }));
       }
     }
@@ -196,7 +250,8 @@ async function fetchRealWidgetAnalytics(
   tenantId: string,
   widgetType: WidgetType,
   accessToken: string,
-  timeRange: string = '7d'
+  timeRange: string = '7d',
+  correlationId?: string
 ): Promise<WidgetAnalytics> {
   
   console.log('Calling real analytics Edge Function...');
@@ -230,7 +285,8 @@ async function fetchRealWidgetAnalytics(
       },
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-correlation-id': correlationId || ''
       }
     });
 
@@ -242,7 +298,7 @@ async function fetchRealWidgetAnalytics(
     });
 
     if (response.error) {
-      console.error('Real analytics function error:', response.error);
+  console.error('Real analytics function error:', response.error, 'cid:', correlationId);
       
       // If it's a 400 error, try without authentication header
       if (response.error.message?.includes('400') || response.error.message?.includes('Bad Request')) {
@@ -269,13 +325,13 @@ async function fetchRealWidgetAnalytics(
       
       // If Edge Function fails, try direct database query as fallback
       console.log('Attempting direct database fallback due to Edge Function error...');
-      return await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
+      throw Object.assign(new Error('Edge function error'), { code: response.error.name || 'EDGE_ERROR' });
     }
 
     // Check if Edge Function returned success
     if (!response.data?.success || !response.data?.data) {
       console.warn('Edge Function returned unsuccessful response, using direct database fallback');
-      return await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
+      throw Object.assign(new Error('Edge function unsuccessful response'), { code: 'EDGE_UNSUCCESSFUL' });
     }
 
     console.log('Real analytics data received successfully from Edge Function');
@@ -283,10 +339,8 @@ async function fetchRealWidgetAnalytics(
     return response.data.data;
     
   } catch (err) {
-    console.error('Edge Function request failed:', err);
-    // Fallback to direct database query
-    console.log('Using direct database fallback due to Edge Function failure');
-    return await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
+    console.error('Edge Function request failed:', err, 'cid:', correlationId);
+    throw Object.assign(err instanceof Error ? err : new Error('Edge failure'), { code: (err as any)?.code || 'EDGE_REQUEST_FAIL' });
   }
 }
 
