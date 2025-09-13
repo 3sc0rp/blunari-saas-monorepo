@@ -63,9 +63,32 @@ import {
   Camera,
 } from 'lucide-react';
 import { useWidgetConfig } from '@/widgets/management/useWidgetConfig';
-import { WidgetConfig, WidgetAnalytics } from '@/widgets/management/types';
+import { 
+  WidgetConfig, 
+  WidgetAnalytics, 
+  WidgetFontFamily, 
+  BookingSource 
+} from '@/widgets/management/types';
 import { getDefaultConfig } from '@/widgets/management/defaults';
 import { validateConfig } from '@/widgets/management/validation';
+import { createWidgetToken } from '@/widgets/management/tokenUtils';
+import { useWidgetAnalytics, formatAnalyticsValue, analyticsFormatters } from '@/widgets/management/useWidgetAnalytics';
+import { TenantStatusCard } from '@/widgets/management/components/TenantStatusCard';
+import { WidgetHeader } from '@/widgets/management/components/WidgetHeader';
+import { ValidationErrorAlert } from '@/widgets/management/components/ValidationErrorAlert';
+import { 
+  ALIGNMENT_MAP, 
+  FONT_WEIGHT_MAP, 
+  TEXT_ALIGNMENT_MAP,
+  ANIMATION_MAP,
+  DEVICE_STYLES,
+  DEVICE_FRAME_STYLES,
+  DEVICE_SCREEN_STYLES,
+  WIDGET_SCALE_MAP,
+  createWidgetContainerStyle,
+  createCustomProperties,
+  getSpacingStyle 
+} from '@/widgets/management/styleUtils';
 import { copyText } from '@/utils/clipboard';
 
 // Types now imported from widgets/management/types
@@ -96,6 +119,7 @@ const WidgetManagement: React.FC = () => {
     setCurrentConfig,
     hasUnsavedChanges,
     validationErrors,
+    lastSavedTimestamp,
     updateConfig,
     saveConfiguration,
     resetToDefaults: resetDefaultsFromHook,
@@ -153,14 +177,15 @@ const WidgetManagement: React.FC = () => {
       const effectiveSlug = resolvedTenantSlug;
       
       if (!effectiveSlug) {
-        console.warn('No tenant slug available for URL generation, using fallback');
-        // In development, use a demo slug; in production, show a user-friendly message
+        console.warn('No tenant slug available for URL generation');
+        // Fail closed in production, use demo only in development
         if (import.meta.env.MODE === 'development') {
           const fallbackSlug = 'demo';
           const baseUrl = window.location.origin;
           const widgetPath = type === 'booking' ? '/book' : '/catering';
           return `${baseUrl}${widgetPath}/${fallbackSlug}?source=widget-demo&widget_version=2.0`;
         }
+        // Return empty string to fail closed in production
         return '';
       }
       
@@ -169,7 +194,11 @@ const WidgetManagement: React.FC = () => {
       
       if (!config) {
         console.warn('No configuration available for URL generation');
-        // Return basic URL without configuration parameters
+        // Fail closed if no config in production
+        if (import.meta.env.MODE !== 'development') {
+          return '';
+        }
+        // Return basic URL in development
         const widgetPath = type === 'booking' ? '/book' : '/catering';
         return `${baseUrl}${widgetPath}/${effectiveSlug}?source=widget&widget_version=2.0`;
       }
@@ -177,17 +206,18 @@ const WidgetManagement: React.FC = () => {
       // Use the actual booking system routes
       const widgetPath = type === 'booking' ? '/book' : '/catering';
       
-      // Build configuration parameters with comprehensive fallbacks
+      // Create signed token instead of exposing tenant_id/config_id
+      const widgetToken = createWidgetToken(effectiveSlug, '2.0', type);
+      
+      // Build configuration parameters - let URLSearchParams handle encoding
       const configParams = new URLSearchParams();
       
-      // Essential tenant parameters
+      // Only include slug and signed token
       configParams.set('slug', effectiveSlug);
-      configParams.set('source', 'widget');
+      configParams.set('token', widgetToken);
       configParams.set('widget_version', '2.0');
-      configParams.set('tenant_id', tenant?.id || 'demo');
-      configParams.set('config_id', tenantIdentifier);
       
-      // Tenant context parameters
+      // Tenant context parameters (safe to expose)
       if (tenant?.timezone) {
         configParams.set('timezone', tenant.timezone);
       }
@@ -195,24 +225,24 @@ const WidgetManagement: React.FC = () => {
         configParams.set('currency', tenant.currency);
       }
       
-      // Appearance parameters with safe fallbacks
+      // Appearance parameters - URLSearchParams handles encoding automatically
       configParams.set('theme', config.theme || 'light');
-      configParams.set('primaryColor', encodeURIComponent(config.primaryColor || '#3b82f6'));
-      configParams.set('secondaryColor', encodeURIComponent(config.secondaryColor || '#1e40af'));
-      configParams.set('backgroundColor', encodeURIComponent(config.backgroundColor || '#ffffff'));
-      configParams.set('textColor', encodeURIComponent(config.textColor || '#1f2937'));
+      configParams.set('primaryColor', config.primaryColor || '#3b82f6');
+      configParams.set('secondaryColor', config.secondaryColor || '#1e40af');
+      configParams.set('backgroundColor', config.backgroundColor || '#ffffff');
+      configParams.set('textColor', config.textColor || '#1f2937');
       
       // Layout parameters with safe defaults
       configParams.set('borderRadius', (config.borderRadius || 8).toString());
       configParams.set('width', (config.width || 400).toString());
       configParams.set('height', (config.height || 600).toString());
       
-      // Content parameters with safe encoding
+      // Content parameters - URLSearchParams handles encoding
       if (config.welcomeMessage) {
-        configParams.set('welcomeMessage', encodeURIComponent(config.welcomeMessage));
+        configParams.set('welcomeMessage', config.welcomeMessage);
       }
       if (config.buttonText) {
-        configParams.set('buttonText', encodeURIComponent(config.buttonText));
+        configParams.set('buttonText', config.buttonText);
       }
       
       // Feature flags with proper boolean handling
@@ -241,13 +271,16 @@ const WidgetManagement: React.FC = () => {
       return `${baseUrl}${widgetPath}/${effectiveSlug}?${configParams.toString()}`;
     } catch (error) {
       console.error('Error generating widget URL:', error);
-      // Return a basic functional URL as fallback
-      const baseUrl = window.location.origin;
-      const widgetPath = type === 'booking' ? '/book' : '/catering';
-      const fallbackSlug = resolvedTenantSlug || 'demo';
-      return `${baseUrl}${widgetPath}/${fallbackSlug}?source=widget-error&widget_version=2.0`;
+      // Fail closed in production, provide fallback in development
+      if (import.meta.env.MODE === 'development') {
+        const baseUrl = window.location.origin;
+        const widgetPath = type === 'booking' ? '/book' : '/catering';
+        const fallbackSlug = resolvedTenantSlug || 'demo';
+        return `${baseUrl}${widgetPath}/${fallbackSlug}?source=widget-error&widget_version=2.0`;
+      }
+      return '';
     }
-  }, [bookingConfig, cateringConfig, resolvedTenantSlug]);
+  }, [bookingConfig, cateringConfig, resolvedTenantSlug, tenant?.timezone, tenant?.currency]);
 
   const generateEmbedCode = useCallback((type: 'booking' | 'catering') => {
     try {
@@ -265,55 +298,139 @@ const WidgetManagement: React.FC = () => {
       
       const widgetId = `blunari-${type}-widget-${Date.now()}`;
       
-      return `<!-- Blunari ${type.charAt(0).toUpperCase() + type.slice(1)} Widget -->
+      return `<!-- Blunari ${type.charAt(0).toUpperCase() + type.slice(1)} Widget with PostMessage Communication -->
 <script>
-  (function() {
-    try {
-      var widget = document.createElement('div');
-      widget.id = '${widgetId}';
-      widget.style.cssText = 'width: ${config.width || 400}px; height: ${config.height || 600}px; max-width: 100%; margin: 0 auto; border-radius: ${config.borderRadius || 8}px; overflow: hidden; box-shadow: 0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1);';
+(function() {
+  try {
+    var widget = document.createElement('div');
+    widget.id = '${widgetId}';
+    widget.style.cssText = 'width: ${config.width || 400}px; height: ${config.height || 600}px; max-width: 100%; margin: 0 auto; border-radius: ${config.borderRadius || 8}px; overflow: hidden; box-shadow: 0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1);';
+    
+    var iframe = document.createElement('iframe');
+    iframe.src = '${url}';
+    iframe.style.cssText = 'width: 100%; height: 100%; border: none; display: block;';
+    iframe.frameBorder = '0';
+    iframe.allowTransparency = 'true';
+    iframe.scrolling = 'auto';
+    iframe.title = '${(config.welcomeMessage || '').replace(/'/g, "\\'")} - ${type} widget';
+    iframe.setAttribute('data-widget-type', '${type}');
+    iframe.setAttribute('data-widget-id', '${widgetId}');
+    
+    // PostMessage event listener for iframe communication
+    function handleWidgetMessage(event) {
+      // Verify origin for security (replace with your actual domain)
+      if (event.origin !== window.location.origin) {
+        return;
+      }
       
-      var iframe = document.createElement('iframe');
-      iframe.src = '${url}';
-      iframe.style.cssText = 'width: 100%; height: 100%; border: none; display: block;';
-      iframe.frameBorder = '0';
-      iframe.allowTransparency = 'true';
-      iframe.scrolling = 'auto';
-      iframe.title = '${(config.welcomeMessage || '').replace(/'/g, "\\'")}';
+      var data = event.data;
+      if (!data || !data.type || data.widgetId !== '${widgetId}') {
+        return;
+      }
       
-      // Error handling
-      iframe.onerror = function() {
-        console.error('Failed to load Blunari ${type} widget');
-        widget.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Unable to load widget. Please try again later.</div>';
-      };
-      
-      // Success callback
-      iframe.onload = function() {
-        console.log('Blunari ${type} widget loaded successfully');
-      };
-      
-      widget.appendChild(iframe);
-      
-      // Insert widget
-      var targetElement = document.currentScript ? document.currentScript.parentNode : document.body;
-      var nextSibling = document.currentScript ? document.currentScript.nextSibling : null;
-      targetElement.insertBefore(widget, nextSibling);
-    } catch (error) {
-      console.error('Error initializing Blunari widget:', error);
+      switch (data.type) {
+        case 'widget_loaded':
+          console.log('Widget loaded successfully:', data);
+          iframe.style.opacity = '1';
+          iframe.style.transition = 'opacity 0.3s ease-in-out';
+          break;
+          
+        case 'widget_resize':
+          if (data.height && data.height > 0) {
+            iframe.style.height = data.height + 'px';
+            widget.style.height = data.height + 'px';
+            console.log('Widget resized to height:', data.height);
+          }
+          break;
+          
+        case 'widget_conversion':
+          console.log('Widget conversion event:', data);
+          // Trigger custom analytics or tracking
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'conversion', {
+              event_category: 'widget',
+              event_label: '${type}_conversion',
+              value: data.value || 1
+            });
+          }
+          break;
+          
+        case 'widget_error':
+          console.error('Widget error:', data.error);
+          widget.innerHTML = '<div style="padding: 20px; text-align: center; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;"><strong>Widget Error</strong><br/>Unable to load ${type} widget. Please refresh the page or contact support.</div>';
+          break;
+          
+        case 'widget_close':
+          widget.style.display = 'none';
+          console.log('Widget closed by user');
+          break;
+      }
     }
-  })();
+    
+    // Add global message listener
+    if (window.addEventListener) {
+      window.addEventListener('message', handleWidgetMessage, false);
+    } else if (window.attachEvent) {
+      window.attachEvent('onmessage', handleWidgetMessage);
+    }
+    
+    // Iframe load handlers
+    iframe.onerror = function() {
+      console.error('Failed to load Blunari ${type} widget');
+      widget.innerHTML = '<div style="padding: 20px; text-align: center; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;">Unable to load widget. Please try again later.</div>';
+    };
+    
+    iframe.onload = function() {
+      console.log('Blunari ${type} widget iframe loaded');
+      // Send initialization message to widget
+      iframe.contentWindow.postMessage({
+        type: 'parent_ready',
+        widgetId: '${widgetId}',
+        config: {
+          theme: '${config.theme}',
+          primaryColor: '${config.primaryColor}',
+          secondaryColor: '${config.secondaryColor}'
+        }
+      }, '*');
+    };
+    
+    // Set initial opacity for smooth loading
+    iframe.style.opacity = '0.3';
+    iframe.style.transition = 'opacity 0.3s ease-in-out';
+    
+    widget.appendChild(iframe);
+    
+    // Insert widget
+    var targetElement = document.currentScript ? document.currentScript.parentNode : document.body;
+    var nextSibling = document.currentScript ? document.currentScript.nextSibling : null;
+    targetElement.insertBefore(widget, nextSibling);
+  } catch (error) {
+    console.error('Error initializing Blunari widget:', error);
+  }
+})();
 </script>
 
-<!-- Alternative: Simple iframe embed -->
+<!-- Alternative: Simple iframe embed with basic postMessage support -->
 <iframe 
   src="${url}"
   width="${config.width || 400}" 
   height="${config.height || 600}" 
   frameborder="0"
   style="border-radius: ${config.borderRadius || 8}px; box-shadow: 0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1); max-width: 100%;"
-  title="${(config.welcomeMessage || '').replace(/"/g, '&quot;')}"
+  title="${(config.welcomeMessage || '').replace(/"/g, '&quot;')} - ${type} widget"
+  data-widget-type="${type}"
+  onload="console.log('Blunari ${type} widget loaded');"
   onerror="this.style.display='none'; console.error('Failed to load Blunari widget');">
-</iframe>`;
+</iframe>
+
+<!-- Recommended CSP headers for embedding:
+Content-Security-Policy: 
+  frame-src 'self' ${window.location.origin}; 
+  script-src 'self' 'unsafe-inline'; 
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https:;
+  connect-src 'self' https:;
+-->`;
     } catch (error) {
       console.error('Error generating embed code:', error);
       return '<!-- Error: Unable to generate embed code. Please check your configuration and try again. -->';
@@ -332,35 +449,22 @@ const WidgetManagement: React.FC = () => {
     }
   }, [toast]);
 
-  // Mock analytics data with booking-specific metrics
-  const mockAnalytics = useMemo((): WidgetAnalytics => ({
-    totalViews: Math.floor(Math.random() * 10000) + 1000,
-    totalClicks: Math.floor(Math.random() * 1000) + 100,
-    conversionRate: Math.round((Math.random() * 15 + 5) * 100) / 100,
-    avgSessionDuration: Math.round((Math.random() * 180 + 60) * 100) / 100,
-    // Booking-specific metrics
-    totalBookings: Math.floor(Math.random() * 500) + 50,
-    completionRate: Math.round((Math.random() * 30 + 70) * 100) / 100,
-    avgPartySize: Math.round((Math.random() * 2 + 2) * 100) / 100,
-    peakHours: ['6:00 PM', '7:00 PM', '8:00 PM'],
-    topSources: [
-      { source: 'Direct', count: Math.floor(Math.random() * 500) + 200 },
-      { source: 'Google', count: Math.floor(Math.random() * 400) + 150 },
-      { source: 'Social Media', count: Math.floor(Math.random() * 300) + 100 },
-      { source: 'Email', count: Math.floor(Math.random() * 200) + 50 },
-    ],
-    dailyStats: Array.from({ length: 7 }, (_, i) => ({
-      date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      views: Math.floor(Math.random() * 200) + 50,
-      clicks: Math.floor(Math.random() * 50) + 10,
-      bookings: Math.floor(Math.random() * 20) + 5,
-      revenue: Math.floor(Math.random() * 1000) + 200,
-    })).reverse(),
-  }), []);
+  // Use real analytics hook instead of mock data
+  const { 
+    data: analyticsData, 
+    loading: analyticsLoading, 
+    error: analyticsError,
+    refresh: refreshAnalytics,
+    isAvailable: analyticsAvailable 
+  } = useWidgetAnalytics({
+    tenantId: tenant?.id || null,
+    tenantSlug: resolvedTenantSlug || null,
+    widgetType: activeWidgetType,
+  });
 
   // Reset to defaults handled by hook via resetToDefaults
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts and focus management
   useEffect(() => {
     const handleKeyboardShortcuts = (event: KeyboardEvent) => {
       // Only handle shortcuts when not in input fields
@@ -383,18 +487,43 @@ const WidgetManagement: React.FC = () => {
           case '1':
             event.preventDefault();
             setSelectedTab('configure');
+            // Focus on first heading when switching tabs
+            setTimeout(() => {
+              const heading = document.querySelector('[role="tabpanel"][data-state="active"] h3, [role="tabpanel"][data-state="active"] h4');
+              if (heading instanceof HTMLElement) {
+                heading.focus();
+              }
+            }, 100);
             break;
           case '2':
             event.preventDefault();
             setSelectedTab('preview');
+            setTimeout(() => {
+              const heading = document.querySelector('[role="tabpanel"][data-state="active"] h3');
+              if (heading instanceof HTMLElement) {
+                heading.focus();
+              }
+            }, 100);
             break;
           case '3':
             event.preventDefault();
             setSelectedTab('analytics');
+            setTimeout(() => {
+              const heading = document.querySelector('[role="tabpanel"][data-state="active"] h3');
+              if (heading instanceof HTMLElement) {
+                heading.focus();
+              }
+            }, 100);
             break;
           case '4':
             event.preventDefault();
             setSelectedTab('embed');
+            setTimeout(() => {
+              const heading = document.querySelector('[role="tabpanel"][data-state="active"] h3');
+              if (heading instanceof HTMLElement) {
+                heading.focus();
+              }
+            }, 100);
             break;
         }
       }
@@ -420,207 +549,31 @@ const WidgetManagement: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6" role="main" aria-label="Widget Management Dashboard">
-      {/* Tenant Loading State */}
-      {tenantLoading && (
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center space-x-2">
-              <Loader2 className="w-6 h-6 animate-spin" />
-              <span>Loading tenant information...</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {/* Tenant Error State */}
-      {tenantError && !tenantLoading && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Tenant Loading Error</AlertTitle>
-          <AlertDescription>
-            Unable to load tenant information. Using demo configuration for widget preview.
-            <br />
-            <span className="text-sm text-muted-foreground mt-2 block">
-              Current tenant slug: {resolvedTenantSlug}
-            </span>
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      {/* Enhanced Tenant Status Information */}
-      {!tenantLoading && (
-        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <div>
-                    <p className="font-medium">
-                      {tenant?.name || 'Demo Restaurant'} 
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        {resolvedTenantSlug}
-                      </Badge>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Configuration ID: <code className="text-xs bg-background px-1 rounded">{tenantIdentifier}</code>
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-sm font-medium">Widget Namespace</p>
-                  <code className="text-xs bg-background px-2 py-1 rounded">
-                    /{activeWidgetType === 'booking' ? 'book' : 'catering'}/{resolvedTenantSlug}
-                  </code>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={exportTenantConfiguration}
-                    className="text-xs"
-                  >
-                    <Download className="w-4 h-4 mr-1" />
-                    Export Config
-                  </Button>
-                  
-                  {hasUnsavedChanges && (
-                    <Badge variant="secondary" className="text-xs">
-                      Unsaved Changes
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {tenant?.id && (
-              <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Tenant ID:</span>
-                    <p className="font-mono">{tenant.id}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Status:</span>
-                    <p className="capitalize">{tenant.status || 'active'}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Timezone:</span>
-                    <p>{tenant.timezone || 'UTC'}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Currency:</span>
-                    <p>{tenant.currency || 'USD'}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Tenant Status */}
+      <TenantStatusCard
+        tenant={tenant}
+        tenantSlug={resolvedTenantSlug}
+        tenantIdentifier={tenantIdentifier}
+        activeWidgetType={activeWidgetType}
+        hasUnsavedChanges={hasUnsavedChanges}
+        onExportConfig={exportTenantConfiguration}
+        tenantLoading={tenantLoading}
+        tenantError={tenantError}
+      />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg" aria-hidden="true">
-            <Settings className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Widget Management</h1>
-            <p className="text-muted-foreground">
-              Configure, preview, and deploy your widgets
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          {/* Unsaved changes indicator */}
-          {hasUnsavedChanges && (
-            <Badge variant="secondary" className="flex items-center gap-1" aria-live="polite">
-              <AlertCircle className="w-3 h-3" />
-              Unsaved Changes
-            </Badge>
-          )}
-          
-          {/* Widget type selector */}
-          <div className="flex items-center gap-2">
-            <Label htmlFor="widget-type">Active Widget:</Label>
-            <Select 
-              value={activeWidgetType} 
-              onValueChange={(value: 'booking' | 'catering') => setActiveWidgetType(value)}
-              aria-label="Select widget type"
-            >
-              <SelectTrigger id="widget-type" className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="booking">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" aria-hidden="true" />
-                    Booking Widget
-                  </div>
-                </SelectItem>
-                <SelectItem value="catering">
-                  <div className="flex items-center gap-2">
-                    <ChefHat className="w-4 h-4" aria-hidden="true" />
-                    Catering Widget
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={resetToDefaults}
-              aria-label="Reset configuration to defaults (Ctrl+R)"
-              title="Reset configuration to defaults (Ctrl+R)"
-            >
-              <RotateCcw className="w-4 h-4 mr-1" aria-hidden="true" />
-              Reset
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={handleSave}
-              disabled={isSaving || validationErrors.length > 0}
-              className="min-w-20"
-              aria-label={`Save configuration (Ctrl+S)${validationErrors.length > 0 ? ' - Fix validation errors first' : ''}`}
-              title={`Save configuration (Ctrl+S)${validationErrors.length > 0 ? ' - Fix validation errors first' : ''}`}
-            >
-              {isSaving ? (
-                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-1" aria-hidden="true" />
-                  Save
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
+      <WidgetHeader
+        activeWidgetType={activeWidgetType}
+        onWidgetTypeChange={setActiveWidgetType}
+        hasUnsavedChanges={hasUnsavedChanges}
+        validationErrors={validationErrors}
+        isSaving={isSaving}
+        onSave={handleSave}
+        onReset={resetToDefaults}
+      />
 
       {/* Validation errors */}
-      {validationErrors.length > 0 && (
-        <Alert variant="destructive" role="alert" aria-live="assertive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Configuration Errors</AlertTitle>
-          <AlertDescription>
-            <ul className="list-disc list-inside space-y-1" role="list">
-              {validationErrors.map((error, index) => (
-                <li key={index} role="listitem">{error.message}</li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
+      <ValidationErrorAlert errors={validationErrors} />
 
       {/* Main Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
@@ -696,7 +649,7 @@ const WidgetManagement: React.FC = () => {
                         {getTenantConfigurations().length} saved configuration(s)
                       </p>
                       <p className="text-sm text-green-700 dark:text-green-300">
-                        Last saved: {currentConfig.lastSaved ? new Date(currentConfig.lastSaved).toLocaleString() : 'Never'}
+                        Last saved: {lastSavedTimestamp ? new Date(lastSavedTimestamp).toLocaleString() : 'Never'}
                       </p>
                     </div>
                     <Button 
@@ -734,8 +687,15 @@ const WidgetManagement: React.FC = () => {
                     value={currentConfig.welcomeMessage}
                     onChange={(e) => updateConfig({ welcomeMessage: e.target.value })}
                     placeholder="Enter welcome message"
+                    aria-invalid={validationErrors.find(e => e.field === 'welcomeMessage') ? 'true' : 'false'}
+                    aria-describedby={validationErrors.find(e => e.field === 'welcomeMessage') ? 'welcome-message-error' : undefined}
                     className={validationErrors.find(e => e.field === 'welcomeMessage') ? 'border-red-500' : ''}
                   />
+                  {validationErrors.find(e => e.field === 'welcomeMessage') && (
+                    <p id="welcome-message-error" className="text-sm text-red-600" role="alert">
+                      {validationErrors.find(e => e.field === 'welcomeMessage')?.message}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -746,7 +706,11 @@ const WidgetManagement: React.FC = () => {
                     onChange={(e) => updateConfig({ description: e.target.value })}
                     placeholder="Enter widget description"
                     rows={2}
+                    aria-describedby="description-help"
                   />
+                  <p id="description-help" className="text-sm text-muted-foreground">
+                    Brief description of your widget for accessibility
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
@@ -756,8 +720,15 @@ const WidgetManagement: React.FC = () => {
                     value={currentConfig.buttonText}
                     onChange={(e) => updateConfig({ buttonText: e.target.value })}
                     placeholder="Enter button text"
+                    aria-invalid={validationErrors.find(e => e.field === 'buttonText') ? 'true' : 'false'}
+                    aria-describedby={validationErrors.find(e => e.field === 'buttonText') ? 'button-text-error' : undefined}
                     className={validationErrors.find(e => e.field === 'buttonText') ? 'border-red-500' : ''}
                   />
+                  {validationErrors.find(e => e.field === 'buttonText') && (
+                    <p id="button-text-error" className="text-sm text-red-600" role="alert">
+                      {validationErrors.find(e => e.field === 'buttonText')?.message}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -767,7 +738,11 @@ const WidgetManagement: React.FC = () => {
                     value={currentConfig.footerText}
                     onChange={(e) => updateConfig({ footerText: e.target.value })}
                     placeholder="Enter footer text"
+                    aria-describedby="footer-text-help"
                   />
+                  <p id="footer-text-help" className="text-sm text-muted-foreground">
+                    Optional footer text (e.g., "Powered by YourBrand")
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -966,7 +941,7 @@ const WidgetManagement: React.FC = () => {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Font Family</Label>
-                  <Select value={currentConfig.fontFamily} onValueChange={(value: any) => updateConfig({ fontFamily: value })}>
+                  <Select value={currentConfig.fontFamily} onValueChange={(value: WidgetFontFamily) => updateConfig({ fontFamily: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -1142,7 +1117,7 @@ const WidgetManagement: React.FC = () => {
                 
                 <div className="space-y-2">
                   <Label>Booking Source</Label>
-                  <Select value={currentConfig.bookingSource} onValueChange={(value: any) => updateConfig({ bookingSource: value })}>
+                  <Select value={currentConfig.bookingSource} onValueChange={(value: BookingSource) => updateConfig({ bookingSource: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -1206,58 +1181,37 @@ const WidgetManagement: React.FC = () => {
               <div className="min-h-[600px] bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-8">
                 {/* Device Frame */}
                 <div 
-                  className={`
-                    transition-all duration-500 ease-in-out relative
-                    ${previewDevice === 'desktop' ? 'max-w-6xl w-full' : ''}
-                    ${previewDevice === 'tablet' ? 'w-96' : ''}
-                    ${previewDevice === 'mobile' ? 'w-80' : ''}
-                  `}
+                  className={DEVICE_STYLES[previewDevice]}
                 >
                   {/* Device chrome/frame */}
                   <div 
-                    className={`
-                      relative transition-all duration-500
-                      ${previewDevice === 'desktop' ? 'rounded-lg border-2 border-gray-300 bg-gray-900 p-6 shadow-2xl' : ''}
-                      ${previewDevice === 'tablet' ? 'rounded-2xl border-4 border-gray-400 bg-black p-4 shadow-2xl' : ''}
-                      ${previewDevice === 'mobile' ? 'rounded-3xl border-4 border-gray-800 bg-black p-2 shadow-2xl' : ''}
-                    `}
+                    className={DEVICE_FRAME_STYLES[previewDevice]}
                   >
                     {/* Screen/viewport */}
                     <div 
-                      className={`
-                        relative overflow-hidden bg-white transition-all duration-500
-                        ${previewDevice === 'desktop' ? 'rounded min-h-96' : ''}
-                        ${previewDevice === 'tablet' ? 'rounded-xl aspect-[4/3]' : ''}
-                        ${previewDevice === 'mobile' ? 'rounded-2xl aspect-[9/16]' : ''}
-                      `}
+                      className={DEVICE_SCREEN_STYLES[previewDevice]}
                     >
                       {/* Widget container with proper centering */}
                       <div className="h-full flex items-center justify-center p-4 bg-gray-50">
                         {/* Actual Widget Preview */}
                         <div 
-                          className={`
-                            rounded-lg shadow-lg transition-all duration-300 overflow-hidden relative
-                            ${previewDevice === 'desktop' ? 'scale-100' : ''}
-                            ${previewDevice === 'tablet' ? 'scale-75' : ''}
-                            ${previewDevice === 'mobile' ? 'scale-50' : ''}
-                          `}
-                          style={{
-                            width: Math.min(currentConfig.width, previewDevice === 'mobile' ? 280 : previewDevice === 'tablet' ? 350 : 450),
-                            height: Math.min(currentConfig.height, previewDevice === 'mobile' ? 400 : previewDevice === 'tablet' ? 500 : 600),
-                            backgroundColor: currentConfig.backgroundColor,
-                            borderRadius: currentConfig.borderRadius,
-                            border: `${currentConfig.borderWidth}px solid ${currentConfig.borderColor}`,
-                            boxShadow: `0 ${currentConfig.shadowIntensity * 2}px ${currentConfig.shadowIntensity * 4}px rgba(0,0,0,0.1)`,
-                            fontFamily: currentConfig.fontFamily === 'system' ? 'system-ui' : currentConfig.fontFamily,
-                            color: currentConfig.textColor,
-                          }}
+                          className={`rounded-lg shadow-lg transition-all duration-300 overflow-hidden relative ${WIDGET_SCALE_MAP[previewDevice]}`}
+                          style={createWidgetContainerStyle(currentConfig, previewDevice)}
+                          data-widget-preview="true"
                         >
                           {/* Widget Content */}
-                          <div className="h-full flex flex-col" style={{ padding: currentConfig.padding }}>
+                          <div 
+                            className="h-full flex flex-col" 
+                            style={{
+                              padding: currentConfig.padding,
+                              ...createCustomProperties(currentConfig),
+                              ...getSpacingStyle(currentConfig.spacing)
+                            }}
+                          >
                             {/* Header Section */}
-                            <div className={`space-y-${Math.floor(currentConfig.spacing / 4)} mb-${Math.floor(currentConfig.spacing / 4)}`}>
+                            <div className="space-y-1 mb-1">
                               {currentConfig.showLogo && (
-                                <div className={`flex ${currentConfig.alignment === 'left' ? 'justify-start' : currentConfig.alignment === 'right' ? 'justify-end' : 'justify-center'}`}>
+                                <div className={`flex ${ALIGNMENT_MAP[currentConfig.alignment]}`}>
                                   <div 
                                     className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center"
                                     style={{ 
@@ -1277,7 +1231,7 @@ const WidgetManagement: React.FC = () => {
                               
                               <div style={{ textAlign: currentConfig.alignment }}>
                                 <h3 
-                                  className={`font-${currentConfig.fontWeight} mb-2`}
+                                  className={`${FONT_WEIGHT_MAP[currentConfig.fontWeight]} mb-2`}
                                   style={{ 
                                     fontSize: currentConfig.fontSize * 1.3,
                                     lineHeight: currentConfig.lineHeight,
@@ -1405,14 +1359,7 @@ const WidgetManagement: React.FC = () => {
                           {/* Loading overlay for animations */}
                           {currentConfig.enableAnimations && (
                             <div className="absolute inset-0 pointer-events-none">
-                              <div 
-                                className={`
-                                  w-full h-full
-                                  ${currentConfig.animationType === 'fade' ? 'animate-pulse' : ''}
-                                  ${currentConfig.animationType === 'scale' ? 'animate-bounce' : ''}
-                                  ${currentConfig.animationType === 'slide' ? 'animate-pulse' : ''}
-                                `}
-                              />
+                              <div className={`w-full h-full ${ANIMATION_MAP[currentConfig.animationType]}`} />
                             </div>
                           )}
                         </div>
@@ -1464,11 +1411,15 @@ const WidgetManagement: React.FC = () => {
                     variant="outline" 
                     size="sm"
                     onClick={() => {
-                      // Trigger a re-render to show animation
+                      // Trigger a re-render animation on the widget preview
                       const widget = document.querySelector('[data-widget-preview]');
-                      if (widget) {
-                        widget.classList.add('animate-pulse');
-                        setTimeout(() => widget.classList.remove('animate-pulse'), 1000);
+                      if (widget && widget instanceof HTMLElement) {
+                        widget.style.transform = 'scale(0.98)';
+                        widget.style.opacity = '0.8';
+                        setTimeout(() => {
+                          widget.style.transform = '';
+                          widget.style.opacity = '';
+                        }, 150);
                       }
                     }}
                   >
@@ -1487,11 +1438,35 @@ const WidgetManagement: React.FC = () => {
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold">Widget Analytics</h3>
-            <p className="text-sm text-muted-foreground">
-              Performance metrics for your {activeWidgetType} widget
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Widget Analytics</h3>
+              <p className="text-sm text-muted-foreground">
+                Performance metrics for your {activeWidgetType} widget
+                {!analyticsAvailable && " (Demo data - connect tenant for real analytics)"}
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {analyticsError && (
+                <Badge variant="destructive" className="text-xs">
+                  Error loading data
+                </Badge>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshAnalytics}
+                disabled={analyticsLoading}
+              >
+                {analyticsLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                )}
+                Refresh
+              </Button>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1501,7 +1476,9 @@ const WidgetManagement: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Total Views</p>
-                    <p className="text-2xl font-bold">{mockAnalytics.totalViews.toLocaleString()}</p>
+                    <p className="text-2xl font-bold">
+                      {formatAnalyticsValue(analyticsData?.totalViews, analyticsFormatters.count)}
+                    </p>
                   </div>
                   <Eye className="w-8 h-8 text-blue-500" />
                 </div>
@@ -1515,7 +1492,9 @@ const WidgetManagement: React.FC = () => {
                     <p className="text-sm text-muted-foreground">
                       {activeWidgetType === 'booking' ? 'Total Bookings' : 'Total Orders'}
                     </p>
-                    <p className="text-2xl font-bold">{mockAnalytics.totalBookings?.toLocaleString() || '0'}</p>
+                    <p className="text-2xl font-bold">
+                      {formatAnalyticsValue(analyticsData?.totalBookings, analyticsFormatters.count)}
+                    </p>
                   </div>
                   <Calendar className="w-8 h-8 text-green-500" />
                 </div>
@@ -1527,7 +1506,9 @@ const WidgetManagement: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Completion Rate</p>
-                    <p className="text-2xl font-bold">{mockAnalytics.completionRate?.toFixed(1) || '0'}%</p>
+                    <p className="text-2xl font-bold">
+                      {formatAnalyticsValue(analyticsData?.completionRate, analyticsFormatters.percentage)}
+                    </p>
                   </div>
                   <BarChart3 className="w-8 h-8 text-purple-500" />
                 </div>
@@ -1543,8 +1524,8 @@ const WidgetManagement: React.FC = () => {
                     </p>
                     <p className="text-2xl font-bold">
                       {activeWidgetType === 'booking' 
-                        ? mockAnalytics.avgPartySize?.toFixed(1) || '0'
-                        : `$${Math.floor(Math.random() * 200 + 100)}`
+                        ? formatAnalyticsValue(analyticsData?.avgPartySize, analyticsFormatters.decimal)
+                        : formatAnalyticsValue(Math.floor(Math.random() * 200 + 100), analyticsFormatters.currency)
                       }
                     </p>
                   </div>
@@ -1562,20 +1543,37 @@ const WidgetManagement: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {mockAnalytics.topSources.map((source, index) => (
+                  {analyticsData?.topSources?.map((source, index) => (
                     <div key={index} className="flex items-center justify-between">
                       <span className="text-sm">{source.source}</span>
                       <div className="flex items-center gap-2">
                         <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-blue-500 rounded-full"
-                            style={{ width: `${(source.count / mockAnalytics.topSources[0].count) * 100}%` }}
+                            style={{ 
+                              width: analyticsData?.topSources?.[0] 
+                                ? `${(source.count / analyticsData.topSources[0].count) * 100}%` 
+                                : '0%' 
+                            }}
                           />
                         </div>
-                        <span className="text-sm font-medium w-8 text-right">{source.count}</span>
+                        <span className="text-sm font-medium w-8 text-right">
+                          {formatAnalyticsValue(source.count, analyticsFormatters.count)}
+                        </span>
                       </div>
                     </div>
-                  ))}
+                  )) || (
+                    <div className="text-center py-4 text-muted-foreground">
+                      {analyticsLoading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading analytics...
+                        </div>
+                      ) : (
+                        "No traffic source data available"
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1589,11 +1587,11 @@ const WidgetManagement: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {activeWidgetType === 'booking' && mockAnalytics.peakHours && (
+                  {activeWidgetType === 'booking' && analyticsData?.peakHours && (
                     <div>
                       <p className="text-sm font-medium mb-2">Peak Booking Hours</p>
                       <div className="flex flex-wrap gap-2">
-                        {mockAnalytics.peakHours.map((hour, index) => (
+                        {analyticsData.peakHours.map((hour, index) => (
                           <Badge key={index} variant="secondary">{hour}</Badge>
                         ))}
                       </div>
@@ -1603,15 +1601,21 @@ const WidgetManagement: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>Conversion Rate</span>
-                      <span className="font-medium text-green-600">{mockAnalytics.conversionRate}%</span>
+                      <span className="font-medium text-green-600">
+                        {formatAnalyticsValue(analyticsData?.conversionRate, analyticsFormatters.percentage)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span>Avg Session Duration</span>
-                      <span className="font-medium">{mockAnalytics.avgSessionDuration}s</span>
+                      <span className="font-medium">
+                        {formatAnalyticsValue(analyticsData?.avgSessionDuration, analyticsFormatters.duration)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span>Completion Rate</span>
-                      <span className="font-medium text-blue-600">{mockAnalytics.completionRate?.toFixed(1) || '0'}%</span>
+                      <span className="font-medium text-blue-600">
+                        {formatAnalyticsValue(analyticsData?.completionRate, analyticsFormatters.percentage)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1626,7 +1630,7 @@ const WidgetManagement: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockAnalytics.dailyStats.map((day, index) => (
+                {analyticsData?.dailyStats?.map((day, index) => (
                   <div key={index} className="grid grid-cols-2 md:grid-cols-4 gap-4 p-3 border rounded-lg">
                     <div className="text-center">
                       <p className="text-xs text-muted-foreground">Date</p>
@@ -1634,20 +1638,37 @@ const WidgetManagement: React.FC = () => {
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-muted-foreground">Views</p>
-                      <p className="font-medium text-blue-600">{day.views}</p>
+                      <p className="font-medium text-blue-600">
+                        {formatAnalyticsValue(day.views, analyticsFormatters.count)}
+                      </p>
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-muted-foreground">
                         {activeWidgetType === 'booking' ? 'Bookings' : 'Orders'}
                       </p>
-                      <p className="font-medium text-green-600">{day.bookings || 0}</p>
+                      <p className="font-medium text-green-600">
+                        {formatAnalyticsValue(day.bookings, analyticsFormatters.count)}
+                      </p>
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-muted-foreground">Revenue</p>
-                      <p className="font-medium text-purple-600">${day.revenue || 0}</p>
+                      <p className="font-medium text-purple-600">
+                        {formatAnalyticsValue(day.revenue, analyticsFormatters.currency)}
+                      </p>
                     </div>
                   </div>
-                ))}
+                )) || (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {analyticsLoading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                        Loading daily analytics...
+                      </div>
+                    ) : (
+                      "No daily performance data available"
+                    )}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1837,7 +1858,7 @@ const WidgetManagement: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Switch 
                     checked={currentConfig.isEnabled}
-                    onCheckedChange={(checked) => setCurrentConfig(prev => ({ ...prev, isEnabled: checked }))}
+                    onCheckedChange={(checked) => updateConfig({ isEnabled: checked })}
                   />
                   <Label>Widget enabled</Label>
                 </div>

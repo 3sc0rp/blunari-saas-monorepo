@@ -9,6 +9,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
   const [activeWidgetType, setActiveWidgetType] = useState<WidgetType>(initialType);
   const [bookingConfig, setBookingConfig] = useState<WidgetConfig>(() => getDefaultConfig('booking'));
   const [cateringConfig, setCateringConfig] = useState<WidgetConfig>(() => getDefaultConfig('catering'));
+  const [lastSavedTimestamp, setLastSavedTimestamp] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const currentConfig = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
@@ -46,9 +47,10 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     try {
       // Enhanced storage key with tenant isolation
       const storageKey = `blunari-widget-config-${activeWidgetType}-${tenantIdentifier}`;
+      const timestamp = new Date().toISOString();
       const configToSave = { 
         ...currentConfig, 
-        lastSaved: new Date().toISOString(), 
+        lastSaved: timestamp, 
         version: '2.0',
         tenantId,
         tenantSlug,
@@ -70,6 +72,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       
       localStorage.setItem(`blunari-tenant-widgets-${tenantIdentifier}`, JSON.stringify(tenantConfigList));
       
+      setLastSavedTimestamp(timestamp);
       setHasUnsavedChanges(false);
       setValidationErrors([]);
       toast({ 
@@ -100,19 +103,23 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
           // Basic validation before applying
           if (merged.width && merged.height && merged.primaryColor) {
             setCurrentConfig(merged);
+            setLastSavedTimestamp(parsed.lastSaved || null);
             console.log(`[Widget Config] Loaded ${activeWidgetType} config for tenant: ${tenantIdentifier}`);
           } else {
             console.warn(`[Widget Config] Invalid saved config for ${activeWidgetType}, using defaults`);
             setCurrentConfig(getDefaultConfig(activeWidgetType));
+            setLastSavedTimestamp(null);
           }
         } else {
           console.warn(`[Widget Config] Config mismatch for tenant ${tenantIdentifier}, using defaults`);
           setCurrentConfig(getDefaultConfig(activeWidgetType));
+          setLastSavedTimestamp(null);
         }
       } else {
         // No saved config, use defaults
         console.log(`[Widget Config] No saved config for ${activeWidgetType} - ${tenantIdentifier}, using defaults`);
         setCurrentConfig(getDefaultConfig(activeWidgetType));
+        setLastSavedTimestamp(null);
       }
       
       // Reset change tracking
@@ -120,11 +127,13 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     } catch (err) {
       console.warn('Failed to load saved configuration:', err);
       setCurrentConfig(getDefaultConfig(activeWidgetType));
+      setLastSavedTimestamp(null);
     }
   }, [activeWidgetType, tenantIdentifier, tenantId, tenantSlug, setCurrentConfig]);
 
   const resetToDefaults = useCallback(() => {
     setCurrentConfig(getDefaultConfig(activeWidgetType));
+    setLastSavedTimestamp(null);
     setHasUnsavedChanges(true);
     setValidationErrors([]);
     toast({ 
@@ -191,6 +200,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     setCurrentConfig,
     hasUnsavedChanges,
     validationErrors,
+    lastSavedTimestamp,
     updateConfig,
     saveConfiguration,
     resetToDefaults,
