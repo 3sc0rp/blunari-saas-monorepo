@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Tenant Widget Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 40px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .tenant-section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .tenant-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .tenant-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .tenant-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .tenant-details h2 {
+            margin: 0;
+            color: #333;
+        }
+        .tenant-details p {
+            margin: 5px 0 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .widget-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .widget-container {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f9f9f9;
+        }
+        .widget-label {
+            background: #333;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .config-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .config-badge {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+        .demo-note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 30px;
+            color: #856404;
+        }
+        @media (max-width: 768px) {
+            .widget-grid {
+                grid-template-columns: 1fr;
+            }
+            .tenant-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Multi-Tenant Widget Demonstration</h1>
+        
+        <div class="demo-note">
+            <h3>🔧 Tenant-Specific Customization</h3>
+            <p>Each restaurant tenant has completely isolated widget configurations. Changes made in one tenant's widget management dashboard only affect that specific tenant's widgets. This ensures each restaurant can customize their booking and catering widgets independently.</p>
+        </div>
+
+        <!-- Demo Restaurant -->
+        <div class="tenant-section">
+            <div class="tenant-header">
+                <div class="tenant-info">
+                    <div class="tenant-logo" style="background: linear-gradient(45deg, #3b82f6, #1e40af);">
+                        DEMO
+                    </div>
+                    <div class="tenant-details">
+                        <h2>Demo Restaurant</h2>
+                        <p>Tenant ID: demo | Timezone: UTC | Currency: USD</p>
+                    </div>
+                </div>
+                <div class="config-badge">Default Configuration</div>
+            </div>
+            
+            <div class="config-info">
+                <strong>Configuration Namespace:</strong> <code>blunari-widget-config-{type}-demo</code><br>
+                <strong>Widget URLs:</strong> <code>/book/demo</code> | <code>/catering/demo</code>
+            </div>
+            
+            <div class="widget-grid">
+                <div class="widget-container">
+                    <div class="widget-label">📅 Booking Widget</div>
+                    <iframe 
+                        src="/book/demo?source=multi-tenant-demo&theme=light&primaryColor=%233b82f6"
+                        width="100%" 
+                        height="500" 
+                        frameborder="0"
+                        style="display: block;">
+                    </iframe>
+                </div>
+                
+                <div class="widget-container">
+                    <div class="widget-label">🍽️ Catering Widget</div>
+                    <iframe 
+                        src="/catering/demo?source=multi-tenant-demo&theme=light&primaryColor=%233b82f6"
+                        width="100%" 
+                        height="500" 
+                        frameborder="0"
+                        style="display: block;">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- Restaurant A (Simulated) -->
+        <div class="tenant-section">
+            <div class="tenant-header">
+                <div class="tenant-info">
+                    <div class="tenant-logo" style="background: linear-gradient(45deg, #ef4444, #dc2626);">
+                        PA
+                    </div>
+                    <div class="tenant-details">
+                        <h2>Pizza Artisan</h2>
+                        <p>Tenant ID: pizza-artisan | Timezone: America/New_York | Currency: USD</p>
+                    </div>
+                </div>
+                <div class="config-badge">Custom Red Theme</div>
+            </div>
+            
+            <div class="config-info">
+                <strong>Configuration Namespace:</strong> <code>blunari-widget-config-{type}-pizza-artisan</code><br>
+                <strong>Widget URLs:</strong> <code>/book/pizza-artisan</code> | <code>/catering/pizza-artisan</code>
+            </div>
+            
+            <div class="widget-grid">
+                <div class="widget-container">
+                    <div class="widget-label">📅 Booking Widget</div>
+                    <iframe 
+                        src="/book/demo?source=multi-tenant-demo&theme=light&primaryColor=%23ef4444&backgroundColor=%23fef2f2&welcomeMessage=Book%20Your%20Pizza%20Experience"
+                        width="100%" 
+                        height="500" 
+                        frameborder="0"
+                        style="display: block;">
+                    </iframe>
+                </div>
+                
+                <div class="widget-container">
+                    <div class="widget-label">🍽️ Catering Widget</div>
+                    <iframe 
+                        src="/catering/demo?source=multi-tenant-demo&theme=light&primaryColor=%23ef4444&backgroundColor=%23fef2f2&welcomeMessage=Pizza%20Catering%20Orders"
+                        width="100%" 
+                        height="500" 
+                        frameborder="0"
+                        style="display: block;">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- Restaurant B (Simulated) -->
+        <div class="tenant-section">
+            <div class="tenant-header">
+                <div class="tenant-info">
+                    <div class="tenant-logo" style="background: linear-gradient(45deg, #10b981, #047857);">
+                        GG
+                    </div>
+                    <div class="tenant-details">
+                        <h2>Green Garden Bistro</h2>
+                        <p>Tenant ID: green-garden | Timezone: Europe/London | Currency: GBP</p>
+                    </div>
+                </div>
+                <div class="config-badge">Eco-Friendly Green Theme</div>
+            </div>
+            
+            <div class="config-info">
+                <strong>Configuration Namespace:</strong> <code>blunari-widget-config-{type}-green-garden</code><br>
+                <strong>Widget URLs:</strong> <code>/book/green-garden</code> | <code>/catering/green-garden</code>
+            </div>
+            
+            <div class="widget-grid">
+                <div class="widget-container">
+                    <div class="widget-label">📅 Booking Widget</div>
+                    <iframe 
+                        src="/book/demo?source=multi-tenant-demo&theme=light&primaryColor=%2310b981&backgroundColor=%23f0fdf4&welcomeMessage=Reserve%20Your%20Sustainable%20Dining"
+                        width="100%" 
+                        height="500" 
+                        frameborder="0"
+                        style="display: block;">
+                    </iframe>
+                </div>
+                
+                <div class="widget-container">
+                    <div class="widget-label">🍽️ Catering Widget</div>
+                    <iframe 
+                        src="/catering/demo?source=multi-tenant-demo&theme=light&primaryColor=%2310b981&backgroundColor=%23f0fdf4&welcomeMessage=Eco-Friendly%20Catering"
+                        width="100%" 
+                        height="500" 
+                        frameborder="0"
+                        style="display: block;">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-note">
+            <h3>🎨 Key Features of Tenant-Specific Customization:</h3>
+            <ul>
+                <li><strong>Isolated Configurations:</strong> Each tenant's widget settings are completely separate</li>
+                <li><strong>Unique Storage:</strong> Configurations saved with tenant-specific storage keys</li>
+                <li><strong>Tenant Context:</strong> URLs include tenant ID, timezone, and currency</li>
+                <li><strong>Brand Consistency:</strong> Each tenant can match their restaurant's branding</li>
+                <li><strong>Export/Import:</strong> Configurations can be backed up and transferred</li>
+                <li><strong>Real-time Updates:</strong> Changes in widget management immediately affect that tenant's widgets</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
