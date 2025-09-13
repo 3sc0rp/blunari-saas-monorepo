@@ -107,7 +107,11 @@ interface WidgetEvent {
   created_at: string;
 }
 
+// Function build/version marker (manually bump if making structural changes)
+const FUNCTION_VERSION = '2025-09-13.1';
+
 serve(async (req) => {
+  const t0 = performance.now();
   const correlationId = req.headers.get('x-correlation-id') || generateId();
   // Get origin for CORS handling
   const origin = req.headers.get('origin');
@@ -306,29 +310,35 @@ serve(async (req) => {
       now
     );
 
+    const durationMs = Math.round(performance.now() - t0);
     console.log('✅ Analytics generated successfully:', {
       totalViews: analytics.totalViews,
       totalClicks: analytics.totalClicks,
       totalBookings: analytics.totalBookings,
-      authMethod: authValidated ? 'authenticated' : 'anonymous'
+      authMethod: authValidated ? 'authenticated' : 'anonymous',
+      durationMs,
+      version: FUNCTION_VERSION
     });
-    
+
     return makeSuccessResponse(analytics, {
       tenantId,
       widgetType: normalizedWidgetType,
       timeRange,
       authMethod: authValidated ? 'authenticated' : 'anonymous',
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
+      durationMs,
+      version: FUNCTION_VERSION
     }, correlationId, responseHeaders);
 
   } catch (error: any) {
-    console.error('❌ Widget analytics error:', error, 'cid:', correlationId);
+    const durationMs = Math.round(performance.now() - t0);
+    console.error('❌ Widget analytics error:', error, 'cid:', correlationId, 'durationMs:', durationMs, 'version:', FUNCTION_VERSION);
     console.error('Error stack:', error?.stack);
     return makeErrorResponse({
       status: 500,
       code: 'INTERNAL_ERROR',
       message: 'Internal server error',
-      details: error?.message || 'Unknown error',
+      details: { message: error?.message || 'Unknown error', durationMs, version: FUNCTION_VERSION },
       correlationId,
       headers: responseHeaders
     });
@@ -509,14 +519,18 @@ async function generateRealAnalytics(
     );
   }
 
-  // Daily statistics
+  // Daily statistics (match actual requested time range instead of fixed 7 days)
   const dailyStats = [];
   const dayMs = 24 * 60 * 60 * 1000;
-  
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(endDate.getTime() - (i * dayMs));
+  // Derive number of whole days in requested window (at least 1). Cap at 30 to avoid oversized payloads.
+  const totalWindowMs = endDate.getTime() - startDate.getTime();
+  let daySpan = Math.max(1, Math.ceil(totalWindowMs / dayMs));
+  if (daySpan > 30) daySpan = 30; // safety cap
+
+  for (let offset = daySpan - 1; offset >= 0; offset--) {
+    const date = new Date(endDate.getTime() - (offset * dayMs));
     const dateStr = date.toISOString().split('T')[0];
-    
+
     const dayOrders = ordersData.filter((order: BookingOrder) => {
       const orderDate = new Date(order.created_at).toISOString().split('T')[0];
       return orderDate === dateStr;

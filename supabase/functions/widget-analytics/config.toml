@@ -1,0 +1,5 @@
+# Edge Function configuration for widget-analytics
+# Allow anonymous (no JWT) requests so public widgets can fetch analytics.
+verify_jwt = false
+
+# (Optional) You can later scope allowed origins at the application layer.
