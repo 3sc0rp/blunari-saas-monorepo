@@ -1,20 +1,14 @@
-/**
- * Enterprise Error Boundary Components for Blunari SAAS
- * 
- * JSX Components for error handling and user feedback
- */
-
 import React from 'react';
+import { logger } from './index';
 
 /**
- * Error boundary integration
+ * Log React Error Boundary errors with enterprise logging
  */
 export const logErrorBoundary = (
   error: Error,
   errorInfo: React.ErrorInfo,
   component: string
 ): void => {
-  const logger = require('./index').logger;
   logger.fatal('🚨 React Error Boundary caught error', {
     component,
     operation: 'error_boundary',
@@ -24,6 +18,12 @@ export const logErrorBoundary = (
     }
   }, error);
 };
+
+/**
+ * Enterprise Error Boundary Components for Blunari SAAS
+ *
+ * JSX Components for error handling and user feedback
+ */
 
 /**
  * Enterprise Error Boundary Component

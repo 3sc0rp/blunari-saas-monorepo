@@ -74,13 +74,14 @@ export function useRealtimeSubscription<T = any>(
           onInsert?.(payload);
           break;
           
-        case 'UPDATE':
+        case 'UPDATE': {
           const updateIndex = newData.findIndex((item: any) => item.id === payload.new.id);
           if (updateIndex !== -1) {
             newData[updateIndex] = payload.new as T;
           }
           onUpdate?.(payload);
           break;
+        }
           
         case 'DELETE':
           newData = newData.filter((item: any) => item.id !== payload.old.id);

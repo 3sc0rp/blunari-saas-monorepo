@@ -455,7 +455,7 @@ Content-Security-Policy:
     if (!analyticsAvailable) return;
     // Skip duplicate initial fetch when default range and no data yet (hook already fetching)
     if (analyticsRange === '7d' && !analyticsData) return;
-    (refreshAnalytics as any)(analyticsRange);
+    refreshAnalytics(analyticsRange);
   }, [analyticsAvailable, analyticsRange, activeWidgetType, refreshAnalytics, analyticsData]);
 
   // Reset to defaults handled by hook via resetToDefaults
@@ -527,7 +527,7 @@ Content-Security-Policy:
 
     document.addEventListener('keydown', handleKeyboardShortcuts);
     return () => document.removeEventListener('keydown', handleKeyboardShortcuts);
-  }, [isSaving, validationErrors.length, saveConfiguration, resetToDefaults, setSelectedTab]);
+  }, [isSaving, validationErrors.length, handleSave, resetToDefaults, setSelectedTab]);
 
   // Warn about unsaved changes before page unload
   useEffect(() => {
@@ -1490,7 +1490,7 @@ Content-Security-Policy:
               </p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
-              <Select value={analyticsRange} onValueChange={(v: any) => setAnalyticsRange(v)}>
+              <Select value={analyticsRange} onValueChange={(v: '1d' | '7d' | '30d') => setAnalyticsRange(v)}>
                 <SelectTrigger className="w-28 h-8">
                   <SelectValue />
                 </SelectTrigger>
@@ -1506,7 +1506,7 @@ Content-Security-Policy:
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => (refreshAnalytics as any)(analyticsRange)}
+                onClick={() => refreshAnalytics(analyticsRange)}
                 disabled={analyticsLoading}
               >
                 {analyticsLoading ? (
