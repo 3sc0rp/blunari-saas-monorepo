@@ -57,6 +57,7 @@ POST https://<project-ref>.functions.supabase.co/widget-analytics
 | INVALID_BODY | Body not an object | Wrap fields in an object |
 | JSON_PARSE_ERROR | Invalid JSON | Fix syntax |
 | MISSING_TENANT_ID | `tenantId` absent/blank | Provide valid tenant id |
+| INVALID_TENANT_ID | tenantId not a UUID | Use canonical UUID (v4) |
 | MISSING_WIDGET_TYPE | `widgetType` absent/blank | Provide widget type |
 | INVALID_WIDGET_TYPE | Not booking/catering | Use supported enum |
 | INTERNAL_ERROR | Unexpected exception | Check logs using correlationId |

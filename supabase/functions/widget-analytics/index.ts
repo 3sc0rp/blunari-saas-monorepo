@@ -59,9 +59,11 @@ const createCorsHeaders = (requestOrigin: string | null = null) => {
   
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version',
+    // Include x-correlation-id so browser preflight allows it, plus explicit standard headers
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version, x-correlation-id',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
     'Access-Control-Max-Age': '86400',
+    'Access-Control-Expose-Headers': 'x-correlation-id, content-type',
     'Access-Control-Allow-Credentials': 'false'
   };
 };
@@ -184,7 +186,11 @@ serve(async (req) => {
         status: 400,
         code: 'JSON_PARSE_ERROR',
         message: 'Invalid JSON in request body',
-        details: String(parseError),
+        details: {
+          error: String(parseError),
+          hint: 'Ensure Content-Type: application/json and use valid JSON syntax',
+          example: { tenantId: '00000000-0000-0000-0000-000000000000', widgetType: 'booking', timeRange: '7d' }
+        },
         correlationId,
         headers: responseHeaders
       });
@@ -205,6 +211,20 @@ serve(async (req) => {
         code: 'MISSING_TENANT_ID',
         message: 'Missing or invalid required parameter: tenantId',
         details: { received: tenantId, type: typeof tenantId },
+        correlationId,
+        headers: responseHeaders
+      });
+    }
+
+    // UUID format validation (simple regex) – if it fails, provide a distinct error code
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(tenantId)) {
+      console.error('Invalid tenantId format (expected UUID v4):', tenantId, correlationId);
+      return makeErrorResponse({
+        status: 400,
+        code: 'INVALID_TENANT_ID',
+        message: 'Invalid tenantId format – must be a UUID',
+        details: { received: tenantId, expectedPattern: 'UUID v4' },
         correlationId,
         headers: responseHeaders
       });
