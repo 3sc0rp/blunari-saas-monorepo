@@ -1,6 +1,37 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, getCorsHeaders } from "../_shared/cors";
+
+// CORS headers for cross-origin requests
+const createCorsHeaders = (requestOrigin: string | null = null) => {
+  const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
+  
+  let allowedOrigin = '*';
+  if (environment === 'production' && requestOrigin) {
+    const allowedOrigins = [
+      'https://app.blunari.ai',
+      'https://blunari.ai',
+      'https://*.blunari.ai'
+    ];
+    
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed.includes('*')) {
+        const pattern = allowed.replace('*', '.*');
+        return new RegExp(pattern).test(requestOrigin);
+      }
+      return allowed === requestOrigin;
+    });
+    
+    allowedOrigin = isAllowed ? requestOrigin : '*';
+  }
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+    'Access-Control-Max-Age': '86400',
+    'Access-Control-Allow-Credentials': 'false'
+  };
+};
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -46,7 +77,7 @@ interface WidgetEvent {
 serve(async (req) => {
   // Get origin for CORS handling
   const origin = req.headers.get('origin');
-  const responseHeaders = getCorsHeaders(origin || undefined);
+  const responseHeaders = createCorsHeaders(origin || null);
   
   // Handle CORS preflight requests FIRST - before any other logic
   if (req.method === 'OPTIONS') {
@@ -81,20 +112,41 @@ serve(async (req) => {
       const bodyText = await req.text();
       console.log('Raw request body:', bodyText);
       
-      if (!bodyText) {
-        console.error('Empty request body');
+      if (!bodyText || bodyText.trim() === '') {
+        console.error('Empty or whitespace-only request body');
         return new Response(
-          JSON.stringify({ error: 'Empty request body' }),
+          JSON.stringify({ 
+            success: false,
+            error: 'Request body is required',
+            details: 'Please provide tenantId and widgetType in the request body'
+          }),
           { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
       requestBody = JSON.parse(bodyText);
       console.log('Parsed request body:', JSON.stringify(requestBody, null, 2));
+      
+      // Validate that requestBody is an object
+      if (!requestBody || typeof requestBody !== 'object' || Array.isArray(requestBody)) {
+        console.error('Request body is not a valid object:', typeof requestBody);
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'Request body must be a JSON object',
+            details: 'Expected object with tenantId and widgetType properties'
+          }),
+          { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     } catch (parseError) {
       console.error('Failed to parse request body:', parseError);
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON in request body', details: String(parseError) }),
+        JSON.stringify({ 
+          success: false,
+          error: 'Invalid JSON in request body', 
+          details: String(parseError) 
+        }),
         { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -106,32 +158,44 @@ serve(async (req) => {
     console.log('- widgetType:', widgetType, typeof widgetType);
     console.log('- timeRange:', timeRange, typeof timeRange);
 
-    // Validate required parameters
-    if (!tenantId) {
-      console.error('Missing tenantId parameter');
+    // Validate required parameters with specific error messages
+    if (!tenantId || typeof tenantId !== 'string' || tenantId.trim() === '') {
+      console.error('Missing or invalid tenantId parameter:', tenantId);
       return new Response(
-        JSON.stringify({ error: 'Missing required parameter: tenantId' }),
+        JSON.stringify({ 
+          success: false,
+          error: 'Missing or invalid required parameter: tenantId',
+          details: 'tenantId must be a non-empty string',
+          received: { tenantId, type: typeof tenantId }
+        }),
         { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (!widgetType) {
-      console.error('Missing widgetType parameter');
+    if (!widgetType || typeof widgetType !== 'string' || widgetType.trim() === '') {
+      console.error('Missing or invalid widgetType parameter:', widgetType);
       return new Response(
-        JSON.stringify({ error: 'Missing required parameter: widgetType' }),
+        JSON.stringify({ 
+          success: false,
+          error: 'Missing or invalid required parameter: widgetType',
+          details: 'widgetType must be a non-empty string ("booking" or "catering")',
+          received: { widgetType, type: typeof widgetType }
+        }),
         { status: 400, headers: { ...responseHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Validate widgetType with case-insensitive check
     const validWidgetTypes = ['booking', 'catering'];
-    const normalizedWidgetType = String(widgetType).toLowerCase();
+    const normalizedWidgetType = String(widgetType).toLowerCase().trim();
     
     if (!validWidgetTypes.includes(normalizedWidgetType)) {
       console.error('Invalid widgetType:', widgetType, 'normalized:', normalizedWidgetType);
       return new Response(
         JSON.stringify({ 
+          success: false,
           error: 'Invalid widgetType. Must be "booking" or "catering"',
+          details: `Received "${widgetType}", expected one of: ${validWidgetTypes.join(', ')}`,
           received: widgetType,
           validOptions: validWidgetTypes
         }),
