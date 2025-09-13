@@ -10,7 +10,7 @@ const ALLOWED_ORIGINS = [
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version, x-correlation-id, x-widget-version, x-widget-id, x-tenant-id, x-connection-id, x-batch-id',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
   'Access-Control-Max-Age': '86400', // 24 hours
   'Access-Control-Allow-Credentials': 'false'
@@ -22,7 +22,7 @@ export const getCorsHeaders = (origin?: string) => {
   // TODO: Implement strict origin checking after CORS is working
   return {
     'Access-Control-Allow-Origin': origin || '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version, x-correlation-id, x-widget-version, x-widget-id, x-tenant-id, x-connection-id, x-batch-id',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
     'Access-Control-Max-Age': '86400',
     'Access-Control-Allow-Credentials': 'false'

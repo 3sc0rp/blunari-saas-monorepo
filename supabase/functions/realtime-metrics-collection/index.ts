@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // CORS headers for cross-origin requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-connection-id, x-correlation-id',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-connection-id, x-correlation-id, x-widget-version, x-widget-id, x-tenant-id, x-batch-id',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
   'Access-Control-Max-Age': '86400',
   'Access-Control-Expose-Headers': 'x-correlation-id, content-type',

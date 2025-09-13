@@ -64,7 +64,7 @@ const createCorsHeaders = (requestOrigin: string | null = null) => {
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version, x-correlation-id',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version, x-correlation-id, x-widget-version, x-widget-id, x-tenant-id',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
     'Access-Control-Max-Age': '86400',
     'Access-Control-Expose-Headers': 'x-correlation-id, content-type',
