@@ -312,15 +312,28 @@ serve(async (req) => {
       return resp;
     }
 
-    // UUID format validation (simple regex) – if it fails, provide a distinct error code
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(tenantId)) {
-      console.error('Invalid tenantId format (expected UUID v4):', tenantId, correlationId);
+    // Basic format validation - allow any reasonable tenant ID format
+    // Database will validate if the tenant actually exists
+    const reservedWords = ['null', 'undefined', 'void', 'empty', 'test', 'admin', 'system'];
+    const isReservedWord = reservedWords.includes(tenantId.toLowerCase());
+    const hasValidFormat = /^[a-zA-Z0-9_-]+$/.test(tenantId);
+    const hasProperLength = tenantId.length >= 8 && tenantId.length <= 100;
+    const containsDashOrUnderscore = /[-_]/.test(tenantId);
+    
+    if (isReservedWord || !hasValidFormat || !hasProperLength || !containsDashOrUnderscore) {
+      console.error('Invalid tenantId format (basic validation):', tenantId, correlationId);
       const resp = makeErrorResponse({
         status: 400,
         code: 'INVALID_TENANT_ID',
-        message: 'Invalid tenantId format – must be a UUID',
-        details: { received: tenantId, expectedPattern: 'UUID v4' },
+        message: 'Invalid tenantId format – must be alphanumeric with dashes/underscores, not reserved words',
+        details: { 
+          received: tenantId, 
+          allowedPattern: 'alphanumeric with dashes/underscores, 8-100 chars, not reserved words',
+          isReservedWord,
+          hasValidFormat,
+          hasProperLength,
+          containsDashOrUnderscore
+        },
         correlationId,
         headers: responseHeaders
       });
