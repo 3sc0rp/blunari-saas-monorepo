@@ -602,9 +602,9 @@ async function fetchRealWidgetAnalytics(
     console.log('📡 Invoking Edge Function with body:', { tenantId, widgetType, timeRange });
     const response = await supabase.functions.invoke('widget-analytics', {
       body: {
-        tenant_id: tenantId, // Fix parameter name to match Edge Function expectation
-        widget_type: widgetType,
-        time_range: timeRange,
+        tenantId, // Use camelCase to match Edge Function expectation
+        widgetType,
+        timeRange,
         version: '2.0'
       },
       headers: {
