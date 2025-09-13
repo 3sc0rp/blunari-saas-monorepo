@@ -600,6 +600,24 @@ async function fetchRealWidgetAnalytics(
     
     // Call the widget-analytics Edge Function with real data queries
     console.log('📡 Invoking Edge Function with body:', { tenantId, widgetType, timeRange });
+    // Build headers object - always include Authorization (use anon key if no user token)
+    const requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-correlation-id': correlationId || '',
+      'x-widget-version': '2.0'
+    };
+    
+    // Always provide Authorization header - use user token if available, otherwise anon key
+    if (accessToken) {
+      requestHeaders['Authorization'] = `Bearer ${accessToken}`;
+    } else {
+      // Fallback to anon key when no user session
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (anonKey) {
+        requestHeaders['Authorization'] = `Bearer ${anonKey}`;
+      }
+    }
+
     const response = await supabase.functions.invoke('widget-analytics', {
       body: {
         tenantId, // Use camelCase to match Edge Function expectation
@@ -607,12 +625,7 @@ async function fetchRealWidgetAnalytics(
         timeRange,
         version: '2.0'
       },
-      headers: {
-        'Authorization': accessToken ? `Bearer ${accessToken}` : undefined,
-        'Content-Type': 'application/json',
-        'x-correlation-id': correlationId || '',
-        'x-widget-version': '2.0'
-      }
+      headers: requestHeaders
     });
 
     console.log('Edge Function response:', {
@@ -625,18 +638,29 @@ async function fetchRealWidgetAnalytics(
     if (response.error) {
   console.error('Real analytics function error:', response.error, 'cid:', correlationId);
       
-      // If it's a 400 error, try without authentication header
+      // If it's a 400 error, try with anon key authentication
       if (response.error.message?.includes('400') || response.error.message?.includes('Bad Request')) {
-        console.log('Retrying Edge Function without authentication header...');
+        console.log('Retrying Edge Function with anon key authentication...');
         
         try {
+          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+          const retryHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'x-correlation-id': correlationId || '',
+            'x-widget-version': '2.0'
+          };
+          
+          if (anonKey) {
+            retryHeaders['Authorization'] = `Bearer ${anonKey}`;
+          }
+          
           const retryResponse = await supabase.functions.invoke('widget-analytics', {
             body: {
               tenantId,
               widgetType,
               timeRange
-            }
-            // No headers - let it run in anonymous mode
+            },
+            headers: retryHeaders
           });
           
           if (!retryResponse.error && retryResponse.data?.success) {
