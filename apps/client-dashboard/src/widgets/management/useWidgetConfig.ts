@@ -14,7 +14,19 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
   const currentConfig = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
   const setCurrentConfig = activeWidgetType === 'booking' ? setBookingConfig : setCateringConfig;
 
-  const tenantIdentifier = tenantId || tenantSlug || 'demo';
+  // Enhanced tenant identification with priority system
+  const tenantIdentifier = useMemo(() => {
+    // Each tenant gets their own unique configuration namespace
+    if (tenantId && tenantSlug) {
+      return `${tenantId}-${tenantSlug}`;
+    } else if (tenantId) {
+      return tenantId;
+    } else if (tenantSlug) {
+      return tenantSlug;
+    } else {
+      return 'demo';
+    }
+  }, [tenantId, tenantSlug]);
 
   const updateConfig = useCallback((updates: Partial<WidgetConfig>) => {
     const newConfig = { ...currentConfig, ...updates };
@@ -32,42 +44,133 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     }
 
     try {
-      const storageKey = `widget-config-${activeWidgetType}-${tenantIdentifier}`;
-      const configToSave = { ...currentConfig, lastSaved: new Date().toISOString(), version: '2.0' };
+      // Enhanced storage key with tenant isolation
+      const storageKey = `blunari-widget-config-${activeWidgetType}-${tenantIdentifier}`;
+      const configToSave = { 
+        ...currentConfig, 
+        lastSaved: new Date().toISOString(), 
+        version: '2.0',
+        tenantId,
+        tenantSlug,
+        widgetType: activeWidgetType,
+        configId: `${tenantIdentifier}-${activeWidgetType}-${Date.now()}`
+      };
+      
       localStorage.setItem(storageKey, JSON.stringify(configToSave));
+      
+      // Also save tenant-specific backup for cross-reference
+      const tenantConfigList = JSON.parse(localStorage.getItem(`blunari-tenant-widgets-${tenantIdentifier}`) || '[]');
+      const existingIndex = tenantConfigList.findIndex((config: any) => config.widgetType === activeWidgetType);
+      
+      if (existingIndex >= 0) {
+        tenantConfigList[existingIndex] = configToSave;
+      } else {
+        tenantConfigList.push(configToSave);
+      }
+      
+      localStorage.setItem(`blunari-tenant-widgets-${tenantIdentifier}`, JSON.stringify(tenantConfigList));
+      
       setHasUnsavedChanges(false);
       setValidationErrors([]);
-      toast({ title: 'Configuration Saved', description: `${activeWidgetType} widget configuration saved.` });
+      toast({ 
+        title: 'Configuration Saved', 
+        description: `${activeWidgetType} widget configuration saved for tenant: ${tenantSlug || tenantId || 'demo'}` 
+      });
       return true;
     } catch (error) {
       console.error('Save configuration error:', error);
       toast({ title: 'Save Failed', description: 'Failed to save configuration. Please try again.', variant: 'destructive' });
       return false;
     }
-  }, [currentConfig, activeWidgetType, tenantIdentifier, toast]);
+  }, [currentConfig, activeWidgetType, tenantIdentifier, tenantId, tenantSlug, toast]);
 
   useEffect(() => {
     try {
-      const storageKey = `widget-config-${activeWidgetType}-${tenantIdentifier}`;
+      // Enhanced loading with tenant-specific storage
+      const storageKey = `blunari-widget-config-${activeWidgetType}-${tenantIdentifier}`;
       const saved = localStorage.getItem(storageKey);
+      
       if (saved) {
         const parsed = JSON.parse(saved);
-        const merged = { ...getDefaultConfig(activeWidgetType), ...parsed };
-        if (merged.width && merged.height && merged.primaryColor) {
-          setCurrentConfig(merged);
+        
+        // Validate that this config belongs to the current tenant
+        if (parsed.tenantId === tenantId || parsed.tenantSlug === tenantSlug || tenantIdentifier === 'demo') {
+          const merged = { ...getDefaultConfig(activeWidgetType), ...parsed };
+          
+          // Basic validation before applying
+          if (merged.width && merged.height && merged.primaryColor) {
+            setCurrentConfig(merged);
+            console.log(`[Widget Config] Loaded ${activeWidgetType} config for tenant: ${tenantIdentifier}`);
+          } else {
+            console.warn(`[Widget Config] Invalid saved config for ${activeWidgetType}, using defaults`);
+            setCurrentConfig(getDefaultConfig(activeWidgetType));
+          }
+        } else {
+          console.warn(`[Widget Config] Config mismatch for tenant ${tenantIdentifier}, using defaults`);
+          setCurrentConfig(getDefaultConfig(activeWidgetType));
         }
+      } else {
+        // No saved config, use defaults
+        console.log(`[Widget Config] No saved config for ${activeWidgetType} - ${tenantIdentifier}, using defaults`);
+        setCurrentConfig(getDefaultConfig(activeWidgetType));
       }
+      
+      // Reset change tracking
+      setHasUnsavedChanges(false);
     } catch (err) {
       console.warn('Failed to load saved configuration:', err);
+      setCurrentConfig(getDefaultConfig(activeWidgetType));
     }
-  }, [activeWidgetType, tenantIdentifier, setCurrentConfig]);
+  }, [activeWidgetType, tenantIdentifier, tenantId, tenantSlug, setCurrentConfig]);
 
   const resetToDefaults = useCallback(() => {
     setCurrentConfig(getDefaultConfig(activeWidgetType));
     setHasUnsavedChanges(true);
     setValidationErrors([]);
-    toast({ title: 'Reset to Defaults', description: 'Configuration has been reset to default values.' });
-  }, [activeWidgetType, setCurrentConfig, toast]);
+    toast({ 
+      title: 'Reset to Defaults', 
+      description: `${activeWidgetType} configuration reset to defaults for tenant: ${tenantSlug || tenantId || 'demo'}` 
+    });
+  }, [activeWidgetType, setCurrentConfig, tenantSlug, tenantId, toast]);
+
+  // Get all saved configurations for current tenant
+  const getTenantConfigurations = useCallback(() => {
+    try {
+      const tenantConfigList = JSON.parse(localStorage.getItem(`blunari-tenant-widgets-${tenantIdentifier}`) || '[]');
+      return tenantConfigList;
+    } catch (error) {
+      console.error('Error loading tenant configurations:', error);
+      return [];
+    }
+  }, [tenantIdentifier]);
+
+  // Export tenant configuration for backup/transfer
+  const exportTenantConfiguration = useCallback(() => {
+    const allConfigs = getTenantConfigurations();
+    const exportData = {
+      tenantId,
+      tenantSlug,
+      tenantIdentifier,
+      exportDate: new Date().toISOString(),
+      version: '2.0',
+      configurations: allConfigs
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `blunari-widget-config-${tenantIdentifier}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({ 
+      title: 'Configuration Exported', 
+      description: `Widget configurations exported for tenant: ${tenantSlug || tenantId || 'demo'}` 
+    });
+  }, [getTenantConfigurations, tenantId, tenantSlug, tenantIdentifier, toast]);
 
   const safeParseInt = useCallback((value: string, fallback: number, min?: number, max?: number): number => {
     const parsed = parseInt(value, 10);
@@ -92,5 +195,8 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     saveConfiguration,
     resetToDefaults,
     safeParseInt,
+    tenantIdentifier,
+    getTenantConfigurations,
+    exportTenantConfiguration,
   } as const;
 }

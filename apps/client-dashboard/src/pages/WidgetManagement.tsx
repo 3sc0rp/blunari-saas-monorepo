@@ -101,6 +101,9 @@ const WidgetManagement: React.FC = () => {
     resetToDefaults: resetDefaultsFromHook,
     safeParseInt,
     setActiveWidgetType: setTypeFromHook,
+    tenantIdentifier,
+    getTenantConfigurations,
+    exportTenantConfiguration,
   } = useWidgetConfig('booking', tenant?.id ?? null, resolvedTenantSlug ?? null);
 
   // Keep local activeWidgetType in sync with hook state
@@ -177,10 +180,20 @@ const WidgetManagement: React.FC = () => {
       // Build configuration parameters with comprehensive fallbacks
       const configParams = new URLSearchParams();
       
-      // Essential parameters
+      // Essential tenant parameters
       configParams.set('slug', effectiveSlug);
       configParams.set('source', 'widget');
       configParams.set('widget_version', '2.0');
+      configParams.set('tenant_id', tenant?.id || 'demo');
+      configParams.set('config_id', tenantIdentifier);
+      
+      // Tenant context parameters
+      if (tenant?.timezone) {
+        configParams.set('timezone', tenant.timezone);
+      }
+      if (tenant?.currency) {
+        configParams.set('currency', tenant.currency);
+      }
       
       // Appearance parameters with safe fallbacks
       configParams.set('theme', config.theme || 'light');
@@ -434,23 +447,80 @@ const WidgetManagement: React.FC = () => {
         </Alert>
       )}
       
-      {/* Tenant Status Information */}
+      {/* Enhanced Tenant Status Information */}
       {!tenantLoading && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-green-500" />
-            <span>
-              Active Tenant: <strong>{tenant?.name || resolvedTenantSlug}</strong> 
-              ({resolvedTenantSlug})
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>Widget URLs will use:</span>
-            <code className="bg-background px-2 py-1 rounded text-xs">
-              /{activeWidgetType === 'booking' ? 'book' : 'catering'}/{resolvedTenantSlug}
-            </code>
-          </div>
-        </div>
+        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  <div>
+                    <p className="font-medium">
+                      {tenant?.name || 'Demo Restaurant'} 
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        {resolvedTenantSlug}
+                      </Badge>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Configuration ID: <code className="text-xs bg-background px-1 rounded">{tenantIdentifier}</code>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-sm font-medium">Widget Namespace</p>
+                  <code className="text-xs bg-background px-2 py-1 rounded">
+                    /{activeWidgetType === 'booking' ? 'book' : 'catering'}/{resolvedTenantSlug}
+                  </code>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={exportTenantConfiguration}
+                    className="text-xs"
+                  >
+                    <Download className="w-4 h-4 mr-1" />
+                    Export Config
+                  </Button>
+                  
+                  {hasUnsavedChanges && (
+                    <Badge variant="secondary" className="text-xs">
+                      Unsaved Changes
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {tenant?.id && (
+              <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Tenant ID:</span>
+                    <p className="font-mono">{tenant.id}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Status:</span>
+                    <p className="capitalize">{tenant.status || 'active'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Timezone:</span>
+                    <p>{tenant.timezone || 'UTC'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Currency:</span>
+                    <p>{tenant.currency || 'USD'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Header */}
@@ -575,6 +645,75 @@ const WidgetManagement: React.FC = () => {
 
         {/* Configuration Tab */}
         <TabsContent value="configure" className="space-y-6">
+          {/* Tenant-Specific Configuration Info */}
+          <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                <Settings className="w-5 h-5" />
+                Tenant-Specific Widget Configuration
+              </CardTitle>
+              <CardDescription className="text-blue-700 dark:text-blue-300">
+                Each restaurant has its own customized widget settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border">
+                    <p className="text-sm font-medium text-muted-foreground">Current Tenant</p>
+                    <p className="font-semibold">{tenant?.name || 'Demo Restaurant'}</p>
+                    <p className="text-xs text-muted-foreground">Slug: {resolvedTenantSlug}</p>
+                  </div>
+                  
+                  <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border">
+                    <p className="text-sm font-medium text-muted-foreground">Configuration ID</p>
+                    <p className="font-mono text-sm">{tenantIdentifier}</p>
+                    <p className="text-xs text-muted-foreground">Unique identifier</p>
+                  </div>
+                  
+                  <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border">
+                    <p className="text-sm font-medium text-muted-foreground">Storage Namespace</p>
+                    <p className="font-mono text-sm">blunari-widget-{activeWidgetType}</p>
+                    <p className="text-xs text-muted-foreground">Local storage key</p>
+                  </div>
+                </div>
+                
+                <div className="bg-white dark:bg-gray-900 p-4 rounded-lg border">
+                  <h4 className="font-medium mb-2">How Tenant-Specific Customization Works:</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>Each tenant has completely isolated widget configurations</li>
+                    <li>Changes you make here only affect <strong>{tenant?.name || 'this tenant'}</strong>'s widgets</li>
+                    <li>Colors, text, layout, and features are tenant-specific</li>
+                    <li>Widget URLs automatically include the tenant identifier: <code>/{activeWidgetType === 'booking' ? 'book' : 'catering'}/{resolvedTenantSlug}</code></li>
+                    <li>Configurations are saved locally and can be exported/imported</li>
+                  </ul>
+                </div>
+                
+                {getTenantConfigurations().length > 0 && (
+                  <div className="flex items-center justify-between bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 rounded-lg">
+                    <div>
+                      <p className="font-medium text-green-900 dark:text-green-100">
+                        {getTenantConfigurations().length} saved configuration(s)
+                      </p>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        Last saved: {currentConfig.lastSaved ? new Date(currentConfig.lastSaved).toLocaleString() : 'Never'}
+                      </p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={exportTenantConfiguration}
+                      className="border-green-300 text-green-700 hover:bg-green-100"
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      Export All
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Content Settings */}
             <Card>
