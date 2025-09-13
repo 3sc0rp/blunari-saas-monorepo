@@ -4,7 +4,7 @@ import { getDefaultConfig } from './defaults';
 import { validateConfig } from './validation';
 import { ValidationError, WidgetConfig, WidgetType } from './types';
 
-export function useWidgetConfig(initialType: WidgetType, tenantId?: string | null, tenantSlug?: string | null) {
+export function useWidgetConfig(initialType: WidgetType, tenantId?: string | null, tenantSlug?: string | null, isLoading?: boolean) {
   const { toast } = useToast();
   const [activeWidgetType, setActiveWidgetType] = useState<WidgetType>(initialType);
   const [bookingConfig, setBookingConfig] = useState<WidgetConfig>(() => getDefaultConfig('booking'));
@@ -15,8 +15,13 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
   const currentConfig = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
   const setCurrentConfig = activeWidgetType === 'booking' ? setBookingConfig : setCateringConfig;
 
-  // Enhanced tenant identification - no demo fallbacks
+  // Enhanced tenant identification - handle loading state
   const tenantIdentifier = useMemo(() => {
+    // If still loading, return a temporary identifier
+    if (isLoading) {
+      return 'loading';
+    }
+    
     // Each tenant gets their own unique configuration namespace
     if (tenantId && tenantSlug) {
       return `${tenantId}-${tenantSlug}`;
@@ -25,9 +30,11 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     } else if (tenantSlug) {
       return tenantSlug;
     } else {
-      throw new Error('Tenant information required - no demo mode available');
+      // For development/testing, provide a fallback
+      console.warn('No tenant information available, using default configuration');
+      return 'default-tenant';
     }
-  }, [tenantId, tenantSlug]);
+  }, [tenantId, tenantSlug, isLoading]);
 
   const updateConfig = useCallback((updates: Partial<WidgetConfig>) => {
     const newConfig = { ...currentConfig, ...updates };
@@ -41,6 +48,16 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     if (errors.length > 0) {
       setValidationErrors(errors);
       toast({ title: 'Validation Error', description: `Please fix ${errors.length} error(s) before saving`, variant: 'destructive' });
+      return false;
+    }
+
+    // Skip saving if still loading or using default tenant
+    if (isLoading || tenantIdentifier === 'loading' || tenantIdentifier === 'default-tenant') {
+      toast({ 
+        title: 'Cannot Save', 
+        description: 'Please wait for tenant information to load before saving', 
+        variant: 'destructive' 
+      });
       return false;
     }
 
@@ -85,9 +102,14 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       toast({ title: 'Save Failed', description: 'Failed to save configuration. Please try again.', variant: 'destructive' });
       return false;
     }
-  }, [currentConfig, activeWidgetType, tenantIdentifier, tenantId, tenantSlug, toast]);
+  }, [currentConfig, activeWidgetType, tenantIdentifier, tenantId, tenantSlug, isLoading, toast]);
 
   useEffect(() => {
+    // Don't load configuration while tenant is still loading
+    if (isLoading || tenantIdentifier === 'loading') {
+      return;
+    }
+
     try {
       // Enhanced loading with tenant-specific storage
       const storageKey = `blunari-widget-config-${activeWidgetType}-${tenantIdentifier}`;
@@ -96,8 +118,8 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       if (saved) {
         const parsed = JSON.parse(saved);
         
-        // Validate that this config belongs to the current tenant - no demo fallbacks
-        if (parsed.tenantId === tenantId || parsed.tenantSlug === tenantSlug) {
+        // For default tenant, always allow loading
+        if (tenantIdentifier === 'default-tenant' || parsed.tenantId === tenantId || parsed.tenantSlug === tenantSlug) {
           const merged = { ...getDefaultConfig(activeWidgetType), ...parsed };
           
           // Basic validation before applying
@@ -129,7 +151,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       setCurrentConfig(getDefaultConfig(activeWidgetType));
       setLastSavedTimestamp(null);
     }
-  }, [activeWidgetType, tenantIdentifier, tenantId, tenantSlug, setCurrentConfig]);
+  }, [activeWidgetType, tenantIdentifier, tenantId, tenantSlug, isLoading, setCurrentConfig]);
 
   const resetToDefaults = useCallback(() => {
     setCurrentConfig(getDefaultConfig(activeWidgetType));

@@ -130,7 +130,7 @@ const WidgetManagement: React.FC = () => {
     tenantIdentifier,
     getTenantConfigurations,
     exportTenantConfiguration,
-  } = useWidgetConfig('booking', tenant?.id ?? null, resolvedTenantSlug ?? null);
+  } = useWidgetConfig('booking', tenant?.id ?? null, resolvedTenantSlug ?? null, tenantLoading);
 
   // Keep local activeWidgetType in sync with hook state
   useEffect(() => {
@@ -532,31 +532,58 @@ Content-Security-Policy:
 
   return (
     <div className="container mx-auto p-6 space-y-6" role="main" aria-label="Widget Management Dashboard">
-      {/* Tenant Status */}
-      <TenantStatusCard
-        tenant={tenant}
-        tenantSlug={resolvedTenantSlug}
-        tenantIdentifier={tenantIdentifier}
-        activeWidgetType={activeWidgetType}
-        hasUnsavedChanges={hasUnsavedChanges}
-        onExportConfig={exportTenantConfiguration}
-        tenantLoading={tenantLoading}
-        tenantError={tenantError}
-      />
+      {/* Loading state while tenant information is being fetched */}
+      {tenantLoading && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center space-x-2">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              <span>Loading tenant information...</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Header */}
-      <WidgetHeader
-        activeWidgetType={activeWidgetType}
-        onWidgetTypeChange={setActiveWidgetType}
-        hasUnsavedChanges={hasUnsavedChanges}
-        validationErrors={validationErrors}
-        isSaving={isSaving}
-        onSave={handleSave}
-        onReset={resetToDefaults}
-      />
+      {/* Error state if tenant loading failed */}
+      {tenantError && !tenantLoading && (
+        <Card className="border-red-200">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-2 text-red-600">
+              <AlertCircle className="w-5 h-5" />
+              <span>Error loading tenant information: {tenantError.message || 'Unknown error'}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Validation errors */}
-      <ValidationErrorAlert errors={validationErrors} />
+      {/* Main content - only show when not loading and no error */}
+      {!tenantLoading && !tenantError && (
+        <>
+          {/* Tenant Status */}
+          <TenantStatusCard
+            tenant={tenant}
+            tenantSlug={resolvedTenantSlug}
+            tenantIdentifier={tenantIdentifier}
+            activeWidgetType={activeWidgetType}
+            hasUnsavedChanges={hasUnsavedChanges}
+            onExportConfig={exportTenantConfiguration}
+            tenantLoading={tenantLoading}
+            tenantError={tenantError}
+          />
+
+          {/* Header */}
+          <WidgetHeader
+            activeWidgetType={activeWidgetType}
+            onWidgetTypeChange={setActiveWidgetType}
+            hasUnsavedChanges={hasUnsavedChanges}
+            validationErrors={validationErrors}
+            isSaving={isSaving}
+            onSave={handleSave}
+            onReset={resetToDefaults}
+          />
+
+          {/* Validation errors */}
+          <ValidationErrorAlert errors={validationErrors} />
 
       {/* Main Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
@@ -2241,6 +2268,8 @@ Content-Security-Policy:
           </Card>
         </TabsContent>
       </Tabs>
+        </>
+      )}
     </div>
   );
 };
