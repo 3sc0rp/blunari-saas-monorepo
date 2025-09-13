@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blunari Widget SDK - Integration Examples</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .example {
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+        .widget-container {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            min-height: 200px;
+            background: white;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .secondary {
+            background: #6c757d;
+        }
+        .secondary:hover {
+            background: #545b62;
+        }
+        .danger {
+            background: #dc3545;
+        }
+        .danger:hover {
+            background: #c82333;
+        }
+        .metrics {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        code {
+            background: #f1f3f4;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        pre {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .theme-selector {
+            margin: 10px 0;
+        }
+        select {
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Blunari Widget SDK - Integration Examples</h1>
+    <p>This page demonstrates various ways to integrate Blunari widgets using our enterprise-grade SDK.</p>
+
+    <!-- Basic Integration Example -->
+    <div class="example">
+        <h2>1. Basic Widget Integration</h2>
+        <p>Simple widget embedding with default settings.</p>
+        
+        <div class="controls">
+            <button onclick="createBasicWidget()">Create Widget</button>
+            <button onclick="destroyBasicWidget()" class="danger">Destroy Widget</button>
+        </div>
+        
+        <div id="basic-widget" class="widget-container">
+            <p style="text-align: center; color: #6c757d;">Widget will appear here</p>
+        </div>
+
+        <pre><code>// Basic widget creation
+const widget = await blunari.createWidget({
+    widgetId: 'your-widget-id',
+    token: 'your-widget-token',
+    container: '#basic-widget'
+})</code></pre>
+    </div>
+
+    <!-- Advanced Integration Example -->
+    <div class="example">
+        <h2>2. Advanced Widget with Event Handling</h2>
+        <p>Widget with real-time analytics, performance monitoring, and event callbacks.</p>
+        
+        <div class="controls">
+            <button onclick="createAdvancedWidget()">Create Advanced Widget</button>
+            <button onclick="reloadAdvancedWidget()" class="secondary">Reload Widget</button>
+            <button onclick="getWidgetMetrics()">Get Metrics</button>
+            <button onclick="destroyAdvancedWidget()" class="danger">Destroy Widget</button>
+        </div>
+
+        <div class="theme-selector">
+            <label for="theme-select">Theme: </label>
+            <select id="theme-select" onchange="updateWidgetTheme()">
+                <option value="auto">Auto</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </div>
+
+        <div id="advanced-widget" class="widget-container">
+            <p style="text-align: center; color: #6c757d;">Advanced widget will appear here</p>
+        </div>
+
+        <div id="widget-status" class="status" style="display: none;"></div>
+        <div id="widget-metrics" class="metrics" style="display: none;"></div>
+        <div id="event-log" class="log" style="display: none;"></div>
+
+        <pre><code>// Advanced widget with full feature set
+const widget = await blunari.createWidget({
+    widgetId: 'your-widget-id',
+    token: 'your-widget-token',
+    container: '#advanced-widget',
+    theme: 'auto',
+    analytics: true,
+    performance: true,
+    autoResize: true,
+    onLoad: () => console.log('Widget loaded'),
+    onError: (error) => console.error('Widget error:', error),
+    onInteraction: (event, data) => console.log('Interaction:', event, data),
+    onConversion: (data) => console.log('Conversion:', data),
+    onResize: (size) => console.log('Resized:', size)
+})</code></pre>
+    </div>
+
+    <!-- Multiple Widgets Example -->
+    <div class="example">
+        <h2>3. Multiple Widgets Management</h2>
+        <p>Managing multiple widget instances simultaneously.</p>
+        
+        <div class="controls">
+            <button onclick="createMultipleWidgets()">Create Multiple Widgets</button>
+            <button onclick="destroyAllWidgets()" class="danger">Destroy All Widgets</button>
+            <button onclick="getActiveWidgetCount()">Get Active Count</button>
+        </div>
+
+        <div class="controls">
+            <strong>Active Widgets: <span id="widget-count">0</span></strong>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div id="widget-1" class="widget-container">
+                <p style="text-align: center; color: #6c757d;">Widget 1</p>
+            </div>
+            <div id="widget-2" class="widget-container">
+                <p style="text-align: center; color: #6c757d;">Widget 2</p>
+            </div>
+        </div>
+
+        <pre><code>// Creating multiple widgets
+const widgets = await Promise.all([
+    blunari.createWidget({
+        widgetId: 'widget-1',
+        token: 'token-1',
+        container: '#widget-1'
+    }),
+    blunari.createWidget({
+        widgetId: 'widget-2',
+        token: 'token-2',
+        container: '#widget-2'
+    })
+])
+
+// Get all active widgets
+const activeWidgets = blunari.getActiveWidgets()
+console.log(`Active widgets: ${activeWidgets.length}`)</code></pre>
+    </div>
+
+    <!-- Custom Styling Example -->
+    <div class="example">
+        <h2>4. Custom Styling & Security</h2>
+        <p>Widget with custom CSS, CSP headers, and security sandbox.</p>
+        
+        <div class="controls">
+            <button onclick="createCustomStyledWidget()">Create Custom Widget</button>
+            <button onclick="destroyCustomWidget()" class="danger">Destroy Widget</button>
+        </div>
+
+        <div id="custom-widget" class="widget-container">
+            <p style="text-align: center; color: #6c757d;">Custom styled widget will appear here</p>
+        </div>
+
+        <pre><code>// Widget with custom styling and security
+const widget = await blunari.createWidget({
+    widgetId: 'your-widget-id',
+    token: 'your-widget-token',
+    container: '#custom-widget',
+    sandbox: true,
+    customStyles: `
+        .widget-header { 
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .widget-button {
+            background: #ff6b6b;
+            border-radius: 25px;
+        }
+    `,
+    csp: {
+        nonce: 'your-csp-nonce',
+        allowedOrigins: ['https://trusted-domain.com']
+    }
+})</code></pre>
+    </div>
+
+    <!-- SDK Information -->
+    <div class="example">
+        <h2>5. SDK Information & Debugging</h2>
+        <p>Get SDK version, debug information, and performance metrics.</p>
+        
+        <div class="controls">
+            <button onclick="getSDKInfo()">Get SDK Info</button>
+            <button onclick="toggleDebugMode()">Toggle Debug Mode</button>
+            <button onclick="clearEventLog()">Clear Log</button>
+        </div>
+
+        <div id="sdk-info" class="metrics" style="display: none;"></div>
+        <div id="debug-log" class="log"></div>
+    </div>
+
+    <!-- Load the Blunari Widget SDK -->
+    <script src="./blunari-widget-sdk.js"></script>
+
+    <script>
+        // Global variables to track widget instances
+        let basicWidget = null
+        let advancedWidget = null
+        let customWidget = null
+        let multipleWidgets = []
+        let debugMode = false
+
+        // Mock widget configuration (replace with real values)
+        const MOCK_CONFIG = {
+            widgetId: 'demo-widget-12345',
+            token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock.token'
+        }
+
+        // Initialize SDK with debug mode
+        const sdk = BlunariWidgetSDK.getInstance({ 
+            apiUrl: 'https://app.blunari.com',
+            debug: false 
+        })
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString()
+            const logElement = document.getElementById('debug-log')
+            logElement.innerHTML += `<div>[${timestamp}] ${message}</div>`
+            logElement.scrollTop = logElement.scrollHeight
+        }
+
+        function updateStatus(elementId, message, isError = false) {
+            const element = document.getElementById(elementId)
+            element.style.display = 'block'
+            element.textContent = message
+            element.className = `status ${isError ? 'error' : 'connected'}`
+        }
+
+        // Basic Widget Functions
+        async function createBasicWidget() {
+            try {
+                if (basicWidget) {
+                    basicWidget.destroy()
+                }
+
+                log('Creating basic widget...')
+                basicWidget = await sdk.createWidget({
+                    ...MOCK_CONFIG,
+                    container: '#basic-widget',
+                    onLoad: () => log('Basic widget loaded successfully'),
+                    onError: (error) => log(`Basic widget error: ${error.message}`)
+                })
+                log('Basic widget created successfully')
+            } catch (error) {
+                log(`Failed to create basic widget: ${error.message}`)
+            }
+        }
+
+        function destroyBasicWidget() {
+            if (basicWidget) {
+                basicWidget.destroy()
+                basicWidget = null
+                log('Basic widget destroyed')
+                document.getElementById('basic-widget').innerHTML = 
+                    '<p style="text-align: center; color: #6c757d;">Widget destroyed</p>'
+            }
+        }
+
+        // Advanced Widget Functions
+        async function createAdvancedWidget() {
+            try {
+                if (advancedWidget) {
+                    advancedWidget.destroy()
+                }
+
+                log('Creating advanced widget with full features...')
+                advancedWidget = await sdk.createWidget({
+                    ...MOCK_CONFIG,
+                    container: '#advanced-widget',
+                    theme: document.getElementById('theme-select').value,
+                    analytics: true,
+                    performance: true,
+                    autoResize: true,
+                    debug: debugMode,
+                    onLoad: () => {
+                        log('Advanced widget loaded')
+                        updateStatus('widget-status', 'Widget Connected & Ready', false)
+                    },
+                    onError: (error) => {
+                        log(`Advanced widget error: ${error.message}`)
+                        updateStatus('widget-status', `Error: ${error.message}`, true)
+                    },
+                    onInteraction: (event, data) => {
+                        log(`Widget interaction: ${event}`)
+                        const eventLog = document.getElementById('event-log')
+                        eventLog.style.display = 'block'
+                        eventLog.innerHTML += `<div>🖱️ ${event}: ${JSON.stringify(data)}</div>`
+                    },
+                    onConversion: (data) => {
+                        log(`Widget conversion: ${JSON.stringify(data)}`)
+                        const eventLog = document.getElementById('event-log')
+                        eventLog.style.display = 'block'
+                        eventLog.innerHTML += `<div>💰 Conversion: ${JSON.stringify(data)}</div>`
+                    },
+                    onResize: (size) => {
+                        log(`Widget resized: ${size.width}x${size.height}`)
+                    }
+                })
+                
+                log('Advanced widget created successfully')
+                updateActiveWidgetCount()
+            } catch (error) {
+                log(`Failed to create advanced widget: ${error.message}`)
+                updateStatus('widget-status', `Failed: ${error.message}`, true)
+            }
+        }
+
+        function reloadAdvancedWidget() {
+            if (advancedWidget) {
+                advancedWidget.reload()
+                log('Advanced widget reloaded')
+            } else {
+                log('No advanced widget to reload')
+            }
+        }
+
+        async function getWidgetMetrics() {
+            if (advancedWidget) {
+                try {
+                    const metrics = await advancedWidget.getMetrics()
+                    const metricsElement = document.getElementById('widget-metrics')
+                    metricsElement.style.display = 'block'
+                    metricsElement.innerHTML = `
+                        <strong>Widget Performance Metrics:</strong><br>
+                        Load Time: ${metrics.loadTime}ms<br>
+                        Render Time: ${metrics.renderTime}ms<br>
+                        Interactions: ${metrics.interactions}<br>
+                        Errors: ${metrics.errors.length}<br>
+                        Performance Entries: ${metrics.performance.length}
+                    `
+                    log('Widget metrics retrieved')
+                } catch (error) {
+                    log(`Failed to get metrics: ${error.message}`)
+                }
+            } else {
+                log('No advanced widget available for metrics')
+            }
+        }
+
+        function updateWidgetTheme() {
+            const theme = document.getElementById('theme-select').value
+            if (advancedWidget) {
+                advancedWidget.updateTheme(theme)
+                log(`Widget theme updated to: ${theme}`)
+            }
+        }
+
+        function destroyAdvancedWidget() {
+            if (advancedWidget) {
+                advancedWidget.destroy()
+                advancedWidget = null
+                log('Advanced widget destroyed')
+                document.getElementById('advanced-widget').innerHTML = 
+                    '<p style="text-align: center; color: #6c757d;">Widget destroyed</p>'
+                document.getElementById('widget-status').style.display = 'none'
+                document.getElementById('widget-metrics').style.display = 'none'
+                updateActiveWidgetCount()
+            }
+        }
+
+        // Multiple Widgets Functions
+        async function createMultipleWidgets() {
+            try {
+                // Destroy existing widgets
+                multipleWidgets.forEach(widget => widget.destroy())
+                multipleWidgets = []
+
+                log('Creating multiple widgets...')
+                
+                const widget1Promise = sdk.createWidget({
+                    ...MOCK_CONFIG,
+                    widgetId: MOCK_CONFIG.widgetId + '-1',
+                    container: '#widget-1'
+                })
+
+                const widget2Promise = sdk.createWidget({
+                    ...MOCK_CONFIG,
+                    widgetId: MOCK_CONFIG.widgetId + '-2',
+                    container: '#widget-2'
+                })
+
+                multipleWidgets = await Promise.all([widget1Promise, widget2Promise])
+                log(`Created ${multipleWidgets.length} widgets successfully`)
+                updateActiveWidgetCount()
+            } catch (error) {
+                log(`Failed to create multiple widgets: ${error.message}`)
+            }
+        }
+
+        function destroyAllWidgets() {
+            const activeWidgets = sdk.getActiveWidgets()
+            sdk.destroyAllWidgets()
+            
+            // Clear local references
+            basicWidget = null
+            advancedWidget = null
+            customWidget = null
+            multipleWidgets = []
+            
+            log(`Destroyed ${activeWidgets.length} widgets`)
+            
+            // Clear containers
+            document.getElementById('basic-widget').innerHTML = 
+                '<p style="text-align: center; color: #6c757d;">Widget destroyed</p>'
+            document.getElementById('advanced-widget').innerHTML = 
+                '<p style="text-align: center; color: #6c757d;">Widget destroyed</p>'
+            document.getElementById('widget-1').innerHTML = 
+                '<p style="text-align: center; color: #6c757d;">Widget 1</p>'
+            document.getElementById('widget-2').innerHTML = 
+                '<p style="text-align: center; color: #6c757d;">Widget 2</p>'
+            document.getElementById('custom-widget').innerHTML = 
+                '<p style="text-align: center; color: #6c757d;">Custom styled widget will appear here</p>'
+            
+            updateActiveWidgetCount()
+        }
+
+        function getActiveWidgetCount() {
+            const count = sdk.getActiveWidgets().length
+            log(`Active widget count: ${count}`)
+            updateActiveWidgetCount()
+        }
+
+        function updateActiveWidgetCount() {
+            const count = sdk.getActiveWidgets().length
+            document.getElementById('widget-count').textContent = count
+        }
+
+        // Custom Styled Widget Functions
+        async function createCustomStyledWidget() {
+            try {
+                if (customWidget) {
+                    customWidget.destroy()
+                }
+
+                log('Creating custom styled widget...')
+                customWidget = await sdk.createWidget({
+                    ...MOCK_CONFIG,
+                    container: '#custom-widget',
+                    sandbox: true,
+                    customStyles: `
+                        .widget-container {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            border-radius: 15px;
+                            padding: 20px;
+                        }
+                        .widget-header {
+                            color: white;
+                            text-align: center;
+                            font-weight: bold;
+                        }
+                        .widget-button {
+                            background: #ff6b6b;
+                            color: white;
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 25px;
+                            cursor: pointer;
+                        }
+                    `,
+                    csp: {
+                        nonce: 'demo-nonce-12345'
+                    },
+                    onLoad: () => log('Custom styled widget loaded'),
+                    onError: (error) => log(`Custom widget error: ${error.message}`)
+                })
+                
+                log('Custom styled widget created successfully')
+                updateActiveWidgetCount()
+            } catch (error) {
+                log(`Failed to create custom styled widget: ${error.message}`)
+            }
+        }
+
+        function destroyCustomWidget() {
+            if (customWidget) {
+                customWidget.destroy()
+                customWidget = null
+                log('Custom styled widget destroyed')
+                document.getElementById('custom-widget').innerHTML = 
+                    '<p style="text-align: center; color: #6c757d;">Widget destroyed</p>'
+                updateActiveWidgetCount()
+            }
+        }
+
+        // SDK Information Functions
+        function getSDKInfo() {
+            const activeWidgets = sdk.getActiveWidgets()
+            const info = {
+                sdkVersion: '1.0.0',
+                activeWidgets: activeWidgets.length,
+                userAgent: navigator.userAgent,
+                performance: {
+                    supported: 'performance' in window,
+                    now: performance.now()
+                },
+                features: {
+                    postMessage: 'postMessage' in window,
+                    performanceObserver: 'PerformanceObserver' in window,
+                    intersectionObserver: 'IntersectionObserver' in window
+                }
+            }
+
+            const infoElement = document.getElementById('sdk-info')
+            infoElement.style.display = 'block'
+            infoElement.innerHTML = `
+                <strong>Blunari Widget SDK Information:</strong><br>
+                SDK Version: ${info.sdkVersion}<br>
+                Active Widgets: ${info.activeWidgets}<br>
+                Performance Supported: ${info.performance.supported}<br>
+                Performance Now: ${info.performance.now.toFixed(2)}ms<br>
+                PostMessage API: ${info.features.postMessage}<br>
+                Performance Observer: ${info.features.performanceObserver}<br>
+                Intersection Observer: ${info.features.intersectionObserver}<br>
+                User Agent: ${info.userAgent.substring(0, 80)}...
+            `
+            
+            log('SDK information retrieved')
+        }
+
+        function toggleDebugMode() {
+            debugMode = !debugMode
+            log(`Debug mode ${debugMode ? 'enabled' : 'disabled'}`)
+        }
+
+        function clearEventLog() {
+            document.getElementById('debug-log').innerHTML = ''
+            document.getElementById('event-log').innerHTML = ''
+            log('Event logs cleared')
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Blunari Widget SDK Demo Page Loaded')
+            log('SDK initialized and ready for use')
+            updateActiveWidgetCount()
+        })
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            sdk.destroyAllWidgets()
+        })
+    </script>
+</body>
+</html>

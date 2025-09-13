@@ -76,6 +76,8 @@ import { useWidgetAnalytics, formatAnalyticsValue, analyticsFormatters } from '@
 import { TenantStatusCard } from '@/widgets/management/components/TenantStatusCard';
 import { WidgetHeader } from '@/widgets/management/components/WidgetHeader';
 import { ValidationErrorAlert } from '@/widgets/management/components/ValidationErrorAlert';
+import RealtimeAnalyticsDashboard from '@/widgets/management/RealtimeAnalyticsDashboard';
+import WidgetVersionManagement from '@/widgets/management/WidgetVersionManagement';
 import { 
   ALIGNMENT_MAP, 
   FONT_WEIGHT_MAP, 
@@ -558,7 +560,7 @@ Content-Security-Policy:
 
       {/* Main Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="configure" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
             Configure
@@ -570,6 +572,14 @@ Content-Security-Policy:
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             Analytics
+          </TabsTrigger>
+          <TabsTrigger value="realtime" className="flex items-center gap-2">
+            <Zap className="w-4 h-4" />
+            Real-time
+          </TabsTrigger>
+          <TabsTrigger value="versions" className="flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" />
+            Versions
           </TabsTrigger>
           <TabsTrigger value="embed" className="flex items-center gap-2">
             <Code className="w-4 h-4" />
@@ -1653,6 +1663,36 @@ Content-Security-Policy:
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Real-time Analytics Tab */}
+        <TabsContent value="realtime" className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold">Real-time Widget Analytics</h3>
+            <p className="text-sm text-muted-foreground">
+              Live insights into your widget performance, user interactions, and engagement metrics
+            </p>
+          </div>
+
+          <RealtimeAnalyticsDashboard 
+            widgetId={config.widgetId}
+            className="space-y-6"
+          />
+        </TabsContent>
+
+        {/* Version Management Tab */}
+        <TabsContent value="versions" className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold">Widget Version Management</h3>
+            <p className="text-sm text-muted-foreground">
+              Manage widget versions, deployments, rollbacks, and A/B testing experiments
+            </p>
+          </div>
+
+          <WidgetVersionManagement 
+            widgetId={config.widgetId}
+            className="space-y-6"
+          />
         </TabsContent>
 
         {/* Deploy Tab */}
