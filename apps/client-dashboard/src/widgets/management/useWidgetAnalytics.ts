@@ -184,11 +184,11 @@ async function fetchAnalyticsDirectly(
   
   try {
     // Fetch booking/order data based on widget type
-    let ordersQuery = widgetType === 'booking' 
-      ? supabase.from('bookings').select('*')
-      : supabase.from('catering_orders').select('*');
+    const tableName = widgetType === 'booking' ? 'bookings' : 'catering_orders';
     
-    const { data: ordersData, error: ordersError } = await ordersQuery
+    const { data: ordersData, error: ordersError } = await supabase
+      .from(tableName as any)
+      .select('*')
       .eq('tenant_id', tenantId)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', now.toISOString());

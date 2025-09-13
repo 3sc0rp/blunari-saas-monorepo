@@ -550,7 +550,7 @@ Content-Security-Policy:
           <CardContent className="p-6">
             <div className="flex items-center space-x-2 text-red-600">
               <AlertCircle className="w-5 h-5" />
-              <span>Error loading tenant information: {tenantError.message || 'Unknown error'}</span>
+              <span>Error loading tenant information: {tenantError || 'Unknown error'}</span>
             </div>
           </CardContent>
         </Card>

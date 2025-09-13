@@ -132,6 +132,9 @@ serve(async (req) => {
 })
 
 async function handleTrackEvent(req: Request, supabase: any, tenantId: string) {
+  const origin = req.headers.get('origin');
+  const responseHeaders = getCorsHeaders(origin || undefined);
+  
   const eventData: WidgetEvent = await req.json()
   
   // Validate required fields
@@ -194,6 +197,8 @@ async function handleTrackEvent(req: Request, supabase: any, tenantId: string) {
 }
 
 async function getRealtimeMetrics(supabase: any, tenantId: string, widgetId?: string | null): Promise<Response> {
+  const responseHeaders = getCorsHeaders();
+  
   const now = new Date()
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
 
@@ -299,6 +304,8 @@ async function getRealtimeMetrics(supabase: any, tenantId: string, widgetId?: st
 }
 
 async function getLiveSessions(supabase: any, tenantId: string, widgetId?: string | null): Promise<Response> {
+  const responseHeaders = getCorsHeaders();
+  
   const now = new Date()
   const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
 
