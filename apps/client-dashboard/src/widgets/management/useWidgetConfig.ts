@@ -15,7 +15,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
   const currentConfig = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
   const setCurrentConfig = activeWidgetType === 'booking' ? setBookingConfig : setCateringConfig;
 
-  // Enhanced tenant identification with priority system
+  // Enhanced tenant identification - no demo fallbacks
   const tenantIdentifier = useMemo(() => {
     // Each tenant gets their own unique configuration namespace
     if (tenantId && tenantSlug) {
@@ -25,7 +25,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     } else if (tenantSlug) {
       return tenantSlug;
     } else {
-      return 'demo';
+      throw new Error('Tenant information required - no demo mode available');
     }
   }, [tenantId, tenantSlug]);
 
@@ -77,7 +77,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       setValidationErrors([]);
       toast({ 
         title: 'Configuration Saved', 
-        description: `${activeWidgetType} widget configuration saved for tenant: ${tenantSlug || tenantId || 'demo'}` 
+        description: `${activeWidgetType} widget configuration saved for tenant: ${tenantSlug || tenantId || 'Unknown'}` 
       });
       return true;
     } catch (error) {
@@ -96,8 +96,8 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       if (saved) {
         const parsed = JSON.parse(saved);
         
-        // Validate that this config belongs to the current tenant
-        if (parsed.tenantId === tenantId || parsed.tenantSlug === tenantSlug || tenantIdentifier === 'demo') {
+        // Validate that this config belongs to the current tenant - no demo fallbacks
+        if (parsed.tenantId === tenantId || parsed.tenantSlug === tenantSlug) {
           const merged = { ...getDefaultConfig(activeWidgetType), ...parsed };
           
           // Basic validation before applying
@@ -138,7 +138,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     setValidationErrors([]);
     toast({ 
       title: 'Reset to Defaults', 
-      description: `${activeWidgetType} configuration reset to defaults for tenant: ${tenantSlug || tenantId || 'demo'}` 
+      description: `${activeWidgetType} configuration reset to defaults for tenant: ${tenantSlug || tenantId || 'Unknown'}` 
     });
   }, [activeWidgetType, setCurrentConfig, tenantSlug, tenantId, toast]);
 
@@ -177,7 +177,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     
     toast({ 
       title: 'Configuration Exported', 
-      description: `Widget configurations exported for tenant: ${tenantSlug || tenantId || 'demo'}` 
+      description: `Widget configurations exported for tenant: ${tenantSlug || tenantId || 'Unknown'}` 
     });
   }, [getTenantConfigurations, tenantId, tenantSlug, tenantIdentifier, toast]);
 

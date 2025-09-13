@@ -102,13 +102,13 @@ const WidgetManagement: React.FC = () => {
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Comprehensive tenant slug resolution with fallbacks
+  // Tenant slug resolution - no demo fallbacks
   const resolvedTenantSlug = useMemo(() => {
     // Priority order for slug resolution:
     // 1. URL slug parameter (from useTenant)
     // 2. Tenant object slug
-    // 3. Fallback to 'demo' for development/testing
-    return tenantSlug || tenant?.slug || 'demo';
+    // No fallbacks - require real tenant data
+    return tenantSlug || tenant?.slug;
   }, [tenantSlug, tenant?.slug]);
 
   // Use centralized widget config hook for robustness
@@ -152,12 +152,12 @@ const WidgetManagement: React.FC = () => {
   // Defaults now centralized in widgets/management/defaults
 
   // Additional component state
-  const mockWidgetId = `widget_${Date.now()}`;
+  const realWidgetId = `${resolvedTenantSlug || 'tenant'}_${activeWidgetType}_${tenantIdentifier?.slice(-8) || 'widget'}`;
 
   // Configuration management now handled by useWidgetConfig
 
-  // Generate embed code based on current config
-  const embedCode = `<iframe src="https://yourdomain.com/widget/${mockWidgetId}" width="${currentConfig.width}" height="${currentConfig.height}" frameborder="0"></iframe>`;
+  // Generate embed code based on current config and real tenant data
+  const embedCode = `<iframe src="https://yourdomain.com/widget/${realWidgetId}" width="${currentConfig.width}" height="${currentConfig.height}" frameborder="0"></iframe>`;
 
   // Validation now centralized in widgets/management/validation
 
@@ -173,34 +173,20 @@ const WidgetManagement: React.FC = () => {
   // Widget URL and embed code generation with enhanced error handling
   const generateWidgetUrl = useCallback((type: 'booking' | 'catering') => {
     try {
-      // Enhanced tenant slug resolution with multiple fallbacks
+      // Real tenant slug required - no fallbacks
       const effectiveSlug = resolvedTenantSlug;
       
       if (!effectiveSlug) {
-        console.warn('No tenant slug available for URL generation');
-        // Fail closed in production, use demo only in development
-        if (import.meta.env.MODE === 'development') {
-          const fallbackSlug = 'demo';
-          const baseUrl = window.location.origin;
-          const widgetPath = type === 'booking' ? '/book' : '/catering';
-          return `${baseUrl}${widgetPath}/${fallbackSlug}?source=widget-demo&widget_version=2.0`;
-        }
-        // Return empty string to fail closed in production
-        return '';
+        console.error('No tenant slug available for URL generation - real tenant required');
+        throw new Error('Tenant slug required for widget URL generation');
       }
       
       const baseUrl = window.location.origin;
       const config = type === 'booking' ? bookingConfig : cateringConfig;
       
       if (!config) {
-        console.warn('No configuration available for URL generation');
-        // Fail closed if no config in production
-        if (import.meta.env.MODE !== 'development') {
-          return '';
-        }
-        // Return basic URL in development
-        const widgetPath = type === 'booking' ? '/book' : '/catering';
-        return `${baseUrl}${widgetPath}/${effectiveSlug}?source=widget&widget_version=2.0`;
+        console.error('No configuration available for URL generation');
+        throw new Error('Widget configuration required for URL generation');
       }
       
       // Use the actual booking system routes
@@ -271,14 +257,9 @@ const WidgetManagement: React.FC = () => {
       return `${baseUrl}${widgetPath}/${effectiveSlug}?${configParams.toString()}`;
     } catch (error) {
       console.error('Error generating widget URL:', error);
-      // Fail closed in production, provide fallback in development
-      if (import.meta.env.MODE === 'development') {
-        const baseUrl = window.location.origin;
-        const widgetPath = type === 'booking' ? '/book' : '/catering';
-        const fallbackSlug = resolvedTenantSlug || 'demo';
-        return `${baseUrl}${widgetPath}/${fallbackSlug}?source=widget-error&widget_version=2.0`;
-      }
-      return '';
+      // Require real tenant data - no fallbacks
+      console.error('Error generating widget URL - real tenant data required');
+      throw new Error('Failed to generate widget URL - tenant information required');
     }
   }, [bookingConfig, cateringConfig, resolvedTenantSlug, tenant?.timezone, tenant?.currency]);
 
@@ -614,7 +595,7 @@ Content-Security-Policy:
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-white dark:bg-gray-900 p-3 rounded-lg border">
                     <p className="text-sm font-medium text-muted-foreground">Current Tenant</p>
-                    <p className="font-semibold">{tenant?.name || 'Demo Restaurant'}</p>
+                    <p className="font-semibold">{tenant?.name || 'Loading...'}</p>
                     <p className="text-xs text-muted-foreground">Slug: {resolvedTenantSlug}</p>
                   </div>
                   
@@ -1443,7 +1424,7 @@ Content-Security-Policy:
               <h3 className="text-lg font-semibold">Widget Analytics</h3>
               <p className="text-sm text-muted-foreground">
                 Performance metrics for your {activeWidgetType} widget
-                {!analyticsAvailable && " (Demo data - connect tenant for real analytics)"}
+                {!analyticsAvailable && " (Real analytics data unavailable - connect tenant for live metrics)"}
               </p>
             </div>
             
@@ -1525,7 +1506,7 @@ Content-Security-Policy:
                     <p className="text-2xl font-bold">
                       {activeWidgetType === 'booking' 
                         ? formatAnalyticsValue(analyticsData?.avgPartySize, analyticsFormatters.decimal)
-                        : formatAnalyticsValue(Math.floor(Math.random() * 200 + 100), analyticsFormatters.currency)
+                        : formatAnalyticsValue(analyticsData?.avgOrderValue, analyticsFormatters.currency)
                       }
                     </p>
                   </div>
