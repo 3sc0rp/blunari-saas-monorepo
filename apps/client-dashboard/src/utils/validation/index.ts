@@ -84,7 +84,7 @@ class SchemaValidator {
       if (error instanceof z.ZodError) {
         const validationError = createValidationError(schemaName, error, context);
         
-        logger.error('Schema validation failed', {
+        const logContext = {
           component: 'schema-validator',
           operation: 'validate',
           metadata: {
@@ -93,7 +93,8 @@ class SchemaValidator {
             context,
             cacheStats: { hits: this.cacheHits, misses: this.cacheMisses }
           }
-        }, validationError);
+        };
+        (logger as any).error('Schema validation failed', logContext, validationError);
         
         throw validationError;
       }
@@ -298,10 +299,11 @@ export function withPropValidation<P extends Record<string, any>>(
       
       return React.createElement(Component, validatedProps);
     } catch (error) {
-      logger.error('Component prop validation failed', {
+      const logContext = {
         component: options.componentName || Component.displayName || Component.name,
         operation: 'prop_validation'
-      }, error as Error);
+      };
+      (logger as any).error('Component prop validation failed', logContext, error as Error);
       
       // Return error boundary or fallback
       return React.createElement('div', {

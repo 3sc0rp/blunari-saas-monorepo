@@ -102,7 +102,11 @@ class TestUtilsClass {
     // Setup global error handling
     const originalError = console.error;
     console.error = (...args: any[]) => {
-      this.logger.error('Test console error', { args });
+      const logContext = { 
+        component: 'test-utils',
+        metadata: { args } 
+      };
+      (this.logger as any).error('Test console error', logContext);
       originalError.apply(console, args);
     };
 
@@ -177,7 +181,11 @@ class TestUtilsClass {
       metrics.performance.memoryUsage = (performance as any).memory.usedJSHeapSize;
     }
 
-    this.logger.debug('Test measurement completed', metrics);
+    const logContext = { 
+      component: 'test-utils',
+      metadata: metrics 
+    };
+    (this.logger as any).debug('Test measurement completed', logContext);
     return metrics;
   }
 
