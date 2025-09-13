@@ -163,7 +163,8 @@ async function fetchRealWidgetAnalytics(
     console.log('Edge Function response:', {
       error: response.error,
       data: response.data ? 'received' : 'null',
-      status: 'unknown' // Unfortunately, Supabase client doesn't expose status code
+      success: response.data?.success,
+      authMethod: response.data?.meta?.authMethod
     });
 
     if (response.error) {
@@ -174,12 +175,14 @@ async function fetchRealWidgetAnalytics(
       return await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
     }
 
-    if (!response.data?.data) {
-      console.warn('No data from Edge Function, using direct database fallback');
+    // Check if Edge Function returned success
+    if (!response.data?.success || !response.data?.data) {
+      console.warn('Edge Function returned unsuccessful response, using direct database fallback');
       return await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
     }
 
     console.log('Real analytics data received successfully from Edge Function');
+    console.log('Auth method used:', response.data.meta?.authMethod || 'unknown');
     return response.data.data;
     
   } catch (err) {
