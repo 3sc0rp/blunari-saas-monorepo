@@ -1473,8 +1473,8 @@ Content-Security-Policy:
             <div className="space-y-1">
               <div className="flex items-center gap-3 flex-wrap">
                 <h3 className="text-lg font-semibold">Widget Analytics</h3>
-                {analyticsMeta?.timeRange && (
-                  <Badge variant="secondary" className="text-xs">Range: {analyticsMeta.timeRange}</Badge>
+                {analyticsMeta?.time_range && (
+                  <Badge variant="secondary" className="text-xs">Range: {analyticsMeta.time_range}</Badge>
                 )}
                 {analyticsMeta?.estimation && (
                   <Badge variant="outline" className="text-xs border-amber-300 text-amber-600">Estimated</Badge>

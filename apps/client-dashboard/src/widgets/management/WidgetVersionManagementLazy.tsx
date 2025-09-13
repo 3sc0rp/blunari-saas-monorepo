@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react'
 const WidgetVersionManagementComponent = React.lazy(() => import('./WidgetVersionManagement'))
 
 interface WidgetVersionManagementLazyProps {
-  widgetId?: string
+  widgetId: string
   className?: string
 }
 
