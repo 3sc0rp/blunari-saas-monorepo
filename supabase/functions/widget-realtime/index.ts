@@ -1,6 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors'
+import { corsHeaders, getCorsHeaders } from '../_shared/cors'
 
 interface WidgetEvent {
   widget_id: string
@@ -36,8 +36,15 @@ interface RealtimeMetrics {
 }
 
 serve(async (req) => {
+  // Get origin for CORS handling
+  const origin = req.headers.get('origin');
+  const responseHeaders = getCorsHeaders(origin || undefined);
+  
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { 
+      status: 200,
+      headers: responseHeaders 
+    })
   }
 
   try {
@@ -58,7 +65,7 @@ serve(async (req) => {
         JSON.stringify({ error: 'Authorization header required' }),
         { 
           status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
         }
       )
     }
@@ -72,7 +79,7 @@ serve(async (req) => {
         JSON.stringify({ error: 'Invalid token' }),
         { 
           status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
         }
       )
     }
@@ -87,7 +94,7 @@ serve(async (req) => {
         JSON.stringify({ error: 'tenant_id parameter required' }),
         { 
           status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
         }
       )
     }
@@ -107,7 +114,7 @@ serve(async (req) => {
           JSON.stringify({ error: 'Invalid action parameter' }),
           { 
             status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
           }
         )
     }
@@ -118,7 +125,7 @@ serve(async (req) => {
       JSON.stringify({ error: 'Internal server error' }),
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }
@@ -133,7 +140,7 @@ async function handleTrackEvent(req: Request, supabase: any, tenantId: string) {
       JSON.stringify({ error: 'Missing required event fields' }),
       { 
         status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }
@@ -159,7 +166,7 @@ async function handleTrackEvent(req: Request, supabase: any, tenantId: string) {
       JSON.stringify({ error: 'Failed to track event' }),
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }
@@ -181,7 +188,7 @@ async function handleTrackEvent(req: Request, supabase: any, tenantId: string) {
     JSON.stringify({ success: true }),
     { 
       status: 200, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
     }
   )
 }
@@ -208,7 +215,7 @@ async function getRealtimeMetrics(supabase: any, tenantId: string, widgetId?: st
       JSON.stringify({ error: 'Failed to fetch metrics' }),
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }
@@ -286,7 +293,7 @@ async function getRealtimeMetrics(supabase: any, tenantId: string, widgetId?: st
     JSON.stringify(metrics),
     { 
       status: 200, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
     }
   )
 }
@@ -313,7 +320,7 @@ async function getLiveSessions(supabase: any, tenantId: string, widgetId?: strin
       JSON.stringify({ error: 'Failed to fetch live sessions' }),
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }
@@ -340,7 +347,7 @@ async function getLiveSessions(supabase: any, tenantId: string, widgetId?: strin
     JSON.stringify(liveSessions),
     { 
       status: 200, 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      headers: { ...responseHeaders, 'Content-Type': 'application/json' } 
     }
   )
 }
