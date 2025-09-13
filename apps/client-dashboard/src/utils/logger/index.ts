@@ -563,3 +563,6 @@ export const logErrorBoundary = (
     }
   }, error);
 };
+
+// Export React components from separate file
+export { EnterpriseErrorBoundary, logErrorBoundary as logErrorBoundaryTsx } from './enterprise-logger';
