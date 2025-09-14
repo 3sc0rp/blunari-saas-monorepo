@@ -178,9 +178,8 @@ const WidgetManagement: React.FC = () => {
     try { return localStorage.getItem(`wm.preview.safe.${tenantSlug || tenant?.slug || 'default'}`) !== '0'; } catch { return true; }
   });
   // Live data preview toggle (renders real widget iframe instead of static mock)
-  const [livePreview, setLivePreview] = useState<boolean>(() => {
-    try { return localStorage.getItem(`wm.preview.live.${tenantSlug || tenant?.slug || 'default'}`) === '1'; } catch { return false; }
-  });
+  // Live preview only mode – always true
+  const livePreview = true;
   const [isLoading, setIsLoading] = useState(false); // generic spinner (saving etc.)
   const [copyBusy, setCopyBusy] = useState(false); // copy-to-clipboard only
   // Deploy tab state
@@ -211,9 +210,7 @@ const WidgetManagement: React.FC = () => {
     try { localStorage.setItem(`wm.preview.safe.${tenantSlug || tenant?.slug || 'default'}`, showSafeArea ? '1' : '0'); } catch {}
   }, [showSafeArea, tenantSlug, tenant?.slug]);
 
-  useEffect(() => {
-    try { localStorage.setItem(`wm.preview.live.${tenantSlug || tenant?.slug || 'default'}`, livePreview ? '1' : '0'); } catch {}
-  }, [livePreview, tenantSlug, tenant?.slug]);
+  // Removed persistence for live toggle (always live)
 
   useEffect(() => {
     try { localStorage.setItem(`wm.tab.${tenantSlug || tenant?.slug || 'default'}`, selectedTab); } catch {}
@@ -642,16 +639,13 @@ const WidgetManagement: React.FC = () => {
               <Badge variant="secondary" className="animate-pulse">Unsaved</Badge>
             )}
           </div>
-          <div className="hidden md:flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><Eye className="w-3 h-3"/> {livePreview ? 'Live' : 'Design'} Preview</span>
+            <div className="hidden md:flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><Eye className="w-3 h-3"/> Live Preview</span>
             <Separator orientation="vertical" className="h-4" />
             <span>{activeWidgetType === 'booking' ? 'Booking' : 'Catering'} widget</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 pr-2 border-r">
-              <Label htmlFor="global-live-toggle" className="text-xs cursor-pointer">Live</Label>
-              <Switch id="global-live-toggle" checked={livePreview} onCheckedChange={setLivePreview} aria-label="Toggle live preview mode" />
-            </div>
+            {/* Live toggle removed - always live */}
             <Button variant="outline" size="sm" disabled={isSaving || !hasUnsavedChanges || validationErrors.length>0} onClick={handleSave}>
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
               <span className="ml-1 hidden sm:inline">Save</span>
@@ -722,7 +716,7 @@ const WidgetManagement: React.FC = () => {
             <Settings className="w-4 h-4" />
             Configure
           </TabsTrigger>
-          <TabsTrigger value="preview" className="flex items-center gap-2" title="Live device preview">
+          <TabsTrigger value="preview" className="flex items-center gap-2" title="Live widget preview">
             <Eye className="w-4 h-4" />
             Preview
           </TabsTrigger>
@@ -1372,8 +1366,7 @@ const WidgetManagement: React.FC = () => {
                 <Switch id="safearea-toggle" checked={showSafeArea} onCheckedChange={setShowSafeArea} aria-label="Toggle notch and safe-area" />
               </div>
               <div className="flex items-center gap-2">
-                <Label htmlFor="live-toggle" className="text-sm" title="Render the real widget inside an iframe">Live Data</Label>
-                <Switch id="live-toggle" checked={livePreview} onCheckedChange={setLivePreview} aria-label="Toggle live widget rendering" />
+                {/* Live toggle removed */}
               </div>
             </div>
           </div>
@@ -1405,7 +1398,7 @@ const WidgetManagement: React.FC = () => {
                           aria-label={`${activeWidgetType} widget preview (${previewDevice})`}
                         >
                           {/* Widget Content: Static design preview OR Live widget iframe */}
-                          {livePreview && liveWidgetUrl ? (
+                          {liveWidgetUrl ? (
                             <>
                               <iframe
                                 title={`${activeWidgetType} live widget preview`}
@@ -1418,161 +1411,9 @@ const WidgetManagement: React.FC = () => {
                                 <Badge variant="secondary" className="text-xs">Live</Badge>
                               </div>
                             </>
-                          ) : livePreview && !liveWidgetUrl ? (
+                          ) : (
                             <div className="h-full flex items-center justify-center p-6 text-center text-sm text-red-600">
                               Unable to load live widget – tenant slug required.
-                            </div>
-                          ) : (
-                            <div 
-                              className="h-full flex flex-col" 
-                              style={widgetComputedProps}
-                            >
-                              {/* Header Section */}
-                              <div className="space-y-1 mb-1">
-                                {currentConfig.showLogo && (
-                                  <div className={`flex ${ALIGNMENT_MAP[currentConfig.alignment]}`}>
-                                    <div 
-                                      className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center"
-                                      style={{ 
-                                        width: currentConfig.fontSize * 2.5, 
-                                        height: currentConfig.fontSize * 2.5 
-                                      }}
-                                    >
-                                      <span 
-                                        className="text-white font-bold"
-                                        style={{ fontSize: currentConfig.fontSize * 0.8 }}
-                                      >
-                                        B
-                                      </span>
-                                    </div>
-                                  </div>
-                                )}
-                                
-                                <div style={{ textAlign: currentConfig.alignment }}>
-                                  <h3 
-                                    className={`${FONT_WEIGHT_MAP[currentConfig.fontWeight]} mb-2`}
-                                    style={{ 
-                                      fontSize: currentConfig.fontSize * 1.3,
-                                      lineHeight: currentConfig.lineHeight,
-                                    }}
-                                  >
-                                    {currentConfig.welcomeMessage}
-                                  </h3>
-                                  {currentConfig.showDescription && currentConfig.description && (
-                                    <p 
-                                      className="opacity-80 mb-4"
-                                      style={{ 
-                                        fontSize: currentConfig.fontSize * 0.85,
-                                        lineHeight: currentConfig.lineHeight,
-                                      }}
-                                    >
-                                      {currentConfig.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {/* Main Content Area */}
-                              <div className="flex-1 flex items-center justify-center py-4">
-                                <div className="text-center space-y-4 w-full max-w-sm">
-                                  {/* Interactive content placeholder showing real booking flow */}
-                                  <div className="space-y-3">
-                                    {/* Step indicator */}
-                                    <div className="flex items-center justify-center gap-2 mb-4">
-                                      <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium">1</div>
-                                      <div className="w-8 h-0.5 bg-gray-200"></div>
-                                      <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">2</div>
-                                      <div className="w-8 h-0.5 bg-gray-200"></div>
-                                      <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">3</div>
-                                      <div className="w-8 h-0.5 bg-gray-200"></div>
-                                      <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs">4</div>
-                                    </div>
-                                    
-                                    {/* Current step content */}
-                                    {activeWidgetType === 'booking' ? (
-                                      <div className="space-y-3">
-                                        <div className="text-sm font-medium text-left">Customer Details</div>
-                                        <div className="grid grid-cols-2 gap-2 text-xs">
-                                          <div className="p-2 bg-gray-100 rounded border text-left">Guest Name</div>
-                                          <div className="p-2 bg-gray-100 rounded border text-left">Party Size</div>
-                                        </div>
-                                        <div className="p-2 bg-gray-100 rounded border text-left text-xs">Email Address</div>
-                                        {currentConfig.enableSpecialRequests && (
-                                          <div className="p-2 bg-gray-100 rounded border text-left text-xs">Special Requests</div>
-                                        )}
-                                        {currentConfig.showAvailabilityIndicator && (
-                                          <div className="flex items-center gap-2 text-xs text-green-600">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                            <span>Available slots found</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <div className="space-y-3">
-                                        <div className="text-sm font-medium text-left">Catering Details</div>
-                                        <div className="grid grid-cols-2 gap-2 text-xs">
-                                          <div className="p-2 bg-gray-100 rounded border text-left">Event Date</div>
-                                          <div className="p-2 bg-gray-100 rounded border text-left">Guest Count</div>
-                                        </div>
-                                        <div className="p-2 bg-gray-100 rounded border text-left text-xs">Menu Preferences</div>
-                                        <div className="p-2 bg-gray-100 rounded border text-left text-xs">Delivery Address</div>
-                                      </div>
-                                    )}
-                                  </div>
-                                  
-                                  {/* CTA Button with booking-specific styling */}
-                                  <button
-                                    className="w-full font-medium transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
-                                    style={{
-                                      backgroundColor: currentConfig.primaryColor,
-                                      color: 'white',
-                                      borderRadius: currentConfig.borderRadius / 2,
-                                      padding: `${currentConfig.fontSize * 0.6}px ${currentConfig.fontSize * 1.2}px`,
-                                      fontSize: currentConfig.fontSize,
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor = currentConfig.secondaryColor;
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor = currentConfig.primaryColor;
-                                    }}
-                                  >
-                                    {currentConfig.buttonText}
-                                  </button>
-                                  
-                                  {/* Additional booking features */}
-                                  {currentConfig.enableTableOptimization && activeWidgetType === 'booking' && (
-                                    <div className="text-xs text-blue-600 flex items-center gap-1">
-                                      <span>⚡</span>
-                                      <span>Smart table optimization enabled</span>
-                                    </div>
-                                  )}
-                                  
-                                  {currentConfig.requireDeposit && (
-                                    <div className="text-xs text-orange-600 flex items-center gap-1">
-                                      <span>💳</span>
-                                      <span>Deposit required for booking</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {/* Footer Section */}
-                              {currentConfig.showFooter && currentConfig.footerText && (
-                                <div className="text-center mt-auto">
-                                  <p 
-                                    className="opacity-60"
-                                    style={{ 
-                                      fontSize: currentConfig.fontSize * 0.7,
-                                      textAlign: currentConfig.alignment 
-                                    }}
-                                  >
-                                    {currentConfig.footerText}
-                                  </p>
-                                </div>
-                              )}
                             </div>
                           )}
                           
