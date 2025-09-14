@@ -184,6 +184,16 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
   useEffect(() => {
     // Allow load attempts even while tenant still resolving slug->id so draft recovery works
     debug('loadEffect start', { activeWidgetType, tenantIdentifier, tenantId, tenantSlug });
+    // Guard: Only run full load logic if signature (widgetType + tenantIdentifier) changes
+    // This prevents re-running on every local field edit / hasUnsavedChanges toggle
+    const signature = `${activeWidgetType}::${tenantIdentifier}`;
+    // Track last signature in ref
+    const g = (window as any).__blunariWidgetConfigLoad = (window as any).__blunariWidgetConfigLoad || { last: null };
+    if (g.last === signature) {
+      debug('loadEffect skipped (unchanged signature)', signature);
+      return;
+    }
+    g.last = signature;
     try {
       // Enhanced loading with tenant-specific storage
       const storageKey = `blunari-widget-config-${activeWidgetType}-${tenantIdentifier}`;
@@ -293,7 +303,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       setLastSavedTimestamp(null);
     }
     debug('loadEffect end');
-  }, [activeWidgetType, tenantIdentifier, tenantId, tenantSlug, isLoading, setCurrentConfig, migratedLegacyKeys, hasUnsavedChanges, shallowEqual, currentConfig]);
+  }, [activeWidgetType, tenantIdentifier, tenantId, tenantSlug, isLoading, setCurrentConfig, migratedLegacyKeys, shallowEqual]);
 
   const resetToDefaults = useCallback(() => {
     setCurrentConfig(getDefaultConfig(activeWidgetType));

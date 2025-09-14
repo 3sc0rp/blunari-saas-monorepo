@@ -376,6 +376,13 @@ const WidgetManagement: React.FC = () => {
 
   // Additional component state
   const realWidgetId = `${resolvedTenantSlug || 'tenant'}_${activeWidgetType}_${tenantIdentifier?.slice(-8) || 'widget'}`;
+  // Diagnostic render counter (dev / debug only)
+  const renderCountRef = useRef(0);
+  renderCountRef.current++;
+  if (import.meta.env.VITE_ANALYTICS_DEBUG === '1' && renderCountRef.current % 25 === 0) {
+    // eslint-disable-next-line no-console
+    console.log('[WidgetManagement] Render count', renderCountRef.current);
+  }
 
   // Configuration management now handled by useWidgetConfig
 
