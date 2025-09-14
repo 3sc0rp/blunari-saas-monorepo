@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { safeStorage } from '@/utils/safeStorage';
 
 type Theme = "light" | "dark" | "deep-sea";
 type Contrast = "normal" | "high";
@@ -22,8 +23,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Load preferences from localStorage
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as Theme;
-    const savedContrast = localStorage.getItem("contrast") as Contrast;
+  const savedTheme = safeStorage.get("theme") as Theme;
+  const savedContrast = safeStorage.get("contrast") as Contrast;
 
     if (savedTheme && ["light", "dark", "deep-sea"].includes(savedTheme)) {
       setThemeState(savedTheme);
@@ -68,12 +69,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem("theme", newTheme);
+  safeStorage.set("theme", newTheme);
   };
 
   const setContrast = (newContrast: Contrast) => {
     setContrastState(newContrast);
-    localStorage.setItem("contrast", newContrast);
+  safeStorage.set("contrast", newContrast);
   };
 
   const toggleTheme = () => {

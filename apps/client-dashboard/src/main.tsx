@@ -1,3 +1,4 @@
+import './sandboxStorageShim'; // must be first to patch storage in sandbox
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import '@/monitoring/sentry';
