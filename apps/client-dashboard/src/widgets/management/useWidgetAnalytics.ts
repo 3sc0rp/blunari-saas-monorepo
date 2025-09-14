@@ -232,22 +232,6 @@ export function useWidgetAnalytics({
       isAvailable
     });
 
-    // Check rate limit before proceeding
-    if (!analyticsRateLimiter.isAllowed()) {
-      const timeUntilNext = analyticsRateLimiter.getTimeUntilNextAllowed();
-      const waitTimeSeconds = Math.ceil(timeUntilNext / 1000);
-
-      console.warn(`🚫 Rate limit exceeded. Next request allowed in ${waitTimeSeconds} seconds`);
-
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: `Rate limit exceeded. Please wait ${waitTimeSeconds} seconds before refreshing.`,
-        lastErrorCode: 'RATE_LIMIT_EXCEEDED'
-      }));
-      return;
-    }
-
     // Check cache first
     const cacheKey = `${tenantId}-${widgetType}-${timeRange}`;
     const cachedData = analyticsCache.get(cacheKey);
@@ -263,6 +247,48 @@ export function useWidgetAnalytics({
         correlationId: 'cached-' + Date.now(),
         lastErrorCode: null,
         meta: { estimation: false, time_range: timeRange }
+      }));
+      return;
+    }
+
+    // Join any in-flight request for the same key across components
+    (globalThis as any).__widgetAnalyticsInflight = (globalThis as any).__widgetAnalyticsInflight || new Map<string, Promise<WidgetAnalytics>>();
+    const inflightMap: Map<string, Promise<WidgetAnalytics>> = (globalThis as any).__widgetAnalyticsInflight;
+    const existing = inflightMap.get(cacheKey);
+    if (existing) {
+      console.log('⏳ Joining in-flight analytics fetch for key:', cacheKey);
+      try {
+        const sharedData = await existing;
+        analyticsCache.set(cacheKey, sharedData);
+        setState(prev => ({
+          ...prev,
+          data: sharedData,
+          loading: false,
+          error: null,
+          lastUpdated: new Date(),
+          mode: 'cached',
+          correlationId: 'shared-' + Date.now(),
+          lastErrorCode: null,
+          meta: { estimation: false, time_range: timeRange }
+        }));
+        return;
+      } catch (e) {
+        console.warn('Shared analytics fetch failed, proceeding with fresh fetch');
+      }
+    }
+
+    // Check rate limit before proceeding (after cache/in-flight dedupe)
+    if (!analyticsRateLimiter.isAllowed()) {
+      const timeUntilNext = analyticsRateLimiter.getTimeUntilNextAllowed();
+      const waitTimeSeconds = Math.ceil(timeUntilNext / 1000);
+
+      console.warn(`🚫 Rate limit exceeded. Next request allowed in ${waitTimeSeconds} seconds`);
+
+      setState(prev => ({
+        ...prev,
+        loading: false,
+        error: `Rate limit exceeded. Please wait ${waitTimeSeconds} seconds before refreshing.`,
+        lastErrorCode: 'RATE_LIMIT_EXCEEDED'
       }));
       return;
     }
@@ -314,7 +340,12 @@ export function useWidgetAnalytics({
         !tenantId.match(/^[0-9a-f-]{36}$/i)
       ) {
         console.log('🎭 Demo tenant detected, using database fallback');
-        const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
+        const promise = fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
+        inflightMap.set(cacheKey, promise);
+        try {
+          const fallbackData = await promise;
+          // Cache fallback results with shorter TTL
+          analyticsCache.set(cacheKey, fallbackData, 2 * 60 * 1000);
           setState({
             data: fallbackData,
             loading: false,
@@ -325,6 +356,9 @@ export function useWidgetAnalytics({
             lastErrorCode: null,
             meta: { estimation: true, time_range: timeRange }
           });
+        } finally {
+          inflightMap.delete(cacheKey);
+        }
         isLoadingRef.current = false;
         return;
       }
@@ -358,14 +392,27 @@ export function useWidgetAnalytics({
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const cid = `${correlationBase.current}:a${attempt}`;
         try {
-          const realResult = await fetchRealWidgetAnalytics(tenantId, widgetType, session.access_token, timeRange, cid);
-          analytics = realResult.data;
+          // De-duplicate concurrent Edge requests across components by cacheKey
+          (globalThis as any).__widgetAnalyticsInflight = (globalThis as any).__widgetAnalyticsInflight || new Map<string, Promise<WidgetAnalytics>>();
+          const inflightMap: Map<string, Promise<WidgetAnalytics>> = (globalThis as any).__widgetAnalyticsInflight;
+          let inflight = inflightMap.get(cacheKey);
+          if (!inflight) {
+            inflight = (async () => {
+              const rr = await fetchRealWidgetAnalytics(tenantId, widgetType, session.access_token, timeRange, cid);
+              return rr.data;
+            })();
+            inflightMap.set(cacheKey, inflight);
+          } else {
+            console.log('⏳ Joining in-flight Edge analytics fetch for key:', cacheKey);
+          }
+          const realData = await inflight;
+          analytics = realData;
           
           // Cache successful results
-          analyticsCache.set(cacheKey, realResult.data);
+          analyticsCache.set(cacheKey, realData);
           
           setState({
-            data: realResult.data,
+            data: realData,
             loading: false,
             error: null,
             lastUpdated: new Date(),
@@ -373,8 +420,8 @@ export function useWidgetAnalytics({
             correlationId: cid,
             lastErrorCode: null,
             meta: {
-              estimation: realResult.meta?.estimation,
-              version: realResult.meta?.version,
+              estimation: undefined,
+              version: undefined,
               time_range: timeRange
             }
           });
@@ -386,6 +433,9 @@ export function useWidgetAnalytics({
           if (attempt < maxAttempts) {
             await new Promise(r => setTimeout(r, attempt * 250));
           }
+        } finally {
+          const inflightMap: Map<string, Promise<WidgetAnalytics>> | undefined = (globalThis as any).__widgetAnalyticsInflight;
+          inflightMap?.delete?.(cacheKey);
         }
       }
 
