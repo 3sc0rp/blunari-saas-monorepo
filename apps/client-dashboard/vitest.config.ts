@@ -14,6 +14,12 @@ export default defineConfig({
     outputFile: {
       json: './test-results.json'
     },
+    exclude: [
+      'tests/**', // Exclude Playwright e2e tests (handled by Playwright)
+      'node_modules/zod/**/tests/**', // Exclude zod's own test suites
+      'node_modules/zod/src/**/tests/**',
+      'node_modules/zod/src/**', // Defensive: avoid picking up experimental v4 test files
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

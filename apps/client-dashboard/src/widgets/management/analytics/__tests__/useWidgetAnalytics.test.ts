@@ -62,7 +62,7 @@ describe('useWidgetAnalytics', () => {
     expect(result.current.isAvailable).toBe(false);
   });
 
-  it('should handle successful edge function response', async () => {
+  it('should handle successful edge function response (forceEdge)', async () => {
     // Use a real UUID to avoid demo path
     const realTenantId = '550e8400-e29b-41d4-a716-446655440000';
 
@@ -91,7 +91,8 @@ describe('useWidgetAnalytics', () => {
     const { result } = renderHook(() => useWidgetAnalytics({
       tenantId: realTenantId,
       tenantSlug: 'test-slug',
-      widgetType: 'booking'
+      widgetType: 'booking',
+      forceEdge: true
     }));
 
     // Wait for the initial fetch
@@ -148,7 +149,9 @@ describe('useWidgetAnalytics', () => {
     // Verify error was reported
     const errorStats = analyticsErrorReporter.getErrorStats();
     expect(errorStats.byCode[AnalyticsErrorCode.EDGE_FUNCTION_ERROR]).toBe(1);
-  });  it('should prevent concurrent fetches', async () => {
+  });
+
+  it('should prevent concurrent fetches (dedup in-flight)', async () => {
     // Use a real UUID to avoid demo path
     const realTenantId = '550e8400-e29b-41d4-a716-446655440002';
 
@@ -165,7 +168,8 @@ describe('useWidgetAnalytics', () => {
     const { result } = renderHook(() => useWidgetAnalytics({
       tenantId: realTenantId,
       tenantSlug: 'test-slug',
-      widgetType: 'booking'
+      widgetType: 'booking',
+      forceEdge: true
     }));
 
     // Attempt multiple concurrent fetches
@@ -176,7 +180,7 @@ describe('useWidgetAnalytics', () => {
       await Promise.all([fetch1, fetch2, fetch3]);
     });
 
-    // Should only have made one edge function call
+    // Should only have made one edge function call despite multiple refreshes
     expect(supabase.functions.invoke).toHaveBeenCalledTimes(1);
   });
 
