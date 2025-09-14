@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import ScrollToTop from "@/components/ScrollToTop";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantBrandingProvider } from "@/contexts/TenantBrandingContext";
@@ -96,6 +96,25 @@ function RouterInstrumentation() {
   return null;
 }
 
+// Lightweight public widget shell: exclude Auth / Tenant providers to avoid auth redirect/login UI.
+// We mount this inside the same BrowserRouter but branch early based on pathname.
+function PublicWidgetShell() {
+  const location = useLocation();
+  const isPublicWidget = location.pathname.startsWith('/book/') || location.pathname.startsWith('/catering/');
+  if (!isPublicWidget) return null;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Routes>
+        <Route path="/book/:slug" element={<BookingPage />} />
+        <Route path="/catering/:slug" element={<BookingPage />} />
+      </Routes>
+      <Toaster />
+      <Sonner />
+      <PerformanceMonitor />
+    </div>
+  );
+}
+
 function App() {
   console.log('🎯 App component rendering with full providers...');
   // Remove direct calls to router-dependent hooks here (now inside RouterInstrumentation)
@@ -108,6 +127,8 @@ function App() {
         <ThemeProvider>
           <BrowserRouter>
             <RouterInstrumentation />
+            {/* IMPORTANT: Public widget routes are rendered via PublicWidgetShell WITHOUT Auth/Tenant/Navigation providers */}
+            <PublicWidgetShell />
             <TenantBrandingProvider>
               <AuthProvider>
                 <ModeProvider>
@@ -121,10 +142,7 @@ function App() {
                             {/* Non-protected routes with minimal loading */}
                             <Route path="/" element={<Index />} />
                             <Route path="/auth/*" element={<Auth />} />
-                            
-                            {/* Public widget routes */}
-                            <Route path="/book/:slug" element={<BookingPage />} />
-                            <Route path="/catering/:slug" element={<BookingPage />} />
+                            {/* NOTE: Public widget routes handled in PublicWidgetShell to avoid AuthProvider wrapping */}
                             
                             {/* Protected dashboard routes with optimized Suspense */}
                             <Route 
