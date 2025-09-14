@@ -561,6 +561,35 @@ const WidgetManagement: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6" role="main" aria-label="Widget Management Dashboard">
+      {/* Sticky global action bar for key widget actions */}
+      {!tenantLoading && !tenantError && (
+        <div className="sticky top-0 z-30 -mt-6 -mx-6 mb-4 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-gray-900/70 bg-white/90 dark:bg-gray-900/90 border-b flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 mr-auto">
+            <h2 className="text-base font-semibold flex items-center gap-2"><Code className="w-4 h-4"/>Widget Manager</h2>
+            {hasUnsavedChanges && (
+              <Badge variant="secondary" className="animate-pulse">Unsaved</Badge>
+            )}
+          </div>
+          <div className="hidden md:flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><Eye className="w-3 h-3"/> {livePreview ? 'Live' : 'Design'} Preview</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span>{activeWidgetType === 'booking' ? 'Booking' : 'Catering'} widget</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pr-2 border-r">
+              <Label htmlFor="global-live-toggle" className="text-xs cursor-pointer">Live</Label>
+              <Switch id="global-live-toggle" checked={livePreview} onCheckedChange={setLivePreview} aria-label="Toggle live preview mode" />
+            </div>
+            <Button variant="outline" size="sm" disabled={isSaving || !hasUnsavedChanges || validationErrors.length>0} onClick={handleSave}>
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin"/> : <Save className="w-4 h-4"/>}
+              <span className="ml-1 hidden sm:inline">Save</span>
+            </Button>
+            <Button variant="ghost" size="sm" disabled={isSaving} onClick={resetToDefaults}>
+              <RotateCcw className="w-4 h-4"/>
+            </Button>
+          </div>
+        </div>
+      )}
       {/* Loading state while tenant information is being fetched */}
       {tenantLoading && (
         <Card>
