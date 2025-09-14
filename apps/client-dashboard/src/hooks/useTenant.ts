@@ -44,6 +44,10 @@ export function useTenant() {
   // Track in-flight resolution to cancel on unmount/changes
   const abortRef = useRef<AbortController | null>(null);
   const timeoutRef = useRef<number | null>(null);
+  const debugEnabled = import.meta.env.VITE_ANALYTICS_DEBUG === '1';
+  const debug = (...args: any[]) => { if (debugEnabled) { /* eslint-disable no-console */ console.log('[useTenant]', ...args); } };
+  const shallowTenantEqual = (a: TenantInfo | null, b: TenantInfo | null) => {
+    if (a === b) return true; if (!a || !b) return false; return a.id===b.id && a.slug===b.slug && a.name===b.name && a.timezone===b.timezone && a.currency===b.currency; };
   
   const resolveTenant = useCallback(async (reason: string = 'resolve') => {
     // Cancel any previous resolution
@@ -71,12 +75,7 @@ export function useTenant() {
         timezone: 'America/New_York',
         currency: 'USD'
       };
-      setState({
-        tenant: fallbackTenant,
-        loading: false,
-        error: null,
-        requestId: null
-      });
+      setState({ tenant: fallbackTenant, loading: false, error: null, requestId: null });
     }, 5000);
 
     try {
