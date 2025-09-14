@@ -94,6 +94,59 @@ import { copyText } from '@/utils/clipboard';
 
 // Types now imported from widgets/management/types
 
+// --- Small utility component: contrast calculation & warnings ---
+const ColorContrastDiagnostics: React.FC<{primary: string; background: string; text: string;}> = ({ primary, background, text }) => {
+  // Utility functions for contrast (WCAG)
+  const parseHex = (h: string) => {
+    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(h.trim());
+    if (!m) return null;
+    let hex = m[1];
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const int = parseInt(hex, 16);
+    return [ (int >> 16) & 255, (int >> 8) & 255, int & 255 ];
+  };
+  const rel = (c: number) => {
+    c /= 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  const contrast = (a: string, b: string) => {
+    const ca = parseHex(a); const cb = parseHex(b);
+    if (!ca || !cb) return null;
+    const La = 0.2126 * rel(ca[0]) + 0.7152 * rel(ca[1]) + 0.0722 * rel(ca[2]);
+    const Lb = 0.2126 * rel(cb[0]) + 0.7152 * rel(cb[1]) + 0.0722 * rel(cb[2]);
+    const ratio = (Math.max(La, Lb) + 0.05) / (Math.min(La, Lb) + 0.05);
+    return Number(ratio.toFixed(2));
+  };
+  const ratios = {
+    primaryText: contrast(primary, text),
+    backgroundText: contrast(background, text),
+    primaryBackground: contrast(primary, background)
+  };
+  const warn = (r: number | null, min: number) => r !== null && r < min;
+  const issues = [
+    warn(ratios.primaryText, 4.5) && 'Primary ↔ Text contrast low',
+    warn(ratios.backgroundText, 4.5) && 'Background ↔ Text contrast low',
+    warn(ratios.primaryBackground, 3) && 'Primary ↔ Background contrast weak'
+  ].filter(Boolean) as string[];
+  return (
+    <div className="mt-2 border rounded-md p-3 bg-white dark:bg-gray-900 text-xs space-y-1" aria-live="polite">
+      <div className="flex flex-wrap gap-3">
+        <span className="font-medium">Contrast:</span>
+        <span>Primary/Text: {ratios.primaryText ?? '—'}</span>
+        <span>Background/Text: {ratios.backgroundText ?? '—'}</span>
+        <span>Primary/Background: {ratios.primaryBackground ?? '—'}</span>
+      </div>
+      {issues.length > 0 ? (
+        <ul className="text-amber-600 list-disc list-inside">
+          {issues.map(i => <li key={i}>{i}</li>)}
+        </ul>
+      ) : (
+        <p className="text-green-600">All key contrast ratios pass baseline guidelines.</p>
+      )}
+    </div>
+  );
+};
+
 const WidgetManagement: React.FC = () => {
   const { tenant, tenantSlug, loading: tenantLoading, error: tenantError } = useTenant();
   const { toast } = useToast();
@@ -836,6 +889,43 @@ const WidgetManagement: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Quick color presets */}
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { name: 'Brand', p: '#3b82f6', s: '#1e40af', bg: '#ffffff', text: '#1f2937' },
+                    { name: 'Dark', p: '#6366f1', s: '#4338ca', bg: '#111827', text: '#F9FAFB' },
+                    { name: 'Emerald', p: '#10b981', s: '#047857', bg: '#ffffff', text: '#064e3b' },
+                    { name: 'Rose', p: '#e11d48', s: '#9f1239', bg: '#ffffff', text: '#1f2937' },
+                    { name: 'Slate', p: '#0f172a', s: '#334155', bg: '#ffffff', text: '#0f172a' }
+                  ].map(preset => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => updateConfig({
+                        primaryColor: preset.p,
+                        secondaryColor: preset.s,
+                        backgroundColor: preset.bg,
+                        textColor: preset.text
+                      })}
+                      className="group relative rounded-md border px-2 py-1 text-xs font-medium hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      aria-label={`Apply ${preset.name} color preset`}
+                    >
+                      <span className="pr-3">{preset.name}</span>
+                      <span className="absolute right-1 top-1 flex gap-0.5">
+                        <span style={{ background: preset.p }} className="w-2 h-2 rounded" />
+                        <span style={{ background: preset.s }} className="w-2 h-2 rounded" />
+                        <span style={{ background: preset.bg, border: '1px solid rgba(0,0,0,0.1)' }} className="w-2 h-2 rounded" />
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Contrast diagnostics */}
+                <ColorContrastDiagnostics 
+                  primary={currentConfig.primaryColor}
+                  background={currentConfig.backgroundColor}
+                  text={currentConfig.textColor}
+                />
                 <div className="space-y-2">
                   <Label>Theme</Label>
                   <Select value={currentConfig.theme} onValueChange={(value: 'light' | 'dark' | 'auto') => updateConfig({ theme: value })}>
