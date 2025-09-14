@@ -155,131 +155,20 @@ export interface WaitlistSettings {
   estimated_wait_accuracy_target: number; // percentage
 }
 
-// Mock data for waitlist entries
-const mockWaitlistEntries: WaitlistEntry[] = [
-  {
-    id: "1",
-    tenant_id: "tenant-1",
-    customer_name: "Jennifer Smith",
-    customer_phone: "(555) 123-4567",
-    customer_email: "jennifer.smith@email.com",
-    party_size: 4,
-    seating_preference: "booth",
-    special_requests: ["high_chair", "near_restroom"],
-    estimated_wait_minutes: 25,
-    priority: "normal",
-    status: "waiting",
-    position: 1,
-    joined_at: "2024-09-04T19:15:00Z",
-    sms_notifications_enabled: true,
-    email_notifications_enabled: false,
-    notification_count: 0,
-    notes: "Family with young children",
-    created_at: "2024-09-04T19:15:00Z",
-    updated_at: "2024-09-04T19:15:00Z",
-  },
-  {
-    id: "2",
-    tenant_id: "tenant-1",
-    customer_name: "David Kim",
-    customer_phone: "(555) 234-5678",
-    party_size: 2,
-    seating_preference: "window",
-    estimated_wait_minutes: 15,
-    priority: "vip",
-    status: "table_ready",
-    position: 2,
-    joined_at: "2024-09-04T19:25:00Z",
-    table_ready_at: "2024-09-04T19:40:00Z",
-    sms_notifications_enabled: true,
-    email_notifications_enabled: true,
-    notification_count: 1,
-    last_notification_sent: "2024-09-04T19:40:00Z",
-    notes: "VIP customer - priority seating",
-    created_at: "2024-09-04T19:25:00Z",
-    updated_at: "2024-09-04T19:40:00Z",
-  },
-  {
-    id: "3",
-    tenant_id: "tenant-1",
-    customer_name: "Maria Rodriguez",
-    customer_phone: "(555) 345-6789",
-    party_size: 6,
-    seating_preference: "no_preference",
-    estimated_wait_minutes: 35,
-    priority: "high",
-    status: "notified",
-    position: 3,
-    joined_at: "2024-09-04T19:20:00Z",
-    notified_at: "2024-09-04T19:45:00Z",
-    sms_notifications_enabled: true,
-    email_notifications_enabled: false,
-    notification_count: 2,
-    last_notification_sent: "2024-09-04T19:45:00Z",
-    notes: "Large party - birthday celebration",
-    created_at: "2024-09-04T19:20:00Z",
-    updated_at: "2024-09-04T19:45:00Z",
-  },
-  {
-    id: "4",
-    tenant_id: "tenant-1",
-    customer_name: "Robert Johnson",
-    customer_phone: "(555) 456-7890",
-    party_size: 3,
-    seating_preference: "bar",
-    estimated_wait_minutes: 20,
-    actual_wait_minutes: 18,
-    priority: "normal",
-    status: "seated",
-    position: 4,
-    joined_at: "2024-09-04T18:50:00Z",
-    seated_at: "2024-09-04T19:08:00Z",
-    sms_notifications_enabled: true,
-    email_notifications_enabled: true,
-    notification_count: 1,
-    created_at: "2024-09-04T18:50:00Z",
-    updated_at: "2024-09-04T19:08:00Z",
-  },
-];
-
-// Mock notification templates
-const mockNotificationTemplates: NotificationTemplate[] = [
-  {
-    id: "1",
-    name: "Table Ready SMS",
-    type: "sms",
-    trigger: "table_ready",
-    message: "Hi {{customer_name}}! Your table for {{party_size}} is ready at {{restaurant_name}}. Please check in within 10 minutes. Reply STOP to opt out.",
-    active: true,
-  },
-  {
-    id: "2",
-    name: "Position Update SMS",
-    type: "sms",
-    trigger: "position_update",
-    message: "Hi {{customer_name}}! You're now #{{position}} on our waitlist. Estimated wait: {{estimated_wait}} minutes. Thanks for your patience!",
-    active: true,
-  },
-  {
-    id: "3",
-    name: "Table Ready Email",
-    type: "email",
-    trigger: "table_ready",
-    message: "Your table is ready! Please return to the host stand within 10 minutes to be seated.",
-    active: false,
-  },
-];
-
-// Mock settings
-const mockSettings: WaitlistSettings = {
-  max_party_size: 12,
-  max_wait_time_minutes: 120,
-  auto_remove_no_show_minutes: 15,
-  sms_notifications_enabled: true,
+// Real-data-only baselines (empty collections). These will be hydrated from Supabase.
+// TODO(waitlist-api): implement fetch + realtime subscriptions for waitlist entries & templates.
+const initialWaitlistEntries: WaitlistEntry[] = [];
+const initialNotificationTemplates: NotificationTemplate[] = [];
+// Baseline settings until persisted tenant-specific configuration is implemented.
+const initialSettings: WaitlistSettings = {
+  max_party_size: 0,
+  max_wait_time_minutes: 0,
+  auto_remove_no_show_minutes: 0,
+  sms_notifications_enabled: false,
   email_notifications_enabled: false,
-  position_update_notifications: true,
-  reminder_intervals: [5, 10, 15],
-  estimated_wait_accuracy_target: 85,
+  position_update_notifications: false,
+  reminder_intervals: [],
+  estimated_wait_accuracy_target: 0,
 };
 
 const statusColors = {
@@ -306,9 +195,9 @@ const WaitlistManagement: React.FC = () => {
   const { tenant, isLoading: tenantLoading } = useTenant();
   const { toast } = useToast();
   
-  const [waitlistEntries, setWaitlistEntries] = useState<WaitlistEntry[]>(mockWaitlistEntries);
-  const [notificationTemplates] = useState<NotificationTemplate[]>(mockNotificationTemplates);
-  const [settings, setSettings] = useState<WaitlistSettings>(mockSettings);
+  const [waitlistEntries, setWaitlistEntries] = useState<WaitlistEntry[]>(initialWaitlistEntries);
+  const [notificationTemplates] = useState<NotificationTemplate[]>(initialNotificationTemplates);
+  const [settings, setSettings] = useState<WaitlistSettings>(initialSettings);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [isLoading, setIsLoading] = useState(false);
@@ -385,6 +274,11 @@ const WaitlistManagement: React.FC = () => {
     
     const longestWaitTime = Math.max(...completedWithWaitTime.map(entry => entry.actual_wait_minutes || 0), 0);
 
+    // Derive notification response rate from entries that have contact info.
+    const eligibleForNotifications = todayEntries.filter(e => e.customer_phone || e.customer_email).length;
+    const responded = todayEntries.filter(e => (e.notification_count || 0) > 0).length;
+    const notificationResponseRate = eligibleForNotifications > 0 ? Math.round((responded / eligibleForNotifications) * 100) : 0;
+
     return {
       total_entries: todayEntries.length,
       current_waiting: currentWaiting,
@@ -392,9 +286,11 @@ const WaitlistManagement: React.FC = () => {
       longest_wait_time: longestWaitTime,
       seated_today: seatedToday,
       no_shows_today: noShowsToday,
-      satisfaction_rate: 92, // Mock data
-      notification_response_rate: 78, // Mock data
-    };
+      satisfaction_rate: 0, // TODO(waitlist-surveys): compute from post-seating feedback
+      notification_response_rate: notificationResponseRate,
+      peak_wait_hours: [], // TODO(waitlist-analytics)
+      wait_time_by_party_size: [], // TODO(waitlist-analytics)
+    } as WaitlistAnalytics;
   }, [waitlistEntries]);
 
   const calculateWaitTime = (joinedAt: string) => {
@@ -548,7 +444,7 @@ const WaitlistManagement: React.FC = () => {
   };
 
   const determinePriority = (entry: Partial<WaitlistEntry>): WaitlistPriority => {
-    // Mock priority logic - in real implementation, this would consider customer history, etc.
+    // Simple heuristic placeholder until real customer history / loyalty logic is added.
     if (entry.party_size && entry.party_size >= 8) return "high";
     return "normal";
   };
