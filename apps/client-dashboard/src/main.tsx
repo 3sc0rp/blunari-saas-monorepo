@@ -12,9 +12,11 @@ if (typeof window !== 'undefined') {
       const msg = e.message || '';
       // Suppress noisy sandboxed localStorage SecurityErrors (expected when iframe lacks allow-same-origin)
       if (/Failed to read the 'localStorage' property/.test(msg)) {
-        if ((window as any).VITE_ANALYTICS_DEBUG === '1') {
+        const g = (window as any).__blunariMetrics = (window as any).__blunariMetrics || { suppressedStorageErrors: 0 };
+        g.suppressedStorageErrors++;
+        if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') {
           // eslint-disable-next-line no-console
-          console.warn('[Suppressed Sandbox Storage Error]', msg);
+          console.warn('[Suppressed Sandbox Storage Error]', msg, 'count=', g.suppressedStorageErrors);
         }
         return; // swallow
       }

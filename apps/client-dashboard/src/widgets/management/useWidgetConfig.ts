@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getDefaultConfig } from './defaults';
 import { validateConfig } from './validation';
 import { ValidationError, WidgetConfig, WidgetType } from './types';
+import shallowEqual from '@/utils/shallowEqual';
 
 export function useWidgetConfig(initialType: WidgetType, tenantId?: string | null, tenantSlug?: string | null, isLoading?: boolean) {
   const { toast } = useToast();
@@ -35,18 +36,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
   // Track whether we've attempted legacy key migration to avoid repeated work
   const [migratedLegacyKeys, setMigratedLegacyKeys] = useState(false);
 
-  // Utility shallow compare to avoid redundant state churn
-  const shallowEqual = (a: any, b: any) => {
-    if (a === b) return true;
-    if (!a || !b) return false;
-    const ak = Object.keys(a);
-    const bk = Object.keys(b);
-    if (ak.length !== bk.length) return false;
-    for (const k of ak) {
-      if (a[k] !== b[k]) return false;
-    }
-    return true;
-  };
+  
 
   const debug = (...args: any[]) => {
     if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') {

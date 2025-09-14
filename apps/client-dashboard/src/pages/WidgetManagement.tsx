@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { safeStorage } from '@/utils/safeStorage';
+import { safeStorage, inSandboxedIframe } from '@/utils/safeStorage';
 import { useTenant } from '@/hooks/useTenant';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -317,6 +317,17 @@ const WidgetManagement: React.FC = () => {
     return (
       <div className="fixed top-0 left-1/2 -translate-x-1/2 z-40 px-3 py-1 rounded-b-md text-xs font-medium tracking-wide text-white bg-indigo-600/90 border border-indigo-400 shadow-sm backdrop-blur" role="status" aria-live="polite">
         {label}
+      </div>
+    );
+  };
+
+  // Ephemeral session banner (only if storage is not persistent – sandboxed preview context)
+  const EphemeralBanner = () => {
+    if (safeStorage.persistent) return null;
+    return (
+      <div className="mb-4 rounded-md border border-amber-400 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2" role="note" aria-live="polite">
+        <span className="font-medium">Sandboxed Preview:</span>
+        <span>Sessions & widget config drafts are ephemeral here{inSandboxedIframe ? ' (iframe isolated)' : ''}. Persistence is disabled for security.</span>
       </div>
     );
   };

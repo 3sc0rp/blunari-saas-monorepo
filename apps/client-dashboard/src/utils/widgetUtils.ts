@@ -206,6 +206,7 @@ export const generateEmbedCode = (
     const safeShadowIntensity = Math.max(0, Math.min(10, config.shadowIntensity));
 
     const embedCode = `<!-- ${safeTenantName} ${type === 'booking' ? 'Booking' : 'Catering'} Widget -->
+<!-- Security: sandbox excludes allow-same-origin to prevent same-origin script escalation -->
 <div id="${type}-widget-container" style="width: 100%; height: ${safeHeight}; border: none; border-radius: ${safeBorderRadius}px; overflow: hidden; box-shadow: 0 ${safeShadowIntensity * 2}px ${safeShadowIntensity * 8}px rgba(0,0,0,0.1);"></div>
 <script>
 (function() {
@@ -216,7 +217,7 @@ export const generateEmbedCode = (
     iframe.style.height = '100%';
     iframe.style.border = 'none';
     iframe.setAttribute('allow', 'payment; geolocation');
-    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation');
+    iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-top-navigation');
     iframe.setAttribute('loading', 'lazy');
     iframe.setAttribute('title', '${safeTenantName} ${type === 'booking' ? 'Booking' : 'Catering'} Widget');
     
