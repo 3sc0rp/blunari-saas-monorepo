@@ -44,12 +44,38 @@ export function useTenant() {
   // Track in-flight resolution to cancel on unmount/changes
   const abortRef = useRef<AbortController | null>(null);
   const timeoutRef = useRef<number | null>(null);
+  // Resolution debounce + identity tracking
+  const lastResolveAtRef = useRef<number>(0);
+  const lastTenantKeyRef = useRef<string | null>(null);
+  const RESOLVE_DEBOUNCE_MS = 4000; // suppress identical resolves within 4s window
   const debugEnabled = import.meta.env.VITE_ANALYTICS_DEBUG === '1';
   const debug = (...args: any[]) => { if (debugEnabled) { /* eslint-disable no-console */ console.log('[useTenant]', ...args); } };
   const shallowTenantEqual = (a: TenantInfo | null, b: TenantInfo | null) => {
     if (a === b) return true; if (!a || !b) return false; return a.id===b.id && a.slug===b.slug && a.name===b.name && a.timezone===b.timezone && a.currency===b.currency; };
+
+  const commitTenant = (nextTenant: TenantInfo | null, context: string) => {
+    setState(prev => {
+      const same = nextTenant ? shallowTenantEqual(prev.tenant, nextTenant) : prev.tenant === null && nextTenant === null;
+      if (same && prev.loading === false) {
+        debug('skip state update - identical tenant', { context });
+        return prev;
+      }
+      lastResolveAtRef.current = Date.now();
+      lastTenantKeyRef.current = params.slug || null;
+      debug('tenant state updated', { context, slug: params.slug, tenantId: nextTenant?.id || null });
+      return { tenant: nextTenant, loading: false, error: null, requestId: null };
+    });
+  };
   
   const resolveTenant = useCallback(async (reason: string = 'resolve') => {
+    const now = Date.now();
+    const currentSlug = params.slug || null;
+    if (reason !== 'refresh' && reason !== 'auth-change') {
+      if (currentSlug === lastTenantKeyRef.current && (now - lastResolveAtRef.current) < RESOLVE_DEBOUNCE_MS) {
+        debug('debounce: skip resolveTenant (within window)', { reason, slug: currentSlug, elapsed: now - lastResolveAtRef.current });
+        return;
+      }
+    }
     // Cancel any previous resolution
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -75,7 +101,7 @@ export function useTenant() {
         timezone: 'America/New_York',
         currency: 'USD'
       };
-      setState({ tenant: fallbackTenant, loading: false, error: null, requestId: null });
+      commitTenant(fallbackTenant, 'timeout-fallback');
     }, 5000);
 
     try {
@@ -84,12 +110,7 @@ export function useTenant() {
       // Check cache first (only for user-based resolution, not slug-based)
       if (!params.slug && cachedTenant && Date.now() < cacheExpiry) {
         if (!signal.aborted) {
-          setState({
-            tenant: cachedTenant,
-            loading: false,
-            error: null,
-            requestId: null
-          });
+          commitTenant(cachedTenant, 'cache-hit');
         }
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
@@ -146,12 +167,7 @@ export function useTenant() {
           };
           
           if (!signal.aborted) {
-            setState({
-              tenant: fallbackTenant,
-              loading: false,
-              error: null,
-              requestId: null
-            });
+            commitTenant(fallbackTenant, 'no-session-dev-fallback');
           }
           if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
@@ -161,12 +177,7 @@ export function useTenant() {
         }
         
         if (!signal.aborted) {
-          setState({
-            tenant: null,
-            loading: false,
-            error: null,
-            requestId: null
-          });
+          commitTenant(null, 'no-session');
           // Only navigate if we're not already on the auth page
           if (window.location.pathname !== '/auth') {
             navigate('/auth');
@@ -209,12 +220,7 @@ export function useTenant() {
           });
           
           if (!signal.aborted) {
-            setState({
-              tenant: null,
-              loading: false,
-              error: null,
-              requestId: null
-            });
+            commitTenant(null, 'requires-auth');
             // Only navigate if we're not already on the auth page
             if (window.location.pathname !== '/auth') {
               navigate('/auth');
@@ -243,12 +249,7 @@ export function useTenant() {
           };
           
           if (!signal.aborted) {
-            setState({
-              tenant: fallbackTenant,
-              loading: false,
-              error: null,
-              requestId: null
-            });
+            commitTenant(fallbackTenant, '403-fallback');
           }
           if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
@@ -274,12 +275,7 @@ export function useTenant() {
             };
             
             if (!signal.aborted) {
-              setState({
-                tenant: fallbackTenant,
-                loading: false,
-                error: null,
-                requestId: null
-              });
+              commitTenant(fallbackTenant, '401-dev-fallback');
             }
             if (timeoutRef.current) {
               clearTimeout(timeoutRef.current);
@@ -289,12 +285,7 @@ export function useTenant() {
           } else {
             // In production, redirect to auth for 401 errors
             if (!signal.aborted) {
-              setState({
-                tenant: null,
-                loading: false,
-                error: null,
-                requestId: null
-              });
+              commitTenant(null, '401-prod-redirect');
               navigate('/auth');
             }
             if (timeoutRef.current) {
@@ -321,12 +312,7 @@ export function useTenant() {
         };
         
         if (!signal.aborted) {
-          setState({
-            tenant: fallbackTenant,
-            loading: false,
-            error: null,
-            requestId: null
-          });
+          commitTenant(fallbackTenant, 'function-failure-fallback');
         }
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
@@ -354,12 +340,7 @@ export function useTenant() {
         };
         
         if (!signal.aborted) {
-          setState({
-            tenant: fallbackTenant,
-            loading: false,
-            error: null,
-            requestId: null
-          });
+          commitTenant(fallbackTenant, 'error-response-fallback');
         }
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
@@ -379,12 +360,7 @@ export function useTenant() {
         }
         
         if (!signal.aborted) {
-          setState({
-            tenant,
-            loading: false,
-            error: null,
-            requestId: null
-          });
+          commitTenant(tenant, 'success');
         }
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
@@ -408,12 +384,7 @@ export function useTenant() {
       };
       
       if (!signal.aborted) {
-        setState({
-          tenant: fallbackTenant,
-          loading: false,
-          error: null,
-          requestId: null
-        });
+        commitTenant(fallbackTenant, 'no-data-fallback');
       }
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -442,12 +413,7 @@ export function useTenant() {
           currency: 'USD'
         };
         
-        setState({
-          tenant: fallbackTenant,
-          loading: false,
-          error: null,
-          requestId: null
-        });
+        commitTenant(fallbackTenant, 'catch-fallback');
       }
     } finally {
       // no-op; timeout cleared in all return paths and catch
@@ -484,7 +450,7 @@ export function useTenant() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         clearCache();
-        resolveTenant('auth-change');
+        resolveTenant('refresh');
       } else if (event === 'SIGNED_OUT') {
         clearCache();
         setState({
