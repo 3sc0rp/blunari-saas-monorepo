@@ -102,3 +102,22 @@ export interface PersistedConfigMeta {
 }
 
 export interface PersistedWidgetConfig extends WidgetConfig, PersistedConfigMeta {}
+
+// Centralized constraints for Widget Management forms
+export const WIDGET_CONFIG_LIMITS = {
+  welcomeMessage: { max: 120 },
+  description: { max: 240 },
+  buttonText: { max: 40 },
+  footerText: { max: 120 },
+  customCss: { max: 4000 },
+  customJs: { max: 4000 },
+  width: { min: 300, max: 1200, default: 400 },
+  height: { min: 300, max: 1200, default: 600 },
+  borderRadius: { min: 0, max: 32 },
+  shadowIntensity: { min: 0, max: 20 },
+  fontSize: { min: 10, max: 28 },
+  lineHeight: { min: 1, max: 2 },
+  maxPartySize: { min: 1, max: 20 },
+  minAdvanceBooking: { min: 0, max: 720 }, // hours
+  maxAdvanceBooking: { min: 1, max: 180 }  // days
+} as const;

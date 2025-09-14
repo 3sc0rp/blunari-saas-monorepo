@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTenant } from '@/hooks/useTenant';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -73,6 +73,7 @@ import { getDefaultConfig } from '@/widgets/management/defaults';
 import { validateConfig } from '@/widgets/management/validation';
 import { createWidgetToken } from '@/widgets/management/tokenUtils';
 import { useWidgetAnalytics, formatAnalyticsValue, analyticsFormatters } from '@/widgets/management/useWidgetAnalytics';
+import { WIDGET_CONFIG_LIMITS } from '@/widgets/management/types';
 import { TenantStatusCard } from '@/widgets/management/components/TenantStatusCard';
 import { WidgetHeader } from '@/widgets/management/components/WidgetHeader';
 import { ValidationErrorAlert } from '@/widgets/management/components/ValidationErrorAlert';
@@ -100,9 +101,54 @@ const WidgetManagement: React.FC = () => {
   const [activeWidgetType, setActiveWidgetType] = useState<'booking' | 'catering'>('booking');
   const [selectedTab, setSelectedTab] = useState('configure');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [deviceScale, setDeviceScale] = useState<number>(1);
+  const [showGrid, setShowGrid] = useState<boolean>(false);
+  const [showSafeArea, setShowSafeArea] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(false); // generic spinner (saving etc.)
   const [copyBusy, setCopyBusy] = useState(false); // copy-to-clipboard only
+  // Deploy tab state
+  const [embedType, setEmbedType] = useState<'script' | 'iframe' | 'react'>('script');
+  const [allowedOriginInput, setAllowedOriginInput] = useState<string>('');
+  const [iframeSandbox, setIframeSandbox] = useState<boolean>(true);
+  const [iframeLazy, setIframeLazy] = useState<boolean>(true);
   const [analyticsRange, setAnalyticsRange] = useState<'1d' | '7d' | '30d'>('7d');
+  // Focus preview after device change
+  useEffect(() => {
+    const el = document.querySelector('[data-widget-preview]') as HTMLElement | null;
+    if (el) {
+      el.setAttribute('tabindex', '-1');
+      el.focus();
+    }
+  }, [previewDevice]);
+
+  // Memoized preview styles to avoid unnecessary recalcs (declared after currentConfig below)
+  let widgetContainerStyle = {} as React.CSSProperties;
+  let widgetComputedProps: React.CSSProperties = {};
+
+  const handleScreenshot = useCallback(async () => {
+    try {
+      const node = document.querySelector('[data-widget-preview]') as HTMLElement | null;
+      if (!node) return;
+      // Dynamic import to keep bundle lean; requires html2canvas in app deps
+      // @ts-ignore - runtime import; types optional
+      const mod: any = await import('html2canvas');
+      const html2canvas = (mod.default || mod) as (el: HTMLElement, opts?: any) => Promise<HTMLCanvasElement>;
+      const canvas = await html2canvas(node, { scale: window.devicePixelRatio * deviceScale, backgroundColor: null });
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve));
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const slug = (tenantSlug || tenant?.slug || 'tenant');
+      a.href = url;
+      a.download = `${slug}-${activeWidgetType}-preview.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Screenshot failed - ensure html2canvas is installed', err);
+    }
+  }, [activeWidgetType, deviceScale, tenantSlug, tenant?.slug]);
 
   // Tenant slug resolution - no demo fallbacks
   const resolvedTenantSlug = useMemo(() => {
@@ -132,6 +178,22 @@ const WidgetManagement: React.FC = () => {
     exportTenantConfiguration,
   } = useWidgetConfig('booking', tenant?.id ?? null, resolvedTenantSlug ?? null, tenantLoading);
 
+  // Now that currentConfig exists, finalize memoized preview styles
+  widgetContainerStyle = useMemo(() => {
+    try {
+      const base = createWidgetContainerStyle(currentConfig, previewDevice) as Record<string, any>;
+      return { ...base, transformOrigin: 'top center', transform: `scale(${deviceScale})` } as React.CSSProperties;
+    } catch {
+      return { transform: `scale(${deviceScale})`, transformOrigin: 'top center' } as React.CSSProperties;
+    }
+  }, [currentConfig, previewDevice, deviceScale]);
+
+  widgetComputedProps = useMemo(() => ({
+    padding: currentConfig.padding,
+    ...createCustomProperties(currentConfig),
+    ...getSpacingStyle(currentConfig.spacing)
+  }), [currentConfig]);
+
   // Keep local activeWidgetType in sync with hook state
   useEffect(() => {
     setTypeFromHook(activeWidgetType);
@@ -150,6 +212,22 @@ const WidgetManagement: React.FC = () => {
       setIsSaving(false);
     }
   }, [saveConfiguration]);
+
+  // Debounced autosave (toggleable flag inside configuration)
+  const [autosaveEnabled, setAutosaveEnabled] = useState<boolean>(true);
+  const autosaveRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!autosaveEnabled) return;
+    if (!hasUnsavedChanges) return;
+    if (validationErrors.length > 0) return;
+    if (autosaveRef.current) window.clearTimeout(autosaveRef.current);
+    autosaveRef.current = window.setTimeout(() => {
+      handleSave();
+    }, 1500);
+    return () => {
+      if (autosaveRef.current) window.clearTimeout(autosaveRef.current);
+    };
+  }, [autosaveEnabled, hasUnsavedChanges, validationErrors.length, handleSave, currentConfig]);
 
   // Defaults now centralized in widgets/management/defaults
 
@@ -282,7 +360,17 @@ const WidgetManagement: React.FC = () => {
       
   const widgetId = `blunari-${type}-widget-${Date.now()}`;
   const safeWelcome = escapeAttr(config.welcomeMessage || '');
-      
+  const allowedOrigin = (allowedOriginInput || new URL(url).origin).replace(/"/g, '');
+  const sandboxAttr = iframeSandbox ? " sandbox=\"allow-scripts allow-same-origin allow-forms allow-popups\"" : '';
+  const lazyAttr = iframeLazy ? " loading=\"lazy\"" : '';
+  const referrerAttr = " referrerpolicy=\"strict-origin-when-cross-origin\"";
+
+      if (embedType === 'iframe') {
+        return `<!-- Simple iframe embed -->\n<iframe\n  src="${url}"\n  width="${config.width || 400}"\n  height="${config.height || 600}"\n  frameborder="0"${lazyAttr}${sandboxAttr}${referrerAttr}\n  style="border-radius: ${config.borderRadius || 8}px; box-shadow: 0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1); max-width: 100%;"\n  title="${safeWelcome} - ${type} widget"\n  data-widget-type="${type}">\n</iframe>`;
+      }
+      if (embedType === 'react') {
+        return `{/* React JSX embed */}\n<iframe\n  src={"${url}"}\n  width={${config.width || 400}}\n  height={${config.height || 600}}\n  style={{ borderRadius: ${config.borderRadius || 8}, boxShadow: '0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1)', maxWidth: '100%' }}\n  title={'${safeWelcome} - ${type} widget'}\n  data-widget-type={'${type}'}${iframeLazy ? " loading=\"lazy\"" : ''}${iframeSandbox ? " sandbox=\"allow-scripts allow-same-origin allow-forms allow-popups\"" : ''} referrerPolicy="strict-origin-when-cross-origin"\n/>`;
+      }
       return `<!-- Blunari ${type.charAt(0).toUpperCase() + type.slice(1)} Widget with PostMessage Communication -->
 <script>
 (function() {
@@ -300,11 +388,14 @@ const WidgetManagement: React.FC = () => {
   iframe.title = '${safeWelcome.replace(/'/g, "\\'")} - ${type} widget';
     iframe.setAttribute('data-widget-type', '${type}');
     iframe.setAttribute('data-widget-id', '${widgetId}');
+    ${iframeLazy ? "iframe.setAttribute('loading','lazy');" : ''}
+    ${iframeSandbox ? "iframe.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups');" : ''}
+    iframe.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
     
     // PostMessage event listener for iframe communication
     function handleWidgetMessage(event) {
-      // Verify origin for security (replace with your actual domain)
-      if (event.origin !== window.location.origin) {
+      // Verify origin for security (generated from embed controls)
+      if (event.origin !== '${allowedOrigin}') {
         return;
       }
       
@@ -376,7 +467,7 @@ const WidgetManagement: React.FC = () => {
           primaryColor: '${config.primaryColor}',
           secondaryColor: '${config.secondaryColor}'
         }
-      }, '*');
+      }, '${allowedOrigin}');
     };
     
     // Set initial opacity for smooth loading
@@ -395,22 +486,9 @@ const WidgetManagement: React.FC = () => {
 })();
 </script>
 
-<!-- Alternative: Simple iframe embed with basic postMessage support -->
-<iframe 
-  src="${url}"
-  width="${config.width || 400}" 
-  height="${config.height || 600}" 
-  frameborder="0"
-  style="border-radius: ${config.borderRadius || 8}px; box-shadow: 0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1); max-width: 100%;"
-  title="${safeWelcome} - ${type} widget"
-  data-widget-type="${type}"
-  onload="console.log('Blunari ${type} widget loaded');"
-  onerror="this.style.display='none'; console.error('Failed to load Blunari widget');">
-</iframe>
-
 <!-- Recommended CSP headers for embedding:
 Content-Security-Policy: 
-  frame-src 'self' ${window.location.origin}; 
+  frame-src 'self' ${allowedOrigin}; 
   script-src 'self' 'unsafe-inline'; 
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: https:;
@@ -678,6 +756,7 @@ Content-Security-Policy:
                       size="sm" 
                       onClick={exportTenantConfiguration}
                       className="border-green-300 text-green-700 hover:bg-green-100"
+                      aria-label="Export all saved configurations"
                     >
                       <Download className="w-4 h-4 mr-1" />
                       Export All
@@ -706,12 +785,14 @@ Content-Security-Policy:
                   <Input
                     id="welcome-message"
                     value={currentConfig.welcomeMessage}
-                    onChange={(e) => updateConfig({ welcomeMessage: e.target.value })}
+                    maxLength={WIDGET_CONFIG_LIMITS.welcomeMessage.max}
+                    onChange={(e) => updateConfig({ welcomeMessage: e.target.value.slice(0, WIDGET_CONFIG_LIMITS.welcomeMessage.max) })}
                     placeholder="Enter welcome message"
                     aria-invalid={validationErrors.find(e => e.field === 'welcomeMessage') ? 'true' : 'false'}
                     aria-describedby={validationErrors.find(e => e.field === 'welcomeMessage') ? 'welcome-message-error' : undefined}
                     className={validationErrors.find(e => e.field === 'welcomeMessage') ? 'border-red-500' : ''}
                   />
+                  <div className="text-xs text-muted-foreground text-right">{currentConfig.welcomeMessage.length}/{WIDGET_CONFIG_LIMITS.welcomeMessage.max}</div>
                   {validationErrors.find(e => e.field === 'welcomeMessage') && (
                     <p id="welcome-message-error" className="text-sm text-red-600" role="alert">
                       {validationErrors.find(e => e.field === 'welcomeMessage')?.message}
@@ -724,11 +805,13 @@ Content-Security-Policy:
                   <Textarea
                     id="description"
                     value={currentConfig.description}
-                    onChange={(e) => updateConfig({ description: e.target.value })}
+                    maxLength={WIDGET_CONFIG_LIMITS.description.max}
+                    onChange={(e) => updateConfig({ description: e.target.value.slice(0, WIDGET_CONFIG_LIMITS.description.max) })}
                     placeholder="Enter widget description"
                     rows={2}
                     aria-describedby="description-help"
                   />
+                  <div className="text-xs text-muted-foreground text-right">{currentConfig.description.length}/{WIDGET_CONFIG_LIMITS.description.max}</div>
                   <p id="description-help" className="text-sm text-muted-foreground">
                     Brief description of your widget for accessibility
                   </p>
@@ -739,12 +822,14 @@ Content-Security-Policy:
                   <Input
                     id="button-text"
                     value={currentConfig.buttonText}
-                    onChange={(e) => updateConfig({ buttonText: e.target.value })}
+                    maxLength={WIDGET_CONFIG_LIMITS.buttonText.max}
+                    onChange={(e) => updateConfig({ buttonText: e.target.value.slice(0, WIDGET_CONFIG_LIMITS.buttonText.max) })}
                     placeholder="Enter button text"
                     aria-invalid={validationErrors.find(e => e.field === 'buttonText') ? 'true' : 'false'}
                     aria-describedby={validationErrors.find(e => e.field === 'buttonText') ? 'button-text-error' : undefined}
                     className={validationErrors.find(e => e.field === 'buttonText') ? 'border-red-500' : ''}
                   />
+                  <div className="text-xs text-muted-foreground text-right">{currentConfig.buttonText.length}/{WIDGET_CONFIG_LIMITS.buttonText.max}</div>
                   {validationErrors.find(e => e.field === 'buttonText') && (
                     <p id="button-text-error" className="text-sm text-red-600" role="alert">
                       {validationErrors.find(e => e.field === 'buttonText')?.message}
@@ -757,10 +842,12 @@ Content-Security-Policy:
                   <Input
                     id="footer-text"
                     value={currentConfig.footerText}
-                    onChange={(e) => updateConfig({ footerText: e.target.value })}
+                    maxLength={WIDGET_CONFIG_LIMITS.footerText.max}
+                    onChange={(e) => updateConfig({ footerText: e.target.value.slice(0, WIDGET_CONFIG_LIMITS.footerText.max) })}
                     placeholder="Enter footer text"
                     aria-describedby="footer-text-help"
                   />
+                  <div className="text-xs text-muted-foreground text-right">{currentConfig.footerText.length}/{WIDGET_CONFIG_LIMITS.footerText.max}</div>
                   <p id="footer-text-help" className="text-sm text-muted-foreground">
                     Optional footer text (e.g., "Powered by YourBrand")
                   </p>
@@ -1166,40 +1253,53 @@ Content-Security-Policy:
             </div>
             
             {/* Device selector */}
-            <div className="flex items-center gap-2">
-              <Label>Device:</Label>
+            <div className="flex items-center gap-3" aria-label="Preview controls" role="group">
+              <Label htmlFor="device-select">Device:</Label>
               <Select value={previewDevice} onValueChange={(value: 'desktop' | 'tablet' | 'mobile') => setPreviewDevice(value)}>
                 <SelectTrigger className="w-32">
-                  <SelectValue />
+                  <SelectValue aria-label={`Current device ${previewDevice}`} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="desktop">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" aria-label="Desktop viewport">
                       <Monitor className="w-4 h-4" />
                       Desktop
                     </div>
                   </SelectItem>
                   <SelectItem value="tablet">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" aria-label="Tablet viewport">
                       <Tablet className="w-4 h-4" />
                       Tablet
                     </div>
                   </SelectItem>
                   <SelectItem value="mobile">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" aria-label="Mobile viewport">
                       <Smartphone className="w-4 h-4" />
                       Mobile
                     </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="scale-input" className="text-sm" title="Adjust preview zoom">Scale</Label>
+                <Input id="scale-input" type="number" step="0.1" min="0.5" max="2" value={deviceScale}
+                  onChange={(e) => setDeviceScale(Math.min(2, Math.max(0.5, parseFloat(e.target.value) || 1)))} className="w-20 h-8" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="grid-toggle" className="text-sm" title="Toggle grid overlay for alignment">Grid</Label>
+                <Switch id="grid-toggle" checked={showGrid} onCheckedChange={setShowGrid} aria-label="Toggle grid overlay" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="safearea-toggle" className="text-sm" title="Toggle notch and safe-area for mobile">Safe-area</Label>
+                <Switch id="safearea-toggle" checked={showSafeArea} onCheckedChange={setShowSafeArea} aria-label="Toggle notch and safe-area" />
+              </div>
             </div>
           </div>
           
           <Card className="border-0 shadow-lg">
             <CardContent className="p-0">
               {/* Device Frame Background */}
-              <div className="min-h-[600px] bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-8">
+              <div className={`min-h-[600px] bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-8 ${showGrid ? 'bg-[linear-gradient(to_right,rgba(0,0,0,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.05)_1px,transparent_1px)] bg-[size:20px_20px]' : ''}` }>
                 {/* Device Frame */}
                 <div 
                   className={DEVICE_STYLES[previewDevice]}
@@ -1216,18 +1316,16 @@ Content-Security-Policy:
                       <div className="h-full flex items-center justify-center p-4 bg-gray-50">
                         {/* Actual Widget Preview */}
                         <div 
-                          className={`rounded-lg shadow-lg transition-all duration-300 overflow-hidden relative ${WIDGET_SCALE_MAP[previewDevice]}`}
-                          style={createWidgetContainerStyle(currentConfig, previewDevice)}
+                          className={`rounded-lg shadow-lg transition-all duration-300 overflow-hidden relative`}
+                          style={widgetContainerStyle}
                           data-widget-preview="true"
+                          role="region"
+                          aria-label={`${activeWidgetType} widget preview (${previewDevice})`}
                         >
                           {/* Widget Content */}
                           <div 
                             className="h-full flex flex-col" 
-                            style={{
-                              padding: currentConfig.padding,
-                              ...createCustomProperties(currentConfig),
-                              ...getSpacingStyle(currentConfig.spacing)
-                            }}
+                            style={widgetComputedProps}
                           >
                             {/* Header Section */}
                             <div className="space-y-1 mb-1">
@@ -1386,17 +1484,17 @@ Content-Security-Policy:
                         </div>
                       </div>
                       
-                      {/* Device status bar for mobile */}
-                      {previewDevice === 'mobile' && (
-                        <div className="absolute top-0 left-0 right-0 h-6 bg-black rounded-t-2xl flex items-center justify-center">
-                          <div className="w-12 h-1 bg-white rounded-full opacity-30"></div>
+                      {/* Device status bar for mobile (notch/safe-area) */}
+                      {previewDevice === 'mobile' && showSafeArea && (
+                        <div className="absolute top-0 left-0 right-0 h-6 bg-black/80 rounded-t-2xl flex items-center justify-center" aria-hidden="true">
+                          <div className="w-16 h-2 bg-white/40 rounded-full"></div>
                         </div>
                       )}
                     </div>
                     
                     {/* Device home indicator for mobile */}
-                    {previewDevice === 'mobile' && (
-                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-white rounded-full opacity-40"></div>
+                    {previewDevice === 'mobile' && showSafeArea && (
+                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-24 h-1.5 bg-white/50 rounded-full" aria-hidden="true"></div>
                     )}
                   </div>
                   
@@ -1430,7 +1528,9 @@ Content-Security-Policy:
                 <div className="flex items-center gap-2">
                   <Button 
                     variant="outline" 
-                    size="sm"
+                    size="sm" 
+                    title="Refresh the preview"
+                    aria-label="Refresh the preview"
                     onClick={() => {
                       // Trigger a re-render animation on the widget preview
                       const widget = document.querySelector('[data-widget-preview]');
@@ -1447,7 +1547,7 @@ Content-Security-Policy:
                     <RefreshCw className="w-4 h-4 mr-1" />
                     Refresh
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleScreenshot} aria-label="Download widget preview screenshot" title="Download screenshot of the preview">
                     <Download className="w-4 h-4 mr-1" />
                     Screenshot
                   </Button>
@@ -1736,6 +1836,32 @@ Content-Security-Policy:
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {/* Embed options */}
+                <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Embed options">
+                  <Label className="text-sm">Format:</Label>
+                  <Select value={embedType} onValueChange={(v: 'script' | 'iframe' | 'react') => setEmbedType(v)}>
+                    <SelectTrigger className="w-28 h-8" aria-label="Select embed format"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="script">Script</SelectItem>
+                      <SelectItem value="iframe">iFrame</SelectItem>
+                      <SelectItem value="react">React</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="allowed-origin" className="text-sm" title="Origin your site will use to receive postMessage">Allowed origin</Label>
+                    <Input id="allowed-origin" className="h-8 w-64" placeholder="https://yourdomain.com" value={allowedOriginInput} onChange={(e) => setAllowedOriginInput(e.target.value)} />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="sandbox-toggle" className="text-sm" title="Add sandbox attr to iframe">Sandbox</Label>
+                      <Switch id="sandbox-toggle" checked={iframeSandbox} onCheckedChange={setIframeSandbox} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="lazy-toggle" className="text-sm" title="Add loading=lazy">Lazy</Label>
+                      <Switch id="lazy-toggle" checked={iframeLazy} onCheckedChange={setIframeLazy} />
+                    </div>
+                  </div>
+                </div>
                 <div className="relative">
                   <pre className="bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto border">
                     <code>{generateEmbedCode(activeWidgetType)}</code>
@@ -1746,6 +1872,7 @@ Content-Security-Policy:
                     className="absolute top-2 right-2"
                     onClick={() => copyToClipboard(generateEmbedCode(activeWidgetType), 'Embed code')}
                     disabled={copyBusy}
+                    aria-label="Copy embed code"
                   >
                     {copyBusy ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
