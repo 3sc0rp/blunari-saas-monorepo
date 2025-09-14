@@ -280,122 +280,59 @@ export interface BudgetPlan {
   updated_at: string;
 }
 
-// Mock data for financial reporting
-const mockRevenueBreakdown: RevenueBreakdown = {
-  total_revenue: 127580,
-  revenue_by_category: [
-    { category: "Food Sales", amount: 89506, percentage: 70.2, growth: 8.5 },
-    { category: "Beverage Sales", amount: 25516, percentage: 20.0, growth: 12.3 },
-    { category: "Catering", amount: 8942, percentage: 7.0, growth: 15.7 },
-    { category: "Merchandise", amount: 3616, percentage: 2.8, growth: -2.1 },
-  ],
-  revenue_by_channel: [
-    { channel: "Dine-in", amount: 76548, percentage: 60.0, commission_fees: 0 },
-    { channel: "Takeaway", amount: 31895, percentage: 25.0, commission_fees: 0 },
-    { channel: "Delivery", amount: 19137, percentage: 15.0, commission_fees: 1914 },
-  ],
-  revenue_by_time: [
-    { period: "Week 1", amount: 31895, orders_count: 712 },
-    { period: "Week 2", amount: 34567, orders_count: 789 },
-    { period: "Week 3", amount: 29876, orders_count: 658 },
-    { period: "Week 4", amount: 31242, orders_count: 698 },
-  ],
-  discounts_applied: 3847,
-  refunds_issued: 1205,
-  net_revenue: 122528,
+// Real-data-only baselines. All values zero / empty until fetched from backend.
+// TODO(financial-api): implement data fetching for revenue, expenses, profitability, cash flow, tax docs & budget.
+const initialRevenueBreakdown: RevenueBreakdown = {
+  total_revenue: 0,
+  revenue_by_category: [],
+  revenue_by_channel: [],
+  revenue_by_time: [],
+  discounts_applied: 0,
+  refunds_issued: 0,
+  net_revenue: 0,
 };
-
-const mockExpenseBreakdown: ExpenseBreakdown = {
-  total_expenses: 98750,
-  expense_categories: [
-    { category: "Food Costs", budgeted: 38000, actual: 39240, variance: 1240, variance_percentage: 3.3 },
-    { category: "Labor Costs", budgeted: 28000, actual: 26850, variance: -1150, variance_percentage: -4.1 },
-    { category: "Rent & Utilities", budgeted: 12000, actual: 11890, variance: -110, variance_percentage: -0.9 },
-    { category: "Marketing", budgeted: 5000, actual: 6200, variance: 1200, variance_percentage: 24.0 },
-    { category: "Equipment & Maintenance", budgeted: 3500, actual: 4180, variance: 680, variance_percentage: 19.4 },
-    { category: "Insurance", budgeted: 2800, actual: 2750, variance: -50, variance_percentage: -1.8 },
-    { category: "Other Expenses", budgeted: 8500, actual: 7640, variance: -860, variance_percentage: -10.1 },
-  ],
-  fixed_costs: 26640,
-  variable_costs: 72110,
-  one_time_expenses: 4180,
-  recurring_expenses: 94570,
-  expense_trends: [
-    { period: "Jan", amount: 22450, category: "Total" },
-    { period: "Feb", amount: 24120, category: "Total" },
-    { period: "Mar", amount: 25680, category: "Total" },
-    { period: "Apr", amount: 26500, category: "Total" },
-  ],
+const initialExpenseBreakdown: ExpenseBreakdown = {
+  total_expenses: 0,
+  expense_categories: [],
+  fixed_costs: 0,
+  variable_costs: 0,
+  one_time_expenses: 0,
+  recurring_expenses: 0,
+  expense_trends: [],
 };
-
-const mockProfitabilityMetrics: ProfitabilityMetrics = {
-  gross_profit: 83288,
-  gross_profit_margin: 65.3,
-  operating_profit: 28778,
-  operating_profit_margin: 22.6,
-  net_profit: 23528,
-  net_profit_margin: 18.4,
-  ebitda: 32450,
-  ebitda_margin: 25.4,
-  cost_of_goods_sold: 44292,
-  cogs_percentage: 34.7,
+const initialProfitabilityMetrics: ProfitabilityMetrics = {
+  gross_profit: 0,
+  gross_profit_margin: 0,
+  operating_profit: 0,
+  operating_profit_margin: 0,
+  net_profit: 0,
+  net_profit_margin: 0,
+  ebitda: 0,
+  ebitda_margin: 0,
+  cost_of_goods_sold: 0,
+  cogs_percentage: 0,
 };
-
-const mockCashFlowData: CashFlowData = {
-  opening_balance: 45680,
-  closing_balance: 58920,
-  net_cash_flow: 13240,
-  operating_cash_flow: 18760,
-  investing_cash_flow: -3200,
-  financing_cash_flow: -2320,
-  cash_flow_by_period: [
-    { period: "Week 1", inflow: 31895, outflow: 24680, net_flow: 7215, balance: 52895 },
-    { period: "Week 2", inflow: 34567, outflow: 26890, net_flow: 7677, balance: 60572 },
-    { period: "Week 3", inflow: 29876, outflow: 28450, net_flow: 1426, balance: 61998 },
-    { period: "Week 4", inflow: 31242, outflow: 25320, net_flow: 5922, balance: 67920 },
-  ],
+const initialCashFlowData: CashFlowData = {
+  opening_balance: 0,
+  closing_balance: 0,
+  net_cash_flow: 0,
+  operating_cash_flow: 0,
+  investing_cash_flow: 0,
+  financing_cash_flow: 0,
+  cash_flow_by_period: [],
 };
-
-const mockTaxDocuments: TaxDocument[] = [
-  {
-    id: "1",
-    document_type: "sales_tax",
-    title: "September 2025 Sales Tax Return",
-    tax_period: "September 2025",
-    amount: 7654,
-    due_date: "2025-10-20",
-    status: "pending",
-    created_at: "2025-09-01T00:00:00Z",
-  },
-  {
-    id: "2",
-    document_type: "payroll_tax",
-    title: "Q3 2025 Payroll Tax Filing",
-    tax_period: "Q3 2025",
-    amount: 12450,
-    due_date: "2025-10-31",
-    status: "filed",
-    created_at: "2025-07-01T00:00:00Z",
-  },
-];
-
-const mockBudgetPlan: BudgetPlan = {
-  id: "budget-2025",
-  name: "FY 2025 Operating Budget",
-  fiscal_year: "2025",
-  categories: [
-    { category: "Food Costs", budgeted_amount: 456000, spent_to_date: 342000, remaining: 114000, percentage_used: 75 },
-    { category: "Labor", budgeted_amount: 336000, spent_to_date: 268800, remaining: 67200, percentage_used: 80 },
-    { category: "Rent & Utilities", budgeted_amount: 144000, spent_to_date: 108000, remaining: 36000, percentage_used: 75 },
-    { category: "Marketing", budgeted_amount: 60000, spent_to_date: 52800, remaining: 7200, percentage_used: 88 },
-    { category: "Equipment", budgeted_amount: 42000, spent_to_date: 31500, remaining: 10500, percentage_used: 75 },
-  ],
-  total_budget: 1038000,
-  total_spent: 803100,
-  variance: -234900,
+const initialTaxDocuments: TaxDocument[] = [];
+const initialBudgetPlan: BudgetPlan = {
+  id: "",
+  name: "",
+  fiscal_year: "",
+  categories: [],
+  total_budget: 0,
+  total_spent: 0,
+  variance: 0,
   status: "active",
-  created_at: "2025-01-01T00:00:00Z",
-  updated_at: "2025-09-04T00:00:00Z",
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
 };
 
 const reportTypes = [
@@ -414,12 +351,12 @@ const FinancialReporting: React.FC = () => {
   
   const [selectedTab, setSelectedTab] = useState("overview");
   const [selectedPeriod, setSelectedPeriod] = useState("current_month");
-  const [revenueData] = useState<RevenueBreakdown>(mockRevenueBreakdown);
-  const [expenseData] = useState<ExpenseBreakdown>(mockExpenseBreakdown);
-  const [profitabilityData] = useState<ProfitabilityMetrics>(mockProfitabilityMetrics);
-  const [cashFlowData] = useState<CashFlowData>(mockCashFlowData);
-  const [taxDocuments] = useState<TaxDocument[]>(mockTaxDocuments);
-  const [budgetPlan] = useState<BudgetPlan>(mockBudgetPlan);
+  const [revenueData] = useState<RevenueBreakdown>(initialRevenueBreakdown);
+  const [expenseData] = useState<ExpenseBreakdown>(initialExpenseBreakdown);
+  const [profitabilityData] = useState<ProfitabilityMetrics>(initialProfitabilityMetrics);
+  const [cashFlowData] = useState<CashFlowData>(initialCashFlowData);
+  const [taxDocuments] = useState<TaxDocument[]>(initialTaxDocuments);
+  const [budgetPlan] = useState<BudgetPlan>(initialBudgetPlan);
   const [isLoading, setIsLoading] = useState(false);
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
 
