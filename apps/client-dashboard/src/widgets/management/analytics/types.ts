@@ -17,3 +17,15 @@ export interface AnalyticsResponse {
   meta?: AnalyticsMeta;
   success?: boolean;
 }
+
+// Stronger typed alias for external consumption (future extension point)
+export type WidgetAnalyticsData = WidgetAnalytics;
+
+// Normalized analytics error payload (used by reporter & tests)
+export interface NormalizedAnalyticsError {
+  code: string;
+  message: string;
+  correlationId?: string;
+  context?: Record<string, unknown>;
+  original?: { name?: string; message?: string };
+}

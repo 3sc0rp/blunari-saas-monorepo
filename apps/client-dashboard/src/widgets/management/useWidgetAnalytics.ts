@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { WidgetAnalytics, WidgetType } from './types';
 import { AnalyticsError, EdgeFunctionError, DatabaseError, AnalyticsErrorCode } from './analytics/errors';
 import { analyticsErrorReporter } from './analytics/errorReporting';
-import type { AnalyticsMeta, AnalyticsTimeRange, AnalyticsResponse } from './analytics/types';
+import type { AnalyticsMeta, AnalyticsTimeRange, AnalyticsResponse, WidgetAnalyticsData } from './analytics/types';
 
 /**
  * Rate Limiter for Analytics API calls
@@ -73,15 +73,30 @@ class AnalyticsRateLimiter {
 const analyticsRateLimiter = new AnalyticsRateLimiter();
 
 /**
+ * Debug logging gate – only emit verbose analytics logs when explicitly enabled.
+ * Set VITE_ANALYTICS_DEBUG=true (or process env) in development to inspect analytics flow.
+ * Errors and warnings still surface unconditionally.
+ */
+// Prefer Vite import.meta env but also fall back to process.env for test/runtime flexibility
+// NOTE: We intentionally do not tree-shake by inlining conditionals so toggling flag at runtime (test) works.
+// Access env flags defensively across build targets (Node in tests, browser in app)
+const RAW_DEBUG_FLAG = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_ANALYTICS_DEBUG) ||
+  (typeof process !== 'undefined' && typeof process.env !== 'undefined' ? (process.env as any).VITE_ANALYTICS_DEBUG : undefined);
+const ANALYTICS_DEBUG = String(RAW_DEBUG_FLAG).toLowerCase() === 'true';
+
+const debug = (...args: any[]) => { if (ANALYTICS_DEBUG) console.log(...args); };
+const debugWarn = (...args: any[]) => { if (ANALYTICS_DEBUG) console.warn(...args); };
+
+/**
  * Analytics Cache with TTL
  */
 class AnalyticsCache {
-  private cache = new Map<string, { data: WidgetAnalytics; timestamp: number; ttl: number }>();
+  private cache = new Map<string, { data: WidgetAnalyticsData; timestamp: number; ttl: number }>();
 
   /**
    * Get cached data if still valid
    */
-  get(key: string): WidgetAnalytics | null {
+  get(key: string): WidgetAnalyticsData | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
@@ -97,7 +112,7 @@ class AnalyticsCache {
   /**
    * Set cached data with TTL
    */
-  set(key: string, data: WidgetAnalytics, ttlMs: number = 5 * 60 * 1000): void { // 5 minutes default
+  set(key: string, data: WidgetAnalyticsData, ttlMs: number = 5 * 60 * 1000): void { // 5 minutes default
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -151,7 +166,7 @@ export interface UseWidgetAnalyticsOptions {
 
 export interface AnalyticsState {
   /** Current analytics data or null if loading/error */
-  data: WidgetAnalytics | null;
+  data: WidgetAnalyticsData | null;
   /** Whether data is currently being fetched */
   loading: boolean;
   /** Error message if fetch failed, null otherwise */
@@ -227,7 +242,7 @@ export function useWidgetAnalytics({
   const isAvailable = Boolean(tenantId && tenantSlug);
 
   const fetchAnalytics = useCallback(async (timeRange: AnalyticsTimeRange = '7d'): Promise<void> => {
-    console.log('🔍 Analytics hook parameters:', {
+  debug('🔍 Analytics hook parameters:', {
       tenantId,
       tenantSlug,
       widgetType,
@@ -239,7 +254,7 @@ export function useWidgetAnalytics({
     const cacheKey = `${tenantId}-${widgetType}-${timeRange}`;
     const cachedData = analyticsCache.get(cacheKey);
     if (cachedData) {
-      console.log('✅ Using cached analytics data');
+  debug('✅ Using cached analytics data');
       setState(prev => ({
         ...prev,
         data: cachedData,
@@ -255,11 +270,11 @@ export function useWidgetAnalytics({
     }
 
     // Join any in-flight request for the same key across components
-    (globalThis as any).__widgetAnalyticsInflight = (globalThis as any).__widgetAnalyticsInflight || new Map<string, Promise<WidgetAnalytics>>();
-    const inflightMap: Map<string, Promise<WidgetAnalytics>> = (globalThis as any).__widgetAnalyticsInflight;
+  (globalThis as any).__widgetAnalyticsInflight = (globalThis as any).__widgetAnalyticsInflight || new Map<string, Promise<WidgetAnalyticsData>>();
+  const inflightMap: Map<string, Promise<WidgetAnalyticsData>> = (globalThis as any).__widgetAnalyticsInflight;
     const existing = inflightMap.get(cacheKey);
     if (existing) {
-      console.log('⏳ Joining in-flight analytics fetch for key:', cacheKey);
+  debug('⏳ Joining in-flight analytics fetch for key:', cacheKey);
       try {
         const sharedData = await existing;
         analyticsCache.set(cacheKey, sharedData);
@@ -276,7 +291,7 @@ export function useWidgetAnalytics({
         }));
         return;
       } catch (e) {
-        console.warn('Shared analytics fetch failed, proceeding with fresh fetch');
+  debugWarn('Shared analytics fetch failed, proceeding with fresh fetch');
       }
     }
 
@@ -298,13 +313,13 @@ export function useWidgetAnalytics({
 
     // Prevent concurrent fetches
     if (isLoadingRef.current) {
-      console.log('Fetch already in progress, skipping');
+  debug('Fetch already in progress, skipping');
       return;
     }
 
     // First guard: not available case
     if (!isAvailable) {
-      console.log('Analytics not available, skipping fetch');
+  debug('Analytics not available, skipping fetch');
       setState(prev => ({
         ...prev,
         data: null,
@@ -316,7 +331,7 @@ export function useWidgetAnalytics({
 
     // Second guard: missing tenant info
     if (!tenantId || !tenantSlug) {
-      console.warn('⚠️ Analytics fetch skipped - missing tenant information:', {
+  debugWarn('⚠️ Analytics fetch skipped - missing tenant information:', {
         tenantId: !!tenantId,
         tenantSlug: !!tenantSlug
       });
@@ -333,7 +348,7 @@ export function useWidgetAnalytics({
   setState(prev => ({ ...prev, loading: true, error: null, lastErrorCode: null }));
 
     try {
-      console.log(`Fetching REAL analytics for tenant ${tenantId}, widget ${widgetType}`);
+  debug(`Fetching REAL analytics for tenant ${tenantId}, widget ${widgetType}`);
       
       // For development/demo purposes, use direct database fallback if tenant looks like demo/test or tenantId not UUID
       if (!forceEdge && (
@@ -342,7 +357,7 @@ export function useWidgetAnalytics({
         (tenantSlug && /demo|test/i.test(tenantSlug)) ||
         !tenantId.match(/^[0-9a-f-]{36}$/i)
       )) {
-        console.log('🎭 Demo tenant detected, using database fallback');
+  debug('🎭 Demo tenant detected, using database fallback');
         const promise = fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
         inflightMap.set(cacheKey, promise);
         try {
@@ -371,7 +386,7 @@ export function useWidgetAnalytics({
   sessionCheckedRef.current = true;
       
       if (authError || !session) {
-        console.warn('⚠️ No authentication available, using database fallback');
+  debugWarn('⚠️ No authentication available, using database fallback');
         // Don't throw error, just use fallback
         const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
         setState({
@@ -391,13 +406,13 @@ export function useWidgetAnalytics({
       // Retry logic for Edge Function
       const maxAttempts = process.env.NODE_ENV === 'test' ? 1 : 3;
       let lastErr: any = null;
-      let analytics: WidgetAnalytics | null = null;
+  let analytics: WidgetAnalyticsData | null = null;
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const cid = `${correlationBase.current}:a${attempt}`;
         try {
           // De-duplicate concurrent Edge requests across components by cacheKey
-          (globalThis as any).__widgetAnalyticsInflight = (globalThis as any).__widgetAnalyticsInflight || new Map<string, Promise<WidgetAnalytics>>();
-          const inflightMap: Map<string, Promise<WidgetAnalytics>> = (globalThis as any).__widgetAnalyticsInflight;
+          (globalThis as any).__widgetAnalyticsInflight = (globalThis as any).__widgetAnalyticsInflight || new Map<string, Promise<WidgetAnalyticsData>>();
+          const inflightMap: Map<string, Promise<WidgetAnalyticsData>> = (globalThis as any).__widgetAnalyticsInflight;
           let inflight = inflightMap.get(cacheKey);
           if (!inflight) {
             inflight = (async () => {
@@ -406,7 +421,7 @@ export function useWidgetAnalytics({
             })();
             inflightMap.set(cacheKey, inflight);
           } else {
-            console.log('⏳ Joining in-flight Edge analytics fetch for key:', cacheKey);
+            debug('⏳ Joining in-flight Edge analytics fetch for key:', cacheKey);
           }
           const realData = await inflight;
           analytics = realData;
@@ -428,22 +443,22 @@ export function useWidgetAnalytics({
               time_range: timeRange
             }
           });
-          console.log('✅ Successfully loaded real analytics data (attempt', attempt, ')');
+          debug('✅ Successfully loaded real analytics data (attempt', attempt, ')');
           break;
         } catch (edgeErr: any) {
           lastErr = edgeErr;
-          console.warn('Edge analytics attempt failed', { attempt, cid, message: edgeErr?.message });
+          debugWarn('Edge analytics attempt failed', { attempt, cid, message: edgeErr?.message });
           if (attempt < maxAttempts) {
             await new Promise(r => setTimeout(r, attempt * 250));
           }
         } finally {
-          const inflightMap: Map<string, Promise<WidgetAnalytics>> | undefined = (globalThis as any).__widgetAnalyticsInflight;
+          const inflightMap: Map<string, Promise<WidgetAnalyticsData>> | undefined = (globalThis as any).__widgetAnalyticsInflight;
           inflightMap?.delete?.(cacheKey);
         }
       }
 
       if (!analytics) {
-        console.log('Switching to direct-db fallback after edge retries');
+  debug('Switching to direct-db fallback after edge retries');
         
         // Report the edge function error since we're falling back to database
         const analyticsError = lastErr instanceof AnalyticsError ? lastErr : new AnalyticsError(
@@ -494,7 +509,7 @@ export function useWidgetAnalytics({
       
       // Enhanced error handling with fallback attempt
       try {
-        console.log('🔄 Attempting direct database fallback...');
+  debug('🔄 Attempting direct database fallback...');
         const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
         
         setState({
@@ -508,7 +523,7 @@ export function useWidgetAnalytics({
           meta: { estimation: true, time_range: timeRange }
         });
         
-        console.log('✅ Successfully loaded analytics via database fallback');
+  debug('✅ Successfully loaded analytics via database fallback');
       } catch (fallbackError) {
         console.error('❌ Database fallback also failed:', fallbackError);
         
@@ -530,7 +545,7 @@ export function useWidgetAnalytics({
 
   // Auto-refresh effect
   useEffect(() => {
-    console.log('📊 Analytics effect triggered:', {
+  debug('📊 Analytics effect triggered:', {
       isAvailable,
       tenantId: !!tenantId,
       tenantSlug: !!tenantSlug,
@@ -539,12 +554,12 @@ export function useWidgetAnalytics({
 
     // Guard against recursive fetch attempts
     if (state.loading) {
-      console.log('Already fetching analytics, skipping');
+  debug('Already fetching analytics, skipping');
       return;
     }
 
     if (!isAvailable) {
-      console.log('🚫 Analytics not available - setting empty state');
+  debug('🚫 Analytics not available - setting empty state');
       setState(prev => ({
         ...prev,
         data: null,
@@ -556,7 +571,7 @@ export function useWidgetAnalytics({
 
     // Only fetch if we have valid tenant data
     if (!tenantId || !tenantSlug || !widgetType) {
-      console.log('🚫 Analytics fetch skipped - missing required data:', {
+  debug('🚫 Analytics fetch skipped - missing required data:', {
         tenantId: !!tenantId,
         tenantSlug: !!tenantSlug,
         widgetType: !!widgetType
@@ -564,7 +579,7 @@ export function useWidgetAnalytics({
       return;
     }
 
-    console.log('✅ Starting analytics fetch...');
+  debug('✅ Starting analytics fetch...');
     // Initial fetch with error handling
     fetchAnalytics().catch(err => {
       console.error('Failed to fetch analytics:', err);
@@ -585,7 +600,7 @@ export function useWidgetAnalytics({
     }, refreshInterval);
 
     return () => {
-      console.log('🧹 Cleaning up analytics interval');
+  debug('🧹 Cleaning up analytics interval');
       clearInterval(interval);
     };
   }, [fetchAnalytics, refreshInterval, isAvailable, tenantId, tenantSlug, widgetType]);
@@ -817,7 +832,7 @@ async function fetchAnalyticsDirectly(
   tenantId: string,
   widgetType: WidgetType,
   timeRange: AnalyticsTimeRange = '7d'
-): Promise<WidgetAnalytics> {
+): Promise<WidgetAnalyticsData> {
   
   console.log('Fetching analytics directly from database...');
   
@@ -848,7 +863,7 @@ async function fetchAnalyticsDirectly(
     ).length;
 
     // Only compute metrics we can derive directly; leave others as 0/undefined
-    const analytics: WidgetAnalytics = {
+  const analytics: WidgetAnalyticsData = {
       totalViews: 0, // Unknown without dedicated events table
       totalClicks: 0, // Unknown without click tracking
       conversionRate: 0, // Cannot compute without views baseline

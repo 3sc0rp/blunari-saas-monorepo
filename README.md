@@ -176,3 +176,37 @@ Common configuration is managed in `packages/config/src/index.ts`
 ---
 
 For detailed setup instructions and troubleshooting, see the individual app README files.
+
+## ✅ Real Data Only Policy
+
+All application dashboards and pages have been purged of mock / fabricated datasets. Any UI sections that previously displayed synthetic values now render empty states until real backend data is integrated. This ensures product decisions, QA, and stakeholder reviews are never influenced by artificial numbers.
+
+### Scope Covered
+- Widget analytics & versions
+- Inventory, Staff, Waitlist, Kitchen Display
+- Reservations & Table Optimization
+- Financial Reporting & Advanced Analytics
+- AI Business Insights (insights, predictions, alerts, models)
+- Performance Optimization (metrics, recommendations, benchmarks, automation)
+- Mobile App Center (no pre-seeded demo apps)
+
+### Implementation Pattern
+- Replaced `mock*` constants with `initial*` empty baselines (arrays/zeroed objects)
+- Added `TODO(<area>-api)` comments where backend integration hooks are expected
+- Guarded calculations (division by zero, averages) and replaced synthetic fallbacks with neutral values (0 / empty lists)
+- Introduced a shared `EmptyState` component for consistent UX messaging
+
+### Rationale
+Using mock numbers in production-facing UI creates risk of:
+- Misinterpreted metrics during demos or validation
+- Accidental reliance on inflated baselines when implementing alerts/thresholds
+- Test flakiness if synthetic assumptions drift from schema reality
+
+### Next Steps (Backend)
+Integrations expected to hydrate the empty baselines:
+- Supabase / Edge Functions for operational metrics & analytics
+- AI service endpoints for insights, anomaly detection, forecasting
+- Streaming/realtime channels for live metrics (where noted by TODOs)
+
+Until those are wired, empty states are intentional and signal integration priority rather than failure.
+

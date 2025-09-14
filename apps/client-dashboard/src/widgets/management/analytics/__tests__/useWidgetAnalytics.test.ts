@@ -217,4 +217,42 @@ describe('useWidgetAnalytics', () => {
     expect(result.current.error).toContain('Analytics unavailable'); // Explicit error surfaced
     expect(result.current.mode).toBeUndefined(); // No mode set on total failure
   });
+
+  it('should not contain synthetic placeholder strings in successful analytics data', async () => {
+    const realTenantId = '550e8400-e29b-41d4-a716-446655440010';
+
+    const edgeData = {
+      totalViews: 10,
+      totalClicks: 5,
+      conversionRate: 50,
+      avgSessionDuration: 120,
+      totalBookings: 2,
+      completionRate: 100,
+      topSources: [{ source: 'direct', count: 10 }],
+      dailyStats: []
+    };
+
+    (supabase.functions.invoke as any).mockResolvedValueOnce({
+      data: { success: true, data: edgeData },
+      error: null
+    });
+
+    (supabase.auth.getSession as any).mockResolvedValueOnce({
+      data: { session: { access_token: 'test-token' } },
+      error: null
+    });
+
+    const { result } = renderHook(() => useWidgetAnalytics({
+      tenantId: realTenantId,
+      tenantSlug: 'analytics-real',
+      widgetType: 'booking',
+      forceEdge: true
+    }));
+
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+
+    const disallowed = /(mock|placeholder|demo|sample)/i;
+    const serialized = JSON.stringify(result.current.data || {});
+    expect(disallowed.test(serialized)).toBe(false);
+  });
 });

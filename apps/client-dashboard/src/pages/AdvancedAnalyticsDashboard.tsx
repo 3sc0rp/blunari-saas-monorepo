@@ -243,7 +243,7 @@ export interface AnalyticsReport {
   export_formats: string[];
 }
 
-// Mock data for advanced analytics
+// Analytics period options (kept – UI control only)
 const analyticsPeriods: AnalyticsPeriod[] = [
   { label: "Today", value: "today", days: 1 },
   { label: "Yesterday", value: "yesterday", days: 1 },
@@ -257,184 +257,45 @@ const analyticsPeriods: AnalyticsPeriod[] = [
   { label: "Custom Range", value: "custom", days: 0 },
 ];
 
-const mockKPIMetrics: KPIMetric[] = [
-  {
-    id: "total_revenue",
-    name: "Total Revenue",
-    value: 127580,
-    previous_value: 119200,
-    change_percentage: 7.03,
-    trend: "up",
-    format: "currency",
-    category: "revenue",
-    icon: DollarSign,
-    color: "#10b981",
-    target: 150000,
-  },
-  {
-    id: "orders_count",
-    name: "Total Orders",
-    value: 2847,
-    previous_value: 2654,
-    change_percentage: 7.27,
-    trend: "up",
-    format: "number",
-    category: "operations",
-    icon: BarChart3,
-    color: "#3b82f6",
-  },
-  {
-    id: "avg_order_value",
-    name: "Average Order Value",
-    value: 44.82,
-    previous_value: 44.91,
-    change_percentage: -0.20,
-    trend: "down",
-    format: "currency",
-    category: "revenue",
-    icon: Calculator,
-    color: "#f59e0b",
-  },
-  {
-    id: "customer_satisfaction",
-    name: "Customer Satisfaction",
-    value: 4.7,
-    previous_value: 4.5,
-    change_percentage: 4.44,
-    trend: "up",
-    format: "number",
-    category: "customer",
-    icon: Star,
-    color: "#8b5cf6",
-    unit: "/5",
-  },
-  {
-    id: "table_turnover",
-    name: "Table Turnover Rate",
-    value: 3.2,
-    previous_value: 2.9,
-    change_percentage: 10.34,
-    trend: "up",
-    format: "number",
-    category: "efficiency",
-    icon: RefreshCw,
-    color: "#06b6d4",
-    unit: " turns/day",
-  },
-  {
-    id: "profit_margin",
-    name: "Profit Margin",
-    value: 18.5,
-    previous_value: 16.8,
-    change_percentage: 10.12,
-    trend: "up",
-    format: "percentage",
-    category: "revenue",
-    icon: TrendingUp,
-    color: "#10b981",
-    target: 25,
-  },
-  {
-    id: "customer_retention",
-    name: "Customer Retention",
-    value: 78.5,
-    previous_value: 75.2,
-    change_percentage: 4.39,
-    trend: "up",
-    format: "percentage",
-    category: "customer",
-    icon: Users,
-    color: "#ef4444",
-    target: 85,
-  },
-  {
-    id: "avg_prep_time",
-    name: "Avg Prep Time",
-    value: 18.5,
-    previous_value: 21.2,
-    change_percentage: -12.74,
-    trend: "up",
-    format: "time",
-    category: "efficiency",
-    icon: Clock,
-    color: "#f97316",
-    unit: " min",
-  },
-];
-
-const mockRevenueAnalytics: RevenueAnalytics = {
-  total_revenue: 127580,
-  revenue_growth: 7.03,
-  revenue_by_channel: [
-    { channel: "Dine-in", amount: 76548, percentage: 60, growth: 5.2 },
-    { channel: "Takeaway", amount: 31895, percentage: 25, growth: 12.8 },
-    { channel: "Delivery", amount: 19137, percentage: 15, growth: 8.4 },
-  ],
-  revenue_by_time: [
-    { date: "2025-08-28", revenue: 4250, orders: 95, average_order_value: 44.74 },
-    { date: "2025-08-29", revenue: 4680, orders: 102, average_order_value: 45.88 },
-    { date: "2025-08-30", revenue: 5120, orders: 118, average_order_value: 43.39 },
-    { date: "2025-08-31", revenue: 4890, orders: 108, average_order_value: 45.28 },
-    { date: "2025-09-01", revenue: 5350, orders: 125, average_order_value: 42.80 },
-    { date: "2025-09-02", revenue: 5890, orders: 135, average_order_value: 43.63 },
-    { date: "2025-09-03", revenue: 6120, orders: 142, average_order_value: 43.10 },
-  ],
-  top_revenue_items: [
-    { item_name: "Signature Ribeye Steak", quantity_sold: 89, revenue: 3560, profit_margin: 65 },
-    { item_name: "Truffle Pasta", quantity_sold: 156, revenue: 3432, profit_margin: 72 },
-    { item_name: "Craft Beer Selection", quantity_sold: 234, revenue: 2808, profit_margin: 78 },
-    { item_name: "Chef's Special Pizza", quantity_sold: 98, revenue: 2450, profit_margin: 68 },
-  ],
-  hourly_revenue: [
-    { hour: 11, revenue: 1250, orders: 28 },
-    { hour: 12, revenue: 2890, orders: 65 },
-    { hour: 13, revenue: 3450, orders: 78 },
-    { hour: 18, revenue: 4200, orders: 89 },
-    { hour: 19, revenue: 5680, orders: 125 },
-    { hour: 20, revenue: 4850, orders: 102 },
-    { hour: 21, revenue: 3200, orders: 68 },
-  ],
+// Real-data-only baselines (empty). To be hydrated via backend analytics service.
+// TODO(advanced-analytics-api): wire up queries for KPI, revenue, customer & financial metrics.
+const initialKPIMetrics: KPIMetric[] = [];
+const initialRevenueAnalytics: RevenueAnalytics = {
+  total_revenue: 0,
+  revenue_growth: 0,
+  revenue_by_channel: [],
+  revenue_by_time: [],
+  top_revenue_items: [],
+  hourly_revenue: [],
 };
-
-const mockCustomerAnalytics: CustomerAnalytics = {
-  total_customers: 3847,
-  new_customers: 287,
-  returning_customers: 3560,
-  customer_retention_rate: 78.5,
-  lifetime_value: 485.60,
-  acquisition_cost: 28.40,
-  churn_rate: 21.5,
-  satisfaction_score: 4.7,
-  loyalty_members: 1523,
-  customer_segments: [
-    { segment: "VIP", count: 189, percentage: 4.9, avg_order_value: 78.50 },
-    { segment: "Regular", count: 2456, percentage: 63.8, avg_order_value: 42.30 },
-    { segment: "Occasional", count: 968, percentage: 25.2, avg_order_value: 35.20 },
-    { segment: "New", count: 234, percentage: 6.1, avg_order_value: 38.90 },
-  ],
-  cohort_analysis: [
-    { cohort: "Jan 2025", size: 145, retention_rates: [100, 68, 52, 41, 35, 32] },
-    { cohort: "Feb 2025", size: 167, retention_rates: [100, 72, 56, 44, 38] },
-    { cohort: "Mar 2025", size: 189, retention_rates: [100, 75, 58, 46] },
-    { cohort: "Apr 2025", size: 198, retention_rates: [100, 78, 61] },
-  ],
+const initialCustomerAnalytics: CustomerAnalytics = {
+  total_customers: 0,
+  new_customers: 0,
+  returning_customers: 0,
+  customer_retention_rate: 0,
+  lifetime_value: 0,
+  acquisition_cost: 0,
+  churn_rate: 0,
+  satisfaction_score: 0,
+  loyalty_members: 0,
+  customer_segments: [],
+  cohort_analysis: [],
 };
-
-const mockFinancialMetrics: FinancialMetrics = {
-  gross_revenue: 127580,
-  net_revenue: 125340,
-  total_costs: 102180,
-  gross_profit: 25400,
-  net_profit: 23160,
-  profit_margin: 18.5,
-  operating_expenses: 45680,
-  cost_of_goods_sold: 38240,
-  labor_costs: 18260,
-  overhead_costs: 12480,
-  tax_amount: 2240,
-  cash_flow: 20920,
-  break_even_point: 89560,
-  roi: 22.7,
+const initialFinancialMetrics: FinancialMetrics = {
+  gross_revenue: 0,
+  net_revenue: 0,
+  total_costs: 0,
+  gross_profit: 0,
+  net_profit: 0,
+  profit_margin: 0,
+  operating_expenses: 0,
+  cost_of_goods_sold: 0,
+  labor_costs: 0,
+  overhead_costs: 0,
+  tax_amount: 0,
+  cash_flow: 0,
+  break_even_point: 0,
+  roi: 0,
 };
 
 const AdvancedAnalyticsDashboard: React.FC = () => {
@@ -442,10 +303,10 @@ const AdvancedAnalyticsDashboard: React.FC = () => {
   const { toast } = useToast();
   
   const [selectedPeriod, setSelectedPeriod] = useState<AnalyticsPeriod>(analyticsPeriods[2]); // Last 7 Days
-  const [kpiMetrics] = useState<KPIMetric[]>(mockKPIMetrics);
-  const [revenueAnalytics] = useState<RevenueAnalytics>(mockRevenueAnalytics);
-  const [customerAnalytics] = useState<CustomerAnalytics>(mockCustomerAnalytics);
-  const [financialMetrics] = useState<FinancialMetrics>(mockFinancialMetrics);
+  const [kpiMetrics] = useState<KPIMetric[]>(initialKPIMetrics);
+  const [revenueAnalytics] = useState<RevenueAnalytics>(initialRevenueAnalytics);
+  const [customerAnalytics] = useState<CustomerAnalytics>(initialCustomerAnalytics);
+  const [financialMetrics] = useState<FinancialMetrics>(initialFinancialMetrics);
   const [selectedTab, setSelectedTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);

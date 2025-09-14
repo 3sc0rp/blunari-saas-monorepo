@@ -151,228 +151,13 @@ export interface AutomationRule {
   created_at: string;
 }
 
-// Mock data
-const mockPerformanceMetrics: PerformanceMetric[] = [
-  {
-    id: "1",
-    name: "Average Order Processing Time",
-    category: "efficiency",
-    current_value: 8.5,
-    target_value: 6.0,
-    unit: "minutes",
-    trend: "down",
-    priority: "high",
-    description: "Time from order placement to kitchen start",
-    recommendations: [
-      "Streamline order entry process",
-      "Implement automated order routing",
-      "Optimize kitchen workflow"
-    ],
-    last_updated: "2025-01-04T10:30:00Z"
-  },
-  {
-    id: "2",
-    name: "Customer Satisfaction Score",
-    category: "customer_satisfaction",
-    current_value: 4.2,
-    target_value: 4.5,
-    unit: "out of 5",
-    trend: "up",
-    priority: "high",
-    description: "Average customer rating across all touchpoints",
-    recommendations: [
-      "Improve service training",
-      "Reduce wait times",
-      "Enhance food quality consistency"
-    ],
-    last_updated: "2025-01-04T09:15:00Z"
-  },
-  {
-    id: "3",
-    name: "Food Cost Percentage",
-    category: "financial",
-    current_value: 32.5,
-    target_value: 28.0,
-    unit: "%",
-    trend: "stable",
-    priority: "medium",
-    description: "Food costs as percentage of revenue",
-    recommendations: [
-      "Optimize portion sizes",
-      "Negotiate better supplier rates",
-      "Reduce food waste"
-    ],
-    last_updated: "2025-01-04T08:45:00Z"
-  },
-  {
-    id: "4",
-    name: "Table Turnover Rate",
-    category: "operational",
-    current_value: 2.8,
-    target_value: 3.2,
-    unit: "turns/day",
-    trend: "up",
-    priority: "medium",
-    description: "Average number of times tables are occupied per day",
-    recommendations: [
-      "Optimize seating arrangements",
-      "Improve service speed",
-      "Implement reservation system"
-    ],
-    last_updated: "2025-01-04T11:00:00Z"
-  },
-  {
-    id: "5",
-    name: "Staff Productivity Index",
-    category: "staff_productivity",
-    current_value: 85,
-    target_value: 90,
-    unit: "score",
-    trend: "up",
-    priority: "medium",
-    description: "Composite score of staff efficiency metrics",
-    recommendations: [
-      "Provide additional training",
-      "Optimize work schedules",
-      "Implement performance incentives"
-    ],
-    last_updated: "2025-01-04T12:20:00Z"
-  },
-  {
-    id: "6",
-    name: "Energy Efficiency Score",
-    category: "sustainability",
-    current_value: 72,
-    target_value: 85,
-    unit: "score",
-    trend: "stable",
-    priority: "low",
-    description: "Energy consumption efficiency rating",
-    recommendations: [
-      "Upgrade to LED lighting",
-      "Install smart thermostats",
-      "Regular equipment maintenance"
-    ],
-    last_updated: "2025-01-04T07:30:00Z"
-  }
-];
-
-const mockRecommendations: OptimizationRecommendation[] = [
-  {
-    id: "1",
-    title: "Implement Smart Kitchen Display System",
-    category: "efficiency",
-    description: "Deploy AI-powered kitchen displays to optimize order preparation sequence and reduce wait times",
-    impact_level: "high",
-    effort_required: "medium",
-    potential_savings: 1250,
-    implementation_time: "2-3 weeks",
-    priority_score: 95,
-    status: "new",
-    created_at: "2025-01-04T09:00:00Z",
-    updated_at: "2025-01-04T09:00:00Z"
-  },
-  {
-    id: "2",
-    title: "Optimize Menu Engineering",
-    category: "financial",
-    description: "Analyze item profitability and popularity to redesign menu layout and pricing strategy",
-    impact_level: "high",
-    effort_required: "low",
-    potential_savings: 2800,
-    implementation_time: "1 week",
-    priority_score: 92,
-    status: "in_progress",
-    created_at: "2025-01-03T14:30:00Z",
-    updated_at: "2025-01-04T10:15:00Z"
-  },
-  {
-    id: "3",
-    title: "Staff Cross-Training Program",
-    category: "staff_productivity",
-    description: "Train staff in multiple positions to improve flexibility and reduce bottlenecks during peak hours",
-    impact_level: "medium",
-    effort_required: "high",
-    potential_savings: 950,
-    implementation_time: "4-6 weeks",
-    priority_score: 78,
-    status: "new",
-    created_at: "2025-01-02T16:45:00Z",
-    updated_at: "2025-01-02T16:45:00Z"
-  },
-  {
-    id: "4",
-    title: "Predictive Inventory Management",
-    category: "operational",
-    description: "Implement AI-driven inventory forecasting to reduce waste and optimize stock levels",
-    impact_level: "medium",
-    effort_required: "medium",
-    potential_savings: 1800,
-    implementation_time: "3-4 weeks",
-    priority_score: 85,
-    status: "new",
-    created_at: "2025-01-01T11:20:00Z",
-    updated_at: "2025-01-01T11:20:00Z"
-  }
-];
-
-const mockAlerts: PerformanceAlert[] = [
-  {
-    id: "1",
-    metric_id: "1",
-    metric_name: "Average Order Processing Time",
-    alert_type: "threshold",
-    severity: "critical",
-    message: "Order processing time has exceeded 10 minutes for the last hour",
-    triggered_at: "2025-01-04T13:45:00Z",
-    acknowledged: false,
-    resolved: false
-  },
-  {
-    id: "2",
-    metric_id: "3",
-    metric_name: "Food Cost Percentage",
-    alert_type: "trend",
-    severity: "warning",
-    message: "Food costs have increased by 5% over the past week",
-    triggered_at: "2025-01-04T08:30:00Z",
-    acknowledged: true,
-    resolved: false
-  }
-];
-
-const mockBenchmarkData: BenchmarkData[] = [
-  { category: "Order Processing Speed", our_performance: 8.5, industry_average: 9.2, top_performers: 6.8, unit: "minutes", ranking_percentile: 65 },
-  { category: "Customer Satisfaction", our_performance: 4.2, industry_average: 4.1, top_performers: 4.7, unit: "out of 5", ranking_percentile: 55 },
-  { category: "Food Cost %", our_performance: 32.5, industry_average: 30.5, top_performers: 26.0, unit: "%", ranking_percentile: 35 },
-  { category: "Table Turnover", our_performance: 2.8, industry_average: 2.9, top_performers: 3.5, unit: "turns/day", ranking_percentile: 48 },
-  { category: "Staff Productivity", our_performance: 85, industry_average: 82, top_performers: 95, unit: "score", ranking_percentile: 70 }
-];
-
-const mockAutomationRules: AutomationRule[] = [
-  {
-    id: "1",
-    name: "High Wait Time Alert",
-    description: "Send alert when average wait time exceeds 15 minutes",
-    trigger_condition: "wait_time > 15 minutes",
-    action: "Send notification to manager",
-    is_active: true,
-    last_triggered: "2025-01-04T12:30:00Z",
-    trigger_count: 8,
-    created_at: "2025-01-01T00:00:00Z"
-  },
-  {
-    id: "2",
-    name: "Low Inventory Auto-Order",
-    description: "Automatically place orders when inventory falls below threshold",
-    trigger_condition: "inventory_level < safety_stock",
-    action: "Generate purchase order",
-    is_active: true,
-    last_triggered: "2025-01-03T16:45:00Z",
-    trigger_count: 23,
-    created_at: "2025-01-01T00:00:00Z"
-  }
-];
+// Real-data-only baselines (empty) replacing prior mock performance datasets.
+// TODO(performance-api): fetch metrics, recommendations, alerts, benchmarks, automation rules.
+const initialPerformanceMetrics: PerformanceMetric[] = [];
+const initialRecommendations: OptimizationRecommendation[] = [];
+const initialAlerts: PerformanceAlert[] = [];
+const initialBenchmarkData: BenchmarkData[] = [];
+const initialAutomationRules: AutomationRule[] = [];
 
 const PerformanceOptimization: React.FC = () => {
   const { tenant, isLoading: tenantLoading } = useTenant();
@@ -380,11 +165,11 @@ const PerformanceOptimization: React.FC = () => {
   
   const [selectedTab, setSelectedTab] = useState("overview");
   const [selectedCategory, setSelectedCategory] = useState<PerformanceCategory | "all">("all");
-  const [metrics] = useState<PerformanceMetric[]>(mockPerformanceMetrics);
-  const [recommendations] = useState<OptimizationRecommendation[]>(mockRecommendations);
-  const [alerts] = useState<PerformanceAlert[]>(mockAlerts);
-  const [benchmarkData] = useState<BenchmarkData[]>(mockBenchmarkData);
-  const [automationRules] = useState<AutomationRule[]>(mockAutomationRules);
+  const [metrics] = useState<PerformanceMetric[]>(initialPerformanceMetrics);
+  const [recommendations] = useState<OptimizationRecommendation[]>(initialRecommendations);
+  const [alerts] = useState<PerformanceAlert[]>(initialAlerts);
+  const [benchmarkData] = useState<BenchmarkData[]>(initialBenchmarkData);
+  const [automationRules] = useState<AutomationRule[]>(initialAutomationRules);
   const [isLoading, setIsLoading] = useState(false);
   const [showRecommendationDialog, setShowRecommendationDialog] = useState(false);
   const [selectedRecommendation, setSelectedRecommendation] = useState<OptimizationRecommendation | null>(null);
@@ -398,7 +183,9 @@ const PerformanceOptimization: React.FC = () => {
   const criticalAlerts = activeAlerts.filter(alert => alert.severity === "critical");
 
   const overallPerformanceScore = useMemo(() => {
+    if (!metrics.length) return 0;
     const scores = metrics.map(metric => {
+      if (metric.target_value === 0) return 0;
       const progress = (metric.current_value / metric.target_value) * 100;
       return Math.min(progress, 100);
     });
@@ -675,6 +462,11 @@ const PerformanceOptimization: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {!metrics.length && (
+                    <div className="text-sm text-muted-foreground text-center py-6">
+                      No performance metrics yet. Metrics will appear once data collection is enabled.
+                    </div>
+                  )}
                   {metrics.slice(0, 4).map((metric) => {
                     const IconComponent = getCategoryIcon(metric.category);
                     const progress = Math.min((metric.current_value / metric.target_value) * 100, 100);
@@ -711,6 +503,11 @@ const PerformanceOptimization: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
+                  {!recommendations.length && (
+                    <div className="text-sm text-muted-foreground text-center py-6">
+                      No recommendations generated. Optimization suggestions will appear after analytics runs.
+                    </div>
+                  )}
                   {recommendations
                     .sort((a, b) => b.priority_score - a.priority_score)
                     .slice(0, 3)
@@ -756,6 +553,13 @@ const PerformanceOptimization: React.FC = () => {
         <TabsContent value="metrics" className="space-y-6">
           {/* Performance Metrics Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            {!filteredMetrics.length && (
+              <Card className="col-span-full">
+                <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                  No metrics to display. Add data sources or wait for ingestion.
+                </CardContent>
+              </Card>
+            )}
             {filteredMetrics.map((metric) => {
               const IconComponent = getCategoryIcon(metric.category);
               const progress = Math.min((metric.current_value / metric.target_value) * 100, 100);
@@ -834,6 +638,11 @@ const PerformanceOptimization: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {!recommendations.length && (
+                  <div className="p-6 text-center text-sm text-muted-foreground">
+                    No optimization recommendations yet.
+                  </div>
+                )}
                 {recommendations.map((rec) => (
                   <div key={rec.id} className="p-4 border rounded-lg">
                     <div className="flex items-start justify-between">
@@ -918,6 +727,11 @@ const PerformanceOptimization: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
+                {!benchmarkData.length && (
+                  <div className="p-6 text-center text-sm text-muted-foreground">
+                    No benchmark data available. Benchmark comparisons will display after integration.
+                  </div>
+                )}
                 {benchmarkData.map((benchmark) => (
                   <div key={benchmark.category} className="space-y-3">
                     <h4 className="font-semibold">{benchmark.category}</h4>
@@ -978,6 +792,11 @@ const PerformanceOptimization: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {!automationRules.length && (
+                  <div className="p-6 text-center text-sm text-muted-foreground">
+                    No automation rules configured.
+                  </div>
+                )}
                 {automationRules.map((rule) => (
                   <div key={rule.id} className="p-4 border rounded-lg">
                     <div className="flex items-start justify-between">

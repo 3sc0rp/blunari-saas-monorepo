@@ -225,84 +225,14 @@ const FEATURE_TEMPLATES: AppFeatureTemplate[] = [
   }
 ];
 
-// Mock data for demonstration
-const MOCK_APPS: MobileAppConfig[] = [
-  {
-    id: '1',
-    tenant_id: 'demo-tenant',
-    app_name: 'Demo Restaurant Customer App',
-    app_type: 'customer',
-    platform: 'pwa',
-    status: 'published',
-    pwa_manifest: {
-      name: 'Demo Restaurant',
-      short_name: 'Demo Restaurant',
-      description: 'Order delicious food from Demo Restaurant',
-      start_url: '/',
-      display: 'standalone',
-      orientation: 'portrait',
-      theme_color: '#3b82f6',
-      background_color: '#ffffff',
-      categories: ['food', 'lifestyle'],
-      icons: [
-        {
-          src: '/icons/icon-192x192.png',
-          sizes: '192x192',
-          type: 'image/png'
-        },
-        {
-          src: '/icons/icon-512x512.png',
-          sizes: '512x512',
-          type: 'image/png'
-        }
-      ]
-    },
-    branding: {
-      primary_color: '#3b82f6',
-      secondary_color: '#1e40af',
-      logo_url: '/logo.png'
-    },
-    features: {
-      offline_support: true,
-      push_notifications: true,
-      location_services: true,
-      camera_access: false,
-      payment_integration: true,
-      biometric_auth: false,
-      app_shortcuts: true,
-      background_sync: true
-    },
-    content: {
-      welcome_message: 'Welcome to Demo Restaurant! Order your favorite meals with ease.',
-      privacy_policy_url: '/privacy',
-      terms_of_service_url: '/terms',
-      support_email: 'support@demorestaurant.com',
-      app_store_description: 'Experience the best of Demo Restaurant with our mobile app.'
-    },
-    build_config: {
-      version: '1.2.0',
-      build_number: 15,
-      min_os_version: '13.0',
-      bundle_id: 'com.demorestaurant.app'
-    },
-    analytics: {
-      install_count: 1247,
-      active_users_daily: 89,
-      active_users_monthly: 456,
-      retention_rate_7d: 72,
-      avg_session_duration: 4.2,
-      crash_rate: 0.1
-    },
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    published_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString()
-  }
-];
+// Real-data-only baseline: start with no apps until backend provides configurations.
+// TODO(mobile-apps-api): fetch tenant mobile app configs & analytics from backend service.
+const INITIAL_APPS: MobileAppConfig[] = [];
 
 export default function MobileAppCenter() {
   const { tenant } = useTenant();
   const { toast } = useToast();
-  const [apps, setApps] = useState<MobileAppConfig[]>(MOCK_APPS);
+  const [apps, setApps] = useState<MobileAppConfig[]>(INITIAL_APPS);
   const [selectedApp, setSelectedApp] = useState<MobileAppConfig | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

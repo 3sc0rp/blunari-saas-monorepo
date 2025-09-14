@@ -68,3 +68,58 @@ npm run build
 ## Custom Domain Setup
 
 Configure your custom domain through your hosting provider's dashboard.
+
+## Real Data Only Policy
+
+This dashboard intentionally does not fabricate, simulate, or backfill analytics or operational data. If real data is unavailable (e.g. Edge Function + DB failure), components render empty states or explicit error messages rather than synthetic placeholders.
+
+Key guarantees:
+
+- No preview/demo analytics mode.
+- No randomly generated metrics in widgets.
+- Fallback chain: Edge Function → Direct DB query → Empty state (never synthetic).
+- Tests assert absence of placeholder strings like `mock`, `demo`, `sample`, `placeholder` in analytics payloads.
+
+## Analytics Debug Logging
+
+Verbose analytics lifecycle logs are gated behind an opt-in environment flag to avoid noisy consoles and accidental exposure of correlation IDs in production.
+
+Enable in development:
+
+```bash
+VITE_ANALYTICS_DEBUG=true npm run dev
+```
+
+Or create a `.env.local` file in `apps/client-dashboard`:
+
+```
+VITE_ANALYTICS_DEBUG=true
+```
+
+What it does:
+
+- Emits detailed fetch phases (cache hits, rate limiting, Edge vs DB fallback, retries).
+- Logs correlation IDs to trace multi-attempt sequences.
+- Suppressed entirely when `VITE_ANALYTICS_DEBUG` is not explicitly `true` (case-insensitive).
+
+Production guidance:
+
+- Do NOT enable in production – leave flag unset for minimal console output.
+- Security: Debug logs may include tenant identifiers and timing metadata (never secrets), so keep flag off in shared staging environments unless diagnosing issues.
+
+Associated files:
+
+- `src/widgets/management/useWidgetAnalytics.ts` – wraps debug output in `debug()` / `debugWarn()` helpers.
+- `analytics/__tests__/useWidgetAnalytics.test.ts` – contains guard test ensuring no synthetic placeholder strings.
+
+## Troubleshooting Analytics
+
+If analytics return empty values:
+
+1. Confirm Edge Function deployment: `supabase/functions/widget-analytics` exists and responds.
+2. Check network tab for the `widget-analytics` invocation status.
+3. Temporarily enable `VITE_ANALYTICS_DEBUG` to inspect decision path (cache, edge retries, DB fallback).
+4. Verify tenant ID format (UUID) to avoid forced direct-DB fallback in demo/test heuristics.
+5. Inspect Supabase logs for function or DB errors.
+
+If both Edge + DB fail, the UI will surface an error message and no data (by design – no fabrication). Fix upstream issues instead of bypassing the policy.

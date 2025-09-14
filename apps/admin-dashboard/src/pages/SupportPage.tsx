@@ -113,7 +113,7 @@ export const SupportPage: React.FC = () => {
       } catch {
         // Fallback to direct query
         console.log("Using direct query fallback...");
-        let query = supabase
+        const query = supabase
           .from("support_tickets")
           .select(
             `*,

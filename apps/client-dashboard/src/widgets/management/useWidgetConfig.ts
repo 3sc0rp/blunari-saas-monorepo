@@ -168,7 +168,9 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       const draftRaw = localStorage.getItem(draftKey);
       let draft: any = null;
       if (draftRaw) {
-        try { draft = JSON.parse(draftRaw); } catch {}
+        try { draft = JSON.parse(draftRaw); } catch (e) {
+          // Ignore malformed draft JSON; will fall back to defaults.
+        }
       }
 
       // One-time migration: If we now key by tenantId but legacy composite key exists, migrate it

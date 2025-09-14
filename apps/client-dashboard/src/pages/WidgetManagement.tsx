@@ -195,25 +195,35 @@ const WidgetManagement: React.FC = () => {
       el.setAttribute('tabindex', '-1');
       el.focus();
     }
-    try { localStorage.setItem(`wm.preview.device.${tenantSlug || tenant?.slug || 'default'}`, previewDevice); } catch {}
+    try { localStorage.setItem(`wm.preview.device.${tenantSlug || tenant?.slug || 'default'}`, previewDevice); } catch (e) {
+      // Non-critical persistence error (e.g., private mode); safe to ignore.
+    }
   }, [previewDevice]);
 
   useEffect(() => {
-    try { localStorage.setItem(`wm.preview.scale.${tenantSlug || tenant?.slug || 'default'}`, String(deviceScale)); } catch {}
+    try { localStorage.setItem(`wm.preview.scale.${tenantSlug || tenant?.slug || 'default'}`, String(deviceScale)); } catch (e) {
+      // Ignore storage write failures.
+    }
   }, [deviceScale, tenantSlug, tenant?.slug]);
 
   useEffect(() => {
-    try { localStorage.setItem(`wm.preview.grid.${tenantSlug || tenant?.slug || 'default'}`, showGrid ? '1' : '0'); } catch {}
+    try { localStorage.setItem(`wm.preview.grid.${tenantSlug || tenant?.slug || 'default'}`, showGrid ? '1' : '0'); } catch (e) {
+      // Ignore storage write failures.
+    }
   }, [showGrid, tenantSlug, tenant?.slug]);
 
   useEffect(() => {
-    try { localStorage.setItem(`wm.preview.safe.${tenantSlug || tenant?.slug || 'default'}`, showSafeArea ? '1' : '0'); } catch {}
+    try { localStorage.setItem(`wm.preview.safe.${tenantSlug || tenant?.slug || 'default'}`, showSafeArea ? '1' : '0'); } catch (e) {
+      // Ignore storage write failures.
+    }
   }, [showSafeArea, tenantSlug, tenant?.slug]);
 
   // Removed persistence for live toggle (always live)
 
   useEffect(() => {
-    try { localStorage.setItem(`wm.tab.${tenantSlug || tenant?.slug || 'default'}`, selectedTab); } catch {}
+    try { localStorage.setItem(`wm.tab.${tenantSlug || tenant?.slug || 'default'}`, selectedTab); } catch (e) {
+      // Ignore storage write failures.
+    }
     const url = new URL(window.location.href);
     url.searchParams.set('tab', selectedTab);
     window.history.replaceState(null, '', url.toString());
@@ -228,7 +238,7 @@ const WidgetManagement: React.FC = () => {
       const node = document.querySelector('[data-widget-preview]') as HTMLElement | null;
       if (!node) return;
       // Dynamic import to keep bundle lean; requires html2canvas in app deps
-      // @ts-ignore - runtime import; types optional
+  // @ts-expect-error html2canvas may not have bundled types or default export shape varies; dynamic import is intentionally untyped
       const mod: any = await import('html2canvas');
       const html2canvas = (mod.default || mod) as (el: HTMLElement, opts?: any) => Promise<HTMLCanvasElement>;
       const canvas = await html2canvas(node, { scale: window.devicePixelRatio * deviceScale, backgroundColor: null });

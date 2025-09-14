@@ -196,322 +196,23 @@ export interface SmartAlert {
   resolved: boolean;
 }
 
-// Mock data for AI-powered insights
-const mockAIInsights: AIInsight[] = [
-  {
-    id: "ai-insight-1",
-    type: "prediction",
-    title: "Weekend Revenue Surge Predicted",
-    description: "AI models predict a 28% increase in weekend revenue based on weather forecasts, local events, and historical patterns.",
-    confidence_score: 92,
-    impact_score: 85,
-    priority: "high",
-    category: "revenue_optimization",
-    data_points: [
-      {
-        metric: "Weather Score",
-        current_value: 95,
-        historical_average: 72,
-        trend_direction: "up",
-        variance_percentage: 32,
-        significance_level: 0.89
-      },
-      {
-        metric: "Local Events Factor",
-        current_value: 88,
-        historical_average: 45,
-        trend_direction: "up",
-        variance_percentage: 96,
-        significance_level: 0.94
-      }
-    ],
-    predicted_outcome: {
-      scenario: "likely",
-      timeframe: "This weekend",
-      probability: 0.92,
-      expected_impact: {
-        revenue_change: 28,
-        cost_change: 12,
-        customer_satisfaction_change: 5,
-        efficiency_change: -8
-      },
-      confidence_interval: {
-        lower_bound: 22,
-        upper_bound: 35
-      }
-    },
-    actionable_recommendations: [
-      {
-        action: "Increase staff scheduling by 30% for weekend shifts",
-        implementation_difficulty: "easy",
-        estimated_time: "2 hours",
-        expected_roi: 240,
-        resources_required: ["Staff coordinator", "Schedule management system"],
-        success_metrics: ["Service time", "Customer satisfaction", "Revenue per hour"],
-        dependencies: ["Staff availability confirmation"]
-      },
-      {
-        action: "Order additional inventory for high-demand items",
-        implementation_difficulty: "moderate",
-        estimated_time: "4 hours",
-        expected_roi: 180,
-        resources_required: ["Inventory manager", "Supplier coordination"],
-        success_metrics: ["Stock-out prevention", "Customer complaints"],
-        dependencies: ["Supplier availability", "Storage capacity"]
-      }
-    ],
-    created_at: "2025-01-04T08:00:00Z",
-    expires_at: "2025-01-06T23:59:59Z",
-    status: "active",
-    ai_model: "Revenue Forecasting v2.1",
-    accuracy_rating: 88
-  },
-  {
-    id: "ai-insight-2",
-    type: "anomaly",
-    title: "Unusual Customer Behavior Pattern Detected",
-    description: "AI has identified an anomalous increase in customer complaints about wait times, despite normal staffing levels.",
-    confidence_score: 78,
-    impact_score: 70,
-    priority: "medium",
-    category: "customer_experience",
-    data_points: [
-      {
-        metric: "Average Wait Time",
-        current_value: 18,
-        historical_average: 15,
-        trend_direction: "up",
-        variance_percentage: 20,
-        significance_level: 0.72
-      },
-      {
-        metric: "Customer Complaints",
-        current_value: 12,
-        historical_average: 4,
-        trend_direction: "up",
-        variance_percentage: 200,
-        significance_level: 0.91
-      }
-    ],
-    predicted_outcome: {
-      scenario: "worst_case",
-      timeframe: "Next 2 weeks",
-      probability: 0.65,
-      expected_impact: {
-        revenue_change: -12,
-        cost_change: 8,
-        customer_satisfaction_change: -25,
-        efficiency_change: -15
-      },
-      confidence_interval: {
-        lower_bound: -18,
-        upper_bound: -8
-      }
-    },
-    actionable_recommendations: [
-      {
-        action: "Implement expedited service protocol during peak hours",
-        implementation_difficulty: "moderate",
-        estimated_time: "1 day",
-        expected_roi: 150,
-        resources_required: ["Service manager", "Kitchen coordinator"],
-        success_metrics: ["Wait time reduction", "Complaint volume"],
-        dependencies: ["Staff training", "Process documentation"]
-      }
-    ],
-    created_at: "2025-01-03T14:30:00Z",
-    status: "active",
-    ai_model: "Anomaly Detection v1.8",
-    accuracy_rating: 82
-  },
-  {
-    id: "ai-insight-3",
-    type: "optimization",
-    title: "Menu Engineering Optimization Opportunity",
-    description: "AI analysis suggests repositioning 3 high-margin items could increase overall profitability by 15%.",
-    confidence_score: 89,
-    impact_score: 92,
-    priority: "high",
-    category: "revenue_optimization",
-    data_points: [
-      {
-        metric: "Menu Item Profitability",
-        current_value: 68,
-        historical_average: 65,
-        trend_direction: "stable",
-        variance_percentage: 5,
-        significance_level: 0.85
-      }
-    ],
-    predicted_outcome: {
-      scenario: "likely",
-      timeframe: "3 months",
-      probability: 0.89,
-      expected_impact: {
-        revenue_change: 15,
-        cost_change: -2,
-        customer_satisfaction_change: 3,
-        efficiency_change: 8
-      },
-      confidence_interval: {
-        lower_bound: 12,
-        upper_bound: 18
-      }
-    },
-    actionable_recommendations: [
-      {
-        action: "Redesign menu layout to highlight high-margin items",
-        implementation_difficulty: "easy",
-        estimated_time: "3 days",
-        expected_roi: 320,
-        resources_required: ["Menu designer", "Marketing team"],
-        success_metrics: ["Item order frequency", "Average order value"],
-        dependencies: ["Menu printing", "Staff training on recommendations"]
-      }
-    ],
-    created_at: "2025-01-02T10:15:00Z",
-    status: "active",
-    ai_model: "Menu Optimization Engine v3.0"
-  }
-];
-
-const mockBusinessPredictions: BusinessPrediction[] = [
-  {
-    id: "pred-1",
-    type: "revenue",
-    title: "Monthly Revenue Forecast",
-    description: "Predicted revenue for the next 3 months based on seasonal trends, marketing campaigns, and economic factors",
-    prediction_horizon: "3_months",
-    confidence_level: 87,
-    predicted_values: [
-      { date: "2025-01-31", value: 145000, confidence_range: [138000, 152000] },
-      { date: "2025-02-28", value: 162000, confidence_range: [154000, 170000] },
-      { date: "2025-03-31", value: 178000, confidence_range: [169000, 187000] }
-    ],
-    factors_considered: [
-      "Historical revenue patterns",
-      "Seasonal adjustments",
-      "Marketing campaign impact",
-      "Economic indicators",
-      "Competitor activity"
-    ],
-    model_used: "Deep Learning Revenue Predictor v2.3",
-    created_at: "2025-01-04T06:00:00Z",
-    last_updated: "2025-01-04T12:00:00Z"
-  },
-  {
-    id: "pred-2",
-    type: "demand",
-    title: "Daily Demand Forecast",
-    description: "Predicted customer demand for the next 7 days including peak hours and menu item preferences",
-    prediction_horizon: "1_week",
-    confidence_level: 92,
-    predicted_values: [
-      { date: "2025-01-05", value: 180, confidence_range: [165, 195] },
-      { date: "2025-01-06", value: 220, confidence_range: [205, 235] },
-      { date: "2025-01-07", value: 195, confidence_range: [180, 210] },
-      { date: "2025-01-08", value: 170, confidence_range: [155, 185] },
-      { date: "2025-01-09", value: 185, confidence_range: [170, 200] },
-      { date: "2025-01-10", value: 245, confidence_range: [230, 260] },
-      { date: "2025-01-11", value: 255, confidence_range: [240, 270] }
-    ],
-    factors_considered: [
-      "Day of week patterns",
-      "Weather forecasts",
-      "Local events calendar",
-      "Historical demand curves",
-      "Marketing promotions"
-    ],
-    model_used: "Demand Forecasting Neural Network v1.9",
-    created_at: "2025-01-04T05:30:00Z",
-    last_updated: "2025-01-04T11:30:00Z"
-  }
-];
-
-const mockSmartAlerts: SmartAlert[] = [
-  {
-    id: "alert-1",
-    title: "Inventory Shortage Risk",
-    message: "AI predicts potential shortage of popular menu items based on demand forecasts and current inventory levels",
-    severity: "warning",
-    category: "inventory_management",
-    ai_generated: true,
-    confidence_score: 84,
-    suggested_actions: [
-      "Place urgent order for affected items",
-      "Consider menu item substitutions",
-      "Implement portion control measures"
-    ],
-    related_metrics: ["Inventory turnover", "Demand forecast", "Sales velocity"],
-    triggered_at: "2025-01-04T09:45:00Z",
-    acknowledged: false,
-    resolved: false
-  },
-  {
-    id: "alert-2",
-    title: "Customer Satisfaction Trend Alert",
-    message: "Declining trend in customer satisfaction scores detected across multiple touchpoints",
-    severity: "critical",
-    category: "customer_experience",
-    ai_generated: true,
-    confidence_score: 91,
-    suggested_actions: [
-      "Investigate service quality issues",
-      "Review staff performance metrics",
-      "Conduct customer feedback analysis"
-    ],
-    related_metrics: ["Customer satisfaction", "Service time", "Review ratings"],
-    triggered_at: "2025-01-04T07:20:00Z",
-    acknowledged: true,
-    resolved: false
-  }
-];
-
-const mockAIModels: AIModel[] = [
-  {
-    id: "model-1",
-    name: "Revenue Forecasting Engine",
-    type: "predictive",
-    description: "Advanced neural network model for predicting restaurant revenue based on multiple data sources",
-    accuracy: 89.2,
-    last_trained: "2025-01-01T00:00:00Z",
-    data_sources: ["POS transactions", "Weather data", "Local events", "Marketing campaigns"],
-    use_cases: ["Revenue forecasting", "Demand prediction", "Capacity planning"],
-    status: "active"
-  },
-  {
-    id: "model-2",
-    name: "Customer Behavior Analyzer",
-    type: "classification",
-    description: "Machine learning model that analyzes customer behavior patterns and preferences",
-    accuracy: 86.7,
-    last_trained: "2024-12-28T00:00:00Z",
-    data_sources: ["Customer transactions", "Menu selections", "Visit patterns", "Reviews"],
-    use_cases: ["Customer segmentation", "Recommendation engine", "Churn prediction"],
-    status: "active"
-  },
-  {
-    id: "model-3",
-    name: "Operational Optimization AI",
-    type: "optimization",
-    description: "AI system that optimizes restaurant operations including staffing, inventory, and workflows",
-    accuracy: 92.1,
-    last_trained: "2025-01-03T00:00:00Z",
-    data_sources: ["Staff schedules", "Order volumes", "Kitchen timings", "Inventory levels"],
-    use_cases: ["Staff optimization", "Inventory management", "Process improvement"],
-    status: "active"
-  }
-];
+// Real-data-only baselines (all empty). These will be populated once AI insight
+// generation, prediction, alerting & model management APIs are implemented.
+// TODO(ai-insights-api): fetch insights, predictions, alerts & models from backend services.
+const initialAIInsights: AIInsight[] = [];
+const initialBusinessPredictions: BusinessPrediction[] = [];
+const initialSmartAlerts: SmartAlert[] = [];
+const initialAIModels: AIModel[] = [];
 
 const AIBusinessInsights: React.FC = () => {
   const { tenant, isLoading: tenantLoading } = useTenant();
   const { toast } = useToast();
   
   const [selectedTab, setSelectedTab] = useState("insights");
-  const [aiInsights] = useState<AIInsight[]>(mockAIInsights);
-  const [businessPredictions] = useState<BusinessPrediction[]>(mockBusinessPredictions);
-  const [smartAlerts] = useState<SmartAlert[]>(mockSmartAlerts);
-  const [aiModels] = useState<AIModel[]>(mockAIModels);
+  const [aiInsights] = useState<AIInsight[]>(initialAIInsights);
+  const [businessPredictions] = useState<BusinessPrediction[]>(initialBusinessPredictions);
+  const [smartAlerts] = useState<SmartAlert[]>(initialSmartAlerts);
+  const [aiModels] = useState<AIModel[]>(initialAIModels);
   const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null);
   const [showInsightDialog, setShowInsightDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -678,7 +379,7 @@ const AIBusinessInsights: React.FC = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Prediction Accuracy</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {Math.round(aiModels.reduce((sum, model) => sum + model.accuracy, 0) / aiModels.length)}%
+                  {aiModels.length ? Math.round(aiModels.reduce((sum, model) => sum + model.accuracy, 0) / aiModels.length) : 0}%
                 </p>
                 <p className="text-xs text-green-600">Average model accuracy</p>
               </div>
@@ -726,6 +427,13 @@ const AIBusinessInsights: React.FC = () => {
         <TabsContent value="insights" className="space-y-6">
           {/* AI Insights */}
           <div className="space-y-4">
+            {filteredInsights.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                  No AI insights yet. Connect data sources or generate insights once backend integration is available.
+                </CardContent>
+              </Card>
+            )}
             {filteredInsights.map((insight) => (
               <Card key={insight.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
@@ -862,6 +570,13 @@ const AIBusinessInsights: React.FC = () => {
         <TabsContent value="predictions" className="space-y-6">
           {/* Business Predictions */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {businessPredictions.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                  No predictions available. Predictions will appear after AI forecasting is enabled.
+                </CardContent>
+              </Card>
+            )}
             {businessPredictions.map((prediction) => (
               <Card key={prediction.id}>
                 <CardHeader>
@@ -925,6 +640,11 @@ const AIBusinessInsights: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {smartAlerts.length === 0 && (
+                  <div className="p-6 text-center text-sm text-muted-foreground">
+                    No smart alerts generated. Alerts will surface once monitoring is active.
+                  </div>
+                )}
                 {smartAlerts.map((alert) => (
                   <div key={alert.id} className={`p-4 border rounded-lg ${getSeverityColor(alert.severity)}`}>
                     <div className="flex items-start justify-between">
@@ -996,6 +716,11 @@ const AIBusinessInsights: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {aiModels.length === 0 && (
+                  <div className="p-6 text-center text-sm text-muted-foreground">
+                    No AI models registered. Models will list here after deployment.
+                  </div>
+                )}
                 {aiModels.map((model) => (
                   <div key={model.id} className="p-4 border rounded-lg">
                     <div className="flex items-start justify-between">
@@ -1090,47 +815,8 @@ const AIBusinessInsights: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Overall AI Accuracy</span>
-                    <div className="flex items-center gap-2">
-                      <Progress value={89} className="w-20 h-2" />
-                      <span className="font-medium">89%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Prediction Reliability</span>
-                    <div className="flex items-center gap-2">
-                      <Progress value={92} className="w-20 h-2" />
-                      <span className="font-medium">92%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Business Impact Score</span>
-                    <div className="flex items-center gap-2">
-                      <Progress value={87} className="w-20 h-2" />
-                      <span className="font-medium">87%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2 border-t">
-                    <div className="text-sm space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Insights Generated:</span>
-                        <span className="font-medium">247 this month</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Implemented Actions:</span>
-                        <span className="font-medium">89 successful</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">ROI from AI:</span>
-                        <span className="font-medium text-green-600">$24,500</span>
-                      </div>
-                    </div>
-                  </div>
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  No performance metrics yet. Metrics will populate after AI models report telemetry.
                 </div>
               </CardContent>
             </Card>
@@ -1143,34 +829,8 @@ const AIBusinessInsights: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm">Data Processing</span>
-                      <span className="text-sm font-medium">2.4M records</span>
-                    </div>
-                    <Progress value={95} className="h-2" />
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm">Pattern Recognition</span>
-                      <span className="text-sm font-medium">Advanced</span>
-                    </div>
-                    <Progress value={88} className="h-2" />
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm">Prediction Accuracy</span>
-                      <span className="text-sm font-medium">Improving</span>
-                    </div>
-                    <Progress value={91} className="h-2" />
-                  </div>
-                  
-                  <div className="pt-2 border-t text-xs text-muted-foreground">
-                    <p>AI models are continuously learning from your business data to provide more accurate insights and predictions.</p>
-                  </div>
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  No learning progress data yet. This section will display ingestion & model training stats once available.
                 </div>
               </CardContent>
             </Card>

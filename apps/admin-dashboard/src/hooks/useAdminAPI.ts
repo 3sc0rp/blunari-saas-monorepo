@@ -93,7 +93,12 @@ export const useAdminAPI = () => {
             },
           } as APIResponse<ProvisioningResponse>;
         }
-      } catch {}
+      } catch (err) {
+        // Ignore any errors encountered during bypass detection so real provisioning can proceed.
+        if (process.env.NODE_ENV === "development") {
+          console.debug("Bypass detection failed (continuing with real provisioning)", err);
+        }
+      }
 
       const response = await callEdgeFunction<ProvisioningResponse>(
         "tenant-provisioning",
