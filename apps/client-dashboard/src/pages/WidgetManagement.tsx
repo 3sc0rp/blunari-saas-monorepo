@@ -493,11 +493,43 @@ const WidgetManagement: React.FC = () => {
   }, [generateWidgetUrl, bookingConfig, cateringConfig]);
 
   // Compute live widget URL only when live preview enabled to avoid throwing during slug resolution
-  const liveWidgetUrl = useMemo(() => {
+  // Track a stable iframe key to avoid React remounting it unless slug/type change
+  const iframeKeyRef = useRef<string>('');
+  const lastConfigSignatureRef = useRef<string>('');
+  const liveWidgetBaseUrl = useMemo(() => {
     if (!livePreview) return null;
     const url = generateWidgetUrl(activeWidgetType);
-    return url ? url + '&preview=1' : null;
-  }, [livePreview, activeWidgetType, generateWidgetUrl]);
+    if (!url) return null;
+    const slug = resolvedTenantSlug || 'tenant';
+    const nextKey = `${slug}:${activeWidgetType}`;
+    if (iframeKeyRef.current !== nextKey) {
+      iframeKeyRef.current = nextKey;
+    }
+    return url + '&preview=1';
+  }, [livePreview, activeWidgetType, generateWidgetUrl, resolvedTenantSlug]);
+
+  // Compute a lightweight signature of config values that materially affect widget rendering.
+  const currentConfigSignature = useMemo(() => {
+    const c = currentConfig;
+    if (!c) return 'none';
+    return [
+      c.theme, c.primaryColor, c.secondaryColor, c.backgroundColor, c.textColor,
+      c.borderRadius, c.width, c.height, c.animationType, c.enableAnimations,
+      c.showLogo, c.showDescription, c.showFooter
+    ].join('|');
+  }, [currentConfig]);
+
+  // Device-specific URL with conditional cache-busting only when config signature changes.
+  const liveWidgetUrl = useMemo(() => {
+    if (!liveWidgetBaseUrl) return null;
+    const deviceParam = `&device=${previewDevice}`;
+    // Only append a cache-buster if config signature changed (prevents constant reload loops)
+    if (lastConfigSignatureRef.current !== currentConfigSignature) {
+      lastConfigSignatureRef.current = currentConfigSignature;
+      return `${liveWidgetBaseUrl}${deviceParam}&cfg=${encodeURIComponent(currentConfigSignature)}`;
+    }
+    return `${liveWidgetBaseUrl}${deviceParam}`;
+  }, [liveWidgetBaseUrl, previewDevice, currentConfigSignature]);
 
   const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {
@@ -1392,11 +1424,13 @@ const WidgetManagement: React.FC = () => {
                           {liveWidgetUrl ? (
                             <>
                               <iframe
+                                key={iframeKeyRef.current}
                                 title={`${activeWidgetType} live widget preview`}
-                                src={liveWidgetUrl + `&device=${previewDevice}`}
+                                src={liveWidgetUrl || undefined}
                                 style={{ width: currentConfig.width, height: currentConfig.height, border: '0', display: 'block', background: '#fff' }}
                                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                                 referrerPolicy="strict-origin-when-cross-origin"
+                                onLoad={() => { if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') { console.log('[WidgetManagement] iframe loaded', { url: liveWidgetUrl }); } }}
                               />
                               <div className="absolute top-2 left-2">
                                 <Badge variant="secondary" className="text-xs">Live</Badge>
