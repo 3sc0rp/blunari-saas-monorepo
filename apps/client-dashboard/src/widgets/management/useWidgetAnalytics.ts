@@ -145,6 +145,8 @@ export interface UseWidgetAnalyticsOptions {
   widgetType: WidgetType;
   /** Refresh interval in milliseconds (default: 5 minutes) */
   refreshInterval?: number;
+  /** Force using the Edge Function even for demo/test tenants (dev/QA only) */
+  forceEdge?: boolean;
 }
 
 export interface AnalyticsState {
@@ -197,6 +199,7 @@ export function useWidgetAnalytics({
   tenantSlug,
   widgetType,
   refreshInterval = 300000, // 5 minutes default
+  forceEdge = false,
 }: UseWidgetAnalyticsOptions): AnalyticsState & {
   refresh: (timeRange?: AnalyticsTimeRange) => Promise<void>;
   isAvailable: boolean;
@@ -333,12 +336,12 @@ export function useWidgetAnalytics({
       console.log(`Fetching REAL analytics for tenant ${tenantId}, widget ${widgetType}`);
       
       // For development/demo purposes, use direct database fallback if tenant looks like demo/test or tenantId not UUID
-      if (
+      if (!forceEdge && (
         tenantId.includes('demo') ||
         tenantId.includes('test') ||
         (tenantSlug && /demo|test/i.test(tenantSlug)) ||
         !tenantId.match(/^[0-9a-f-]{36}$/i)
-      ) {
+      )) {
         console.log('🎭 Demo tenant detected, using database fallback');
         const promise = fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
         inflightMap.set(cacheKey, promise);

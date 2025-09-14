@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// Minimal inline validation to avoid external deps in Edge runtime
+type ZIssue = { path: string[]; message: string };
 
 // Lightweight UUID v4 generator (avoids extra deps in Edge Function)
 function generateId() {
@@ -34,6 +36,14 @@ function makeSuccessResponse(data: any, meta: Record<string, unknown>, correlati
   );
 }
 
+// Problem+JSON helper
+function makeProblem(status: number, title: string, detail: string, correlationId: string, headers: Record<string,string>, extra?: unknown) {
+  return new Response(
+    JSON.stringify({ type: 'about:blank', title, status, detail, correlationId, ...(extra ? { extra } : {}) }),
+    { status, headers: { ...headers, 'Content-Type': 'application/problem+json', 'x-correlation-id': correlationId } }
+  );
+}
+
 // CORS headers for cross-origin requests
 const createCorsHeaders = (requestOrigin: string | null = null) => {
   const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
@@ -64,13 +74,38 @@ const createCorsHeaders = (requestOrigin: string | null = null) => {
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version, x-correlation-id, x-widget-version, x-widget-id, x-tenant-id',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with, x-supabase-api-version, x-correlation-id, x-widget-version, x-widget-id, x-tenant-id, if-none-match',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
     'Access-Control-Max-Age': '86400',
-    'Access-Control-Expose-Headers': 'x-correlation-id, content-type',
+    'Access-Control-Expose-Headers': 'x-correlation-id, content-type, x-ratelimit-limit, x-ratelimit-remaining, x-ratelimit-reset',
     'Access-Control-Allow-Credentials': 'false'
   };
 };
+
+// Simple schema-based validation without external libs (Edge-friendly)
+function normalizeBody(body: any) {
+  if (!body || typeof body !== 'object') return body;
+  const n: any = { ...body };
+  if (n.tenant_id && !n.tenantId) n.tenantId = n.tenant_id;
+  if (n.widget_type && !n.widgetType) n.widgetType = n.widget_type;
+  if (n.time_range && !n.timeRange) n.timeRange = n.time_range;
+  return n;
+}
+
+function validateRequest(body: any): { ok: true; data: { tenantId: string; widgetType: string; timeRange: string } } | { ok: false; issues: ZIssue[] } {
+  const issues: ZIssue[] = [];
+  const b = body || {};
+  const tenantId = String(b.tenantId || '').trim();
+  const widgetType = String(b.widgetType || '').trim();
+  const timeRange = String(b.timeRange || '7d').trim();
+  if (!tenantId) issues.push({ path: ['tenantId'], message: 'Required' });
+  if (tenantId && !/^[A-Za-z0-9_-]{4,100}$/.test(tenantId)) issues.push({ path: ['tenantId'], message: 'Invalid format' });
+  if (!widgetType) issues.push({ path: ['widgetType'], message: 'Required' });
+  if (widgetType && !['booking', 'catering'].includes(widgetType.toLowerCase())) issues.push({ path: ['widgetType'], message: 'Invalid value' });
+  if (timeRange && !['1d', '7d', '30d'].includes(timeRange.toLowerCase())) issues.push({ path: ['timeRange'], message: 'Invalid value' });
+  if (issues.length) return { ok: false, issues };
+  return { ok: true, data: { tenantId, widgetType: widgetType.toLowerCase(), timeRange: timeRange.toLowerCase() } };
+}
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -198,14 +233,7 @@ serve(async (req) => {
     const contentType = req.headers.get('content-type') || '';
     if (!contentType.toLowerCase().includes('application/json')) {
       console.warn('Unsupported media type:', contentType, 'cid:', correlationId);
-      const resp = makeErrorResponse({
-        status: 415,
-        code: 'UNSUPPORTED_MEDIA_TYPE',
-        message: 'Content-Type must be application/json',
-        details: { received: contentType },
-        correlationId,
-        headers: responseHeaders
-      });
+      const resp = makeProblem(415, 'UNSUPPORTED_MEDIA_TYPE', 'Content-Type must be application/json', correlationId, responseHeaders, { received: contentType });
       const durationMs = Math.round(performance.now() - t0);
       logOutcome({ success: false, durationMs, errorCode: 'UNSUPPORTED_MEDIA_TYPE', errorMessage: 'Content-Type must be application/json' });
       return resp;
@@ -217,14 +245,7 @@ serve(async (req) => {
       const allowHeader = responseHeaders['Access-Control-Allow-Origin'];
       if (allowHeader === 'null') {
         console.warn('Origin not allowed:', origin, 'cid:', correlationId);
-        const resp = makeErrorResponse({
-          status: 403,
-          code: 'ORIGIN_NOT_ALLOWED',
-          message: 'Origin not allowed',
-          details: { origin },
-          correlationId,
-          headers: responseHeaders
-        });
+        const resp = makeProblem(403, 'ORIGIN_NOT_ALLOWED', 'Origin not allowed', correlationId, responseHeaders, { origin });
         const durationMs = Math.round(performance.now() - t0);
         logOutcome({ success: false, durationMs, errorCode: 'ORIGIN_NOT_ALLOWED', errorMessage: 'Origin not allowed' });
         return resp;
@@ -239,14 +260,7 @@ serve(async (req) => {
       
       if (!bodyText || bodyText.trim() === '') {
         console.error('Empty or whitespace-only request body', correlationId);
-        const resp = makeErrorResponse({
-          status: 400,
-          code: 'EMPTY_BODY',
-          message: 'Request body is required',
-          details: 'Provide tenantId and widgetType',
-          correlationId,
-          headers: responseHeaders
-        });
+        const resp = makeProblem(400, 'EMPTY_BODY', 'Request body is required', correlationId, responseHeaders, { hint: 'Provide tenantId and widgetType' });
         const durationMs = Math.round(performance.now() - t0);
         logOutcome({ success: false, durationMs, errorCode: 'EMPTY_BODY', errorMessage: 'Request body is required' });
         return resp;
@@ -258,41 +272,30 @@ serve(async (req) => {
       // Validate that requestBody is an object
       if (!requestBody || typeof requestBody !== 'object' || Array.isArray(requestBody)) {
         console.error('Request body not an object:', typeof requestBody, correlationId);
-        const resp = makeErrorResponse({
-          status: 400,
-          code: 'INVALID_BODY',
-          message: 'Request body must be a JSON object',
-          details: 'Expected object with tenantId and widgetType properties',
-          correlationId,
-          headers: responseHeaders
-        });
+        const resp = makeProblem(400, 'INVALID_BODY', 'Request body must be a JSON object', correlationId, responseHeaders);
         const durationMs = Math.round(performance.now() - t0);
         logOutcome({ success: false, durationMs, errorCode: 'INVALID_BODY', errorMessage: 'Request body must be a JSON object' });
         return resp;
       }
     } catch (parseError) {
       console.error('Failed JSON parse', parseError, correlationId);
-      const resp = makeErrorResponse({
-        status: 400,
-        code: 'JSON_PARSE_ERROR',
-        message: 'Invalid JSON in request body',
-        details: {
-          error: String(parseError),
-          hint: 'Ensure Content-Type: application/json and use valid JSON syntax',
-          example: { tenantId: '00000000-0000-0000-0000-000000000000', widgetType: 'booking', timeRange: '7d' }
-        },
-        correlationId,
-        headers: responseHeaders
-      });
+      const resp = makeProblem(400, 'JSON_PARSE_ERROR', 'Invalid JSON in request body', correlationId, responseHeaders, { error: String(parseError) });
       const durationMs = Math.round(performance.now() - t0);
       logOutcome({ success: false, durationMs, errorCode: 'JSON_PARSE_ERROR', errorMessage: 'Invalid JSON in request body' });
       return resp;
     }
 
     // Extract and validate parameters with detailed logging (support both camelCase and snake_case)
-  const tenantId = (requestBody.tenantId ?? requestBody.tenant_id) as string | undefined;
-  const widgetType = (requestBody.widgetType ?? requestBody.widget_type) as string | undefined;
-  const timeRange = (requestBody.timeRange ?? requestBody.time_range ?? '7d') as string;
+  requestBody = normalizeBody(requestBody);
+  const parsed = validateRequest(requestBody);
+  if (!parsed.ok) {
+    console.error('Validation error:', parsed.issues, 'cid:', correlationId);
+    const resp = makeProblem(400, 'VALIDATION_ERROR', 'Invalid request parameters', correlationId, responseHeaders, { issues: parsed.issues });
+    const durationMs = Math.round(performance.now() - t0);
+    logOutcome({ success: false, durationMs, errorCode: 'VALIDATION_ERROR', errorMessage: 'Invalid request parameters' });
+    return resp;
+  }
+  const { tenantId, widgetType, timeRange } = parsed.data;
     console.log('Parameter validation:');
     console.log('- tenantId:', tenantId, typeof tenantId);
     console.log('- widgetType:', widgetType, typeof widgetType);
@@ -408,6 +411,7 @@ serve(async (req) => {
     // ------------ Rate Limiting ---------------
   const rateLimitMax = parseInt(Deno.env.get('WIDGET_ANALYTICS_RATE_LIMIT') || '120'); // default 120 req/hour bucket
     const rateLimitEnabled = rateLimitMax > 0;
+    let rateLimitRemaining: string | undefined = undefined;
     if (rateLimitEnabled) {
       try {
         const hourStart = new Date();
@@ -449,16 +453,13 @@ serve(async (req) => {
             .eq('bucket', bucket)
             .eq('window_start', hourStart.toISOString());
         }
+        rateLimitRemaining = String(Math.max(0, rateLimitMax - currentCount));
         if (currentCount > rateLimitMax) {
           console.warn('Rate limit exceeded bucket:', bucket, 'count:', currentCount, 'limit:', rateLimitMax, 'cid:', correlationId);
-          const resp = makeErrorResponse({
-            status: 429,
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: 'Too many requests – slow down',
-            details: { limitPerHour: rateLimitMax, bucket },
-            correlationId,
-            headers: { ...responseHeaders, 'Retry-After': '60' }
-          });
+          const resp = new Response(
+            JSON.stringify({ success: false, code: 'RATE_LIMIT_EXCEEDED', error: 'Too many requests \u2013 slow down', correlationId }),
+            { status: 429, headers: { ...responseHeaders, 'Retry-After': '60', 'x-ratelimit-limit': String(rateLimitMax), 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '60', 'Content-Type': 'application/json' } }
+          );
           const durationMs = Math.round(performance.now() - t0);
             logOutcome({ success: false, tenantId, widgetType: normalizedWidgetType, timeRange: normalizedTimeRange, durationMs, errorCode: 'RATE_LIMIT_EXCEEDED', errorMessage: 'Too many requests' });
           return resp;
@@ -555,7 +556,7 @@ serve(async (req) => {
       durationMs,
       version: FUNCTION_VERSION,
       estimation
-    }, correlationId, responseHeaders);
+    }, correlationId, { ...responseHeaders, 'x-ratelimit-limit': String(rateLimitMax), 'x-ratelimit-remaining': rateLimitRemaining || 'NA', 'x-ratelimit-reset': '60' });
   logOutcome({ success: true, tenantId, widgetType: normalizedWidgetType, timeRange: normalizedTimeRange, authMethod: authValidated ? 'authenticated' : 'anonymous', durationMs });
     return successResponse;
 
