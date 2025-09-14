@@ -414,134 +414,16 @@ const WidgetManagement: React.FC = () => {
   const referrerAttr = " referrerpolicy=\"strict-origin-when-cross-origin\"";
 
       if (embedType === 'iframe') {
-        return `<!-- Simple iframe embed -->\n<iframe\n  src="${url}"\n  width="${config.width || 400}"\n  height="${config.height || 600}"\n  frameborder="0"${lazyAttr}${sandboxAttr}${referrerAttr}\n  style="border-radius: ${config.borderRadius || 8}px; box-shadow: 0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1); max-width: 100%;"\n  title="${safeWelcome} - ${type} widget"\n  data-widget-type="${type}">\n</iframe>`;
+        return `<!-- Simple iframe embed (recommended for quick integration) -->\n<iframe\n  src="${url}&embed=1"\n  width="${config.width || 400}"\n  height="${config.height || 600}"\n  style="border:0;max-width:100%;border-radius:${config.borderRadius || 8}px;box-shadow:0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)"\n  title="${safeWelcome || 'Blunari widget'}"\n  loading="${iframeLazy ? 'lazy' : 'eager'}"${iframeSandbox ? '\n  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"' : ''}\n  referrerpolicy="strict-origin-when-cross-origin"\n  data-widget-type="${type}"\n></iframe>`;
       }
       if (embedType === 'react') {
-        return `{/* React JSX embed */}\n<iframe\n  src={"${url}"}\n  width={${config.width || 400}}\n  height={${config.height || 600}}\n  style={{ borderRadius: ${config.borderRadius || 8}, boxShadow: '0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1)', maxWidth: '100%' }}\n  title={'${safeWelcome} - ${type} widget'}\n  data-widget-type={'${type}'}${iframeLazy ? " loading=\"lazy\"" : ''}${iframeSandbox ? " sandbox=\"allow-scripts allow-same-origin allow-forms allow-popups\"" : ''} referrerPolicy="strict-origin-when-cross-origin"\n/>`;
+        return `{/* React iframe embed */}\n<iframe\n  src={"${url}&embed=1"}\n  width={${config.width || 400}}\n  height={${config.height || 600}}\n  style={{border:0, maxWidth:'100%', borderRadius:${config.borderRadius || 8}, boxShadow:'0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)'}}\n  title={'${safeWelcome || 'Blunari widget'}'}\n  loading="${iframeLazy ? 'lazy' : 'eager'}"${iframeSandbox ? '\n  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"' : ''}\n  referrerPolicy="strict-origin-when-cross-origin"\n  data-widget-type={'${type}'}\n/>`;
       }
-      return `<!-- Blunari ${type.charAt(0).toUpperCase() + type.slice(1)} Widget with PostMessage Communication -->
-<script>
-(function() {
-  try {
-    var widget = document.createElement('div');
-    widget.id = '${widgetId}';
-    widget.style.cssText = 'width: ${config.width || 400}px; height: ${config.height || 600}px; max-width: 100%; margin: 0 auto; border-radius: ${config.borderRadius || 8}px; overflow: hidden; box-shadow: 0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,0.1);';
-    
-    var iframe = document.createElement('iframe');
-    iframe.src = '${url}';
-    iframe.style.cssText = 'width: 100%; height: 100%; border: none; display: block;';
-    iframe.frameBorder = '0';
-    iframe.allowTransparency = 'true';
-    iframe.scrolling = 'auto';
-  iframe.title = '${safeWelcome.replace(/'/g, "\\'")} - ${type} widget';
-    iframe.setAttribute('data-widget-type', '${type}');
-    iframe.setAttribute('data-widget-id', '${widgetId}');
-    ${iframeLazy ? "iframe.setAttribute('loading','lazy');" : ''}
-    ${iframeSandbox ? "iframe.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups');" : ''}
-    iframe.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
-    
-    // PostMessage event listener for iframe communication
-    function handleWidgetMessage(event) {
-      // Verify origin for security (generated from embed controls)
-      if (event.origin !== '${allowedOrigin}') {
-        return;
-      }
-      
-      var data = event.data;
-      if (!data || !data.type || data.widgetId !== '${widgetId}') {
-        return;
-      }
-      
-      switch (data.type) {
-        case 'widget_loaded':
-          console.log('Widget loaded successfully:', data);
-          iframe.style.opacity = '1';
-          iframe.style.transition = 'opacity 0.3s ease-in-out';
-          break;
-          
-        case 'widget_resize':
-          if (data.height && data.height > 0) {
-            iframe.style.height = data.height + 'px';
-            widget.style.height = data.height + 'px';
-            console.log('Widget resized to height:', data.height);
-          }
-          break;
-          
-        case 'widget_conversion':
-          console.log('Widget conversion event:', data);
-          // Trigger custom analytics or tracking
-          if (typeof gtag !== 'undefined') {
-            gtag('event', 'conversion', {
-              event_category: 'widget',
-              event_label: '${type}_conversion',
-              value: data.value || 1
-            });
-          }
-          break;
-          
-        case 'widget_error':
-          console.error('Widget error:', data.error);
-          widget.innerHTML = '<div style="padding: 20px; text-align: center; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;"><strong>Widget Error</strong><br/>Unable to load ${type} widget. Please refresh the page or contact support.</div>';
-          break;
-          
-        case 'widget_close':
-          widget.style.display = 'none';
-          console.log('Widget closed by user');
-          break;
-      }
-    }
-    
-    // Add global message listener
-    if (window.addEventListener) {
-      window.addEventListener('message', handleWidgetMessage, false);
-    } else if (window.attachEvent) {
-      window.attachEvent('onmessage', handleWidgetMessage);
-    }
-    
-    // Iframe load handlers
-    iframe.onerror = function() {
-      console.error('Failed to load Blunari ${type} widget');
-      widget.innerHTML = '<div style="padding: 20px; text-align: center; color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;">Unable to load widget. Please try again later.</div>';
-    };
-    
-    iframe.onload = function() {
-      console.log('Blunari ${type} widget iframe loaded');
-      // Send initialization message to widget
-      iframe.contentWindow.postMessage({
-        type: 'parent_ready',
-        widgetId: '${widgetId}',
-        config: {
-          theme: '${config.theme}',
-          primaryColor: '${config.primaryColor}',
-          secondaryColor: '${config.secondaryColor}'
-        }
-      }, '${allowedOrigin}');
-    };
-    
-    // Set initial opacity for smooth loading
-    iframe.style.opacity = '0.3';
-    iframe.style.transition = 'opacity 0.3s ease-in-out';
-    
-    widget.appendChild(iframe);
-    
-    // Insert widget
-    var targetElement = document.currentScript ? document.currentScript.parentNode : document.body;
-    var nextSibling = document.currentScript ? document.currentScript.nextSibling : null;
-    targetElement.insertBefore(widget, nextSibling);
-  } catch (error) {
-    console.error('Error initializing Blunari widget:', error);
-  }
-})();
-</script>
 
-<!-- Recommended CSP headers for embedding:
-Content-Security-Policy: 
-  frame-src 'self' ${allowedOrigin}; 
-  script-src 'self' 'unsafe-inline'; 
-  style-src 'self' 'unsafe-inline';
-  img-src 'self' data: https:;
-  connect-src 'self' https:;
--->`;
+      // Script embed (advanced) – creates container, injects iframe, handles resize + token handshake
+      const tokenParam = new URL(url).searchParams.get('token') || '';
+      const slugParam = new URL(url).searchParams.get('slug') || '';
+      return `<!-- Blunari ${type} widget script embed -->\n<div id="${widgetId}" data-widget-slug="${slugParam}" data-widget-type="${type}" style="width:${config.width || 400}px;height:${config.height || 600}px;max-width:100%;margin:0 auto;border-radius:${config.borderRadius || 8}px;overflow:hidden;box-shadow:0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)"></div>\n<script defer>(function(){\n  if(window.__blunariInit && window.__blunariInit['${widgetId}']) return;\n  window.__blunariInit = window.__blunariInit||{};\n  window.__blunariInit['${widgetId}']=true;\n  var host='${new URL(url).origin}';\n  var container=document.getElementById('${widgetId}');\n  if(!container) return;\n  var src='${url}&embed=1&parent_origin='+encodeURIComponent(window.location.origin);\n  var iframe=document.createElement('iframe');\n  iframe.src=src;\n  iframe.title='${safeWelcome || 'Blunari widget'}';\n  iframe.loading='${iframeLazy ? 'lazy' : 'eager'}';\n  iframe.setAttribute('referrerpolicy','strict-origin-when-cross-origin');\n  ${iframeSandbox ? "iframe.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-popups');" : ''}\n  iframe.style.cssText='width:100%;height:100%;border:0;display:block;background:#fff';\n  container.appendChild(iframe);\n  var allowed='${allowedOrigin}';\n  function onMsg(e){\n    if(allowed && e.origin!==allowed) return;\n    var d=e.data;\n    if(!d||d.widgetId!=='${widgetId}') return;\n    if(d.type==='widget_resize' && d.height){ iframe.style.height=d.height+'px'; container.style.height=d.height+'px'; }\n    if(d.type==='widget_loaded'){ container.classList.add('blunari-loaded'); }\n  }\n  window.addEventListener('message',onMsg,false);\n})();</script>\n<noscript>Enable JavaScript to load the Blunari ${type} widget.</noscript>`;
     } catch (error) {
       console.error('Error generating embed code:', error);
       return '<!-- Error: Unable to generate embed code. Please check your configuration and try again. -->';
