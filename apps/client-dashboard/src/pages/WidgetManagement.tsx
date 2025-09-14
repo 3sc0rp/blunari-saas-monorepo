@@ -277,7 +277,25 @@ const WidgetManagement: React.FC = () => {
     tenantIdentifier,
     getTenantConfigurations,
     exportTenantConfiguration,
+    saving,
+    changedKeysCount,
+    isDraft
   } = useWidgetConfig('booking', tenant?.id ?? null, resolvedTenantSlug ?? null, tenantLoading);
+
+  // Floating status ribbon for autosave/draft state
+  const StatusRibbon = () => {
+    if (!hasUnsavedChanges && !saving) return null;
+    const label = saving
+      ? 'Saving…'
+      : isDraft
+        ? `Draft (${changedKeysCount} change${changedKeysCount===1?'':'s'})`
+        : `Unsaved (${changedKeysCount} change${changedKeysCount===1?'':'s'})`;
+    return (
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 z-40 px-3 py-1 rounded-b-md text-xs font-medium tracking-wide text-white bg-indigo-600/90 border border-indigo-400 shadow-sm backdrop-blur" role="status" aria-live="polite">
+        {label}
+      </div>
+    );
+  };
 
   // Now that currentConfig exists, finalize memoized preview styles
   widgetContainerStyle = useMemo(() => {
@@ -614,6 +632,7 @@ const WidgetManagement: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6" role="main" aria-label="Widget Management Dashboard">
+      <StatusRibbon />
       {/* Sticky global action bar for key widget actions */}
       {!tenantLoading && !tenantError && (
         <div className="sticky top-0 z-30 -mt-6 -mx-6 mb-4 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-gray-900/70 bg-white/90 dark:bg-gray-900/90 border-b flex flex-wrap items-center gap-4">
