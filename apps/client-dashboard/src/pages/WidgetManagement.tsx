@@ -101,6 +101,9 @@ const WidgetManagement: React.FC = () => {
   const [activeWidgetType, setActiveWidgetType] = useState<'booking' | 'catering'>('booking');
   const [selectedTab, setSelectedTab] = useState(() => {
     try {
+      const url = new URL(window.location.href);
+      const qp = url.searchParams.get('tab');
+      if (qp === 'configure' || qp === 'preview' || qp === 'analytics' || qp === 'embed') return qp;
       const key = `wm.tab.${tenantSlug || tenant?.slug || 'default'}`;
       return localStorage.getItem(key) || 'configure';
     } catch { return 'configure'; }
@@ -1907,8 +1910,8 @@ Content-Security-Policy:
                     </SelectContent>
                   </Select>
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="allowed-origin" className="text-sm" title="Origin your site will use to receive postMessage">Allowed origin</Label>
-                    <Input id="allowed-origin" className="h-8 w-64" placeholder="https://yourdomain.com" value={allowedOriginInput} onChange={(e) => setAllowedOriginInput(e.target.value)} />
+                    <Label htmlFor="allowed-origin" className="text-sm" title="Origin of the widget (sender) accepted for postMessage">Allowed widget origin</Label>
+                    <Input id="allowed-origin" className="h-8 w-64" placeholder={typeof window !== 'undefined' ? window.location.origin : 'https://app.blunari.ai'} value={allowedOriginInput} onChange={(e) => setAllowedOriginInput(e.target.value)} />
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
