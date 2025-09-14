@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { safeStorage } from '@/utils/safeStorage';
 import { useTenant } from '@/hooks/useTenant';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -165,24 +166,24 @@ const WidgetManagement: React.FC = () => {
       const qp = url.searchParams.get('tab');
       if (qp === 'configure' || qp === 'preview' || qp === 'analytics' || qp === 'embed') return qp;
       const key = `wm.tab.${tenantSlug || tenant?.slug || 'default'}`;
-      return localStorage.getItem(key) || 'configure';
+      return safeStorage.get(key) || 'configure';
     } catch { return 'configure'; }
   });
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>(() => {
     try {
       const key = `wm.preview.device.${tenantSlug || tenant?.slug || 'default'}`;
-      const v = localStorage.getItem(key) as 'desktop' | 'tablet' | 'mobile' | null;
+      const v = safeStorage.get(key) as 'desktop' | 'tablet' | 'mobile' | null;
       return v || 'desktop';
     } catch { return 'desktop'; }
   });
   const [deviceScale, setDeviceScale] = useState<number>(() => {
-    try { return parseFloat(localStorage.getItem(`wm.preview.scale.${tenantSlug || tenant?.slug || 'default'}`) || '1'); } catch { return 1; }
+    try { return parseFloat(safeStorage.get(`wm.preview.scale.${tenantSlug || tenant?.slug || 'default'}`) || '1'); } catch { return 1; }
   });
   const [showGrid, setShowGrid] = useState<boolean>(() => {
-    try { return localStorage.getItem(`wm.preview.grid.${tenantSlug || tenant?.slug || 'default'}`) === '1'; } catch { return false; }
+    try { return safeStorage.get(`wm.preview.grid.${tenantSlug || tenant?.slug || 'default'}`) === '1'; } catch { return false; }
   });
   const [showSafeArea, setShowSafeArea] = useState<boolean>(() => {
-    try { return localStorage.getItem(`wm.preview.safe.${tenantSlug || tenant?.slug || 'default'}`) !== '0'; } catch { return true; }
+    try { return safeStorage.get(`wm.preview.safe.${tenantSlug || tenant?.slug || 'default'}`) !== '0'; } catch { return true; }
   });
   // Live data preview toggle (renders real widget iframe instead of static mock)
   // Live preview only mode – always true
@@ -202,25 +203,25 @@ const WidgetManagement: React.FC = () => {
       el.setAttribute('tabindex', '-1');
       el.focus();
     }
-    try { localStorage.setItem(`wm.preview.device.${tenantSlug || tenant?.slug || 'default'}`, previewDevice); } catch (e) {
+    try { safeStorage.set(`wm.preview.device.${tenantSlug || tenant?.slug || 'default'}`, previewDevice); } catch (e) {
       // Non-critical persistence error (e.g., private mode); safe to ignore.
     }
   }, [previewDevice]);
 
   useEffect(() => {
-    try { localStorage.setItem(`wm.preview.scale.${tenantSlug || tenant?.slug || 'default'}`, String(deviceScale)); } catch (e) {
+    try { safeStorage.set(`wm.preview.scale.${tenantSlug || tenant?.slug || 'default'}`, String(deviceScale)); } catch (e) {
       // Ignore storage write failures.
     }
   }, [deviceScale, tenantSlug, tenant?.slug]);
 
   useEffect(() => {
-    try { localStorage.setItem(`wm.preview.grid.${tenantSlug || tenant?.slug || 'default'}`, showGrid ? '1' : '0'); } catch (e) {
+    try { safeStorage.set(`wm.preview.grid.${tenantSlug || tenant?.slug || 'default'}`, showGrid ? '1' : '0'); } catch (e) {
       // Ignore storage write failures.
     }
   }, [showGrid, tenantSlug, tenant?.slug]);
 
   useEffect(() => {
-    try { localStorage.setItem(`wm.preview.safe.${tenantSlug || tenant?.slug || 'default'}`, showSafeArea ? '1' : '0'); } catch (e) {
+    try { safeStorage.set(`wm.preview.safe.${tenantSlug || tenant?.slug || 'default'}`, showSafeArea ? '1' : '0'); } catch (e) {
       // Ignore storage write failures.
     }
   }, [showSafeArea, tenantSlug, tenant?.slug]);
@@ -229,7 +230,7 @@ const WidgetManagement: React.FC = () => {
 
   useEffect(() => {
     const keyBase = `wm.tab.${tenantSlug || tenant?.slug || 'default'}`;
-    try { localStorage.setItem(keyBase, selectedTab); } catch (e) { /* ignore */ }
+  try { safeStorage.set(keyBase, selectedTab); } catch (e) { /* ignore */ }
     // Avoid redundant history updates (can trigger downstream listeners)
     try {
       const url = new URL(window.location.href);

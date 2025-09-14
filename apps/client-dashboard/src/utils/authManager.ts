@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/utils/logger';
 import { performanceMonitor } from '@/utils/performanceMonitor';
+import { safeStorage, inSandboxedIframe } from '@/utils/safeStorage';
 
 interface AuthUser {
   id: string;
@@ -42,9 +43,27 @@ interface AuthConfig {
 }
 
 class EnterpriseAuthManager {
+  /**
+   * Supabase client with dynamic storage:
+   * - Uses safeStorage which falls back to in-memory map when sandboxed (no persistence).
+   * - Disables session persistence & auto refresh in sandboxed iframe to avoid SecurityErrors.
+   */
   private supabase = createClient(
     import.meta.env.VITE_SUPABASE_URL!,
-    import.meta.env.VITE_SUPABASE_ANON_KEY!
+    import.meta.env.VITE_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        storage: {
+          getItem: (k: string) => safeStorage.get(k),
+            // supabase expects string | null
+          setItem: (k: string, v: string) => safeStorage.set(k, v),
+          removeItem: (k: string) => safeStorage.remove(k)
+        } as Storage,
+        persistSession: safeStorage.persistent && !inSandboxedIframe,
+        autoRefreshToken: safeStorage.persistent && !inSandboxedIframe,
+        detectSessionInUrl: true
+      }
+    }
   );
 
   private currentSession: AuthSession | null = null;
@@ -74,8 +93,14 @@ class EnterpriseAuthManager {
     // Initialize session check
     this.initializeSessionCheck();
     
-    // Load existing session
-    this.loadSessionFromStorage();
+    // Load existing session only when storage is persistent; sandboxed iframe sessions are ephemeral.
+    if (safeStorage.persistent) {
+      this.loadSessionFromStorage();
+    } else if (inSandboxedIframe) {
+      logger.info('Auth running in sandboxed iframe (ephemeral session only)', {
+        component: 'EnterpriseAuthManager'
+      });
+    }
 
     logger.info('Enterprise Auth Manager initialized', {
       component: 'EnterpriseAuthManager',
@@ -167,7 +192,9 @@ class EnterpriseAuthManager {
 
       // Store session
       this.currentSession = session;
-      this.saveSessionToStorage(session);
+      if (safeStorage.persistent) {
+        this.saveSessionToStorage(session);
+      }
       
       // Clear failed attempts
       this.failedAttempts.delete(credentials.email);
@@ -276,7 +303,9 @@ class EnterpriseAuthManager {
       this.currentSession.refreshToken = data.session.refresh_token;
       this.currentSession.expiresAt = Date.now() + (this.config.sessionTimeout * 60 * 1000);
 
-      this.saveSessionToStorage(this.currentSession);
+      if (safeStorage.persistent) {
+        this.saveSessionToStorage(this.currentSession);
+      }
 
       logger.debug('Session refreshed successfully', {
         component: 'EnterpriseAuthManager',
@@ -462,7 +491,7 @@ class EnterpriseAuthManager {
         }
       };
       
-      localStorage.setItem('auth_session', JSON.stringify(sessionData));
+  safeStorage.set('auth_session', JSON.stringify(sessionData));
     } catch (error) {
       logger.warn('Failed to save session to storage', {
         component: 'EnterpriseAuthManager'
@@ -472,7 +501,7 @@ class EnterpriseAuthManager {
 
   private loadSessionFromStorage(): void {
     try {
-      const stored = localStorage.getItem('auth_session');
+  const stored = safeStorage.get('auth_session');
       if (stored) {
         const session = JSON.parse(stored) as AuthSession;
         
@@ -505,7 +534,7 @@ class EnterpriseAuthManager {
   }
 
   private clearSessionFromStorage(): void {
-    localStorage.removeItem('auth_session');
+  safeStorage.remove('auth_session');
   }
 
   destroy(): void {
