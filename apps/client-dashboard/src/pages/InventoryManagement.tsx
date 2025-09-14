@@ -69,110 +69,10 @@ import {
   InventoryAlert,
 } from "@/types/restaurant";
 
-// Mock data for inventory items
-const mockInventoryItems: InventoryItem[] = [
-  {
-    id: "1",
-    tenant_id: "tenant-1",
-    name: "Chicken Breast",
-    category: "protein",
-    sku: "CHKN-001",
-    current_quantity: 45,
-    unit: "lb",
-    cost_per_unit: 850, // $8.50
-    reorder_point: 20,
-    max_quantity: 100,
-    supplier: "Fresh Foods Co",
-    storage_location: "Walk-in Cooler A",
-    expiration_date: "2024-09-10",
-    last_updated: "2024-09-04T10:00:00Z",
-    created_at: "2024-09-01T00:00:00Z",
-    updated_at: "2024-09-04T10:00:00Z",
-  },
-  {
-    id: "2",
-    tenant_id: "tenant-1",
-    name: "Tomatoes",
-    category: "produce",
-    sku: "TOM-001",
-    current_quantity: 15,
-    unit: "lb",
-    cost_per_unit: 320, // $3.20
-    reorder_point: 25,
-    max_quantity: 50,
-    supplier: "Local Farm",
-    storage_location: "Walk-in Cooler B",
-    expiration_date: "2024-09-07",
-    last_updated: "2024-09-04T08:30:00Z",
-    created_at: "2024-09-01T00:00:00Z",
-    updated_at: "2024-09-04T08:30:00Z",
-  },
-  {
-    id: "3",
-    tenant_id: "tenant-1",
-    name: "All-Purpose Flour",
-    category: "dry_goods",
-    sku: "FLOUR-001",
-    current_quantity: 80,
-    unit: "lb",
-    cost_per_unit: 125, // $1.25
-    reorder_point: 30,
-    max_quantity: 150,
-    supplier: "Grain Supply Inc",
-    storage_location: "Dry Storage",
-    last_updated: "2024-09-03T14:00:00Z",
-    created_at: "2024-09-01T00:00:00Z",
-    updated_at: "2024-09-03T14:00:00Z",
-  },
-  {
-    id: "4",
-    tenant_id: "tenant-1",
-    name: "Olive Oil",
-    category: "oils_condiments",
-    sku: "OIL-001",
-    current_quantity: 8,
-    unit: "bottle",
-    cost_per_unit: 1250, // $12.50
-    reorder_point: 12,
-    max_quantity: 24,
-    supplier: "Mediterranean Foods",
-    storage_location: "Dry Storage",
-    last_updated: "2024-09-04T09:15:00Z",
-    created_at: "2024-09-01T00:00:00Z",
-    updated_at: "2024-09-04T09:15:00Z",
-  },
-];
-
-// Mock data for purchase orders
-const mockPurchaseOrders: PurchaseOrder[] = [
-  {
-    id: "1",
-    tenant_id: "tenant-1",
-    order_number: "PO-2024-001",
-    supplier: "Fresh Foods Co",
-    status: "pending",
-    order_date: "2024-09-04",
-    expected_delivery: "2024-09-06",
-    total_amount: 45000, // $450.00
-    notes: "Weekly protein order",
-    created_at: "2024-09-04T09:00:00Z",
-    updated_at: "2024-09-04T09:00:00Z",
-  },
-  {
-    id: "2",
-    tenant_id: "tenant-1",
-    order_number: "PO-2024-002",
-    supplier: "Local Farm",
-    status: "delivered",
-    order_date: "2024-09-02",
-    expected_delivery: "2024-09-04",
-    actual_delivery: "2024-09-04",
-    total_amount: 18500, // $185.00
-    notes: "Fresh produce delivery",
-    created_at: "2024-09-02T10:00:00Z",
-    updated_at: "2024-09-04T08:30:00Z",
-  },
-];
+// Real-data-only policy: start with empty arrays and load from API when implemented.
+// TODO: Implement fetching logic (e.g., Supabase queries or REST endpoints) to populate inventory and purchase orders.
+const initialInventoryItems: InventoryItem[] = [];
+const initialPurchaseOrders: PurchaseOrder[] = [];
 
 const categoryOptions: InventoryCategory[] = [
   "protein", "produce", "dairy", "dry_goods", "beverages", "oils_condiments", "spices", "cleaning", "disposables"
@@ -206,8 +106,8 @@ const InventoryManagement: React.FC = () => {
   const { tenant, isLoading: tenantLoading } = useTenant();
   const { toast } = useToast();
   
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(mockInventoryItems);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(mockPurchaseOrders);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(initialInventoryItems);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(initialPurchaseOrders);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(false);
