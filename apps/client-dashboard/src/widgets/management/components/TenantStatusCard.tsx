@@ -82,68 +82,37 @@ export const TenantStatusCard: React.FC<TenantStatusCardProps> = ({
               <CheckCircle className="w-5 h-5 text-green-500" />
               <div>
                 <p className="font-medium">
-                  {tenant?.name || 'Demo Restaurant'} 
-                  <Badge variant="outline" className="ml-2 text-xs">
-                    {tenantSlug}
-                  </Badge>
+                  {tenant?.name || 'Restaurant'}
+                  {tenantSlug && (
+                    <Badge variant="outline" className="ml-2 text-xs">
+                      {tenantSlug}
+                    </Badge>
+                  )}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Configuration ID: <code className="text-xs bg-background px-1 rounded">{tenantIdentifier}</code>
+                <p className="text-xs text-muted-foreground">
+                  {hasUnsavedChanges ? 'You have unsaved changes' : 'Widget configuration ready'}
                 </p>
               </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium">Widget Namespace</p>
-              <code className="text-xs bg-background px-2 py-1 rounded">
-                /{activeWidgetType === 'booking' ? 'book' : 'catering'}/{tenantSlug}
-              </code>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onExportConfig}
-                className="text-xs"
-              >
-                <Download className="w-4 h-4 mr-1" />
-                Export Config
-              </Button>
-              
-              {hasUnsavedChanges && (
-                <Badge variant="secondary" className="text-xs">
-                  Unsaved Changes
-                </Badge>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExportConfig}
+              className="text-xs"
+            >
+              <Download className="w-4 h-4 mr-1" />
+              Export Config
+            </Button>
+            {hasUnsavedChanges && (
+              <Badge variant="secondary" className="text-xs">
+                Unsaved
+              </Badge>
+            )}
           </div>
         </div>
-        
-        {tenant?.id && (
-          <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-              <div>
-                <span className="text-muted-foreground">Tenant ID:</span>
-                <p className="font-mono">{tenant.id}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Status:</span>
-                <p className="capitalize">{tenant.status || 'active'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Timezone:</span>
-                <p>{tenant.timezone || 'UTC'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Currency:</span>
-                <p>{tenant.currency || 'USD'}</p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Debug / advanced identifiers removed for cleaner UI */}
       </CardContent>
     </Card>
   );
