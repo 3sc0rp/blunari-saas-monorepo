@@ -152,6 +152,13 @@ const WidgetManagement: React.FC = () => {
   const { toast } = useToast();
   
   const [activeWidgetType, setActiveWidgetType] = useState<'booking' | 'catering'>('booking');
+  const debugWM = (...args: any[]) => {
+    if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') {
+      // eslint-disable-next-line no-console
+      console.log('[WidgetManagement]', ...args);
+    }
+  };
+
   const [selectedTab, setSelectedTab] = useState(() => {
     try {
       const url = new URL(window.location.href);
@@ -221,12 +228,22 @@ const WidgetManagement: React.FC = () => {
   // Removed persistence for live toggle (always live)
 
   useEffect(() => {
-    try { localStorage.setItem(`wm.tab.${tenantSlug || tenant?.slug || 'default'}`, selectedTab); } catch (e) {
-      // Ignore storage write failures.
+    const keyBase = `wm.tab.${tenantSlug || tenant?.slug || 'default'}`;
+    try { localStorage.setItem(keyBase, selectedTab); } catch (e) { /* ignore */ }
+    // Avoid redundant history updates (can trigger downstream listeners)
+    try {
+      const url = new URL(window.location.href);
+      const current = url.searchParams.get('tab');
+      if (current !== selectedTab) {
+        url.searchParams.set('tab', selectedTab);
+        window.history.replaceState(null, '', url.toString());
+        debugWM('Tab URL sync', { from: current, to: selectedTab });
+      } else {
+        debugWM('Tab URL sync skipped (no change)', { tab: selectedTab });
+      }
+    } catch (e) {
+      debugWM('Tab URL sync error', e);
     }
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', selectedTab);
-    window.history.replaceState(null, '', url.toString());
   }, [selectedTab, tenantSlug, tenant?.slug]);
 
   // Memoized preview styles to avoid unnecessary recalcs (declared after currentConfig below)
@@ -322,6 +339,7 @@ const WidgetManagement: React.FC = () => {
   // Keep local activeWidgetType in sync with hook state
   useEffect(() => {
     setTypeFromHook(activeWidgetType);
+    debugWM('Active widget type effect', { activeWidgetType });
   }, [activeWidgetType, setTypeFromHook]);
 
   // Local saving spinner state wrapping hook save
@@ -502,9 +520,9 @@ const WidgetManagement: React.FC = () => {
 
   // Re-fetch analytics when range changes or widget type changes
   useEffect(() => {
-    if (!analyticsAvailable) return;
-    // Skip duplicate initial fetch when default range and no data yet (hook already fetching)
-    if (analyticsRange === '7d' && !analyticsData) return;
+    if (!analyticsAvailable) { debugWM('Analytics fetch skipped: not available'); return; }
+    if (analyticsRange === '7d' && !analyticsData) { debugWM('Analytics fetch skipped default initial'); return; }
+    debugWM('Analytics fetch trigger', { range: analyticsRange, widgetType: activeWidgetType });
     refreshAnalytics(analyticsRange);
   }, [analyticsAvailable, analyticsRange, activeWidgetType, refreshAnalytics, analyticsData]);
 
