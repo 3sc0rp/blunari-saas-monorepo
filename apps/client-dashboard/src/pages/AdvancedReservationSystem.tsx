@@ -145,120 +145,10 @@ export interface ReservationAnalytics {
   conversion_by_source: Array<{ source: string; conversion: number }>;
 }
 
-// Mock data for advanced reservations
-const mockReservations: AdvancedReservation[] = [
-  {
-    id: "1",
-    tenant_id: "tenant-1",
-    customer_id: "customer-1",
-    customer_name: "Alice Johnson",
-    customer_email: "alice.johnson@email.com",
-    customer_phone: "(555) 123-4567",
-    party_size: 4,
-    date: "2024-09-06",
-    time: "19:00",
-    duration_minutes: 120,
-    table_id: "table-5",
-    table_preference: "Window table if possible",
-    status: "confirmed",
-    seating_preference: "window",
-    special_occasions: ["birthday"],
-    dietary_requirements: ["vegetarian", "gluten_free"],
-    estimated_spend: 15000, // $150.00
-    priority_score: 85,
-    confirmation_sent: true,
-    reminder_sent: false,
-    follow_up_sent: false,
-    notes: "Birthday celebration for mom, would like a quiet table",
-    created_at: "2024-09-04T10:00:00Z",
-    updated_at: "2024-09-04T10:30:00Z",
-  },
-  {
-    id: "2",
-    tenant_id: "tenant-1",
-    customer_name: "Robert Chen",
-    customer_email: "robert.chen@business.com",
-    customer_phone: "(555) 234-5678",
-    party_size: 6,
-    date: "2024-09-05",
-    time: "18:30",
-    duration_minutes: 90,
-    status: "arrived",
-    seating_preference: "private_room",
-    special_occasions: ["business_meeting"],
-    estimated_spend: 25000, // $250.00
-    priority_score: 95,
-    arrival_time: "2024-09-05T18:25:00Z",
-    confirmation_sent: true,
-    reminder_sent: true,
-    follow_up_sent: false,
-    notes: "Business dinner, needs privacy and minimal noise",
-    internal_notes: "VIP client - ensure best service",
-    created_at: "2024-09-02T14:20:00Z",
-    updated_at: "2024-09-05T18:25:00Z",
-  },
-  {
-    id: "3",
-    tenant_id: "tenant-1",
-    customer_name: "Maria Garcia",
-    customer_phone: "(555) 345-6789",
-    party_size: 2,
-    date: "2024-09-04",
-    time: "20:00",
-    duration_minutes: 75,
-    status: "completed",
-    seating_preference: "booth",
-    special_occasions: ["date_night"],
-    estimated_spend: 8500, // $85.00
-    priority_score: 70,
-    arrival_time: "2024-09-04T19:55:00Z",
-    seated_time: "2024-09-04T20:02:00Z",
-    completed_time: "2024-09-04T21:15:00Z",
-    confirmation_sent: true,
-    reminder_sent: true,
-    follow_up_sent: true,
-    created_at: "2024-09-03T16:45:00Z",
-    updated_at: "2024-09-04T21:15:00Z",
-  },
-];
-
-// Mock table optimization data
-const mockTables: TableOptimization[] = [
-  {
-    id: "table-1",
-    table_number: "T1",
-    capacity: 2,
-    location: "window",
-    status: "available",
-    optimal_party_sizes: [1, 2],
-    revenue_per_hour: 5000, // $50/hour
-    turnover_minutes: 75,
-    accessibility_features: [],
-  },
-  {
-    id: "table-2",
-    table_number: "T2",
-    capacity: 4,
-    location: "booth",
-    status: "occupied",
-    current_reservation_id: "1",
-    optimal_party_sizes: [3, 4],
-    revenue_per_hour: 8000, // $80/hour
-    turnover_minutes: 90,
-    accessibility_features: ["wheelchair_accessible"],
-  },
-  {
-    id: "table-3",
-    table_number: "T3",
-    capacity: 6,
-    location: "private_room",
-    status: "reserved",
-    optimal_party_sizes: [5, 6],
-    revenue_per_hour: 12000, // $120/hour
-    turnover_minutes: 120,
-    accessibility_features: ["wheelchair_accessible", "hearing_loop"],
-  },
-];
+// Real-data-only baseline (empty). To be hydrated via future Supabase queries & realtime.
+// TODO(reservations-api): implement fetch + subscription for reservations & tables.
+const initialReservations: AdvancedReservation[] = [];
+const initialTables: TableOptimization[] = [];
 
 const statusColors = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -282,8 +172,8 @@ const AdvancedReservationSystem: React.FC = () => {
   const { tenant, isLoading: tenantLoading } = useTenant();
   const { toast } = useToast();
   
-  const [reservations, setReservations] = useState<AdvancedReservation[]>(mockReservations);
-  const [tables, setTables] = useState<TableOptimization[]>(mockTables);
+  const [reservations, setReservations] = useState<AdvancedReservation[]>(initialReservations);
+  const [tables, setTables] = useState<TableOptimization[]>(initialTables);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -338,7 +228,9 @@ const AdvancedReservationSystem: React.FC = () => {
       todayReservations.reduce((sum, r) => sum + r.party_size, 0) / totalReservations : 0;
     
     const totalRevenue = todayReservations.reduce((sum, r) => sum + (r.estimated_spend || 0), 0);
-    const tableUtilization = (tables.filter(t => t.status !== "available").length / tables.length) * 100;
+    const tableUtilization = tables.length > 0 
+      ? (tables.filter(t => t.status !== "available").length / tables.length) * 100 
+      : 0;
 
     return {
       totalReservations,
