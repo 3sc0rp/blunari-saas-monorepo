@@ -28,97 +28,9 @@ import {
   KitchenDisplayStatus,
 } from "@/types/restaurant";
 
-// Mock data for kitchen tickets
-const mockTickets: KitchenTicket[] = [
-  {
-    id: "1",
-    order_id: "order-1",
-    table_number: "Table 7",
-    customer_name: "Smith",
-    status: "new",
-    priority: "normal",
-    estimated_completion: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-    special_instructions: "No onions, extra sauce",
-    items: [
-      {
-        id: "1",
-        ticket_id: "1",
-        menu_item_name: "Caesar Salad",
-        quantity: 1,
-        special_instructions: "Dressing on the side",
-        status: "new",
-        prep_time_minutes: 8,
-      },
-      {
-        id: "2",
-        ticket_id: "1",
-        menu_item_name: "Grilled Salmon",
-        quantity: 1,
-        special_instructions: "Medium rare",
-        status: "new",
-        prep_time_minutes: 18,
-      }
-    ],
-    created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    order_id: "order-2",
-    table_number: "Table 3",
-    customer_name: "Johnson",
-    status: "preparing",
-    priority: "high",
-    estimated_completion: new Date(Date.now() + 8 * 60 * 1000).toISOString(),
-    items: [
-      {
-        id: "3",
-        ticket_id: "2",
-        menu_item_name: "Ribeye Steak",
-        quantity: 2,
-        special_instructions: "One medium, one well done",
-        status: "preparing",
-        prep_time_minutes: 25,
-        started_at: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "4",
-        ticket_id: "2",
-        menu_item_name: "Truffle Fries",
-        quantity: 1,
-        status: "ready",
-        prep_time_minutes: 10,
-        started_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-        completed_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-      }
-    ],
-    created_at: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    order_id: "order-3",
-    table_number: "Takeout",
-    customer_name: "Williams",
-    status: "ready",
-    priority: "urgent",
-    estimated_completion: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
-    items: [
-      {
-        id: "5",
-        ticket_id: "3",
-        menu_item_name: "Fish & Chips",
-        quantity: 2,
-        status: "ready",
-        prep_time_minutes: 15,
-        started_at: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
-        completed_at: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
-      }
-    ],
-    created_at: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-    updated_at: new Date().toISOString(),
-  }
-];
+// Real-data-only baseline for kitchen tickets. To be populated via orders -> tickets mapping.
+// TODO(kds-api): subscribe to live orders/kitchen_tickets channel and hydrate state.
+const initialTickets: KitchenTicket[] = [];
 
 const statusColors = {
   new: "bg-blue-100 text-blue-800 border-blue-200",
@@ -145,7 +57,7 @@ const KitchenDisplaySystem: React.FC = () => {
   const { tenant, isLoading: tenantLoading } = useTenant();
   const { toast } = useToast();
   
-  const [tickets, setTickets] = useState<KitchenTicket[]>(mockTickets);
+  const [tickets, setTickets] = useState<KitchenTicket[]>(initialTickets);
   const [selectedStatus, setSelectedStatus] = useState<KitchenDisplayStatus | "all">("all");
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
