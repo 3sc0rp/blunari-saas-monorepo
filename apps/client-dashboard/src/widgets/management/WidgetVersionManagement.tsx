@@ -156,165 +156,44 @@ const WidgetVersionManagement: React.FC<WidgetVersionManagementProps> = ({
 
   const fetchVersions = async () => {
     try {
-      // This would be an actual API call
-      // const response = await fetch('/api/widgets/versions')
-      // const data = await response.json()
-      
-      // Mock data for demonstration
-      const mockVersions: WidgetVersion[] = [
-        {
-          id: '1',
-          version_number: '2.1.0',
-          config: {},
-          status: 'production',
-          deployment_strategy: 'gradual',
-          rollout_percentage: 100,
-          feature_flags: { 'new_ui': true, 'analytics_v2': true },
-          changelog: 'Added new analytics dashboard and improved UI performance',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          deployed_at: new Date(Date.now() - 3600000).toISOString(),
-          rolled_back_at: null,
-          rollback_reason: null
-        },
-        {
-          id: '2',
-          version_number: '2.0.1',
-          config: {},
-          status: 'deprecated',
-          deployment_strategy: 'immediate',
-          rollout_percentage: 0,
-          feature_flags: { 'new_ui': false, 'analytics_v2': false },
-          changelog: 'Bug fixes and performance improvements',
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          deployed_at: new Date(Date.now() - 86400000).toISOString(),
-          rolled_back_at: new Date(Date.now() - 3600000).toISOString(),
-          rollback_reason: 'Performance issues detected'
-        },
-        {
-          id: '3',
-          version_number: '2.2.0-beta',
-          config: {},
-          status: 'staging',
-          deployment_strategy: 'canary',
-          rollout_percentage: 10,
-          feature_flags: { 'experimental_feature': true },
-          changelog: 'Beta release with experimental features',
-          created_at: new Date().toISOString(),
-          deployed_at: null,
-          rolled_back_at: null,
-          rollback_reason: null
-        }
-      ]
-      
-      setVersions(mockVersions)
+      // TODO: Replace with real API call (e.g., /api/widgets/versions?widgetId=...)
+      // const res = await fetch(`/api/widgets/versions?widgetId=${widgetId}`)
+      // const data: WidgetVersion[] = await res.json()
+      // setVersions(data)
+      setVersions([]) // Real-data-only: no mock fallback
     } catch (err) {
       setError('Failed to fetch widget versions')
+      setVersions([])
     }
   }
 
   const fetchDeployments = async () => {
     try {
-      // Mock deployment data
-      const mockDeployments: WidgetDeployment[] = [
-        {
-          id: '1',
-          environment: 'production',
-          deployment_type: 'gradual',
-          start_time: new Date(Date.now() - 3600000).toISOString(),
-          completion_time: new Date(Date.now() - 1800000).toISOString(),
-          status: 'completed',
-          rollout_percentage: 100,
-          metrics: { success_rate: 99.8, avg_load_time: 850 },
-          error_details: null
-        },
-        {
-          id: '2',
-          environment: 'staging',
-          deployment_type: 'canary',
-          start_time: new Date().toISOString(),
-          completion_time: null,
-          status: 'in_progress',
-          rollout_percentage: 10,
-          metrics: { success_rate: 100, avg_load_time: 780 },
-          error_details: null
-        }
-      ]
-      
-      setDeployments(mockDeployments)
+      // TODO: Replace with real API call (e.g., /api/widgets/deployments)
+      setDeployments([])
     } catch (err) {
       setError('Failed to fetch deployments')
+      setDeployments([])
     }
   }
 
   const fetchFeatureFlags = async () => {
     try {
-      // Mock feature flags
-      const mockFlags: FeatureFlag[] = [
-        {
-          id: '1',
-          flag_key: 'new_ui',
-          flag_name: 'New UI Design',
-          description: 'Enable the new user interface design',
-          flag_type: 'boolean',
-          default_value: false,
-          is_enabled: true,
-          targeting_rules: []
-        },
-        {
-          id: '2',
-          flag_key: 'analytics_v2',
-          flag_name: 'Analytics V2',
-          description: 'Enable enhanced analytics tracking',
-          flag_type: 'boolean',
-          default_value: false,
-          is_enabled: true,
-          targeting_rules: []
-        },
-        {
-          id: '3',
-          flag_key: 'experimental_feature',
-          flag_name: 'Experimental Feature',
-          description: 'Beta feature for testing',
-          flag_type: 'boolean',
-          default_value: false,
-          is_enabled: false,
-          targeting_rules: []
-        }
-      ]
-      
-      setFeatureFlags(mockFlags)
+      // TODO: Replace with real API call (e.g., /api/feature-flags?scope=widget)
+      setFeatureFlags([])
     } catch (err) {
       setError('Failed to fetch feature flags')
+      setFeatureFlags([])
     }
   }
 
   const fetchExperiments = async () => {
     try {
-      // Mock experiments
-      const mockExperiments: WidgetExperiment[] = [
-        {
-          id: '1',
-          experiment_name: 'UI Performance Test',
-          description: 'Compare performance between old and new UI',
-          control_version_id: '2',
-          treatment_version_id: '1',
-          traffic_allocation: { control: 50, treatment: 50 },
-          status: 'completed',
-          start_date: new Date(Date.now() - 604800000).toISOString(),
-          end_date: new Date(Date.now() - 86400000).toISOString(),
-          results: { 
-            conversion_rate_lift: 12.5, 
-            statistical_significance: 0.003,
-            winner: 'treatment'
-          },
-          statistical_significance: 0.003,
-          winner_version_id: '1'
-        }
-      ]
-      
-      setExperiments(mockExperiments)
+      // TODO: Replace with real API call (e.g., /api/widgets/experiments)
+      setExperiments([])
     } catch (err) {
       setError('Failed to fetch experiments')
+      setExperiments([])
     }
   }
 

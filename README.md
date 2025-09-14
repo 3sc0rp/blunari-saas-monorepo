@@ -32,25 +32,12 @@ blunari-saas/
 ```bash
 # Install dependencies for all packages
 npm install
-
-# Build all packages
-npm run build
-
-# Start all applications in development mode
 npm run dev
 ```
 
-### Individual App Commands
-
-```bash
-# Start only background-ops API
 npm run dev:background-ops
 
 # Start only admin dashboard
-npm run dev:admin
-
-# Start only client dashboard
-npm run dev:client
 ```
 
 ## 📋 Applications
@@ -126,9 +113,6 @@ npm run build --workspace=packages/types
 # Type check all packages
 npm run type-check
 
-# Type check specific app
-npm run type-check --workspace=apps/background-ops
-```
 
 ## 🚢 Deployment
 
@@ -136,10 +120,6 @@ npm run type-check --workspace=apps/background-ops
 
 Currently deployed to Fly.io:
 
-```bash
-cd apps/background-ops
-fly deploy
-```
 
 ### Frontend Applications
 
@@ -151,9 +131,6 @@ Deployment configuration TBD (recommended: Vercel/Netlify)
 
 Each app manages its own environment variables:
 
-- `apps/background-ops/.env` - API configuration
-- `apps/admin-dashboard/.env.local` - Admin dashboard config
-- `apps/client-dashboard/.env.local` - Client dashboard config
 
 ### Shared Configuration
 
@@ -171,19 +148,10 @@ Common configuration is managed in `packages/config/src/index.ts`
 1. Make changes in feature branches
 2. Ensure all tests pass: `npm run test`
 3. Type check: `npm run type-check`
-4. Format code: `npm run format`
-5. Submit pull request
-
-## 📚 Documentation
 
 - [API Documentation](./docs/api.md) - Background-ops API reference
 - [Development Guide](./docs/development.md) - Detailed development setup
-- [Deployment Guide](./docs/deployment.md) - Production deployment instructions
-
-## ⚡ Scripts Reference
-
 | Command              | Description                        |
-| -------------------- | ---------------------------------- |
 | `npm run dev`        | Start all apps in development mode |
 | `npm run build`      | Build all packages and apps        |
 | `npm run lint`       | Lint all code                      |
@@ -194,9 +162,6 @@ Common configuration is managed in `packages/config/src/index.ts`
 
 ## 🏗️ Architecture
 
-The monorepo uses:
-
-- **Turborepo** for build orchestration and caching
 - **TypeScript** for type safety across all packages
 - **Shared packages** for common functionality
 - **Workspace** configuration for efficient dependency management

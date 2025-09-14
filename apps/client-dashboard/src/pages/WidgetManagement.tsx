@@ -367,96 +367,56 @@ const WidgetManagement: React.FC = () => {
   // loading/saving now handled by hook on mount and when identifiers change
 
   // Widget URL and embed code generation with enhanced error handling
-  const generateWidgetUrl = useCallback((type: 'booking' | 'catering') => {
-    try {
-      // Real tenant slug required - no fallbacks
-      const effectiveSlug = resolvedTenantSlug;
-      
-      if (!effectiveSlug) {
-        console.error('No tenant slug available for URL generation - real tenant required');
-        throw new Error('Tenant slug required for widget URL generation');
-      }
-      
-      const baseUrl = window.location.origin;
-      const config = type === 'booking' ? bookingConfig : cateringConfig;
-      
-      if (!config) {
-        console.error('No configuration available for URL generation');
-        throw new Error('Widget configuration required for URL generation');
-      }
-      
-      // Use the actual booking system routes
-      const widgetPath = type === 'booking' ? '/book' : '/catering';
-      
-      // Create signed token instead of exposing tenant_id/config_id
-      const widgetToken = createWidgetToken(effectiveSlug, '2.0', type);
-      
-      // Build configuration parameters - let URLSearchParams handle encoding
-      const configParams = new URLSearchParams();
-      
-      // Only include slug and signed token
-      configParams.set('slug', effectiveSlug);
-      configParams.set('token', widgetToken);
-      configParams.set('widget_version', '2.0');
-      
-      // Tenant context parameters (safe to expose)
-      if (tenant?.timezone) {
-        configParams.set('timezone', tenant.timezone);
-      }
-      if (tenant?.currency) {
-        configParams.set('currency', tenant.currency);
-      }
-      
-      // Appearance parameters - URLSearchParams handles encoding automatically
-      configParams.set('theme', config.theme || 'light');
-      configParams.set('primaryColor', config.primaryColor || '#3b82f6');
-      configParams.set('secondaryColor', config.secondaryColor || '#1e40af');
-      configParams.set('backgroundColor', config.backgroundColor || '#ffffff');
-      configParams.set('textColor', config.textColor || '#1f2937');
-      
-      // Layout parameters with safe defaults
-      configParams.set('borderRadius', (config.borderRadius || 8).toString());
-      configParams.set('width', (config.width || 400).toString());
-      configParams.set('height', (config.height || 600).toString());
-      
-      // Content parameters - URLSearchParams handles encoding
-      if (config.welcomeMessage) {
-        configParams.set('welcomeMessage', config.welcomeMessage);
-      }
-      if (config.buttonText) {
-        configParams.set('buttonText', config.buttonText);
-      }
-      
-      // Feature flags with proper boolean handling
-      configParams.set('showLogo', (config.showLogo ?? true).toString());
-      configParams.set('showDescription', (config.showDescription ?? true).toString());
-      configParams.set('showFooter', (config.showFooter ?? true).toString());
-      configParams.set('enableAnimations', (config.enableAnimations ?? true).toString());
-      configParams.set('animationType', config.animationType || 'fade');
-      
-      // Booking-specific parameters
-      if (type === 'booking') {
-        if (config.enableTableOptimization !== undefined) {
-          configParams.set('enableTableOptimization', config.enableTableOptimization.toString());
-        }
-        if (config.maxPartySize) {
-          configParams.set('maxPartySize', config.maxPartySize.toString());
-        }
-        if (config.requireDeposit !== undefined) {
-          configParams.set('requireDeposit', config.requireDeposit.toString());
-        }
-        if (config.enableSpecialRequests !== undefined) {
-          configParams.set('enableSpecialRequests', config.enableSpecialRequests.toString());
-        }
-      }
-      
-      return `${baseUrl}${widgetPath}/${effectiveSlug}?${configParams.toString()}`;
-    } catch (error) {
-      console.error('Error generating widget URL:', error);
-      // Require real tenant data - no fallbacks
-      console.error('Error generating widget URL - real tenant data required');
-      throw new Error('Failed to generate widget URL - tenant information required');
+  const generateWidgetUrl = useCallback((type: 'booking' | 'catering'): string | null => {
+    // Gracefully handle loading states instead of throwing noisy errors
+    const effectiveSlug = resolvedTenantSlug;
+    if (!effectiveSlug) {
+      // Slug not yet resolved; caller should treat as unavailable
+      return null;
     }
+
+    const config = type === 'booking' ? bookingConfig : cateringConfig;
+    if (!config) return null;
+
+    const baseUrl = window.location.origin;
+    const widgetPath = type === 'booking' ? '/book' : '/catering';
+    const widgetToken = createWidgetToken(effectiveSlug, '2.0', type);
+
+    const params = new URLSearchParams();
+    params.set('slug', effectiveSlug);
+    params.set('token', widgetToken);
+    params.set('widget_version', '2.0');
+
+    if (tenant?.timezone) params.set('timezone', tenant.timezone);
+    if (tenant?.currency) params.set('currency', tenant.currency);
+
+    params.set('theme', config.theme || 'light');
+    params.set('primaryColor', config.primaryColor || '#3b82f6');
+    params.set('secondaryColor', config.secondaryColor || '#1e40af');
+    params.set('backgroundColor', config.backgroundColor || '#ffffff');
+    params.set('textColor', config.textColor || '#1f2937');
+
+    params.set('borderRadius', String(config.borderRadius || 8));
+    params.set('width', String(config.width || 400));
+    params.set('height', String(config.height || 600));
+
+    if (config.welcomeMessage) params.set('welcomeMessage', config.welcomeMessage);
+    if (config.buttonText) params.set('buttonText', config.buttonText);
+
+    params.set('showLogo', String(config.showLogo ?? true));
+    params.set('showDescription', String(config.showDescription ?? true));
+    params.set('showFooter', String(config.showFooter ?? true));
+    params.set('enableAnimations', String(config.enableAnimations ?? true));
+    params.set('animationType', config.animationType || 'fade');
+
+    if (type === 'booking') {
+      if (config.enableTableOptimization !== undefined) params.set('enableTableOptimization', String(config.enableTableOptimization));
+      if (config.maxPartySize) params.set('maxPartySize', String(config.maxPartySize));
+      if (config.requireDeposit !== undefined) params.set('requireDeposit', String(config.requireDeposit));
+      if (config.enableSpecialRequests !== undefined) params.set('enableSpecialRequests', String(config.enableSpecialRequests));
+    }
+
+    return `${baseUrl}${widgetPath}/${effectiveSlug}?${params.toString()}`;
   }, [bookingConfig, cateringConfig, resolvedTenantSlug, tenant?.timezone, tenant?.currency]);
 
   const escapeAttr = (val: string) => (val || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -501,11 +461,8 @@ const WidgetManagement: React.FC = () => {
   // Compute live widget URL only when live preview enabled to avoid throwing during slug resolution
   const liveWidgetUrl = useMemo(() => {
     if (!livePreview) return null;
-    try {
-      return generateWidgetUrl(activeWidgetType) + '&preview=1';
-    } catch {
-      return null;
-    }
+    const url = generateWidgetUrl(activeWidgetType);
+    return url ? url + '&preview=1' : null;
   }, [livePreview, activeWidgetType, generateWidgetUrl]);
 
   const copyToClipboard = useCallback(async (text: string, label: string) => {
@@ -1508,17 +1465,16 @@ const WidgetManagement: React.FC = () => {
                 {analyticsMeta?.time_range && (
                   <Badge variant="secondary" className="text-xs">Range: {analyticsMeta.time_range}</Badge>
                 )}
-                {analyticsMeta?.estimation && (
-                  <Badge variant="outline" className="text-xs border-amber-300 text-amber-600">Estimated</Badge>
-                )}
+                {/* Estimation badge removed: real-data-only policy */}
                 {analyticsMeta?.version && (
                   <Badge variant="outline" className="text-xs">v{analyticsMeta.version}</Badge>
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
                 Performance metrics for your {activeWidgetType} widget
-                {!analyticsAvailable && " (Real analytics data unavailable - connect tenant for live metrics)"}
-                {analyticsMeta?.estimation && ' – some values inferred from limited data.'}
+                {!analyticsAvailable && " – connect tenant to enable analytics."}
+                {(!analyticsLoading && analyticsData && analyticsData.totalViews === 0 && analyticsData.totalBookings === 0) && ' – no recorded activity yet.'}
+                {analyticsError && ' – analytics temporarily unavailable.'}
               </p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">

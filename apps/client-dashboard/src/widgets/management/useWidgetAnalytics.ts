@@ -158,8 +158,8 @@ export interface AnalyticsState {
   error: string | null;
   /** Timestamp of last successful data update */
   lastUpdated: Date | null;
-  /** Data source mode: 'edge', 'direct-db', 'synthetic', or 'cached' */
-  mode?: 'edge' | 'direct-db' | 'synthetic' | 'cached';
+  /** Data source mode: 'edge', 'direct-db', or 'cached' (synthetic removed for real-data-only policy) */
+  mode?: 'edge' | 'direct-db' | 'cached';
   /** Correlation ID for tracking requests */
   correlationId?: string;
   /** Last error code for debugging */
@@ -174,7 +174,7 @@ export interface AnalyticsState {
  * Features:
  * - Rate limiting (10 requests per minute)
  * - Client-side caching with TTL
- * - Multi-layer fallback: Edge Function → Database → Synthetic data
+ * - Multi-layer fallback: Edge Function → Database (synthetic removed for real-data-only policy)
  * - Concurrent request prevention
  * - Comprehensive error handling and reporting
  *
@@ -476,7 +476,7 @@ export function useWidgetAnalytics({
         });
       }
     } catch (error) {
-      console.error('❌ Failed to fetch real analytics:', error);
+  console.error('❌ Failed to fetch real analytics (will attempt DB fallback only):', error);
       
       // Create an analytics error for tracking
       const analyticsError = error instanceof AnalyticsError ? error : new AnalyticsError(
@@ -512,40 +512,16 @@ export function useWidgetAnalytics({
       } catch (fallbackError) {
         console.error('❌ Database fallback also failed:', fallbackError);
         
-        // Generate synthetic fallback data when everything fails
-        const syntheticData = {
-          totalViews: 250,
-          totalClicks: 45,
-          conversionRate: 8.5,
-          avgSessionDuration: 180,
-          totalBookings: 12,
-          completionRate: 85,
-          avgPartySize: widgetType === 'booking' ? 2.5 : undefined,
-          avgOrderValue: widgetType === 'catering' ? 150 : undefined,
-          peakHours: widgetType === 'booking' ? ['18:00', '19:00', '20:00'] : undefined,
-          topSources: [
-            { source: 'direct', count: 8 },
-            { source: 'website', count: 3 },
-            { source: 'social', count: 1 }
-          ],
-          dailyStats: Array.from({ length: 7 }, (_, i) => ({
-            date: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            views: 30 + Math.floor(Math.random() * 20),
-            clicks: 5 + Math.floor(Math.random() * 5),
-            bookings: 1 + Math.floor(Math.random() * 3),
-            revenue: 50 + Math.floor(Math.random() * 100)
-          }))
-        };
-        
+        // Final failure: surface error and clear data (no synthetic fabrication)
         setState(prev => ({
           ...prev,
-          loading: false,
-          error: null, // Clear error since we have synthetic data
-          data: syntheticData,
-          mode: 'synthetic',
-          correlationId: correlationBase.current + ':synthetic',
-          lastErrorCode: (fallbackError as any)?.code || null,
-          meta: { estimation: true, time_range: timeRange }
+            loading: false,
+            error: 'Analytics unavailable – unable to load real data',
+            data: null,
+            mode: undefined,
+            correlationId: correlationBase.current + ':unavailable',
+            lastErrorCode: (fallbackError as any)?.code || analyticsError.code,
+            meta: { estimation: false, time_range: timeRange }
         }));
         isLoadingRef.current = false;
       }
@@ -867,65 +843,53 @@ async function fetchAnalyticsDirectly(
     
     const orders = ordersData || [];
     const totalOrders = orders.length;
-    const completedOrders = orders.filter((order: any) => 
+    const completedOrders = orders.filter((order: any) =>
       order.status === 'confirmed' || order.status === 'completed'
     ).length;
-    
-    // Create analytics based on available data
+
+    // Only compute metrics we can derive directly; leave others as 0/undefined
     const analytics: WidgetAnalytics = {
-      totalViews: Math.max(totalOrders * 15, 100),
-      totalClicks: Math.max(totalOrders * 3, 20),
-      conversionRate: totalOrders > 0 ? (completedOrders / Math.max(totalOrders * 15, 100)) * 100 : 0,
-      avgSessionDuration: 180, // 3 minutes default
+      totalViews: 0, // Unknown without dedicated events table
+      totalClicks: 0, // Unknown without click tracking
+      conversionRate: 0, // Cannot compute without views baseline
+      avgSessionDuration: 0, // Not tracked here
       totalBookings: totalOrders,
       completionRate: totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0,
-      topSources: [
-        { source: 'direct', count: Math.floor(totalOrders * 0.6) },
-        { source: 'website', count: Math.floor(totalOrders * 0.3) },
-        { source: 'social', count: Math.floor(totalOrders * 0.1) }
-      ],
+      topSources: [], // No reliable source breakdown in orders table
       dailyStats: []
     };
-    
-    // Add widget-specific metrics
+
     if (widgetType === 'booking') {
       const partySizes = orders
-        .filter((order: any) => order.party_size)
         .map((order: any) => order.party_size)
-        .filter((size: any) => size !== undefined);
-      
-      analytics.avgPartySize = partySizes.length > 0 
-        ? partySizes.reduce((a: number, b: number) => a + b, 0) / partySizes.length
-        : 2.5;
-        
-      analytics.peakHours = ['18:00', '19:00', '20:00'];
+        .filter((size: any) => typeof size === 'number');
+      if (partySizes.length) {
+        analytics.avgPartySize = partySizes.reduce((a: number, b: number) => a + b, 0) / partySizes.length;
+      }
+      // Peak hours require event timestamps aggregated by hour; skip if insufficient data
     } else {
       const orderValues = orders
-        .filter((order: any) => order.total_amount && order.total_amount > 0)
-        .map((order: any) => order.total_amount);
-      
-      analytics.avgOrderValue = orderValues.length > 0
-        ? orderValues.reduce((a: number, b: number) => a + b, 0) / orderValues.length
-        : 150;
+        .map((order: any) => order.total_amount)
+        .filter((v: any) => typeof v === 'number' && v > 0);
+      if (orderValues.length) {
+        analytics.avgOrderValue = orderValues.reduce((a: number, b: number) => a + b, 0) / orderValues.length;
+      }
     }
-    
-    // Generate daily stats
+
     for (let i = daysBack - 1; i >= 0; i--) {
-      const date = new Date(now.getTime() - (i * 24 * 60 * 60 * 1000));
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = date.toISOString().split('T')[0];
-      
-      const dayOrders = orders.filter((order: any) => 
-        order.created_at.startsWith(dateStr)
-      );
-      
+      const dayOrders = orders.filter((order: any) => order.created_at.startsWith(dateStr));
+      const dayRevenue = dayOrders
+        .map((o: any) => o.total_amount)
+        .filter((v: any) => typeof v === 'number' && v > 0)
+        .reduce((sum: number, v: number) => sum + v, 0);
       analytics.dailyStats.push({
         date: dateStr,
-        views: Math.max(dayOrders.length * 15, 10),
-        clicks: Math.max(dayOrders.length * 3, 2),
+        views: 0,
+        clicks: 0,
         bookings: dayOrders.length,
-        revenue: dayOrders
-          .filter((order: any) => order.total_amount)
-          .reduce((sum: number, order: any) => sum + (order.total_amount || 0), 0)
+        revenue: dayRevenue || undefined
       });
     }
     

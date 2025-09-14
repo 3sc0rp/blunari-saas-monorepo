@@ -184,7 +184,7 @@ describe('useWidgetAnalytics', () => {
     expect(supabase.functions.invoke).toHaveBeenCalledTimes(1);
   });
 
-  it('should handle complete failure gracefully', async () => {
+  it('should surface error with no data when all fallbacks fail (no synthetic)', async () => {
     // Use a real UUID to avoid demo path
     const realTenantId = '550e8400-e29b-41d4-a716-446655440003';
 
@@ -213,8 +213,8 @@ describe('useWidgetAnalytics', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    expect(result.current.data).toBeTruthy(); // Should have synthetic fallback data
-    expect(result.current.error).toBeNull(); // Error should be cleared when fallback works
-    expect(result.current.mode).toBe('synthetic'); // Should be synthetic since both failed
+    expect(result.current.data).toBeNull(); // No synthetic data fabricated
+    expect(result.current.error).toContain('Analytics unavailable'); // Explicit error surfaced
+    expect(result.current.mode).toBeUndefined(); // No mode set on total failure
   });
 });
