@@ -384,36 +384,16 @@ export const safeCopyToClipboard = async (text: string): Promise<{ success: bool
   }
 };
 
-// Safe localStorage operations
+// Deprecated local safeLocalStorage shim replaced by central safeStorage util.
+// Keeping exported shape for backward compatibility if imported elsewhere.
+import { safeStorage } from '@/utils/safeStorage';
 export const safeLocalStorage = {
-  getItem: (key: string): string | null => {
-    try {
-      if (!key || typeof key !== 'string') return null;
-      return localStorage.getItem(key);
-    } catch {
-      return null;
-    }
+  getItem: (key: string) => (typeof key === 'string' ? safeStorage.get(key) : null),
+  setItem: (key: string, value: string) => {
+    if (typeof key !== 'string' || typeof value !== 'string') return false;
+    safeStorage.set(key, value); return true;
   },
-  
-  setItem: (key: string, value: string): boolean => {
-    try {
-      if (!key || typeof key !== 'string' || typeof value !== 'string') return false;
-      localStorage.setItem(key, value);
-      return true;
-    } catch {
-      return false;
-    }
-  },
-  
-  removeItem: (key: string): boolean => {
-    try {
-      if (!key || typeof key !== 'string') return false;
-      localStorage.removeItem(key);
-      return true;
-    } catch {
-      return false;
-    }
-  }
+  removeItem: (key: string) => { if (typeof key !== 'string') return false; safeStorage.remove(key); return true; }
 };
 
 export default {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { safeStorage } from '@/utils/safeStorage';
 import { useToast } from '@/hooks/use-toast';
 import { getDefaultConfig } from './defaults';
 import { validateConfig } from './validation';
@@ -84,7 +85,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
         tenantSlug,
         widgetType: activeWidgetType,
       };
-      localStorage.setItem(draftKey, JSON.stringify(draftPayload));
+  safeStorage.set(draftKey, JSON.stringify(draftPayload));
     } catch (e) {
       // Non-fatal
       console.warn('Failed to persist draft config', e);
@@ -140,10 +141,10 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
         configId: `${tenantIdentifier}-${activeWidgetType}-${Date.now()}`
       };
       
-  localStorage.setItem(storageKey, JSON.stringify(configToSave));
+  safeStorage.set(storageKey, JSON.stringify(configToSave));
       
       // Also save tenant-specific backup for cross-reference
-      const tenantConfigList = JSON.parse(localStorage.getItem(`blunari-tenant-widgets-${tenantIdentifier}`) || '[]');
+  const tenantConfigList = JSON.parse(safeStorage.get(`blunari-tenant-widgets-${tenantIdentifier}`) || '[]');
       const existingIndex = tenantConfigList.findIndex((config: any) => config.widgetType === activeWidgetType);
       
       if (existingIndex >= 0) {
@@ -152,7 +153,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
         tenantConfigList.push(configToSave);
       }
       
-      localStorage.setItem(`blunari-tenant-widgets-${tenantIdentifier}`, JSON.stringify(tenantConfigList));
+  safeStorage.set(`blunari-tenant-widgets-${tenantIdentifier}`, JSON.stringify(tenantConfigList));
       
       setLastSavedTimestamp(timestamp);
       setHasUnsavedChanges(false);
@@ -196,11 +197,11 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     g.last = signature;
     try {
       // Enhanced loading with tenant-specific storage
-      const storageKey = `blunari-widget-config-${activeWidgetType}-${tenantIdentifier}`;
-      const saved = localStorage.getItem(storageKey);
+  const storageKey = `blunari-widget-config-${activeWidgetType}-${tenantIdentifier}`;
+  const saved = safeStorage.get(storageKey);
       // Load any draft (could be for transient slug or pre-id state)
-      const draftKey = `blunari-widget-config-draft-${activeWidgetType}-${tenantIdentifier}`;
-      const draftRaw = localStorage.getItem(draftKey);
+  const draftKey = `blunari-widget-config-draft-${activeWidgetType}-${tenantIdentifier}`;
+  const draftRaw = safeStorage.get(draftKey);
       let draft: any = null;
       if (draftRaw) {
         try { draft = JSON.parse(draftRaw); } catch (e) {
@@ -212,10 +213,10 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       if (!migratedLegacyKeys && tenantId && tenantSlug) {
         const legacyKey = `blunari-widget-config-${activeWidgetType}-${tenantId}-${tenantSlug}`;
         if (!saved) {
-          const legacySaved = localStorage.getItem(legacyKey);
+          const legacySaved = safeStorage.get(legacyKey);
             if (legacySaved) {
-              localStorage.setItem(storageKey, legacySaved);
-              localStorage.removeItem(legacyKey);
+              safeStorage.set(storageKey, legacySaved);
+              safeStorage.remove(legacyKey);
             }
         }
         setMigratedLegacyKeys(true);
@@ -320,7 +321,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
   // Get all saved configurations for current tenant
   const getTenantConfigurations = useCallback(() => {
     try {
-      const tenantConfigList = JSON.parse(localStorage.getItem(`blunari-tenant-widgets-${tenantIdentifier}`) || '[]');
+  const tenantConfigList = JSON.parse(safeStorage.get(`blunari-tenant-widgets-${tenantIdentifier}`) || '[]');
       return tenantConfigList;
     } catch (error) {
       console.error('Error loading tenant configurations:', error);

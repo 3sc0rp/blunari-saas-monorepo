@@ -9,9 +9,18 @@ if (typeof window !== 'undefined') {
   if (!(window as any).__GLOBAL_ERROR_PATCHED__) {
     (window as any).__GLOBAL_ERROR_PATCHED__ = true;
     window.addEventListener('error', (e) => {
+      const msg = e.message || '';
+      // Suppress noisy sandboxed localStorage SecurityErrors (expected when iframe lacks allow-same-origin)
+      if (/Failed to read the 'localStorage' property/.test(msg)) {
+        if ((window as any).VITE_ANALYTICS_DEBUG === '1') {
+          // eslint-disable-next-line no-console
+          console.warn('[Suppressed Sandbox Storage Error]', msg);
+        }
+        return; // swallow
+      }
       // eslint-disable-next-line no-console
       console.error('[GlobalError]', {
-        message: e.message,
+        message: msg,
         filename: e.filename,
         lineno: e.lineno,
         colno: e.colno,
