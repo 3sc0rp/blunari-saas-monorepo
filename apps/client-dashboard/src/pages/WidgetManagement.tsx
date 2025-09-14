@@ -237,9 +237,8 @@ const WidgetManagement: React.FC = () => {
     try {
       const node = document.querySelector('[data-widget-preview]') as HTMLElement | null;
       if (!node) return;
-      // Dynamic import to keep bundle lean; requires html2canvas in app deps
-  // @ts-expect-error html2canvas may not have bundled types or default export shape varies; dynamic import is intentionally untyped
-      const mod: any = await import('html2canvas');
+  // Dynamic import to keep bundle lean; requires html2canvas in app deps
+  const mod: any = await import('html2canvas');
       const html2canvas = (mod.default || mod) as (el: HTMLElement, opts?: any) => Promise<HTMLCanvasElement>;
       const canvas = await html2canvas(node, { scale: window.devicePixelRatio * deviceScale, backgroundColor: null });
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve));
