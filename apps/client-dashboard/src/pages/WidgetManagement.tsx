@@ -99,11 +99,28 @@ const WidgetManagement: React.FC = () => {
   const { toast } = useToast();
   
   const [activeWidgetType, setActiveWidgetType] = useState<'booking' | 'catering'>('booking');
-  const [selectedTab, setSelectedTab] = useState('configure');
-  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [deviceScale, setDeviceScale] = useState<number>(1);
-  const [showGrid, setShowGrid] = useState<boolean>(false);
-  const [showSafeArea, setShowSafeArea] = useState<boolean>(true);
+  const [selectedTab, setSelectedTab] = useState(() => {
+    try {
+      const key = `wm.tab.${tenantSlug || tenant?.slug || 'default'}`;
+      return localStorage.getItem(key) || 'configure';
+    } catch { return 'configure'; }
+  });
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>(() => {
+    try {
+      const key = `wm.preview.device.${tenantSlug || tenant?.slug || 'default'}`;
+      const v = localStorage.getItem(key) as 'desktop' | 'tablet' | 'mobile' | null;
+      return v || 'desktop';
+    } catch { return 'desktop'; }
+  });
+  const [deviceScale, setDeviceScale] = useState<number>(() => {
+    try { return parseFloat(localStorage.getItem(`wm.preview.scale.${tenantSlug || tenant?.slug || 'default'}`) || '1'); } catch { return 1; }
+  });
+  const [showGrid, setShowGrid] = useState<boolean>(() => {
+    try { return localStorage.getItem(`wm.preview.grid.${tenantSlug || tenant?.slug || 'default'}`) === '1'; } catch { return false; }
+  });
+  const [showSafeArea, setShowSafeArea] = useState<boolean>(() => {
+    try { return localStorage.getItem(`wm.preview.safe.${tenantSlug || tenant?.slug || 'default'}`) !== '0'; } catch { return true; }
+  });
   const [isLoading, setIsLoading] = useState(false); // generic spinner (saving etc.)
   const [copyBusy, setCopyBusy] = useState(false); // copy-to-clipboard only
   // Deploy tab state
@@ -119,7 +136,27 @@ const WidgetManagement: React.FC = () => {
       el.setAttribute('tabindex', '-1');
       el.focus();
     }
+    try { localStorage.setItem(`wm.preview.device.${tenantSlug || tenant?.slug || 'default'}`, previewDevice); } catch {}
   }, [previewDevice]);
+
+  useEffect(() => {
+    try { localStorage.setItem(`wm.preview.scale.${tenantSlug || tenant?.slug || 'default'}`, String(deviceScale)); } catch {}
+  }, [deviceScale, tenantSlug, tenant?.slug]);
+
+  useEffect(() => {
+    try { localStorage.setItem(`wm.preview.grid.${tenantSlug || tenant?.slug || 'default'}`, showGrid ? '1' : '0'); } catch {}
+  }, [showGrid, tenantSlug, tenant?.slug]);
+
+  useEffect(() => {
+    try { localStorage.setItem(`wm.preview.safe.${tenantSlug || tenant?.slug || 'default'}`, showSafeArea ? '1' : '0'); } catch {}
+  }, [showSafeArea, tenantSlug, tenant?.slug]);
+
+  useEffect(() => {
+    try { localStorage.setItem(`wm.tab.${tenantSlug || tenant?.slug || 'default'}`, selectedTab); } catch {}
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', selectedTab);
+    window.history.replaceState(null, '', url.toString());
+  }, [selectedTab, tenantSlug, tenant?.slug]);
 
   // Memoized preview styles to avoid unnecessary recalcs (declared after currentConfig below)
   let widgetContainerStyle = {} as React.CSSProperties;
@@ -677,19 +714,19 @@ Content-Security-Policy:
       {/* Main Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="configure" className="flex items-center gap-2">
+          <TabsTrigger value="configure" className="flex items-center gap-2" title="Configure content, appearance, and features">
             <Settings className="w-4 h-4" />
             Configure
           </TabsTrigger>
-          <TabsTrigger value="preview" className="flex items-center gap-2">
+          <TabsTrigger value="preview" className="flex items-center gap-2" title="Live device preview">
             <Eye className="w-4 h-4" />
             Preview
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
+          <TabsTrigger value="analytics" className="flex items-center gap-2" title="Analytics & performance">
             <BarChart3 className="w-4 h-4" />
             Analytics
           </TabsTrigger>
-          <TabsTrigger value="embed" className="flex items-center gap-2">
+          <TabsTrigger value="embed" className="flex items-center gap-2" title="Generate embed code & test URLs">
             <Code className="w-4 h-4" />
             Deploy
           </TabsTrigger>
@@ -1605,6 +1642,28 @@ Content-Security-Policy:
                   <RefreshCw className="w-4 h-4 mr-1" />
                 )}
                 Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  try {
+                    const rows: string[] = [];
+                    rows.push('source,count');
+                    (analyticsData?.topSources || []).forEach(s => rows.push(`${s.source},${s.count}`));
+                    rows.push('');
+                    rows.push('date,views,bookings,revenue');
+                    (analyticsData?.dailyStats || []).forEach(d => rows.push(`${d.date},${d.views},${d.bookings ?? ''},${d.revenue ?? ''}`));
+                    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${resolvedTenantSlug || 'tenant'}-${activeWidgetType}-analytics.csv`;
+                    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                  } catch (e) { console.error('CSV export failed', e); }
+                }}
+              >
+                Export CSV
               </Button>
             </div>
           </div>
