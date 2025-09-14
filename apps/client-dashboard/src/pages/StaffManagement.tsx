@@ -66,85 +66,11 @@ import {
   CreateEmployeeRequest,
 } from "@/types/restaurant";
 
-// Mock data for employees
-const mockEmployees: Employee[] = [
-  {
-    id: "1",
-    tenant_id: "tenant-1",
-    employee_number: "EMP001",
-    first_name: "John",
-    last_name: "Doe",
-    email: "john.doe@restaurant.com",
-    phone: "(555) 123-4567",
-    role: "chef",
-    hourly_rate: 2800, // $28.00
-    hire_date: "2024-01-15",
-    status: "active",
-    emergency_contact_name: "Jane Doe",
-    emergency_contact_phone: "(555) 987-6543",
-    created_at: "2024-01-15T00:00:00Z",
-    updated_at: "2024-01-15T00:00:00Z",
-  },
-  {
-    id: "2",
-    tenant_id: "tenant-1",
-    employee_number: "EMP002",
-    first_name: "Sarah",
-    last_name: "Wilson",
-    email: "sarah.wilson@restaurant.com",
-    phone: "(555) 234-5678",
-    role: "server",
-    hourly_rate: 1500, // $15.00
-    hire_date: "2024-02-01",
-    status: "active",
-    created_at: "2024-02-01T00:00:00Z",
-    updated_at: "2024-02-01T00:00:00Z",
-  },
-  {
-    id: "3",
-    tenant_id: "tenant-1",
-    employee_number: "EMP003",
-    first_name: "Mike",
-    last_name: "Johnson",
-    email: "mike.johnson@restaurant.com",
-    phone: "(555) 345-6789",
-    role: "manager",
-    hourly_rate: 3500, // $35.00
-    hire_date: "2023-12-01",
-    status: "active",
-    created_at: "2023-12-01T00:00:00Z",
-    updated_at: "2023-12-01T00:00:00Z",
-  },
-];
-
-// Mock data for shifts
-const mockShifts: Shift[] = [
-  {
-    id: "1",
-    tenant_id: "tenant-1",
-    employee_id: "1",
-    scheduled_start: "2024-09-04T09:00:00Z",
-    scheduled_end: "2024-09-04T17:00:00Z",
-    actual_start: "2024-09-04T08:55:00Z",
-    status: "checked_in",
-    hourly_rate: 2800,
-    created_at: "2024-09-03T00:00:00Z",
-    updated_at: "2024-09-04T08:55:00Z",
-  },
-  {
-    id: "2",
-    tenant_id: "tenant-1",
-    employee_id: "2",
-    scheduled_start: "2024-09-04T11:00:00Z",
-    scheduled_end: "2024-09-04T19:00:00Z",
-    actual_start: "2024-09-04T11:05:00Z",
-    actual_end: "2024-09-04T19:15:00Z",
-    status: "checked_out",
-    hourly_rate: 1500,
-    created_at: "2024-09-03T00:00:00Z",
-    updated_at: "2024-09-04T19:15:00Z",
-  },
-];
+// Real-data-only baseline: start with empty collections. These will be populated via
+// future API calls (Supabase) for employees & shifts.
+// TODO(staff-api): implement fetch + subscription to employees & shifts tables.
+const initialEmployees: Employee[] = [];
+const initialShifts: Shift[] = [];
 
 const roleOptions: StaffRole[] = [
   "manager", "chef", "sous_chef", "line_cook", "server", "bartender", "host", "busser", "dishwasher"
@@ -174,8 +100,8 @@ const StaffManagement: React.FC = () => {
   const { tenant, isLoading: tenantLoading } = useTenant();
   const { toast } = useToast();
   
-  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
-  const [shifts, setShifts] = useState<Shift[]>(mockShifts);
+  const [employees, setEmployees] = useState<Employee[]>(initialEmployees);
+  const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(false);
   
