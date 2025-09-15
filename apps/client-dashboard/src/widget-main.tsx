@@ -46,6 +46,10 @@ function WidgetApp() {
     const rawParent = params.get('parent_origin') || '';
     let parentOrigin = '';
     try { if (rawParent) parentOrigin = new URL(rawParent).origin; } catch {}
+    // Fallback to document.referrer origin if provided and valid (safer than '*')
+    if (!parentOrigin && document.referrer) {
+      try { parentOrigin = new URL(document.referrer).origin; } catch {}
+    }
     const correlationId = params.get('cid') || '';
     const widgetIdRef = { current: '' } as { current: string };
 
@@ -78,7 +82,7 @@ function WidgetApp() {
       } catch {}
     };
 
-    const ro = new (window as any).ResizeObserver ? new ResizeObserver(sendResize) : null;
+    const ro = (window as any).ResizeObserver ? new ResizeObserver(sendResize) : null;
     if (ro) {
       try { ro.observe(document.documentElement); } catch {}
     }

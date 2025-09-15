@@ -24,34 +24,42 @@ interface JWTHeder {
  * Creates a signed JWT token for widget access
  * This replaces direct tenant_id/config_id exposure in URLs
  */
-export function createWidgetToken(
+export async function createWidgetToken(
   slug: string,
   configVersion: string,
   widgetType: 'booking' | 'catering'
-): string {
+): Promise<string> {
+  // Prefer server-signed token via Edge Function for security.
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (supabaseUrl) {
+      const res = await fetch(`${supabaseUrl}/functions/v1/create-widget-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, widget_type: widgetType, config_version: configVersion, ttl_seconds: 3600 })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.token) return data.token as string;
+      }
+    }
+  } catch {}
+
+  // Fallback: local signing in development only (not secure). Avoid in production.
   const now = Math.floor(Date.now() / 1000);
   const payload: WidgetTokenPayload = {
     slug,
     configVersion,
     timestamp: now,
     widgetType,
-    exp: now + (60 * 60), // 1 hour expiration
+    exp: now + (60 * 60),
     iat: now
   };
-
-  // In production, this would use a proper server-side secret
-  // For now, we use a development secret (should be environment variable)
   const secret = getJWTSecret();
-
-  const header: JWTHeder = {
-    alg: 'HS256',
-    typ: 'JWT'
-  };
-
+  const header: JWTHeder = { alg: 'HS256', typ: 'JWT' };
   const encodedHeader = base64UrlEncode(JSON.stringify(header));
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const signature = createHMACSignature(`${encodedHeader}.${encodedPayload}`, secret);
-
   return `${encodedHeader}.${encodedPayload}.${signature}`;
 }
 
