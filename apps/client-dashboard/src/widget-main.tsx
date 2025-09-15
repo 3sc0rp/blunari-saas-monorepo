@@ -67,7 +67,11 @@ function WidgetApp() {
         widgetIdRef.current = d.widgetId || widgetIdRef.current;
         const cid = d.correlationId || correlationId;
         try {
-          window.parent && window.parent.postMessage({ type: 'widget_loaded', widgetId: widgetIdRef.current, correlationId: cid }, parentOrigin || '*');
+          const payload = { type: 'widget_loaded', widgetId: widgetIdRef.current, correlationId: cid } as any;
+          // Send to parent (embed case)
+          try { window.parent && window.parent.postMessage(payload, parentOrigin || '*'); } catch {}
+          // Also send to self (test/top-level case)
+          try { window.postMessage(payload, parentOrigin || '*'); } catch {}
         } catch {}
       }
     }
