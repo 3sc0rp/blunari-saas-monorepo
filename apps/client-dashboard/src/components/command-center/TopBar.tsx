@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Popover as UIPopover, PopoverTrigger as UIPopoverTrigger, PopoverContent as UIPopoverContent } from "@/components/ui/popover";
 import { useTenantNotifications } from '@/hooks/useTenantNotifications';
+import { formatDistanceToNow } from 'date-fns';
 import {
   Popover,
   PopoverContent,
@@ -252,28 +253,52 @@ export function TopBar({
                 )}
               </div>
             </UIPopoverTrigger>
-            <UIPopoverContent className="w-80 glass border-white/10">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-white/90">Notifications</span>
+            <UIPopoverContent className="w-[360px] glass border-white/10 p-0">
+              <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onNotify}>Send Reminders</Button>
-                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { markAllRead(); }}>Mark all read</Button>
+                  <span className="text-sm font-medium text-white/90">Notifications</span>
+                  {unreadCount > 0 && (
+                    <Badge className="bg-red-500/90 text-white h-5 px-1 text-[11px]">{Math.min(unreadCount, 99)} new</Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-[12px]" onClick={onNotify}>Send Reminders</Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-[12px]" onClick={() => { markAllRead(); }}>Mark all read</Button>
                 </div>
               </div>
-              <div className="max-h-72 overflow-auto space-y-2">
-                {notifLoading && <div className="text-xs text-white/60">Loading…</div>}
-                {!notifLoading && notifications.length === 0 && (
-                  <div className="text-xs text-white/60">No notifications</div>
-                )}
-                {notifications.map((n) => (
-                  <div key={n.id} className="p-2 rounded-md bg-white/5 border border-white/10">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-white/90 line-clamp-1">{n.title || n.type}</span>
-                      <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => markRead(n.id)}>Read</Button>
-                    </div>
-                    <div className="text-[11px] text-white/70 line-clamp-2">{n.message}</div>
+              <div className="max-h-80 overflow-auto p-2">
+                {notifLoading && (
+                  <div className="space-y-2">
+                    <div className="h-10 rounded-md bg-white/5 animate-pulse" />
+                    <div className="h-10 rounded-md bg-white/5 animate-pulse" />
+                    <div className="h-10 rounded-md bg-white/5 animate-pulse" />
                   </div>
-                ))}
+                )}
+                {!notifLoading && notifications.length === 0 && (
+                  <div className="py-6 text-center text-xs text-white/60">No notifications</div>
+                )}
+                {!notifLoading && notifications.length > 0 && (
+                  <div className="space-y-2">
+                    {notifications.slice(0, 10).map((n) => (
+                      <button
+                        key={n.id}
+                        onClick={() => markRead(n.id)}
+                        className="w-full text-left p-2 rounded-md bg-white/5 hover:bg-white/10 transition-colors border border-white/10 focus:outline-none focus:ring-2 focus:ring-accent"
+                        aria-label={`Notification: ${n.title || n.type}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-xs font-medium text-white/90 truncate">{n.title || n.type}</div>
+                            <div className="text-[11px] text-white/70 line-clamp-2">{n.message}</div>
+                          </div>
+                          <div className="text-[10px] text-white/50 whitespace-nowrap">
+                            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </UIPopoverContent>
           </UIPopover>
