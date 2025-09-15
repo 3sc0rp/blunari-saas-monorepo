@@ -110,6 +110,8 @@ test.describe('Embed handshake', () => {
     const po = encodeURIComponent(base || 'http://localhost:5173');
     const targetUrl = getWidgetUrl(base) + '&cid=test-cid-123&parent_origin=' + po;
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
+    // Ensure the widget listener is attached
+    await page.waitForTimeout(250);
 
     // Listen for widget_loaded from the child (same window during test)
     const gotLoaded = await page.evaluate(() => {
@@ -122,8 +124,10 @@ test.describe('Embed handshake', () => {
           }
         };
         window.addEventListener('message', handler);
-        // Simulate parent_ready sent from parent to the widget
-        window.postMessage({ type: 'parent_ready', widgetId: 'e2e-widget', correlationId: 'test-cid-123' }, '*');
+        // Simulate parent_ready slightly delayed to ensure listener is mounted
+        setTimeout(() => {
+          window.postMessage({ type: 'parent_ready', widgetId: 'e2e-widget', correlationId: 'test-cid-123' }, '*');
+        }, 50);
         setTimeout(() => resolve(false), 1500);
       });
     });

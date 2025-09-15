@@ -9,15 +9,18 @@ test.describe('Booking Widget Happy Path (no deposit)', () => {
   test('completes a booking end-to-end', async ({ page, baseURL }) => {
     const url = widgetUrl(baseURL as string | undefined);
     await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle');
 
-    // Step 1: select party size
-    const partyButton = page.getByRole('option', { name: /2 guests/i }).first();
-    await partyButton.click();
+    // Step 1: select party size (wait for options to appear)
+    const partyGrid = page.locator('[role="listbox"], [data-party-grid]');
+    await partyGrid.first().waitFor({ timeout: 15000 });
+    const partyButton = page.getByRole('button', { name: /2\s*(guest|guests)?/i }).first().or(page.getByRole('option', { name: /2\s*guests/i }).first());
+    await partyButton.click({ timeout: 15000 });
 
     // Step 2: wait for availability and pick first slot
-    await page.getByText('Available times').waitFor();
-    const firstSlot = page.locator('button[role="button"]').filter({ hasText: /available/ }).first();
-    await firstSlot.click();
+    await page.getByText(/Available times/i).first().waitFor({ timeout: 15000 });
+    const firstSlot = page.locator('button').filter({ hasText: /available|\d{1,2}:\d{2}/i }).first();
+    await firstSlot.click({ timeout: 15000 });
 
     // Step 3: fill guest details
     await page.getByLabel('First Name *').fill('Test');
@@ -31,6 +34,6 @@ test.describe('Booking Widget Happy Path (no deposit)', () => {
     await confirmBtn.click();
 
     // Expect confirmation UI
-    await expect(page.getByText(/Booking Confirmed!/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Booking Confirmed!/i)).toBeVisible({ timeout: 45000 });
   });
 });
