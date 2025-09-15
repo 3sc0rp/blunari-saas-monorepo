@@ -27,6 +27,8 @@ export default defineConfig({
   },
 
   projects: [
+    // Skip any Vitest-based specs by default (avoid matcher injection conflicts)
+    // Only run Playwright *.spec.ts under tests/ that do NOT import vitest.
     // Include E2E tests for Command Center
     {
       name: "command-center-e2e",
