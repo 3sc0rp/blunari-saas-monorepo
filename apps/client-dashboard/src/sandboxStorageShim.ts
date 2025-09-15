@@ -30,13 +30,22 @@
     try {
       Object.defineProperty(window, 'localStorage', { configurable:true, get(){ return memoryStorage; }});
       Object.defineProperty(window, 'sessionStorage', { configurable:true, get(){ return memoryStorage; }});
-      if (typeof console !== 'undefined') {
-        // eslint-disable-next-line no-console
-        console.warn('[Blunari sandboxStorageShim] Applied in-memory storage fallback (sandboxed iframe).');
-      }
+      // Log only in explicit debug modes to avoid noisy console in production embeds
+      try {
+        const showDebug = /\b(debug|console)=verbose\b/i.test(window.location.search) || (window as any).__BLUNARI_DEBUG__ === true;
+        if (showDebug && typeof console !== 'undefined') {
+          // eslint-disable-next-line no-console
+          console.debug('[Blunari sandboxStorageShim] Applied in-memory storage fallback (sandboxed iframe).');
+        }
+      } catch {}
     } catch (patchErr) {
-      // eslint-disable-next-line no-console
-      console.warn('[Blunari sandboxStorageShim] Failed to redefine storages:', patchErr);
+      try {
+        const showDebug = /\b(debug|console)=verbose\b/i.test(window.location.search) || (window as any).__BLUNARI_DEBUG__ === true;
+        if (showDebug && typeof console !== 'undefined') {
+          // eslint-disable-next-line no-console
+          console.debug('[Blunari sandboxStorageShim] Failed to redefine storages:', patchErr);
+        }
+      } catch {}
     }
   }
 })();

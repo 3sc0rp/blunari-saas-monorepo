@@ -16,6 +16,14 @@
       ]
     },
     {
+      "source": "/api/public/branding/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+      ]
+    },
+    {
       "source": "/public-widget.html",
       "headers": [
         { "key": "cache-control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate" },
