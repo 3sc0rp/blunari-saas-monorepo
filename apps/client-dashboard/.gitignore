@@ -16,6 +16,7 @@ dist-ssr
 .turbo/
 playwright-report/
 test-results/
+test-results*.json
 
 # Playwright and testing artifacts
 auth-page-analysis.png

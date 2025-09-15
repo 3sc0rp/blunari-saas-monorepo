@@ -1,7 +1,7 @@
 /**
  * Enterprise Error Boundary with Professional Logging Integration
  * 
- * World-class features:
+ * Features:
  * - Comprehensive error capture and recovery
  * - Integration with enterprise logging system
  * - User-friendly fallback UI

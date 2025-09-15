@@ -1,8 +1,6 @@
 /**
- * @fileoverview Performance Optimization Utilities
- * @description World-class performance optimization hooks and utilities
- * @version 1.0.0
- * @author Blunari Development Team
+ * @fileoverview Performance optimization utilities (hooks & HOCs)
+ * Provides: render monitoring, debounced/throttled callbacks, heavy computation memo, virtual scrolling, lazy loader, metrics collector.
  */
 
 import React, { 
@@ -349,7 +347,7 @@ export function useLargeDataset<T>(
 /**
  * Higher-order component for performance optimization
  */
-export function withPerformanceOptimization<T extends object>(
+export function withPerformanceOptimization<T extends Record<string, any>>(
   WrappedComponent: ComponentType<T>,
   options: {
     memoize?: boolean;
@@ -379,7 +377,8 @@ export function withPerformanceOptimization<T extends object>(
 
   OptimizedComponent.displayName = `withPerformanceOptimization(${displayName})`;
 
-  return memoize ? memo(OptimizedComponent) : OptimizedComponent;
+  // Cast to ComponentType<T> to satisfy generic expectations; runtime shape is preserved.
+  return (memoize ? (memo(OptimizedComponent) as unknown as ComponentType<T>) : OptimizedComponent) as ComponentType<T>;
 }
 
 /**
@@ -445,7 +444,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
   });
 
   LazyComponent.displayName = 'LazyComponent';
-  return LazyComponent;
+  return LazyComponent as unknown as ComponentType<React.ComponentProps<T>>;
 }
 
 /**

@@ -1,13 +1,12 @@
 /**
- * Enterprise Schema Validation System for Blunari SAAS
- * 
- * World-class features:
- * - Runtime type validation with Zod
+ * Schema Validation System
+ * Features:
+ * - Runtime type validation (Zod)
  * - API response validation with error recovery
- * - Component prop validation
+ * - Component prop validation helpers
  * - Configuration schema enforcement
- * - Performance-optimized validation
- * - Type-safe schema composition
+ * - Caching + basic performance timing
+ * - Type-safe schema composition utilities
  */
 
 import React from 'react';

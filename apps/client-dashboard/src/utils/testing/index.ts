@@ -1,8 +1,6 @@
 /**
- * @fileoverview Enterprise Testing Infrastructure
- * @description World-class testing utilities for comprehensive coverage
- * @version 1.0.0
- * @author Blunari Development Team
+ * @fileoverview Internal testing utilities
+ * @description Shared helpers for rendering, performance timing, a11y checks.
  */
 
 import { cleanup, render, RenderOptions, RenderResult } from '@testing-library/react';

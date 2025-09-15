@@ -1,7 +1,7 @@
 /**
  * Enterprise-Grade Logging System for Blunari SAAS
  * 
- * World-class features:
+ * Features:
  * - Structured logging with correlation IDs
  * - Multiple log levels with filtering
  * - Performance metrics tracking
@@ -64,7 +64,7 @@ declare global {
 }
 
 /**
- * Enterprise Logger Class - World-class logging implementation
+ * Enterprise Logger Class - structured logging implementation
  */
 class EnterpriseLogger {
   private readonly logLevel: LogLevel;

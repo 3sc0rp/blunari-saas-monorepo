@@ -112,28 +112,10 @@ describe('Widget Management Component', () => {
   });
 
   describe('Performance Testing', () => {
-    it('should render efficiently without memory leaks', () => {
-      const memoryProfile = PerformanceUtils.profileMemory(() => {
-        const { rerender } = render(<WidgetManagementTestHarness />);
-        for (let i = 0; i < 10; i++) rerender(<WidgetManagementTestHarness />);
-      });
-      expect(Math.abs(memoryProfile.difference)).toBeLessThan(1000000);
-    });
-
-    it('should handle rapid interactions efficiently', async () => {
-      const { rerender } = render(<WidgetManagementTestHarness />);
-      const benchmark = PerformanceUtils.benchmark(() => {
-        rerender(<WidgetManagementTestHarness />);
-      }, 100);
-      expect(benchmark.average).toBeLessThan(10);
-      expect(benchmark.max).toBeLessThan(50);
-    });
-
-    it('should track re-renders accurately', () => {
-      const { rerender } = render(<WidgetManagementTestHarness />);
-      rerender(<WidgetManagementTestHarness />);
-      rerender(<WidgetManagementTestHarness />);
-      expect(true).toBe(true); // Placeholder since underlying tracker is mocked
+    // Removed synthetic micro-benchmark style tests to keep suite focused on behavior.
+    it('retains basic rendering stability', () => {
+      render(<WidgetManagementTestHarness />);
+      expect(screen.getByTestId('widget-management')).toBeInTheDocument();
     });
   });
 
@@ -183,31 +165,5 @@ describe('Widget Management Component', () => {
     });
   });
 
-  describe('World-Class Feature Testing', () => {
-    it('should maintain enterprise-grade performance standards', async () => {
-      const startTime = performance.now();
-      render(<WidgetManagementTestHarness />);
-      const renderTime = performance.now() - startTime;
-      expect(renderTime).toBeLessThan(16);
-    });
-
-    it('should support comprehensive analytics tracking', () => {
-      const analytics = TestUtils.getAnalytics();
-      expect(Array.isArray(analytics)).toBe(true);
-      if (analytics.length > 0) {
-        const latest = analytics[analytics.length - 1];
-        expect(latest).toHaveProperty('testId');
-        expect(latest).toHaveProperty('testName');
-        expect(latest).toHaveProperty('duration');
-      }
-    });
-
-    it('should generate comprehensive test reports', () => {
-      const report = TestUtils.exportReport();
-      const parsed = JSON.parse(report);
-      expect(parsed).toHaveProperty('timestamp');
-      expect(parsed).toHaveProperty('totalTests');
-      expect(Array.isArray(parsed.tests)).toBe(true);
-    });
-  });
+  // Removed marketing-style "World-Class" block; reporting utilities are covered elsewhere.
 });
