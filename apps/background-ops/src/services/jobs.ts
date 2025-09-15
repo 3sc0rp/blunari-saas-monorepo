@@ -17,12 +17,15 @@ import {
 // Bull queue instance
 let jobQueue: Bull.Queue;
 let redis: RedisClientType;
+let inMemoryJobs: BaseJob[] = [];
+let inMemoryEnabled = false;
 
 // Initialize job processing infrastructure
 export async function initializeJobService(): Promise<void> {
   try {
-    // Skip Redis entirely for development - will be re-enabled for production
-    logger.warn("🔄 Redis disabled for development - job service disabled");
+    // Skip Redis entirely for now - enable in-memory fallback so API works
+    inMemoryEnabled = true;
+    logger.warn("🔄 Redis disabled - using in-memory job store");
     return;
 
     // Skip Redis entirely if URL is not provided or empty
@@ -83,7 +86,8 @@ export async function initializeJobService(): Promise<void> {
       logger.error("Failed to initialize job service:", error);
       throw error;
     } else {
-      logger.warn("🔄 Job service disabled - Redis not available");
+      inMemoryEnabled = true;
+      logger.warn("🔄 Job service degraded - using in-memory job store");
     }
   }
 }
@@ -141,10 +145,19 @@ export async function createJob(
       scheduledFor: scheduledFor > now ? scheduledFor : undefined,
     };
 
+    if (inMemoryEnabled || !jobQueue) {
+      inMemoryJobs.unshift(job);
+      jobLogger.info("Job created (in-memory)", {
+        jobId,
+        type: jobRequest.type,
+        priority: job.priority,
+      });
+      return job;
+    }
+
     // Add to Bull queue
-    const delay =
-      scheduledFor > now ? scheduledFor.getTime() - now.getTime() : 0;
-    const bullJob = await jobQueue.add(
+    const delay = scheduledFor > now ? scheduledFor.getTime() - now.getTime() : 0;
+    await jobQueue.add(
       jobRequest.type,
       {
         ...job,
@@ -182,6 +195,10 @@ export async function createJob(
  */
 export async function getJob(jobId: string): Promise<BaseJob | null> {
   try {
+    if (inMemoryEnabled || !jobQueue) {
+      return inMemoryJobs.find((j) => j.id === jobId) || null;
+    }
+
     const bullJob = await jobQueue.getJob(jobId);
     if (!bullJob) {
       return null;
@@ -207,6 +224,18 @@ export async function cancelJob(
   const jobLogger = logger.child({ requestId, jobId });
 
   try {
+    if (inMemoryEnabled || !jobQueue) {
+      const job = inMemoryJobs.find((j) => j.id === jobId);
+      if (!job) return false;
+      if ([JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED].includes(job.status)) {
+        jobLogger.warn("Cannot cancel job in final state", { state: job.status });
+        return false;
+      }
+      job.status = JobStatus.CANCELLED;
+      job.updatedAt = new Date();
+      return true;
+    }
+
     const bullJob = await jobQueue.getJob(jobId);
     if (!bullJob) {
       return false;
@@ -241,6 +270,16 @@ export async function queryJobs(filters: JobFilters): Promise<{
   try {
     const limit = Math.min(filters.limit || 50, 100);
     const offset = filters.offset || 0;
+
+    if (inMemoryEnabled || !jobQueue) {
+      let jobs = [...inMemoryJobs];
+      if (filters.tenantId) jobs = jobs.filter((j) => j.tenantId === filters.tenantId);
+      if (filters.type && filters.type.length > 0) jobs = jobs.filter((j) => (filters.type as JobType[]).includes(j.type as JobType));
+      if (filters.status && filters.status.length > 0) jobs = jobs.filter((j) => (filters.status as JobStatus[]).includes(j.status));
+      if (filters.fromDate) jobs = jobs.filter((j) => j.createdAt >= new Date(filters.fromDate!));
+      if (filters.toDate) jobs = jobs.filter((j) => j.createdAt <= new Date(filters.toDate!));
+      return { jobs: jobs.slice(offset, offset + limit), total: jobs.length };
+    }
 
     // Get jobs from Bull queue based on status
     let bullJobs: Bull.Job[] = [];
@@ -328,6 +367,22 @@ export async function getJobStats(): Promise<{
   recentFailures: number;
 }> {
   try {
+    if (inMemoryEnabled || !jobQueue) {
+      const byStatus: Record<JobStatus, number> = {
+        [JobStatus.PENDING]: inMemoryJobs.filter((j) => j.status === JobStatus.PENDING).length,
+        [JobStatus.PROCESSING]: inMemoryJobs.filter((j) => j.status === JobStatus.PROCESSING).length,
+        [JobStatus.COMPLETED]: inMemoryJobs.filter((j) => j.status === JobStatus.COMPLETED).length,
+        [JobStatus.FAILED]: inMemoryJobs.filter((j) => j.status === JobStatus.FAILED).length,
+        [JobStatus.CANCELLED]: inMemoryJobs.filter((j) => j.status === JobStatus.CANCELLED).length,
+        [JobStatus.RETRYING]: inMemoryJobs.filter((j) => j.status === JobStatus.RETRYING).length,
+      } as any;
+      const byType: Record<string, number> = {};
+      for (const j of inMemoryJobs) {
+        byType[j.type as string] = (byType[j.type as string] || 0) + 1;
+      }
+      return { total: inMemoryJobs.length, byStatus, byType, recentFailures: 0 };
+    }
+
     const [waiting, active, completed, failed, delayed] = await Promise.all([
       jobQueue.getWaiting(),
       jobQueue.getActive(),

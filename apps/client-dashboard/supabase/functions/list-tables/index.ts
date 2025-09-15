@@ -52,7 +52,7 @@ interface TablePosition { x: number; y: number }
 interface RestaurantTable {
   id: string;
   name: string;
-  section: 'Patio' | 'Bar' | 'Main';
+  section: 'Patio' | 'Bar' | 'Main' | string;
   seats: number;
   status: 'AVAILABLE' | 'SEATED' | 'RESERVED' | 'MAINTENANCE' | 'OUT_OF_ORDER';
   position?: TablePosition;
@@ -61,11 +61,14 @@ interface RestaurantTable {
 interface DatabaseTable {
   id: string;
   name: string;
-  section?: string;
+  section?: string; // legacy or custom
+  location_zone?: string; // current schema
   capacity?: number;
-  seats?: number;
-  status?: string;
-  position?: TablePosition;
+  seats?: number; // legacy/custom
+  status?: string; // 'available' | 'occupied' | 'reserved' | 'maintenance'
+  position?: TablePosition; // legacy/custom JSON
+  position_x?: number; // current schema
+  position_y?: number; // current schema
   tenant_id: string;
   created_at: string;
   updated_at: string;
@@ -73,15 +76,31 @@ interface DatabaseTable {
 
 interface BookingData { table_id: string; booking_time: string; duration_minutes: number; status: string }
 
+const mapDatabaseStatusToUi = (status?: string): RestaurantTable['status'] => {
+  switch ((status || '').toLowerCase()) {
+    case 'available':
+      return 'AVAILABLE';
+    case 'reserved':
+      return 'RESERVED';
+    case 'maintenance':
+      return 'MAINTENANCE';
+    case 'occupied':
+      return 'SEATED';
+    default:
+      return 'AVAILABLE';
+  }
+};
+
 const mapDatabaseTableToRestaurantTable = (dbTable: DatabaseTable): RestaurantTable => {
-  return {
-    id: dbTable.id,
-    name: dbTable.name,
-    section: (dbTable.section as RestaurantTable['section']) || 'Main',
-    seats: dbTable.capacity || dbTable.seats || 4,
-    status: (dbTable.status as RestaurantTable['status']) || 'AVAILABLE',
-    position: dbTable.position
-  };
+  const section = (dbTable.section || dbTable.location_zone || 'Main') as RestaurantTable['section'];
+  const seats = dbTable.capacity || dbTable.seats || 4;
+  const status = mapDatabaseStatusToUi(dbTable.status);
+  const position: TablePosition | undefined =
+    typeof dbTable.position_x === 'number' && typeof dbTable.position_y === 'number'
+      ? { x: dbTable.position_x, y: dbTable.position_y }
+      : dbTable.position;
+
+  return { id: dbTable.id, name: dbTable.name, section, seats, status, position };
 };
 
 function isTableCurrentlyOccupied(
@@ -177,11 +196,12 @@ serve(async (req) => {
       .select(`
         id,
         name,
+        location_zone,
         section,
         capacity,
-        seats,
         status,
-        position,
+        position_x,
+        position_y,
         tenant_id,
         created_at,
         updated_at
@@ -202,25 +222,41 @@ serve(async (req) => {
       );
     }
 
-    // Get current reservations to update table statuses
+    // Get current reservations to update table statuses (support both schemas)
     const now = new Date();
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const { data: bookingsData } = await supabaseClient
+    let bookingsData: BookingData[] = [];
+    // Attempt schema with TIMESTAMPTZ booking_time
+    const { data: btData, error: btError } = await supabaseClient
       .from('bookings')
-      .select(`
-        table_id,
-        booking_time,
-        duration_minutes,
-        status
-      `)
+      .select('table_id, booking_time, duration_minutes, status')
       .eq('tenant_id', tenantId)
       .gte('booking_time', startOfDay.toISOString())
       .lte('booking_time', endOfDay.toISOString())
       .in('status', ['confirmed', 'seated']);
+
+    if (!btError && btData) {
+      bookingsData = btData as unknown as BookingData[];
+    } else {
+      // Fallback schema: booking_date (DATE) + booking_time (TIME)
+      const { data: bdData } = await supabaseClient
+        .from('bookings')
+        .select('table_id, booking_date, booking_time, duration_minutes, status')
+        .eq('tenant_id', tenantId)
+        .eq('booking_date', now.toISOString().slice(0, 10))
+        .in('status', ['confirmed', 'seated']);
+
+      bookingsData = (bdData || []).map((b: any) => ({
+        table_id: b.table_id,
+        booking_time: `${b.booking_date}T${(b.booking_time || '00:00:00')}`,
+        duration_minutes: b.duration_minutes,
+        status: b.status,
+      }));
+    }
 
     // Update table statuses based on current reservations
     if (bookingsData && bookingsData.length > 0 && tables.length > 0) {

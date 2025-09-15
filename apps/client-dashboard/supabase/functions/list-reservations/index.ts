@@ -121,10 +121,8 @@ serve(async (req) => {
     const endDate = new Date(body.date)
     endDate.setHours(23, 59, 59, 999)
 
-    // Build query with table join for real section/name
-    let query = supabaseClient
-      .from('bookings')
-      .select(`
+    // Build query with table join for real table metadata; support both schemas
+    const baseSelect = `
         id,
         tenant_id,
         table_id,
@@ -132,15 +130,19 @@ serve(async (req) => {
         guest_phone,
         guest_email,
         party_size,
-        booking_time,
         duration_minutes,
         status,
         special_requests,
         deposit_amount,
         created_at,
         updated_at,
-        restaurant_tables:restaurant_tables(id, name, section, capacity, seats)
-      `)
+        restaurant_tables:restaurant_tables(id, name, location_zone, capacity)
+      `
+
+    let useTimestampSchema = true
+    let query = supabaseClient
+      .from('bookings')
+      .select(baseSelect + `, booking_time`)
       .eq('tenant_id', tenantId)
       .gte('booking_time', startDate.toISOString())
       .lte('booking_time', endDate.toISOString())
@@ -151,7 +153,26 @@ serve(async (req) => {
       query = query.eq('status', body.filters.status.toLowerCase())
     }
 
-    const { data: bookingsData, error: bookingsError } = await query
+    let { data: bookingsData, error: bookingsError } = await query
+
+    if (bookingsError) {
+      // Fallback to schema with booking_date (DATE) + booking_time (TIME)
+      useTimestampSchema = false
+      let query2 = supabaseClient
+        .from('bookings')
+        .select(baseSelect + `, booking_date, booking_time`)
+        .eq('tenant_id', tenantId)
+        .eq('booking_date', body.date)
+        .order('booking_time', { ascending: true })
+
+      if (body.filters?.status && body.filters.status !== 'all') {
+        query2 = query2.eq('status', body.filters.status.toLowerCase())
+      }
+
+      const r2 = await query2
+      bookingsData = r2.data as any[]
+      bookingsError = r2.error
+    }
 
     if (bookingsError) {
       console.error('Database error:', bookingsError)
@@ -162,12 +183,14 @@ serve(async (req) => {
     const reservations = (bookingsData || [])
       .filter((booking: any) => !!booking.table_id)
       .map((booking: any) => {
-        const startTime = new Date(booking.booking_time)
+        const startTime = useTimestampSchema
+          ? new Date(booking.booking_time)
+          : new Date(`${booking.booking_date}T${booking.booking_time}`)
         const durationMinutes = booking.duration_minutes || 90
         const endTime = new Date(startTime.getTime() + (durationMinutes * 60 * 1000))
 
         const tableMeta = booking.restaurant_tables || null
-        const section = tableMeta?.section || 'Main'
+        const section = tableMeta?.location_zone || 'Main'
 
         return {
           id: booking.id,
