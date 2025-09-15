@@ -208,17 +208,18 @@ const WidgetManagement: React.FC = () => {
   const [widgetToken, setWidgetToken] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
+    const slug = tenantSlug || tenant?.slug || null;
+    if (!slug) { setWidgetToken(null); return () => { cancelled = true; }; }
     (async () => {
       try {
-        if (!resolvedTenantSlug) { setWidgetToken(null); return; }
-        const t = await createWidgetToken(resolvedTenantSlug, '2.0', activeWidgetType);
+        const t = await createWidgetToken(slug, '2.0', activeWidgetType);
         if (!cancelled) setWidgetToken(t);
       } catch {
         if (!cancelled) setWidgetToken(null);
       }
     })();
     return () => { cancelled = true; };
-  }, [resolvedTenantSlug, activeWidgetType]);
+  }, [tenantSlug, tenant?.slug, activeWidgetType]);
   // Focus preview after device change
   useEffect(() => {
     const el = document.querySelector('[data-widget-preview]') as HTMLElement | null;
