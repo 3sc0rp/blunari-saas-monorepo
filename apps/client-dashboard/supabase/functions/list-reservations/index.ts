@@ -4,26 +4,40 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // CORS headers for cross-origin requests
 const createCorsHeaders = (requestOrigin: string | null = null) => {
   const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
-  
+
+  // Normalize and validate origin
+  const normalize = (origin: string | null) => {
+    try { if (!origin) return null; const u = new URL(origin); return `${u.protocol}//${u.host}`; } catch { return null; }
+  };
+  const origin = normalize(requestOrigin);
+
+  // Hostname-level allowlist with wildcard support for subdomains
+  const isAllowed = (o: string | null) => {
+    if (!o) return false;
+    try {
+      const { hostname, protocol } = new URL(o);
+      if (protocol !== 'https:') return false;
+      if (hostname === 'app.blunari.ai' || hostname === 'demo.blunari.ai' || hostname === 'admin.blunari.ai' || hostname === 'services.blunari.ai' || hostname === 'blunari.ai' || hostname === 'www.blunari.ai') return true;
+      // Allow any *.blunari.ai subdomain in production
+      if (hostname.endsWith('.blunari.ai')) return true;
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
   let allowedOrigin = '*';
-  if (environment === 'production' && requestOrigin) {
-    const allowedOrigins = [
-      'https://demo.blunari.ai',
-  'https://app.blunari.ai',
-      'https://admin.blunari.ai', 
-      'https://services.blunari.ai',
-      'https://blunari.ai',
-      'https://www.blunari.ai'
-    ];
-    allowedOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+  if (environment === 'production') {
+    allowedOrigin = isAllowed(origin) ? (origin as string) : 'https://app.blunari.ai';
   }
-  
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key, accept, accept-language, content-length',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key, x-correlation-id, accept, accept-language, content-length',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
   };
 };
 
