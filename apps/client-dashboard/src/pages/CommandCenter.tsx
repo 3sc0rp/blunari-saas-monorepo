@@ -23,6 +23,7 @@ import {
   TableRow as ContractTableRow
 } from "@/lib/contracts.ts";
 import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
 import type { TableRow as LegacyTableRow, Reservation as LegacyReservation } from "@/hooks/useCommandCenterData";
 
 // Type transformation utilities for converting contract types to legacy component types
@@ -213,6 +214,48 @@ export default function CommandCenter() {
     }
   };
 
+  // Notification trigger: send reminders for today's pending reservations
+  const handleNotify = async () => {
+    try {
+      const todayPending = reservations
+        .filter(r => r.status === 'PENDING')
+        .map(r => r.id);
+
+      if (todayPending.length === 0) {
+        toast.info('No pending reservations to notify');
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast.error('Authentication required');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('send-bulk-notifications', {
+        body: {
+          bookingIds: todayPending,
+          type: 'reminder',
+          template: 'booking_reminder'
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`Notifications queued for ${todayPending.length} reservation(s)`);
+      } else {
+        toast.error('Failed to send notifications');
+      }
+    } catch (err: any) {
+      console.error('Notify error:', err);
+      toast.error('Failed to send notifications');
+    }
+  };
+
   // Convert error string to ErrorState format
   const errorState = useMemo(() => {
     if (!error) return null;
@@ -282,6 +325,7 @@ export default function CommandCenter() {
           selectedDate={selectedDate}
           onNewReservation={handleNewReservation}
           onExport={handleExport}
+          onNotify={handleNotify}
         />
 
         {/* Debug Component - Remove in production */}

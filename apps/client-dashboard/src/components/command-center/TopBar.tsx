@@ -36,13 +36,15 @@ interface TopBarProps {
   selectedDate?: string;
   onNewReservation?: () => void;
   onExport?: () => void;
+  onNotify?: () => void;
 }
 
 export function TopBar({ 
   onDateChange, 
   selectedDate = new Date().toISOString().split('T')[0], 
   onNewReservation = () => {},
-  onExport = () => {}
+  onExport = () => {},
+  onNotify = () => {}
 }: TopBarProps) {
   const navigate = useNavigate();
   const { setMode } = useUIMode();
@@ -232,6 +234,9 @@ export function TopBar({
               variant="ghost"
               size="sm"
               className="glass border-white/10 text-white/90 h-10 w-10 p-0 hover:bg-white/5"
+              onClick={onNotify}
+              title="Send notifications for selected/today's reservations"
+              aria-label="Open notifications"
             >
               <Bell className="w-4 h-4" />
             </Button>
