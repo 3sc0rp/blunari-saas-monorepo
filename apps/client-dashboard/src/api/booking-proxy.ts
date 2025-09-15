@@ -106,14 +106,19 @@ export async function getTenantBySlug(slug: string) {
     if (!supabaseUrl || !supabaseKey) throw new Error('Missing Supabase configuration');
 
     // Call lightweight public tenant resolver Edge Function
+    const token = (() => {
+      try { return new URLSearchParams(window.location.search).get('token') || undefined; } catch { return undefined; }
+    })();
+
     const res = await fetch(`${supabaseUrl}/functions/v1/tenant`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // Send anon key for rate limiting context; widget token enables auth-less path server-side
         Authorization: `Bearer ${supabaseKey}`,
         apikey: supabaseKey,
       },
-      body: JSON.stringify({ slug })
+      body: JSON.stringify({ slug, token })
     });
 
     if (!res.ok) {
@@ -122,12 +127,13 @@ export async function getTenantBySlug(slug: string) {
     }
 
     const json = await res.json();
+    const payload = (json && typeof json === 'object' && 'data' in json) ? (json as any).data : json;
     const transformedData = {
-      tenant_id: json.id,
-      slug: json.slug || slug,
-      name: json.name || slug,
-      timezone: json.timezone || 'UTC',
-      currency: json.currency || 'USD',
+      tenant_id: payload.id,
+      slug: payload.slug || slug,
+      name: payload.name || slug,
+      timezone: payload.timezone || 'UTC',
+      currency: payload.currency || 'USD',
       branding: {
         primary_color: '#3b82f6',
         secondary_color: '#1e40af',

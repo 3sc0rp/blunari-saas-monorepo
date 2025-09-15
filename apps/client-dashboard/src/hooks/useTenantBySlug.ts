@@ -1,8 +1,15 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+// Public widget context must avoid supabase-js to prevent Locks API usage.
+// We resolve tenant via the lightweight edge function instead.
+import { getTenantBySlug } from "@/api/booking-proxy";
 
-type Tenant = Database["public"]["Tables"]["tenants"]["Row"];
+type Tenant = {
+  id: string;
+  name: string;
+  slug: string;
+  timezone?: string;
+  currency?: string;
+};
 
 interface UseTenantBySlugReturn {
   tenant: Tenant | null;
@@ -16,42 +23,32 @@ export function useTenantBySlug(slug: string): UseTenantBySlugReturn {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchTenant = async () => {
+    let cancelled = false;
+    (async () => {
       if (!slug) {
         setLoading(false);
         return;
       }
-
       try {
         setLoading(true);
         setError(null);
-
-        const { data, error } = await supabase
-          .from("tenants")
-          .select("*")
-          .eq("slug", slug)
-          .eq("status", "active")
-          .single();
-
-        if (error) {
-          if (error.code === "PGRST116") {
-            setError("Tenant not found");
-          } else {
-            throw error;
-          }
-          return;
-        }
-
-        setTenant(data);
+        const info = await getTenantBySlug(slug);
+        if (cancelled) return;
+        setTenant({
+          id: info.tenant_id,
+          name: info.name,
+          slug: info.slug,
+          timezone: info.timezone,
+          currency: info.currency,
+        });
       } catch (err) {
-        console.error("Error fetching tenant:", err);
+        if (cancelled) return;
         setError("Failed to load tenant information");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    };
-
-    fetchTenant();
+    })();
+    return () => { cancelled = true; };
   }, [slug]);
 
   return {

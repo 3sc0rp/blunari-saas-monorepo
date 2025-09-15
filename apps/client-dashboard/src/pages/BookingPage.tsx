@@ -1,7 +1,7 @@
 import React from "react";
 import { useParams, useLocation } from "react-router-dom";
-import BookingWidget from "@/components/booking/BookingWidget";
-import CateringWidget from "@/components/catering/CateringWidget";
+const BookingWidget = React.lazy(() => import("@/components/booking/BookingWidget"));
+const CateringWidget = React.lazy(() => import("@/components/catering/CateringWidget"));
 import { Card, CardContent } from "@/components/ui/card";
 
 const BookingPage: React.FC = () => {
@@ -9,7 +9,7 @@ const BookingPage: React.FC = () => {
   const location = useLocation();
 
   // Determine if this is a catering or booking widget based on the path
-  const isCateringWidget = location.pathname.startsWith("/catering");
+  const isCateringWidget = /(^|\/)catering\//.test(location.pathname);
 
   if (!slug) {
     return (
@@ -32,14 +32,18 @@ const BookingPage: React.FC = () => {
   if (isCateringWidget) {
     return (
       <div className="min-h-screen bg-muted/20">
-        <CateringWidget slug={slug} />
+        <React.Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
+          <CateringWidget slug={slug} />
+        </React.Suspense>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-muted/20">
-      <BookingWidget slug={slug} />
+      <React.Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
+        <BookingWidget slug={slug} />
+      </React.Suspense>
     </div>
   );
 };
