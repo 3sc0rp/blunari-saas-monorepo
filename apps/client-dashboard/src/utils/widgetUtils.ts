@@ -247,104 +247,29 @@ export const generateEmbedCode = (
   }
 };
 
-// Safe analytics data generation with fallbacks
-export const generateSafeAnalyticsData = (timeRange: string): AnalyticsData => {
-  try {
-    const seed = timeRange === '24h' ? 1 : timeRange === '7d' ? 2 : timeRange === '30d' ? 3 : 4;
-    
-    const safeRandom = (index: number): number => {
-      try {
-        const x = Math.sin(seed * 9999 + index) * 10000;
-        const result = x - Math.floor(x);
-        return isNaN(result) ? 0.5 : Math.max(0, Math.min(1, result));
-      } catch {
-        return 0.5; // Fallback value
-      }
-    };
-    
-    const safeFloor = (value: number): number => {
-      try {
-        return Math.floor(value);
-      } catch {
-        return 0;
-      }
-    };
+// Safe analytics data generation – remove randomized values in production paths
+export type AnalyticsData = {
+  totalViews?: number | null;
+  totalInteractions?: number | null;
+  totalConversions?: number | null;
+  conversionRate?: number | null;
+  avgSessionDuration?: number | null;
+  bounceRate?: number | null;
+  topSources?: Array<{ source: string; views: number | null; conversions: number | null }>;
+  dailyStats?: Array<{ date: string; views: number | null; conversions: number | null }>;
+};
 
-    const safeToFixed = (value: number, digits: number): number => {
-      try {
-        return parseFloat(value.toFixed(digits));
-      } catch {
-        return 0;
-      }
-    };
-
-    return {
-      totalViews: safeFloor(safeRandom(1) * 10000) + 1000,
-      totalInteractions: safeFloor(safeRandom(2) * 5000) + 500,
-      totalConversions: safeFloor(safeRandom(3) * 500) + 50,
-      conversionRate: safeToFixed(safeRandom(4) * 10 + 2, 1),
-      avgSessionDuration: safeFloor(safeRandom(5) * 300) + 60,
-      bounceRate: safeToFixed(safeRandom(6) * 40 + 20, 1),
-      topSources: [
-        { source: 'Direct', views: safeFloor(safeRandom(7) * 2000) + 1000, conversions: safeFloor(safeRandom(8) * 50) + 20 },
-        { source: 'Google', views: safeFloor(safeRandom(9) * 1500) + 500, conversions: safeFloor(safeRandom(10) * 40) + 15 },
-        { source: 'Social Media', views: safeFloor(safeRandom(11) * 1000) + 300, conversions: safeFloor(safeRandom(12) * 25) + 10 },
-        { source: 'Email', views: safeFloor(safeRandom(13) * 800) + 200, conversions: safeFloor(safeRandom(14) * 20) + 5 }
-      ],
-      deviceBreakdown: [
-        { device: 'Mobile', percentage: safeFloor(safeRandom(15) * 30) + 50 },
-        { device: 'Desktop', percentage: safeFloor(safeRandom(16) * 20) + 20 },
-        { device: 'Tablet', percentage: safeFloor(safeRandom(17) * 15) + 5 }
-      ],
-      hourlyData: Array.from({ length: 24 }, (_, i) => ({
-        hour: `${i}:00`,
-        views: safeFloor(safeRandom(18 + i) * 100) + 10,
-        conversions: safeFloor(safeRandom(42 + i) * 10) + 1
-      })),
-      weeklyData: Array.from({ length: 7 }, (_, i) => ({
-        day: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i] || 'Day',
-        views: safeFloor(safeRandom(50 + i) * 500) + 100,
-        conversions: safeFloor(safeRandom(57 + i) * 50) + 10
-      }))
-    };
-  } catch (error) {
-    console.error('Error generating analytics data:', error);
-    
-    // Return safe fallback data
-    return {
-      totalViews: 1000,
-      totalInteractions: 500,
-      totalConversions: 50,
-      conversionRate: 5.0,
-      avgSessionDuration: 120,
-      bounceRate: 30.0,
-      topSources: [
-        { source: 'Direct', views: 500, conversions: 25 },
-        { source: 'Google', views: 300, conversions: 15 },
-        { source: 'Social Media', views: 150, conversions: 8 },
-        { source: 'Email', views: 50, conversions: 2 }
-      ],
-      deviceBreakdown: [
-        { device: 'Mobile', percentage: 60 },
-        { device: 'Desktop', percentage: 30 },
-        { device: 'Tablet', percentage: 10 }
-      ],
-      hourlyData: Array.from({ length: 24 }, (_, i) => ({
-        hour: `${i}:00`,
-        views: 50,
-        conversions: 5
-      })),
-      weeklyData: [
-        { day: 'Mon', views: 200, conversions: 20 },
-        { day: 'Tue', views: 180, conversions: 18 },
-        { day: 'Wed', views: 220, conversions: 22 },
-        { day: 'Thu', views: 240, conversions: 24 },
-        { day: 'Fri', views: 280, conversions: 28 },
-        { day: 'Sat', views: 300, conversions: 30 },
-        { day: 'Sun', views: 260, conversions: 26 }
-      ]
-    };
-  }
+export const generateSafeAnalyticsData = (_timeRange: string): AnalyticsData => {
+  return {
+    totalViews: null,
+    totalInteractions: null,
+    totalConversions: null,
+    conversionRate: null,
+    avgSessionDuration: null,
+    bounceRate: null,
+    topSources: [],
+    dailyStats: [],
+  };
 };
 
 // Safe clipboard operations
