@@ -171,13 +171,23 @@ export function KpiStrip({ items, loading = false }: KpiStripProps) {
 
   return (
     <div className="flex gap-4 overflow-x-auto scrollbar-none">
-      {items.map((card) => (
-        <KpiCardComponent
-          key={card.id}
-          card={card}
-          onInfoClick={handleInfoClick}
-        />
-      ))}
+      {items.length === 0 ? (
+        <div className="text-sm text-white/60 px-2" title="Not enough data yet">
+          — No KPIs available
+        </div>
+      ) : (
+        items.map((card) => (
+          <KpiCardComponent
+            key={card.id}
+            card={{
+              ...card,
+              value: (card.value && String(card.value).trim().length > 0) ? card.value : '—',
+              hint: card.hint || (card.value ? '' : 'Not enough data yet')
+            }}
+            onInfoClick={handleInfoClick}
+          />
+        ))
+      )}
     </div>
   );
 }

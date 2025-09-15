@@ -148,18 +148,19 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         };
         
         // Parallel fetch all data using standardized approach
-        const [tablesResult, kpisResult] = await Promise.all([
-          // Fetch tables using GET request (edge function requires GET)
+        const [tablesResult, kpisResult, reservationsResult] = await Promise.all([
           fetchEdgeFunction('list-tables', 'GET').catch(error => {
             console.error('🚨 Tables fetch catch block triggered:', error);
             return { data: null, error };
           }),
-          
-          // Fetch KPIs using POST request with date parameter
           fetchEdgeFunction('get-kpis', 'POST', { date }).catch(error => {
             console.error('🚨 KPIs fetch catch block triggered:', error);
             return { data: null, error };
-          })
+          }),
+          fetchEdgeFunction('list-reservations', 'POST', { date, filters }).catch(error => {
+            console.error('🚨 Reservations fetch catch block triggered:', error);
+            return { data: null, error };
+          }),
         ]);
 
         // Handle function invocation errors
@@ -171,24 +172,34 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           console.error('KPIs fetch error details:', kpisResult.error);
           throw new Error(`Failed to fetch KPIs: ${kpisResult.error.message}`);
         }
+        if (reservationsResult.error) {
+          console.error('Reservations fetch error details:', reservationsResult.error);
+          throw new Error(`Failed to fetch reservations: ${reservationsResult.error.message}`);
+        }
 
         // Extract data from Supabase function results
         const tablesData = tablesResult.data;
         const kpisData = kpisResult.data;
+        const reservationsData = reservationsResult.data;
 
         logger.debug('Processing edge function results', {
           tablesData: tablesData ? Object.keys(tablesData) : 'null',
           kpisData: kpisData ? Object.keys(kpisData) : 'null',
+          reservationsData: reservationsData ? Object.keys(reservationsData) : 'null',
           tablesDataStructure: tablesData?.data ? 'has data array' : 'no data array',
-          kpisDataStructure: kpisData?.data ? 'has data array' : 'no data array'
+          kpisDataStructure: kpisData?.data ? 'has data array' : 'no data array',
+          reservationsDataStructure: reservationsData?.data ? 'has data array' : 'no data array'
         });
 
         // For now, use empty reservations array (we can implement list-reservations later)
-        const reservations: Reservation[] = [];
+        const reservations: Reservation[] = (reservationsData?.data || []).map((r: any) => {
+          try { return validateReservation(r); } catch { return null; }
+        }).filter(Boolean);
 
         // Validate and transform data - fix the data access
         logger.debug('Raw table data sample', { data: tablesData?.data?.[0] });
         logger.debug('Raw KPI data sample', { data: kpisData?.data?.[0] });
+        logger.debug('Raw reservation data sample', { data: reservationsData?.data?.[0] });
 
         const tables: TableRow[] = (tablesData?.data || []).map((t: any, index: number) => {
           try {
