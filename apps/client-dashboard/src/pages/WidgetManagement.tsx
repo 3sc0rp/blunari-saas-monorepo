@@ -439,7 +439,7 @@ const WidgetManagement: React.FC = () => {
   // loading/saving now handled by hook on mount and when identifiers change
 
   // Widget URL and embed code generation with enhanced error handling
-  const generateWidgetUrl = useCallback(async (type: 'booking' | 'catering'): Promise<string | null> => {
+  const generateWidgetUrl = useCallback((type: 'booking' | 'catering'): string | null => {
     // Gracefully handle loading states instead of throwing noisy errors
       const effectiveSlug = resolvedTenantSlug;
       if (!effectiveSlug) {
@@ -453,7 +453,11 @@ const WidgetManagement: React.FC = () => {
   const baseUrl = window.location.origin;
   // New standalone public widget bundle path (served by public-widget.html)
   const widgetPath = type === 'booking' ? '/public-widget/book' : '/public-widget/catering';
-      const widgetToken = await createWidgetToken(effectiveSlug, '2.0', type);
+      // Require a server-signed widget token to proceed
+      if (!widgetToken) {
+        // Defer until token is available; caller will handle null gracefully
+        return null;
+      }
       
     const params = new URLSearchParams();
     params.set('slug', effectiveSlug);
@@ -490,23 +494,12 @@ const WidgetManagement: React.FC = () => {
     }
 
     return `${baseUrl}${widgetPath}/${effectiveSlug}?${params.toString()}`;
-  }, [bookingConfig, cateringConfig, resolvedTenantSlug, tenant?.timezone, tenant?.currency]);
+  }, [bookingConfig, cateringConfig, resolvedTenantSlug, tenant?.timezone, tenant?.currency, widgetToken]);
 
   const escapeAttr = (val: string) => (val || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const generateEmbedCode = useCallback((type: 'booking' | 'catering') => {
     try {
-      const url = (window as any).__wm_url_cache?.[type] || null;
-      // generate asynchronously once to avoid blocking
-      if (!url) {
-        (async () => {
-          try {
-            const u = await generateWidgetUrl(type);
-            (window as any).__wm_url_cache = (window as any).__wm_url_cache || {};
-            (window as any).__wm_url_cache[type] = u;
-            setTimeout(() => setPreviewVersion(v => v + 1), 0);
-          } catch {}
-        })();
-      }
+      const url = generateWidgetUrl(type);
       
       if (!url) {
         return '<!-- Error: Unable to generate widget URL. Please check your configuration. -->';
