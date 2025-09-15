@@ -4,7 +4,7 @@ import { useTenant } from "@/hooks/useTenant";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 
-export type UIMode = "operations" | "management";
+export type UIMode = "management";
 
 interface UIPreference {
   mode: UIMode;
@@ -61,7 +61,7 @@ const withRetry = async <T,>(
 export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const { tenant } = useTenant();
-  const [mode, setModeState] = useState<UIMode>("operations");
+  const [mode, setModeState] = useState<UIMode>("management");
   const [ready, setReady] = useState(false);
   const [seenTour, setSeenTour] = useState(false);
   const [hasUserPreferences, setHasUserPreferences] = useState<boolean | null>(null);
@@ -88,7 +88,7 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
 
   // Get role-based default mode
   const getRoleBasedDefault = useCallback(async (): Promise<UIMode> => {
-    if (!user) return "operations";
+    if (!user) return "management";
 
     try {
       // Check if user has a role in employees table
@@ -109,7 +109,7 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
           case 'OPS':
           case 'VIEWER':
           default:
-            return "operations"; // Staff defaults to operations
+            return "management"; // Single mode enforced
         }
       }
 
@@ -125,7 +125,7 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
       }
 
       // Default for unknown roles
-      return "operations";
+      return "management";
     } catch (error) {
       console.error("Error determining role-based default:", error);
       return "operations";
@@ -232,7 +232,7 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
         const savedPreference = await loadPreference();
         
         if (savedPreference && savedPreference.mode) {
-          setModeState(savedPreference.mode);
+          setModeState("management");
           setSeenTour(!!savedPreference.seenTourAt);
         } else {
           // First time - use role-based default

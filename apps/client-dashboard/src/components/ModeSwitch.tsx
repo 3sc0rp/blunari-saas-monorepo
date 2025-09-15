@@ -26,36 +26,10 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
   const location = useLocation();
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const isOperationsMode = mode === "operations";
-  const isManagementMode = mode === "management";
+  const isOperationsMode = false;
+  const isManagementMode = true;
 
-  const handleToggle = async () => {
-    if (isTransitioning) return; // Prevent multiple clicks during transition
-    
-    setIsTransitioning(true);
-    const newMode = isOperationsMode ? "management" : "operations";
-    const currentMode = isOperationsMode ? "operations" : "management";
-    
-    try {
-      // Start navigation immediately to prevent white flash
-      if (newMode === "operations") {
-        navigate("/command-center");
-      } else {
-        if (location.pathname === "/command-center") {
-          navigate("/dashboard");
-        }
-      }
-      
-      // Trigger the enhanced global transition after navigation starts
-      await triggerModeTransition(currentMode, newMode);
-      
-      // Update the mode
-      await setMode(newMode);
-    } finally {
-      // Reset transition state faster
-      setIsTransitioning(false);
-    }
-  };
+  const handleToggle = async () => { return; };
 
   if (!ready) {
     return (
@@ -84,23 +58,19 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
               animate={{
                 scale: isTransitioning ? 1.1 : 1,
                 boxShadow: isTransitioning 
-                  ? (isOperationsMode 
-                      ? "0 0 20px rgba(59, 130, 246, 0.5)" 
-                      : "0 0 20px rgba(245, 158, 11, 0.5)")
+                  ? "0 0 20px rgba(245, 158, 11, 0.5)"
                   : "0 4px 12px rgba(0, 0, 0, 0.15)"
               }}
               transition={{ duration: 0.3 }}
             >
               <Button
-                onClick={handleToggle}
+                onClick={() => navigate('/dashboard')}
                 variant="ghost"
                 size="sm"
                 disabled={isTransitioning}
                 className={cn(
                   "relative h-9 w-9 p-0 rounded-lg border-2 transition-all duration-500",
-                  isOperationsMode 
-                    ? "border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600" 
-                    : "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600",
+                  "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600",
                   isTransitioning && "cursor-wait",
                   className
                 )}
@@ -112,11 +82,7 @@ export const ModeSwitch: React.FC<ModeSwitchProps> = ({
                   }}
                   transition={{ duration: 0.5 }}
                 >
-                  {isOperationsMode ? (
-                    <Monitor className="h-4 w-4" />
-                  ) : (
-                    <Settings2 className="h-4 w-4" />
-                  )}
+                  <Settings2 className="h-4 w-4" />
                 </motion.div>
                 
                 {/* Compact mode transition effect */}

@@ -1,12 +1,12 @@
 import React from "react";
-import { TopBar } from "@/components/command-center/TopBar.tsx";
-import { KpiStrip, type KpiCard } from "@/components/command-center/KpiStrip.tsx";
-import { Filters } from "@/components/command-center/Filters.tsx";
-import { MainSplit } from "@/components/command-center/MainSplit.tsx";
-import { ReservationDrawer } from "@/components/command-center/ReservationDrawer.tsx";
-import { AuthDebugger } from "@/components/command-center/AuthDebugger.tsx";
-import { TenantTestComponent } from "@/components/TenantTestComponent.tsx";
-import { DebugEdgeFunctions } from "@/components/debug/DebugEdgeFunctions.tsx";
+import { TopBar } from "@/components/command-center/TopBar";
+import { KpiStrip, type KpiCard } from "@/components/command-center/KpiStrip";
+import { Filters } from "@/components/command-center/Filters";
+import { MainSplit } from "@/components/command-center/MainSplit";
+import { ReservationDrawer } from "@/components/command-center/ReservationDrawer";
+import { AuthDebugger } from "@/components/command-center/AuthDebugger";
+import { TenantTestComponent } from "@/components/TenantTestComponent";
+import { DebugEdgeFunctions } from "@/components/debug/DebugEdgeFunctions";
 import { useCommandCenterData } from "@/hooks/useCommandCenterDataNew.ts";
 import { useReservationActions } from "@/hooks/useReservationActions.ts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useState, useMemo } from "react";
-import { FiltersState } from "@/components/command-center/Filters.tsx";
+import { FiltersState } from "@/components/command-center/Filters";
 import { 
   Filters as FiltersType, 
   shouldUseMocks,

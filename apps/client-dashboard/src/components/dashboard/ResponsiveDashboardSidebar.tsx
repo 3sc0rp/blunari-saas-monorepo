@@ -44,33 +44,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useTenant } from "@/hooks/useTenant";
 import { useUIMode } from "@/lib/ui-mode";
-import { ModeSwitch } from "@/components/ModeSwitch";
 
-// Mode-aware navigation items
-const operationsNavigation = [
-  {
-    section: "Command Center", 
-    items: [
-      { title: "Command Center", url: "/command-center", icon: Monitor },
-      { title: "Live Floor", url: "/dashboard/tables", icon: MapPin },
-      { title: "Timeline", url: "/dashboard/bookings", icon: Clock },
-    ],
-  },
-  {
-    section: "Kitchen Operations",
-    items: [
-      { title: "Kitchen Display", url: "/dashboard/kitchen-display", icon: UtensilsCrossed },
-      { title: "Inventory", url: "/dashboard/inventory-management", icon: Package },
-    ],
-  },
-  {
-    section: "Service",
-    items: [
-      { title: "Staff Management", url: "/dashboard/staff-management", icon: UserCircle },
-      { title: "Messages", url: "/dashboard/messages", icon: MessageSquare },
-    ],
-  },
-];
+// Consolidated navigation under Management
 
 const managementNavigation = [
   {
@@ -83,6 +58,11 @@ const managementNavigation = [
   {
     section: "Restaurant Management",
     items: [
+      { title: "Command Center", url: "/command-center", icon: Monitor },
+      { title: "Live Floor", url: "/dashboard/tables", icon: MapPin },
+      { title: "Timeline", url: "/dashboard/bookings", icon: Clock },
+      { title: "Kitchen Display", url: "/dashboard/kitchen-display", icon: UtensilsCrossed },
+      { title: "Inventory", url: "/dashboard/inventory-management", icon: Package },
       { title: "Staff Management", url: "/dashboard/staff-management", icon: UserCircle },
       { title: "Settings", url: "/dashboard/settings", icon: Settings },
     ],
@@ -122,8 +102,8 @@ export function ResponsiveDashboardSidebar() {
   const { mode } = useUIMode();
   const currentPath = location.pathname;
 
-  // Select navigation based on current UI mode
-  const navigationItems = mode === "operations" ? operationsNavigation : managementNavigation;
+  // Always show management navigation
+  const navigationItems = managementNavigation;
 
   const isActive = (path: string) => {
     if (path === "/command-center") {
@@ -166,22 +146,13 @@ export function ResponsiveDashboardSidebar() {
                 <h2 className="font-semibold text-text truncate text-sm leading-tight">
                   {tenant?.name || "Restaurant"}
                 </h2>
-                <p className="text-xs text-text-muted truncate opacity-75 leading-tight">
-                  {mode === "operations" ? "Operations Center" : "Management Portal"}
-                </p>
+                <p className="text-xs text-text-muted truncate opacity-75 leading-tight">Management Portal</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Mode Switch - Only show when not collapsed */}
-        {!collapsed && (
-          <div className="px-2 pb-4">
-            <div className="bg-surface-2/20 backdrop-blur-sm rounded-lg p-1.5 border border-surface-2/30">
-              <ModeSwitch size="xs" />
-            </div>
-          </div>
-        )}
+        {/* Mode Switch removed */}
 
         {/* Professional Navigation Sections */}
         <div className="flex-1 px-4 py-2 space-y-8 relative">

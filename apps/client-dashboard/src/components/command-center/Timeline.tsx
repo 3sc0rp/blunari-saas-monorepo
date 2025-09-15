@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { cn } from "@/lib/utils";
 import type { TableRow, Reservation } from "@/hooks/useCommandCenterData";
 import { format, addHours, startOfDay, differenceInMinutes } from "date-fns";
-import CurrentTimeMarker from './CurrentTimeMarker.tsx';
-import DurationBar from './DurationBar.tsx';
+import CurrentTimeMarker from './CurrentTimeMarker';
+import DurationBar from './DurationBar';
 
 interface TimelineProps {
   tables: TableRow[];
@@ -320,7 +320,7 @@ export function Timeline({
                   <CurrentTimeMarker
                     startHour={17}
                     endHour={23}
-                    slotHeight={72}
+                    slotHeight={rowHeight}
                     slotWidth={80}
                     className="top-0"
                   />
@@ -357,7 +357,7 @@ export function Timeline({
           <div className="text-center space-y-3 bg-slate-900/80 backdrop-blur rounded-lg p-6 border border-white/10">
             <div className="text-sm text-white/70 font-medium">No reservations for this date</div>
             <div className="text-xs text-white/50">Click on time slots to add your first booking</div>
-            <div className="text-xs text-white/40 bg-white/5 px-2 py-1 rounded">
+            <div className="text-xs text-white/40 bg:white/5 px-2 py-1 rounded">
               Press <kbd className="bg-white/10 px-1 rounded text-white/60">N</kbd> for quick booking
             </div>
           </div>
