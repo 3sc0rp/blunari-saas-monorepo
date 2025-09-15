@@ -90,6 +90,20 @@ export default function CommandCenter() {
 
   const handleNewReservation = () => { setNewOpen(true); };
 
+  const handleQuickCreateAt = (tableId: string, time: Date) => {
+    try {
+      setFormTableId(tableId);
+      const yyyy = new Intl.DateTimeFormat('en-CA', { year: 'numeric' }).format(time);
+      const mm = new Intl.DateTimeFormat('en-CA', { month: '2-digit' }).format(time);
+      const dd = new Intl.DateTimeFormat('en-CA', { day: '2-digit' }).format(time);
+      setFormDate(`${yyyy}-${mm}-${dd}`);
+      setFormTime(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }).format(time));
+      setNewOpen(true);
+    } catch (e) {
+      console.error('Quick create failed', e);
+    }
+  };
+
   // Handle keyboard shortcuts with enhanced error handling
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -353,6 +367,7 @@ export default function CommandCenter() {
           tables={legacyTables}
           reservations={legacyReservations}
           onSelectReservation={setSelectedReservationId}
+          onCreateReservationAt={handleQuickCreateAt}
           onFocusTable={setFocusTableId}
           focusTableId={focusTableId}
           loading={loading}

@@ -49,6 +49,8 @@ interface MainSplitProps {
   reservations: Reservation[];
   /** Callback when a reservation is selected */
   onSelectReservation: (id: string) => void;
+  /** Quick-create reservation at a table/time */
+  onCreateReservationAt?: (tableId: string, time: Date) => void;
   /** Callback when a table is focused */
   onFocusTable?: (tableId: string) => void;
   /** Callback when a reservation is moved */
@@ -147,6 +149,7 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
   tables = [],
   reservations = [],
   onSelectReservation,
+  onCreateReservationAt,
   onFocusTable = () => {},
   onMove = async () => {},
   focusTableId,
@@ -167,8 +170,11 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
 
   const handleTimeSlotClick = useCallback((tableId: string, time: Date) => {
     try {
-      // TODO: Open new reservation dialog
-      console.log('Create reservation for table', tableId, 'at', time);
+      if (onCreateReservationAt) {
+        onCreateReservationAt(tableId, time);
+      } else {
+        console.log('Create reservation for table', tableId, 'at', time);
+      }
     } catch (err) {
       console.error('Error handling time slot click:', err);
     }

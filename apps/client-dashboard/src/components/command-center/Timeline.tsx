@@ -11,6 +11,7 @@ interface TimelineProps {
   focusTableId?: string;
   onReservationClick: (reservation: Reservation) => void;
   onTimeSlotClick: (tableId: string, time: Date) => void;
+  rowHeight?: number;
 }
 
 interface TimeSlot {
@@ -24,7 +25,8 @@ export function Timeline({
   reservations,
   focusTableId,
   onReservationClick,
-  onTimeSlotClick
+  onTimeSlotClick,
+  rowHeight = 72
 }: TimelineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -255,7 +257,7 @@ export function Timeline({
                           isHourStart ? "border-white/10" : "border-white/6",
                           isEvenHour ? "bg-white/[0.02]" : "bg-transparent"
                         )}
-                        style={{ minHeight: '72px' }}
+                        style={{ minHeight: `${rowHeight}px` }}
                       >
                         {/* Time slot click area */}
                         <button
