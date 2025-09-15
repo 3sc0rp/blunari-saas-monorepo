@@ -439,24 +439,22 @@ const WidgetManagement: React.FC = () => {
   // loading/saving now handled by hook on mount and when identifiers change
 
   // Widget URL and embed code generation with enhanced error handling
-  const generateWidgetUrl = useCallback((type: 'booking' | 'catering'): string | null => {
+  const generateWidgetUrl = useCallback((type: 'booking' | 'catering'): string => {
     // Gracefully handle loading states instead of throwing noisy errors
       const effectiveSlug = resolvedTenantSlug;
       if (!effectiveSlug) {
-      // Slug not yet resolved; caller should treat as unavailable
-      return null;
+        return '';
       }
       
       const config = type === 'booking' ? bookingConfig : cateringConfig;
-    if (!config) return null;
+    if (!config) return '';
 
   const baseUrl = window.location.origin;
   // New standalone public widget bundle path (served by public-widget.html)
   const widgetPath = type === 'booking' ? '/public-widget/book' : '/public-widget/catering';
       // Require a server-signed widget token to proceed
       if (!widgetToken) {
-        // Defer until token is available; caller will handle null gracefully
-        return null;
+        return '';
       }
       
     const params = new URLSearchParams();
