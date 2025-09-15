@@ -159,17 +159,7 @@ export default function CommandCenter() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [filters, handleNewReservation]);
 
-  const {
-    kpis,
-    tables,
-    reservations,
-    policies,
-    loading,
-    error
-  } = useCommandCenterData({
-    date: selectedDate,
-    filters: contractFilters
-  });
+  const { kpis, tables, reservations, policies, loading, error, refetch, isStale, liveConnected, requestId } = useCommandCenterData({ date: selectedDate, filters: contractFilters });
 
   // Add debug logging in development mode
   if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
@@ -302,9 +292,14 @@ export default function CommandCenter() {
         {/* Debug Panel - Remove in production */}
         {error && (
           <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-4">
-            <div className="text-red-400 font-semibold mb-2">❌ Command Center Error:</div>
-            <div className="text-red-300 text-sm mb-4">{error}</div>
-            <AuthDebugger />
+            <div className="text-red-400 font-semibold mb-2">❌ Command Center Error</div>
+            <div className="text-red-300 text-sm mb-3">{error}</div>
+            {requestId && (
+              <div className="text-xs text-red-200">
+                requestId: <code className="px-1 py-0.5 bg-red-950/40 rounded">{requestId}</code>
+                <a className="ml-3 underline hover:no-underline" href={`https://admin.blunari.ai/logs?requestId=${encodeURIComponent(requestId)}`} target="_blank" rel="noreferrer">View logs</a>
+              </div>
+            )}
           </div>
         )}
 

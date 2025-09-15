@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from './useTenant';
 import { 
@@ -45,9 +45,14 @@ interface UseCommandCenterDataProps {
 export function useCommandCenterData({ date, filters }: UseCommandCenterDataProps) {
   const { tenantId, loading: tenantLoading } = useTenant();
   const queryClient = useQueryClient();
+  const [liveConnected, setLiveConnected] = useState(false);
+  const lastRequestIdRef = useRef<string | null>(null);
+
+  // Debounce filters to reduce thrash
+  const debouncedFilters = useDebouncedValue(filters, 300);
 
   // Query key with all dependencies
-  const queryKey = ['command-center', tenantId, date, filters];
+  const queryKey = ['command-center', tenantId, date, debouncedFilters];
 
   const query = useQuery({
     queryKey,
@@ -126,10 +131,13 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
             ...(body && method !== 'GET' ? { body: JSON.stringify(body) } : {})
           });
           
+          const requestId = response.headers.get('x-request-id') || null;
+          if (requestId) lastRequestIdRef.current = requestId;
           logger.debug(`Response from ${functionName}`, {
             status: response.status,
             statusText: response.statusText,
-            ok: response.ok
+            ok: response.ok,
+            requestId
           });
           
           if (!response.ok) {
@@ -144,43 +152,34 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           
           const data = await response.json();
           logger.debug(`Edge function ${functionName} success`, { dataKeys: Object.keys(data) });
-          return { data, error: null };
+          return { data, error: null, requestId } as const;
         };
         
         // Parallel fetch all data using standardized approach
         const [tablesResult, kpisResult, reservationsResult] = await Promise.all([
-          fetchEdgeFunction('list-tables', 'GET').catch(error => {
-            console.error('🚨 Tables fetch catch block triggered:', error);
-            return { data: null, error };
-          }),
-          fetchEdgeFunction('get-kpis', 'POST', { date }).catch(error => {
-            console.error('🚨 KPIs fetch catch block triggered:', error);
-            return { data: null, error };
-          }),
-          fetchEdgeFunction('list-reservations', 'POST', { date, filters }).catch(error => {
-            console.error('🚨 Reservations fetch catch block triggered:', error);
-            return { data: null, error };
-          }),
+          fetchEdgeFunction('list-tables', 'GET').catch(error => ({ data: null, error })),
+          fetchEdgeFunction('get-kpis', 'POST', { date }).catch(error => ({ data: null, error })),
+          fetchEdgeFunction('list-reservations', 'POST', { date, filters: debouncedFilters }).catch(error => ({ data: null, error })),
         ]);
 
         // Handle function invocation errors
-        if (tablesResult.error) {
-          console.error('Tables fetch error details:', tablesResult.error);
-          throw new Error(`Failed to fetch tables: ${tablesResult.error.message}`);
+        if ((tablesResult as any).error) {
+          console.error('Tables fetch error details:', (tablesResult as any).error);
+          throw new Error(`Failed to fetch tables: ${(tablesResult as any).error.message}`);
         }
-        if (kpisResult.error) {
-          console.error('KPIs fetch error details:', kpisResult.error);
-          throw new Error(`Failed to fetch KPIs: ${kpisResult.error.message}`);
+        if ((kpisResult as any).error) {
+          console.error('KPIs fetch error details:', (kpisResult as any).error);
+          throw new Error(`Failed to fetch KPIs: ${(kpisResult as any).error.message}`);
         }
-        if (reservationsResult.error) {
-          console.error('Reservations fetch error details:', reservationsResult.error);
-          throw new Error(`Failed to fetch reservations: ${reservationsResult.error.message}`);
+        if ((reservationsResult as any).error) {
+          console.error('Reservations fetch error details:', (reservationsResult as any).error);
+          throw new Error(`Failed to fetch reservations: ${(reservationsResult as any).error.message}`);
         }
 
         // Extract data from Supabase function results
-        const tablesData = tablesResult.data;
-        const kpisData = kpisResult.data;
-        const reservationsData = reservationsResult.data;
+        const tablesData = (tablesResult as any).data;
+        const kpisData = (kpisResult as any).data;
+        const reservationsData = (reservationsResult as any).data;
 
         logger.debug('Processing edge function results', {
           tablesData: tablesData ? Object.keys(tablesData) : 'null',
@@ -285,12 +284,12 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
       }
     },
     enabled: !!tenantId && !tenantLoading && isValidUUID(tenantId),
-    staleTime: 30_000, // 30 seconds
+    staleTime: 60_000, // 30 seconds
     gcTime: 5 * 60_000, // 5 minutes
     refetchOnWindowFocus: false,
     retry: (failureCount, error) => {
       // Don't retry auth errors
-      const errorMessage = error?.message?.toLowerCase() || '';
+      const errorMessage = (error as any)?.message?.toLowerCase() || '';
       if (errorMessage.includes('auth') || errorMessage.includes('unauthorized')) {
         return false;
       }
@@ -306,37 +305,34 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
     }
   }, [query.error]);
 
-  // Real-time subscriptions for live updates
+  // Visibility refetch
   useEffect(() => {
-    if (!tenantId) {
-      return;
+    function onVisibility() {
+      if (document.visibilityState === 'visible' && tenantId) {
+        queryClient.invalidateQueries({ queryKey: ['command-center', tenantId] });
+      }
     }
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [tenantId, queryClient]);
 
-    // Set up real-time subscriptions
+  // Real-time subscriptions for live updates (bookings + tables)
+  useEffect(() => {
+    if (!tenantId) return;
+
     const channel = supabase
       .channel(`command-center-${tenantId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'bookings',
-          filter: `tenant_id=eq.${tenantId}`
-        },
-        () => {
-          // Invalidate and refetch command center data
-          queryClient.invalidateQueries({ queryKey: ['command-center', tenantId] });
-          toast('Data updated', { 
-            description: 'Live update received',
-            duration: 2000 
-          });
-        }
-      )
-      .subscribe();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `tenant_id=eq.${tenantId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['command-center', tenantId] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurant_tables', filter: `tenant_id=eq.${tenantId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['command-center', tenantId] });
+      })
+      .subscribe((status) => {
+        setLiveConnected(status === 'SUBSCRIBED');
+      });
 
-    return () => {
-      channel.unsubscribe();
-    };
+    return () => { channel.unsubscribe(); };
   }, [tenantId, queryClient]);
 
   const data = query.data;
@@ -355,8 +351,20 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
     loading: query.isLoading || tenantLoading,
     error: query.error?.message || null,
     refetch: query.refetch,
-    isStale: query.isStale
+    isStale: query.isStale,
+    liveConnected,
+    requestId: lastRequestIdRef.current,
   };
+}
+
+// simple debounce hook
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(id);
+  }, [value, delayMs]);
+  return debounced;
 }
 
 
