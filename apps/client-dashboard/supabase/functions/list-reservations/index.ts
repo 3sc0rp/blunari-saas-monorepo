@@ -135,8 +135,7 @@ serve(async (req) => {
         special_requests,
         deposit_amount,
         created_at,
-        updated_at,
-        restaurant_tables:restaurant_tables(id, name, location_zone, capacity)
+        updated_at
       `
 
     let useTimestampSchema = true
@@ -179,40 +178,49 @@ serve(async (req) => {
       return createErrorResponse('DATABASE_ERROR', 'Failed to fetch reservations', 500, requestOrigin)
     }
 
-    // Transform bookings to match frontend contract using real table metadata; exclude unassigned tables
-    const reservations = (bookingsData || [])
-      .filter((booking: any) => !!booking.table_id)
-      .map((booking: any) => {
-        const startTime = useTimestampSchema
-          ? new Date(booking.booking_time)
-          : new Date(`${booking.booking_date}T${booking.booking_time}`)
-        const durationMinutes = booking.duration_minutes || 90
-        const endTime = new Date(startTime.getTime() + (durationMinutes * 60 * 1000))
+    // Transform bookings; fetch table section per-row safely (async)
+    const reservations = await Promise.all(
+      (bookingsData || [])
+        .filter((booking: any) => !!booking.table_id)
+        .map(async (booking: any) => {
+          const startTime = useTimestampSchema
+            ? new Date(booking.booking_time)
+            : new Date(`${booking.booking_date}T${booking.booking_time}`)
+          const durationMinutes = booking.duration_minutes || 90
+          const endTime = new Date(startTime.getTime() + (durationMinutes * 60 * 1000))
 
-        const tableMeta = booking.restaurant_tables || null
-        const section = tableMeta?.location_zone || 'Main'
+          let section = 'Main'
+          try {
+            const { data: t } = await supabaseClient
+              .from('restaurant_tables')
+              .select('location_zone, section')
+              .eq('id', booking.table_id)
+              .maybeSingle()
+            section = (t?.location_zone || t?.section || 'Main') as string
+          } catch {}
 
-        return {
-          id: booking.id,
-          tenantId: booking.tenant_id,
-          tableId: booking.table_id,
-          section,
-          start: startTime.toISOString(),
-          end: endTime.toISOString(),
-          partySize: booking.party_size,
-          channel: 'WEB',
-          vip: Boolean(booking.special_requests && (booking.special_requests as string).toLowerCase().includes('vip')),
-          guestName: booking.guest_name,
-          guestPhone: booking.guest_phone,
-          guestEmail: booking.guest_email,
-          status: (booking.status || 'confirmed').toString().toUpperCase(),
-          depositRequired: !!booking.deposit_amount,
-          depositAmount: booking.deposit_amount,
-          specialRequests: booking.special_requests || undefined,
-          createdAt: booking.created_at,
-          updatedAt: booking.updated_at
-        }
-      })
+          return {
+            id: booking.id,
+            tenantId: booking.tenant_id,
+            tableId: booking.table_id,
+            section,
+            start: startTime.toISOString(),
+            end: endTime.toISOString(),
+            partySize: booking.party_size,
+            channel: 'WEB',
+            vip: Boolean(booking.special_requests && (booking.special_requests as string).toLowerCase().includes('vip')),
+            guestName: booking.guest_name,
+            guestPhone: booking.guest_phone,
+            guestEmail: booking.guest_email,
+            status: (booking.status || 'confirmed').toString().toUpperCase(),
+            depositRequired: !!booking.deposit_amount,
+            depositAmount: booking.deposit_amount,
+            specialRequests: booking.special_requests || undefined,
+            createdAt: booking.created_at,
+            updatedAt: booking.updated_at
+          }
+        })
+    )
 
     return createCorsResponse({ data: reservations })
 

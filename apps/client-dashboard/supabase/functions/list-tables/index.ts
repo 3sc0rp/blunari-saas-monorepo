@@ -190,22 +190,10 @@ serve(async (req) => {
       return createErrorResponse('TENANT_NOT_FOUND', 'No tenant found for user', 404, requestOrigin);
     }
 
-    // Fetch restaurant tables with explicit field selection
+    // Fetch restaurant tables (schema-safe: use *)
     const { data: tablesData, error: tablesError } = await supabaseClient
       .from('restaurant_tables')
-      .select(`
-        id,
-        name,
-        location_zone,
-        section,
-        capacity,
-        status,
-        position_x,
-        position_y,
-        tenant_id,
-        created_at,
-        updated_at
-      `)
+      .select('*')
       .eq('tenant_id', tenantId)
       .order('name');
 
