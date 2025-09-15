@@ -4,26 +4,26 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // CORS headers for cross-origin requests
 const createCorsHeaders = (requestOrigin: string | null = null) => {
   const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
-  
+
+  const normalize = (origin: string | null) => { try { if (!origin) return null; const u = new URL(origin); return `${u.protocol}//${u.host}`; } catch { return null; } };
+  const origin = normalize(requestOrigin);
+  const isAllowed = (o: string | null) => {
+    if (!o) return false;
+    try { const { hostname, protocol } = new URL(o); if (protocol !== 'https:') return false; if (hostname.endsWith('.blunari.ai') || ['app.blunari.ai','demo.blunari.ai','admin.blunari.ai','services.blunari.ai','blunari.ai','www.blunari.ai'].includes(hostname)) return true; return false; } catch { return false; }
+  };
+
   let allowedOrigin = '*';
-  if (environment === 'production' && requestOrigin) {
-    const allowedOrigins = [
-      'https://app.blunari.ai',
-      'https://demo.blunari.ai',
-      'https://admin.blunari.ai', 
-      'https://services.blunari.ai',
-      'https://blunari.ai',
-      'https://www.blunari.ai'
-    ];
-    allowedOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+  if (environment === 'production') {
+    allowedOrigin = isAllowed(origin) ? (origin as string) : 'https://app.blunari.ai';
   }
-  
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key, accept, accept-language, content-length',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key, x-correlation-id, accept, accept-language, content-length',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
   };
 };
 
