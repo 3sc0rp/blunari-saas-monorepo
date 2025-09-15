@@ -48,6 +48,7 @@ class EnterpriseAuthManager {
    * - Uses safeStorage which falls back to in-memory map when sandboxed (no persistence).
    * - Disables session persistence & auto refresh in sandboxed iframe to avoid SecurityErrors.
    */
+  private readonly locksAvailable = typeof navigator !== 'undefined' && !!(navigator as any).locks && typeof (navigator as any).locks.request === 'function';
   private supabase = createClient(
     import.meta.env.VITE_SUPABASE_URL!,
     import.meta.env.VITE_SUPABASE_ANON_KEY!,
@@ -59,8 +60,8 @@ class EnterpriseAuthManager {
           setItem: (k: string, v: string) => safeStorage.set(k, v),
           removeItem: (k: string) => safeStorage.remove(k)
         } as Storage,
-        persistSession: safeStorage.persistent && !inSandboxedIframe,
-        autoRefreshToken: safeStorage.persistent && !inSandboxedIframe,
+        persistSession: safeStorage.persistent && !inSandboxedIframe && (typeof navigator !== 'undefined' && !!(navigator as any).locks),
+        autoRefreshToken: safeStorage.persistent && !inSandboxedIframe && (typeof navigator !== 'undefined' && !!(navigator as any).locks),
         detectSessionInUrl: true
       }
     }
@@ -280,6 +281,10 @@ class EnterpriseAuthManager {
     }
 
     try {
+      if (!this.locksAvailable) {
+        logger.warn('Locks API unavailable; skipping token refresh', { component: 'EnterpriseAuthManager' });
+        return this.currentSession;
+      }
       logger.debug('Refreshing session', {
         component: 'EnterpriseAuthManager',
         userId: this.currentSession.user.id
@@ -463,6 +468,10 @@ class EnterpriseAuthManager {
   }
 
   private startSessionManagement(): void {
+    // Skip automatic refresh when Locks API is unavailable (e.g., sandboxed iframes)
+    if (!this.locksAvailable) {
+      return;
+    }
     // Set up automatic refresh 5 minutes before expiration
     const refreshTime = this.currentSession!.expiresAt - Date.now() - (5 * 60 * 1000);
     

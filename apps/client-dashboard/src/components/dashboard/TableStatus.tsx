@@ -20,7 +20,9 @@ const TableStatus = () => {
         tablesCount: tables?.length || 0 
       });
     } else {
-      logger.warn('TableStatus: No tenant ID available');
+      if (import.meta.env.MODE === 'development') {
+        logger.debug('TableStatus: waiting for tenant');
+      }
     }
     
     if (error) {

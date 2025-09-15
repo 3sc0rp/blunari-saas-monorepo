@@ -93,11 +93,9 @@ export function usePerformanceMonitoring(componentName: string) {
       const endTime = performance.now();
       const renderTime = endTime - startTime.current;
 
-      // Validate render time is reasonable (not negative or extremely large)
-      if (renderTime < 0 || renderTime > 10000) {
-        console.warn(`[Performance] Invalid render time for ${componentName}: ${renderTime}ms`);
-        return;
-      }
+      // Reduce noise: only log in development and within sensible bounds
+      if (process.env.NODE_ENV !== 'development') return;
+      if (renderTime < 0 || renderTime > 30000) return;
 
       // Log performance metrics for debugging
       if (process.env.NODE_ENV === 'development') {
