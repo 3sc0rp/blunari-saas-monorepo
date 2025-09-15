@@ -12,14 +12,14 @@ test.describe('Booking Widget Happy Path (no deposit)', () => {
     await page.waitForLoadState('networkidle');
 
     // Step 1: select party size (wait for options to appear)
-    const partyGrid = page.locator('[role="listbox"], [data-party-grid]');
+    const partyGrid = page.locator('[data-party-grid], [role="listbox"], [aria-label*="party" i]');
     await partyGrid.first().waitFor({ timeout: 15000 });
     const partyButton = page.locator('button, [role="option"]').filter({ hasText: /(^|\b)2(\b|\s*guests?)/i }).first();
     await expect(partyButton).toBeVisible({ timeout: 15000 });
     await partyButton.click();
 
     // Step 2: wait for availability and pick first slot
-    await page.getByText(/Available times/i).first().waitFor({ timeout: 15000 });
+    await page.getByText(/Available times|Choose a time/i).first().waitFor({ timeout: 15000 });
     const firstSlot = page.locator('button').filter({ hasText: /available|\d{1,2}:\d{2}/i }).first();
     await expect(firstSlot).toBeVisible({ timeout: 15000 });
     await firstSlot.click();

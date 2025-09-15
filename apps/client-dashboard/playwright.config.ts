@@ -8,11 +8,8 @@ export default defineConfig({
   expect: {
     // Global expect timeout
     timeout: 10000,
-    // Threshold for visual comparisons
-    threshold: 0.3,
     toHaveScreenshot: {
       // Make visual tests more stable
-      threshold: 0.3,
       animations: "disabled",
     },
   },
