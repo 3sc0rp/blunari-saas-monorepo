@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/public-widget/(.*)", "destination": "/public-widget.html" },
     { "source": "/((?!api).*)", "destination": "/index.html" }
   ],
   "headers": [
@@ -12,6 +13,15 @@
         { "key": "x-frame-options", "value": "DENY" },
         { "key": "referrer-policy", "value": "strict-origin-when-cross-origin" },
   { "key": "content-security-policy", "value": "default-src 'self'; connect-src 'self' https://*.supabase.co https://o*.ingest.sentry.io https://*.sentry.io; img-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-ancestors 'none';" }
+      ]
+    },
+    {
+      "source": "/public-widget.html",
+      "headers": [
+        { "key": "cache-control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate" },
+        { "key": "x-content-type-options", "value": "nosniff" },
+        { "key": "referrer-policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "content-security-policy", "value": "default-src 'self'; connect-src 'self' https://*.supabase.co https://services.blunari.ai; img-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors *;" }
       ]
     },
     {
