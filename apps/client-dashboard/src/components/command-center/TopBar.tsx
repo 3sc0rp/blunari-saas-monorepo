@@ -22,6 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Popover as UIPopover, PopoverTrigger as UIPopoverTrigger, PopoverContent as UIPopoverContent } from "@/components/ui/popover";
+import { useTenantNotifications } from '@/hooks/useTenantNotifications';
 import {
   Popover,
   PopoverContent,
@@ -53,6 +55,8 @@ export function TopBar({
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState("demo-restaurant");
   const [contextFilter, setContextFilter] = useState("all");
+  const { notifications, unreadCount, loading: notifLoading, markRead, markAllRead } = useTenantNotifications();
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -229,21 +233,50 @@ export function TopBar({
           </div>
 
           {/* Notification Bell */}
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="glass border-white/10 text-white/90 h-10 w-10 p-0 hover:bg-white/5"
-              onClick={onNotify}
-              title="Send notifications for selected/today's reservations"
-              aria-label="Open notifications"
-            >
-              <Bell className="w-4 h-4" />
-            </Button>
-            <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center p-0">
-              2
-            </Badge>
-          </div>
+          <UIPopover open={notifOpen} onOpenChange={setNotifOpen}>
+            <UIPopoverTrigger asChild>
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="glass border-white/10 text-white/90 h-10 w-10 p-0 hover:bg-white/5"
+                  title="Notifications"
+                  aria-label="Open notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                </Button>
+                {unreadCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center p-0">
+                    {Math.min(unreadCount, 99)}
+                  </Badge>
+                )}
+              </div>
+            </UIPopoverTrigger>
+            <UIPopoverContent className="w-80 glass border-white/10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-white/90">Notifications</span>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={onNotify}>Send Reminders</Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => { markAllRead(); }}>Mark all read</Button>
+                </div>
+              </div>
+              <div className="max-h-72 overflow-auto space-y-2">
+                {notifLoading && <div className="text-xs text-white/60">Loading…</div>}
+                {!notifLoading && notifications.length === 0 && (
+                  <div className="text-xs text-white/60">No notifications</div>
+                )}
+                {notifications.map((n) => (
+                  <div key={n.id} className="p-2 rounded-md bg-white/5 border border-white/10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-white/90 line-clamp-1">{n.title || n.type}</span>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => markRead(n.id)}>Read</Button>
+                    </div>
+                    <div className="text-[11px] text-white/70 line-clamp-2">{n.message}</div>
+                  </div>
+                ))}
+              </div>
+            </UIPopoverContent>
+          </UIPopover>
         </div>
       </div>
     </div>
