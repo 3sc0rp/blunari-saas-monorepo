@@ -1899,29 +1899,53 @@ const WidgetManagement: React.FC = () => {
 
         {/* Deploy Tab */}
         <TabsContent value="embed" className="space-y-6">
-          <div>
+          <div aria-live="polite">
             <h3 className="text-lg font-semibold">Deploy Your Widget</h3>
-            <p className="text-sm text-muted-foreground">
-              Copy and paste the embed code to integrate your {activeWidgetType} widget into your website
-            </p>
+            <p className="text-sm text-muted-foreground">A step-by-step guide to embed and validate the {activeWidgetType} widget.</p>
           </div>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <Badge variant={originState.valid ? 'secondary' : 'destructive'} className="text-xs" aria-live="polite">
+                    {originState.valid ? 'Origin OK' : 'Origin invalid'}
+                  </Badge>
+                  <span className="hidden md:inline">Tenant:</span>
+                  <code className="hidden md:inline bg-muted px-2 py-0.5 rounded">{resolvedTenantSlug || '—'}</code>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="default" size="sm" onClick={() => copyToClipboard(generateEmbedCode(activeWidgetType), 'Script embed code')} aria-label="Copy script embed code">
+                    <Copy className="w-4 h-4 mr-2" /> Copy Embed
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(generateWidgetUrl(activeWidgetType), 'Widget URL')}>
+                    <Copy className="w-4 h-4 mr-2" /> Copy URL
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => window.open(generateWidgetUrl(activeWidgetType), '_blank')}>
+                    <ExternalLink className="w-4 h-4 mr-1" /> Open
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Generated embed code */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Code className="w-5 h-5" />
-                Embed Code
+                1. Choose Embed Format & Security
               </CardTitle>
               <CardDescription>
-                Add this code to your website where you want the widget to appear
+                Select the format and configure security before copying the embed code.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {/* Embed options */}
                 <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Embed options">
-                  <Label className="text-sm">Format:</Label>
+                  <Label className="text-sm">Format</Label>
                   <Select value={embedType} onValueChange={(v: 'script' | 'iframe' | 'react') => setEmbedType(v)}>
                     <SelectTrigger className="w-28 h-8" aria-label="Select embed format"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -1931,7 +1955,7 @@ const WidgetManagement: React.FC = () => {
                     </SelectContent>
                   </Select>
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="allowed-origin" className="text-sm" title="Origin of the widget (sender) accepted for postMessage">Allowed widget origin</Label>
+                    <Label htmlFor="allowed-origin" className="text-sm" title="Restrict postMessage messages to this origin">Allowed origin</Label>
                     <Input
                       id="allowed-origin"
                       className="h-8 w-64"
