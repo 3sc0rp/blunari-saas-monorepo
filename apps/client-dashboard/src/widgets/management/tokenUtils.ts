@@ -32,10 +32,14 @@ export async function createWidgetToken(
   // Prefer server-signed token via Edge Function for security.
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     if (supabaseUrl) {
       const res = await fetch(`${supabaseUrl}/functions/v1/create-widget-token`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(anonKey ? { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` } : {})
+        },
         body: JSON.stringify({ slug, widget_type: widgetType, config_version: configVersion, ttl_seconds: 3600 })
       });
       if (res.ok) {
