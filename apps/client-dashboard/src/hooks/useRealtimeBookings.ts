@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,6 +21,21 @@ interface Booking {
 export const useRealtimeBookings = (tenantId?: string) => {
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
+
+  // Wait for a valid session before opening a realtime channel to avoid early WebSocket closes
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!cancelled) setSessionReady(!!data.session);
+      } catch {
+        if (!cancelled) setSessionReady(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Fetch bookings
   const {
@@ -55,7 +70,7 @@ export const useRealtimeBookings = (tenantId?: string) => {
 
   // Set up real-time subscription
   useEffect(() => {
-    if (!tenantId) return;
+    if (!tenantId || !sessionReady) return;
 
     const channel = supabase
       .channel("tenant-bookings")
@@ -80,7 +95,7 @@ export const useRealtimeBookings = (tenantId?: string) => {
       supabase.removeChannel(channel);
       setIsConnected(false);
     };
-  }, [tenantId, queryClient]);
+  }, [tenantId, sessionReady, queryClient]);
 
   return {
     bookings,

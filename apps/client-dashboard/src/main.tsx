@@ -2,6 +2,8 @@ import './sandboxStorageShim'; // must be first to patch storage in sandbox
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import '@/monitoring/sentry';
+// Optional: configure custom error analytics endpoint (no-op if unset)
+;(window as any).__ERROR_ANALYTICS_ENDPOINT__ = import.meta.env.VITE_ERROR_ANALYTICS_ENDPOINT || '';
 import './index.css';
 
 // Temporary runtime instrumentation for diagnosing generic errors

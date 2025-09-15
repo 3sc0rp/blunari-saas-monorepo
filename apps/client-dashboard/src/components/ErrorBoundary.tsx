@@ -133,30 +133,26 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         });
       }
 
-      // Send to custom analytics endpoint
-      if (navigator.sendBeacon) {
-        const payload = JSON.stringify({
-          type: 'error_boundary',
-          errorId,
-          component: this.props.component,
-          level: this.props.level,
-          error: {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-          },
-          errorInfo: {
-            componentStack: errorInfo.componentStack
-          },
-          metadata: {
-            retryCount: this.state.retryCount,
-            userAgent: navigator.userAgent,
-            url: window.location.href,
-            timestamp: new Date().toISOString()
-          }
-        });
-
-        navigator.sendBeacon('/api/analytics/error-boundary', payload);
+      // Send to custom analytics endpoint if configured
+      const endpoint = (window as any).__ERROR_ANALYTICS_ENDPOINT__ || '';
+      if (endpoint && navigator.sendBeacon) {
+        try {
+          const payload = JSON.stringify({
+            type: 'error_boundary',
+            errorId,
+            component: this.props.component,
+            level: this.props.level,
+            error: { name: error.name, message: error.message, stack: error.stack },
+            errorInfo: { componentStack: errorInfo.componentStack },
+            metadata: {
+              retryCount: this.state.retryCount,
+              userAgent: navigator.userAgent,
+              url: window.location.href,
+              timestamp: new Date().toISOString()
+            }
+          });
+          navigator.sendBeacon(endpoint, payload);
+        } catch {}
       }
     } catch (monitoringError) {
       const monitoringLogContext = {
