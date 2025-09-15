@@ -47,18 +47,14 @@ function createErrorResponse(code: string, message: string, status: number, requ
   });
 }
 
-// Type definitions
-interface TablePosition {
-  x: number;
-  y: number;
-}
+interface TablePosition { x: number; y: number }
 
 interface RestaurantTable {
   id: string;
   name: string;
-  section: string;
+  section: 'Patio' | 'Bar' | 'Main';
   seats: number;
-  status: 'AVAILABLE' | 'RESERVED' | 'SEATED' | 'OCCUPIED' | 'OUT_OF_ORDER';
+  status: 'AVAILABLE' | 'SEATED' | 'RESERVED' | 'MAINTENANCE' | 'OUT_OF_ORDER';
   position?: TablePosition;
 }
 
@@ -75,84 +71,34 @@ interface DatabaseTable {
   updated_at: string;
 }
 
-interface BookingData {
-  table_id: string;
-  booking_time: string;
-  duration_minutes?: number;
-  status: 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no-show';
-}
-
-interface TenantData {
-  tenant_id: string;
-}
-
-// Constants
-const DEFAULT_DURATION_MINUTES = 90;
-const MOCK_TABLE_COUNT = 20;
-const TABLE_SECTIONS = ['Patio', 'Bar', 'Main'] as const;
-const SEAT_OPTIONS = [2, 4, 6, 8] as const;
-
-type TableSection = typeof TABLE_SECTIONS[number];
-
-// Utility functions
-const generateMockTables = (): RestaurantTable[] => {
-  return Array.from({ length: MOCK_TABLE_COUNT }, (_, i): RestaurantTable => {
-    const tableId = `table-${i + 1}`;
-    let section: TableSection;
-    
-    if (i < 6) section = 'Patio';
-    else if (i < 12) section = 'Bar';
-    else section = 'Main';
-
-    return {
-      id: tableId,
-      name: `Table ${i + 1}`,
-      section,
-      seats: SEAT_OPTIONS[Math.floor(Math.random() * SEAT_OPTIONS.length)],
-      status: 'AVAILABLE',
-      position: {
-        x: Math.floor(Math.random() * 400) + 50,
-        y: Math.floor(Math.random() * 300) + 50
-      }
-    };
-  });
-};
+interface BookingData { table_id: string; booking_time: string; duration_minutes: number; status: string }
 
 const mapDatabaseTableToRestaurantTable = (dbTable: DatabaseTable): RestaurantTable => {
   return {
     id: dbTable.id,
     name: dbTable.name,
-    section: dbTable.section || 'Main',
+    section: (dbTable.section as RestaurantTable['section']) || 'Main',
     seats: dbTable.capacity || dbTable.seats || 4,
     status: (dbTable.status as RestaurantTable['status']) || 'AVAILABLE',
     position: dbTable.position
   };
 };
 
-const isTableCurrentlyOccupied = (
-  table: RestaurantTable, 
-  bookings: BookingData[], 
-  currentTime: Date
-): { isOccupied: boolean; status: RestaurantTable['status'] } => {
-  const currentReservation = bookings.find((booking: BookingData) => {
-    if (booking.table_id !== table.id) return false;
-    
-    const bookingStart = new Date(booking.booking_time);
-    const duration = booking.duration_minutes || DEFAULT_DURATION_MINUTES;
-    const bookingEnd = new Date(bookingStart.getTime() + (duration * 60 * 1000));
-    
-    return bookingStart <= currentTime && currentTime <= bookingEnd;
-  });
-
-  if (currentReservation) {
-    return {
-      isOccupied: true,
-      status: currentReservation.status === 'seated' ? 'SEATED' : 'RESERVED'
-    };
+function isTableCurrentlyOccupied(
+  table: RestaurantTable,
+  bookings: BookingData[],
+  now: Date
+): { isOccupied: boolean; status: RestaurantTable['status'] } {
+  const relevant = bookings.filter((b) => b.table_id === table.id);
+  for (const b of relevant) {
+    const start = new Date(b.booking_time);
+    const end = new Date(start.getTime() + (b.duration_minutes || 90) * 60 * 1000);
+    if (start <= now && now <= end && (b.status === 'confirmed' || b.status === 'seated')) {
+      return { isOccupied: true, status: b.status === 'seated' ? 'SEATED' : 'RESERVED' };
+    }
   }
-
   return { isOccupied: false, status: 'AVAILABLE' };
-};
+}
 
 serve(async (req) => {
   const requestOrigin = req.headers.get('origin');
@@ -203,7 +149,7 @@ serve(async (req) => {
       .single()
 
     if (userTenantAccess) {
-      tenantId = userTenantAccess.tenant_id;
+      tenantId = (userTenantAccess as any).tenant_id;
     }
 
     // Method 2: Check if user is provisioned in auto_provisioning
@@ -216,21 +162,7 @@ serve(async (req) => {
         .single()
 
       if (autoProvisionData) {
-        tenantId = autoProvisionData.tenant_id;
-      }
-    }
-
-    // Method 3: Assign to demo tenant if no specific assignment (for demo purposes)
-    if (!tenantId) {
-      const { data: demoTenant } = await supabaseClient
-        .from('tenants')
-        .select('id')
-        .eq('slug', 'demo')
-        .eq('status', 'active')
-        .single()
-
-      if (demoTenant) {
-        tenantId = demoTenant.id;
+        tenantId = (autoProvisionData as any).tenant_id;
       }
     }
 
@@ -257,17 +189,17 @@ serve(async (req) => {
       .eq('tenant_id', tenantId)
       .order('name');
 
+    if (tablesError) {
+      console.error('Tables query error:', tablesError)
+      return createErrorResponse('DATABASE_ERROR', 'Failed to fetch tables', 500, requestOrigin);
+    }
+
     let tables: RestaurantTable[] = [];
 
     if (tablesData && tablesData.length > 0) {
-      // Use real table data from database
       tables = tablesData.map((table: DatabaseTable) => 
         mapDatabaseTableToRestaurantTable(table)
       );
-    } else {
-      // Generate mock tables for demo (TODO: Remove in production)
-      console.warn('No restaurant tables found, generating mock data');
-      tables = generateMockTables();
     }
 
     // Get current reservations to update table statuses
@@ -277,7 +209,7 @@ serve(async (req) => {
     const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const { data: bookingsData, error: bookingsError } = await supabaseClient
+    const { data: bookingsData } = await supabaseClient
       .from('bookings')
       .select(`
         table_id,
@@ -290,13 +222,8 @@ serve(async (req) => {
       .lte('booking_time', endOfDay.toISOString())
       .in('status', ['confirmed', 'seated']);
 
-    if (bookingsError) {
-      console.error('Bookings query error:', bookingsError);
-      // Continue without status updates rather than failing completely
-    }
-
     // Update table statuses based on current reservations
-    if (bookingsData && bookingsData.length > 0) {
+    if (bookingsData && bookingsData.length > 0 && tables.length > 0) {
       tables = tables.map((table: RestaurantTable): RestaurantTable => {
         const occupancyCheck = isTableCurrentlyOccupied(
           table, 
@@ -327,7 +254,7 @@ serve(async (req) => {
           return acc;
         }, {} as Record<string, number>),
         last_updated: now.toISOString(),
-        data_source: tablesData && tablesData.length > 0 ? 'database' : 'mock'
+        data_source: 'database'
       }
     };
 

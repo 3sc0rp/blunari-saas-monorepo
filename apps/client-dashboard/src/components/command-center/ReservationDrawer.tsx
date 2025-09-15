@@ -11,6 +11,7 @@ interface ReservationDrawerProps {
   onMove: () => void;
   onMessage: () => void;
   onCancel: () => Promise<void>;
+  onApprove?: () => Promise<void>;
 }
 
 export function ReservationDrawer({
@@ -21,9 +22,12 @@ export function ReservationDrawer({
   onEdit,
   onMove,
   onMessage,
-  onCancel
+  onCancel,
+  onApprove
 }: ReservationDrawerProps) {
   if (!open || !reservation) return null;
+
+  const isPending = (reservation.status || '').toLowerCase() === 'pending';
 
   return (
     <>
@@ -92,6 +96,15 @@ export function ReservationDrawer({
 
           {/* Actions */}
           <div className="space-y-3">
+            {isPending && onApprove && (
+              <button
+                onClick={() => onApprove?.()}
+                className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+              >
+                Confirm Reservation
+              </button>
+            )}
+
             <button
               onClick={onEdit}
               className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"

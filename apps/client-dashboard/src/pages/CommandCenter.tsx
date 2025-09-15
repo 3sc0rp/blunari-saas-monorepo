@@ -9,6 +9,11 @@ import { TenantTestComponent } from "@/components/TenantTestComponent.tsx";
 import { DebugEdgeFunctions } from "@/components/debug/DebugEdgeFunctions.tsx";
 import { useCommandCenterData } from "@/hooks/useCommandCenterDataNew.ts";
 import { useReservationActions } from "@/hooks/useReservationActions.ts";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useState, useMemo } from "react";
 import { FiltersState } from "@/components/command-center/Filters.tsx";
 import { 
@@ -71,57 +76,18 @@ export default function CommandCenter() {
     isAnyLoading: isActionLoading
   } = useReservationActions();
 
-  const handleNewReservation = async () => {
-    try {
-      // Mock new reservation for now - in real app would open a modal
-      if (shouldUseMocks()) {
-        console.log('New reservation shortcut triggered (mock mode)');
-        return;
-      }
-      
-      // CRITICAL FIX: Proper validation before accessing array elements
-      if (!tables || !Array.isArray(tables) || tables.length === 0) {
-        toast.error('No tables available. Please ensure your restaurant has tables configured.');
-        return;
-      }
-      
-      // CRITICAL FIX: Find available table instead of using first table blindly  
-      const availableTable = tables.find(table => 
-        table.status === 'AVAILABLE' && table.seats > 0 // FIX: Use correct enum value
-      );
-      
-      if (!availableTable) {
-        toast.error('No available tables found. All tables are currently occupied or reserved.');
-        return;
-      }
-      
-      // CRITICAL FIX: Validate table data before using it
-      if (!availableTable.id || !availableTable.seats) {
-        toast.error('Invalid table data. Please refresh and try again.');
-        return;
-      }
-      
-      // Example of creating a reservation programmatically
-      const result = await createReservationAction({
-        tableId: availableTable.id,
-        start: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
-        end: new Date(Date.now() + 2.5 * 60 * 60 * 1000).toISOString(), // 2.5 hours from now
-        partySize: Math.min(4, availableTable.seats), // Don't exceed table capacity
-        guestName: 'Test Guest',
-        guestEmail: 'test@example.com',
-        channel: 'WEB'
-      });
-      
-      if (result.ok) {
-        toast.success('Reservation created successfully');
-      } else {
-        toast.error(`Failed to create reservation: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Failed to create new reservation:', error);
-      toast.error('Failed to create reservation. Please try again.');
-    }
-  };
+  const [newOpen, setNewOpen] = useState(false);
+  const [formTableId, setFormTableId] = useState<string>("");
+  const [formDate, setFormDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [formTime, setFormTime] = useState<string>("18:00");
+  const [formDuration, setFormDuration] = useState<number>(120);
+  const [formParty, setFormParty] = useState<number>(2);
+  const [formName, setFormName] = useState<string>("");
+  const [formEmail, setFormEmail] = useState<string>("");
+  const [formPhone, setFormPhone] = useState<string>("");
+  const [formNotes, setFormNotes] = useState<string>("");
+
+  const handleNewReservation = () => { setNewOpen(true); };
 
   // Handle keyboard shortcuts with enhanced error handling
   React.useEffect(() => {
@@ -370,10 +336,122 @@ export default function CommandCenter() {
           console.log('Message guest:', selectedReservationId);
         }}
         onCancel={async () => {
-          console.log('Cancel reservation:', selectedReservationId);
-          // TODO: Implement cancellation
+          if (!selectedReservationId) return;
+          const res = await cancelReservationAction({ reservationId: selectedReservationId, reason: 'Cancelled by owner' });
+          if ((res as any)?.ok === false) {
+            toast.error(`Cancel failed: ${(res as any).error}`);
+          } else {
+            toast.success('Reservation cancelled');
+            setSelectedReservationId(null);
+            await refetch();
+          }
+        }}
+        onApprove={async () => {
+          if (!selectedReservationId) return;
+          const res = await moveReservationAction({ reservationId: selectedReservationId, status: 'CONFIRMED' as any });
+          if ((res as any)?.ok === false) {
+            toast.error(`Approve failed: ${(res as any).error}`);
+          } else {
+            toast.success('Reservation confirmed');
+            await refetch();
+          }
         }}
       />
+
+      {/* New Reservation Dialog */}
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Reservation</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="table">Table</Label>
+                <Select value={formTableId} onValueChange={setFormTableId}>
+                  <SelectTrigger id="table"><SelectValue placeholder="Select table" /></SelectTrigger>
+                  <SelectContent>
+                    {legacyTables.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name} ({t.capacity})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="party">Party Size</Label>
+                <Input id="party" type="number" min={1} max={20} value={formParty} onChange={(e) => setFormParty(parseInt(e.target.value || '0'))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label htmlFor="date">Date</Label>
+                <Input id="date" type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="time">Time</Label>
+                <Input id="time" type="time" value={formTime} onChange={(e) => setFormTime(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="duration">Duration (min)</Label>
+                <Input id="duration" type="number" min={30} step={15} value={formDuration} onChange={(e) => setFormDuration(parseInt(e.target.value || '0'))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="name">Guest Name</Label>
+                <Input id="name" value={formName} onChange={(e) => setFormName(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" value={formPhone} onChange={(e) => setFormPhone(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="notes">Notes</Label>
+                <Input id="notes" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewOpen(false)} disabled={isActionLoading}>Cancel</Button>
+            <Button onClick={async () => {
+              try {
+                if (!formTableId) { toast.error('Select a table'); return; }
+                if (!formName) { toast.error('Enter guest name'); return; }
+                const startIso = new Date(`${formDate}T${formTime}:00`).toISOString();
+                const endIso = new Date(new Date(startIso).getTime() + formDuration * 60000).toISOString();
+                const res = await createReservationAction({
+                  tableId: formTableId,
+                  start: startIso,
+                  end: endIso,
+                  partySize: formParty,
+                  guestName: formName,
+                  guestEmail: formEmail || undefined,
+                  guestPhone: formPhone || undefined,
+                  specialRequests: formNotes || undefined,
+                  channel: 'WEB'
+                });
+                if ((res as any)?.ok === false) {
+                  toast.error(`Create failed: ${(res as any).error}`);
+                } else {
+                  toast.success('Reservation created');
+                  setNewOpen(false);
+                  setFormName(""); setFormEmail(""); setFormPhone(""); setFormNotes("");
+                  await refetch();
+                }
+              } catch (err) {
+                console.error(err);
+                toast.error('Failed to create reservation');
+              }
+            }} disabled={isActionLoading}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

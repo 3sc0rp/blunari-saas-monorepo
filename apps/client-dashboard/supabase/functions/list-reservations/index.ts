@@ -65,7 +65,7 @@ interface ListReservationsRequest {
   date: string; // YYYY-MM-DD format
   filters?: {
     section?: 'all' | 'Patio' | 'Bar' | 'Main';
-    status?: 'all' | 'CONFIRMED' | 'SEATED' | 'COMPLETED';
+    status?: 'all' | 'PENDING' | 'CONFIRMED' | 'SEATED' | 'COMPLETED' | 'CANCELLED';
     channel?: 'all' | 'WEB' | 'PHONE' | 'WALKIN';
   };
 }
@@ -121,7 +121,7 @@ serve(async (req) => {
     const endDate = new Date(body.date)
     endDate.setHours(23, 59, 59, 999)
 
-    // Build query
+    // Build query with table join for real section/name
     let query = supabaseClient
       .from('bookings')
       .select(`
@@ -138,7 +138,8 @@ serve(async (req) => {
         special_requests,
         deposit_amount,
         created_at,
-        updated_at
+        updated_at,
+        restaurant_tables:restaurant_tables(id, name, section, capacity, seats)
       `)
       .eq('tenant_id', tenantId)
       .gte('booking_time', startDate.toISOString())
@@ -154,49 +155,41 @@ serve(async (req) => {
 
     if (bookingsError) {
       console.error('Database error:', bookingsError)
-      return createErrorResponse('DATABASE_ERROR', 'Failed to fetch reservations', 500)
+      return createErrorResponse('DATABASE_ERROR', 'Failed to fetch reservations', 500, requestOrigin)
     }
 
-    // Transform bookings to match frontend contract
-    const reservations = (bookingsData || []).map((booking: any) => {
-      const startTime = new Date(booking.booking_time)
-      const durationMinutes = booking.duration_minutes || 90
-      const endTime = new Date(startTime.getTime() + (durationMinutes * 60 * 1000))
+    // Transform bookings to match frontend contract using real table metadata; exclude unassigned tables
+    const reservations = (bookingsData || [])
+      .filter((booking: any) => !!booking.table_id)
+      .map((booking: any) => {
+        const startTime = new Date(booking.booking_time)
+        const durationMinutes = booking.duration_minutes || 90
+        const endTime = new Date(startTime.getTime() + (durationMinutes * 60 * 1000))
 
-      // Determine section from table_id (mock logic - in real app this would come from tables table)
-      let section = 'Main'
-      if (booking.table_id) {
-        const tableNum = parseInt(booking.table_id.replace('table-', ''))
-        if (tableNum <= 6) section = 'Patio'
-        else if (tableNum <= 12) section = 'Bar'
-      }
+        const tableMeta = booking.restaurant_tables || null
+        const section = tableMeta?.section || 'Main'
 
-      // Apply section filter if specified
-      if (body.filters?.section && body.filters.section !== 'all' && section !== body.filters.section) {
-        return null
-      }
-
-      return {
-        id: booking.id,
-        tenantId: booking.tenant_id,
-        tableId: booking.table_id || `table-${Math.floor(Math.random() * 20) + 1}`,
-        section,
-        start: startTime.toISOString(),
-        end: endTime.toISOString(),
-        partySize: booking.party_size,
-        channel: 'WEB', // Default since not stored in current schema
-        vip: booking.special_requests?.toLowerCase().includes('vip') || false,
-        guestName: booking.guest_name,
-        guestPhone: booking.guest_phone,
-        guestEmail: booking.guest_email,
-        status: booking.status?.toUpperCase() || 'CONFIRMED',
-        depositRequired: !!booking.deposit_amount,
-        depositAmount: booking.deposit_amount,
-        specialRequests: booking.special_requests,
-        createdAt: booking.created_at,
-        updatedAt: booking.updated_at
-      }
-    }).filter(Boolean) // Remove null entries from section filtering
+        return {
+          id: booking.id,
+          tenantId: booking.tenant_id,
+          tableId: booking.table_id,
+          section,
+          start: startTime.toISOString(),
+          end: endTime.toISOString(),
+          partySize: booking.party_size,
+          channel: 'WEB',
+          vip: Boolean(booking.special_requests && (booking.special_requests as string).toLowerCase().includes('vip')),
+          guestName: booking.guest_name,
+          guestPhone: booking.guest_phone,
+          guestEmail: booking.guest_email,
+          status: (booking.status || 'confirmed').toString().toUpperCase(),
+          depositRequired: !!booking.deposit_amount,
+          depositAmount: booking.deposit_amount,
+          specialRequests: booking.special_requests || undefined,
+          createdAt: booking.created_at,
+          updatedAt: booking.updated_at
+        }
+      })
 
     return createCorsResponse({ data: reservations })
 

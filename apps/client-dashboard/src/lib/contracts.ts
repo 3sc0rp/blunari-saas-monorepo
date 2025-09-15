@@ -14,7 +14,7 @@ export const ReservationZ = z.object({
   guestName: z.string().min(1),
   guestPhone: z.string().optional(),
   guestEmail: z.string().email().optional(),
-  status: z.enum(['CONFIRMED', 'SEATED', 'COMPLETED', 'CANCELLED', 'NO_SHOW']).default('CONFIRMED'),
+  status: z.enum(['PENDING', 'CONFIRMED', 'SEATED', 'COMPLETED', 'CANCELLED', 'NO_SHOW']).default('PENDING'),
   depositRequired: z.boolean().default(false),
   depositAmount: z.number().optional(),
   specialRequests: z.string().optional(),
@@ -76,9 +76,10 @@ export const MoveReservationRequestZ = z.object({
   reservationId: z.string().uuid(),
   tableId: z.string().optional(),
   start: z.string().datetime().optional(),
-  end: z.string().datetime().optional()
-}).refine(data => data.tableId || data.start || data.end, {
-  message: "At least one field (tableId, start, or end) must be provided"
+  end: z.string().datetime().optional(),
+  status: z.enum(['PENDING', 'CONFIRMED', 'SEATED', 'COMPLETED', 'CANCELLED', 'NO_SHOW']).optional()
+}).refine(data => data.tableId || data.start || data.end || data.status, {
+  message: "At least one field (tableId, start, end, or status) must be provided"
 });
 
 export const CancelReservationRequestZ = z.object({
@@ -106,7 +107,7 @@ export const ApiResponseZ = <T extends z.ZodType>(dataSchema: T) => z.object({
 // Filters schema
 export const FiltersZ = z.object({
   section: z.enum(['all', 'Patio', 'Bar', 'Main']).default('all'),
-  status: z.enum(['all', 'CONFIRMED', 'SEATED', 'COMPLETED']).default('all'),
+  status: z.enum(['all', 'PENDING', 'CONFIRMED', 'SEATED', 'COMPLETED']).default('all'),
   channel: z.enum(['all', 'WEB', 'PHONE', 'WALKIN']).default('all'),
   partySize: z.object({
     min: z.number().int().min(1).optional(),

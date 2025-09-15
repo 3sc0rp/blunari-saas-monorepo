@@ -317,26 +317,26 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
 
     return new Response(JSON.stringify(responseBody), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } });
   } catch (error) {
-    // Fallback to local booking creation
+    // Fallback to local booking creation — create PENDING and notify owner for approval
     try {
       const { tenant_id, hold_id, guest_details, idempotency_key } = requestData;
-      const { data: hold, error: holdError } = await supabase.from("booking_holds").select("*").eq("id", hold_id).single();
+      const { data: hold, error: holdError } = await supabase.from("booking_holds").select("*").eq("id", hold_id).maybeSingle();
       if (holdError || !hold) {
         return errorResponse('HOLD_NOT_FOUND', 'Booking hold not found or expired', 404, requestId, { details: holdError?.message });
       }
 
       const { data: existing } = await supabase
         .from("bookings")
-        .select("id")
+        .select("id, status")
         .eq("tenant_id", tenant_id)
         .eq("guest_email", guest_details.email)
         .eq("booking_time", hold.booking_time)
         .maybeSingle();
 
       if (existing) {
-        const body = { success: true, reservation_id: existing.id, confirmation_number: `CONF${existing.id.slice(-6).toUpperCase()}`, status: "confirmed", summary: { date: hold.booking_time, time: new Date(hold.booking_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }), party_size: hold.party_size, table_info: "Reserved Table", deposit_required: false }, _fallback: true, requestId };
+        const body = { success: true, reservation_id: existing.id, confirmation_number: `PEND${existing.id.slice(-6).toUpperCase()}`, status: "pending", summary: { date: hold.booking_time, time: new Date(hold.booking_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }), party_size: hold.party_size, table_info: "Pending Approval", deposit_required: false }, _fallback: true, requestId };
         if (idempotency_key) { try { await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: body }); } catch {} }
-        await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: guest_details?.email, template: 'reservation.confirmed', data: { reservation_id: existing.id, confirmation_number: `CONF${existing.id.slice(-6).toUpperCase()}`, tenant_name: tenant?.name } });
+        await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: tenant?.email || 'owner@blunari.ai', template: 'reservation.review', data: { reservation_id: existing.id, tenant_name: tenant?.name } });
         return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } });
       }
 
@@ -348,7 +348,7 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
         guest_email: guest_details.email,
         guest_phone: guest_details.phone || null,
         special_requests: guest_details.special_requests || null,
-        status: "confirmed",
+        status: "pending",
         duration_minutes: hold.duration_minutes,
         deposit_required: false,
         deposit_paid: false,
@@ -359,10 +359,10 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
         return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: bookingError.message });
       }
 
-      const confirmationNumber = `CONF${booking.id.slice(-6).toUpperCase()}`;
-      const body = { success: true, reservation_id: booking.id, confirmation_number: confirmationNumber, status: "confirmed", summary: { date: booking.booking_time, time: new Date(booking.booking_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }), party_size: booking.party_size, table_info: "Reserved Table", deposit_required: false }, _fallback: true, requestId };
+      const confirmationNumber = `PEND${booking.id.slice(-6).toUpperCase()}`;
+      const body = { success: true, reservation_id: booking.id, confirmation_number: confirmationNumber, status: "pending", summary: { date: booking.booking_time, time: new Date(booking.booking_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }), party_size: booking.party_size, table_info: "Pending Approval", deposit_required: false }, _fallback: true, requestId };
       if (idempotency_key) { try { await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: body }); } catch {} }
-      await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: guest_details?.email, template: 'reservation.confirmed', data: { reservation_id: booking.id, confirmation_number: confirmationNumber, tenant_name: tenant?.name } });
+      await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: tenant?.email || 'owner@blunari.ai', template: 'reservation.review', data: { reservation_id: booking.id, tenant_name: tenant?.name } });
       return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } });
     } catch (fallbackError) {
       return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: `${fallbackError}` });
@@ -373,21 +373,41 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
 async function enqueueNotificationJob(opts: { tenantId: string; requestId?: string; type: 'email' | 'sms'; to: string; template: string; data: Record<string, unknown> }) {
   try {
     const url = Deno.env.get('BACKGROUND_OPS_URL');
-    const apiKey = Deno.env.get('BACKGROUND_OPS_API_KEY');
-    if (!url || !apiKey) {
-      // No background-ops configured; skip silently
+    const apiKey = Deno.env.get('BACKGROUND_OPS_API_KEY'); // maps to X_API_KEY
+    const signingSecret = Deno.env.get('BACKGROUND_OPS_SIGNING_SECRET'); // maps to SIGNING_SECRET
+    if (!url || !apiKey || !signingSecret) {
+      // Not configured; skip silently to avoid breaking booking flow
       return;
     }
-    const res = await fetch(`${url.replace(/\/$/, '')}/api/v1/jobs`, {
+
+    const endpoint = `${url.replace(/\/$/, '')}/api/v1/jobs`;
+    const requestId = opts.requestId || crypto.randomUUID();
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const idempotencyKey = `notif:${opts.template}:${(opts.data as any)?.reservation_id || ''}`;
+    const bodyObj = { type: 'notification.send', payload: { type: opts.type, to: opts.to, template: opts.template, data: opts.data }, priority: 5 };
+    const bodyStr = JSON.stringify(bodyObj);
+
+    // HMAC signature over: body + timestamp + tenantId + requestId
+    const encoder = new TextEncoder();
+    const data = encoder.encode(bodyStr + timestamp + opts.tenantId + requestId);
+    const key = await crypto.subtle.importKey('raw', encoder.encode(signingSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const signatureBuf = await crypto.subtle.sign('HMAC', key, data);
+    const signatureHex = Array.from(new Uint8Array(signatureBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'X-Idempotency-Key': `notif:${opts.template}:${opts.data?.reservation_id || ''}`,
+        'x-api-key': apiKey,
+        'x-signature': `sha256=${signatureHex}`,
+        'x-timestamp': timestamp,
+        'x-tenant-id': opts.tenantId,
+        'x-request-id': requestId,
+        'x-idempotency-key': idempotencyKey,
       },
-      body: JSON.stringify({ type: 'notification.send', payload: { type: opts.type, to: opts.to, template: opts.template, data: opts.data }, priority: 5 })
+      body: bodyStr
     });
-    // Ignore non-2xx but avoid throwing to not break booking flow
+    // Ignore failures intentionally
   } catch {
     // Swallow errors to keep booking flow resilient
   }
@@ -423,7 +443,6 @@ function generateTimeSlots(
           time: slotTime.toISOString(),
           available_tables: availableTables,
           optimal: hour >= 18 && hour <= 19,
-          // revenue_projection removed: no randomized metrics
         });
       }
     }

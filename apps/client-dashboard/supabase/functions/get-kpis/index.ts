@@ -56,7 +56,7 @@ interface Booking {
   id: string;
   tenant_id: string;
   booking_time: string;
-  status: 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no-show';
+  status: 'pending' | 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no_show';
   party_size: number;
   duration_minutes?: number;
   created_at: string;
@@ -72,30 +72,6 @@ interface KpiData {
   hint: string;
   format: 'percentage' | 'number';
 }
-
-interface TenantData {
-  tenant_id: string;
-}
-
-// Constants
-const DEFAULT_DURATION_MINUTES = 90;
-const DEFAULT_TOTAL_TABLES = 20;
-const NO_SHOW_RISK_MULTIPLIER = 0.15;
-const KITCHEN_LOAD_MULTIPLIER = 20;
-
-// Utility functions
-const generateSparkline = (base: number, variance: number = 10): number[] => {
-  return Array.from({ length: 12 }, () => 
-    Math.max(0, base + (Math.random() - 0.5) * variance)
-  );
-};
-
-const isValidDateString = (dateStr: string): boolean => {
-  const date = new Date(dateStr);
-  const isValidDate = date instanceof Date && !isNaN(date.getTime());
-  const matchesFormat = /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
-  return isValidDate && matchesFormat;
-};
 
 serve(async (req) => {
   const requestOrigin = req.headers.get('origin');
@@ -134,10 +110,9 @@ serve(async (req) => {
       return createErrorResponse('AUTH_INVALID', 'Invalid authorization token', 401, requestOrigin);
     }
 
-    // Get tenant information using the same logic as the tenant function
+    // Resolve tenant id
     let tenantId: string | null = null;
 
-    // Method 1: Check if user has explicit tenant assignment in user_tenant_access
     const { data: userTenantAccess } = await supabaseClient
       .from('user_tenant_access')
       .select('tenant_id')
@@ -146,10 +121,9 @@ serve(async (req) => {
       .single()
 
     if (userTenantAccess) {
-      tenantId = userTenantAccess.tenant_id;
+      tenantId = (userTenantAccess as any).tenant_id;
     }
 
-    // Method 2: Check if user is provisioned in auto_provisioning
     if (!tenantId) {
       const { data: autoProvisionData } = await supabaseClient
         .from('auto_provisioning')
@@ -159,21 +133,7 @@ serve(async (req) => {
         .single()
 
       if (autoProvisionData) {
-        tenantId = autoProvisionData.tenant_id;
-      }
-    }
-
-    // Method 3: Assign to demo tenant if no specific assignment (for demo purposes)
-    if (!tenantId) {
-      const { data: demoTenant } = await supabaseClient
-        .from('tenants')
-        .select('id')
-        .eq('slug', 'demo')
-        .eq('status', 'active')
-        .single()
-
-      if (demoTenant) {
-        tenantId = demoTenant.id;
+        tenantId = (autoProvisionData as any).tenant_id;
       }
     }
 
@@ -186,11 +146,9 @@ serve(async (req) => {
     let dateParam: string;
     
     if (req.method === 'GET') {
-      // Get date from query parameters
       const url = new URL(req.url);
       dateParam = url.searchParams.get('date') || new Date().toISOString().split('T')[0];
     } else {
-      // POST request - get date from body
       try {
         const body = await req.json();
         dateParam = body.date || new Date().toISOString().split('T')[0];
@@ -200,17 +158,26 @@ serve(async (req) => {
       }
     }
     
-    if (!isValidDateString(dateParam)) {
-      return createErrorResponse('INVALID_DATE', 'Invalid date format. Use YYYY-MM-DD', 400, requestOrigin);
-    }
-
     // Build date range for the requested date
     const startDate = new Date(dateParam);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(dateParam);
     endDate.setHours(23, 59, 59, 999);
 
-    // Fetch bookings for the specified date with proper error handling
+    // Fetch table count
+    const { data: tablesCountData, error: tablesCountError } = await supabaseClient
+      .from('restaurant_tables')
+      .select('id', { count: 'estimated', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('active', true);
+
+    if (tablesCountError) {
+      console.error('Tables count error:', tablesCountError);
+    }
+
+    const totalTables = (tablesCountData as any)?.length ?? (tablesCountError ? 0 : (tablesCountData as any));
+
+    // Fetch bookings for the specified date
     const { data: bookingsData, error: bookingsError } = await supabaseClient
       .from('bookings')
       .select(`
@@ -234,75 +201,60 @@ serve(async (req) => {
 
     const bookings: Booking[] = bookingsData || [];
 
-    // Get total tables count (TODO: Replace with actual restaurant_tables query)
-    const totalTables = DEFAULT_TOTAL_TABLES;
+    // Derive KPIs from real data
+    const now = new Date();
+    const confirmedOrSeated = bookings.filter((b) => b.status === 'confirmed' || b.status === 'seated');
+    const completed = bookings.filter((b) => b.status === 'completed');
+    const cancelled = bookings.filter((b) => b.status === 'cancelled');
 
-    // Calculate KPIs with proper type safety
-    const confirmedBookings = bookings.filter((booking: Booking) => 
-      booking.status === 'confirmed' || booking.status === 'seated'
-    );
-    const completedBookings = bookings.filter((booking: Booking) => 
-      booking.status === 'completed'
-    );
-    const cancelledBookings = bookings.filter((booking: Booking) => 
-      booking.status === 'cancelled'
-    );
-    
-    // Calculate current occupancy
-    const currentTime = new Date();
-    const occupiedTables = bookings.filter((booking: Booking) => {
-      const bookingStart = new Date(booking.booking_time);
-      const duration = booking.duration_minutes || DEFAULT_DURATION_MINUTES;
-      const bookingEnd = new Date(bookingStart.getTime() + (duration * 60 * 1000));
-      
-      return booking.status === 'seated' && 
-             bookingStart <= currentTime && 
-             currentTime <= bookingEnd;
+    // Current occupancy (tables with a seated booking at current time)
+    const occupiedTables = new Set<string>();
+    for (const b of bookings) {
+      if (b.status !== 'seated') continue;
+      const start = new Date(b.booking_time);
+      const dur = b.duration_minutes || 90;
+      const end = new Date(start.getTime() + dur * 60 * 1000);
+      if (start <= now && now <= end) {
+        // we don't have table_id from this query; quick join-less approximation via count of seated bookings
+        occupiedTables.add(b.id); // placeholder for count; size used below
+      }
+    }
+    const occupancyPct = totalTables > 0 ? Math.round((occupiedTables.size / totalTables) * 100) : 0;
+
+    const covers = confirmedOrSeated.reduce((sum, b) => sum + (b.party_size || 0), 0);
+
+    // No-show risk: ratio of pending/confirmed upcoming vs total day bookings
+    const upcomingConfirmed = bookings.filter((b) => {
+      const t = new Date(b.booking_time);
+      return (b.status === 'confirmed') && t > now;
     }).length;
-    
-    const occupancy = Math.round((occupiedTables / totalTables) * 100);
+    const noShowRisk = Math.min(100, Math.round((upcomingConfirmed / Math.max(1, bookings.length)) * 100));
 
-    // Calculate total covers (guests)
-    const covers = confirmedBookings.reduce((sum: number, booking: Booking) => 
-      sum + (booking.party_size || 0), 0
-    );
+    const avgPartySize = confirmedOrSeated.length > 0 ? Math.round((covers / confirmedOrSeated.length) * 10) / 10 : 0;
 
-    // Calculate no-show risk based on upcoming reservations
-    const upcomingBookings = bookings.filter((booking: Booking) => {
-      const bookingTime = new Date(booking.booking_time);
-      return booking.status === 'confirmed' && bookingTime > currentTime;
+    // Kitchen load: seated bookings in current hour scaled to percentage
+    const currentHour = now.getHours();
+    const currentHourSeated = bookings.filter((b) => {
+      if (b.status !== 'seated') return false;
+      const hour = new Date(b.booking_time).getHours();
+      return hour === currentHour;
+    }).length;
+    const kitchenPacing = Math.min(100, currentHourSeated * 20);
+
+    // Build sparkline series from hourly bookings counts (no randomness)
+    const hourlyCounts = Array.from({ length: 12 }, (_, i) => i).map((i) => {
+      const hour = i + 10; // 10:00 to 21:00 typical service window
+      return bookings.filter((b) => new Date(b.booking_time).getHours() === hour).length;
     });
-    const noShowRisk = upcomingBookings.length > 0 ? 
-      Math.min(100, Math.round(upcomingBookings.length * NO_SHOW_RISK_MULTIPLIER * 100)) : 0;
 
-    // Calculate average party size
-    const avgPartySize = confirmedBookings.length > 0 ? 
-      Math.round((covers / confirmedBookings.length) * 10) / 10 : 0;
-
-    // Calculate kitchen load based on current hour activity
-    const currentHour = currentTime.getHours();
-    const currentHourBookings = bookings.filter((booking: Booking) => {
-      const bookingHour = new Date(booking.booking_time).getHours();
-      return bookingHour === currentHour && booking.status === 'seated';
-    }).length;
-    const kitchenPacing = Math.min(100, currentHourBookings * KITCHEN_LOAD_MULTIPLIER);
-
-    // Generate sparkline data for trending visualization
-    const generateSparkline = (base: number, variance: number = 10): number[] => {
-      return Array.from({ length: 12 }, () => 
-        Math.max(0, Math.round((base + (Math.random() - 0.5) * variance) * 100) / 100)
-      );
-    };
-
-    // Build comprehensive KPI response
     const kpis: KpiData[] = [
       {
         id: 'occupancy',
         label: 'Occupancy',
-        value: `${occupancy}%`,
-        tone: occupancy > 80 ? 'success' : occupancy > 60 ? 'default' : 'warning',
-        spark: generateSparkline(occupancy, 15),
-        hint: `${occupiedTables} of ${totalTables} tables occupied`,
+        value: `${occupancyPct}%`,
+        tone: occupancyPct > 80 ? 'success' : occupancyPct > 60 ? 'default' : 'warning',
+        spark: hourlyCounts,
+        hint: `${occupiedTables.size} of ${totalTables} tables occupied`,
         format: 'percentage'
       },
       {
@@ -310,8 +262,8 @@ serve(async (req) => {
         label: 'Covers',
         value: covers.toString(),
         tone: 'default',
-        spark: generateSparkline(covers, 8),
-        hint: `${confirmedBookings.length} confirmed reservations`,
+        spark: hourlyCounts,
+        hint: `${confirmedOrSeated.length} confirmed/seated reservations`,
         format: 'number'
       },
       {
@@ -319,8 +271,8 @@ serve(async (req) => {
         label: 'No-Show Risk',
         value: `${noShowRisk}%`,
         tone: noShowRisk > 20 ? 'danger' : noShowRisk > 10 ? 'warning' : 'success',
-        spark: generateSparkline(noShowRisk, 5),
-        hint: `Based on ${upcomingBookings.length} upcoming reservations`,
+        spark: hourlyCounts,
+        hint: `Based on ${upcomingConfirmed} upcoming confirmed reservations`,
         format: 'percentage'
       },
       {
@@ -328,7 +280,7 @@ serve(async (req) => {
         label: 'Avg Party Size',
         value: avgPartySize.toString(),
         tone: 'default',
-        spark: generateSparkline(avgPartySize, 0.5),
+        spark: hourlyCounts,
         hint: 'Average guests per reservation',
         format: 'number'
       },
@@ -337,22 +289,21 @@ serve(async (req) => {
         label: 'Kitchen Load',
         value: `${kitchenPacing}%`,
         tone: kitchenPacing > 80 ? 'danger' : kitchenPacing > 60 ? 'warning' : 'success',
-        spark: generateSparkline(kitchenPacing, 20),
-        hint: `${currentHourBookings} orders this hour`,
+        spark: hourlyCounts,
+        hint: `${currentHourSeated} seated this hour`,
         format: 'percentage'
       }
     ];
 
-    // Add request metadata for debugging
     const responseData = {
       data: kpis,
       meta: {
         date: dateParam,
         tenant_id: tenantId,
         total_bookings: bookings.length,
-        confirmed_bookings: confirmedBookings.length,
-        completed_bookings: completedBookings.length,
-        cancelled_bookings: cancelledBookings.length,
+        confirmed_bookings: confirmedOrSeated.length,
+        completed_bookings: completed.length,
+        cancelled_bookings: cancelled.length,
         calculated_at: new Date().toISOString()
       }
     };
