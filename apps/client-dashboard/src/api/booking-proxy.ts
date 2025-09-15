@@ -1,5 +1,5 @@
 // Live booking API proxy via Supabase Edge Functions
-import { supabase } from "@/integrations/supabase/client";
+// Note: This module is safe for public widget runtime – it does NOT import supabase-js.
 import {
   TenantInfoSchema,
   AvailabilityResponseSchema,
@@ -9,7 +9,6 @@ import {
   SearchRequest,
   HoldRequest,
   ReservationRequest,
-  APIError,
 } from "@/types/booking-api";
 
 class BookingAPIError extends Error {
@@ -29,8 +28,6 @@ async function callEdgeFunction(
   body: Record<string, unknown> = {},
 ): Promise<unknown> {
   try {
-    console.log(`Calling edge function: ${functionName}`, body);
-
     // Pull token from URL (public widget runtime)
     const token = (() => {
       try { return new URLSearchParams(window.location.search).get('token') || undefined; } catch { return undefined; }
@@ -42,8 +39,6 @@ async function callEdgeFunction(
       tenant_id: undefined, // never trust client tenant_id
       timestamp: new Date().toISOString(),
     };
-
-    console.log("Final request body being sent:", requestBody);
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -65,11 +60,8 @@ async function callEdgeFunction(
       },
     );
 
-    console.log("Edge function HTTP response status:", response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Edge function HTTP error:", response.status, errorText);
       throw new BookingAPIError(
         "HTTP_ERROR",
         `HTTP ${response.status}: ${errorText}`,
@@ -77,18 +69,17 @@ async function callEdgeFunction(
     }
 
     const data = await response.json();
-    console.log("Edge function response data:", data);
 
-    if (data?.success === false && data?.error) {
+    if ((data as any)?.success === false && (data as any)?.error) {
+      const err: any = data as any;
       throw new BookingAPIError(
-        data.error.code || "API_ERROR",
-        data.error.message,
-        data.error,
+        err.error.code || "API_ERROR",
+        err.error.message,
+        err.error,
       );
     }
 
     if (!data) {
-      console.error("No data received from edge function");
       throw new BookingAPIError(
         "NO_DATA",
         "No data received from booking service",
@@ -100,43 +91,49 @@ async function callEdgeFunction(
     if (error instanceof BookingAPIError) {
       throw error;
     }
-    console.error(`Failed to call edge function ${functionName}:`, error);
     throw new BookingAPIError(
       "NETWORK_ERROR",
       `Failed to communicate with booking service`,
-      error,
+      error as any,
     );
   }
 }
 
 export async function getTenantBySlug(slug: string) {
   try {
-    // Use the secure public view for tenant lookup
-    const { data: tenantData, error } = await supabase
-      .from("tenant_public_info")
-      .select("*")
-      .eq("slug", slug)
-      .single();
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseKey) throw new Error('Missing Supabase configuration');
 
-    if (error || !tenantData) {
-      throw new BookingAPIError(
-        "TENANT_NOT_FOUND",
-        `Restaurant not found: ${slug}`,
-      );
+    // Call lightweight public tenant resolver Edge Function
+    const res = await fetch(`${supabaseUrl}/functions/v1/tenant`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${supabaseKey}`,
+        apikey: supabaseKey,
+      },
+      body: JSON.stringify({ slug })
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new BookingAPIError('TENANT_LOOKUP_FAILED', `HTTP ${res.status}: ${txt}`);
     }
 
+    const json = await res.json();
     const transformedData = {
-      tenant_id: tenantData.id,
-      slug: tenantData.slug,
-      name: tenantData.name,
-      timezone: tenantData.timezone,
-      currency: tenantData.currency,
+      tenant_id: json.id,
+      slug: json.slug || slug,
+      name: json.name || slug,
+      timezone: json.timezone || 'UTC',
+      currency: json.currency || 'USD',
       branding: {
-        primary_color: "#3b82f6", // Default primary color
-        secondary_color: "#1e40af", // Default secondary color
+        primary_color: '#3b82f6',
+        secondary_color: '#1e40af',
       },
       features: {
-        deposit_enabled: false, // Get from policies later
+        deposit_enabled: false,
         revenue_optimization: true,
       },
     };
@@ -149,7 +146,7 @@ export async function getTenantBySlug(slug: string) {
     throw new BookingAPIError(
       "TENANT_LOOKUP_FAILED",
       "Failed to lookup restaurant information",
-      error,
+      error as any,
     );
   }
 }
@@ -169,7 +166,7 @@ export async function searchAvailability(request: SearchRequest) {
     throw new BookingAPIError(
       "AVAILABILITY_SEARCH_FAILED",
       "Failed to search availability",
-      error,
+      error as any,
     );
   }
 }
@@ -186,7 +183,7 @@ export async function createHold(request: HoldRequest) {
     throw new BookingAPIError(
       "HOLD_CREATION_FAILED",
       "Failed to create booking hold",
-      error,
+      error as any,
     );
   }
 }
@@ -208,7 +205,7 @@ export async function confirmReservation(
     throw new BookingAPIError(
       "RESERVATION_CONFIRMATION_FAILED",
       "Failed to confirm reservation",
-      error,
+      error as any,
     );
   }
 }
@@ -231,7 +228,7 @@ export async function getTenantPolicies(tenantId: string) {
     throw new BookingAPIError(
       "POLICY_RETRIEVAL_FAILED",
       "Failed to retrieve policies",
-      error,
+      error as any,
     );
   }
 }
