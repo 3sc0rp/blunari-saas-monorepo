@@ -320,15 +320,48 @@ serve(async (req) => {
       tenantData = data;
     }
 
-    const response: TenantResponse = {
+    // Load business hours (normalized table preferred; fallback to tenant_settings.operational)
+    let businessHours: Array<{ day_of_week: number; is_open: boolean; open_time: string | null; close_time: string | null }> = [];
+    try {
+      const { data: bh } = await supabaseClient
+        .from('business_hours')
+        .select('day_of_week, is_open, open_time, close_time')
+        .eq('tenant_id', tenantData.id)
+        .order('day_of_week', { ascending: true });
+      if (bh && Array.isArray(bh) && bh.length > 0) {
+        businessHours = bh as any;
+      } else {
+        const { data: settingsRow } = await supabaseClient
+          .from('tenant_settings')
+          .select('setting_value')
+          .eq('tenant_id', tenantData.id)
+          .eq('setting_key', 'operational')
+          .maybeSingle();
+        const op = settingsRow?.setting_value || null;
+        if (op && op.businessHours) {
+          businessHours = Object.keys(op.businessHours).map((k) => {
+            const d = op.businessHours[k];
+            return {
+              day_of_week: parseInt(k, 10),
+              is_open: !!d.isOpen,
+              open_time: d.openTime || null,
+              close_time: d.closeTime || null
+            };
+          }).sort((a, b) => a.day_of_week - b.day_of_week);
+        }
+      }
+    } catch {}
+
+    const response: any = {
       id: tenantData.id,
       slug: tenantData.slug,
       name: tenantData.name,
       timezone: tenantData.timezone || 'America/New_York',
-      currency: tenantData.currency || 'USD'
+      currency: tenantData.currency || 'USD',
+      business_hours: businessHours
     };
 
-    console.log(`Tenant resolved successfully:`, { tenantId: response.id, slug: response.slug, userId: user.id });
+    console.log(`Tenant resolved successfully:`, { tenantId: response.id, slug: response.slug, userId: user ? user.id : null, via: isWidgetTokenFlow ? 'widget_token' : 'user_jwt' });
     return createSuccessResponse(response, requestOrigin);
 
   } catch (error) {

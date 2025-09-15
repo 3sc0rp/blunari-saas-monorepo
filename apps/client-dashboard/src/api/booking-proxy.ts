@@ -134,6 +134,7 @@ export async function getTenantBySlug(slug: string) {
       name: payload.name || slug,
       timezone: payload.timezone || 'UTC',
       currency: payload.currency || 'USD',
+      business_hours: Array.isArray(payload.business_hours) ? payload.business_hours : [],
       branding: {
         primary_color: '#3b82f6',
         secondary_color: '#1e40af',

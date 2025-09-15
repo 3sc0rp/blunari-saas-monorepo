@@ -46,6 +46,14 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
 
   const timezone = tenant.timezone || "UTC";
 
+  const getBusinessHoursForDate = (date: Date) => {
+    const day = date.getDay(); // 0-6 (Sun-Sat)
+    const bh = (tenant as any).business_hours as Array<{ day_of_week: number; is_open: boolean; open_time: string | null; close_time: string | null }> | undefined;
+    if (!Array.isArray(bh)) return null;
+    const rec = bh.find((r) => r.day_of_week === day);
+    return rec || null;
+  };
+
   const fetchAvailability = useCallback(async (date: Date) => {
     setLoadingSlots(true);
     setError(null);
@@ -127,7 +135,11 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
     // Disable past dates
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return date < today;
+    if (date < today) return true;
+    // Disable closed days according to tenant business hours (if present)
+    const bh = getBusinessHoursForDate(date);
+    if (bh && bh.is_open === false) return true;
+    return false;
   };
 
   return (

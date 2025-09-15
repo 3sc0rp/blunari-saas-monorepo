@@ -156,7 +156,7 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, request
       tenant_id,
       party_size: Number(party_size),
       service_date,
-      time_window: { start: "T12:00:00", end: "T21:00:00" },
+      time_window: await resolveTimeWindowForDate(supabase, tenant_id, service_date),
     };
 
     const apiResponse = await fetch(apiUrl, {
@@ -206,13 +206,44 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, request
       .gte("booking_time", dayStart.toISOString())
       .lt("booking_time", dayEnd.toISOString());
 
-    const slots = generateTimeSlots(tables || [], bookings || [], party_size, searchDate);
+    const timeWindow = await resolveTimeWindowForDate(supabase, tenant_id, service_date);
+    const slots = generateTimeSlots(tables || [], bookings || [], party_size, searchDate, timeWindow);
 
     return new Response(
       JSON.stringify({ success: true, slots, _fallback: true, requestId }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } },
     );
   }
+}
+
+async function resolveTimeWindowForDate(supabase: any, tenantId: string, serviceDate: string): Promise<{ start: string; end: string }> {
+  try {
+    const date = new Date(serviceDate);
+    const dow = date.getUTCDay();
+    const { data: bh } = await supabase
+      .from('business_hours')
+      .select('day_of_week,is_open,open_time,close_time')
+      .eq('tenant_id', tenantId)
+      .eq('day_of_week', dow)
+      .maybeSingle();
+    if (bh && bh.is_open && bh.open_time && bh.close_time) {
+      return { start: `T${bh.open_time}`, end: `T${bh.close_time}` };
+    }
+    // Fallback to operational settings if table empty
+    const { data: op } = await supabase
+      .from('tenant_settings')
+      .select('setting_value')
+      .eq('tenant_id', tenantId)
+      .eq('setting_key', 'operational')
+      .maybeSingle();
+    const ops = op?.setting_value;
+    const rec = ops?.businessHours ? ops.businessHours[String(dow)] : null;
+    if (rec && rec.isOpen && rec.openTime && rec.closeTime) {
+      return { start: `T${rec.openTime}`, end: `T${rec.closeTime}` };
+    }
+  } catch {}
+  // Default window
+  return { start: 'T12:00:00', end: 'T21:00:00' };
 }
 
 async function handleCreateHold(supabase: any, requestData: any, requestId?: string) {
@@ -418,14 +449,21 @@ function generateTimeSlots(
   bookings: any[],
   partySize: number,
   date: Date,
+  timeWindow?: { start: string; end: string }
 ) {
   const slots: any[] = [];
   const suitableTables = tables.filter((table) => table.capacity >= partySize);
+  // Parse window; default 12:00 to 21:00
+  const [startH, startM] = (timeWindow?.start?.replace('T','') || '12:00:00').split(':').map((v) => parseInt(v, 10));
+  const [endH, endM] = (timeWindow?.end?.replace('T','') || '21:00:00').split(':').map((v) => parseInt(v, 10));
+  const endTotalMin = endH * 60 + (endM || 0);
 
-  for (let hour = 12; hour < 21; hour++) {
+  for (let hour = startH; hour <= endH; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
       const slotTime = new Date(date);
       slotTime.setHours(hour, minute, 0, 0);
+      const totalMin = hour * 60 + minute;
+      if (totalMin >= endTotalMin) break;
       if (slotTime <= new Date()) continue;
 
       const conflictingBookings = bookings.filter((booking) => {
