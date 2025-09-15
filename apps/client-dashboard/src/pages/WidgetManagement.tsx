@@ -424,8 +424,9 @@ const WidgetManagement: React.FC = () => {
     const config = type === 'booking' ? bookingConfig : cateringConfig;
     if (!config) return null;
 
-    const baseUrl = window.location.origin;
-    const widgetPath = type === 'booking' ? '/book' : '/catering';
+  const baseUrl = window.location.origin;
+  // New standalone public widget bundle path (served by public-widget.html)
+  const widgetPath = type === 'booking' ? '/public-widget/book' : '/public-widget/catering';
     const widgetToken = createWidgetToken(effectiveSlug, '2.0', type);
 
     const params = new URLSearchParams();
@@ -488,10 +489,10 @@ const WidgetManagement: React.FC = () => {
   const referrerAttr = " referrerpolicy=\"strict-origin-when-cross-origin\"";
 
       if (embedType === 'iframe') {
-        return `<!-- Simple iframe embed (recommended for quick integration) -->\n<!-- Security: removed allow-same-origin to prevent sandbox escape when scripts are enabled -->\n<iframe\n  src="${url}&embed=1"\n  width="${config.width || 400}"\n  height="${config.height || 600}"\n  style="border:0;max-width:100%;border-radius:${config.borderRadius || 8}px;box-shadow:0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)"\n  title="${safeWelcome || 'Blunari widget'}"\n  loading="${iframeLazy ? 'lazy' : 'eager'}"${iframeSandbox ? '\n  sandbox="allow-scripts allow-forms allow-popups"' : ''}\n  referrerpolicy="strict-origin-when-cross-origin"\n  data-widget-type="${type}"\n></iframe>`;
+        return `<!-- Simple iframe embed (standalone bundle) -->\n<!-- Uses /public-widget entry for smaller isolated runtime -->\n<iframe\n  src="${url}&embed=1"\n  width="${config.width || 400}"\n  height="${config.height || 600}"\n  style="border:0;max-width:100%;border-radius:${config.borderRadius || 8}px;box-shadow:0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)"\n  title="${safeWelcome || 'Blunari widget'}"\n  loading="${iframeLazy ? 'lazy' : 'eager'}"${iframeSandbox ? '\n  sandbox="allow-scripts allow-forms allow-popups"' : ''}\n  referrerpolicy="strict-origin-when-cross-origin"\n  data-widget-type="${type}"\n></iframe>`;
       }
       if (embedType === 'react') {
-        return `{/* React iframe embed */}\n{/* Security: removed allow-same-origin to avoid sandbox breakout */}\n<iframe\n  src={"${url}&embed=1"}\n  width={${config.width || 400}}\n  height={${config.height || 600}}\n  style={{border:0, maxWidth:'100%', borderRadius:${config.borderRadius || 8}, boxShadow:'0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)'}}\n  title={'${safeWelcome || 'Blunari widget'}'}\n  loading="${iframeLazy ? 'lazy' : 'eager'}"${iframeSandbox ? '\n  sandbox="allow-scripts allow-forms allow-popups"' : ''}\n  referrerPolicy="strict-origin-when-cross-origin"\n  data-widget-type={'${type}'}\n/>`;
+        return `{/* React iframe embed (standalone /public-widget bundle) */}\n<iframe\n  src={"${url}&embed=1"}\n  width={${config.width || 400}}\n  height={${config.height || 600}}\n  style={{border:0, maxWidth:'100%', borderRadius:${config.borderRadius || 8}, boxShadow:'0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)'}}\n  title={'${safeWelcome || 'Blunari widget'}'}\n  loading="${iframeLazy ? 'lazy' : 'eager'}"${iframeSandbox ? '\n  sandbox="allow-scripts allow-forms allow-popups"' : ''}\n  referrerPolicy="strict-origin-when-cross-origin"\n  data-widget-type={'${type}'}\n/>`;
       }
 
       // Script embed (advanced) – creates container, injects iframe, handles resize + token handshake

@@ -92,6 +92,10 @@ export default defineConfig(({ mode }) => {
       // Use esbuild for now (faster & simpler) while diagnosing runtime function errors
       minify: isProduction ? 'esbuild' : false,
       rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          'public-widget': path.resolve(__dirname, 'public-widget.html')
+        },
         output: {
           // Collapse to single vendor chunk temporarily to rule out cross-chunk call issues
           manualChunks(id) {

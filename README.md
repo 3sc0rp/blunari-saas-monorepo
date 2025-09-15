@@ -210,3 +210,39 @@ Integrations expected to hydrate the empty baselines:
 
 Until those are wired, empty states are intentional and signal integration priority rather than failure.
 
+## ⚡ Widget Embedding Quickstart
+
+Production-ready public widget bundle ships via the standalone multi-entry build at `/public-widget`.
+
+### Booking Widget (Simple Iframe)
+```html
+<iframe
+	src="https://app.yourdomain.com/public-widget/book/your-restaurant-slug?token=YOUR_SIGNED_TOKEN&embed=1"
+	title="Reserve a Table"
+	loading="lazy"
+	sandbox="allow-scripts allow-forms allow-popups"
+	referrerpolicy="strict-origin-when-cross-origin"
+	style="width:100%;max-width:420px;height:620px;border:0;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.08);"
+></iframe>
+```
+
+### Advanced Script Loader (Progressive)
+```html
+<div id="blunari-booking" style="min-height:620px"></div>
+<script>
+!function(){var c=document.getElementById('blunari-booking');if(!c)return;var f=document.createElement('iframe');f.src='https://app.yourdomain.com/public-widget/book/your-restaurant-slug?token=YOUR_SIGNED_TOKEN&embed=1';f.loading='lazy';f.referrerPolicy='strict-origin-when-cross-origin';f.sandbox='allow-scripts allow-forms allow-popups';f.style.cssText='width:100%;height:100%;border:0;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.08);background:#fff';c.appendChild(f);}();
+</script>
+```
+
+### Security Notes
+- No `allow-same-origin` in sandbox (prevents DOM escape).
+- Use a short-lived signed token (do not expose tenant secrets).
+- Apply a CSP on your host page restricting script-src to trusted origins.
+
+### Optional CSP Snippet
+```
+Content-Security-Policy: default-src 'none'; frame-src https://app.yourdomain.com; img-src https: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src https://api.yourdomain.com https://<supabase-project>.supabase.co; frame-ancestors *; base-uri 'none';
+```
+
+See `docs/embedding-security.md` for in-depth guidance (SRI, async patterns, origin validation, hardening checklist).
+
