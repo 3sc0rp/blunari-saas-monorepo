@@ -106,7 +106,9 @@ test.describe('Public Booking Widget messaging', () => {
 test.describe('Embed handshake', () => {
   test('parent_ready -> widget_loaded with correlationId echo', async ({ page }) => {
     await installSupabaseStubs(page);
-    const targetUrl = getWidgetUrl(test.info().project.use?.baseURL as string | undefined) + '&cid=test-cid-123&parent_origin=' + encodeURIComponent('http://localhost:5173');
+    const base = test.info().project.use?.baseURL as string | undefined;
+    const po = encodeURIComponent(base || 'http://localhost:5173');
+    const targetUrl = getWidgetUrl(base) + '&cid=test-cid-123&parent_origin=' + po;
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
 
     // Listen for widget_loaded from the child (same window during test)

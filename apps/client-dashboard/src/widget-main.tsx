@@ -54,7 +54,13 @@ function WidgetApp() {
     const widgetIdRef = { current: '' } as { current: string };
 
     function handleMessage(e: MessageEvent) {
-      if (parentOrigin && e.origin !== parentOrigin) return;
+      const sameWindow = e.source === window;
+      const originOk = !parentOrigin
+        || e.origin === parentOrigin
+        || e.origin === window.location.origin
+        || e.origin === 'null'
+        || sameWindow;
+      if (!originOk) return;
       const d = e.data as any;
       if (!d || typeof d !== 'object') return;
       if (d.type === 'parent_ready') {

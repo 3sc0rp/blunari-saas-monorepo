@@ -2,6 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
+  testMatch: ["**/*.spec.ts"],
+  testIgnore: ["**/__tests__/**", "**/*vitest*.*", "tests/safeStorage.spec.ts", "tests/widgetConfig.storage.spec.ts"],
   timeout: 30000,
   expect: {
     // Global expect timeout
