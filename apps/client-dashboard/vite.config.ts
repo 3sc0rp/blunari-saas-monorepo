@@ -99,7 +99,12 @@ export default defineConfig(({ mode }) => {
         output: {
           // Collapse to single vendor chunk temporarily to rule out cross-chunk call issues
           manualChunks(id) {
-            if (id.includes('node_modules/')) return 'vendor';
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('node_modules/react') || id.includes('node_modules/scheduler')) return 'react-core';
+            if (id.includes('node_modules/@supabase')) return 'supabase';
+            if (id.includes('node_modules/lucide-react') || id.includes('node_modules/class-variance-authority') || id.includes('node_modules/clsx')) return 'ui-kit';
+            if (id.includes('node_modules/date-fns')) return 'date-fns';
+            return 'vendor';
           },
           chunkFileNames: 'chunks/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',

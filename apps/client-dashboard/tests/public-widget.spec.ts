@@ -102,3 +102,30 @@ test.describe('Public Booking Widget messaging', () => {
     expect(realErrors.length, `Console errors after resize message: \n${realErrors.join('\n')}`).toBeLessThan(2);
   });
 });
+
+test.describe('Embed handshake', () => {
+  test('parent_ready -> widget_loaded with correlationId echo', async ({ page }) => {
+    await installSupabaseStubs(page);
+    const targetUrl = getWidgetUrl(test.info().project.use?.baseURL as string | undefined) + '&cid=test-cid-123&parent_origin=' + encodeURIComponent('http://localhost:5173');
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
+
+    // Listen for widget_loaded from the child (same window during test)
+    const gotLoaded = await page.evaluate(() => {
+      return new Promise<boolean>((resolve) => {
+        const handler = (e: MessageEvent) => {
+          const d: any = e.data;
+          if (d && d.type === 'widget_loaded' && d.correlationId) {
+            window.removeEventListener('message', handler);
+            resolve(true);
+          }
+        };
+        window.addEventListener('message', handler);
+        // Simulate parent_ready sent from parent to the widget
+        window.postMessage({ type: 'parent_ready', widgetId: 'e2e-widget', correlationId: 'test-cid-123' }, '*');
+        setTimeout(() => resolve(false), 1500);
+      });
+    });
+
+    expect(gotLoaded).toBeTruthy();
+  });
+});

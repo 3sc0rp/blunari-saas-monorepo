@@ -40,6 +40,61 @@ function WidgetApp() {
     return () => { cancelled = true; };
   }, []);
 
+  // Parent postMessage handshake + resize events
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const rawParent = params.get('parent_origin') || '';
+    let parentOrigin = '';
+    try { if (rawParent) parentOrigin = new URL(rawParent).origin; } catch {}
+    const correlationId = params.get('cid') || '';
+    const widgetIdRef = { current: '' } as { current: string };
+
+    function handleMessage(e: MessageEvent) {
+      if (parentOrigin && e.origin !== parentOrigin) return;
+      const d = e.data as any;
+      if (!d || typeof d !== 'object') return;
+      if (d.type === 'parent_ready') {
+        widgetIdRef.current = d.widgetId || widgetIdRef.current;
+        const cid = d.correlationId || correlationId;
+        try {
+          window.parent && window.parent.postMessage({ type: 'widget_loaded', widgetId: widgetIdRef.current, correlationId: cid }, parentOrigin || '*');
+        } catch {}
+      }
+    }
+
+    window.addEventListener('message', handleMessage, false);
+
+    // ResizeObserver to notify parent about height changes
+    let lastHeight = -1;
+    const sendResize = () => {
+      try {
+        const body = document.body;
+        const doc = document.documentElement;
+        const h = Math.max(body ? body.scrollHeight : 0, doc ? doc.scrollHeight : 0);
+        if (h && h !== lastHeight) {
+          lastHeight = h;
+          window.parent && window.parent.postMessage({ type: 'widget_resize', widgetId: widgetIdRef.current, height: h, correlationId }, parentOrigin || '*');
+        }
+      } catch {}
+    };
+
+    const ro = new (window as any).ResizeObserver ? new ResizeObserver(sendResize) : null;
+    if (ro) {
+      try { ro.observe(document.documentElement); } catch {}
+    }
+    const interval = window.setInterval(sendResize, 1000);
+    window.addEventListener('load', sendResize);
+    // Initial notify
+    sendResize();
+
+    return () => {
+      window.removeEventListener('message', handleMessage, false);
+      if (ro) ro.disconnect();
+      window.clearInterval(interval);
+      window.removeEventListener('load', sendResize);
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

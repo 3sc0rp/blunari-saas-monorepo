@@ -191,10 +191,18 @@ const WidgetManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false); // generic spinner (saving etc.)
   const [copyBusy, setCopyBusy] = useState(false); // copy-to-clipboard only
   // Deploy tab state
-  const [embedType, setEmbedType] = useState<'script' | 'iframe' | 'react'>('script');
-  const [allowedOriginInput, setAllowedOriginInput] = useState<string>('');
-  const [iframeSandbox, setIframeSandbox] = useState<boolean>(true);
-  const [iframeLazy, setIframeLazy] = useState<boolean>(true);
+  const [embedType, setEmbedType] = useState<'script' | 'iframe' | 'react'>(() => {
+    try { return (safeStorage.get(`wm.deploy.format.${tenantSlug || tenant?.slug || 'default'}`) as 'script'|'iframe'|'react') || 'script'; } catch { return 'script'; }
+  });
+  const [allowedOriginInput, setAllowedOriginInput] = useState<string>(() => {
+    try { return safeStorage.get(`wm.deploy.origin.${tenantSlug || tenant?.slug || 'default'}`) || (typeof window !== 'undefined' ? window.location.origin : ''); } catch { return typeof window !== 'undefined' ? window.location.origin : ''; }
+  });
+  const [iframeSandbox, setIframeSandbox] = useState<boolean>(() => {
+    try { return safeStorage.get(`wm.deploy.sandbox.${tenantSlug || tenant?.slug || 'default'}`) !== '0'; } catch { return true; }
+  });
+  const [iframeLazy, setIframeLazy] = useState<boolean>(() => {
+    try { return safeStorage.get(`wm.deploy.lazy.${tenantSlug || tenant?.slug || 'default'}`) !== '0'; } catch { return true; }
+  });
   const [analyticsRange, setAnalyticsRange] = useState<'1d' | '7d' | '30d'>('7d');
   // Focus preview after device change
   useEffect(() => {
@@ -226,7 +234,10 @@ const WidgetManagement: React.FC = () => {
     }
   }, [showSafeArea, tenantSlug, tenant?.slug]);
 
-  // Removed persistence for live toggle (always live)
+  useEffect(() => { try { safeStorage.set(`wm.deploy.format.${tenantSlug || tenant?.slug || 'default'}`, embedType); } catch {} }, [embedType, tenantSlug, tenant?.slug]);
+  useEffect(() => { try { safeStorage.set(`wm.deploy.origin.${tenantSlug || tenant?.slug || 'default'}`, allowedOriginInput || ''); } catch {} }, [allowedOriginInput, tenantSlug, tenant?.slug]);
+  useEffect(() => { try { safeStorage.set(`wm.deploy.sandbox.${tenantSlug || tenant?.slug || 'default'}`, iframeSandbox ? '1' : '0'); } catch {} }, [iframeSandbox, tenantSlug, tenant?.slug]);
+  useEffect(() => { try { safeStorage.set(`wm.deploy.lazy.${tenantSlug || tenant?.slug || 'default'}`, iframeLazy ? '1' : '0'); } catch {} }, [iframeLazy, tenantSlug, tenant?.slug]);
 
   useEffect(() => {
     const keyBase = `wm.tab.${tenantSlug || tenant?.slug || 'default'}`;
@@ -415,20 +426,20 @@ const WidgetManagement: React.FC = () => {
   // Widget URL and embed code generation with enhanced error handling
   const generateWidgetUrl = useCallback((type: 'booking' | 'catering'): string | null => {
     // Gracefully handle loading states instead of throwing noisy errors
-    const effectiveSlug = resolvedTenantSlug;
-    if (!effectiveSlug) {
+      const effectiveSlug = resolvedTenantSlug;
+      if (!effectiveSlug) {
       // Slug not yet resolved; caller should treat as unavailable
       return null;
-    }
-
-    const config = type === 'booking' ? bookingConfig : cateringConfig;
+      }
+      
+      const config = type === 'booking' ? bookingConfig : cateringConfig;
     if (!config) return null;
 
   const baseUrl = window.location.origin;
   // New standalone public widget bundle path (served by public-widget.html)
   const widgetPath = type === 'booking' ? '/public-widget/book' : '/public-widget/catering';
-    const widgetToken = createWidgetToken(effectiveSlug, '2.0', type);
-
+      const widgetToken = createWidgetToken(effectiveSlug, '2.0', type);
+      
     const params = new URLSearchParams();
     params.set('slug', effectiveSlug);
     params.set('token', widgetToken);
@@ -456,7 +467,7 @@ const WidgetManagement: React.FC = () => {
     params.set('enableAnimations', String(config.enableAnimations ?? true));
     params.set('animationType', config.animationType || 'fade');
 
-    if (type === 'booking') {
+      if (type === 'booking') {
       if (config.enableTableOptimization !== undefined) params.set('enableTableOptimization', String(config.enableTableOptimization));
       if (config.maxPartySize) params.set('maxPartySize', String(config.maxPartySize));
       if (config.requireDeposit !== undefined) params.set('requireDeposit', String(config.requireDeposit));
@@ -483,7 +494,17 @@ const WidgetManagement: React.FC = () => {
       
   const widgetId = `blunari-${type}-widget-${Date.now()}`;
   const safeWelcome = escapeAttr(config.welcomeMessage || '');
-  const allowedOrigin = (allowedOriginInput || new URL(url).origin).replace(/"/g, '').replace(/</g, '');
+  // Origin validation and sanitization
+  let allowedOrigin = '';
+  try {
+    const raw = allowedOriginInput || (typeof window !== 'undefined' ? window.location.origin : '');
+    const u = new URL(raw);
+    if (!/^https?:$/.test(u.protocol)) {
+      allowedOrigin = new URL(url).origin;
+    } else {
+      allowedOrigin = u.origin;
+    }
+  } catch { allowedOrigin = new URL(url).origin; }
   const sandboxAttr = iframeSandbox ? " sandbox=\"allow-scripts allow-same-origin allow-forms allow-popups\"" : '';
   const lazyAttr = iframeLazy ? " loading=\"lazy\"" : '';
   const referrerAttr = " referrerpolicy=\"strict-origin-when-cross-origin\"";
@@ -498,12 +519,44 @@ const WidgetManagement: React.FC = () => {
       // Script embed (advanced) – creates container, injects iframe, handles resize + token handshake
       const tokenParam = new URL(url).searchParams.get('token') || '';
       const slugParam = new URL(url).searchParams.get('slug') || '';
-    return `<!-- Blunari ${type} widget script embed -->\n<div id="${widgetId}" data-widget-slug="${slugParam}" data-widget-type="${type}" style="width:${config.width || 400}px;height:${config.height || 600}px;max-width:100%;margin:0 auto;border-radius:${config.borderRadius || 8}px;overflow:hidden;box-shadow:0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)"></div>\n<script defer>(function(){\n  if(window.__blunariInit && window.__blunariInit['${widgetId}']) return;\n  window.__blunariInit = window.__blunariInit||{};\n  window.__blunariInit['${widgetId}']=true;\n  var host='${new URL(url).origin}';\n  var container=document.getElementById('${widgetId}');\n  if(!container) return;\n  var src='${url}&embed=1&parent_origin='+encodeURIComponent(window.location.origin);\n  var iframe=document.createElement('iframe');\n  iframe.src=src;\n  iframe.title='${safeWelcome || 'Blunari widget'}';\n  iframe.loading='${iframeLazy ? 'lazy' : 'eager'}';\n  iframe.setAttribute('referrerpolicy','strict-origin-when-cross-origin');\n  ${iframeSandbox ? "iframe.setAttribute('sandbox','allow-scripts allow-forms allow-popups');" : ''}\n  iframe.style.cssText='width:100%;height:100%;border:0;display:block;background:#fff';\n  container.appendChild(iframe);\n  var allowed='${allowedOrigin}';\n  function onMsg(e){\n    if(allowed && e.origin!==allowed) return;\n    var d=e.data;\n    if(!d||d.widgetId!=='${widgetId}') return;\n    if(d.type==='widget_resize' && d.height){ iframe.style.height=d.height+'px'; container.style.height=d.height+'px'; }\n    if(d.type==='widget_loaded'){ container.classList.add('blunari-loaded'); }\n  }\n  window.addEventListener('message',onMsg,false);\n})();</script>\n<noscript>Enable JavaScript to load the Blunari ${type} widget.</noscript>`;
+    return `<!-- Blunari ${type} widget script embed -->\n<div id="${widgetId}" data-widget-slug="${slugParam}" data-widget-type="${type}" style="width:${config.width || 400}px;height:${config.height || 600}px;max-width:100%;margin:0 auto;border-radius:${config.borderRadius || 8}px;overflow:hidden;box-shadow:0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)"></div>\n<script defer>(function(){
+  if(window.__blunariInit && window.__blunariInit['${widgetId}']) return;
+  window.__blunariInit = window.__blunariInit||{};
+  window.__blunariInit['${widgetId}']=true;
+  var host='${new URL(url).origin}';
+  var container=document.getElementById('${widgetId}');
+  if(!container) return;
+  var cid='cid-'+Math.random().toString(36).slice(2)+Date.now().toString(36);
+  var src='${url}&embed=1&parent_origin='+encodeURIComponent(window.location.origin)+'&cid='+encodeURIComponent(cid);
+  var iframe=document.createElement('iframe');
+  iframe.src=src;
+  iframe.title='${safeWelcome || 'Blunari widget'}';
+  iframe.loading='${iframeLazy ? 'lazy' : 'eager'}';
+  iframe.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
+  ${iframeSandbox ? "iframe.setAttribute('sandbox','allow-scripts allow-forms allow-popups');" : ''}
+  iframe.style.cssText='width:100%;height:100%;border:0;display:block;background:#fff';
+  container.appendChild(iframe);
+  var allowed='${'" + allowedOrigin + "'}';
+  function onMsg(e){
+    if(allowed && e.origin!==allowed) return;
+    var d=e.data;
+    if(!d||d.widgetId!=='${widgetId}') return;
+    if(d.type==='widget_resize' && d.height){ iframe.style.height=d.height+'px'; container.style.height=d.height+'px'; }
+    if(d.type==='widget_loaded'){ container.classList.add('blunari-loaded'); }
+    if(d.type==='widget_error'){ console.error('Widget error',{error:d.error,requestId:d.requestId,cid:cid}); }
+  }
+  window.addEventListener('message',onMsg,false);
+  // parent_ready handshake once iframe is attached
+  try {
+    iframe.contentWindow && iframe.contentWindow.postMessage({ type:'parent_ready', widgetId:'${widgetId}', correlationId: cid }, '*');
+  } catch {}
+})();</script>
+<noscript>Enable JavaScript to load the Blunari ${type} widget.</noscript>`;
     } catch (error) {
       console.error('Error generating embed code:', error);
       return '<!-- Error: Unable to generate embed code. Please check your configuration and try again. -->';
     }
-  }, [generateWidgetUrl, bookingConfig, cateringConfig]);
+  }, [generateWidgetUrl, bookingConfig, cateringConfig, allowedOriginInput, iframeSandbox, iframeLazy, embedType]);
 
   // Compute live widget URL only when live preview enabled to avoid throwing during slug resolution
   // Track a stable iframe key to avoid React remounting it unless slug/type change
@@ -662,6 +715,16 @@ const WidgetManagement: React.FC = () => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
+
+  // Allowed origin validation state
+  const originState = useMemo(() => {
+    try {
+      const raw = allowedOriginInput || '';
+      const u = new URL(raw);
+      if (!/^https?:$/.test(u.protocol)) return { valid: false, error: 'Must start with http:// or https://', sanitized: '' };
+      return { valid: true, error: '', sanitized: u.origin };
+    } catch { return { valid: false, error: 'Enter a valid origin like https://yourdomain.com', sanitized: '' }; }
+  }, [allowedOriginInput]);
 
   return (
     <div className="container mx-auto p-6 space-y-6" role="main" aria-label="Widget Management Dashboard">
@@ -1448,13 +1511,13 @@ const WidgetManagement: React.FC = () => {
                               />
                               <div className="absolute top-2 left-2">
                                 <Badge variant="secondary" className="text-xs">Live</Badge>
-                              </div>
+                                  </div>
                             </>
                           ) : (
                             <div className="h-full flex items-center justify-center p-6 text-center text-sm text-red-600">
                               Unable to load live widget – tenant slug required.
-                            </div>
-                          )}
+                                    </div>
+                                  )}
                           
                           {/* Loading overlay for animations */}
                           {currentConfig.enableAnimations && (
@@ -1509,7 +1572,7 @@ const WidgetManagement: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Button 
                     variant="outline" 
-                    size="sm" 
+                    size="sm"
                     title="Refresh the preview"
                     aria-label="Refresh the preview"
                     onClick={() => {
@@ -1851,7 +1914,18 @@ const WidgetManagement: React.FC = () => {
                   </Select>
                   <div className="flex items-center gap-2">
                     <Label htmlFor="allowed-origin" className="text-sm" title="Origin of the widget (sender) accepted for postMessage">Allowed widget origin</Label>
-                    <Input id="allowed-origin" className="h-8 w-64" placeholder={typeof window !== 'undefined' ? window.location.origin : 'https://app.blunari.ai'} value={allowedOriginInput} onChange={(e) => setAllowedOriginInput(e.target.value)} />
+                    <Input
+                      id="allowed-origin"
+                      className="h-8 w-64"
+                      placeholder={typeof window !== 'undefined' ? window.location.origin : 'https://app.blunari.ai'}
+                      value={allowedOriginInput}
+                      onChange={(e) => setAllowedOriginInput(e.target.value)}
+                      aria-invalid={!originState.valid}
+                      aria-describedby={!originState.valid ? 'allowed-origin-error' : undefined}
+                    />
+                    {!originState.valid && (
+                      <span id="allowed-origin-error" className="text-xs text-red-600">{originState.error}</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
@@ -1873,7 +1947,7 @@ const WidgetManagement: React.FC = () => {
                     size="sm"
                     className="absolute top-2 right-2"
                     onClick={() => copyToClipboard(generateEmbedCode(activeWidgetType), 'Embed code')}
-                    disabled={copyBusy}
+                    disabled={copyBusy || !originState.valid}
                     aria-label="Copy embed code"
                   >
                     {copyBusy ? (
