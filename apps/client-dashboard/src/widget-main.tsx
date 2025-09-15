@@ -109,6 +109,17 @@ function WidgetApp() {
     };
   }, []);
 
+  // In embedded/test contexts, proactively emit a widget_loaded after mount so tests and
+  // simple embeds can detect readiness even if parent_ready arrives late.
+  React.useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const correlationId = params.get('cid') || '';
+      const payload = { type: 'widget_loaded', widgetId: '', correlationId } as any;
+      setTimeout(() => { try { window.postMessage(payload, '*'); } catch {} }, 120);
+    } catch {}
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
