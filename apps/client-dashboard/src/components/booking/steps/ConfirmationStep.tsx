@@ -47,6 +47,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   );
   const [processing, setProcessing] = useState(false);
   const [stepTimes, setStepTimes] = useState<{ [key: string]: number }>({});
+  const [idemKey] = useState(() => `booking:${crypto.randomUUID()}`);
 
   const { tenant, party_size, selected_slot, guest_details } = state;
 
@@ -102,7 +103,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       });
 
       // Step 2: Confirm reservation with idempotency
-      const idempotencyKey = `booking-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const idempotencyKey = idemKey;
 
       const confirmedReservation = await measureStep(
         "Confirming reservation",

@@ -38,22 +38,17 @@ const DepositSection: React.FC<DepositSectionProps> = ({
     loadPolicies();
   }, [tenant.tenant_id]);
 
-  // Don't render anything if loading
   if (loading) {
-    return null;
+    return <div aria-live="polite" className="sr-only">Loading policies…</div>;
   }
 
-  // Don't render if policies failed to load or deposit is not enabled
   if (error || !policies?.deposit?.enabled) {
     return null;
   }
 
   const { deposit } = policies;
-  const depositAmount =
-    deposit.amount ||
-    (deposit.percentage
-      ? reservation.party_size * 10 * (deposit.percentage / 100)
-      : 0);
+  const amountRaw = deposit.amount || 0;
+  const depositAmount = Math.max(0, Math.round(amountRaw));
 
   return (
     <Card>

@@ -63,9 +63,11 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                   {...register("first_name")}
                   placeholder="John"
                   disabled={loading}
+                  aria-invalid={!!errors.first_name}
+                  aria-describedby={errors.first_name ? 'first_name_error' : undefined}
                 />
                 {errors.first_name && (
-                  <p className="text-sm text-destructive">
+                  <p id="first_name_error" className="text-sm text-destructive">
                     {errors.first_name.message}
                   </p>
                 )}
@@ -77,9 +79,11 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                   {...register("last_name")}
                   placeholder="Doe"
                   disabled={loading}
+                  aria-invalid={!!errors.last_name}
+                  aria-describedby={errors.last_name ? 'last_name_error' : undefined}
                 />
                 {errors.last_name && (
-                  <p className="text-sm text-destructive">
+                  <p id="last_name_error" className="text-sm text-destructive">
                     {errors.last_name.message}
                   </p>
                 )}
@@ -95,9 +99,11 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                 {...register("email")}
                 placeholder="john@example.com"
                 disabled={loading}
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? 'email_error' : undefined}
               />
               {errors.email && (
-                <p className="text-sm text-destructive">
+                <p id="email_error" className="text-sm text-destructive">
                   {errors.email.message}
                 </p>
               )}
@@ -111,9 +117,11 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                 {...register("phone")}
                 placeholder="+1 (555) 123-4567"
                 disabled={loading}
+                aria-invalid={!!errors.phone}
+                aria-describedby={errors.phone ? 'phone_error' : undefined}
               />
               {errors.phone && (
-                <p className="text-sm text-destructive">
+                <p id="phone_error" className="text-sm text-destructive">
                   {errors.phone.message}
                 </p>
               )}
@@ -130,9 +138,11 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                 placeholder="Allergies, accessibility needs, celebration notes..."
                 rows={3}
                 disabled={loading}
+                aria-invalid={!!errors.special_requests}
+                aria-describedby={errors.special_requests ? 'special_requests_error' : undefined}
               />
               {errors.special_requests && (
-                <p className="text-sm text-destructive">
+                <p id="special_requests_error" className="text-sm text-destructive">
                   {errors.special_requests.message}
                 </p>
               )}

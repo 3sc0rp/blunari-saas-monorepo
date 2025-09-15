@@ -31,15 +31,20 @@ async function callEdgeFunction(
   try {
     console.log(`Calling edge function: ${functionName}`, body);
 
-    // Ensure we always send a valid object with required fields
+    // Pull token from URL (public widget runtime)
+    const token = (() => {
+      try { return new URLSearchParams(window.location.search).get('token') || undefined; } catch { return undefined; }
+    })();
+
     const requestBody = {
       ...body,
+      token, // let server validate and resolve slug→tenant_id
+      tenant_id: undefined, // never trust client tenant_id
       timestamp: new Date().toISOString(),
     };
 
     console.log("Final request body being sent:", requestBody);
 
-    // Use fetch directly as a fallback since Supabase invoke might have issues
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -74,8 +79,7 @@ async function callEdgeFunction(
     const data = await response.json();
     console.log("Edge function response data:", data);
 
-    // Check for data validity
-    if (data.success === false && data.error) {
+    if (data?.success === false && data?.error) {
       throw new BookingAPIError(
         data.error.code || "API_ERROR",
         data.error.message,
@@ -88,31 +92,6 @@ async function callEdgeFunction(
       throw new BookingAPIError(
         "NO_DATA",
         "No data received from booking service",
-      );
-    }
-
-    console.log("Raw edge function data:", data);
-
-    // Handle different response formats
-    if (typeof data === "string") {
-      try {
-        const parsedData = JSON.parse(data);
-        console.log("Parsed string response:", parsedData);
-        return parsedData;
-      } catch (parseError) {
-        console.error("Failed to parse string response:", parseError);
-        throw new BookingAPIError(
-          "PARSE_ERROR",
-          "Invalid response format from booking service",
-        );
-      }
-    }
-
-    if (data.success === false && data.error) {
-      throw new BookingAPIError(
-        data.error.code || "API_ERROR",
-        data.error.message,
-        data.error,
       );
     }
 
@@ -179,16 +158,14 @@ export async function searchAvailability(request: SearchRequest) {
   try {
     const payload = {
       action: "search",
-      ...request,
+      party_size: request.party_size,
+      service_date: request.service_date,
+      time_window: request.time_window,
     };
 
-    console.log("Sending search availability payload:", payload);
-
     const data = await callEdgeFunction("widget-booking-live", payload);
-
     return AvailabilityResponseSchema.parse(data);
   } catch (error) {
-    console.error("Availability search error details:", error);
     throw new BookingAPIError(
       "AVAILABILITY_SEARCH_FAILED",
       "Failed to search availability",
@@ -201,9 +178,9 @@ export async function createHold(request: HoldRequest) {
   try {
     const data = await callEdgeFunction("widget-booking-live", {
       action: "hold",
-      ...request,
+      party_size: request.party_size,
+      slot: request.slot,
     });
-
     return HoldResponseSchema.parse(data);
   } catch (error) {
     throw new BookingAPIError(
@@ -222,7 +199,8 @@ export async function confirmReservation(
     const data = await callEdgeFunction("widget-booking-live", {
       action: "confirm",
       idempotency_key: idempotencyKey,
-      ...request,
+      hold_id: request.hold_id,
+      guest_details: request.guest_details,
     });
 
     return ReservationResponseSchema.parse(data);
@@ -262,8 +240,30 @@ export async function sendAnalyticsEvent(
   event: string,
   data: Record<string, unknown>,
 ): Promise<void> {
-  // For demo, we'll just log analytics events
-  // In production, this should be replaced with actual analytics API calls
-  console.log("Analytics event:", event, data);
-  return Promise.resolve();
+  try {
+    const url = import.meta.env.VITE_BACKGROUND_OPS_URL;
+    const apiKey = import.meta.env.VITE_BACKGROUND_OPS_API_KEY;
+    if (!url || !apiKey) {
+      // Fallback to console if not configured
+      console.log("Analytics event:", event, data);
+      return;
+    }
+    const body = {
+      type: `widget.${event}`,
+      payload: data,
+      metadata: {
+        timestamp: new Date().toISOString(),
+      },
+    };
+    await fetch(`${url.replace(/\/$/, '')}/api/v1/events`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    // Swallow analytics errors; do not disrupt UX
+  }
 }

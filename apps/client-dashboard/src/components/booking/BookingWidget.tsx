@@ -238,6 +238,52 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
     }
   }, [state.step]);
 
+  // Keyboard shortcuts: 1/2/3/4 to navigate steps, Enter to advance, ? to show help
+  useEffect(() => {
+    function isTypingTarget(el: EventTarget | null) {
+      const node = el as HTMLElement | null;
+      if (!node) return false;
+      const tag = (node.tagName || '').toLowerCase();
+      return tag === 'input' || tag === 'textarea' || (node as any).isContentEditable;
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (isTypingTarget(e.target)) return;
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        toast("Keyboard", { description: "1-4: navigate steps • Enter: advance • Backspace: back" });
+        return;
+      }
+      if (e.key === 'Enter') {
+        // Attempt to advance to next step if not loading and prerequisites met
+        if (stepLoading) return;
+        if (state.step === 1 && state.party_size) {
+          // noop: moving to step 2 is controlled by PartySize step completion
+        } else if (state.step === 2 && state.selected_slot) {
+          // noop; DateTime step triggers on selection
+        } else if (state.step === 3 && state.guest_details) {
+          setState((prev) => ({ ...prev, step: 4 }));
+        }
+        return;
+      }
+      if (["1","2","3","4"].includes(e.key)) {
+        const desired = parseInt(e.key, 10) as 1|2|3|4;
+        // Only allow navigation to steps whose prerequisites are satisfied
+        const canGo = (
+          desired === 1 ||
+          (desired === 2 && state.party_size) ||
+          (desired === 3 && state.party_size && state.selected_slot) ||
+          (desired === 4 && state.party_size && state.selected_slot && state.guest_details)
+        );
+        if (canGo) {
+          setState((prev) => ({ ...prev, step: desired }));
+          setStepError(null);
+          e.preventDefault();
+        }
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [state.step, state.party_size, state.selected_slot, state.guest_details, stepLoading]);
+
   const progressPercentage = (state.step / 4) * 100;
 
   const stepTitles = {

@@ -168,7 +168,9 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => fetchAvailability(selectedDate)}
-                disabled={loadingSlots}
+                disabled={loadingSlots || parentLoading}
+                aria-busy={loadingSlots}
+                aria-live="polite"
               >
                 <RefreshCw
                   className={`w-4 h-4 ${loadingSlots ? "animate-spin" : ""}`}
@@ -209,7 +211,7 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
                     <motion.button
                       key={index}
                       onClick={() => handleSlotSelect(slot)}
-                      disabled={parentLoading}
+                      disabled={parentLoading || loadingSlots}
                       className="relative p-4 rounded-xl border-2 border-surface-3 hover:border-brand/50 bg-surface/50 hover:bg-surface transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed group hover:shadow-lg hover:shadow-brand/10"
                       whileHover={{ scale: 1.03, y: -2 }}
                       whileTap={{ scale: 0.98 }}

@@ -4,7 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-correlation-id, x-idempotency-key",
+  "Access-Control-Expose-Headers": "x-request-id, x-ratelimit-limit, x-ratelimit-remaining, x-ratelimit-reset",
   "Content-Security-Policy":
     "default-src 'self'; script-src 'self'; object-src 'none';",
   "X-Frame-Options": "DENY",
@@ -13,231 +14,150 @@ const corsHeaders = {
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
 };
 
-// Input validation and sanitization
-function validateAndSanitizeInput(data: any): boolean {
-  if (!data || typeof data !== "object") return false;
+// Basic base64url helpers
+function b64urlDecode(str: string): string {
+  const padded = str.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = padded.length % 4;
+  const paddedStr = pad ? padded + '='.repeat(4 - pad) : padded;
+  try { return atob(paddedStr); } catch { return ''; }
+}
+function b64urlEncode(str: string): string {
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+/g, '');
+}
 
-  // Check for required fields
-  if (!data.tenant_id || !data.action) return false;
+// Insecure fallback HMAC compatible with client dev token utils (replace with real crypto in prod)
+function simpleHMAC(data: string, secret: string): string {
+  let hash = secret;
+  for (let i = 0; i < data.length; i++) {
+    hash = (((hash.charCodeAt(i % hash.length) ^ data.charCodeAt(i)) % 256).toString(16).padStart(2, '0')) + hash;
+  }
+  return b64urlEncode(hash.substring(0, 64));
+}
 
-  // Validate UUID format for tenant_id
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(data.tenant_id)) return false;
+function getWidgetSecret(): string {
+  return Deno.env.get('WIDGET_JWT_SECRET') || Deno.env.get('VITE_JWT_SECRET') || 'dev-jwt-secret-change-in-production-2025';
+}
 
-  // Validate party size (reasonable bounds)
-  if (data.party_size && (data.party_size < 1 || data.party_size > 20))
-    return false;
+function validateWidgetToken(token: string): { slug: string; configVersion?: string; widgetType?: string } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const [h, p, s] = parts;
+    const header = JSON.parse(b64urlDecode(h));
+    if (!header || header.alg !== 'HS256' || header.typ !== 'JWT') return null;
+    const payload = JSON.parse(b64urlDecode(p));
+    if (!payload || !payload.slug) return null;
+    if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return null;
+    const expected = simpleHMAC(`${h}.${p}`, getWidgetSecret());
+    if (expected !== s) return null;
+    return { slug: payload.slug, configVersion: payload.configVersion, widgetType: payload.widgetType };
+  } catch {
+    return null;
+  }
+}
 
-  return true;
+function errorResponse(code: string, message: string, status = 400, requestId?: string, issues?: unknown) {
+  return new Response(
+    JSON.stringify({ success: false, error: { code, message, requestId, issues } }),
+    { status, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } },
+  );
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = crypto.randomUUID();
+
   try {
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     if (req.method !== "POST") {
-      console.log("Non-POST request received:", req.method);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed" },
-        }),
-        {
-          status: 405,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return errorResponse('METHOD_NOT_ALLOWED', 'Method not allowed', 405, requestId);
     }
 
-    console.log("POST request received, processing...");
-
-    let requestData;
+    let requestData: any;
     try {
       const bodyText = await req.text();
-      console.log("Raw request body length:", bodyText ? bodyText.length : 0);
-      console.log("Raw request body:", bodyText);
-      console.log("Request method:", req.method);
-      console.log(
-        "Request headers:",
-        Object.fromEntries(req.headers.entries()),
-      );
-
       if (!bodyText || bodyText.trim() === "") {
-        console.error("Empty request body received");
-        // Try to get data from URL params as fallback
         const url = new URL(req.url);
-        const params = Object.fromEntries(url.searchParams.entries());
-        console.log("URL params as fallback:", params);
-
-        if (Object.keys(params).length === 0) {
-          return new Response(
-            JSON.stringify({
-              success: false,
-              error: {
-                code: "EMPTY_BODY",
-                message: "Request body is required. Received empty body.",
-                debug: {
-                  method: req.method,
-                  contentType: req.headers.get("content-type"),
-                  bodyLength: bodyText ? bodyText.length : 0,
-                },
-              },
-            }),
-            {
-              status: 400,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
-          );
-        }
-        requestData = params;
+        requestData = Object.fromEntries(url.searchParams.entries());
       } else {
         requestData = JSON.parse(bodyText);
       }
-
-      console.log("Successfully parsed request data:", requestData);
     } catch (parseError) {
-      console.error("Failed to parse request body:", parseError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: "INVALID_JSON",
-            message: "Invalid JSON in request body",
-            details:
-              parseError instanceof Error
-                ? parseError.message
-                : "Unknown parse error",
-          },
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return errorResponse('INVALID_JSON', 'Invalid JSON in request body', 400, requestId, { parseError: `${parseError}` });
     }
 
-    console.log("Parsed request data:", requestData);
-
-    const { action } = requestData;
-
+    const action = requestData?.action;
     if (!action) {
-      console.error("No action specified in request:", requestData);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: "MISSING_ACTION",
-            message: "Action parameter is required",
-          },
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return errorResponse('MISSING_ACTION', 'Action parameter is required', 400, requestId);
     }
 
-    // Validate and sanitize input
-    if (!validateAndSanitizeInput(requestData)) {
-      console.error("Invalid input data:", requestData);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: "INVALID_INPUT",
-            message: "Invalid or malformed request data",
-          },
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+    // Validate and resolve widget token → slug → tenant_id
+    const token = requestData.token || new URL(req.url).searchParams.get('token');
+    const tokenPayload = token ? validateWidgetToken(token) : null;
+    if (!tokenPayload?.slug) {
+      return errorResponse('INVALID_TOKEN', 'Valid widget token is required', 401, requestId);
     }
+
+    // Resolve tenant by slug
+    const { data: tenant, error: tenantError } = await supabase
+      .from('tenants')
+      .select('id, name, slug, timezone, currency')
+      .eq('slug', tokenPayload.slug)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (tenantError || !tenant) {
+      return errorResponse('TENANT_NOT_FOUND', `Restaurant "${tokenPayload.slug}" not found`, 404, requestId);
+    }
+
+    // Override any client-provided tenant_id
+    requestData.tenant_id = tenant.id;
 
     if (action === "search") {
-      return handleAvailabilitySearch(supabase, requestData);
+      return await handleAvailabilitySearch(supabase, requestData, requestId);
     } else if (action === "hold") {
-      return handleCreateHold(supabase, requestData);
+      return await handleCreateHold(supabase, requestData, requestId);
     } else if (action === "confirm") {
-      return handleConfirmReservation(supabase, requestData);
+      return await handleConfirmReservation(supabase, requestData, requestId, tenant);
     } else {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: "INVALID_ACTION",
-            message: "Invalid action specified",
-          },
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return errorResponse('INVALID_ACTION', 'Invalid action specified', 400, requestId);
     }
   } catch (error) {
-    console.error("Unexpected error:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "An unexpected error occurred",
-        },
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return errorResponse('INTERNAL_ERROR', 'An unexpected error occurred', 500, undefined, { error: `${error}` });
   }
 });
 
-async function handleAvailabilitySearch(supabase: any, requestData: any) {
+async function handleAvailabilitySearch(supabase: any, requestData: any, requestId?: string) {
   const { tenant_id, party_size, service_date } = requestData;
 
-  // Get tenant info from Supabase for validation
   const { data: tenant, error: tenantError } = await supabase
     .from("tenants")
-    .select("*")
+    .select("id")
     .eq("id", tenant_id)
     .maybeSingle();
 
   if (tenantError) {
-    console.error("Tenant query error:", tenantError);
-    throw new Error(`Failed to query tenant: ${tenantError.message}`);
+    return errorResponse('TENANT_QUERY_FAILED', `Failed to query tenant`, 500, requestId, { details: tenantError.message });
   }
-
   if (!tenant) {
-    console.error("Tenant not found for ID:", tenant_id);
-    throw new Error(`Tenant not found: ${tenant_id}`);
+    return errorResponse('TENANT_NOT_FOUND', `Tenant not found`, 404, requestId);
   }
 
-  // Try external Blunari API for availability search first
   try {
     const apiUrl = "https://services.blunari.ai/api/public/booking/search";
 
     const searchPayload = {
       tenant_id,
-      party_size: Number(party_size), // Ensure it's a number
-      service_date, // Already in YYYY-MM-DD format
-      time_window: {
-        start: "T12:00:00", // ISO time format
-        end: "T21:00:00", // ISO time format
-      },
+      party_size: Number(party_size),
+      service_date,
+      time_window: { start: "T12:00:00", end: "T21:00:00" },
     };
-
-    console.log("Calling external API:", apiUrl, searchPayload);
 
     const apiResponse = await fetch(apiUrl, {
       method: "POST",
@@ -245,40 +165,26 @@ async function handleAvailabilitySearch(supabase: any, requestData: any) {
         "Content-Type": "application/json",
         Accept: "application/json",
         "User-Agent": "Supabase-Edge-Function/1.0",
-        "X-Request-ID": crypto.randomUUID(),
+        "X-Request-ID": requestId || crypto.randomUUID(),
       },
       body: JSON.stringify(searchPayload),
     });
 
     if (!apiResponse.ok) {
       const errorText = await apiResponse.text();
-      console.error("External API error:", apiResponse.status, errorText);
-      throw new Error(`Booking service unavailable (${apiResponse.status})`);
+      throw new Error(`External API error ${apiResponse.status}: ${errorText}`);
     }
 
     const apiData = await apiResponse.json();
-    console.log("External API response:", apiData);
 
-    // Return the external API response in the expected format
     return new Response(
-      JSON.stringify({
-        success: true,
-        slots: apiData.slots || [],
-        alternatives: apiData.alternatives || [],
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      JSON.stringify({ success: true, slots: apiData.slots || [], alternatives: apiData.alternatives || [], requestId }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } },
     );
   } catch (apiError) {
-    console.error("External API failed:", apiError);
-    console.log("Falling back to local data...");
-
-    // Fallback to local Supabase data if external API fails
+    // Fallback to local Supabase data
     const { tenant_id, party_size, service_date } = requestData;
 
-    // Get tables for the tenant
     const { data: tables, error: tablesError } = await supabase
       .from("restaurant_tables")
       .select("*")
@@ -286,80 +192,35 @@ async function handleAvailabilitySearch(supabase: any, requestData: any) {
       .eq("active", true);
 
     if (tablesError) {
-      console.error("Failed to fetch tables:", tablesError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: "SEARCH_FAILED",
-            message: "Unable to load restaurant data. Please try again.",
-          },
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return errorResponse('SEARCH_FAILED', 'Unable to load restaurant data. Please try again.', 500, requestId, { details: tablesError.message });
     }
 
-    // Get existing bookings for the date
     const searchDate = new Date(service_date);
-    const dayStart = new Date(
-      searchDate.getFullYear(),
-      searchDate.getMonth(),
-      searchDate.getDate(),
-    );
+    const dayStart = new Date(searchDate.getFullYear(), searchDate.getMonth(), searchDate.getDate());
     const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
-    const { data: bookings, error: bookingsError } = await supabase
+    const { data: bookings } = await supabase
       .from("bookings")
       .select("*")
       .eq("tenant_id", tenant_id)
       .gte("booking_time", dayStart.toISOString())
       .lt("booking_time", dayEnd.toISOString());
 
-    if (bookingsError) {
-      console.error("Failed to fetch bookings:", bookingsError);
-      // Continue without bookings data
-    }
-
-    // Generate available time slots
-    const slots = generateTimeSlots(
-      tables || [],
-      bookings || [],
-      party_size,
-      searchDate,
-    );
+    const slots = generateTimeSlots(tables || [], bookings || [], party_size, searchDate);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        slots,
-        _fallback: true,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      JSON.stringify({ success: true, slots, _fallback: true, requestId }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } },
     );
   }
 }
 
-async function handleCreateHold(supabase: any, requestData: any) {
+async function handleCreateHold(supabase: any, requestData: any, requestId?: string) {
   try {
     const { tenant_id, slot, party_size } = requestData;
 
-    // Call external Blunari API for hold creation
     const apiUrl = "https://services.blunari.ai/api/public/booking/holds";
-
-    const holdPayload = {
-      tenant_id,
-      party_size: Number(party_size), // Ensure it's a number
-      slot,
-      policy_params: {},
-    };
-
-    console.log("Creating hold with external API:", apiUrl, holdPayload);
+    const holdPayload = { tenant_id, party_size: Number(party_size), slot, policy_params: {} };
 
     const apiResponse = await fetch(apiUrl, {
       method: "POST",
@@ -367,110 +228,62 @@ async function handleCreateHold(supabase: any, requestData: any) {
         "Content-Type": "application/json",
         Accept: "application/json",
         "User-Agent": "Supabase-Edge-Function/1.0",
-        "X-Request-ID": crypto.randomUUID(),
+        "X-Request-ID": requestId || crypto.randomUUID(),
       },
       body: JSON.stringify(holdPayload),
     });
 
     if (!apiResponse.ok) {
       const errorText = await apiResponse.text();
-      console.error("External API hold error:", apiResponse.status, errorText);
-      throw new Error(`Failed to create booking hold (${apiResponse.status})`);
+      throw new Error(`Failed to create booking hold (${apiResponse.status}): ${errorText}`);
     }
 
     const apiData = await apiResponse.json();
-    console.log("External API hold response:", apiData);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        hold_id: apiData.hold_id,
-        expires_at: apiData.expires_at,
-        table_identifiers: apiData.table_identifiers || ["Available Table"],
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      JSON.stringify({ success: true, hold_id: apiData.hold_id, expires_at: apiData.expires_at, table_identifiers: apiData.table_identifiers || ["Available Table"], requestId }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } },
     );
   } catch (error) {
-    console.error("Hold creation error:", error);
-
-    // Fallback to local hold creation
+    // Local fallback
     try {
-      console.log("Falling back to local hold creation...");
       const { tenant_id, slot, party_size } = requestData;
-
-      const holdData = {
-        tenant_id,
-        booking_time: slot.time,
-        party_size,
-        duration_minutes: 120,
-        session_id: crypto.randomUUID(),
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minute hold
-      };
-
-      const { data: hold, error: holdError } = await supabase
-        .from("booking_holds")
-        .insert(holdData)
-        .select()
-        .single();
-
+      const holdData = { tenant_id, booking_time: slot.time, party_size, duration_minutes: 120, session_id: crypto.randomUUID(), expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() };
+      const { data: hold, error: holdError } = await supabase.from("booking_holds").insert(holdData).select().single();
       if (holdError) {
-        throw new Error(`Failed to create hold: ${holdError.message}`);
+        return errorResponse('HOLD_FAILED', 'Unable to reserve time slot. Please try again.', 500, requestId, { details: holdError.message });
       }
-
       return new Response(
-        JSON.stringify({
-          success: true,
-          hold_id: hold.id,
-          expires_at: hold.expires_at,
-          table_identifiers: ["Available Table"],
-          _fallback: true,
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        JSON.stringify({ success: true, hold_id: hold.id, expires_at: hold.expires_at, table_identifiers: ["Available Table"], _fallback: true, requestId }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } },
       );
     } catch (fallbackError) {
-      console.error("Fallback hold creation failed:", fallbackError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: "HOLD_FAILED",
-            message: "Unable to reserve time slot. Please try again.",
-          },
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return errorResponse('HOLD_FAILED', 'Unable to reserve time slot. Please try again.', 500, requestId, { details: `${fallbackError}` });
     }
   }
 }
 
-async function handleConfirmReservation(supabase: any, requestData: any) {
+async function handleConfirmReservation(supabase: any, requestData: any, requestId: string | undefined, tenant: any) {
   try {
     const { tenant_id, hold_id, guest_details, idempotency_key } = requestData;
 
-    // Call external Blunari API for reservation confirmation
-    const apiUrl =
-      "https://services.blunari.ai/api/public/booking/reservations";
+    // Idempotency read (best-effort)
+    if (idempotency_key) {
+      try {
+        const { data: idem } = await supabase
+          .from('idempotency_keys')
+          .select('status_code, response_json')
+          .eq('tenant_id', tenant_id)
+          .eq('idempotency_key', idempotency_key)
+          .maybeSingle();
+        if (idem && idem.response_json) {
+          return new Response(JSON.stringify(idem.response_json), { status: idem.status_code || 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } });
+        }
+      } catch {}
+    }
 
-    const reservationPayload = {
-      tenant_id,
-      hold_id,
-      guest_details,
-    };
-
-    console.log(
-      "Confirming reservation with external API:",
-      apiUrl,
-      reservationPayload,
-    );
+    const apiUrl = "https://services.blunari.ai/api/public/booking/reservations";
+    const reservationPayload = { tenant_id, hold_id, guest_details };
 
     const apiResponse = await fetch(apiUrl, {
       method: "POST",
@@ -478,7 +291,7 @@ async function handleConfirmReservation(supabase: any, requestData: any) {
         "Content-Type": "application/json",
         Accept: "application/json",
         "User-Agent": "Supabase-Edge-Function/1.0",
-        "X-Request-ID": crypto.randomUUID(),
+        "X-Request-ID": requestId || crypto.randomUUID(),
         "X-Idempotency-Key": idempotency_key || crypto.randomUUID(),
       },
       body: JSON.stringify(reservationPayload),
@@ -486,50 +299,32 @@ async function handleConfirmReservation(supabase: any, requestData: any) {
 
     if (!apiResponse.ok) {
       const errorText = await apiResponse.text();
-      console.error(
-        "External API reservation error:",
-        apiResponse.status,
-        errorText,
-      );
-      throw new Error(`Failed to confirm reservation (${apiResponse.status})`);
+      throw new Error(`Failed to confirm reservation (${apiResponse.status}): ${errorText}`);
     }
 
     const apiData = await apiResponse.json();
-    console.log("External API reservation response:", apiData);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        reservation_id: apiData.reservation_id,
-        confirmation_number: apiData.confirmation_number,
-        status: apiData.status,
-        summary: apiData.summary,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    const responseBody = { success: true, reservation_id: apiData.reservation_id, confirmation_number: apiData.confirmation_number, status: apiData.status, summary: apiData.summary, requestId };
+
+    // Idempotency write (best-effort)
+    if (idempotency_key) {
+      try {
+        await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: responseBody });
+      } catch {}
+    }
+
+    await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: guest_details?.email, template: 'reservation.confirmed', data: { reservation_id: apiData.reservation_id, confirmation_number: apiData.confirmation_number, tenant_name: tenant?.name } });
+
+    return new Response(JSON.stringify(responseBody), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } });
   } catch (error) {
-    console.error("Reservation confirmation error:", error);
-
     // Fallback to local booking creation
     try {
-      console.log("Falling back to local booking creation...");
-      const { tenant_id, hold_id, guest_details } = requestData;
-
-      // Get hold information first
-      const { data: hold, error: holdError } = await supabase
-        .from("booking_holds")
-        .select("*")
-        .eq("id", hold_id)
-        .single();
-
+      const { tenant_id, hold_id, guest_details, idempotency_key } = requestData;
+      const { data: hold, error: holdError } = await supabase.from("booking_holds").select("*").eq("id", hold_id).single();
       if (holdError || !hold) {
-        throw new Error("Booking hold not found or expired");
+        return errorResponse('HOLD_NOT_FOUND', 'Booking hold not found or expired', 404, requestId, { details: holdError?.message });
       }
 
-      // Check for duplicate booking
       const { data: existing } = await supabase
         .from("bookings")
         .select("id")
@@ -539,33 +334,12 @@ async function handleConfirmReservation(supabase: any, requestData: any) {
         .maybeSingle();
 
       if (existing) {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            reservation_id: existing.id,
-            confirmation_number: `CONF${existing.id.slice(-6).toUpperCase()}`,
-            status: "confirmed",
-            summary: {
-              date: hold.booking_time,
-              time: new Date(hold.booking_time).toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              }),
-              party_size: hold.party_size,
-              table_info: "Reserved Table",
-              deposit_required: false,
-            },
-            _fallback: true,
-          }),
-          {
-            status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
+        const body = { success: true, reservation_id: existing.id, confirmation_number: `CONF${existing.id.slice(-6).toUpperCase()}`, status: "confirmed", summary: { date: hold.booking_time, time: new Date(hold.booking_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }), party_size: hold.party_size, table_info: "Reserved Table", deposit_required: false }, _fallback: true, requestId };
+        if (idempotency_key) { try { await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: body }); } catch {} }
+        await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: guest_details?.email, template: 'reservation.confirmed', data: { reservation_id: existing.id, confirmation_number: `CONF${existing.id.slice(-6).toUpperCase()}`, tenant_name: tenant?.name } });
+        return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } });
       }
 
-      // Create the booking
       const bookingData = {
         tenant_id,
         booking_time: hold.booking_time,
@@ -580,60 +354,42 @@ async function handleConfirmReservation(supabase: any, requestData: any) {
         deposit_paid: false,
       };
 
-      const { data: booking, error: bookingError } = await supabase
-        .from("bookings")
-        .insert(bookingData)
-        .select()
-        .single();
-
+      const { data: booking, error: bookingError } = await supabase.from("bookings").insert(bookingData).select().single();
       if (bookingError) {
-        throw new Error(`Failed to create booking: ${bookingError.message}`);
+        return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: bookingError.message });
       }
 
       const confirmationNumber = `CONF${booking.id.slice(-6).toUpperCase()}`;
-
-      console.log("Fallback booking created successfully:", booking.id);
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          reservation_id: booking.id,
-          confirmation_number: confirmationNumber,
-          status: "confirmed",
-          summary: {
-            date: booking.booking_time,
-            time: new Date(booking.booking_time).toLocaleTimeString("en-US", {
-              hour: "numeric",
-              minute: "2-digit",
-              hour12: true,
-            }),
-            party_size: booking.party_size,
-            table_info: "Reserved Table",
-            deposit_required: false,
-          },
-          _fallback: true,
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      const body = { success: true, reservation_id: booking.id, confirmation_number: confirmationNumber, status: "confirmed", summary: { date: booking.booking_time, time: new Date(booking.booking_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }), party_size: booking.party_size, table_info: "Reserved Table", deposit_required: false }, _fallback: true, requestId };
+      if (idempotency_key) { try { await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: body }); } catch {} }
+      await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: guest_details?.email, template: 'reservation.confirmed', data: { reservation_id: booking.id, confirmation_number: confirmationNumber, tenant_name: tenant?.name } });
+      return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } });
     } catch (fallbackError) {
-      console.error("Fallback reservation failed:", fallbackError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: "CONFIRMATION_FAILED",
-            message: "Unable to confirm reservation. Please try again.",
-          },
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: `${fallbackError}` });
     }
+  }
+}
+
+async function enqueueNotificationJob(opts: { tenantId: string; requestId?: string; type: 'email' | 'sms'; to: string; template: string; data: Record<string, unknown> }) {
+  try {
+    const url = Deno.env.get('BACKGROUND_OPS_URL');
+    const apiKey = Deno.env.get('BACKGROUND_OPS_API_KEY');
+    if (!url || !apiKey) {
+      // No background-ops configured; skip silently
+      return;
+    }
+    const res = await fetch(`${url.replace(/\/$/, '')}/api/v1/jobs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'X-Idempotency-Key': `notif:${opts.template}:${opts.data?.reservation_id || ''}`,
+      },
+      body: JSON.stringify({ type: 'notification.send', payload: { type: opts.type, to: opts.to, template: opts.template, data: opts.data }, priority: 5 })
+    });
+    // Ignore non-2xx but avoid throwing to not break booking flow
+  } catch {
+    // Swallow errors to keep booking flow resilient
   }
 }
 
@@ -643,42 +399,34 @@ function generateTimeSlots(
   partySize: number,
   date: Date,
 ) {
-  const slots = [];
+  const slots: any[] = [];
   const suitableTables = tables.filter((table) => table.capacity >= partySize);
 
-  // Generate slots from 12 PM to 9 PM
   for (let hour = 12; hour < 21; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
       const slotTime = new Date(date);
       slotTime.setHours(hour, minute, 0, 0);
-
-      // Skip past times
       if (slotTime <= new Date()) continue;
 
-      // Check availability
       const conflictingBookings = bookings.filter((booking) => {
         const bookingStart = new Date(booking.booking_time);
         const bookingEnd = new Date(
           bookingStart.getTime() + booking.duration_minutes * 60 * 1000,
         );
-        const slotEnd = new Date(slotTime.getTime() + 120 * 60 * 1000); // 2 hour default
-
+        const slotEnd = new Date(slotTime.getTime() + 120 * 60 * 1000);
         return slotTime < bookingEnd && slotEnd > bookingStart;
       });
 
-      const availableTables =
-        suitableTables.length - conflictingBookings.length;
-
+      const availableTables = suitableTables.length - conflictingBookings.length;
       if (availableTables > 0) {
         slots.push({
           time: slotTime.toISOString(),
           available_tables: availableTables,
-          revenue_projection: Math.round(100 + Math.random() * 100),
-          optimal: hour >= 18 && hour <= 19, // Prime dinner time
+          optimal: hour >= 18 && hour <= 19,
+          // revenue_projection removed: no randomized metrics
         });
       }
     }
   }
-
-  return slots.slice(0, 15); // Limit slots
+  return slots.slice(0, 15);
 }

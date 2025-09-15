@@ -18,6 +18,24 @@ const PartySizeStep: React.FC<PartySizeStepProps> = ({
 }) => {
   const [selectedSize, setSelectedSize] = useState<number | null>(null);
 
+  // Keyboard navigation
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (loading) return;
+    const idx = selectedSize ? selectedSize - 1 : -1;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      const next = Math.min(11, Math.max(0, idx + 1));
+      setSelectedSize(next + 1);
+      e.preventDefault();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      const prev = Math.min(11, Math.max(0, (idx === -1 ? 0 : idx - 1)));
+      setSelectedSize(prev + 1);
+      e.preventDefault();
+    } else if (e.key === 'Enter' && selectedSize) {
+      handleSizeSelect(selectedSize);
+      e.preventDefault();
+    }
+  };
+
   // Generate party size options (1-12)
   const partySizeOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -55,12 +73,15 @@ const PartySizeStep: React.FC<PartySizeStepProps> = ({
         </CardHeader>
 
         <CardContent className="px-8 pb-8">
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4" role="listbox" aria-label="Select party size" tabIndex={0} onKeyDown={onKeyDown}>
             {partySizeOptions.map((size) => (
               <motion.button
                 key={size}
                 onClick={() => handleSizeSelect(size)}
                 disabled={loading}
+                role="option"
+                aria-selected={selectedSize === size}
+                aria-label={`${size} ${size === 1 ? 'guest' : 'guests'}`}
                 className={`
                   relative aspect-square rounded-xl border-2 transition-all duration-300 shadow-sm
                   hover:scale-[1.08] hover:shadow-lg hover:shadow-brand/20
