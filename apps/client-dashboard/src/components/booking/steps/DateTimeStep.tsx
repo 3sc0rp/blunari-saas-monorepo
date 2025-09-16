@@ -142,6 +142,18 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
     return false;
   };
 
+  const isSlotOutsideBusinessHours = (slotIso: string) => {
+    const slot = parseISO(slotIso);
+    const bh = getBusinessHoursForDate(slot);
+    if (!bh || bh.is_open === false) return true;
+    const [openH, openM] = (bh.open_time || "00:00:00").split(":").map((v) => parseInt(v, 10));
+    const [closeH, closeM] = (bh.close_time || "23:59:59").split(":").map((v) => parseInt(v, 10));
+    const minutes = slot.getHours() * 60 + slot.getMinutes();
+    const openMinutes = openH * 60 + (openM || 0);
+    const closeMinutes = closeH * 60 + (closeM || 0);
+    return minutes < openMinutes || minutes >= closeMinutes;
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -219,7 +231,9 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
               <div className="space-y-6">
                 {/* Main slots with compact cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {availability.slots.map((slot, index) => (
+                  {availability.slots
+                    .filter((slot) => !isSlotOutsideBusinessHours(slot.time))
+                    .map((slot, index) => (
                     <motion.button
                       key={index}
                       onClick={() => handleSlotSelect(slot)}
