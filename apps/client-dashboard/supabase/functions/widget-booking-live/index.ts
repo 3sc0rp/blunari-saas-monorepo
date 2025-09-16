@@ -454,17 +454,29 @@ async function enqueueNotificationJob(opts: { tenantId: string; requestId?: stri
   }
 }
 
-// Convert a wall-clock time in a specific IANA timezone to a UTC ISO string
-function toUtcIso(serviceDate: Date, hour: number, minute: number, timeZone: string): string {
-  const y = serviceDate.getUTCFullYear();
-  const m = serviceDate.getUTCMonth();
-  const d = serviceDate.getUTCDate();
-  // Create a base date at the desired wall time (treated as UTC temporarily)
-  const base = new Date(Date.UTC(y, m, d, hour, minute, 0));
-  // Convert that instant to the provided timezone, then compute the diff
-  const tzDate = new Date(base.toLocaleString('en-US', { timeZone }));
-  const diff = base.getTime() - tzDate.getTime();
-  const utc = new Date(base.getTime() + diff);
+// Robust conversion of a wall-clock time in a specific IANA timezone to a UTC ISO string
+function getTzOffsetMinutes(date: Date, timeZone: string): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  const parts = dtf.formatToParts(date);
+  const map: Record<string, string> = {} as any;
+  for (const p of parts) { if (p.type !== 'literal') map[p.type] = p.value; }
+  const asUTC = Date.UTC(+map.year, +map.month - 1, +map.day, +map.hour, +map.minute, +map.second);
+  return (asUTC - date.getTime()) / 60000;
+}
+
+function zonedWallTimeToUtcISO(serviceDate: Date, hour: number, minute: number, timeZone: string): string {
+  const guess = new Date(Date.UTC(serviceDate.getUTCFullYear(), serviceDate.getUTCMonth(), serviceDate.getUTCDate(), hour, minute, 0));
+  const offsetMin = getTzOffsetMinutes(guess, timeZone);
+  const utc = new Date(guess.getTime() - offsetMin * 60000);
   return utc.toISOString();
 }
 
@@ -485,7 +497,7 @@ function generateTimeSlots(
 
   for (let hour = startH; hour <= endH; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      const iso = toUtcIso(date, hour, minute, tenantTimezone);
+      const iso = zonedWallTimeToUtcISO(date, hour, minute, tenantTimezone);
       const slotTime = new Date(iso);
       const totalMin = hour * 60 + minute;
       if (totalMin >= endTotalMin) break;
