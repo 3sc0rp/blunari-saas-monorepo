@@ -125,10 +125,11 @@ export const TenantBrandingProvider: React.FC<{
         root.style.setProperty("--brand", hslColor);
         root.style.setProperty("--ring", hslColor);
 
-        // Create a lighter variant for foreground
+        // Contrast-aware foreground for brand backgrounds
         const [h, s, l] = hslColor.split(" ");
-        const lighterL = Math.min(parseInt(l.replace("%", "")) + 20, 90);
-        root.style.setProperty("--brand-foreground", `${h} ${s} ${lighterL}%`);
+        const lightness = parseInt(l.replace("%", ""));
+        const brandFg = lightness < 50 ? "0 0% 98%" : "0 0% 10%"; // white on dark, near-black on light
+        root.style.setProperty("--brand-foreground", brandFg);
       } catch (error) {
         console.warn(
           "Invalid primary color format:",
@@ -143,10 +144,11 @@ export const TenantBrandingProvider: React.FC<{
         const hslColor = hexToHsl(brandingData.accentColor);
         root.style.setProperty("--accent", hslColor);
 
-        // Create foreground variant
+        // Contrast-aware foreground for accent backgrounds
         const [h, s, l] = hslColor.split(" ");
-        const lighterL = Math.min(parseInt(l.replace("%", "")) + 20, 90);
-        root.style.setProperty("--accent-foreground", `${h} ${s} ${lighterL}%`);
+        const lightness = parseInt(l.replace("%", ""));
+        const accentFg = lightness < 50 ? "0 0% 98%" : "0 0% 10%";
+        root.style.setProperty("--accent-foreground", accentFg);
       } catch (error) {
         console.warn("Invalid accent color format:", brandingData.accentColor);
       }
