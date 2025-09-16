@@ -96,24 +96,7 @@ function RouterInstrumentation() {
   return null;
 }
 
-// Lightweight public widget shell: exclude Auth / Tenant providers to avoid auth redirect/login UI.
-// We mount this inside the same BrowserRouter but branch early based on pathname.
-function PublicWidgetShell() {
-  const location = useLocation();
-  const isPublicWidget = location.pathname.startsWith('/book/') || location.pathname.startsWith('/catering/');
-  if (!isPublicWidget) return null;
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Routes>
-        <Route path="/book/:slug" element={<BookingPage />} />
-        <Route path="/catering/:slug" element={<BookingPage />} />
-      </Routes>
-      <Toaster />
-      <Sonner />
-      <PerformanceMonitor />
-    </div>
-  );
-}
+// Removed legacy public widget routes (/book and /catering).
 
 function App() {
   console.log('🎯 App component rendering with full providers...');
