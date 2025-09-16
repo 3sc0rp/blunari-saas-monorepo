@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { useTenant } from "@/hooks/useTenant";
+import { useTenantBranding } from "@/contexts/TenantBrandingContext";
 import { useUIMode } from "@/lib/ui-mode";
 
 // Consolidated navigation under Management
@@ -99,6 +100,7 @@ export function ResponsiveDashboardSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const { tenant } = useTenant();
+  const { restaurantName, logoUrl } = useTenantBranding();
   const { mode } = useUIMode();
   const currentPath = location.pathname;
 
@@ -138,13 +140,21 @@ export function ResponsiveDashboardSidebar() {
         <div className="h-[64px] p-4 flex items-center relative">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-surface-2/10 to-transparent" />
           <div className="flex items-center gap-3 w-full relative z-10">
-            <div className="w-8 h-8 bg-gradient-to-br from-brand via-brand/90 to-brand/70 rounded-xl flex items-center justify-center flex-shrink-0 shadow-elev-2 ring-1 ring-brand/20">
-              <Building className="w-4 h-4 text-brand-foreground" />
-            </div>
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={`${restaurantName} logo`}
+                className="w-8 h-8 rounded-xl object-cover flex-shrink-0 shadow-elev-2 ring-1 ring-brand/20"
+              />
+            ) : (
+              <div className="w-8 h-8 bg-gradient-to-br from-brand via-brand/90 to-brand/70 rounded-xl flex items-center justify-center flex-shrink-0 shadow-elev-2 ring-1 ring-brand/20">
+                <Building className="w-4 h-4 text-brand-foreground" />
+              </div>
+            )}
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <h2 className="font-semibold text-text truncate text-sm leading-tight">
-                  {tenant?.name || "Restaurant"}
+                  {restaurantName || tenant?.name || "Restaurant"}
                 </h2>
                 <p className="text-xs text-text-muted truncate opacity-75 leading-tight">Management Portal</p>
               </div>
