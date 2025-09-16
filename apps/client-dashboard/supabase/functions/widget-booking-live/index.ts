@@ -120,7 +120,7 @@ serve(async (req) => {
     requestData.tenant_id = tenant.id;
 
     if (action === "search") {
-      return await handleAvailabilitySearch(supabase, requestData, requestId);
+      return await handleAvailabilitySearch(supabase, requestData, tenant.timezone, requestId);
     } else if (action === "hold") {
       return await handleCreateHold(supabase, requestData, requestId);
     } else if (action === "confirm") {
@@ -133,7 +133,7 @@ serve(async (req) => {
   }
 });
 
-async function handleAvailabilitySearch(supabase: any, requestData: any, requestId?: string) {
+async function handleAvailabilitySearch(supabase: any, requestData: any, tenantTimezone?: string, requestId?: string) {
   const { tenant_id, party_size, service_date } = requestData;
 
   const { data: tenant, error: tenantError } = await supabase
@@ -156,7 +156,7 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, request
       tenant_id,
       party_size: Number(party_size),
       service_date,
-      time_window: await resolveTimeWindowForDate(supabase, tenant_id, service_date),
+      time_window: await resolveTimeWindowForDate(supabase, tenant_id, service_date, tenantTimezone),
     };
 
     const apiResponse = await fetch(apiUrl, {
@@ -206,8 +206,8 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, request
       .gte("booking_time", dayStart.toISOString())
       .lt("booking_time", dayEnd.toISOString());
 
-    const timeWindow = await resolveTimeWindowForDate(supabase, tenant_id, service_date);
-    const slots = generateTimeSlots(tables || [], bookings || [], party_size, searchDate, timeWindow);
+    const timeWindow = await resolveTimeWindowForDate(supabase, tenant_id, service_date, tenantTimezone);
+    const slots = generateTimeSlots(tables || [], bookings || [], party_size, searchDate, timeWindow, tenantTimezone || 'UTC');
 
     return new Response(
       JSON.stringify({ success: true, slots, _fallback: true, requestId }),
@@ -216,9 +216,10 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, request
   }
 }
 
-async function resolveTimeWindowForDate(supabase: any, tenantId: string, serviceDate: string): Promise<{ start: string; end: string }> {
+async function resolveTimeWindowForDate(supabase: any, tenantId: string, serviceDate: string, tenantTimezone?: string): Promise<{ start: string; end: string }> {
   try {
     const date = new Date(serviceDate);
+    // Use UTC day-of-week by default; serverside timezone normalization for DOW can be added if needed
     const dow = date.getUTCDay();
     const { data: bh } = await supabase
       .from('business_hours')
@@ -444,12 +445,27 @@ async function enqueueNotificationJob(opts: { tenantId: string; requestId?: stri
   }
 }
 
+// Convert a wall-clock time in a specific IANA timezone to a UTC ISO string
+function toUtcIso(serviceDate: Date, hour: number, minute: number, timeZone: string): string {
+  const y = serviceDate.getUTCFullYear();
+  const m = serviceDate.getUTCMonth();
+  const d = serviceDate.getUTCDate();
+  // Create a base date at the desired wall time (treated as UTC temporarily)
+  const base = new Date(Date.UTC(y, m, d, hour, minute, 0));
+  // Convert that instant to the provided timezone, then compute the diff
+  const tzDate = new Date(base.toLocaleString('en-US', { timeZone }));
+  const diff = base.getTime() - tzDate.getTime();
+  const utc = new Date(base.getTime() + diff);
+  return utc.toISOString();
+}
+
 function generateTimeSlots(
   tables: any[],
   bookings: any[],
   partySize: number,
   date: Date,
-  timeWindow?: { start: string; end: string }
+  timeWindow?: { start: string; end: string },
+  tenantTimezone: string = 'UTC'
 ) {
   const slots: any[] = [];
   const suitableTables = tables.filter((table) => table.capacity >= partySize);
@@ -460,17 +476,15 @@ function generateTimeSlots(
 
   for (let hour = startH; hour <= endH; hour++) {
     for (let minute = 0; minute < 60; minute += 30) {
-      const slotTime = new Date(date);
-      slotTime.setHours(hour, minute, 0, 0);
+      const iso = toUtcIso(date, hour, minute, tenantTimezone);
+      const slotTime = new Date(iso);
       const totalMin = hour * 60 + minute;
       if (totalMin >= endTotalMin) break;
       if (slotTime <= new Date()) continue;
 
       const conflictingBookings = bookings.filter((booking) => {
         const bookingStart = new Date(booking.booking_time);
-        const bookingEnd = new Date(
-          bookingStart.getTime() + booking.duration_minutes * 60 * 1000,
-        );
+        const bookingEnd = new Date(bookingStart.getTime() + booking.duration_minutes * 60 * 1000);
         const slotEnd = new Date(slotTime.getTime() + 120 * 60 * 1000);
         return slotTime < bookingEnd && slotEnd > bookingStart;
       });
@@ -478,7 +492,7 @@ function generateTimeSlots(
       const availableTables = suitableTables.length - conflictingBookings.length;
       if (availableTables > 0) {
         slots.push({
-          time: slotTime.toISOString(),
+          time: iso,
           available_tables: availableTables,
           optimal: hour >= 18 && hour <= 19,
         });
