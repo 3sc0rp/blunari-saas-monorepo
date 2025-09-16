@@ -152,11 +152,12 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, tenantT
   try {
     const apiUrl = "https://services.blunari.ai/api/public/booking/search";
 
+    const windowForDay = await resolveTimeWindowForDate(supabase, tenant_id, service_date, tenantTimezone);
     const searchPayload = {
       tenant_id,
       party_size: Number(party_size),
       service_date,
-      time_window: await resolveTimeWindowForDate(supabase, tenant_id, service_date, tenantTimezone),
+      time_window: windowForDay,
     };
 
     const apiResponse = await fetch(apiUrl, {
@@ -177,8 +178,27 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, tenantT
 
     const apiData = await apiResponse.json();
 
+    // Clamp server response to the configured business-hours window as a safety net
+    const [openH, openM] = (windowForDay.start.replace('T','') || '00:00:00').split(':').map((v: string) => parseInt(v, 10));
+    const [closeH, closeM] = (windowForDay.end.replace('T','') || '23:59:59').split(':').map((v: string) => parseInt(v, 10));
+    const openMin = openH * 60 + (openM || 0);
+    const closeMin = closeH * 60 + (closeM || 0);
+    const tz = tenantTimezone || 'UTC';
+    const toLocalMinutes = (iso: string) => {
+      const d = new Date(iso);
+      const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false, hour: '2-digit', minute: '2-digit' }).formatToParts(d);
+      const obj: any = {}; for (const p of parts) { if (p.type !== 'literal') obj[p.type] = p.value; }
+      return (parseInt(obj.hour, 10) * 60) + parseInt(obj.minute, 10);
+    };
+    const clamp = (arr: any[] | undefined) => (arr || []).filter((s: any) => {
+      try { const m = toLocalMinutes(s.time); return m >= openMin && m < closeMin; } catch { return false; }
+    });
+
+    const clampedSlots = clamp(apiData.slots);
+    const clampedAlts = clamp(apiData.alternatives);
+
     return new Response(
-      JSON.stringify({ success: true, slots: apiData.slots || [], alternatives: apiData.alternatives || [], requestId }),
+      JSON.stringify({ success: true, slots: clampedSlots, alternatives: clampedAlts, requestId }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } },
     );
   } catch (apiError) {
