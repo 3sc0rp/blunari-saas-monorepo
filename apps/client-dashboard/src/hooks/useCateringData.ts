@@ -130,10 +130,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
               id,
               name,
               description,
-              price_per_person,
-              unit,
               dietary_restrictions,
-              allergen_info,
               image_url
             )
           )
