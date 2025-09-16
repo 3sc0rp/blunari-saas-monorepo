@@ -218,18 +218,27 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, tenantT
 
 async function resolveTimeWindowForDate(supabase: any, tenantId: string, serviceDate: string, tenantTimezone?: string): Promise<{ start: string; end: string }> {
   try {
-    const date = new Date(serviceDate);
-    // Use UTC day-of-week by default; serverside timezone normalization for DOW can be added if needed
-    const dow = date.getUTCDay();
-    const { data: bh } = await supabase
+    const tz = tenantTimezone || 'UTC';
+    // Determine local day-of-week in tenant timezone (0..6, Sun..Sat)
+    const dowLocal = (() => {
+      const testDate = new Date(`${serviceDate}T12:00:00Z`); // noon UTC to avoid DST edge
+      const dayStr = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: tz }).format(testDate);
+      const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+      return map[dayStr] ?? new Date(serviceDate).getUTCDay();
+    })();
+
+    // Prefer normalized table
+    const { data: bhAll } = await supabase
       .from('business_hours')
       .select('day_of_week,is_open,open_time,close_time')
-      .eq('tenant_id', tenantId)
-      .eq('day_of_week', dow)
-      .maybeSingle();
-    if (bh && bh.is_open && bh.open_time && bh.close_time) {
-      return { start: `T${bh.open_time}`, end: `T${bh.close_time}` };
+      .eq('tenant_id', tenantId);
+    if (Array.isArray(bhAll) && bhAll.length > 0) {
+      const rec = bhAll.find((r: any) => r.day_of_week === dowLocal);
+      if (rec && rec.is_open && rec.open_time && rec.close_time) {
+        return { start: `T${rec.open_time}`, end: `T${rec.close_time}` };
+      }
     }
+
     // Fallback to operational settings if table empty
     const { data: op } = await supabase
       .from('tenant_settings')
@@ -238,9 +247,9 @@ async function resolveTimeWindowForDate(supabase: any, tenantId: string, service
       .eq('setting_key', 'operational')
       .maybeSingle();
     const ops = op?.setting_value;
-    const rec = ops?.businessHours ? ops.businessHours[String(dow)] : null;
-    if (rec && rec.isOpen && rec.openTime && rec.closeTime) {
-      return { start: `T${rec.openTime}`, end: `T${rec.closeTime}` };
+    const rec2 = ops?.businessHours ? ops.businessHours[String(dowLocal)] : null;
+    if (rec2 && rec2.isOpen && rec2.openTime && rec2.closeTime) {
+      return { start: `T${rec2.openTime}`, end: `T${rec2.closeTime}` };
     }
   } catch {}
   // Default window
