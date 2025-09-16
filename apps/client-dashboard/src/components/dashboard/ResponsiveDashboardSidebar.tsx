@@ -73,7 +73,7 @@ const managementNavigation = [
     items: [
       { title: "Bookings", url: "/dashboard/bookings", icon: Calendar },
       { title: "Waitlist Management", url: "/dashboard/waitlist-management", icon: Clock },
-      { title: "Tables", url: "/dashboard/tables", icon: TableProperties },
+      // Removed duplicate navigation entry for Tables (Live Floor already links to /dashboard/tables)
       { title: "Customers", url: "/dashboard/customers", icon: Users },
       { title: "Catering", url: "/dashboard/catering", icon: ChefHat },
     ],
