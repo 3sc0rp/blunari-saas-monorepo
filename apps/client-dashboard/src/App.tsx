@@ -110,8 +110,7 @@ function App() {
         <ThemeProvider>
           <BrowserRouter>
             <RouterInstrumentation />
-            {/* IMPORTANT: Public widget routes are rendered via PublicWidgetShell WITHOUT Auth/Tenant/Navigation providers */}
-            <PublicWidgetShell />
+            {/* Public widget routes are served by a separate entry (widget-main). */}
             <TenantBrandingProvider>
               <AuthProvider>
                 <ModeProvider>
