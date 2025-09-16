@@ -35,7 +35,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
     defaultValues: settings,
   });
 
-  // Watch form changes for live preview updates
+  // Do NOT live-apply changes globally; only apply on Save
   const watchedValues = form.watch();
 
   // Update form values when settings prop changes
@@ -45,28 +45,18 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
     }
   }, [settings, form]);
 
-  // Update live preview with debounced effect to prevent infinite loops
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      updateBranding({
-        logoUrl: watchedValues.logoUrl,
-        restaurantName: watchedValues.restaurantName,
-        primaryColor: watchedValues.primaryColor,
-        accentColor: watchedValues.accentColor,
-      });
-    }, 100); // 100ms debounce
-
-    return () => clearTimeout(timeoutId);
-  }, [
-    watchedValues.logoUrl,
-    watchedValues.restaurantName,
-    watchedValues.primaryColor,
-    watchedValues.accentColor,
-    updateBranding,
-  ]);
+  // Removed: live preview side-effect. Changes apply only after Save.
 
   const onSubmit = (data: BrandingSettingsType) => {
     onUpdate(data);
+    // Apply branding globally only after explicit Save
+    updateBranding({
+      logoUrl: data.logoUrl,
+      restaurantName: data.restaurantName,
+      primaryColor: data.primaryColor,
+      accentColor: data.accentColor,
+    });
+    form.reset(data);
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -316,7 +306,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={isUpdating}>
+              <Button type="submit" disabled={isUpdating || !form.formState.isDirty}>
                 {isUpdating ? "Saving..." : "Save Branding Settings"}
               </Button>
             </div>
