@@ -225,14 +225,6 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
                   description="Upload your restaurant logo (PNG, JPG, SVG)"
                   maxSize={2 * 1024 * 1024} // 2MB
                 />
-
-                <FileUpload
-                  value={form.watch("faviconUrl")}
-                  onChange={(url) => form.setValue("faviconUrl", url)}
-                  label="Favicon"
-                  description="Upload favicon (32x32px recommended)"
-                  maxSize={512 * 1024} // 512KB
-                />
               </div>
             </div>
 
