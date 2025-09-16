@@ -81,8 +81,32 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
         timeoutPromise,
       ])) as AvailabilityResponse;
 
-      console.log("Availability search result:", result);
-      setAvailability(result);
+      // Clamp to business hours client-side as a safety net (covers any upstream mismatches)
+      const bh = getBusinessHoursForDate(date);
+      const clampClient = (arr: TimeSlot[] | undefined): TimeSlot[] => {
+        if (!arr || !bh || bh.is_open === false) return [];
+        const [openH, openM] = (bh.open_time || "00:00:00").split(":").map(v => parseInt(v, 10));
+        const [closeH, closeM] = (bh.close_time || "23:59:59").split(":").map(v => parseInt(v, 10));
+        const openMin = openH * 60 + (openM || 0);
+        const closeMin = closeH * 60 + (closeM || 0);
+        const toLocalMinutes = (iso: string) => {
+          const parts = formatInTimeZone(parseISO(iso), timezone, "HH:mm");
+          const [h, m] = parts.split(":").map(n => parseInt(n, 10));
+          return h * 60 + m;
+        };
+        return (arr || []).filter(s => {
+          try { const m = toLocalMinutes(s.time); return m >= openMin && m < closeMin; } catch { return false; }
+        });
+      };
+
+      const clamped = {
+        ...result,
+        slots: clampClient(result.slots),
+        alternatives: clampClient(result.alternatives as any),
+      } as AvailabilityResponse;
+
+      console.log("Availability (clamped):", clamped);
+      setAvailability(clamped);
 
       if (result && result.slots && result.slots.length === 0) {
         toast("No availability found for this date", {
