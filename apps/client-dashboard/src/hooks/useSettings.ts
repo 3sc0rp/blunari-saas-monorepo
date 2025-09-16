@@ -167,6 +167,36 @@ export const useSettings = () => {
 
       await upsertSetting("operational", updatedOperational);
 
+      // Keep normalized business_hours table in sync for fast lookups by edge functions
+      try {
+        if (!tenant?.id) throw new Error("No tenant found");
+
+        const businessHours = updatedOperational.businessHours || {} as any;
+        const rows = Object.keys(businessHours).map((key) => {
+          const idx = parseInt(key, 10);
+          const rec = businessHours[key] || {};
+          return {
+            tenant_id: tenant.id,
+            day_of_week: isNaN(idx) ? 0 : idx,
+            is_open: !!rec.isOpen,
+            open_time: rec.isOpen ? (rec.openTime || null) : null,
+            close_time: rec.isOpen ? (rec.closeTime || null) : null,
+            updated_at: new Date().toISOString(),
+          } as any;
+        });
+
+        if (rows.length > 0) {
+          const { error: bhError } = await supabase
+            .from("business_hours")
+            .upsert(rows, { onConflict: "tenant_id,day_of_week" });
+          if (bhError) {
+            console.warn("business_hours upsert warning:", bhError.message);
+          }
+        }
+      } catch (syncError) {
+        console.warn("Failed to sync business_hours table:", syncError);
+      }
+
       return updatedOperational;
     },
     onSuccess: () => {

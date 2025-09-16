@@ -48,15 +48,18 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
   // Removed: live preview side-effect. Changes apply only after Save.
 
   const onSubmit = (data: BrandingSettingsType) => {
+    // First persist via hook
     onUpdate(data);
-    // Apply branding globally only after explicit Save
-    updateBranding({
-      logoUrl: data.logoUrl,
-      restaurantName: data.restaurantName,
-      primaryColor: data.primaryColor,
-      accentColor: data.accentColor,
-    });
-    form.reset(data);
+    // Then apply to runtime branding context
+    setTimeout(() => {
+      updateBranding({
+        logoUrl: data.logoUrl,
+        restaurantName: data.restaurantName,
+        primaryColor: data.primaryColor,
+        accentColor: data.accentColor,
+      });
+      form.reset(data);
+    }, 0);
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -218,49 +221,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
               </div>
             </div>
 
-            {/* Custom Domain */}
-            <div className="space-y-4">
-              <Label className="text-sm font-medium">Custom Domain</Label>
-              <div className="space-y-3">
-                <FormField
-                  control={form.control}
-                  name="customDomain"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Domain Name</FormLabel>
-                      <div className="flex gap-2">
-                        <div className="flex items-center">
-                          <Globe className="h-4 w-4 text-muted-foreground mr-2" />
-                        </div>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="yourdomain.com"
-                            className="flex-1"
-                          />
-                        </FormControl>
-                        <Badge
-                          variant={getStatusBadgeVariant(settings.domainStatus)}
-                        >
-                          {settings.domainStatus}
-                        </Badge>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {settings.customDomain && (
-                  <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
-                    <strong>DNS Configuration:</strong>
-                    <br />
-                    Add a CNAME record pointing to: <code>app.blunari.com</code>
-                    <br />
-                    Verification may take up to 24 hours.
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Removed: Custom Domain section */}
 
             {/* Preview */}
             <div className="space-y-4">
@@ -306,7 +267,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={isUpdating || !form.formState.isDirty}>
+              <Button type="submit" disabled={isUpdating}>
                 {isUpdating ? "Saving..." : "Save Branding Settings"}
               </Button>
             </div>
