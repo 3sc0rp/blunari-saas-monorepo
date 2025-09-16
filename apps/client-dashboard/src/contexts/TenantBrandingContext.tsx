@@ -81,10 +81,9 @@ export const TenantBrandingProvider: React.FC<{
       const newBranding: TenantBranding = {
         logoUrl: tenant.logo_url || "/logo.png",
         restaurantName: tenant.name || "Blunari",
-        // Note: tenant.settings structure needs to be defined in types
-        // For now, using fallback values
-        primaryColor: undefined,
-        accentColor: undefined,
+        // Surface saved brand colors from the tenant row when available
+        primaryColor: (tenant as any).primary_color || undefined,
+        accentColor: (tenant as any).secondary_color || undefined,
         fontFamily: undefined,
         borderRadius: undefined,
       };

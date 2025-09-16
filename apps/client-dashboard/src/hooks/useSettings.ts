@@ -127,6 +127,8 @@ export const useSettings = () => {
           name: branding.restaurantName || currentBranding.restaurantName,
           logo_url: branding.logoUrl || currentBranding.logoUrl,
           primary_color: branding.primaryColor || currentBranding.primaryColor,
+          secondary_color:
+            branding.secondaryColor || currentBranding.secondaryColor,
           updated_at: new Date().toISOString(),
         })
         .eq("id", tenant?.id);
