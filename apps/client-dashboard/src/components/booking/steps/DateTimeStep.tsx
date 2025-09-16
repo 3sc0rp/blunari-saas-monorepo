@@ -47,7 +47,10 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
   const timezone = tenant.timezone || "UTC";
 
   const getBusinessHoursForDate = (date: Date) => {
-    const day = date.getDay(); // 0-6 (Sun-Sat)
+    // Determine day-of-week in the tenant's timezone
+    // ISO "i" gives 1-7 where 7 = Sunday; convert to 0-6 (Sun-Sat)
+    const isoDow = parseInt(formatInTimeZone(date, timezone, "i"), 10) || 7;
+    const day = isoDow === 7 ? 0 : isoDow; // 0..6
     const bh = (tenant as any).business_hours as Array<{ day_of_week: number; is_open: boolean; open_time: string | null; close_time: string | null }> | undefined;
     if (!Array.isArray(bh)) return null;
     const rec = bh.find((r) => r.day_of_week === day);
@@ -142,17 +145,8 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
     return false;
   };
 
-  const isSlotOutsideBusinessHours = (slotIso: string) => {
-    const slot = parseISO(slotIso);
-    const bh = getBusinessHoursForDate(slot);
-    if (!bh || bh.is_open === false) return true;
-    const [openH, openM] = (bh.open_time || "00:00:00").split(":").map((v) => parseInt(v, 10));
-    const [closeH, closeM] = (bh.close_time || "23:59:59").split(":").map((v) => parseInt(v, 10));
-    const minutes = slot.getHours() * 60 + slot.getMinutes();
-    const openMinutes = openH * 60 + (openM || 0);
-    const closeMinutes = closeH * 60 + (closeM || 0);
-    return minutes < openMinutes || minutes >= closeMinutes;
-  };
+  // Server already clamps to business hours; keep client logic minimal.
+  // We only need business-hours for disabling closed days in the calendar.
 
   return (
     <div className="space-y-6">
@@ -231,9 +225,7 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
               <div className="space-y-6">
                 {/* Main slots with compact cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {availability.slots
-                    .filter((slot) => !isSlotOutsideBusinessHours(slot.time))
-                    .map((slot, index) => (
+                  {availability.slots.map((slot, index) => (
                     <motion.button
                       key={index}
                       onClick={() => handleSlotSelect(slot)}
