@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,12 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenant } from "@/hooks/useTenant";
 import { useTableManagement, Table } from "@/hooks/useTableManagement";
-import { FloorPlan3DManager } from "@/components/tables/FloorPlan3D";
 import FloorPlanManager from "@/components/tables/FloorPlanManager";
 import FloorPlanViewer2D from "@/components/tables/FloorPlanViewer2D";
 
-// Lazy load the 3D component to prevent scheduler conflicts
-const FloorPlanViewer3D = lazy(() => import("@/components/tables/FloorPlanViewer3D"));
 import {
   Grid3X3,
   Plus,
@@ -96,14 +93,7 @@ const TableManagement: React.FC = () => {
             <Eye className="h-4 w-4 mr-2" />
             Floor Plan
           </Button>
-          <Button
-            variant={viewMode === "3d" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("3d")}
-          >
-            <Move3D className="h-4 w-4 mr-2" />
-            3D View
-          </Button>
+          {/* 3D View removed */}
           <Button
             variant={viewMode === "grid" ? "default" : "outline"}
             size="sm"
@@ -213,30 +203,6 @@ const TableManagement: React.FC = () => {
             getStatusColor={getStatusColor}
             getTableIcon={getTableIcon}
           />
-        ) : viewMode === "3d" ? (
-          <div className="space-y-6">
-            <FloorPlanManager />
-            <Suspense 
-              fallback={
-                <div className="h-[400px] flex items-center justify-center">
-                  <div className="text-center">
-                    <Skeleton className="h-8 w-8 mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">Loading 3D view...</p>
-                  </div>
-                </div>
-              }
-            >
-              <FloorPlanViewer3D />
-            </Suspense>
-            <details className="mt-4">
-              <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground">
-                View 2D Preview (Fallback)
-              </summary>
-              <div className="mt-2">
-                <FloorPlanViewer2D />
-              </div>
-            </details>
-          </div>
         ) : (
           <GridView
             tables={tables}

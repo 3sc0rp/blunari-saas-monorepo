@@ -159,32 +159,30 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, tenantT
     );
   }
 
-  // Load active tables for capacity
-  const { data: tables, error: tablesError } = await supabase
-    .from('restaurant_tables')
-    .select('*')
-    .eq('tenant_id', tenant_id)
-    .eq('active', true);
-  if (tablesError) {
-    return errorResponse('SEARCH_FAILED', 'Unable to load restaurant tables', 500, requestId, { details: tablesError.message });
-  }
-
-  // Load bookings for the day (support TIMESTAMPTZ or DATE+TIME schemas)
+  // Load data in parallel
   const searchDate = new Date(service_date);
   const dayStart = new Date(searchDate.getFullYear(), searchDate.getMonth(), searchDate.getDate());
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
-  let bookings: any[] = [];
-  try {
-    const { data: btData } = await supabase
+  const [tablesRes, bookingsTsRes] = await Promise.all([
+    supabase
+      .from('restaurant_tables')
+      .select('*')
+      .eq('tenant_id', tenant_id)
+      .eq('active', true),
+    supabase
       .from('bookings')
       .select('table_id, booking_time, duration_minutes, status')
       .eq('tenant_id', tenant_id)
       .gte('booking_time', dayStart.toISOString())
-      .lt('booking_time', dayEnd.toISOString());
-    bookings = btData || [];
-  } catch {}
+      .lt('booking_time', dayEnd.toISOString())
+  ]);
 
+  if (tablesRes.error) {
+    return errorResponse('SEARCH_FAILED', 'Unable to load restaurant tables', 500, requestId, { details: tablesRes.error.message });
+  }
+
+  let bookings: any[] = bookingsTsRes.data || [];
   if (!bookings || bookings.length === 0) {
     try {
       const { data: bdData } = await supabase
@@ -202,11 +200,12 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, tenantT
   }
 
   // Generate local availability strictly from configured hours and tables
-  const slots = generateTimeSlots(tables || [], bookings || [], Number(party_size), searchDate, windowForDay, tenantTimezone || 'UTC');
+  const slots = generateTimeSlots(tablesRes.data || [], bookings || [], Number(party_size), searchDate, windowForDay, tenantTimezone || 'UTC');
 
+  const headers = { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '', 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' };
   return new Response(
     JSON.stringify({ success: true, slots, requestId }),
-    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } },
+    { status: 200, headers },
   );
 }
 

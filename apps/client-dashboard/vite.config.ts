@@ -97,10 +97,7 @@ export default defineConfig(({ mode }) => {
           'public-widget': path.resolve(__dirname, 'public-widget.html')
         },
         output: {
-          // Collapse to single vendor chunk to ensure dependency ordering consistency
-          manualChunks(id) {
-            if (id.includes('node_modules/')) return 'vendor';
-          },
+          // Let Vite/Rollup split vendors automatically for smaller initial chunks
           chunkFileNames: 'chunks/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
