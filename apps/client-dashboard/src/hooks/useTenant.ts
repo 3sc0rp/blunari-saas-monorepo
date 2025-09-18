@@ -244,27 +244,16 @@ export function useTenant() {
         if (session?.user?.id) {
           let resolvedTenantId: string | null = null;
 
-          const { data: access, error: accessErr } = await supabase
-            .from('user_tenant_access')
+          // QUERY ORDER CHANGE: Prefer auto_provisioning (present in your DB) and
+          // avoid user_tenant_access which may not exist in some environments.
+          const { data: autoProv, error: autoErr } = await supabase
+            .from('auto_provisioning')
             .select('tenant_id')
             .eq('user_id', session.user.id)
-            .eq('active', true)
+            .eq('status', 'completed')
             .maybeSingle();
-
-          if (!accessErr && access?.tenant_id) {
-            resolvedTenantId = (access as any).tenant_id as string;
-          }
-
-          if (!resolvedTenantId) {
-            const { data: autoProv, error: autoErr } = await supabase
-              .from('auto_provisioning')
-              .select('tenant_id')
-              .eq('user_id', session.user.id)
-              .eq('status', 'completed')
-              .maybeSingle();
-            if (!autoErr && autoProv?.tenant_id) {
-              resolvedTenantId = (autoProv as any).tenant_id as string;
-            }
+          if (!autoErr && autoProv?.tenant_id) {
+            resolvedTenantId = (autoProv as any).tenant_id as string;
           }
 
           if (resolvedTenantId) {
