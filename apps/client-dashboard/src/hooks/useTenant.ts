@@ -94,13 +94,13 @@ export function useTenant() {
         slug: params.slug,
         reason
       });
-      const fallbackTenant: TenantInfo = {
-        id: '99e1607d-da99-4f72-9182-a417072eb629',
-        slug: 'demo',
-        name: 'Demo Restaurant',
-        timezone: 'America/New_York',
-        currency: 'USD'
-      };
+        const fallbackTenant: TenantInfo = {
+          id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
+          slug: 'demo',
+          name: 'Demo Restaurant',
+          timezone: 'America/New_York',
+          currency: 'USD'
+        };
       commitTenant(fallbackTenant, 'timeout-fallback');
     }, 5000);
 
@@ -159,7 +159,7 @@ export function useTenant() {
         // Instead of redirecting immediately, try to create a demo tenant for development
         if (import.meta.env.MODE === 'development') {
           const fallbackTenant: TenantInfo = {
-            id: '99e1607d-da99-4f72-9182-a417072eb629', // Demo tenant ID
+            id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // Demo tenant ID - CONSISTENT
             slug: 'demo',
             name: 'Demo Restaurant',
             timezone: 'America/New_York',
@@ -324,9 +324,9 @@ export function useTenant() {
         });
         
         const fallbackTenant: TenantInfo = {
-          id: session?.user?.id || '99e1607d-da99-4f72-9182-a417072eb629',
+          id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
           slug: params.slug || 'demo',
-          name: params.slug ? `${params.slug} Restaurant` : 'Restaurant Dashboard',
+          name: params.slug ? `${params.slug} Restaurant` : 'Demo Restaurant',
           timezone: 'America/New_York',
           currency: 'USD'
         };
@@ -352,9 +352,9 @@ export function useTenant() {
         
         // Always use fallback tenant instead of showing errors to user
         const fallbackTenant: TenantInfo = {
-          id: session?.user?.id || '99e1607d-da99-4f72-9182-a417072eb629',
+          id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
           slug: params.slug || 'demo',
-          name: params.slug ? `${params.slug} Restaurant` : 'Restaurant Dashboard',
+          name: params.slug ? `${params.slug} Restaurant` : 'Demo Restaurant',
           timezone: 'America/New_York',
           currency: 'USD'
         };

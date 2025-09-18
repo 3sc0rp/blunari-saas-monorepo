@@ -45,9 +45,11 @@ export const useAdvancedBookings = (tenantId?: string) => {
 
       // Apply date range filter
       if (filters.dateRange.start) {
+        console.log('[useAdvancedBookings] Applying date filter start:', filters.dateRange.start);
         query = query.gte("booking_time", filters.dateRange.start);
       }
       if (filters.dateRange.end) {
+        console.log('[useAdvancedBookings] Applying date filter end:', filters.dateRange.end);
         query = query.lte("booking_time", filters.dateRange.end);
       }
 
