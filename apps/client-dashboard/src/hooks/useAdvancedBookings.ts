@@ -213,9 +213,16 @@ export const useAdvancedBookings = (tenantId?: string) => {
       id: string;
       updates: Partial<ExtendedBooking>;
     }) => {
+      // Sanitize UI fields to match DB schema
+      const payload: Record<string, any> = { ...updates };
+      if (payload.status) {
+        payload.status = payload.status === 'noshow' ? 'no_show' : payload.status;
+      }
+      delete payload.table_name; // never update derived field
+
       const { error } = await supabase
         .from("bookings")
-        .update(updates)
+        .update(payload)
         .eq("id", id);
       if (error) throw error;
     },
