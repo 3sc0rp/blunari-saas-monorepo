@@ -184,15 +184,19 @@ serve(async (req) => {
     requestData.tenant_id = resolvedTenantId;
 
     if (action === "search") {
+      console.log('[widget-booking-live] search', { requestId, tenant: resolvedTenantId, tz: resolvedTenant?.timezone });
       return await handleAvailabilitySearch(supabase, requestData, resolvedTenant?.timezone, requestId);
     } else if (action === "hold") {
+      console.log('[widget-booking-live] hold', { requestId, tenant: resolvedTenantId });
       return await handleCreateHold(supabase, requestData, requestId);
     } else if (action === "confirm") {
+      console.log('[widget-booking-live] confirm', { requestId, tenant: resolvedTenantId });
       return await handleConfirmReservation(supabase, requestData, requestId, resolvedTenant);
     } else {
       return errorResponse('INVALID_ACTION', 'Invalid action specified', 400, requestId);
     }
   } catch (error) {
+    console.error('[widget-booking-live] INTERNAL_ERROR', { error: `${error}`, stack: (error as any)?.stack });
     return errorResponse('INTERNAL_ERROR', 'An unexpected error occurred', 500, undefined, { error: `${error}` });
   }
 });
