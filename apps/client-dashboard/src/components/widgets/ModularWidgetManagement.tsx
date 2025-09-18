@@ -101,7 +101,7 @@ const ModularWidgetManagement = memo<ModularWidgetManagementProps>(({
 }) => {
   // Performance monitoring
   const performanceMetrics = usePerformanceMonitor('ModularWidgetManagement');
-  const { entitled } = useEntitlement('three_d_floor');
+  // 3D entitlement removed
 
   // State management
   const [moduleState, setModuleState] = useState<ModuleState>({
@@ -355,26 +355,7 @@ const ModularWidgetManagement = memo<ModularWidgetManagementProps>(({
                 className="space-y-6"
               />
             </TabsContent>
-            {entitled && (
-              <div className="mt-6">
-                <div className="p-4 border rounded-lg bg-surface-2/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">3D Floor (Beta)</h3>
-                      <p className="text-sm text-muted-foreground">Manage and preview your interactive 3D floor experience.</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <a href="/dashboard/client/3d-floor">
-                        <button className="inline-flex items-center rounded-md bg-brand px-3 py-2 text-sm text-brand-foreground">Open Manager</button>
-                      </a>
-                      <a href="/experience/3d?slug=demo">
-                        <button className="inline-flex items-center rounded-md border px-3 py-2 text-sm">Preview</button>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* 3D links removed */}
           </div>
         </Tabs>
 

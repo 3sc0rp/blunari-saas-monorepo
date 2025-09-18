@@ -105,20 +105,8 @@ export function ResponsiveDashboardSidebar() {
   const { mode } = useUIMode();
   const currentPath = location.pathname;
 
-  // Always show management navigation
-  const { entitled } = useEntitlement('three_d_floor');
-  const navigationItems = managementNavigation.map((section) => {
-    if (section.section === "Tools") {
-      const threeDItem = { title: "3D Floor (Beta)", url: "/dashboard/client/3d-floor", icon: Eye } as const;
-      const hasItem = section.items.some((it) => it.url === "/dashboard/client/3d-floor");
-      return {
-        ...section,
-        // Always include the 3D item so users can access upsell if not entitled.
-        items: hasItem ? section.items : [...section.items, threeDItem],
-      };
-    }
-    return section;
-  });
+  // Build navigation without 3D feature
+  const navigationItems = managementNavigation;
 
   const isActive = (path: string) => {
     if (path === "/command-center") {
