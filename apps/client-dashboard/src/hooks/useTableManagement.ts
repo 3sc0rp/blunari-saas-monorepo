@@ -53,24 +53,22 @@ export const useTableManagement = (tenantId?: string) => {
 
       // Combine tables with booking data
       const tablesWithBookings: Table[] = tablesData.map((table) => {
-        const currentBooking = bookingsData.find(
-          (booking) => booking.table_id === table.id,
-        );
+        const currentBooking = bookingsData.find((booking) => booking.table_id === table.id);
 
-        let status: Table["status"] = "available";
+        // Prefer booking-derived status when a booking exists; otherwise use DB status
+        let status: Table["status"] = (table.status as Table["status"]) || "available";
         if (currentBooking) {
           status = currentBooking.status === "seated" ? "occupied" : "reserved";
         }
+
+        const hasPosition = typeof table.position_x === "number" && typeof table.position_y === "number";
 
         const tableData: Table = {
           id: table.id,
           name: table.name,
           capacity: table.capacity,
           status,
-          position:
-            table.position_x && table.position_y
-              ? { x: table.position_x, y: table.position_y }
-              : { x: 100, y: 100 },
+          position: hasPosition ? { x: table.position_x, y: table.position_y } : { x: 100, y: 100 },
           table_type: (table.table_type as Table["table_type"]) || "standard",
           current_booking: currentBooking
             ? {
@@ -138,6 +136,24 @@ export const useTableManagement = (tenantId?: string) => {
     error,
     updateTable: updateTableMutation.mutate,
     isUpdating: updateTableMutation.isPending,
+    changeStatus: async (tableId: string, status: Table["status"]) => {
+      const { error: err } = await supabase
+        .from("restaurant_tables")
+        .update({ status })
+        .eq("id", tableId);
+      if (err) throw err;
+      await queryClient.invalidateQueries({ queryKey: ["tables", tenantId] });
+      toast({ title: "Status Updated", description: `Table set to ${status}.` });
+    },
+    deactivateTable: async (tableId: string) => {
+      const { error: err } = await supabase
+        .from("restaurant_tables")
+        .update({ active: false })
+        .eq("id", tableId);
+      if (err) throw err;
+      await queryClient.invalidateQueries({ queryKey: ["tables", tenantId] });
+      toast({ title: "Table Deactivated", description: "Table is no longer active." });
+    },
     addTable: async (newTable: Omit<Table, "id" | "status" | "current_booking"> & { status?: Table["status"] }) => {
       if (!tenantId) throw new Error("Missing tenant");
       const payload: any = {
