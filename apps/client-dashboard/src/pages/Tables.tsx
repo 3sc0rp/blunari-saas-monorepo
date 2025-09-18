@@ -79,19 +79,7 @@ const Tables: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Info banner */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-        <Alert className="border-warning/20 bg-warning/5">
-          <AlertDescription className="flex items-center justify-between w-full">
-            <div>
-              <strong>Real data only</strong>
-              <p className="text-sm text-muted-foreground mt-1">
-                No 2D/3D views or mock AI. All actions update your database and reflect in the widget.
-              </p>
-            </div>
-          </AlertDescription>
-        </Alert>
-      </motion.div>
+      {/* Info banner removed */}
 
       {/* KPIs */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="grid grid-cols-2 md:grid-cols-5 gap-4">
