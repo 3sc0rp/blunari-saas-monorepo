@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useTenant } from "@/hooks/useTenant";
 import { useAdvancedBookings } from "@/hooks/useAdvancedBookings";
-import BookingsTable from "@/components/booking/BookingsTable";
+import OptimizedBookingsTable from "@/components/booking/VirtualizedBookingsTable";
 import ReservationDrawer from "@/components/booking/ReservationDrawer";
 import SmartBookingWizard from "@/components/booking/SmartBookingWizard";
 import AdvancedFilters from "@/components/booking/AdvancedFilters";
@@ -452,7 +452,7 @@ const Bookings: React.FC = () => {
       )}
 
       {/* Data Table */}
-      <BookingsTable
+      <OptimizedBookingsTable
         bookings={bookings}
         selectedBookings={selectedBookings}
         onSelectBooking={handleSelectBooking}
@@ -460,6 +460,7 @@ const Bookings: React.FC = () => {
         onBookingClick={handleBookingClick}
         onStatusUpdate={handleStatusUpdate}
         isLoading={isLoading}
+        height={600}
       />
 
       {/* Reservation Drawer */}

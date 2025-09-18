@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,15 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [localSearch, setLocalSearch] = useState<string>(filters.search || "");
+
+  // Debounce search to reduce re-renders
+  useMemo(() => {
+    const id = setTimeout(() => {
+      if (localSearch !== filters.search) onFiltersChange({ ...filters, search: localSearch });
+    }, 250);
+    return () => clearTimeout(id);
+  }, [localSearch]);
 
   const statusOptions: {
     value: BookingStatus;
@@ -49,7 +58,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
     { value: "seated", label: "Seated", color: "bg-green-500" },
     { value: "completed", label: "Completed", color: "bg-purple-500" },
     { value: "cancelled", label: "Cancelled", color: "bg-danger" },
-    { value: "noshow", label: "No Show", color: "bg-surface-3" },
+    { value: "no_show", label: "No Show", color: "bg-surface-3" },
   ];
 
   const sourceOptions: { value: BookingSource; label: string }[] = [
@@ -81,12 +90,15 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRange(range);
     if (range?.from) {
-      updateFilters({
+      const start = new Date(range.from);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(range.to || range.from);
+      end.setHours(23, 59, 59, 999);
+      onFiltersChange({
+        ...filters,
         dateRange: {
-          start: range.from.toISOString().split("T")[0],
-          end:
-            range.to?.toISOString().split("T")[0] ||
-            range.from.toISOString().split("T")[0],
+          start: start.toISOString(),
+          end: end.toISOString(),
         },
       });
     }
@@ -94,6 +106,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
   const clearFilters = () => {
     setDateRange(undefined);
+    setLocalSearch("");
     onFiltersChange({
       status: [],
       dateRange: { start: "", end: "" },
@@ -132,14 +145,22 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, email, phone, or special requests..."
-            value={filters.search || ""}
-            onChange={(e) => updateFilters({ search: e.target.value })}
-            className="pl-10"
-          />
+        <div className="relative flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, email, phone, or special requests..."
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          {(activeFilterCount > 0 || localSearch) && (
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <X className="h-4 w-4 mr-1" />
+              Clear Filters
+            </Button>
+          )}
         </div>
 
         {/* Quick Filters & Advanced Toggle */}
