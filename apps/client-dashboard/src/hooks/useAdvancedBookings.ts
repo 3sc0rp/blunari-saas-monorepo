@@ -29,10 +29,14 @@ export const useAdvancedBookings = (tenantId?: string) => {
     queryFn: async () => {
       if (!tenantId) return [];
 
+      console.log('[useAdvancedBookings] Fetching with tenantId:', tenantId);
+
       let query = supabase
         .from("bookings")
         .select("*, restaurant_tables!bookings_table_id_fkey(name)")
         .eq("tenant_id", tenantId);
+
+      console.log('[useAdvancedBookings] Query built, executing...');
 
       // Apply status filter
       if (filters.status.length > 0) {
@@ -59,11 +63,20 @@ export const useAdvancedBookings = (tenantId?: string) => {
         ascending: true,
       });
 
-      if (error) throw error;
-      return (data || []).map((b: any) => ({
+      console.log('[useAdvancedBookings] Query result:', { data: data?.length, error });
+      
+      if (error) {
+        console.error('[useAdvancedBookings] Query error:', error);
+        throw error;
+      }
+      
+      const result = (data || []).map((b: any) => ({
         ...(b as any),
         table_name: b["restaurant_tables"]?.name,
       })) as ExtendedBooking[];
+      
+      console.log('[useAdvancedBookings] Processed result:', result.length, 'bookings');
+      return result;
     },
     enabled: !!tenantId,
   });

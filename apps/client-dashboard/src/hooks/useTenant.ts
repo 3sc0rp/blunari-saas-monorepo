@@ -190,6 +190,26 @@ export function useTenant() {
         return;
       }
 
+      // Use direct fallback in development instead of calling edge function
+      if (import.meta.env.MODE === 'development') {
+        console.log('[useTenant] Development mode - using fallback tenant');
+        const fallbackTenant: TenantInfo = {
+          id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+          slug: 'demo',
+          name: 'Demo Restaurant',
+          timezone: 'America/New_York',
+          currency: 'USD'
+        };
+        if (!signal.aborted) {
+          commitTenant(fallbackTenant, 'dev-mode-fallback');
+        }
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        return;
+      }
+
       // Call the tenant Edge Function with enhanced authentication
       logger.debug('Calling tenant function', {
         component: 'useTenant',
