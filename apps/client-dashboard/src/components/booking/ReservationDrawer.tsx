@@ -60,13 +60,13 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
   const [editedBooking, setEditedBooking] = useState<Partial<ExtendedBooking>>(
     {},
   );
+  // Hooks must not be conditional. Declare before any early return.
+  const [messageOpen, setMessageOpen] = useState(false);
 
   if (!booking) return null;
 
-  const [messageOpen, setMessageOpen] = useState(false);
-
   const getStatusBadge = (status: BookingStatus) => {
-    const statusConfig = {
+    const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive'; label: string; icon: any }> = {
       confirmed: {
         variant: "default" as const,
         label: "Confirmed",
@@ -89,9 +89,15 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
         label: "No Show",
         icon: AlertCircle,
       },
+      no_show: { // database variant
+        variant: "destructive" as const,
+        label: "No Show",
+        icon: AlertCircle,
+      },
     };
 
-    const config = statusConfig[status];
+    const key = (status as unknown as string) || 'pending';
+    const config = statusConfig[key] || statusConfig['pending'];
     const IconComponent = config.icon;
 
     return (
