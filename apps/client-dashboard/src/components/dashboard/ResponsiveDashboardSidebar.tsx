@@ -61,7 +61,7 @@ const managementNavigation = [
     section: "Restaurant Management",
     items: [
       { title: "Command Center", url: "/command-center", icon: Monitor },
-      { title: "Live Floor", url: "/dashboard/tables", icon: MapPin },
+      { title: "Tables", url: "/dashboard/tables", icon: TableProperties },
       { title: "Timeline", url: "/dashboard/bookings", icon: Clock },
       { title: "Kitchen Display", url: "/dashboard/kitchen-display", icon: UtensilsCrossed },
       { title: "Inventory", url: "/dashboard/inventory-management", icon: Package },

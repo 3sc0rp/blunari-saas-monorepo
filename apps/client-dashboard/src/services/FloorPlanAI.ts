@@ -27,9 +27,9 @@ export class FloorPlanAI {
     if (this.isInitialized) return;
 
     try {
-      console.log("AI Floor Plan Analysis initialized (mock mode)");
+      console.log("AI Floor Plan Analysis initialized");
       this.isInitialized = true;
-      this.detector = { mock: true };
+      this.detector = null;
     } catch (error) {
       console.warn("Failed to initialize AI model:", error);
       this.isInitialized = false;
@@ -43,53 +43,24 @@ export class FloorPlanAI {
     const startTime = Date.now();
 
     try {
-      console.log("Starting floor plan analysis (mock implementation)");
+      console.log("Starting floor plan analysis");
 
       if (!imageElement.complete || imageElement.naturalHeight === 0) {
         throw new Error("Image not loaded properly");
       }
 
-      // Mock analysis - in a real implementation, this would use AI
-      const mockTables: DetectedTable[] = [
-        {
-          id: "table-1",
-          name: "Table 1",
-          position: { x: 100, y: 100 },
-          confidence: 0.85,
-          boundingBox: { x: 80, y: 80, width: 40, height: 40 },
-          estimatedCapacity: 4,
-          tableType: "square",
-          description: "4-person square table"
-        },
-        {
-          id: "table-2", 
-          name: "Table 2",
-          position: { x: 200, y: 150 },
-          confidence: 0.92,
-          boundingBox: { x: 180, y: 130, width: 40, height: 40 },
-          estimatedCapacity: 4,
-          tableType: "round",
-          description: "4-person round table"
-        }
-      ];
+      // Real AI integration must be explicitly enabled
+      const aiEnabled = (import.meta as any)?.env?.VITE_FLOORPLAN_AI_ENABLED === 'true';
+      if (!aiEnabled) {
+        throw new Error("AI_DISABLED");
+      }
 
-      const analysis: FloorPlanAnalysis = {
-        tableCount: mockTables.length,
-        detectedTables: mockTables,
-        confidence: 0.88,
-        recommendations: [
-          "Consider adding more spacing between tables",
-          "Optimize table layout for better flow",
-          "Add high-capacity tables for busy periods"
-        ],
-        analysisTime: Date.now() - startTime
-      };
-
-      console.log("Floor plan analysis completed:", analysis);
-      return analysis;
+      // If enabled, implement your real analysis here (not provided in this repo)
+      throw new Error("AI_NOT_IMPLEMENTED");
 
     } catch (error) {
       console.error("Floor plan analysis failed:", error);
+      // Return empty result to avoid any mock data
       return this.createFallbackAnalysis(startTime, (error as Error).message);
     }
   }
@@ -111,8 +82,7 @@ export class FloorPlanAI {
     imageElement: HTMLImageElement,
     basicAnalysis: FloorPlanAnalysis
   ): Promise<FloorPlanAnalysis> {
-    // Mock implementation - would integrate with GPT Vision API
-    console.log("GPT Vision enhancement (mock implementation)");
+    console.log("GPT Vision enhancement disabled");
     return basicAnalysis;
   }
 

@@ -11,6 +11,9 @@ import { useTableManagement, Table } from "@/hooks/useTableManagement";
 import { FloorPlan3DManager } from "@/components/tables/FloorPlan3D";
 import FloorPlanManager from "@/components/tables/FloorPlanManager";
 import FloorPlanViewer2D from "@/components/tables/FloorPlanViewer2D";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Lazy load the 3D component to prevent scheduler conflicts
 const FloorPlanViewer3D = lazy(() => import("@/components/tables/FloorPlanViewer3D"));
@@ -43,6 +46,9 @@ const Tables: React.FC = () => {
   const [viewMode, setViewMode] = useState<"3d">("3d");
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [isCalibrated, setIsCalibrated] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTableData, setEditTableData] = useState<Table | null>(null);
 
   // Fetch real table data from database
   const { tables, isLoading, updateTable } = useTableManagement(tenant?.id);
@@ -110,7 +116,7 @@ const Tables: React.FC = () => {
             <Move3D className="h-4 w-4 mr-2" />
             3D Manager
           </Button>
-          <Button className="transition-brand shadow-elev-1">
+          <Button className="transition-brand shadow-elev-1" onClick={() => setAddOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Table
           </Button>
@@ -352,6 +358,78 @@ const Tables: React.FC = () => {
           </div>
         </details>
       </motion.div>
+
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Table</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="table-name">Name</Label>
+                <Input id="table-name" placeholder="T1" onChange={(e)=>setEditTableData(prev=>({ id: prev?.id||"", name: e.target.value, capacity: prev?.capacity||4, table_type: prev?.table_type||"standard" }))} />
+              </div>
+              <div>
+                <Label htmlFor="capacity">Capacity</Label>
+                <Input id="capacity" type="number" defaultValue={4} onChange={(e)=>setEditTableData(prev=>({ id: prev?.id||"", name: prev?.name||"", capacity: Number(e.target.value||0), table_type: prev?.table_type||"standard" }))} />
+              </div>
+            </div>
+            <div>
+              <Label>Type</Label>
+              <Select defaultValue="standard" onValueChange={(val)=>setEditTableData(prev=>({ id: prev?.id||"", name: prev?.name||"", capacity: prev?.capacity||4, table_type: val as any }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="bar">Bar</SelectItem>
+                  <SelectItem value="booth">Booth</SelectItem>
+                  <SelectItem value="outdoor">Outdoor</SelectItem>
+                  <SelectItem value="private">Private</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={async()=>{ if(!tenant?.id) return; const d=editTableData||{id:"",name:"T1",capacity:4,table_type:"standard" as const}; await updateTable({ tableId: d.id, updates: { name: d.name, capacity: d.capacity, table_type: d.table_type, position:{x:100,y:100} } }); setAddOpen(false); setEditTableData(null); }}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Table</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-table-name">Name</Label>
+                <Input id="edit-table-name" value={editTableData?.name||""} onChange={(e)=>setEditTableData(prev=>prev?{...prev,name:e.target.value}:prev)} />
+              </div>
+              <div>
+                <Label htmlFor="edit-capacity">Capacity</Label>
+                <Input id="edit-capacity" type="number" value={editTableData?.capacity??4} onChange={(e)=>setEditTableData(prev=>prev?{...prev,capacity:Number(e.target.value||0)}:prev)} />
+              </div>
+            </div>
+            <div>
+              <Label>Type</Label>
+              <Select value={editTableData?.table_type||"standard"} onValueChange={(val)=>setEditTableData(prev=>prev?{...prev,table_type: val as any}:prev)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="bar">Bar</SelectItem>
+                  <SelectItem value="booth">Booth</SelectItem>
+                  <SelectItem value="outdoor">Outdoor</SelectItem>
+                  <SelectItem value="private">Private</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={async()=>{ if(!editTableData) return; await updateTable({ tableId: editTableData.id, updates: { name: editTableData.name, capacity: editTableData.capacity, table_type: editTableData.table_type } as any }); setEditOpen(false); setEditTableData(null); }}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -443,19 +521,7 @@ const FloorPlanView: React.FC<{
 };
 
 // Grid View Component
-const GridView: React.FC<{
-  tables: Table[];
-  selectedTable: string | null;
-  onSelectTable: (id: string | null) => void;
-  getStatusColor: (status: Table["status"]) => string;
-  getTableIcon: (type: Table["table_type"]) => any;
-}> = ({
-  tables,
-  selectedTable,
-  onSelectTable,
-  getStatusColor,
-  getTableIcon,
-}) => {
+const GridView: React.FC<{ tables: Table[]; selectedTable: string | null; onSelectTable: (id: string | null) => void; getStatusColor: (status: Table["status"]) => string; getTableIcon: (type: Table["table_type"]) => any; onEdit: (table: Table) => void; }> = ({ tables, selectedTable, onSelectTable, getStatusColor, getTableIcon, onEdit }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {tables.map((table) => {
@@ -507,6 +573,9 @@ const GridView: React.FC<{
                     </div>
                   </div>
                 )}
+              </div>
+              <div className="pt-3 flex justify-end">
+                <Button size="sm" variant="outline" onClick={()=>onEdit(table)}>Edit</Button>
               </div>
             </CardContent>
           </Card>

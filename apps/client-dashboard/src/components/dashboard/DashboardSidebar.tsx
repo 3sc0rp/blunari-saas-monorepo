@@ -39,7 +39,7 @@ const navigation = [
     icon: Calendar,
     badge: "bookings",
   },
-  // Removed duplicate entry; "Live Floor" covers table management at /dashboard/tables
+  { name: "Tables", href: "/dashboard/tables", icon: TableProperties },
   { name: "Customers", href: "/dashboard/customers", icon: Users },
   { name: "Catering", href: "/dashboard/catering", icon: UtensilsCrossed },
   { name: "Booking Widget", href: "/dashboard/widget-preview", icon: Code },

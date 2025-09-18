@@ -93,7 +93,7 @@ export const useTableManagement = (tenantId?: string) => {
     enabled: !!tenantId,
   });
 
-  // Update table status
+  // Update table status / fields
   const updateTableMutation = useMutation({
     mutationFn: async ({
       tableId,
@@ -102,9 +102,16 @@ export const useTableManagement = (tenantId?: string) => {
       tableId: string;
       updates: Partial<Table>;
     }) => {
+      const payload: any = { ...updates };
+      // Map UI position back to position_x/position_y if present
+      if (updates.position) {
+        payload.position_x = updates.position.x;
+        payload.position_y = updates.position.y;
+        delete payload.position;
+      }
       const { error } = await supabase
         .from("restaurant_tables")
-        .update(updates)
+        .update(payload)
         .eq("id", tableId);
       if (error) throw error;
     },
@@ -131,6 +138,21 @@ export const useTableManagement = (tenantId?: string) => {
     error,
     updateTable: updateTableMutation.mutate,
     isUpdating: updateTableMutation.isPending,
+    addTable: async (newTable: Omit<Table, "id" | "status" | "current_booking"> & { status?: Table["status"] }) => {
+      if (!tenantId) throw new Error("Missing tenant");
+      const payload: any = {
+        tenant_id: tenantId,
+        name: newTable.name,
+        capacity: newTable.capacity,
+        table_type: newTable.table_type,
+        active: true,
+        position_x: newTable.position?.x ?? 100,
+        position_y: newTable.position?.y ?? 100,
+      };
+      const { error } = await supabase.from("restaurant_tables").insert(payload);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ["tables", tenantId] });
+    },
   };
 };
 
