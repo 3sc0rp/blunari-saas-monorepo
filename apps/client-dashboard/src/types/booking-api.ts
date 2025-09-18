@@ -57,6 +57,8 @@ export const HoldRequestSchema = z.object({
   party_size: z.number(),
   slot: TimeSlotSchema,
   policy_params: z.record(z.string(), z.any()).optional(),
+  // Optional preferred table assignment from dashboard flows
+  table_id: z.string().uuid().optional(),
 });
 
 export const HoldResponseSchema = z.object({
@@ -77,6 +79,7 @@ export const ReservationRequestSchema = z.object({
   tenant_id: z.string().uuid(),
   hold_id: z.string().uuid(),
   guest_details: GuestDetailsSchema,
+  table_id: z.string().uuid().optional(),
 });
 
 export const ReservationResponseSchema = z.object({

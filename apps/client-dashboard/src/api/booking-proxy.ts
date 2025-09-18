@@ -216,6 +216,7 @@ export async function createHold(request: HoldRequest) {
       action: "hold",
       party_size: request.party_size,
       slot: request.slot,
+      table_id: (request as any).table_id,
     });
     return HoldResponseSchema.parse(data);
   } catch (error) {
@@ -237,6 +238,7 @@ export async function confirmReservation(
       idempotency_key: idempotencyKey,
       hold_id: request.hold_id,
       guest_details: request.guest_details,
+      table_id: (request as any).table_id,
     });
 
     return ReservationResponseSchema.parse(data);

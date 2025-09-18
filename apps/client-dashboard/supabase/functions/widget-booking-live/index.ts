@@ -363,7 +363,7 @@ async function handleCreateHold(supabase: any, requestData: any, requestId?: str
 
 async function handleCreateHoldLocal(supabase: any, requestData: any, requestId?: string) {
   try {
-    const { tenant_id, slot, party_size } = requestData;
+    const { tenant_id, slot, party_size, table_id } = requestData;
     if (!tenant_id || !slot?.time || !party_size) {
       return errorResponse('HOLD_INVALID', 'Missing tenant_id, slot.time or party_size', 400, requestId);
     }
@@ -375,7 +375,8 @@ async function handleCreateHoldLocal(supabase: any, requestData: any, requestId?
       session_id: crypto.randomUUID(),
       expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     };
-    const { data: hold, error: holdError } = await supabase.from('booking_holds').insert(holdData).select().single();
+    // Optional: embed table preference
+    const { data: hold, error: holdError } = await supabase.from('booking_holds').insert({ ...holdData, table_id: table_id || null }).select().single();
     if (holdError) {
       return errorResponse('HOLD_FAILED', 'Unable to reserve time slot. Please try again.', 500, requestId, { details: holdError.message });
     }
@@ -497,7 +498,7 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
 
 async function handleConfirmReservationLocal(supabase: any, requestData: any, requestId: string | undefined, tenant: any) {
   try {
-    const { tenant_id, hold_id, guest_details, idempotency_key } = requestData;
+    const { tenant_id, hold_id, guest_details, idempotency_key, table_id } = requestData;
 
     if (!tenant_id || !hold_id || !guest_details?.email) {
       return errorResponse('CONFIRMATION_INVALID', 'Missing tenant_id, hold_id, or guest details', 400, requestId);
@@ -537,7 +538,8 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       deposit_paid: false,
     };
 
-    const { data: booking, error: bookingError } = await supabase.from('bookings').insert(bookingData).select().single();
+    // Persist table assignment if provided
+    const { data: booking, error: bookingError } = await supabase.from('bookings').insert({ ...bookingData, table_id: table_id || hold.table_id || null }).select().single();
     if (bookingError) {
       return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: bookingError.message });
     }

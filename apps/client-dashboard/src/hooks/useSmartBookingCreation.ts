@@ -115,6 +115,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
         tenant_id: tenantId,
         party_size: data.partySize,
         slot: { time: bookingDateTime.toISOString(), available_tables: 1 },
+        table_id: data.tableId,
       });
 
       // 2) Confirm reservation with idempotency
@@ -133,6 +134,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
             phone: data.phone,
             special_requests: data.specialRequests,
           },
+          table_id: data.tableId,
         },
         idempotencyKey,
       );
