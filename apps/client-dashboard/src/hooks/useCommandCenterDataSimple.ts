@@ -65,7 +65,7 @@ export function useCommandCenterDataSimple() {
           phone: booking.guest_phone,
           partySize: booking.party_size,
           start: booking.booking_time,
-          end: new Date(new Date(booking.booking_time).getTime() + booking.duration_minutes * 60000).toISOString(),
+          end: new Date(new Date(booking.booking_time).getTime() + (Number(booking.duration_minutes || 120) * 60000)).toISOString(),
           status: booking.status.toUpperCase(),
           tableId: booking.table_id,
           specialRequests: booking.special_requests,
