@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { createHold, confirmReservation } from "@/api/booking-proxy";
 import { BookingFormData, TableOptimization } from "@/types/booking";
 import { useToast } from "@/hooks/use-toast";
 
@@ -101,42 +102,45 @@ export const useSmartBookingCreation = (tenantId?: string) => {
     return Math.max(0, score);
   };
 
-  // Create booking mutation
+  // Create booking mutation (server-side via Edge Function for RLS-safe inserts)
   const createBookingMutation = useMutation({
     mutationFn: async (data: BookingFormData & { tableId?: string }) => {
+      if (!tenantId) throw new Error("Missing tenant");
       const bookingDateTime = new Date(`${data.date}T${data.time}`);
-      const eta = calculateETA(bookingDateTime.toISOString(), data.partySize);
 
-      const bookingData = {
+      // 1) Create a hold using the live widget function
+      const hold = await createHold({
         tenant_id: tenantId,
-        guest_name: data.customerName,
-        guest_email: data.email,
-        guest_phone: data.phone,
         party_size: data.partySize,
-        booking_time: bookingDateTime.toISOString(),
-        duration_minutes: data.duration || 120,
-        table_id: data.tableId,
-        special_requests: data.specialRequests,
-        status: "confirmed",
-        deposit_required: data.depositRequired,
-        deposit_amount: data.depositAmount,
-        eta_prediction: eta,
-        confidence_score: Math.random() * 20 + 80, // 80-100% confidence
-      };
+        slot: { time: bookingDateTime.toISOString(), available_tables: 1 },
+      });
 
-      const { data: booking, error } = await supabase
-        .from("bookings")
-        .insert(bookingData)
-        .select()
-        .single();
+      // 2) Confirm reservation with idempotency
+      const idempotencyKey = crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+      const [first_name, ...rest] = (data.customerName || "").trim().split(" ");
+      const last_name = rest.join(" ") || "";
 
-      if (error) throw error;
-      return booking;
+      const reservation = await confirmReservation(
+        {
+          tenant_id: tenantId,
+          hold_id: hold.hold_id,
+          guest_details: {
+            first_name: first_name || data.customerName || "Guest",
+            last_name: last_name || "",
+            email: data.email,
+            phone: data.phone,
+            special_requests: data.specialRequests,
+          },
+        },
+        idempotencyKey,
+      );
+
+      return reservation;
     },
-    onSuccess: (booking) => {
+    onSuccess: (reservation) => {
       toast({
         title: "Booking Created Successfully",
-        description: `Booking for ${booking.guest_name} on ${new Date(booking.booking_time).toLocaleDateString()} has been confirmed.`,
+        description: `Reservation ${reservation.confirmation_number || reservation.reservation_id} created.`,
       });
       resetForm();
     },

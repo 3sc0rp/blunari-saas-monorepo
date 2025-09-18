@@ -242,7 +242,31 @@ const DashboardHome: React.FC = () => {
           {/* Today's Bookings - Takes 2/5 of width on xl screens */}
           <div className="xl:col-span-2">
             <div className="h-96">
-              {metricsLoading ? <SkeletonBookingsList /> : <TodaysBookings />}
+              {metricsLoading ? (
+                <SkeletonBookingsList />
+              ) : metrics?.todayBookings?.count ? (
+                <TodaysBookings />
+              ) : (
+                <div className="h-full flex items-center justify-center border border-dashed rounded-lg bg-surface/40">
+                  <div className="text-center space-y-3 max-w-xs">
+                    <div className="mx-auto w-12 h-12 rounded-full bg-muted/20 flex items-center justify-center">
+                      <Calendar className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium">No bookings for this date</p>
+                      <p className="text-sm text-muted-foreground">Create a booking or import your schedule to get started.</p>
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <Button size="sm" onClick={() => (window.location.href = '/dashboard/bookings?new=1')}>
+                        <Plus className="w-4 h-4 mr-1" /> Create Booking
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => (window.location.href = '/dashboard/bookings')}>
+                        View All
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

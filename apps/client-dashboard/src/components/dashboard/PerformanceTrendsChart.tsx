@@ -76,6 +76,26 @@ const PerformanceTrendsChart: React.FC<PerformanceTrendsChartProps> = ({
     );
   }
 
+  if (!data || data.length === 0) {
+    return (
+      <Card className="col-span-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            7-Day Performance Trends
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 flex items-center justify-center border border-dashed rounded-lg bg-surface/40">
+            <div className="text-center text-sm text-muted-foreground">
+              No trend data yet. Generate activity by creating bookings.
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="col-span-2 shadow-soft">
       <CardHeader>
