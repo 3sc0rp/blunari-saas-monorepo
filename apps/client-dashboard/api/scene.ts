@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { requireEntitlement } from '@/lib/require-entitlement';
+// Use relative import to ensure Vercel serverless resolves without tsconfig path alias
+import { requireEntitlement } from '../src/lib/require-entitlement';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -40,9 +41,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const scene = (settingsRow as any)?.setting_value || { glbUrl: '', map: [] };
     return res.status(200).json(scene);
   } catch (e: any) {
-    if (e instanceof Response) {
-      return res.status(e.status || 403).end();
+    // Avoid referencing global Response in runtimes where it's undefined
+    if (e && typeof e === 'object' && 'status' in e) {
+      const status = (e as any).status || 403;
+      return res.status(status).end();
     }
+    // Log for Vercel function logs to aid debugging
+    try { console.error('SCENE_ERROR', e); } catch {}
     return res.status(500).json({ error: 'SCENE_ERROR' });
   }
 }
