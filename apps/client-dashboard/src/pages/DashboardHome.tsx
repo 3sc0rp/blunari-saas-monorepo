@@ -22,7 +22,11 @@ import {
   UserX,
   TrendingUp,
   Users,
+  Plus,
+  ListChecks,
+  Settings as Cog,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const DashboardHome: React.FC = () => {
   const { tenant, accessType, tenantSlug } = useTenant();
@@ -129,6 +133,48 @@ const DashboardHome: React.FC = () => {
             <div className="absolute -bottom-5 -left-5 w-32 h-32 bg-brand-foreground/5 rounded-full blur-xl"></div>
           </div>
         )}
+      </motion.div>
+
+      {/* Quick Actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, delay: 0.15 }}
+      >
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Button
+            variant="outline"
+            className="justify-start gap-2 h-11 bg-surface/60 hover:bg-surface-2 border-surface-2/50"
+            onClick={() => (window.location.href = "/dashboard/bookings?new=1")}
+            aria-label="Create booking"
+          >
+            <Plus className="w-4 h-4" /> Create Booking
+          </Button>
+          <Button
+            variant="outline"
+            className="justify-start gap-2 h-11 bg-surface/60 hover:bg-surface-2 border-surface-2/50"
+            onClick={() => (window.location.href = "/dashboard/waitlist-management")}
+            aria-label="Open waitlist"
+          >
+            <ListChecks className="w-4 h-4" /> Open Waitlist
+          </Button>
+          <Button
+            variant="outline"
+            className="justify-start gap-2 h-11 bg-surface/60 hover:bg-surface-2 border-surface-2/50"
+            onClick={() => (window.location.href = "/dashboard/tables")}
+            aria-label="Add table"
+          >
+            <Users className="w-4 h-4" /> Manage Tables
+          </Button>
+          <Button
+            variant="outline"
+            className="justify-start gap-2 h-11 bg-surface/60 hover:bg-surface-2 border-surface-2/50"
+            onClick={() => (window.location.href = "/dashboard/settings")}
+            aria-label="Open settings"
+          >
+            <Cog className="w-4 h-4" /> Settings
+          </Button>
+        </div>
       </motion.div>
 
       {/* Row 1: KPI Cards */}
