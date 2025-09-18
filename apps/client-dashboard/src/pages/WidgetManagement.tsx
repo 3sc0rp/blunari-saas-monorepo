@@ -1981,7 +1981,7 @@ const WidgetManagement: React.FC = () => {
                   </div>
                 </div>
                 <div className="relative">
-                  <pre className="bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto border">
+                  <pre className="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 p-4 rounded-lg text-sm overflow-x-auto border border-gray-200 dark:border-gray-700">
                     <code>{generateEmbedCode(activeWidgetType)}</code>
                   </pre>
                   <Button
@@ -2006,19 +2006,19 @@ const WidgetManagement: React.FC = () => {
                 {/* Enhanced Tenant-Specific Testing */}
                 <div className="space-y-4">
                   {/* Primary Testing URL */}
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-blue-900">Tenant-Specific Testing URL</h4>
+                      <h4 className="font-medium text-blue-900 dark:text-blue-100">Tenant-Specific Testing URL</h4>
                       <Badge variant="outline" className="text-blue-700">
                         Tenant: {resolvedTenantSlug}
                       </Badge>
                     </div>
-                    <p className="text-sm text-blue-700 mb-3">
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
                       Test your {activeWidgetType} widget with your specific tenant configuration:
                     </p>
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 bg-white p-2 rounded border text-sm">
+                        <code className="flex-1 bg-white dark:bg-gray-900 dark:text-gray-100 p-2 rounded border dark:border-gray-700 text-sm">
                           {generateWidgetUrl(activeWidgetType)}
                         </code>
                         <Button
@@ -2040,7 +2040,7 @@ const WidgetManagement: React.FC = () => {
                       </div>
                       
                       {/* Testing Instructions */}
-                      <div className="bg-blue-25 p-3 rounded border border-blue-200">
+                      <div className="bg-blue-25 dark:bg-blue-950/10 p-3 rounded border border-blue-200 dark:border-blue-800">
                         <p className="text-xs text-blue-600 font-medium mb-1">Testing Checklist:</p>
                         <ul className="text-xs text-blue-600 space-y-1">
                           <li>✓ Verify {activeWidgetType} flow works end-to-end</li>
@@ -2067,7 +2067,7 @@ const WidgetManagement: React.FC = () => {
                       <div>
                         <p className="text-sm text-green-700 mb-2">Mobile Preview (forced mobile view):</p>
                         <div className="flex items-center gap-2">
-                          <code className="flex-1 bg-white p-2 rounded border text-xs">
+                          <code className="flex-1 bg-white dark:bg-gray-900 dark:text-gray-100 p-2 rounded border dark:border-gray-700 text-xs">
                             {generateWidgetUrl(activeWidgetType)}&mobile=true&viewport=375x667
                           </code>
                           <Button
@@ -2084,7 +2084,7 @@ const WidgetManagement: React.FC = () => {
                       <div>
                         <p className="text-sm text-green-700 mb-2">Debug Mode (with console logging):</p>
                         <div className="flex items-center gap-2">
-                          <code className="flex-1 bg-white p-2 rounded border text-xs">
+                          <code className="flex-1 bg-white dark:bg-gray-900 dark:text-gray-100 p-2 rounded border dark:border-gray-700 text-xs">
                             {generateWidgetUrl(activeWidgetType)}&debug=true&console=verbose
                           </code>
                           <Button
@@ -2101,7 +2101,7 @@ const WidgetManagement: React.FC = () => {
                       <div>
                         <p className="text-sm text-green-700 mb-2">With Demo Data (for testing purposes):</p>
                         <div className="flex items-center gap-2">
-                          <code className="flex-1 bg-white p-2 rounded border text-xs">
+                          <code className="flex-1 bg-white dark:bg-gray-900 dark:text-gray-100 p-2 rounded border dark:border-gray-700 text-xs">
                             {generateWidgetUrl(activeWidgetType)}&demo=true&test_data=enabled
                           </code>
                           <Button
