@@ -122,8 +122,8 @@ serve(async (req) => {
       try {
         const bearer = req.headers.get('Authorization')?.replace('Bearer ', '');
         if (bearer) {
-          const supabaseAnon = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-          const { data: auth } = await supabaseAnon.auth.getUser(bearer);
+          // Use service client to verify JWT to avoid relying on ANON env
+          const { data: auth } = await supabase.auth.getUser(bearer);
           const user = (auth as any)?.user;
           if (user) {
             // If client provided tenant_id, verify access explicitly and prefer it
