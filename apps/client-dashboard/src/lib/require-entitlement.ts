@@ -24,7 +24,8 @@ export async function requireEntitlement(req: VercelRequest, key: 'three_d_floor
     }
   } catch {}
 
-  const searchParams = new URL(req.url || 'http://localhost').searchParams;
+  const urlObj = new URL(req.url || '', 'http://localhost');
+  const searchParams = urlObj.searchParams;
   const slug = searchParams.get('slug');
   if (!tenantId && slug) {
     const { data: t } = await supabase.from('tenants').select('id').eq('slug', slug).maybeSingle();

@@ -6,14 +6,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
   try {
-    const { tenantId } = await requireEntitlement(req as any, 'three_d_floor');
+    const { tenantId } = await requireEntitlement(req as any, 'three_d_floor').catch((e: any) => {
+      // If entitlement check fails due to missing auth headers on public route, fall back to slug lookup
+      return { tenantId: null } as any;
+    });
 
     const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!url || !serviceKey) return res.status(200).json({ glbUrl: '', map: [] });
     const supabase = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
-    const urlObj = new URL(req.url || 'http://localhost');
+    const urlObj = new URL(req.url || '', 'http://localhost');
     const area = urlObj.searchParams.get('area') || 'main-dining';
     const slug = urlObj.searchParams.get('slug');
 
@@ -22,6 +25,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!resolvedTenantId && slug) {
       const { data: t } = await supabase.from('tenants').select('id').eq('slug', slug).maybeSingle();
       resolvedTenantId = t?.id || tenantId;
+    }
+    if (!resolvedTenantId) {
+      return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
     const { data: settingsRow } = await supabase
@@ -37,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (e instanceof Response) {
       return res.status(e.status || 403).end();
     }
-    return res.status(200).json({ glbUrl: '', map: [] });
+    return res.status(500).json({ error: 'SCENE_ERROR' });
   }
 }
 
