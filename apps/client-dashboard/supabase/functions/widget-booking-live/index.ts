@@ -97,27 +97,73 @@ serve(async (req) => {
       return errorResponse('MISSING_ACTION', 'Action parameter is required', 400, requestId);
     }
 
-    // Validate and resolve widget token → slug → tenant_id
+    // Validate and resolve widget token → slug → tenant_id, with authenticated fallback for dashboard usage
     const token = requestData.token || new URL(req.url).searchParams.get('token');
     const tokenPayload = token ? validateWidgetToken(token) : null;
-    if (!tokenPayload?.slug) {
-      return errorResponse('INVALID_TOKEN', 'Valid widget token is required', 401, requestId);
+
+    let resolvedTenantId: string | null = null;
+    let resolvedTenant: any = null;
+
+    if (tokenPayload?.slug) {
+      const { data: tenant, error: tenantError } = await supabase
+        .from('tenants')
+        .select('id, name, slug, timezone, currency')
+        .eq('slug', tokenPayload.slug)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (!tenantError && tenant) {
+        resolvedTenantId = tenant.id;
+        resolvedTenant = tenant;
+      }
     }
 
-    // Resolve tenant by slug
-    const { data: tenant, error: tenantError } = await supabase
-      .from('tenants')
-      .select('id, name, slug, timezone, currency')
-      .eq('slug', tokenPayload.slug)
-      .eq('status', 'active')
-      .maybeSingle();
+    // Fallback: accept authenticated dashboard requests (no widget token)
+    if (!resolvedTenantId) {
+      try {
+        const bearer = req.headers.get('Authorization')?.replace('Bearer ', '');
+        if (bearer) {
+          const { data: auth } = await supabase.auth.getUser(bearer);
+          const user = (auth as any)?.user;
+          if (user) {
+            // Try user_tenant_access first
+            const { data: uta } = await supabase
+              .from('user_tenant_access')
+              .select('tenant_id')
+              .eq('user_id', user.id)
+              .eq('active', true)
+              .maybeSingle();
+            resolvedTenantId = (uta as any)?.tenant_id || null;
 
-    if (tenantError || !tenant) {
-      return errorResponse('TENANT_NOT_FOUND', `Restaurant "${tokenPayload.slug}" not found`, 404, requestId);
+            // Fallback to auto_provisioning
+            if (!resolvedTenantId) {
+              const { data: ap } = await supabase
+                .from('auto_provisioning')
+                .select('tenant_id')
+                .eq('user_id', user.id)
+                .eq('status', 'completed')
+                .maybeSingle();
+              resolvedTenantId = (ap as any)?.tenant_id || null;
+            }
+
+            if (resolvedTenantId) {
+              const { data: t } = await supabase
+                .from('tenants')
+                .select('id, name, slug, timezone, currency')
+                .eq('id', resolvedTenantId)
+                .maybeSingle();
+              resolvedTenant = t || null;
+            }
+          }
+        }
+      } catch {}
+    }
+
+    if (!resolvedTenantId) {
+      return errorResponse('INVALID_TOKEN', 'Valid widget token or authenticated session required', 401, requestId);
     }
 
     // Override any client-provided tenant_id
-    requestData.tenant_id = tenant.id;
+    requestData.tenant_id = resolvedTenantId;
 
     if (action === "search") {
       return await handleAvailabilitySearch(supabase, requestData, tenant.timezone, requestId);
