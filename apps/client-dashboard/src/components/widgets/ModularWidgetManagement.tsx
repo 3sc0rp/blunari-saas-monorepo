@@ -361,11 +361,11 @@ const ModularWidgetManagement = memo<ModularWidgetManagementProps>(({
 
         {/* Performance debug info (development only) */}
         {process.env.NODE_ENV === 'development' && (
-          <div className="mt-8 p-4 bg-gray-50 border rounded-lg text-xs text-gray-600">
+              <div className="mt-8 p-4 bg-gray-50 dark:bg-gray-900 border rounded-lg text-xs text-gray-600 dark:text-gray-300">
             <div className="grid grid-cols-4 gap-4">
               <div>Mount Time: {performanceMetrics.mountTime}ms</div>
               <div>Renders: {performanceMetrics.renderCount}</div>
-              <div>Memory: {(performance as any).memory?.usedJSHeapSize ? 
+                  <div>Memory: {(performance as any).memory?.usedJSHeapSize ? 
                 Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024) + 'MB' : 'N/A'}</div>
               <div>Active Tab: {moduleState.activeTab}</div>
             </div>

@@ -119,7 +119,7 @@ function App() {
                     <NavigationProvider>
                       <FullscreenProvider>
                         <TooltipProvider>
-                        <div className="min-h-screen bg-gray-50">
+                        <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
                           <ScrollToTop />
                           <Routes>
                             {/* Non-protected routes with minimal loading */}
