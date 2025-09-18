@@ -94,6 +94,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     };
     (logger as any).error('🚨 Component Error Boundary Triggered', detailedLogContext, error);
 
+    // Auto-retry for transient errors
+    if (error.message?.includes('ChunkLoadError') || 
+        error.message?.includes('Loading chunk') ||
+        error.message?.includes('Failed to fetch')) {
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    }
+
     // Update state with error info
     this.setState({ errorInfo });
 
