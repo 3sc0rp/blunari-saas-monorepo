@@ -17,9 +17,11 @@ import {
 import { useTenant } from "@/hooks/useTenant";
 import { useAdvancedBookings } from "@/hooks/useAdvancedBookings";
 import OptimizedBookingsTable from "@/components/booking/VirtualizedBookingsTable";
+import BookingsCalendar from "@/components/booking/BookingsCalendar";
 import ReservationDrawer from "@/components/booking/ReservationDrawer";
 import SmartBookingWizard from "@/components/booking/SmartBookingWizard";
 import AdvancedFilters from "@/components/booking/AdvancedFilters";
+import { toast } from "sonner";
 import {
   ExtendedBooking,
   BookingStatus,
@@ -52,6 +54,7 @@ const Bookings: React.FC = () => {
   } = useAdvancedBookings(tenant?.id);
 
   const [showWizard, setShowWizard] = useState(false);
+  const [view, setView] = useState<'table'|'calendar'>("table");
   const [selectedBooking, setSelectedBooking] =
     useState<ExtendedBooking | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -301,7 +304,7 @@ const Bookings: React.FC = () => {
         <Button size="sm" variant="outline" onClick={() => setDatePreset('next7')}>Next 7 days</Button>
       </div>
 
-      {/* Today's Metrics */}
+      {/* Toggle + Today's Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -366,6 +369,13 @@ const Bookings: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="flex justify-end">
+        <div className="flex items-center gap-2">
+          <Button variant={view==='table'? 'default':'outline'} size="sm" onClick={()=>setView('table')}>List</Button>
+          <Button variant={view==='calendar'? 'default':'outline'} size="sm" onClick={()=>setView('calendar')}>Calendar</Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -451,17 +461,21 @@ const Bookings: React.FC = () => {
         </Card>
       )}
 
-      {/* Data Table */}
-      <OptimizedBookingsTable
-        bookings={bookings}
-        selectedBookings={selectedBookings}
-        onSelectBooking={handleSelectBooking}
-        onSelectAll={handleSelectAll}
-        onBookingClick={handleBookingClick}
-        onStatusUpdate={handleStatusUpdate}
-        isLoading={isLoading}
-        height={600}
-      />
+      {/* Data View */}
+      {view === 'table' ? (
+        <OptimizedBookingsTable
+          bookings={bookings}
+          selectedBookings={selectedBookings}
+          onSelectBooking={handleSelectBooking}
+          onSelectAll={handleSelectAll}
+          onBookingClick={handleBookingClick}
+          onStatusUpdate={handleStatusUpdate}
+          isLoading={isLoading}
+          height={600}
+        />
+      ) : (
+        <BookingsCalendar bookings={bookings} onSelectBooking={handleBookingClick} />
+      )}
 
       {/* Reservation Drawer */}
       <ReservationDrawer

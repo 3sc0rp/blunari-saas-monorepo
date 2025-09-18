@@ -224,7 +224,19 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, tenantT
     return errorResponse('TENANT_NOT_FOUND', 'Tenant not found', 404, requestId);
   }
 
-  // Resolve opening hours strictly from Operations (business_hours)
+  // Resolve opening hours strictly from Operations (business_hours), skip if holiday
+  const { data: holiday } = await supabase
+    .from('holidays')
+    .select('holiday_date')
+    .eq('tenant_id', tenant_id)
+    .eq('holiday_date', service_date)
+    .maybeSingle();
+  if (holiday) {
+    return new Response(
+      JSON.stringify({ success: true, slots: [], reason: 'HOLIDAY', requestId }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } },
+    );
+  }
   const windowForDay = await resolveTimeWindowForDate(supabase, tenant_id, service_date, tenantTimezone);
   if (!windowForDay) {
     // Closed day or hours not configured

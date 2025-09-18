@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import MessageDialog from "@/components/booking/MessageDialog";
 import { ExtendedBooking, BookingStatus } from "@/types/booking";
 import {
   User,
@@ -61,6 +62,8 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
   );
 
   if (!booking) return null;
+
+  const [messageOpen, setMessageOpen] = useState(false);
 
   const getStatusBadge = (status: BookingStatus) => {
     const statusConfig = {
@@ -396,7 +399,7 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
                     Seat Guest
                   </Button>
                 )}
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={()=>setMessageOpen(true)}>
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Send Message
                 </Button>
@@ -413,6 +416,15 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
               )}
             </CardContent>
           </Card>
+          <MessageDialog
+            open={messageOpen}
+            onOpenChange={setMessageOpen}
+            defaultChannel={booking.guest_phone ? 'sms' : 'email'}
+            onSend={async ({ channel, to, subject, body }) => {
+              // Placeholder: wire to background-ops or email/SMS provider
+              console.log('Send', { channel, to, subject, body });
+            }}
+          />
 
           {/* Activity Log */}
           <Card>
