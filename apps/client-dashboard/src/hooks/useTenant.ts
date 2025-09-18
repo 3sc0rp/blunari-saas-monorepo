@@ -218,18 +218,87 @@ export function useTenant() {
         return;
       }
 
-      // Call the tenant Edge Function with enhanced authentication
-      logger.debug('Calling tenant function', {
-        component: 'useTenant',
-        slug: params.slug
-      });
-      
-      const { data: responseData, error: functionError } = await callTenantFunction(
-        params.slug ? { slug: params.slug } : {}
-      );
+      // First, try DIRECT database resolution (no edge functions)
+      try {
+        // 1) Slug-based resolution
+        if (params.slug) {
+          const { data: tenantBySlug, error: slugError } = await supabase
+            .from('tenants')
+            .select('id, slug, name, timezone, currency')
+            .eq('slug', params.slug)
+            .maybeSingle();
+
+          if (!slugError && tenantBySlug) {
+            if (!signal.aborted) {
+              commitTenant(tenantBySlug as any, 'db-slug');
+            }
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+              timeoutRef.current = null;
+            }
+            return;
+          }
+        }
+
+        // 2) User-based resolution
+        if (session?.user?.id) {
+          let resolvedTenantId: string | null = null;
+
+          const { data: access, error: accessErr } = await supabase
+            .from('user_tenant_access')
+            .select('tenant_id')
+            .eq('user_id', session.user.id)
+            .eq('active', true)
+            .maybeSingle();
+
+          if (!accessErr && access?.tenant_id) {
+            resolvedTenantId = (access as any).tenant_id as string;
+          }
+
+          if (!resolvedTenantId) {
+            const { data: autoProv, error: autoErr } = await supabase
+              .from('auto_provisioning')
+              .select('tenant_id')
+              .eq('user_id', session.user.id)
+              .eq('status', 'completed')
+              .maybeSingle();
+            if (!autoErr && autoProv?.tenant_id) {
+              resolvedTenantId = (autoProv as any).tenant_id as string;
+            }
+          }
+
+          if (resolvedTenantId) {
+            const { data: tenantById, error: idError } = await supabase
+              .from('tenants')
+              .select('id, slug, name, timezone, currency')
+              .eq('id', resolvedTenantId)
+              .maybeSingle();
+
+            if (!idError && tenantById) {
+              if (!signal.aborted) {
+                commitTenant(tenantById as any, 'db-user');
+              }
+              if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+              }
+              return;
+            }
+          }
+        }
+      } catch (dbResolveError) {
+        logger.warn('Direct tenant resolution failed', {
+          component: 'useTenant',
+          error: dbResolveError instanceof Error ? dbResolveError.message : 'Unknown error'
+        });
+      }
+
+      // Disable tenant edge function to avoid noisy 400/401s; fallback will be used
+      const responseData: any = null;
+      const functionError: any = null;
 
       // FIX: Check if component is still mounted before updating state
-  if (signal.aborted) return;
+      if (signal.aborted) return;
 
       if (functionError) {
         logger.warn('Tenant function error detected', {
