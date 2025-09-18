@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useTenant } from '@/hooks/useTenant';
 import { useAdvancedBookings } from '@/hooks/useAdvancedBookings';
 import { useTodayData } from '@/hooks/useTodayData';
@@ -11,8 +11,7 @@ const DataFlowDebugger: React.FC = () => {
   const { bookings, isLoading: bookingsLoading, error: bookingsError } = useAdvancedBookings(tenantId || undefined);
   const todayDataQuery = useTodayData();
 
-  useEffect(() => {
-    const runDebugChecks = async () => {
+  const runDebugChecks = useCallback(async () => {
       const info: any = {
         timestamp: new Date().toISOString(),
         environment: import.meta.env.MODE,
@@ -108,10 +107,11 @@ const DataFlowDebugger: React.FC = () => {
       }
 
       setDebugInfo(info);
-    };
-
-    runDebugChecks();
   }, [tenant, tenantId, tenantLoading, bookings, bookingsLoading, bookingsError, todayDataQuery]);
+
+  useEffect(() => {
+    runDebugChecks();
+  }, [runDebugChecks]);
 
   // Always show in development, and show in production if there are issues
   const shouldShow = import.meta.env.MODE === 'development' || 

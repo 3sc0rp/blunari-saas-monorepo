@@ -7,7 +7,7 @@ import { ReservationDrawer } from "@/components/command-center/ReservationDrawer
 import { AuthDebugger } from "@/components/command-center/AuthDebugger";
 import { TenantTestComponent } from "@/components/TenantTestComponent";
 import { DebugEdgeFunctions } from "@/components/debug/DebugEdgeFunctions";
-import { useCommandCenterData } from "@/hooks/useCommandCenterDataNew.ts";
+import { useCommandCenterDataSimple } from "@/hooks/useCommandCenterDataSimple";
 import { useReservationActions } from "@/hooks/useReservationActions.ts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -141,7 +141,7 @@ export default function CommandCenter() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [filters, handleNewReservation]);
 
-  const { kpis, tables, reservations, policies, loading, error, refetch, isStale, liveConnected, requestId } = useCommandCenterData({ date: selectedDate, filters: contractFilters });
+  const { kpis = [], tables = [], reservations = [], policies, loading, error, refetch } = useCommandCenterDataSimple();
 
   // Add debug logging in development mode
   if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
