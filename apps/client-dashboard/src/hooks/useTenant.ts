@@ -125,9 +125,16 @@ export function useTenant() {
       let sessionError;
       
       try {
+        console.log('[useTenant] Getting session...');
         const sessionResult = await supabase.auth.getSession();
         session = sessionResult.data.session;
         sessionError = sessionResult.error;
+        console.log('[useTenant] Session result:', { 
+          hasSession: !!session, 
+          userId: session?.user?.id, 
+          email: session?.user?.email,
+          error: sessionError?.message 
+        });
       } catch (error) {
         logger.warn('Session retrieval failed, attempting refresh', {
           component: 'useTenant',

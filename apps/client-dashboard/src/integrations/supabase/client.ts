@@ -27,6 +27,7 @@ export const supabase = createClient<Database>(
       storage: localStorage,
       persistSession: true,
       autoRefreshToken: true,
+      debug: import.meta.env.MODE === 'development',
     },
     realtime: {
       params: {
@@ -37,9 +38,13 @@ export const supabase = createClient<Database>(
     },
     global: {
       fetch: (url, options = {}) => {
+        console.log('[Supabase] Request:', { url, method: options.method || 'GET' });
         return fetch(url, {
           ...options,
           keepalive: false, // Prevent WebSocket interference
+        }).then(res => {
+          console.log('[Supabase] Response:', { url, status: res.status, ok: res.ok });
+          return res;
         });
       },
     },

@@ -16,6 +16,7 @@ import { ModeTransitionProvider } from "@/contexts/ModeTransitionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import DataFlowDebugger from "@/components/debug/DataFlowDebugger";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { connectionManager } from "@/utils/supabaseConnection";
 import { useMemoryCleanup, usePerformanceMonitoring, useBundleMonitoring } from "@/hooks/usePerformance";
@@ -246,6 +247,7 @@ function App() {
                           <Toaster />
                           <Sonner />
                           <PerformanceMonitor />
+                          <DataFlowDebugger />
                         </div>
                         </TooltipProvider>
                       </FullscreenProvider>
