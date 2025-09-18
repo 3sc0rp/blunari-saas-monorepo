@@ -233,7 +233,7 @@ const Tables: React.FC = () => {
             </div>
             <div>
               <Label>Type</Label>
-              <Select value={newType} onValueChange={(val)=>setNewType(val as Table["table_type"]))}>
+              <Select value={newType} onValueChange={(val)=>setNewType(val as Table["table_type"])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="standard">Standard</SelectItem>
