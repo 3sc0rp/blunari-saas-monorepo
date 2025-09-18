@@ -144,7 +144,7 @@ export default function CommandCenter() {
   const { kpis = [], tables = [], reservations = [], policies, loading, error, refetch } = useCommandCenterDataSimple();
 
   // Add debug logging in development mode
-  if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
+  if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
     console.log('🏢 Command Center State:', {
       loading,
       error,

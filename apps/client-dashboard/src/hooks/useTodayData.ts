@@ -104,8 +104,11 @@ export const useTodayData = () => {
         endOfDay.setHours(23, 59, 59, 999);
 
         // Fetch today's bookings with improved error handling
-        console.log('[useTodayData] Fetching bookings for tenant:', tenant.id);
-        console.log('[useTodayData] Date range:', { start: startOfDay.toISOString(), end: endOfDay.toISOString() });
+        const devLogs = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
+        if (devLogs) {
+          console.log('[useTodayData] Fetching bookings for tenant:', tenant.id);
+          console.log('[useTodayData] Date range:', { start: startOfDay.toISOString(), end: endOfDay.toISOString() });
+        }
         
         const { data: bookings, error: bookingsError } = await supabase
           .from('bookings')
@@ -115,7 +118,7 @@ export const useTodayData = () => {
           .lte('booking_time', endOfDay.toISOString())
           .order('booking_time', { ascending: true });
 
-        console.log('[useTodayData] Bookings result:', { count: bookings?.length, error: bookingsError });
+        if (devLogs) console.log('[useTodayData] Bookings result:', { count: bookings?.length, error: bookingsError });
 
         if (bookingsError) {
           console.error("Error fetching bookings:", bookingsError);

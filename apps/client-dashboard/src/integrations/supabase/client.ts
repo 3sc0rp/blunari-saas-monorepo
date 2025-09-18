@@ -27,7 +27,7 @@ export const supabase = createClient<Database>(
       storage: localStorage,
       persistSession: true,
       autoRefreshToken: true,
-      debug: import.meta.env.MODE === 'development',
+      debug: import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_SUPABASE_DEBUG === 'true',
     },
     realtime: {
       params: {
@@ -38,12 +38,17 @@ export const supabase = createClient<Database>(
     },
     global: {
       fetch: (url, options = {}) => {
-        console.log('[Supabase] Request:', { url, method: options.method || 'GET' });
+        const enableVerbose = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_SUPABASE_DEBUG === 'true';
+        if (enableVerbose) {
+          console.log('[Supabase] Request:', { url, method: (options as any).method || 'GET' });
+        }
         return fetch(url, {
-          ...options,
-          keepalive: false, // Prevent WebSocket interference
+          ...(options as any),
+          keepalive: false,
         }).then(res => {
-          console.log('[Supabase] Response:', { url, status: res.status, ok: res.ok });
+          if (enableVerbose) {
+            console.log('[Supabase] Response:', { url, status: res.status, ok: res.ok });
+          }
           return res;
         });
       },

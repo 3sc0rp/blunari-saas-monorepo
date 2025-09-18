@@ -90,7 +90,7 @@ export function useTenant() {
     }
     timeoutRef.current = window.setTimeout(() => {
       if (signal.aborted) return;
-      logger.info('Tenant resolution timeout (5s), using fallback tenant', {
+      if (import.meta.env.MODE === 'development' && debugEnabled) logger.info('Tenant resolution timeout (5s), using fallback tenant', {
         component: 'useTenant',
         slug: params.slug,
         reason
@@ -125,11 +125,11 @@ export function useTenant() {
       let sessionError;
       
       try {
-        console.log('[useTenant] Getting session...');
+        if (import.meta.env.MODE === 'development' && debugEnabled) console.log('[useTenant] Getting session...');
         const sessionResult = await supabase.auth.getSession();
         session = sessionResult.data.session;
         sessionError = sessionResult.error;
-        console.log('[useTenant] Session result:', { 
+        if (import.meta.env.MODE === 'development' && debugEnabled) console.log('[useTenant] Session result:', { 
           hasSession: !!session, 
           userId: session?.user?.id, 
           email: session?.user?.email,
@@ -200,7 +200,7 @@ export function useTenant() {
 
       // Use direct fallback in development instead of calling edge function
       if (import.meta.env.MODE === 'development') {
-        console.log('[useTenant] Development mode - using fallback tenant');
+        if (debugEnabled) console.log('[useTenant] Development mode - using fallback tenant');
         const fallbackTenant: TenantInfo = {
           id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
           slug: 'demo',

@@ -8,11 +8,14 @@ export function useCommandCenterDataSimple() {
   const query = useQuery({
     queryKey: ['command-center-simple', tenantId],
     queryFn: async () => {
-      console.log('[useCommandCenterDataSimple] === DIRECT DB QUERIES ONLY ===');
-      console.log('[useCommandCenterDataSimple] Tenant ID:', tenantId);
+      const devLogs = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
+      if (devLogs) {
+        console.log('[useCommandCenterDataSimple] === DIRECT DB QUERIES ONLY ===');
+        console.log('[useCommandCenterDataSimple] Tenant ID:', tenantId);
+      }
       
       if (!tenantId) {
-        console.log('[useCommandCenterDataSimple] No tenant ID - returning empty data');
+        if (devLogs) console.log('[useCommandCenterDataSimple] No tenant ID - returning empty data');
         return {
           kpis: [],
           tables: [],
@@ -45,7 +48,7 @@ export function useCommandCenterDataSimple() {
             .eq('tenant_id', tenantId)
         ]);
 
-        console.log('[useCommandCenterDataSimple] Query results:', {
+        if (devLogs) console.log('[useCommandCenterDataSimple] Query results:', {
           tables: { count: tablesResult.data?.length, error: tablesResult.error },
           bookings: { count: bookingsResult.data?.length, error: bookingsResult.error }
         });
@@ -100,7 +103,7 @@ export function useCommandCenterDataSimple() {
           }
         ];
 
-        console.log('[useCommandCenterDataSimple] Returning data:', {
+        if (devLogs) console.log('[useCommandCenterDataSimple] Returning data:', {
           kpis: kpis.length,
           tables: tables.length,
           reservations: reservations.length

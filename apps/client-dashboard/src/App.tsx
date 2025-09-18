@@ -80,7 +80,9 @@ function RouterInstrumentation() {
 // Removed legacy public widget routes (/book and /catering).
 
 function App() {
-  console.log('🎯 App component rendering with full providers...');
+  if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+    console.log('🎯 App component rendering with full providers...');
+  }
   // Remove direct calls to router-dependent hooks here (now inside RouterInstrumentation)
   useEffect(() => {
     connectionManager.ensureConnection();
