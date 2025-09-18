@@ -74,6 +74,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const USE_LOCAL_BOOKING = (Deno.env.get('USE_LOCAL_BOOKING') || 'true').toLowerCase() !== 'false';
 
     if (req.method !== "POST") {
       return errorResponse('METHOD_NOT_ALLOWED', 'Method not allowed', 405, requestId);
@@ -188,9 +189,15 @@ serve(async (req) => {
       return await handleAvailabilitySearch(supabase, requestData, resolvedTenant?.timezone, requestId);
     } else if (action === "hold") {
       console.log('[widget-booking-live] hold', { requestId, tenant: resolvedTenantId });
+      if (USE_LOCAL_BOOKING) {
+        return await handleCreateHoldLocal(supabase, requestData, requestId);
+      }
       return await handleCreateHold(supabase, requestData, requestId);
     } else if (action === "confirm") {
       console.log('[widget-booking-live] confirm', { requestId, tenant: resolvedTenantId });
+      if (USE_LOCAL_BOOKING) {
+        return await handleConfirmReservationLocal(supabase, requestData, requestId, resolvedTenant);
+      }
       return await handleConfirmReservation(supabase, requestData, requestId, resolvedTenant);
     } else {
       return errorResponse('INVALID_ACTION', 'Invalid action specified', 400, requestId);
@@ -354,6 +361,33 @@ async function handleCreateHold(supabase: any, requestData: any, requestId?: str
   }
 }
 
+async function handleCreateHoldLocal(supabase: any, requestData: any, requestId?: string) {
+  try {
+    const { tenant_id, slot, party_size } = requestData;
+    if (!tenant_id || !slot?.time || !party_size) {
+      return errorResponse('HOLD_INVALID', 'Missing tenant_id, slot.time or party_size', 400, requestId);
+    }
+    const holdData = {
+      tenant_id,
+      booking_time: slot.time,
+      party_size: Number(party_size),
+      duration_minutes: 120,
+      session_id: crypto.randomUUID(),
+      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    };
+    const { data: hold, error: holdError } = await supabase.from('booking_holds').insert(holdData).select().single();
+    if (holdError) {
+      return errorResponse('HOLD_FAILED', 'Unable to reserve time slot. Please try again.', 500, requestId, { details: holdError.message });
+    }
+    return new Response(
+      JSON.stringify({ success: true, hold_id: hold.id, expires_at: hold.expires_at, table_identifiers: ["Available Table"], _local: true, requestId }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } },
+    );
+  } catch (e) {
+    return errorResponse('HOLD_FAILED', 'Unable to reserve time slot. Please try again.', 500, requestId, { details: `${e}` });
+  }
+}
+
 async function handleConfirmReservation(supabase: any, requestData: any, requestId: string | undefined, tenant: any) {
   try {
     const { tenant_id, hold_id, guest_details, idempotency_key } = requestData;
@@ -458,6 +492,63 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
     } catch (fallbackError) {
       return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: `${fallbackError}` });
     }
+  }
+}
+
+async function handleConfirmReservationLocal(supabase: any, requestData: any, requestId: string | undefined, tenant: any) {
+  try {
+    const { tenant_id, hold_id, guest_details, idempotency_key } = requestData;
+
+    if (!tenant_id || !hold_id || !guest_details?.email) {
+      return errorResponse('CONFIRMATION_INVALID', 'Missing tenant_id, hold_id, or guest details', 400, requestId);
+    }
+
+    // Idempotency check
+    if (idempotency_key) {
+      try {
+        const { data: idem } = await supabase
+          .from('idempotency_keys')
+          .select('status_code, response_json')
+          .eq('tenant_id', tenant_id)
+          .eq('idempotency_key', idempotency_key)
+          .maybeSingle();
+        if (idem && idem.response_json) {
+          return new Response(JSON.stringify(idem.response_json), { status: idem.status_code || 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } });
+        }
+      } catch {}
+    }
+
+    const { data: hold, error: holdError } = await supabase.from('booking_holds').select('*').eq('id', hold_id).maybeSingle();
+    if (holdError || !hold) {
+      return errorResponse('HOLD_NOT_FOUND', 'Booking hold not found or expired', 404, requestId, { details: holdError?.message });
+    }
+
+    const bookingData = {
+      tenant_id,
+      booking_time: hold.booking_time,
+      party_size: hold.party_size,
+      guest_name: `${guest_details.first_name || ''} ${guest_details.last_name || ''}`.trim() || 'Guest',
+      guest_email: guest_details.email,
+      guest_phone: guest_details.phone || null,
+      special_requests: guest_details.special_requests || null,
+      status: 'confirmed',
+      duration_minutes: hold.duration_minutes,
+      deposit_required: false,
+      deposit_paid: false,
+    };
+
+    const { data: booking, error: bookingError } = await supabase.from('bookings').insert(bookingData).select().single();
+    if (bookingError) {
+      return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: bookingError.message });
+    }
+
+    const confirmationNumber = `CONF${booking.id.slice(-6).toUpperCase()}`;
+    const body = { success: true, reservation_id: booking.id, confirmation_number: confirmationNumber, status: 'confirmed', summary: { date: booking.booking_time, time: new Date(booking.booking_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }), party_size: booking.party_size, table_info: 'Auto-assigned', deposit_required: false }, _local: true, requestId };
+    if (idempotency_key) { try { await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: body }); } catch {} }
+
+    return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } });
+  } catch (e) {
+    return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: `${e}` });
   }
 }
 
