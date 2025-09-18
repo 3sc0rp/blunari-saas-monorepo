@@ -32,6 +32,8 @@ import Bookings from "./pages/Bookings";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import BookingPage from "./pages/BookingPage";
+import Client3DFloor from "./pages/Client3DFloor";
+import Public3DExperience from "./pages/Public3DExperience";
 
 // Lazy load heavy components with prefetch hints
 const Analytics = lazy(() => 
@@ -125,6 +127,8 @@ function App() {
                             <Route path="/" element={<Index />} />
                             <Route path="/auth/*" element={<Auth />} />
                             {/* NOTE: Public widget routes handled in PublicWidgetShell to avoid AuthProvider wrapping */}
+                            {/* Public 3D experience (plan-gated via API; upsell shown by page if blocked) */}
+                            <Route path="/experience/3d" element={<Public3DExperience />} />
                             
                             {/* Protected dashboard routes with optimized Suspense */}
                             <Route 
@@ -139,6 +143,8 @@ function App() {
                               <Route index element={<Dashboard />} />
                               <Route path="bookings" element={<Bookings />} />
                               <Route path="settings" element={<Settings />} />
+                              {/* Client 3D management (entitled tenants only; page shows upsell otherwise) */}
+                              <Route path="client/3d-floor" element={<Client3DFloor />} />
                               
                               {/* Lazy loaded routes with specific fallbacks */}
                               <Route path="home" element={

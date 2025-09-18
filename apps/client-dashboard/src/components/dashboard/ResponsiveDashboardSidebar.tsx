@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { useTenant } from "@/hooks/useTenant";
+import { useEntitlement } from "@/lib/entitlements";
 import { useTenantBranding } from "@/contexts/TenantBrandingContext";
 import { useUIMode } from "@/lib/ui-mode";
 
@@ -105,7 +106,16 @@ export function ResponsiveDashboardSidebar() {
   const currentPath = location.pathname;
 
   // Always show management navigation
-  const navigationItems = managementNavigation;
+  const { entitled } = useEntitlement('three_d_floor');
+  const navigationItems = managementNavigation.map((section) => {
+    if (section.section === "Tools") {
+      return {
+        ...section,
+        items: entitled ? [...section.items, { title: "3D Floor (Beta)", url: "/dashboard/client/3d-floor", icon: Eye }] : section.items,
+      };
+    }
+    return section;
+  });
 
   const isActive = (path: string) => {
     if (path === "/command-center") {
