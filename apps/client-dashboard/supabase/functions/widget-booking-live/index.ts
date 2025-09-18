@@ -503,5 +503,6 @@ function generateTimeSlots(
       }
     }
   }
-  return slots.slice(0, 15);
+  // Return all slots within business hours
+  return slots;
 }
