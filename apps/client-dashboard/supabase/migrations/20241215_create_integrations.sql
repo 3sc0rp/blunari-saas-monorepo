@@ -150,7 +150,7 @@ INSERT INTO integration_providers (name, slug, category, description, auth_type,
  ARRAY[]::text[]),
 ('Slack', 'slack', 'communication', 'Team communication and notifications', 'oauth2',
  ARRAY['notifications', 'alerts', 'messaging'],
- ARRAY[])
+ ARRAY[]::text[])
 ON CONFLICT (slug) DO NOTHING;
 
 -- Create indexes for performance
