@@ -48,7 +48,7 @@ export function useTenant() {
   const lastResolveAtRef = useRef<number>(0);
   const lastTenantKeyRef = useRef<string | null>(null);
   const RESOLVE_DEBOUNCE_MS = 4000; // suppress identical resolves within 4s window
-  const debugEnabled = import.meta.env.VITE_ANALYTICS_DEBUG === '1';
+  const debugEnabled = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
   const debug = (...args: any[]) => { if (debugEnabled) { /* eslint-disable no-console */ console.log('[useTenant]', ...args); } };
   const shallowTenantEqual = (a: TenantInfo | null, b: TenantInfo | null) => {
     if (a === b) return true; if (!a || !b) return false; return a.id===b.id && a.slug===b.slug && a.name===b.name && a.timezone===b.timezone && a.currency===b.currency; };
@@ -63,9 +63,6 @@ export function useTenant() {
       lastResolveAtRef.current = Date.now();
       lastTenantKeyRef.current = params.slug || null;
       debug('tenant state updated', { context, slug: params.slug, tenantId: nextTenant?.id || null });
-      if (debugEnabled && import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-        console.log('[useTenant] Tenant committed:', { id: nextTenant?.id, slug: nextTenant?.slug, context });
-      }
       return { tenant: nextTenant, loading: false, error: null, requestId: null };
     });
   };

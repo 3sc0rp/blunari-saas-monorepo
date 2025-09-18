@@ -42,9 +42,7 @@ export class SupabaseConnectionManager {
     // Handle auth state changes
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-          console.log('✅ Supabase auth established, resetting connection attempts');
-        }
+        // keep silent by default
         this.reconnectAttempts = 0;
       }
       
