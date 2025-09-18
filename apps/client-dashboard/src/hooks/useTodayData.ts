@@ -7,15 +7,6 @@ import { Database } from "@/integrations/supabase/types";
 type BookingRow = Database['public']['Tables']['bookings']['Row'];
 type RestaurantTableRow = Database['public']['Tables']['restaurant_tables']['Row'];
 
-// Utility function to generate mock waitlist data
-// TODO: Replace with real waitlist_entries table query when available
-const generateMockWaitlistEntries = (tenantId: string): WaitlistEntryWithProfiles[] => {
-  const mockEntries: WaitlistEntryWithProfiles[] = [];
-  
-  // You can add mock data here or fetch from a different table
-  // Example: Use bookings with status 'waiting' as waitlist
-  return mockEntries;
-};
 
 export interface TodayData {
   totalCovers: number;
@@ -124,32 +115,27 @@ export const useTodayData = () => {
           throw new Error(`Failed to fetch bookings: ${bookingsError.message}`);
         }
 
-        // Mock waitlist entries since table doesn't exist
-        // In a real application, you would either:
-        // 1. Create the waitlist_entries table
-        // 2. Use a different table like 'bookings' with status 'waiting'
-        // 3. Remove waitlist functionality entirely
-        const waitlistEntries: WaitlistEntryWithProfiles[] = [
-          // Mock data for demonstration
-          {
-            id: 'mock-waitlist-1',
-            created_at: new Date().toISOString(),
-            party_size: 2,
+        // Build waitlist entries from real data if present: bookings with status 'waiting'
+        const waitlistEntries: WaitlistEntryWithProfiles[] = (bookings || [])
+          .filter(b => (b as any).status === 'waiting')
+          .map(b => ({
+            id: (b as any).id,
+            created_at: (b as any).created_at,
+            party_size: (b as any).party_size || 0,
             status: 'waiting',
-            customer_name: 'John Doe',
-            phone: '+1234567890',
-            special_requests: 'Window table preferred',
+            customer_name: (b as any).guest_name,
+            phone: (b as any).guest_phone || undefined,
+            special_requests: (b as any).special_requests || undefined,
             priority: 'standard',
-            estimated_wait_minutes: 15,
+            estimated_wait_minutes: undefined,
             profiles: {
-              first_name: 'John',
-              last_name: 'Doe',
-              email: 'john.doe@example.com',
-              phone: '+1234567890',
-              avatar_url: null
+              first_name: undefined,
+              last_name: undefined,
+              email: (b as any).guest_email,
+              phone: (b as any).guest_phone || undefined,
+              avatar_url: undefined
             }
-          }
-        ];
+          }));
 
         // Fetch restaurant tables with proper column names
         const { data: tables, error: tablesError } = await supabase
@@ -168,9 +154,8 @@ export const useTodayData = () => {
         const bookingsList: BookingWithProfiles[] = (bookings || []).map(booking => ({
           ...booking,
           // Add compatibility fields for existing components
-          customer_name: booking.guest_name,
-          table_number: booking.table_id || undefined,
-          source: booking.id.includes('walk') ? 'walk_in' : 'online', // Mock source detection
+          customer_name: (booking as any).guest_name,
+          table_number: (booking as any).table_id || undefined,
         }));
 
         const waitlistList = waitlistEntries || [];
@@ -187,16 +172,9 @@ export const useTodayData = () => {
         const noShowBookings = bookingsList.filter(b => b.status === 'no_show').length;
         const totalCovers = bookingsList.reduce((sum, b) => sum + (b.party_size || 0), 0);
         
-        // Safe source filtering with fallback
-        const reservations = bookingsList.filter(b => {
-          const source = b.source || 'online';
-          return source !== 'walk_in';
-        }).length;
-        
-        const walkIns = bookingsList.filter(b => {
-          const source = b.source || 'online';
-          return source === 'walk_in';
-        }).length;
+        // Reservations based on real statuses; walk-ins not tracked without explicit column
+        const reservations = bookingsList.filter(b => ['confirmed','seated','completed'].includes((b as any).status)).length;
+        const walkIns = 0;
 
         // Calculate average wait time safely
         const averageWaitTime = waitlistList.length > 0 ? 
@@ -210,12 +188,13 @@ export const useTodayData = () => {
             }
           }, 0) / waitlistList.length) : 0;
 
-        // Estimated revenue (mock calculation based on average spend)
-        const avgSpendPerCover = 45; // TODO: Make this configurable per tenant
+        // Estimated revenue based on covers and a configurable average (set to 0 if not desired)
+        const avgSpendPerCover = 0; // Use only real revenue if available; keep 0 to avoid synthetic numbers
         const estimatedRevenue = totalCovers * avgSpendPerCover;
 
-        // Mock satisfaction score - in real app would come from reviews/feedback
-        const satisfactionScore = Math.floor(Math.random() * 15) + 85; // 85-100%
+        // Satisfaction score derived from real booking outcomes (lower with cancellations/no-shows)
+        const issueRate = (cancelledBookings + noShowBookings) / Math.max(1, bookingsList.length);
+        const satisfactionScore = Math.max(0, Math.round(100 - issueRate * 100));
 
         return {
           totalCovers,
