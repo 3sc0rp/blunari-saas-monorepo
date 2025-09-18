@@ -29,10 +29,11 @@ export const useTableManagement = (tenantId?: string) => {
   } = useQuery({
     queryKey: ["tables", tenantId],
     queryFn: async () => {
-      console.log('[useTableManagement] Fetching tables for tenant:', tenantId);
+      const devLogs = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
+      if (devLogs) console.log('[useTableManagement] Fetching tables for tenant:', tenantId);
       
       if (!tenantId) {
-        console.log('[useTableManagement] No tenantId - returning empty');
+        if (devLogs) console.log('[useTableManagement] No tenantId - returning empty');
         return [];
       }
 
@@ -44,7 +45,7 @@ export const useTableManagement = (tenantId?: string) => {
         .eq("active", true)
         .order("name");
 
-      console.log('[useTableManagement] Tables query result:', { count: tablesData?.length, error: tablesError });
+      if (devLogs) console.log('[useTableManagement] Tables query result:', { count: tablesData?.length, error: tablesError });
 
       if (tablesError) throw tablesError;
 

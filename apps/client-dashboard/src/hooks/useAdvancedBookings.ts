@@ -42,7 +42,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
       if (devLogs) console.log('[useAdvancedBookings] Building query...');
       let query = supabase
         .from("bookings")
-        .select("*, restaurant_tables!bookings_table_id_fkey(name)")
+        .select("*")
         .eq("tenant_id", tenantId);
 
       if (devLogs) console.log('[useAdvancedBookings] Base query built, applying filters...');
@@ -70,9 +70,12 @@ export const useAdvancedBookings = (tenantId?: string) => {
         query = query.lte("party_size", filters.partySize.max);
       }
 
-      const { data, error } = await query.order("booking_time", {
-        ascending: true,
-      });
+      const [bookingsRes, tablesRes] = await Promise.all([
+        query.order("booking_time", { ascending: true }),
+        supabase.from("restaurant_tables").select("id,name").eq("tenant_id", tenantId)
+      ]);
+      const data = bookingsRes.data;
+      const error = bookingsRes.error;
 
       if (devLogs) console.log('[useAdvancedBookings] Query result:', { data: data?.length, error });
       
@@ -81,10 +84,20 @@ export const useAdvancedBookings = (tenantId?: string) => {
         throw error;
       }
       
-      const result = (data || []).map((b: any) => ({
-        ...(b as any),
-        table_name: b["restaurant_tables"]?.name,
-      })) as ExtendedBooking[];
+      const tableIdToName: Record<string, string> = Object.fromEntries(
+        (tablesRes.data || []).map((t: any) => [t.id, t.name])
+      );
+
+      const result = (data || []).map((b: any) => {
+        const joinedName = (b as any)["restaurant_tables"]?.name;
+        const mappedName = b.table_id ? tableIdToName[b.table_id] : undefined;
+        const normalizedStatus = (b.status === 'no_show') ? 'noshow' : b.status;
+        return {
+          ...(b as any),
+          status: normalizedStatus,
+          table_name: joinedName || mappedName,
+        } as ExtendedBooking;
+      });
       
       if (devLogs) console.log('[useAdvancedBookings] Processed result:', result.length, 'bookings');
       return result;
