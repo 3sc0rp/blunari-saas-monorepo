@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { createHold, confirmReservation } from "@/api/booking-proxy";
 import { BookingFormData, TableOptimization } from "@/types/booking";
 import { useToast } from "@/hooks/use-toast";
 
 export const useSmartBookingCreation = (tenantId?: string) => {
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
+  const [createdReservation, setCreatedReservation] = useState<any | null>(null);
   const [formData, setFormData] = useState<BookingFormData>({
     customerName: "",
     email: "",
@@ -138,11 +140,17 @@ export const useSmartBookingCreation = (tenantId?: string) => {
       return reservation;
     },
     onSuccess: (reservation) => {
+      setCreatedReservation(reservation);
+      setCurrentStep(5);
+      // Force-refresh key booking views immediately; Realtime will follow-up
+      if (tenantId) {
+        queryClient.invalidateQueries({ queryKey: ["advanced-bookings", tenantId] });
+        queryClient.invalidateQueries({ queryKey: ["today-data", tenantId] });
+      }
       toast({
         title: "Booking Created Successfully",
         description: `Reservation ${reservation.confirmation_number || reservation.reservation_id} created.`,
       });
-      resetForm();
     },
     onError: (error) => {
       toast({
@@ -156,6 +164,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
 
   const resetForm = () => {
     setCurrentStep(1);
+    setCreatedReservation(null);
     setFormData({
       customerName: "",
       email: "",
@@ -188,6 +197,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
     availableTables,
     createBooking: createBookingMutation.mutate,
     isCreating: createBookingMutation.isPending,
+    createdReservation,
     nextStep,
     previousStep,
     updateFormData,

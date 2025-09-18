@@ -60,6 +60,7 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
     availableTables,
     createBooking,
     isCreating,
+    createdReservation,
     nextStep,
     previousStep,
     updateFormData,
@@ -88,7 +89,8 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
     { title: "Customer Details", icon: Users },
     { title: "Date & Time", icon: CalendarIcon },
     { title: "Table Selection", icon: MapPin },
-    { title: "Confirmation", icon: CheckCircle },
+    { title: "Review", icon: CheckCircle },
+    { title: "Done", icon: CheckCircle },
   ];
 
   return (
@@ -448,7 +450,7 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
             </motion.div>
           )}
 
-          {/* Step 4: Confirmation */}
+          {/* Step 4: Review */}
           {currentStep === 4 && (
             <motion.div
               key="step4"
@@ -544,6 +546,53 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
               </Card>
             </motion.div>
           )}
+
+          {/* Step 5: Success */}
+          {currentStep === 5 && (
+            <motion.div
+              key="step5"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              className="space-y-6"
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-success">
+                    <CheckCircle className="h-5 w-5" />
+                    Booking Confirmed
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Confirmation No.: {createdReservation?.confirmation_number || createdReservation?.reservation_id}
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Name: </span>
+                      <span>{formData.customerName}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Party: </span>
+                      <span>{formData.partySize}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Date: </span>
+                      <span>{selectedDate ? format(selectedDate, 'PPP') : formData.date}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Time: </span>
+                      <span>{formData.time}</span>
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <Button variant="outline" onClick={resetForm}>Create Another</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Navigation Buttons */}
@@ -574,7 +623,7 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
               Next
               <ArrowRight className="h-4 w-4" />
             </Button>
-          ) : (
+          ) : currentStep === 4 ? (
             <Button
               onClick={handleSubmit}
               disabled={isCreating}
@@ -582,6 +631,10 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
             >
               {isCreating ? "Creating..." : "Create Booking"}
               <CheckCircle className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button onClick={() => onOpenChange(false)} className="flex items-center gap-2">
+              Close
             </Button>
           )}
         </div>
