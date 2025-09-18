@@ -47,9 +47,9 @@ const Client3DFloor: React.FC = () => {
   const { tenant } = useTenant();
   const [glbUrl, setGlbUrl] = useState<string>("");
   const [area, setArea] = useState<string>("main-dining");
-  const [sceneMapJson, setSceneMapJson] = useState<string>("[
-  { \"mesh\": \"Table_01\", \"seatId\": \"T1\", \"capacity\": 4 }
-]");
+  const [sceneMapJson, setSceneMapJson] = useState<string>(`[
+  { "mesh": "Table_01", "seatId": "T1", "capacity": 4 }
+]`);
   const [saving, setSaving] = useState(false);
 
   const onUploadGlb = (url: string) => setGlbUrl(url);
