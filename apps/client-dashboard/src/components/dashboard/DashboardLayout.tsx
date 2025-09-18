@@ -5,7 +5,6 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ResponsiveDashboardSidebar } from "./ResponsiveDashboardSidebar";
 import BottomNavigation from "./BottomNavigation";
 import BreadcrumbHeader from "./BreadcrumbHeader";
-import GlobalStatusStrip from "./GlobalStatusStrip";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useResponsiveLayout } from "@/hooks/useResponsiveLayout";
 import { useFullscreen } from "@/contexts/FullscreenContext";
@@ -33,8 +32,7 @@ const DashboardLayout: React.FC = () => {
         Skip to main content
       </a>
 
-      {/* Global Status Strip */}
-      <GlobalStatusStrip />
+      {/* Global Status Strip removed */}
 
       <SidebarProvider 
         defaultOpen={shouldShowSidebar}
