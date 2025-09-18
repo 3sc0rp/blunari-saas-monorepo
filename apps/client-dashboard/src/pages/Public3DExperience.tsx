@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,9 +13,14 @@ async function fetchScene(area: string) {
   return res.json() as Promise<{ glbUrl: string; map: SceneMapItem[] }>;
 }
 
-function SceneModel({ url }: { url: string }) {
+function SceneModel({ url, onMeshClick }: { url: string; onMeshClick?: (meshName: string) => void }) {
   const { scene } = useGLTF(url, true);
-  return <primitive object={scene} />;
+  const handlePointerDown = useCallback((e: any) => {
+    e.stopPropagation();
+    const name = e?.object?.name || e?.target?.name || '';
+    if (name && onMeshClick) onMeshClick(name);
+  }, [onMeshClick]);
+  return <primitive object={scene} onPointerDown={handlePointerDown} />;
 }
 
 const Public3DExperience: React.FC = () => {
@@ -23,6 +28,7 @@ const Public3DExperience: React.FC = () => {
   const [slug] = useState(() => new URLSearchParams(window.location.search).get('slug') || 'demo');
   const [scene, setScene] = useState<{ glbUrl: string; map: SceneMapItem[] } | null>(null);
   const [fallback2D, setFallback2D] = useState(false);
+  const [forbidden, setForbidden] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<SceneMapItem | null>(null);
   const timeoutRef = useRef<number | null>(null);
 
@@ -38,11 +44,13 @@ const Public3DExperience: React.FC = () => {
       return;
     }
     timeoutRef.current = window.setTimeout(() => setFallback2D(true), 2500);
-    fetchScene(area).then((s) => {
+    fetch(`/api/scene?area=${encodeURIComponent(area)}`).then(async (res) => {
       if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
+      if (res.status === 403) { setForbidden(true); return; }
+      const s = await res.json();
       setScene(s);
       sendAnalyticsEvent('three_d_area_view', { area, slug }).catch(() => {});
-    });
+    }).catch(() => setFallback2D(true));
     return () => { if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; } };
   }, [area]);
 
@@ -66,9 +74,36 @@ const Public3DExperience: React.FC = () => {
     );
   }
 
+  if (forbidden) {
+    return (
+      <div className="max-w-3xl mx-auto p-6">
+        <Card>
+          <CardContent className="p-6 space-y-3">
+            <h2 className="text-lg font-semibold">3D Floor not enabled</h2>
+            <p className="text-sm text-muted-foreground">Upgrade your plan to unlock the interactive 3D Floor View.</p>
+            <div className="flex gap-2">
+              <a href={`/api/stripe/checkout?feature=three_d_floor`}>
+                <Button>Upgrade</Button>
+              </a>
+              <Button variant="secondary" onClick={onBack}>Back to Standard View</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!scene?.glbUrl) {
     return <div className="p-8 text-center text-muted-foreground">Loading 3D experience…</div>;
   }
+
+  const handleMeshClick = useCallback((meshName: string) => {
+    const hit = scene?.map?.find?.((m: any) => m.mesh === meshName) || null;
+    if (hit) {
+      setSelectedSeat(hit);
+      sendAnalyticsEvent('three_d_table_click', { seatId: hit.seatId || hit.label || meshName, area, slug }).catch(() => {});
+    }
+  }, [scene, area, slug]);
 
   return (
     <div className="w-full h-[calc(100vh-2rem)] p-4">
@@ -81,7 +116,7 @@ const Public3DExperience: React.FC = () => {
           <ambientLight intensity={0.8} />
           <directionalLight position={[5, 10, 7.5]} intensity={0.8} />
           <Suspense fallback={null}>
-            <SceneModel url={scene.glbUrl} />
+            <SceneModel url={scene.glbUrl} onMeshClick={handleMeshClick} />
           </Suspense>
           <OrbitControls makeDefault />
         </Canvas>
