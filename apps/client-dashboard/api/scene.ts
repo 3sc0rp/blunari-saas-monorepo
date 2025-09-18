@@ -13,13 +13,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!url || !serviceKey) return res.status(200).json({ glbUrl: '', map: [] });
     const supabase = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
-    const area = (new URL(req.url || 'http://localhost')).searchParams.get('area') || 'main-dining';
+    const urlObj = new URL(req.url || 'http://localhost');
+    const area = urlObj.searchParams.get('area') || 'main-dining';
+    const slug = urlObj.searchParams.get('slug');
 
     // Minimal MVP: read from tenant_settings where setting_key='scene:{area}'
+    let resolvedTenantId = tenantId;
+    if (!resolvedTenantId && slug) {
+      const { data: t } = await supabase.from('tenants').select('id').eq('slug', slug).maybeSingle();
+      resolvedTenantId = t?.id || tenantId;
+    }
+
     const { data: settingsRow } = await supabase
       .from('tenant_settings')
       .select('setting_value')
-      .eq('tenant_id', tenantId)
+      .eq('tenant_id', resolvedTenantId)
       .eq('setting_key', `scene:${area}`)
       .maybeSingle();
 

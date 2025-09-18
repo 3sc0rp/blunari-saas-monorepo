@@ -8,8 +8,8 @@ import { sendAnalyticsEvent } from '@/api/booking-proxy';
 
 type SceneMapItem = { mesh: string; seatId?: string; label?: string; capacity?: number };
 
-async function fetchScene(area: string) {
-  const res = await fetch(`/api/scene?area=${encodeURIComponent(area)}`);
+async function fetchScene(area: string, slug: string) {
+  const res = await fetch(`/api/scene?area=${encodeURIComponent(area)}&slug=${encodeURIComponent(slug)}`);
   return res.json() as Promise<{ glbUrl: string; map: SceneMapItem[] }>;
 }
 
@@ -44,7 +44,7 @@ const Public3DExperience: React.FC = () => {
       return;
     }
     timeoutRef.current = window.setTimeout(() => setFallback2D(true), 2500);
-    fetch(`/api/scene?area=${encodeURIComponent(area)}`).then(async (res) => {
+    fetch(`/api/scene?area=${encodeURIComponent(area)}&slug=${encodeURIComponent(slug)}`).then(async (res) => {
       if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
       if (res.status === 403) { setForbidden(true); return; }
       const s = await res.json();

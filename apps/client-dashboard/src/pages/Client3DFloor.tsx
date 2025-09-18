@@ -71,7 +71,10 @@ const Client3DFloor: React.FC = () => {
     }
   };
 
-  const previewUrl = useMemo(() => `/experience/3d?area=${encodeURIComponent(area)}`, [area]);
+  const previewUrl = useMemo(() => {
+    const slug = tenant?.slug || 'demo';
+    return `/experience/3d?slug=${encodeURIComponent(slug)}&area=${encodeURIComponent(area)}`;
+  }, [tenant?.slug, area]);
 
   if (!entitled) return <Upsell />;
 
