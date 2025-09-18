@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { listPresets, savePreset, deletePreset } from "@/utils/presets";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,6 +127,8 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
   };
 
   const activeFilterCount = getActiveFilterCount();
+  const scope = "bookings";
+  const presets = listPresets<BookingFilters>(scope);
 
   return (
     <Card>
@@ -140,6 +143,47 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">Presets</Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-3" align="end">
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const name = prompt("Preset name?") || "My preset";
+                        savePreset(scope, name, filters);
+                      }}
+                    >
+                      Save current
+                    </Button>
+                  </div>
+                  <div className="space-y-1 max-h-56 overflow-auto">
+                    {presets.length === 0 && (
+                      <p className="text-sm text-muted-foreground">No presets yet</p>
+                    )}
+                    {presets.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between text-sm">
+                        <button
+                          className="text-left hover:underline"
+                          onClick={() => onFiltersChange(p.value)}
+                        >
+                          {p.name}
+                        </button>
+                        <button
+                          className="text-destructive"
+                          onClick={() => deletePreset(scope, p.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </CardHeader>
