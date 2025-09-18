@@ -82,6 +82,11 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
       }
 
       // PRODUCTION FIX: Attempt real data fetch with graceful fallback
+      console.log('[useCommandCenterDataNew] === STARTING DATA FETCH ===');
+      console.log('[useCommandCenterDataNew] Tenant ID:', tenantId);
+      console.log('[useCommandCenterDataNew] Date:', date);
+      console.log('[useCommandCenterDataNew] Filters:', filters);
+      
       logger.info('Fetching real Command Center data for production', {
         component: 'useCommandCenterDataNew',
         tenantId,

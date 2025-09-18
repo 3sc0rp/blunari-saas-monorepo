@@ -29,7 +29,12 @@ export const useTableManagement = (tenantId?: string) => {
   } = useQuery({
     queryKey: ["tables", tenantId],
     queryFn: async () => {
-      if (!tenantId) return [];
+      console.log('[useTableManagement] Fetching tables for tenant:', tenantId);
+      
+      if (!tenantId) {
+        console.log('[useTableManagement] No tenantId - returning empty');
+        return [];
+      }
 
       // Get tables
       const { data: tablesData, error: tablesError } = await supabase
@@ -38,6 +43,8 @@ export const useTableManagement = (tenantId?: string) => {
         .eq("tenant_id", tenantId)
         .eq("active", true)
         .order("name");
+
+      console.log('[useTableManagement] Tables query result:', { count: tablesData?.length, error: tablesError });
 
       if (tablesError) throw tablesError;
 

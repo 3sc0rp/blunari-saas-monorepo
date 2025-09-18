@@ -17,6 +17,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import DataFlowDebugger from "@/components/debug/DataFlowDebugger";
+import DataAuditor from "@/components/debug/DataAuditor";
 import PerformanceMonitor from "@/components/PerformanceMonitor";
 import { connectionManager } from "@/utils/supabaseConnection";
 import { useMemoryCleanup, usePerformanceMonitoring, useBundleMonitoring } from "@/hooks/usePerformance";
@@ -248,6 +249,7 @@ function App() {
                           <Sonner />
                           <PerformanceMonitor />
                           <DataFlowDebugger />
+                          <DataAuditor />
                         </div>
                         </TooltipProvider>
                       </FullscreenProvider>

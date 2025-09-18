@@ -20,12 +20,19 @@ export const useAnalytics = (
   const { data: historicalBookings, isLoading } = useQuery({
     queryKey: ["analytics-bookings", tenantId, dateRange],
     queryFn: async () => {
-      if (!tenantId) return [];
+      console.log('[useAnalytics] Fetching historical bookings for tenant:', tenantId);
+      
+      if (!tenantId) {
+        console.log('[useAnalytics] No tenantId - returning empty');
+        return [];
+      }
 
       const startDate =
         dateRange?.start ||
         new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const endDate = dateRange?.end || new Date().toISOString();
+
+      console.log('[useAnalytics] Date range:', { start: startDate, end: endDate });
 
       const { data, error } = await supabase
         .from("bookings")
@@ -34,6 +41,8 @@ export const useAnalytics = (
         .gte("booking_time", startDate)
         .lte("booking_time", endDate)
         .order("booking_time", { ascending: true });
+
+      console.log('[useAnalytics] Historical bookings result:', { count: data?.length, error });
 
       if (error) throw error;
       return data || [];
