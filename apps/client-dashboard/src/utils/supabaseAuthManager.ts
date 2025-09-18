@@ -110,11 +110,13 @@ class SupabaseAuthManager {
   async callEdgeFunction<T = any>(options: EdgeFunctionOptions): Promise<{ data: T | null; error: any }> {
     const { functionName, body, retries = this.maxRetries, timeout = this.baseTimeout } = options;
     
-    // Skip tenant function calls in development to reduce noise
-    if (functionName === 'tenant' && import.meta.env.MODE === 'development') {
+    // Skip noisy edge function calls that aren't critical for data display
+    if (import.meta.env.MODE === 'development' && 
+        ['tenant', 'get-kpis', 'list-tables', 'list-reservations'].includes(functionName)) {
+      console.log(`[SupabaseAuthManager] Skipping ${functionName} in dev mode`);
       return {
         data: null,
-        error: { message: 'Tenant function disabled in dev', code: 'DEV_SKIP', status: 401 }
+        error: { message: `${functionName} disabled in dev`, code: 'DEV_SKIP', status: 401 }
       };
     }
     

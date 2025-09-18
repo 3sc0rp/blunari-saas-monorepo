@@ -124,6 +124,11 @@ const DataFlowDebugger: React.FC = () => {
 
   const [collapsed, setCollapsed] = useState(false);
 
+  // Prevent render errors
+  if (!debugInfo || typeof debugInfo !== 'object') {
+    return null;
+  }
+
   return (
     <div style={{
       position: 'fixed',
