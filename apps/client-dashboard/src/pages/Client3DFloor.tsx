@@ -93,7 +93,7 @@ const Client3DFloor: React.FC = () => {
             </div>
             <div className="space-y-2">
               <Label>GLB Scene</Label>
-              <FileUpload value={glbUrl} onChange={onUploadGlb} accept=".glb" label="3D Scene (.glb)" description="Upload a GLB file for your dining area" />
+              <FileUpload value={glbUrl} onChange={onUploadGlb} accept=".glb" maxSize={10 * 1024 * 1024} label="3D Scene (.glb)" description="Upload a GLB file for your dining area" />
             </div>
           </div>
           <div className="space-y-2">
