@@ -136,107 +136,81 @@ serve(async (req) => {
 async function handleAvailabilitySearch(supabase: any, requestData: any, tenantTimezone?: string, requestId?: string) {
   const { tenant_id, party_size, service_date } = requestData;
 
+  // Validate tenant exists
   const { data: tenant, error: tenantError } = await supabase
-    .from("tenants")
-    .select("id")
-    .eq("id", tenant_id)
+    .from('tenants')
+    .select('id')
+    .eq('id', tenant_id)
     .maybeSingle();
-
   if (tenantError) {
-    return errorResponse('TENANT_QUERY_FAILED', `Failed to query tenant`, 500, requestId, { details: tenantError.message });
+    return errorResponse('TENANT_QUERY_FAILED', 'Failed to query tenant', 500, requestId, { details: tenantError.message });
   }
   if (!tenant) {
-    return errorResponse('TENANT_NOT_FOUND', `Tenant not found`, 404, requestId);
+    return errorResponse('TENANT_NOT_FOUND', 'Tenant not found', 404, requestId);
   }
 
+  // Resolve opening hours strictly from Operations (business_hours)
+  const windowForDay = await resolveTimeWindowForDate(supabase, tenant_id, service_date, tenantTimezone);
+  if (!windowForDay) {
+    // Closed day or hours not configured
+    return new Response(
+      JSON.stringify({ success: true, slots: [], reason: 'CLOSED_OR_NO_HOURS', requestId }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } },
+    );
+  }
+
+  // Load active tables for capacity
+  const { data: tables, error: tablesError } = await supabase
+    .from('restaurant_tables')
+    .select('*')
+    .eq('tenant_id', tenant_id)
+    .eq('active', true);
+  if (tablesError) {
+    return errorResponse('SEARCH_FAILED', 'Unable to load restaurant tables', 500, requestId, { details: tablesError.message });
+  }
+
+  // Load bookings for the day (support TIMESTAMPTZ or DATE+TIME schemas)
+  const searchDate = new Date(service_date);
+  const dayStart = new Date(searchDate.getFullYear(), searchDate.getMonth(), searchDate.getDate());
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
+  let bookings: any[] = [];
   try {
-    const apiUrl = "https://services.blunari.ai/api/public/booking/search";
+    const { data: btData } = await supabase
+      .from('bookings')
+      .select('table_id, booking_time, duration_minutes, status')
+      .eq('tenant_id', tenant_id)
+      .gte('booking_time', dayStart.toISOString())
+      .lt('booking_time', dayEnd.toISOString());
+    bookings = btData || [];
+  } catch {}
 
-    const windowForDay = await resolveTimeWindowForDate(supabase, tenant_id, service_date, tenantTimezone);
-    const searchPayload = {
-      tenant_id,
-      party_size: Number(party_size),
-      service_date,
-      time_window: windowForDay,
-    };
-
-    const apiResponse = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "User-Agent": "Supabase-Edge-Function/1.0",
-        "X-Request-ID": requestId || crypto.randomUUID(),
-      },
-      body: JSON.stringify(searchPayload),
-    });
-
-    if (!apiResponse.ok) {
-      const errorText = await apiResponse.text();
-      throw new Error(`External API error ${apiResponse.status}: ${errorText}`);
-    }
-
-    const apiData = await apiResponse.json();
-
-    // Clamp server response to the configured business-hours window as a safety net
-    const [openH, openM] = (windowForDay.start.replace('T','') || '00:00:00').split(':').map((v: string) => parseInt(v, 10));
-    const [closeH, closeM] = (windowForDay.end.replace('T','') || '23:59:59').split(':').map((v: string) => parseInt(v, 10));
-    const openMin = openH * 60 + (openM || 0);
-    const closeMin = closeH * 60 + (closeM || 0);
-    const tz = tenantTimezone || 'UTC';
-    const toLocalMinutes = (iso: string) => {
-      const d = new Date(iso);
-      const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false, hour: '2-digit', minute: '2-digit' }).formatToParts(d);
-      const obj: any = {}; for (const p of parts) { if (p.type !== 'literal') obj[p.type] = p.value; }
-      return (parseInt(obj.hour, 10) * 60) + parseInt(obj.minute, 10);
-    };
-    const clamp = (arr: any[] | undefined) => (arr || []).filter((s: any) => {
-      try { const m = toLocalMinutes(s.time); return m >= openMin && m < closeMin; } catch { return false; }
-    });
-
-    const clampedSlots = clamp(apiData.slots);
-    const clampedAlts = clamp(apiData.alternatives);
-
-    return new Response(
-      JSON.stringify({ success: true, slots: clampedSlots, alternatives: clampedAlts, requestId }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } },
-    );
-  } catch (apiError) {
-    // Fallback to local Supabase data
-    const { tenant_id, party_size, service_date } = requestData;
-
-    const { data: tables, error: tablesError } = await supabase
-      .from("restaurant_tables")
-      .select("*")
-      .eq("tenant_id", tenant_id)
-      .eq("active", true);
-
-    if (tablesError) {
-      return errorResponse('SEARCH_FAILED', 'Unable to load restaurant data. Please try again.', 500, requestId, { details: tablesError.message });
-    }
-
-    const searchDate = new Date(service_date);
-    const dayStart = new Date(searchDate.getFullYear(), searchDate.getMonth(), searchDate.getDate());
-    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-
-    const { data: bookings } = await supabase
-      .from("bookings")
-      .select("*")
-      .eq("tenant_id", tenant_id)
-      .gte("booking_time", dayStart.toISOString())
-      .lt("booking_time", dayEnd.toISOString());
-
-    const timeWindow = await resolveTimeWindowForDate(supabase, tenant_id, service_date, tenantTimezone);
-    const slots = generateTimeSlots(tables || [], bookings || [], party_size, searchDate, timeWindow, tenantTimezone || 'UTC');
-
-    return new Response(
-      JSON.stringify({ success: true, slots, _fallback: true, requestId }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } },
-    );
+  if (!bookings || bookings.length === 0) {
+    try {
+      const { data: bdData } = await supabase
+        .from('bookings')
+        .select('table_id, booking_date, booking_time, duration_minutes, status')
+        .eq('tenant_id', tenant_id)
+        .eq('booking_date', service_date);
+      bookings = (bdData || []).map((b: any) => ({
+        table_id: b.table_id,
+        booking_time: `${b.booking_date}T${b.booking_time || '00:00:00'}`,
+        duration_minutes: b.duration_minutes,
+        status: b.status,
+      }));
+    } catch {}
   }
+
+  // Generate local availability strictly from configured hours and tables
+  const slots = generateTimeSlots(tables || [], bookings || [], Number(party_size), searchDate, windowForDay, tenantTimezone || 'UTC');
+
+  return new Response(
+    JSON.stringify({ success: true, slots, requestId }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } },
+  );
 }
 
-async function resolveTimeWindowForDate(supabase: any, tenantId: string, serviceDate: string, tenantTimezone?: string): Promise<{ start: string; end: string }> {
+async function resolveTimeWindowForDate(supabase: any, tenantId: string, serviceDate: string, tenantTimezone?: string): Promise<{ start: string; end: string } | null> {
   try {
     const tz = tenantTimezone || 'UTC';
     // Determine local day-of-week in tenant timezone (0..6, Sun..Sat)
@@ -247,7 +221,7 @@ async function resolveTimeWindowForDate(supabase: any, tenantId: string, service
       return map[dayStr] ?? new Date(serviceDate).getUTCDay();
     })();
 
-    // Prefer normalized table
+    // Use normalized Operations hours only
     const { data: bhAll } = await supabase
       .from('business_hours')
       .select('day_of_week,is_open,open_time,close_time')
@@ -257,23 +231,12 @@ async function resolveTimeWindowForDate(supabase: any, tenantId: string, service
       if (rec && rec.is_open && rec.open_time && rec.close_time) {
         return { start: `T${rec.open_time}`, end: `T${rec.close_time}` };
       }
-    }
-
-    // Fallback to operational settings if table empty
-    const { data: op } = await supabase
-      .from('tenant_settings')
-      .select('setting_value')
-      .eq('tenant_id', tenantId)
-      .eq('setting_key', 'operational')
-      .maybeSingle();
-    const ops = op?.setting_value;
-    const rec2 = ops?.businessHours ? ops.businessHours[String(dowLocal)] : null;
-    if (rec2 && rec2.isOpen && rec2.openTime && rec2.closeTime) {
-      return { start: `T${rec2.openTime}`, end: `T${rec2.closeTime}` };
+      // Explicitly closed
+      return null;
     }
   } catch {}
-  // Default window
-  return { start: 'T12:00:00', end: 'T21:00:00' };
+  // No configured hours
+  return null;
 }
 
 async function handleCreateHold(supabase: any, requestData: any, requestId?: string) {
