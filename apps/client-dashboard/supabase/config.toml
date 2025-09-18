@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.widget-booking]
 verify_jwt = false
+
+[functions.widget-booking-live]
+verify_jwt = false

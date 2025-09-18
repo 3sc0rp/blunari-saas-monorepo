@@ -23,25 +23,34 @@ class BookingAPIError extends Error {
 }
 
 // Live API functions using Supabase edge functions
-function getUserAccessTokenFromStorage(supabaseUrl?: string): string | undefined {
+async function getUserAccessToken(supabaseUrl?: string): Promise<string | undefined> {
   try {
     if (!supabaseUrl || typeof window === 'undefined') return undefined;
     const { hostname } = new URL(supabaseUrl);
     const projectRef = hostname.split('.')[0];
     const key = `sb-${projectRef}-auth-token`;
     const raw = window.localStorage.getItem(key);
-    if (!raw) return undefined;
-    const parsed = JSON.parse(raw);
-    // supabase v2 stores in currentSession, but be defensive
-    return (
-      parsed?.currentSession?.access_token ||
-      parsed?.access_token ||
-      parsed?.session?.access_token ||
-      undefined
-    );
-  } catch {
-    return undefined;
-  }
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const token = (
+        parsed?.currentSession?.access_token ||
+        parsed?.access_token ||
+        parsed?.session?.access_token ||
+        undefined
+      );
+      if (token) return token;
+    }
+  } catch {}
+  // Fallback to querying supabase client if available (dashboard runtime only)
+  try {
+    const mod = await import('@/integrations/supabase/client');
+    const client = (mod as any)?.supabase;
+    if (client?.auth?.getSession) {
+      const { data } = await client.auth.getSession();
+      return data?.session?.access_token || undefined;
+    }
+  } catch {}
+  return undefined;
 }
 async function callEdgeFunction(
   functionName: string,
@@ -68,6 +77,7 @@ async function callEdgeFunction(
       throw new Error("Missing Supabase configuration");
     }
 
+    const userJwt = await getUserAccessToken(supabaseUrl);
     const response = await fetch(
       `${supabaseUrl}/functions/v1/${functionName}`,
       {
@@ -75,7 +85,7 @@ async function callEdgeFunction(
         headers: {
           "Content-Type": "application/json",
           // Prefer user JWT when available (dashboard) to pass auth to edge function; fallback to anon key
-          Authorization: `Bearer ${getUserAccessTokenFromStorage(supabaseUrl) || supabaseKey}`,
+          Authorization: `Bearer ${userJwt || supabaseKey}`,
           apikey: supabaseKey,
         },
         body: JSON.stringify(requestBody),
