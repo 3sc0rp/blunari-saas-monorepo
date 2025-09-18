@@ -109,9 +109,12 @@ export function ResponsiveDashboardSidebar() {
   const { entitled } = useEntitlement('three_d_floor');
   const navigationItems = managementNavigation.map((section) => {
     if (section.section === "Tools") {
+      const threeDItem = { title: "3D Floor (Beta)", url: "/dashboard/client/3d-floor", icon: Eye } as const;
+      const hasItem = section.items.some((it) => it.url === "/dashboard/client/3d-floor");
       return {
         ...section,
-        items: entitled ? [...section.items, { title: "3D Floor (Beta)", url: "/dashboard/client/3d-floor", icon: Eye }] : section.items,
+        // Always include the 3D item so users can access upsell if not entitled.
+        items: hasItem ? section.items : [...section.items, threeDItem],
       };
     }
     return section;
