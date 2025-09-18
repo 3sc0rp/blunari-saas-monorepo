@@ -27,16 +27,22 @@ export const useAdvancedBookings = (tenantId?: string) => {
   } = useQuery({
     queryKey: ["advanced-bookings", tenantId, filters],
     queryFn: async () => {
-      if (!tenantId) return [];
+      console.log('[useAdvancedBookings] === QUERY START ===');
+      console.log('[useAdvancedBookings] Input tenantId:', tenantId);
+      console.log('[useAdvancedBookings] Input filters:', filters);
+      
+      if (!tenantId) {
+        console.log('[useAdvancedBookings] No tenantId - returning empty array');
+        return [];
+      }
 
-      console.log('[useAdvancedBookings] Fetching with tenantId:', tenantId);
-
+      console.log('[useAdvancedBookings] Building query...');
       let query = supabase
         .from("bookings")
         .select("*, restaurant_tables!bookings_table_id_fkey(name)")
         .eq("tenant_id", tenantId);
 
-      console.log('[useAdvancedBookings] Query built, executing...');
+      console.log('[useAdvancedBookings] Base query built, applying filters...');
 
       // Apply status filter
       if (filters.status.length > 0) {
