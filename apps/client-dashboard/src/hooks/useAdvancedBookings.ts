@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -64,6 +64,25 @@ export const useAdvancedBookings = (tenantId?: string) => {
     },
     enabled: !!tenantId,
   });
+
+  // Realtime subscription to bookings changes for this tenant
+  useEffect(() => {
+    if (!tenantId) return;
+    const channel = supabase
+      .channel(`bookings_rt_${tenantId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings', filter: `tenant_id=eq.${tenantId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['advanced-bookings', tenantId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch {}
+    };
+  }, [tenantId, queryClient]);
 
   // Filter bookings by search term
   const filteredBookings = useMemo(() => {

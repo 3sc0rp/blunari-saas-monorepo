@@ -87,7 +87,7 @@ interface RestaurantTable {
 export const useTodayData = () => {
   const { tenant } = useTenant();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ["today-data", tenant?.id],
     queryFn: async (): Promise<TodayData> => {
       if (!tenant) {
@@ -229,4 +229,25 @@ export const useTodayData = () => {
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
+
+  // Subscribe to real-time updates for today’s bookings to refresh dashboard metrics
+  useEffect(() => {
+    if (!tenant?.id) return;
+    const channel = supabase
+      .channel(`today_data_rt_${tenant.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings', filter: `tenant_id=eq.${tenant.id}` },
+        () => {
+          query.refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch {}
+    };
+  }, [tenant?.id]);
+
+  return query;
 };
