@@ -31,10 +31,11 @@ import LazyLoadingFallback, {
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import Bookings from "./pages/Bookings";
+// Lazy load Bookings to avoid double import warning and reduce initial bundle
+const Bookings = lazy(() => import(/* webpackChunkName: "bookings" */ "./pages/Bookings"));
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import BookingPage from "./pages/BookingPage";
+// Removed unused BookingPage import
 // 3D feature removed
 
 // Lazy load heavy components with prefetch hints
