@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 const STRIPE_PRICE = import.meta.env.VITE_STRIPE_PRICE_3D_FLOOR as string | undefined;
 const STRIPE_PORTAL_URL = import.meta.env.VITE_STRIPE_PORTAL_URL as string | undefined;
 
-const Upsell: React.FC = () => (
+const Upsell: React.FC<{ tenantId?: string; slug?: string }> = ({ tenantId, slug }) => (
   <div className="max-w-2xl mx-auto">
     <Card>
       <CardHeader>
@@ -28,7 +28,7 @@ const Upsell: React.FC = () => (
       </CardContent>
       <CardFooter className="gap-3">
         {STRIPE_PRICE ? (
-          <a href={`/api/stripe/checkout?price=${encodeURIComponent(STRIPE_PRICE)}`}>
+          <a href={`/api/stripe/checkout?price=${encodeURIComponent(STRIPE_PRICE)}&feature=three_d_floor${tenantId ? `&tenant=${encodeURIComponent(tenantId)}` : ''}${slug ? `&slug=${encodeURIComponent(slug)}` : ''}`}>
             <Button>Upgrade</Button>
           </a>
         ) : null}
@@ -76,7 +76,7 @@ const Client3DFloor: React.FC = () => {
     return `/experience/3d?slug=${encodeURIComponent(slug)}&area=${encodeURIComponent(area)}`;
   }, [tenant?.slug, area]);
 
-  if (!entitled) return <Upsell />;
+  if (!entitled) return <Upsell tenantId={tenant?.id} slug={tenant?.slug} />;
 
   return (
     <div className="max-w-5xl mx-auto grid gap-6">
