@@ -322,63 +322,41 @@ const OptimizedBookingsTable: React.FC<OptimizedBookingsTableProps> = ({
                     </Badge>
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
+                    <div className="flex items-center gap-1">
+                      {booking.status === "pending" && (
+                        <Button variant="outline" size="sm" onClick={() => onStatusUpdate(booking.id, "confirmed")}>
+                          Confirm
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        className="bg-surface border-surface-2"
-                      >
-                        <DropdownMenuItem
-                          onClick={() => onBookingClick(booking)}
-                          className="hover:bg-surface-2"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="hover:bg-surface-2">
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Send Message
-                        </DropdownMenuItem>
-                        {booking.status === "pending" && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              onStatusUpdate(booking.id, "confirmed")
-                            }
-                            className="hover:bg-surface-2"
-                          >
-                            Confirm Booking
+                      )}
+                      {booking.status === "confirmed" && (
+                        <Button variant="outline" size="sm" onClick={() => onStatusUpdate(booking.id, "seated")}>
+                          Seat
+                        </Button>
+                      )}
+                      {["confirmed", "pending"].includes(booking.status) && (
+                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => onStatusUpdate(booking.id, "cancelled")}>
+                          Cancel
+                        </Button>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-surface border-surface-2">
+                          <DropdownMenuItem onClick={() => onBookingClick(booking)} className="hover:bg-surface-2">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
                           </DropdownMenuItem>
-                        )}
-                        {booking.status === "confirmed" && (
-                          <DropdownMenuItem
-                            onClick={() => onStatusUpdate(booking.id, "seated")}
-                            className="hover:bg-surface-2"
-                          >
-                            Mark as Seated
+                          <DropdownMenuItem className="hover:bg-surface-2">
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Send Message
                           </DropdownMenuItem>
-                        )}
-                        {["confirmed", "pending"].includes(booking.status) && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              onStatusUpdate(booking.id, "cancelled")
-                            }
-                            className="text-destructive hover:bg-destructive/10"
-                          >
-                            <X className="h-4 w-4 mr-2" />
-                            Cancel Booking
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               );

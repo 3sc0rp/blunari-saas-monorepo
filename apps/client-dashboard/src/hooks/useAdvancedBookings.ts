@@ -181,14 +181,28 @@ export const useAdvancedBookings = (tenantId?: string) => {
         .eq("id", id);
       if (error) throw error;
     },
+    onMutate: async ({ id, updates }) => {
+      await queryClient.cancelQueries({ queryKey: ["advanced-bookings", tenantId] });
+      const prev = queryClient.getQueryData<ExtendedBooking[]>(["advanced-bookings", tenantId]);
+      if (prev) {
+        queryClient.setQueryData(
+          ["advanced-bookings", tenantId],
+          prev.map((b) => (b.id === id ? { ...b, ...updates } as ExtendedBooking : b)),
+        );
+      }
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) {
+        queryClient.setQueryData(["advanced-bookings", tenantId], ctx.prev);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["advanced-bookings", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["today-data", tenantId] });
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["advanced-bookings", tenantId],
-      });
-      toast({
-        title: "Booking Updated",
-        description: "Booking has been successfully updated.",
-      });
+      toast({ title: "Booking Updated" });
     },
   });
 
