@@ -11,6 +11,7 @@ import { NavigationProvider } from "@/contexts/NavigationContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { FullscreenProvider } from "@/contexts/FullscreenContext";
 import { ModeProvider } from "@/lib/ui-mode";
+import { registerRoutePrefetch, prefetchRoute } from "@/lib/prefetch";
 import { ModeTransitionProvider } from "@/contexts/ModeTransitionContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -35,45 +36,21 @@ import BookingPage from "./pages/BookingPage";
 // 3D feature removed
 
 // Lazy load heavy components with prefetch hints
-const Analytics = lazy(() => 
-  import(/* webpackChunkName: "analytics" */ "./pages/Analytics")
-);
-const Tables = lazy(() => 
-  import(/* webpackChunkName: "tables" */ "./pages/Tables")
-);
-const CommandCenter = lazy(() => 
-  import(/* webpackChunkName: "command-center" */ "./pages/CommandCenter")
-);
+const Analytics = lazy(() => import(/* webpackChunkName: "analytics" */ "./pages/Analytics"));
+const Tables = lazy(() => import(/* webpackChunkName: "tables" */ "./pages/Tables"));
+const CommandCenter = lazy(() => import(/* webpackChunkName: "command-center" */ "./pages/CommandCenter"));
 const WaitlistManagement = lazy(() => 
   import(/* webpackChunkName: "waitlist" */ "./pages/WaitlistManagement")
 );
-const CustomerProfiles = lazy(() => 
-  import(/* webpackChunkName: "customers" */ "./pages/CustomerProfiles")
-);
-const Catering = lazy(() => 
-  import(/* webpackChunkName: "catering" */ "./pages/Catering")
-);
-const Messages = lazy(() => 
-  import(/* webpackChunkName: "messages" */ "./pages/Messages")
-);
-const KitchenDisplaySystem = lazy(() => 
-  import(/* webpackChunkName: "kitchen" */ "./pages/KitchenDisplaySystem")
-);
-const StaffManagement = lazy(() => 
-  import(/* webpackChunkName: "staff" */ "./pages/StaffManagement")
-);
-const InventoryManagement = lazy(() => 
-  import(/* webpackChunkName: "inventory" */ "./pages/InventoryManagement")
-);
-const AIBusinessInsights = lazy(() => 
-  import(/* webpackChunkName: "ai-insights" */ "./pages/AIBusinessInsights")
-);
-const WidgetManagement = lazy(() => 
-  import(/* webpackChunkName: "widgets" */ "./pages/WidgetManagement")
-);
-const DashboardHome = lazy(() => 
-  import(/* webpackChunkName: "dashboard-home" */ "./pages/DashboardHome")
-);
+const CustomerProfiles = lazy(() => import(/* webpackChunkName: "customers" */ "./pages/CustomerProfiles"));
+const Catering = lazy(() => import(/* webpackChunkName: "catering" */ "./pages/Catering"));
+const Messages = lazy(() => import(/* webpackChunkName: "messages" */ "./pages/Messages"));
+const KitchenDisplaySystem = lazy(() => import(/* webpackChunkName: "kitchen" */ "./pages/KitchenDisplaySystem"));
+const StaffManagement = lazy(() => import(/* webpackChunkName: "staff" */ "./pages/StaffManagement"));
+const InventoryManagement = lazy(() => import(/* webpackChunkName: "inventory" */ "./pages/InventoryManagement"));
+const AIBusinessInsights = lazy(() => import(/* webpackChunkName: "ai-insights" */ "./pages/AIBusinessInsights"));
+const WidgetManagement = lazy(() => import(/* webpackChunkName: "widgets" */ "./pages/WidgetManagement"));
+const DashboardHome = lazy(() => import(/* webpackChunkName: "dashboard-home" */ "./pages/DashboardHome"));
 
 // Optimized QueryClient with better defaults for performance
 const queryClient = new QueryClient({
@@ -104,6 +81,18 @@ function App() {
   // Remove direct calls to router-dependent hooks here (now inside RouterInstrumentation)
   useEffect(() => {
     connectionManager.ensureConnection();
+    // Lightweight prefetch of most-likely next routes
+    try {
+      registerRoutePrefetch('/dashboard/tables', () => import('./pages/Tables'));
+      registerRoutePrefetch('/dashboard/analytics', () => import('./pages/Analytics'));
+      registerRoutePrefetch('/dashboard/bookings', () => import('./pages/Bookings'));
+      registerRoutePrefetch('/dashboard/widget-management', () => import('./pages/WidgetManagement'));
+      // Prefetch one or two on idle
+      setTimeout(() => {
+        prefetchRoute('/dashboard/tables');
+        prefetchRoute('/dashboard/analytics');
+      }, 300);
+    } catch {}
   }, []);
   return (
     <ErrorBoundary>
