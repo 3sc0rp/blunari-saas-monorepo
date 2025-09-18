@@ -190,7 +190,7 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
         </CardHeader>
         <CardContent className="space-y-8">
           {/* Date picker */}
-          <div>
+          <div aria-live="polite" aria-atomic="true">
             <h3 className="font-medium mb-4">Choose a date</h3>
             <div className="flex justify-center">
               <CalendarComponent

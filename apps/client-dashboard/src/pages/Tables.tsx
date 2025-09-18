@@ -169,7 +169,21 @@ const Tables: React.FC = () => {
 
       {/* Tables Grid */}
       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredTables.map((table)=> (
+        {filteredTables.length === 0 ? (
+          <Card className="col-span-full">
+            <CardContent className="py-10 text-center text-muted-foreground">
+              <div className="text-h4 mb-2">No tables match your filters</div>
+              <p className="text-body-sm mb-4">Try clearing filters or adding a new table.</p>
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="outline" onClick={()=>{ setSearch(""); setStatusFilter("all"); }}>Clear Filters</Button>
+                <Button onClick={()=>setAddOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Table
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : filteredTables.map((table)=> (
           <Card key={table.id} className="transition-all duration-200 hover:shadow-md">
             <CardContent className="pt-4">
               <div className="flex items-center justify-between mb-3">
