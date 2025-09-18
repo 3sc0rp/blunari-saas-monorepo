@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import type { TableRow as LegacyTableRow, Reservation as LegacyReservation } from "@/hooks/useCommandCenterData";
+import SmartBookingWizard from "@/components/booking/SmartBookingWizard";
 
 // Type transformation utilities for converting contract types to legacy component types
 const transformTableToLegacy = (table: ContractTableRow): LegacyTableRow => ({
