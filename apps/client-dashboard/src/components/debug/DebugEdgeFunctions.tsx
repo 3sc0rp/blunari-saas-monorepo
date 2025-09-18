@@ -6,7 +6,9 @@ export const DebugEdgeFunctions: React.FC = () => {
   const [results, setResults] = useState<any>({});
 
   useEffect(() => {
-    testEdgeFunctions();
+    if (import.meta.env.MODE === 'development') {
+      testEdgeFunctions();
+    }
   }, []);
 
   const testEdgeFunctions = async () => {
@@ -115,6 +117,8 @@ export const DebugEdgeFunctions: React.FC = () => {
       }));
     }
   };
+
+  if (import.meta.env.MODE !== 'development') return null;
 
   return (
     <div className="p-6 bg-gray-50 rounded-lg">

@@ -104,27 +104,29 @@ const DataAuditor: React.FC = () => {
         error: sessionError?.message
       };
 
-      // Test 7: Edge function connectivity
-      console.log('[DataAuditor] Testing edge functions...');
-      try {
-        const { data: tenantTest, error: tenantTestError } = await supabase.functions.invoke('tenant', {
-          body: { slug: 'demo' }
-        });
-        
-        results.tests.edgeFunctions = {
-          tenant: {
-            success: !tenantTestError,
-            error: tenantTestError?.message,
-            data: tenantTest
-          }
-        };
-      } catch (err) {
-        results.tests.edgeFunctions = {
-          tenant: {
-            success: false,
-            error: err instanceof Error ? err.message : 'Unknown error'
-          }
-        };
+      // Skip edge function tests in production for reliability
+      if (import.meta.env.MODE === 'development') {
+        console.log('[DataAuditor] Testing edge functions (dev only)...');
+        try {
+          const { data: tenantTest, error: tenantTestError } = await supabase.functions.invoke('tenant', {
+            body: { slug: 'demo' }
+          });
+          
+          results.tests.edgeFunctions = {
+            tenant: {
+              success: !tenantTestError,
+              error: tenantTestError?.message,
+              data: tenantTest
+            }
+          };
+        } catch (err) {
+          results.tests.edgeFunctions = {
+            tenant: {
+              success: false,
+              error: err instanceof Error ? err.message : 'Unknown error'
+            }
+          };
+        }
       }
 
     } catch (globalError) {

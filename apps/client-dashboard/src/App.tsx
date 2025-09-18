@@ -247,9 +247,13 @@ function App() {
                           {/* Toast notifications */}
                           <Toaster />
                           <Sonner />
-                          <PerformanceMonitor />
-                          <DataFlowDebugger />
-                          <DataAuditor />
+                          {import.meta.env.MODE === 'development' && (
+                            <>
+                              <PerformanceMonitor />
+                              <DataFlowDebugger />
+                              <DataAuditor />
+                            </>
+                          )}
                         </div>
                         </TooltipProvider>
                       </FullscreenProvider>
