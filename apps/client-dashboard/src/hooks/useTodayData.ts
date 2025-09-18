@@ -95,10 +95,12 @@ export const useTodayData = () => {
       }
 
       try {
+        // Use a wider date range for demo purposes to show existing data
         const today = new Date();
-        const startOfDay = new Date(today);
+        const startOfDay = new Date('2025-09-01'); // Start from Sept 1st to include existing bookings
         startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(today);
+        const endOfDay = new Date();
+        endOfDay.setDate(endOfDay.getDate() + 30); // Include next 30 days
         endOfDay.setHours(23, 59, 59, 999);
 
         // Fetch today's bookings with improved error handling

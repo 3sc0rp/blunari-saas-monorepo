@@ -63,6 +63,7 @@ export function useTenant() {
       lastResolveAtRef.current = Date.now();
       lastTenantKeyRef.current = params.slug || null;
       debug('tenant state updated', { context, slug: params.slug, tenantId: nextTenant?.id || null });
+      console.log('[useTenant] Tenant committed:', { id: nextTenant?.id, slug: nextTenant?.slug, context });
       return { tenant: nextTenant, loading: false, error: null, requestId: null };
     });
   };
