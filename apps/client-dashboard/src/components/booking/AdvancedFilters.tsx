@@ -59,7 +59,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
     { value: "seated", label: "Seated", color: "bg-green-500" },
     { value: "completed", label: "Completed", color: "bg-purple-500" },
     { value: "cancelled", label: "Cancelled", color: "bg-danger" },
-    { value: "no_show", label: "No Show", color: "bg-surface-3" },
+    { value: "noshow", label: "No Show", color: "bg-surface-3" },
   ];
 
   const sourceOptions: { value: BookingSource; label: string }[] = [

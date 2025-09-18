@@ -47,9 +47,10 @@ export const useAdvancedBookings = (tenantId?: string) => {
 
       if (devLogs) console.log('[useAdvancedBookings] Base query built, applying filters...');
 
-      // Apply status filter
+      // Apply status filter (support legacy no_show)
       if (filters.status.length > 0) {
-        query = query.in("status", filters.status);
+        const normalized = filters.status.map((s) => (s === 'no_show' ? 'noshow' : s));
+        query = query.in("status", normalized as any);
       }
 
       // Apply date range filter
