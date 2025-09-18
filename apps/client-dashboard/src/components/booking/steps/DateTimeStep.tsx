@@ -84,7 +84,10 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
       // Clamp to business hours client-side as a safety net (covers any upstream mismatches)
       const bh = getBusinessHoursForDate(date);
       const clampClient = (arr: TimeSlot[] | undefined): TimeSlot[] => {
-        if (!arr || !bh || bh.is_open === false) return [];
+        if (!arr) return [];
+        // If business hours are unknown client-side, don't over-filter.
+        if (!bh) return arr;
+        if (bh.is_open === false) return [];
         const [openH, openM] = (bh.open_time || "00:00:00").split(":").map(v => parseInt(v, 10));
         const [closeH, closeM] = (bh.close_time || "23:59:59").split(":").map(v => parseInt(v, 10));
         const openMin = openH * 60 + (openM || 0);
@@ -94,7 +97,7 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
           const [h, m] = parts.split(":").map(n => parseInt(n, 10));
           return h * 60 + m;
         };
-        return (arr || []).filter(s => {
+        return arr.filter(s => {
           try { const m = toLocalMinutes(s.time); return m >= openMin && m < closeMin; } catch { return false; }
         });
       };
