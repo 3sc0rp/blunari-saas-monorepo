@@ -122,17 +122,35 @@ serve(async (req) => {
       try {
         const bearer = req.headers.get('Authorization')?.replace('Bearer ', '');
         if (bearer) {
-          const { data: auth } = await supabase.auth.getUser(bearer);
+          const supabaseAnon = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+          const { data: auth } = await supabaseAnon.auth.getUser(bearer);
           const user = (auth as any)?.user;
           if (user) {
+            // If client provided tenant_id, verify access explicitly and prefer it
+            if (requestData?.tenant_id) {
+              const explicitTenantId = String(requestData.tenant_id);
+              const { data: hasExplicitAccess } = await supabase
+                .from('user_tenant_access')
+                .select('tenant_id')
+                .eq('user_id', user.id)
+                .eq('tenant_id', explicitTenantId)
+                .eq('active', true)
+                .maybeSingle();
+              if (hasExplicitAccess) {
+                resolvedTenantId = explicitTenantId;
+              }
+            }
+
             // Try user_tenant_access first
-            const { data: uta } = await supabase
-              .from('user_tenant_access')
-              .select('tenant_id')
-              .eq('user_id', user.id)
-              .eq('active', true)
-              .maybeSingle();
-            resolvedTenantId = (uta as any)?.tenant_id || null;
+            if (!resolvedTenantId) {
+              const { data: uta } = await supabase
+                .from('user_tenant_access')
+                .select('tenant_id')
+                .eq('user_id', user.id)
+                .eq('active', true)
+                .maybeSingle();
+              resolvedTenantId = (uta as any)?.tenant_id || null;
+            }
 
             // Fallback to auto_provisioning
             if (!resolvedTenantId) {
@@ -166,11 +184,11 @@ serve(async (req) => {
     requestData.tenant_id = resolvedTenantId;
 
     if (action === "search") {
-      return await handleAvailabilitySearch(supabase, requestData, tenant.timezone, requestId);
+      return await handleAvailabilitySearch(supabase, requestData, resolvedTenant?.timezone, requestId);
     } else if (action === "hold") {
       return await handleCreateHold(supabase, requestData, requestId);
     } else if (action === "confirm") {
-      return await handleConfirmReservation(supabase, requestData, requestId, tenant);
+      return await handleConfirmReservation(supabase, requestData, requestId, resolvedTenant);
     } else {
       return errorResponse('INVALID_ACTION', 'Invalid action specified', 400, requestId);
     }

@@ -23,6 +23,26 @@ class BookingAPIError extends Error {
 }
 
 // Live API functions using Supabase edge functions
+function getUserAccessTokenFromStorage(supabaseUrl?: string): string | undefined {
+  try {
+    if (!supabaseUrl || typeof window === 'undefined') return undefined;
+    const { hostname } = new URL(supabaseUrl);
+    const projectRef = hostname.split('.')[0];
+    const key = `sb-${projectRef}-auth-token`;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw);
+    // supabase v2 stores in currentSession, but be defensive
+    return (
+      parsed?.currentSession?.access_token ||
+      parsed?.access_token ||
+      parsed?.session?.access_token ||
+      undefined
+    );
+  } catch {
+    return undefined;
+  }
+}
 async function callEdgeFunction(
   functionName: string,
   body: Record<string, unknown> = {},
@@ -35,8 +55,9 @@ async function callEdgeFunction(
 
     const requestBody = {
       ...body,
-      token, // let server validate and resolve slug→tenant_id
-      tenant_id: undefined, // never trust client tenant_id
+      token, // let server validate and resolve slug→tenant_id when present (widget path)
+      // Allow explicit tenant_id from dashboard flows; server will verify access
+      tenant_id: (body as any)?.tenant_id ?? undefined,
       timestamp: new Date().toISOString(),
     };
 
@@ -53,7 +74,8 @@ async function callEdgeFunction(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${supabaseKey}`,
+          // Prefer user JWT when available (dashboard) to pass auth to edge function; fallback to anon key
+          Authorization: `Bearer ${getUserAccessTokenFromStorage(supabaseUrl) || supabaseKey}`,
           apikey: supabaseKey,
         },
         body: JSON.stringify(requestBody),

@@ -55,6 +55,11 @@ const Bookings: React.FC = () => {
   const [selectedBooking, setSelectedBooking] =
     useState<ExtendedBooking | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string>("");
+
+  useEffect(() => {
+    setLastUpdated(new Date().toLocaleTimeString());
+  }, [bookings]);
 
   // URL State Management for Filters
   useEffect(() => {
@@ -180,6 +185,45 @@ const Bookings: React.FC = () => {
     setSelectedBookings([]);
   };
 
+  // Quick filter helpers
+  const setQuickStatus = (status?: BookingStatus) => {
+    setFilters((prev) => ({
+      ...prev,
+      status: status ? ([status] as BookingStatus[]) : [],
+    }));
+  };
+
+  const setDatePreset = (preset: 'today' | 'tomorrow' | 'next7' | 'week') => {
+    const now = new Date();
+    const start = new Date(now);
+    const end = new Date(now);
+    if (preset === 'today') {
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+    } else if (preset === 'tomorrow') {
+      start.setDate(start.getDate() + 1);
+      start.setHours(0, 0, 0, 0);
+      end.setDate(end.getDate() + 1);
+      end.setHours(23, 59, 59, 999);
+    } else if (preset === 'next7') {
+      start.setHours(0, 0, 0, 0);
+      end.setDate(end.getDate() + 7);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      // current week (Mon-Sun)
+      const day = start.getDay();
+      const diffToMonday = (day + 6) % 7; // 0 (Sun) -> 6
+      start.setDate(start.getDate() - diffToMonday);
+      start.setHours(0, 0, 0, 0);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+    }
+    setFilters((prev) => ({
+      ...prev,
+      dateRange: { start: start.toISOString(), end: end.toISOString() },
+    }));
+  };
+
   const handleExportCSV = () => {
     const bookingsToExport =
       selectedBookings.length > 0
@@ -228,12 +272,33 @@ const Bookings: React.FC = () => {
           <Badge variant="outline" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             Real-time
+            <span className="text-xs text-muted-foreground">updated {lastUpdated}</span>
           </Badge>
           <Button onClick={() => setShowWizard(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Booking
           </Button>
         </div>
+      </div>
+
+      {/* Quick Filters */}
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <span className="text-sm text-muted-foreground mr-1">Status:</span>
+        <Button size="sm" variant={filters.status.length === 0 ? 'default' : 'outline'} onClick={() => setQuickStatus(undefined)}>All</Button>
+        <Button size="sm" variant={filters.status.includes('pending' as BookingStatus) ? 'default' : 'outline'} onClick={() => setQuickStatus('pending' as BookingStatus)}>Pending</Button>
+        <Button size="sm" variant={filters.status.includes('confirmed' as BookingStatus) ? 'default' : 'outline'} onClick={() => setQuickStatus('confirmed' as BookingStatus)}>Confirmed</Button>
+        <Button size="sm" variant={filters.status.includes('seated' as BookingStatus) ? 'default' : 'outline'} onClick={() => setQuickStatus('seated' as BookingStatus)}>Seated</Button>
+        <Button size="sm" variant={filters.status.includes('completed' as BookingStatus) ? 'default' : 'outline'} onClick={() => setQuickStatus('completed' as BookingStatus)}>Completed</Button>
+        <Button size="sm" variant={filters.status.includes('cancelled' as BookingStatus) ? 'default' : 'outline'} onClick={() => setQuickStatus('cancelled' as BookingStatus)}>Cancelled</Button>
+        <Button size="sm" variant={filters.status.includes('no_show' as BookingStatus) ? 'default' : 'outline'} onClick={() => setQuickStatus('no_show' as BookingStatus)}>No‑Show</Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-muted-foreground mr-1">Date:</span>
+        <Button size="sm" variant="outline" onClick={() => setDatePreset('today')}>Today</Button>
+        <Button size="sm" variant="outline" onClick={() => setDatePreset('tomorrow')}>Tomorrow</Button>
+        <Button size="sm" variant="outline" onClick={() => setDatePreset('week')}>This Week</Button>
+        <Button size="sm" variant="outline" onClick={() => setDatePreset('next7')}>Next 7 days</Button>
       </div>
 
       {/* Today's Metrics */}
