@@ -204,7 +204,7 @@ const Tables: React.FC = () => {
         ))}
       </div>
 
-      {/* Add Table Dialog */
+      {/* Add Table Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
@@ -242,7 +242,7 @@ const Tables: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Table Dialog */
+      {/* Edit Table Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader>
