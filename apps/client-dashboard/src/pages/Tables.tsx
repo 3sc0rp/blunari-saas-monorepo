@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,12 @@ const Tables: React.FC = () => {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Table["status"]>("all");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedSearch(search), 200);
+    return () => window.clearTimeout(id);
+  }, [search]);
 
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -38,7 +44,7 @@ const Tables: React.FC = () => {
   };
 
   const filteredTables = useMemo(() => {
-    const term = search.trim().toLowerCase();
+    const term = debouncedSearch.trim().toLowerCase();
     return tables.filter((t) => {
       const matchSearch = t.name.toLowerCase().includes(term);
       const matchStatus = statusFilter === "all" || t.status === statusFilter;

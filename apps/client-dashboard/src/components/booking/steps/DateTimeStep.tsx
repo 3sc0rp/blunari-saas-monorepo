@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Calendar,
@@ -158,9 +158,9 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
     onComplete({ slot });
   };
 
-  const formatSlotTime = (timeISO: string) => {
+  const formatSlotTime = useCallback((timeISO: string) => {
     return formatInTimeZone(parseISO(timeISO), timezone, "h:mm a");
-  };
+  }, [timezone]);
 
   const isDateDisabled = (date: Date) => {
     // Disable past dates
