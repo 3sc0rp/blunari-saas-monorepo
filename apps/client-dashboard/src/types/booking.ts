@@ -47,6 +47,7 @@ export interface ExtendedBooking {
   duration_minutes: number;
   status: BookingStatus;
   table_id?: string;
+  table_name?: string;
   special_requests?: string;
   source?: BookingSource;
   deposit_required?: boolean;

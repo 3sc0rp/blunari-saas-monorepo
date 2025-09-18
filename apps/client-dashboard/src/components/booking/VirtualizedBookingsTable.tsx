@@ -310,9 +310,7 @@ const OptimizedBookingsTable: React.FC<OptimizedBookingsTableProps> = ({
                   <TableCell>{getStatusBadge(booking.status)}</TableCell>
                   <TableCell>
                     <span className="text-sm text-text-muted">
-                      {booking.table_id
-                        ? `Table ${booking.table_id}`
-                        : "Unassigned"}
+                      {booking.table_name || booking.table_id || "Unassigned"}
                     </span>
                   </TableCell>
                   <TableCell>

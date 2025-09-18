@@ -31,7 +31,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
 
       let query = supabase
         .from("bookings")
-        .select("*")
+        .select("*, restaurant_tables!bookings_table_id_fkey(name)")
         .eq("tenant_id", tenantId);
 
       // Apply status filter
@@ -60,7 +60,10 @@ export const useAdvancedBookings = (tenantId?: string) => {
       });
 
       if (error) throw error;
-      return data as ExtendedBooking[];
+      return (data || []).map((b: any) => ({
+        ...(b as any),
+        table_name: b["restaurant_tables"]?.name,
+      })) as ExtendedBooking[];
     },
     enabled: !!tenantId,
   });
