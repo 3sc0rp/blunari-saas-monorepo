@@ -12,6 +12,7 @@ interface ReservationDrawerProps {
   onMessage: () => void;
   onCancel: () => Promise<void>;
   onApprove?: () => Promise<void>;
+  onDelete?: () => Promise<void>;
 }
 
 export function ReservationDrawer({
@@ -23,7 +24,8 @@ export function ReservationDrawer({
   onMove,
   onMessage,
   onCancel,
-  onApprove
+  onApprove,
+  onDelete
 }: ReservationDrawerProps) {
   if (!open || !reservation) return null;
 
@@ -132,6 +134,15 @@ export function ReservationDrawer({
             >
               Cancel Reservation
             </button>
+
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                className="w-full px-4 py-2 bg-red-800 hover:bg-red-900 text-white rounded-lg transition-colors"
+              >
+                Delete Reservation
+              </button>
+            )}
           </div>
         </div>
       </div>

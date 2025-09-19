@@ -386,6 +386,18 @@ export default function CommandCenter() {
             setSelectedReservationId(null);
           }
         }}
+        onDelete={async () => {
+          if (!selectedReservationId) return;
+          try {
+            const { error } = await supabase.from('bookings').delete().eq('id', selectedReservationId);
+            if (error) throw error;
+            toast.success('Reservation deleted');
+            setSelectedReservationId(null);
+            await refetch();
+          } catch (e: any) {
+            toast.error(`Delete failed: ${e?.message || e}`);
+          }
+        }}
         onEdit={() => {
           console.log('Edit reservation:', selectedReservationId);
         }}
@@ -404,6 +416,18 @@ export default function CommandCenter() {
             toast.success('Reservation cancelled');
             setSelectedReservationId(null);
             await refetch();
+          }
+        }}
+        onDelete={async () => {
+          if (!selectedReservationId) return;
+          try {
+            const { error } = await supabase.from('bookings').delete().eq('id', selectedReservationId);
+            if (error) throw error;
+            toast.success('Reservation deleted');
+            setSelectedReservationId(null);
+            await refetch();
+          } catch (e: any) {
+            toast.error(`Delete failed: ${e?.message || e}`);
           }
         }}
         onApprove={async () => {

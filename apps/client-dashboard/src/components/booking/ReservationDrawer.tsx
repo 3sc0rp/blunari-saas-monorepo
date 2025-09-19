@@ -426,14 +426,26 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
                 </Button>
               </div>
               {(["pending", "confirmed"].includes(booking.status)) && (
-                <Button
-                  onClick={() => onStatusUpdate(booking.id, "cancelled")}
-                  variant="destructive"
-                  className="w-full"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel Booking
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full">
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel Booking
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove the reservation.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => onDeleteBooking ? onDeleteBooking(booking.id) : onStatusUpdate(booking.id, 'cancelled')}>Confirm Cancel</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
               {onDeleteBooking && (
                 <AlertDialog>
