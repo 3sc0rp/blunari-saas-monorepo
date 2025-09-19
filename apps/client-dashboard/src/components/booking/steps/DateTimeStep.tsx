@@ -112,6 +112,11 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
       console.log("Availability (clamped):", clamped);
       setAvailability(clamped);
 
+      // Store deposit policy from API response for later use
+      if ((result as any)?.deposit_policy) {
+        (window as any).__widget_deposit_policy = (result as any).deposit_policy;
+      }
+
       if (result && result.slots && result.slots.length === 0) {
         toast("No availability found for this date", {
           description: "Try selecting a different date or party size",

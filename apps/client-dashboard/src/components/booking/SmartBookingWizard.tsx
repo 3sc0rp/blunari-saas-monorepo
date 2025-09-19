@@ -100,7 +100,7 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
       <DialogContent
         className="max-w-4xl max-h-[90vh] overflow-y-auto"
         aria-describedby="booking-wizard-description"
@@ -552,11 +552,11 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
               </Card>
 
               {formData.depositRequired && stripePromise && (
-                <Elements stripe={stripePromise}>
+                <Elements stripe={stripePromise} options={{appearance:{labels:'floating'},fonts:[],locale:'en'}}>
                   <div className="space-y-2">
                     <Label>Payment Method</Label>
-                    <div className="p-3 border rounded-md bg-background">
-                      <CardElement options={{ hidePostalCode: true }} />
+                    <div className="p-3 border rounded-md bg-background" aria-live="polite">
+                      <CardElement options={{ hidePostalCode: true, style:{base:{fontSize:'16px'}} }} />
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Your card will be charged a refundable deposit of ${formData.depositAmount || 0}.

@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { User, ArrowLeft } from "lucide-react";
+import { User, ArrowLeft, CreditCard } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   GuestDetails,
   GuestDetailsSchema,
@@ -39,6 +40,11 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
   const onSubmit = (data: GuestDetails) => {
     onComplete({ guest_details: data });
   };
+
+  // Check if deposit is required based on policy stored from availability search
+  const depositPolicy = (window as any).__widget_deposit_policy;
+  const depositRequired = depositPolicy?.required;
+  const depositAmount = depositPolicy?.amount;
 
   return (
     <div className="space-y-6">
@@ -166,6 +172,21 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
           </form>
         </CardContent>
       </Card>
+
+      {/* Deposit Notice */}
+      {depositRequired && (
+        <Alert>
+          <CreditCard className="h-4 w-4" />
+          <AlertDescription>
+            A refundable deposit of ${depositAmount} will be required for this reservation.
+            {depositPolicy?.description && (
+              <div className="mt-1 text-xs text-muted-foreground">
+                {depositPolicy.description}
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Back button */}
       <div className="flex justify-start">

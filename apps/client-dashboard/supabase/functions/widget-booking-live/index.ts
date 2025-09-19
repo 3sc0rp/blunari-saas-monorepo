@@ -278,6 +278,20 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, tenantT
     } catch {}
   }
 
+  // Read deposit policy for this tenant
+  let depositPolicy = null;
+  try {
+    const { data: settings } = await supabase
+      .from('tenant_settings')
+      .select('setting_value')
+      .eq('tenant_id', tenant_id)
+      .eq('setting_key', 'operational')
+      .maybeSingle();
+    if (settings?.setting_value?.depositPolicy) {
+      depositPolicy = settings.setting_value.depositPolicy;
+    }
+  } catch {}
+
   // Generate local availability strictly from configured hours and tables
   const slots = generateTimeSlots(
     tablesRes.data || [],
@@ -289,9 +303,23 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, tenantT
     { preBufferMin: 10, postBufferMin: 10, pacingCap: parseInt(Deno.env.get('PACING_PER_SLOT') || '0') || 0 }
   );
 
+  // Include deposit policy in response for widget UI
+  const responseData = { 
+    success: true, 
+    slots, 
+    requestId,
+    deposit_policy: depositPolicy?.enabled ? {
+      required: Number(party_size) >= (depositPolicy.largePartyThreshold || 6),
+      amount: Number(party_size) >= (depositPolicy.largePartyThreshold || 6) 
+        ? (depositPolicy.largePartyAmount || depositPolicy.defaultAmount || 25)
+        : (depositPolicy.defaultAmount || 25),
+      description: `Deposit required for parties of ${depositPolicy.largePartyThreshold || 6}+`
+    } : null
+  };
+
   const headers = { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '', 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60' };
   return new Response(
-    JSON.stringify({ success: true, slots, requestId }),
+    JSON.stringify(responseData),
     { status: 200, headers },
   );
 }
