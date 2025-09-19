@@ -50,6 +50,18 @@ async function getUserAccessToken(supabaseUrl?: string): Promise<string | undefi
       return data?.session?.access_token || undefined;
     }
   } catch {}
+  // For development/demo, return a demo user token if available
+  if (import.meta.env.MODE === 'development') {
+    try {
+      const mod = await import('@/integrations/supabase/client');
+      const client = (mod as any)?.supabase;
+      // Try to get current session one more time
+      const session = await client.auth.getSession();
+      if (session?.data?.session?.access_token) {
+        return session.data.session.access_token;
+      }
+    } catch {}
+  }
   return undefined;
 }
 async function callEdgeFunction(
@@ -78,6 +90,17 @@ async function callEdgeFunction(
     }
 
     const userJwt = await getUserAccessToken(supabaseUrl);
+    
+    // Debug logging in development
+    if (import.meta.env.MODE === 'development') {
+      console.log('[booking-proxy] Auth details:', {
+        hasUserJwt: !!userJwt,
+        usingAnonKey: !userJwt,
+        functionName,
+        requestBody: { ...requestBody, token: requestBody.token ? '[REDACTED]' : undefined }
+      });
+    }
+    
     const response = await fetch(
       `${supabaseUrl}/functions/v1/${functionName}`,
       {
