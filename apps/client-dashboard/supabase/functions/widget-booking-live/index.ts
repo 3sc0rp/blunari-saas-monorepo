@@ -557,16 +557,27 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       return errorResponse('HOLD_NOT_FOUND', 'Booking hold not found or expired', 404, requestId, { details: holdError?.message });
     }
 
+    // Normalize hold start/end across schemas
+    const holdStart: Date = (() => {
+      if (hold.booking_time && typeof hold.booking_time === 'string' && hold.booking_time.includes('T')) {
+        return new Date(hold.booking_time);
+      }
+      const datePart: string = hold.booking_date || (hold.booking_time?.split('T')[0]);
+      const timePart: string = hold.booking_time?.split('T')[1] || hold.booking_time || '00:00:00';
+      return new Date(`${datePart}T${timePart}`);
+    })();
+    const durationMins: number = hold.duration_minutes || 120;
+
     // If a concrete table assignment is present, proactively check for overlaps
     const assignedTableId = table_id || hold.table_id || null;
     if (assignedTableId) {
       try {
-        const startTime = new Date(hold.booking_time);
-        const endTime = new Date(startTime.getTime() + (hold.duration_minutes || 120) * 60 * 1000);
+        const startTime = holdStart;
+        const endTime = new Date(startTime.getTime() + durationMins * 60 * 1000);
         // Narrow window query and validate overlap in JS to avoid depending on db functions
         const { data: overlapping } = await supabase
           .from('bookings')
-          .select('id, booking_time, duration_minutes, status')
+          .select('id, booking_time, booking_date, duration_minutes, status')
           .eq('tenant_id', tenant_id)
           .eq('table_id', assignedTableId)
           .neq('status', 'cancelled')
@@ -574,7 +585,9 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
           .lte('booking_time', new Date(endTime.getTime() + 4 * 60 * 60 * 1000).toISOString());
 
         const hasConflict = (overlapping || []).some((b: any) => {
-          const s = new Date(b.booking_time);
+          const s = b.booking_time && typeof b.booking_time === 'string' && b.booking_time.includes('T')
+            ? new Date(b.booking_time)
+            : new Date(`${b.booking_date}T${(b.booking_time || '00:00:00')}`);
           const e = new Date(s.getTime() + (b.duration_minutes || 120) * 60 * 1000);
           return startTime < e && endTime > s;
         });
@@ -587,14 +600,14 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
 
     const bookingData = {
       tenant_id,
-      booking_time: hold.booking_time,
+      booking_time: holdStart.toISOString(),
       party_size: hold.party_size,
       guest_name: `${guest_details.first_name || ''} ${guest_details.last_name || ''}`.trim() || 'Guest',
       guest_email: guest_details.email,
       guest_phone: guest_details.phone || null,
       special_requests: guest_details.special_requests || null,
       status: 'confirmed',
-      duration_minutes: hold.duration_minutes,
+      duration_minutes: durationMins,
       deposit_required: false,
       deposit_paid: false,
     };
@@ -606,19 +619,19 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       booking = res.data; bookingError = res.error;
     }
     if (bookingError) {
-      const when = new Date(hold.booking_time);
+      const when = holdStart;
       const legacyInsert = {
         tenant_id,
         table_id: assignedTableId,
-        booking_date: when.toISOString().slice(0, 10),
-        booking_time: when.toISOString().slice(11, 19),
+        booking_date: (hold.booking_date as string) || when.toISOString().slice(0, 10),
+        booking_time: (typeof hold.booking_time === 'string' && !hold.booking_time.includes('T')) ? hold.booking_time : when.toISOString().slice(11, 19),
         party_size: hold.party_size,
         guest_name: `${guest_details.first_name || ''} ${guest_details.last_name || ''}`.trim() || 'Guest',
         guest_email: guest_details.email,
         guest_phone: guest_details.phone || null,
         special_requests: guest_details.special_requests || null,
         status: 'confirmed',
-        duration_minutes: hold.duration_minutes,
+        duration_minutes: durationMins,
         deposit_required: false,
         deposit_paid: false,
       } as any;
