@@ -243,6 +243,7 @@ export async function createHold(request: HoldRequest) {
   try {
     const data = await callEdgeFunction("widget-booking-live", {
       action: "hold",
+      tenant_id: request.tenant_id,
       party_size: request.party_size,
       slot: request.slot,
       table_id: (request as any).table_id,
@@ -265,6 +266,7 @@ export async function confirmReservation(
     const data = await callEdgeFunction("widget-booking-live", {
       action: "confirm",
       idempotency_key: idempotencyKey,
+      tenant_id: request.tenant_id,
       hold_id: request.hold_id,
       guest_details: request.guest_details,
       table_id: (request as any).table_id,
