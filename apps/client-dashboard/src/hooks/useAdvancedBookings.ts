@@ -47,9 +47,9 @@ export const useAdvancedBookings = (tenantId?: string) => {
 
       if (devLogs) console.log('[useAdvancedBookings] Base query built, applying filters...');
 
-      // Apply status filter (support legacy no_show)
+      // Apply status filter (support legacy no_show in DB)
       if (filters.status.length > 0) {
-        const normalized = filters.status.map((s) => (s === 'no_show' ? 'noshow' : s));
+        const normalized = filters.status.map((s) => (s === 'noshow' ? 'no_show' : s));
         query = query.in("status", normalized as any);
       }
 
@@ -69,6 +69,17 @@ export const useAdvancedBookings = (tenantId?: string) => {
       }
       if (filters.partySize?.max) {
         query = query.lte("party_size", filters.partySize.max);
+      }
+
+      // Apply source filter
+      if (filters.sources && filters.sources.length > 0) {
+        query = query.in('source', filters.sources as any);
+      }
+
+      // Apply text search across key fields
+      if (filters.search && filters.search.trim().length > 0) {
+        const term = filters.search.trim().replace(/%/g, '\\%').replace(/_/g, '\\_');
+        query = query.or(`guest_name.ilike.%${term}%,guest_email.ilike.%${term}%,guest_phone.ilike.%${term}%,special_requests.ilike.%${term}%`);
       }
 
       const [bookingsRes, tablesRes] = await Promise.all([
