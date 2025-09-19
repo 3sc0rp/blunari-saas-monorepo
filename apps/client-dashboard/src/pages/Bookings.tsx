@@ -294,7 +294,7 @@ const Bookings: React.FC = () => {
         <Button size="sm" variant={filters.status.includes('seated' as BookingStatus) ? 'default' : 'outline'} onClick={() => setQuickStatus('seated' as BookingStatus)}>Seated</Button>
         <Button size="sm" variant={filters.status.includes('completed' as BookingStatus) ? 'default' : 'outline'} onClick={() => setQuickStatus('completed' as BookingStatus)}>Completed</Button>
         <Button size="sm" variant={filters.status.includes('cancelled' as BookingStatus) ? 'default' : 'outline'} onClick={() => setQuickStatus('cancelled' as BookingStatus)}>Cancelled</Button>
-        <Button size="sm" variant={filters.status.includes('no_show' as BookingStatus) ? 'default' : 'outline'} onClick={() => setQuickStatus('no_show' as BookingStatus)}>No‑Show</Button>
+        <Button size="sm" variant={filters.status.includes('noshow' as BookingStatus) ? 'default' : 'outline'} onClick={() => setQuickStatus('noshow' as BookingStatus)}>No‑Show</Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
