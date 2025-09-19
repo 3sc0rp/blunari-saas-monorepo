@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { Elements, useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -70,6 +72,10 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
 
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTable, setSelectedTable] = useState<string>("");
+  const stripePromise = React.useMemo(() => {
+    const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
+    return pk ? loadStripe(pk) : null;
+  }, []);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -544,6 +550,20 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                   )}
                 </CardContent>
               </Card>
+
+              {formData.depositRequired && stripePromise && (
+                <Elements stripe={stripePromise}>
+                  <div className="space-y-2">
+                    <Label>Payment Method</Label>
+                    <div className="p-3 border rounded-md bg-background">
+                      <CardElement options={{ hidePostalCode: true }} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Your card will be charged a refundable deposit of ${formData.depositAmount || 0}.
+                    </p>
+                  </div>
+                </Elements>
+              )}
             </motion.div>
           )}
 
