@@ -118,7 +118,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
         table_id: data.tableId,
       });
 
-      // 2) Confirm reservation with idempotency
+      // 2) Confirm reservation with idempotency (assumes deposit handled in UI when required)
       const idempotencyKey = crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
       const [first_name, ...rest] = (data.customerName || "").trim().split(" ");
       const last_name = rest.join(" ") || "";
@@ -135,6 +135,9 @@ export const useSmartBookingCreation = (tenantId?: string) => {
             special_requests: data.specialRequests,
           },
           table_id: data.tableId,
+          deposit: data.depositRequired
+            ? { required: true, amount_cents: Math.round((data.depositAmount || 0) * 100), paid: (data as any).depositPaid === true }
+            : undefined,
         },
         idempotencyKey,
       );

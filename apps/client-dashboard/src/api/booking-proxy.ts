@@ -270,6 +270,7 @@ export async function confirmReservation(
       hold_id: request.hold_id,
       guest_details: request.guest_details,
       table_id: (request as any).table_id,
+      deposit: (request as any).deposit
     });
 
     return ReservationResponseSchema.parse(data);
@@ -303,6 +304,36 @@ export async function getTenantPolicies(tenantId: string) {
       error as any,
     );
   }
+}
+
+// Deposits
+export async function createDepositIntent(params: { tenant_id: string; amount_cents: number; email?: string; description?: string }) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) throw new Error('Missing Supabase configuration');
+
+  const res = await fetch(`${supabaseUrl}/functions/v1/create-deposit-intent`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${supabaseKey}`,
+      apikey: supabaseKey,
+    },
+    body: JSON.stringify({
+      tenant_id: params.tenant_id,
+      amount: params.amount_cents,
+      email: params.email,
+      description: params.description || 'Booking deposit',
+    }),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Deposit intent failed: ${txt}`);
+  }
+  const json = await res.json();
+  if (!json?.client_secret) throw new Error('No client_secret returned');
+  return json.client_secret as string;
 }
 
 export async function sendAnalyticsEvent(
