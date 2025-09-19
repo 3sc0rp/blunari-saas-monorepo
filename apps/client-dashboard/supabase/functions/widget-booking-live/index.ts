@@ -426,17 +426,21 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
   try {
     const { tenant_id, hold_id, guest_details, idempotency_key } = requestData;
 
-    // Idempotency read (best-effort)
+    // Idempotency read (best-effort) — guarded if table exists
     if (idempotency_key) {
       try {
-        const { data: idem } = await supabase
-          .from('idempotency_keys')
-          .select('status_code, response_json')
-          .eq('tenant_id', tenant_id)
-          .eq('idempotency_key', idempotency_key)
-          .maybeSingle();
-        if (idem && idem.response_json) {
-          return new Response(JSON.stringify(idem.response_json), { status: idem.status_code || 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } });
+        const { data: tables } = await supabase.rpc('pg_tables');
+        const hasIdem = Array.isArray(tables) ? tables.some((t: any) => `${t?.schemaname}.${t?.tablename}` === 'public.idempotency_keys') : false;
+        if (hasIdem) {
+          const { data: idem } = await supabase
+            .from('idempotency_keys')
+            .select('status_code, response_json')
+            .eq('tenant_id', tenant_id)
+            .eq('idempotency_key', idempotency_key)
+            .maybeSingle();
+          if (idem && idem.response_json) {
+            return new Response(JSON.stringify(idem.response_json), { status: idem.status_code || 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } });
+          }
         }
       } catch {}
     }
@@ -465,10 +469,14 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
 
     const responseBody = { success: true, reservation_id: apiData.reservation_id, confirmation_number: apiData.confirmation_number, status: apiData.status, summary: apiData.summary, requestId };
 
-    // Idempotency write (best-effort)
+    // Idempotency write (best-effort) if table exists
     if (idempotency_key) {
       try {
-        await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: responseBody });
+        const { data: tables } = await supabase.rpc('pg_tables');
+        const hasIdem = Array.isArray(tables) ? tables.some((t: any) => `${t?.schemaname}.${t?.tablename}` === 'public.idempotency_keys') : false;
+        if (hasIdem) {
+          await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: responseBody });
+        }
       } catch {}
     }
 
@@ -644,7 +652,15 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
 
     const confirmationNumber = `CONF${booking.id.slice(-6).toUpperCase()}`;
     const body = { success: true, reservation_id: booking.id, confirmation_number: confirmationNumber, status: 'confirmed', summary: { date: booking.booking_time, time: new Date(booking.booking_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }), party_size: booking.party_size, table_info: 'Auto-assigned', deposit_required: false }, _local: true, requestId };
-    if (idempotency_key) { try { await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: body }); } catch {} }
+    if (idempotency_key) {
+      try {
+        const { data: tables } = await supabase.rpc('pg_tables');
+        const hasIdem = Array.isArray(tables) ? tables.some((t: any) => `${t?.schemaname}.${t?.tablename}` === 'public.idempotency_keys') : false;
+        if (hasIdem) {
+          await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: body });
+        }
+      } catch {}
+    }
 
     return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } });
   } catch (e) {
