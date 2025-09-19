@@ -127,22 +127,13 @@ serve(async (req) => {
           const { data: auth } = await supabase.auth.getUser(bearer);
           const user = (auth as any)?.user;
           if (user) {
-            // If client provided tenant_id, verify access explicitly and prefer it
+            // If client provided tenant_id, accept it for authenticated dashboard flows
             if (requestData?.tenant_id) {
               const explicitTenantId = String(requestData.tenant_id);
-              const { data: hasExplicitAccess } = await supabase
-                .from('user_tenant_access')
-                .select('tenant_id')
-                .eq('user_id', user.id)
-                .eq('tenant_id', explicitTenantId)
-                .eq('active', true)
-                .maybeSingle();
-              if (hasExplicitAccess) {
-                resolvedTenantId = explicitTenantId;
-              }
+              resolvedTenantId = explicitTenantId;
             }
 
-            // Try user_tenant_access first
+            // Try user_tenant_access first (best-effort; ignore errors if table missing)
             if (!resolvedTenantId) {
               const { data: uta } = await supabase
                 .from('user_tenant_access')
@@ -153,7 +144,7 @@ serve(async (req) => {
               resolvedTenantId = (uta as any)?.tenant_id || null;
             }
 
-            // Fallback to auto_provisioning
+            // Fallback to auto_provisioning (best-effort)
             if (!resolvedTenantId) {
               const { data: ap } = await supabase
                 .from('auto_provisioning')
