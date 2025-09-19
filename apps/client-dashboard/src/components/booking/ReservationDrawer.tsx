@@ -4,6 +4,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -154,6 +155,7 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
         <SheetHeader className="space-y-4">
           <div className="flex items-center justify-between">
             <SheetTitle>Reservation Details</SheetTitle>
+            <SheetDescription>View and manage reservation details.</SheetDescription>
             <div className="flex items-center gap-2">
               {!isEditing ? (
                 <Button

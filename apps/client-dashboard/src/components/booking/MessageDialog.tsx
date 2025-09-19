@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,9 @@ const MessageDialog: React.FC<Props> = ({ open, onOpenChange, defaultChannel = '
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Send Message</DialogTitle>
+          <DialogDescription>
+            Compose and send an SMS or email to the guest. All fields marked optional can be left blank.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
