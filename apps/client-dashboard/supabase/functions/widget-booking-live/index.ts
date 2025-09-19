@@ -536,6 +536,34 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       return errorResponse('HOLD_NOT_FOUND', 'Booking hold not found or expired', 404, requestId, { details: holdError?.message });
     }
 
+    // If a concrete table assignment is present, proactively check for overlaps
+    const assignedTableId = table_id || hold.table_id || null;
+    if (assignedTableId) {
+      try {
+        const startTime = new Date(hold.booking_time);
+        const endTime = new Date(startTime.getTime() + (hold.duration_minutes || 120) * 60 * 1000);
+        // Narrow window query and validate overlap in JS to avoid depending on db functions
+        const { data: overlapping } = await supabase
+          .from('bookings')
+          .select('id, booking_time, duration_minutes, status')
+          .eq('tenant_id', tenant_id)
+          .eq('table_id', assignedTableId)
+          .neq('status', 'cancelled')
+          .gte('booking_time', new Date(startTime.getTime() - 4 * 60 * 60 * 1000).toISOString())
+          .lte('booking_time', new Date(endTime.getTime() + 4 * 60 * 60 * 1000).toISOString());
+
+        const hasConflict = (overlapping || []).some((b: any) => {
+          const s = new Date(b.booking_time);
+          const e = new Date(s.getTime() + (b.duration_minutes || 120) * 60 * 1000);
+          return startTime < e && endTime > s;
+        });
+
+        if (hasConflict) {
+          return errorResponse('RESERVATION_CONFLICT', 'Selected table is already booked for that time window', 409, requestId);
+        }
+      } catch {}
+    }
+
     const bookingData = {
       tenant_id,
       booking_time: hold.booking_time,
@@ -551,7 +579,7 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
     };
 
     // Persist table assignment if provided
-    const { data: booking, error: bookingError } = await supabase.from('bookings').insert({ ...bookingData, table_id: table_id || hold.table_id || null }).select().single();
+    const { data: booking, error: bookingError } = await supabase.from('bookings').insert({ ...bookingData, table_id: assignedTableId }).select().single();
     if (bookingError) {
       return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: bookingError.message });
     }
