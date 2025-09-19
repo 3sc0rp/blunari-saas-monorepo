@@ -113,6 +113,12 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
               tenant_id: tenant.tenant_id,
               hold_id: hold.hold_id,
               guest_details,
+              deposit: (guest_details as any)?.payment_intent_id ? {
+                required: true,
+                amount_cents: Math.round(((window as any).__widget_deposit_policy?.amount || 0) * 100),
+                paid: true,
+                payment_intent_id: (guest_details as any).payment_intent_id
+              } : undefined,
             },
             idempotencyKey,
           );

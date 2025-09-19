@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { User, ArrowLeft, CreditCard } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import {
   GuestDetails,
   GuestDetailsSchema,
@@ -22,6 +24,80 @@ interface GuestDetailsStepProps {
   loading: boolean;
 }
 
+// Payment form component that uses Stripe Elements
+const PaymentForm: React.FC<{ 
+  onPaymentSuccess: (paymentIntentId: string) => void; 
+  onPaymentError: (error: string) => void;
+  amount: number;
+  customerName: string;
+  email: string;
+  tenantId: string;
+}> = ({ onPaymentSuccess, onPaymentError, amount, customerName, email, tenantId }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+
+  const handlePayment = async () => {
+    if (!stripe || !elements) return;
+    
+    setProcessing(true);
+    try {
+      // Create deposit intent
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-deposit-intent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          amount: Math.round(amount * 100), // convert to cents
+          email,
+          description: `Deposit for ${customerName}`,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create payment intent');
+      const { client_secret } = await response.json();
+
+      // Confirm payment with card
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) throw new Error('Card element not found');
+
+      const { error, paymentIntent } = await stripe.confirmCardPayment(client_secret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: { name: customerName, email },
+        },
+      });
+
+      if (error) {
+        onPaymentError(error.message || 'Payment failed');
+      } else if (paymentIntent?.status === 'succeeded') {
+        onPaymentSuccess(paymentIntent.id);
+      } else {
+        onPaymentError('Payment not completed');
+      }
+    } catch (err) {
+      onPaymentError((err as Error)?.message || 'Payment failed');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="p-3 border rounded-md bg-background">
+        <CardElement options={{ hidePostalCode: true, style: { base: { fontSize: '16px' } } }} />
+      </div>
+      <Button onClick={handlePayment} disabled={processing || !stripe || !elements} className="w-full">
+        {processing ? 'Processing...' : `Pay $${amount} Deposit`}
+      </Button>
+    </div>
+  );
+};
+
 const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
   tenant,
   onComplete,
@@ -32,19 +108,54 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
     register,
     handleSubmit,
     formState: { errors, isValid },
+    watch,
   } = useForm<GuestDetails>({
     resolver: zodResolver(GuestDetailsSchema),
     mode: "onChange",
   });
 
-  const onSubmit = (data: GuestDetails) => {
-    onComplete({ guest_details: data });
-  };
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
 
   // Check if deposit is required based on policy stored from availability search
   const depositPolicy = (window as any).__widget_deposit_policy;
   const depositRequired = depositPolicy?.required;
   const depositAmount = depositPolicy?.amount;
+
+  // Initialize Stripe when deposit is required
+  useEffect(() => {
+    if (depositRequired && import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) {
+      setStripePromise(loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY));
+    }
+  }, [depositRequired]);
+
+  const onSubmit = (data: GuestDetails) => {
+    // If deposit required but not paid, don't proceed
+    if (depositRequired && !paymentCompleted) {
+      return; // Payment form handles this
+    }
+    
+    // Pass payment info along with guest details
+    onComplete({ 
+      guest_details: {
+        ...data,
+        ...(paymentIntentId && { payment_intent_id: paymentIntentId })
+      } as any
+    });
+  };
+
+  const handlePaymentSuccess = (intentId: string) => {
+    setPaymentIntentId(intentId);
+    setPaymentCompleted(true);
+  };
+
+  const handlePaymentError = (error: string) => {
+    console.error('Payment error:', error);
+    // Toast or error display could go here
+  };
+
+  const formData = watch();
 
   return (
     <div className="space-y-6">
@@ -163,29 +274,47 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
               <Button
                 type="submit"
                 className="w-full"
-                disabled={!isValid || loading}
+                disabled={!isValid || loading || (depositRequired && !paymentCompleted)}
                 style={{ backgroundColor: tenant.branding?.primary_color }}
               >
-                {loading ? "Processing..." : "Continue to Confirmation"}
+                {loading ? "Processing..." : depositRequired && !paymentCompleted ? "Complete Payment First" : "Continue to Confirmation"}
               </Button>
             </motion.div>
           </form>
         </CardContent>
       </Card>
 
-      {/* Deposit Notice */}
-      {depositRequired && (
-        <Alert>
-          <CreditCard className="h-4 w-4" />
-          <AlertDescription>
-            A refundable deposit of ${depositAmount} will be required for this reservation.
-            {depositPolicy?.description && (
-              <div className="mt-1 text-xs text-muted-foreground">
-                {depositPolicy.description}
-              </div>
+      {/* Deposit Payment */}
+      {depositRequired && stripePromise && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Deposit Payment
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!paymentCompleted ? (
+              <Elements stripe={stripePromise}>
+                <PaymentForm
+                  onPaymentSuccess={handlePaymentSuccess}
+                  onPaymentError={handlePaymentError}
+                  amount={depositAmount}
+                  customerName={formData.first_name + ' ' + (formData.last_name || '')}
+                  email={formData.email || ''}
+                  tenantId={tenant.tenant_id}
+                />
+              </Elements>
+            ) : (
+              <Alert>
+                <CreditCard className="h-4 w-4" />
+                <AlertDescription className="text-green-600">
+                  ✓ Deposit payment of ${depositAmount} completed successfully.
+                </AlertDescription>
+              </Alert>
             )}
-          </AlertDescription>
-        </Alert>
+          </CardContent>
+        </Card>
       )}
 
       {/* Back button */}
