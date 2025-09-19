@@ -340,8 +340,10 @@ async function resolveTimeWindowForDate(supabase: any, tenantId: string, service
       .from('business_hours')
       .select('day_of_week,is_open,open_time,close_time')
       .eq('tenant_id', tenantId);
+    
     if (Array.isArray(bhAll) && bhAll.length > 0) {
       const rec = bhAll.find((r: any) => r.day_of_week === dowLocal);
+      
       if (rec && rec.is_open && rec.open_time && rec.close_time) {
         return { start: `T${rec.open_time}`, end: `T${rec.close_time}` };
       }
