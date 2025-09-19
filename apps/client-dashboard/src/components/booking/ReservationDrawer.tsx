@@ -38,6 +38,17 @@ import {
   X,
 } from "lucide-react";
 import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ReservationDrawerProps {
   booking: ExtendedBooking | null;
@@ -48,6 +59,7 @@ interface ReservationDrawerProps {
     bookingId: string,
     updates: Partial<ExtendedBooking>,
   ) => void;
+  onDeleteBooking?: (bookingId: string) => void;
 }
 
 const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
@@ -56,6 +68,7 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
   onOpenChange,
   onStatusUpdate,
   onUpdateBooking,
+  onDeleteBooking,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedBooking, setEditedBooking] = useState<Partial<ExtendedBooking>>(
@@ -412,7 +425,7 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
                   Send Message
                 </Button>
               </div>
-              {["pending", "confirmed"].includes(booking.status) && (
+              {(["pending", "confirmed"].includes(booking.status)) && (
                 <Button
                   onClick={() => onStatusUpdate(booking.id, "cancelled")}
                   variant="destructive"
@@ -421,6 +434,25 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
                   <X className="h-4 w-4 mr-2" />
                   Cancel Booking
                 </Button>
+              )}
+              {onDeleteBooking && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full">Delete Reservation</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete this reservation?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the reservation.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => onDeleteBooking(booking.id)}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </CardContent>
           </Card>
