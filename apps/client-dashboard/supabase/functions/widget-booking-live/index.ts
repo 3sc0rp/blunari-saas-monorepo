@@ -379,16 +379,37 @@ async function handleCreateHoldLocal(supabase: any, requestData: any, requestId?
     if (!tenant_id || !slot?.time || !party_size) {
       return errorResponse('HOLD_INVALID', 'Missing tenant_id, slot.time or party_size', 400, requestId);
     }
-    const holdData = {
+    const holdDataTs = {
       tenant_id,
       booking_time: slot.time,
       party_size: Number(party_size),
       duration_minutes: 120,
       session_id: crypto.randomUUID(),
       expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-    };
-    // Optional: embed table preference
-    const { data: hold, error: holdError } = await supabase.from('booking_holds').insert({ ...holdData, table_id: table_id || null }).select().single();
+    } as any;
+    // Try TIMESTAMPTZ schema first
+    let hold: any = null;
+    let holdError: any = null;
+    {
+      const res = await supabase.from('booking_holds').insert({ ...holdDataTs, table_id: table_id || null }).select().single();
+      hold = res.data; holdError = res.error;
+    }
+    // Fallback to DATE + TIME schema
+    if (holdError) {
+      const when = new Date(slot.time);
+      const holdDataSplit = {
+        tenant_id,
+        booking_date: when.toISOString().slice(0, 10),
+        booking_time: when.toISOString().slice(11, 19),
+        party_size: Number(party_size),
+        duration_minutes: 120,
+        session_id: crypto.randomUUID(),
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        table_id: table_id || null,
+      } as any;
+      const res2 = await supabase.from('booking_holds').insert(holdDataSplit).select().single();
+      hold = res2.data; holdError = res2.error;
+    }
     if (holdError) {
       return errorResponse('HOLD_FAILED', 'Unable to reserve time slot. Please try again.', 500, requestId, { details: holdError.message });
     }
@@ -578,8 +599,32 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       deposit_paid: false,
     };
 
-    // Persist table assignment if provided
-    const { data: booking, error: bookingError } = await supabase.from('bookings').insert({ ...bookingData, table_id: assignedTableId }).select().single();
+    // Persist table assignment if provided (support both schemas)
+    let booking: any = null; let bookingError: any = null;
+    {
+      const res = await supabase.from('bookings').insert({ ...bookingData, table_id: assignedTableId }).select().single();
+      booking = res.data; bookingError = res.error;
+    }
+    if (bookingError) {
+      const when = new Date(hold.booking_time);
+      const legacyInsert = {
+        tenant_id,
+        table_id: assignedTableId,
+        booking_date: when.toISOString().slice(0, 10),
+        booking_time: when.toISOString().slice(11, 19),
+        party_size: hold.party_size,
+        guest_name: `${guest_details.first_name || ''} ${guest_details.last_name || ''}`.trim() || 'Guest',
+        guest_email: guest_details.email,
+        guest_phone: guest_details.phone || null,
+        special_requests: guest_details.special_requests || null,
+        status: 'confirmed',
+        duration_minutes: hold.duration_minutes,
+        deposit_required: false,
+        deposit_paid: false,
+      } as any;
+      const res2 = await supabase.from('bookings').insert(legacyInsert).select().single();
+      booking = res2.data; bookingError = res2.error;
+    }
     if (bookingError) {
       return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: bookingError.message });
     }

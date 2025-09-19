@@ -93,7 +93,13 @@ async function callEdgeFunction(
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
+      let errorText = await response.text();
+      try {
+        const parsed = JSON.parse(errorText);
+        if (parsed?.error?.code) {
+          errorText = `${parsed.error.code}: ${parsed.error.message || ''}`.trim();
+        }
+      } catch {}
       throw new BookingAPIError(
         "HTTP_ERROR",
         `HTTP ${response.status}: ${errorText}`,
