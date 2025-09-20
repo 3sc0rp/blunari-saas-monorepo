@@ -65,7 +65,7 @@ const DepositSection: React.FC<DepositSectionProps> = ({
         <Alert>
           <Info className="w-4 h-4" />
           <AlertDescription>
-            {deposit.description ||
+            {((window as any).__widget_deposit_policy?.label) || deposit.description ||
               `A deposit of $${depositAmount} will be collected upon arrival to secure your reservation.`}
           </AlertDescription>
         </Alert>
