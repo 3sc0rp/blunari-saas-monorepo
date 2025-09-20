@@ -679,6 +679,7 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       deposit_required: depositRequired,
       deposit_amount: depositRequired ? depositAmount : 0,
       deposit_paid: depositRequired ? depositPaid : false,
+      stripe_payment_intent_id: (deposit && (deposit as any).payment_intent_id) ? String((deposit as any).payment_intent_id) : null,
     };
 
     // Persist table assignment if provided (support both schemas)
@@ -704,6 +705,7 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       deposit_required: depositRequired,
       deposit_amount: depositRequired ? depositAmount : 0,
       deposit_paid: depositRequired ? depositPaid : false,
+      stripe_payment_intent_id: (deposit && (deposit as any).payment_intent_id) ? String((deposit as any).payment_intent_id) : null,
       } as any;
       const res2 = await supabase.from('bookings').insert(legacyInsert).select().single();
       booking = res2.data; bookingError = res2.error;
