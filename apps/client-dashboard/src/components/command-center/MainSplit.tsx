@@ -31,6 +31,7 @@ import MiniFloorplan from "./MiniFloorplan.tsx";
 import KitchenLoadGauge from "./KitchenLoadGauge.tsx";
 import { StatusLegend } from "./StatusLegend";
 import { Timeline } from "./Timeline";
+import { useReservationActions } from '@/hooks/useReservationActions';
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 import type { TableRow, Reservation } from "@/hooks/useCommandCenterData";
@@ -159,6 +160,8 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
   error
 }) {
   
+  const { moveReservationAction } = useReservationActions();
+
   // Memoized event handlers to prevent unnecessary re-renders
   const handleReservationClick = useCallback((reservation: Reservation) => {
     try {
@@ -192,6 +195,14 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
       console.error('Error moving reservation:', err);
     }
   }, [onMove]);
+
+  const handleReservationChange = useCallback(async (u: { id: string; start: string; end: string }) => {
+    try {
+      await moveReservationAction({ reservationId: u.id, start: u.start, end: u.end });
+    } catch (err) {
+      console.error('Error updating reservation time:', err);
+    }
+  }, [moveReservationAction]);
 
   // Memoized computation for kitchen load calculation
   const calculatedKitchenLoad = useMemo(() => {
@@ -323,6 +334,7 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
           focusTableId={focusTableId}
           onReservationClick={handleReservationClick}
           onTimeSlotClick={handleTimeSlotClick}
+          onReservationChange={handleReservationChange}
         />
       </section>
     </div>
