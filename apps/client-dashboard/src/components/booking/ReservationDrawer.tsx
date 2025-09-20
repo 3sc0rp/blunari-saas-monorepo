@@ -21,6 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import MessageDialog from "@/components/booking/MessageDialog";
 import { ExtendedBooking, BookingStatus } from "@/types/booking";
+import { useSettings } from "@/hooks/useSettings";
 import {
   User,
   Mail,
@@ -76,6 +77,7 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
   );
   // Hooks must not be conditional. Declare before any early return.
   const [messageOpen, setMessageOpen] = useState(false);
+  const { settings } = useSettings();
 
   if (!booking) return null;
 
@@ -357,7 +359,7 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
           </Card>
 
           {/* Payment Information */}
-          {(booking.deposit_required || booking.deposit_paid) && (
+          {(booking.deposit_required || booking.deposit_paid || settings?.operational?.depositPolicy?.showPolicyLabel) && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -367,24 +369,12 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
               </CardHeader>
               <CardContent className="space-y-3">
                 {/* Optional Policy Label */}
-                {(() => {
-                  try {
-                    const op = (booking as any).operationalSettings as any;
-                    const policy = op?.depositPolicy;
-                    const show = policy?.showPolicyLabel;
-                    const threshold = policy?.largePartyThreshold || 6;
-                    const label = `Required for parties  ${threshold}`.replace('\u001e', '≥');
-                    if (show) {
-                      return (
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Policy</span>
-                          <Badge variant="outline">{label}</Badge>
-                        </div>
-                      );
-                    }
-                  } catch {}
-                  return null;
-                })()}
+                {settings?.operational?.depositPolicy?.showPolicyLabel && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Policy</span>
+                    <Badge variant="outline">{`Required for parties ≥ ${settings.operational.depositPolicy.largePartyThreshold || 6}`}</Badge>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Deposit Required</span>
                   <Badge
