@@ -13,6 +13,7 @@ interface TimelineProps {
   onReservationClick: (reservation: Reservation) => void;
   onTimeSlotClick: (tableId: string, time: Date) => void;
   rowHeight?: number;
+  onReservationChange?: (update: { id: string; start: string; end: string }) => void;
 }
 
 interface TimeSlot {
@@ -27,10 +28,12 @@ export function Timeline({
   focusTableId,
   onReservationClick,
   onTimeSlotClick,
-  rowHeight = 72
+  rowHeight = 72,
+  onReservationChange
 }: TimelineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [slotWidth, setSlotWidth] = useState<80 | 120 | 160>(80); // 15/30/60 min zoom
 
   // Update current time every minute
   useEffect(() => {
@@ -204,13 +207,14 @@ export function Timeline({
                   <div
                     key={index}
                     className={cn(
-                      "flex-1 min-w-[80px] p-3 text-xs font-medium text-center border-r",
+                      "flex-1 p-3 text-xs font-medium text-center border-r",
                       "transition-colors",
                       isHourStart ? "border-white/15" : "border-white/6",
                       slot.isCurrentTime && "bg-accent/20 text-accent font-semibold",
                       isEvenHour ? "bg-white/[0.02]" : "bg-transparent",
                       isHourStart && "font-semibold uppercase tracking-wide text-white/80"
                     )}
+                    style={{ minWidth: `${slotWidth}px` }}
                   >
                     {isHourStart ? format(slot.time, "H:mm") : format(slot.time, ":mm")}
                   </div>
@@ -225,6 +229,19 @@ export function Timeline({
                 slotWidth={80}
                 className="top-0"
               />
+              {/* Zoom controls */}
+              <div className="absolute right-2 top-2 flex gap-1">
+                {[80,120,160].map((w)=> (
+                  <button
+                    key={w}
+                    className={cn("px-2 py-1 rounded text-[10px] border", Number(w)===slotWidth ? "bg-accent/20 border-accent text-accent" : "bg-white/5 border-white/15 text-white/70 hover:bg-white/10")}
+                    onClick={()=> setSlotWidth(w as any)}
+                    aria-label={`Set zoom to ${w===80? '15': w===120? '30': '60'} minute slots`}
+                  >
+                    {w===80? '15m': w===120? '30m':'60m'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -282,11 +299,11 @@ export function Timeline({
                       <div
                         key={slotIndex}
                         className={cn(
-                          "flex-1 min-w-[80px] p-1 border-r relative",
+                          "flex-1 p-1 border-r relative",
                           isHourStart ? "border-white/10" : "border-white/6",
                           isEvenHour ? "bg-white/[0.02]" : "bg-transparent"
                         )}
-                        style={{ minHeight: `${laneHeight * laneCount}px` }}
+                        style={{ minHeight: `${laneHeight * laneCount}px`, minWidth: `${slotWidth}px` }}
                       >
                         {/* Time slot click area */}
                         <button
@@ -304,6 +321,58 @@ export function Timeline({
                     {tableReservations.map((reservation) => {
                       const pos = getReservationPosition(reservation);
                       const laneIdx = laneIndexById[reservation.id] ?? 0;
+                      const handleDrag = (e: React.MouseEvent<HTMLDivElement>) => {
+                        if (!onReservationChange) return;
+                        const rowEl = (e.currentTarget.parentElement?.parentElement) as HTMLElement;
+                        if (!rowEl) return;
+                        const startX = e.clientX;
+                        const origStart = new Date(reservation.start);
+                        const onMove = (ev: MouseEvent) => {
+                          const dx = ev.clientX - startX;
+                          const minutesPerPx = (15 / (slotWidth)); // 15 min per slotWidth px
+                          const moveMin = Math.round(dx * minutesPerPx);
+                          const newStart = new Date(origStart.getTime() + moveMin * 60000);
+                          const duration = new Date(reservation.end).getTime() - origStart.getTime();
+                          const newEnd = new Date(newStart.getTime() + duration);
+                          onReservationChange?.({ id: reservation.id, start: newStart.toISOString(), end: newEnd.toISOString() });
+                        };
+                        const onUp = () => {
+                          window.removeEventListener('mousemove', onMove);
+                          window.removeEventListener('mouseup', onUp);
+                        };
+                        window.addEventListener('mousemove', onMove);
+                        window.addEventListener('mouseup', onUp);
+                      };
+
+                      const handleResize = (e: React.MouseEvent<HTMLDivElement>, edge: 'start' | 'end') => {
+                        if (!onReservationChange) return;
+                        e.stopPropagation();
+                        const startX = e.clientX;
+                        const origStart = new Date(reservation.start);
+                        const origEnd = new Date(reservation.end);
+                        const onMove = (ev: MouseEvent) => {
+                          const dx = ev.clientX - startX;
+                          const minutesPerPx = (15 / (slotWidth));
+                          const deltaMin = Math.round(dx * minutesPerPx);
+                          let newStart = origStart;
+                          let newEnd = origEnd;
+                          if (edge === 'start') {
+                            newStart = new Date(origStart.getTime() + deltaMin * 60000);
+                          } else {
+                            newEnd = new Date(origEnd.getTime() + deltaMin * 60000);
+                          }
+                          if (newEnd > newStart) {
+                            onReservationChange?.({ id: reservation.id, start: newStart.toISOString(), end: newEnd.toISOString() });
+                          }
+                        };
+                        const onUp = () => {
+                          window.removeEventListener('mousemove', onMove);
+                          window.removeEventListener('mouseup', onUp);
+                        };
+                        window.addEventListener('mousemove', onMove);
+                        window.addEventListener('mouseup', onUp);
+                      };
+
                       return (
                         <TooltipProvider delayDuration={200} key={reservation.id}>
                           <Tooltip>
@@ -322,6 +391,7 @@ export function Timeline({
                                   zIndex: 25 + laneIdx
                                 }}
                                 onClick={() => onReservationClick(reservation)}
+                                onMouseDown={handleDrag}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter' || e.key === ' ') {
                                     e.preventDefault();
@@ -332,6 +402,23 @@ export function Timeline({
                                 role="button"
                                 aria-label={`Reservation for ${reservation.guestName}, ${reservation.partySize} guests from ${format(new Date(reservation.start), "H:mm")} to ${format(new Date(reservation.end), "H:mm")}, status: ${reservation.status}`}
                               >
+                                {/* Resize handles */}
+                                {onReservationChange && (
+                                  <>
+                                    <div
+                                      className="absolute inset-y-1 left-0 w-1 bg-white/40 hover:bg-white/70 cursor-ew-resize rounded"
+                                      onMouseDown={(ev) => handleResize(ev, 'start')}
+                                      aria-label="Resize start"
+                                      role="separator"
+                                    />
+                                    <div
+                                      className="absolute inset-y-1 right-0 w-1 bg-white/40 hover:bg-white/70 cursor-ew-resize rounded"
+                                      onMouseDown={(ev) => handleResize(ev, 'end')}
+                                      aria-label="Resize end"
+                                      role="separator"
+                                    />
+                                  </>
+                                )}
                                 <div className="text-xs font-semibold text-white truncate">
                                   {reservation.guestName}
                                 </div>
