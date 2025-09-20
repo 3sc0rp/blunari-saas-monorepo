@@ -26,6 +26,7 @@ export interface OperationalSettings {
     defaultAmount: number;
     largePartyThreshold: number;
     largePartyAmount: number;
+    showPolicyLabel?: boolean;
   };
   advanceBookingDays: number;
   cancellationPolicy: string;

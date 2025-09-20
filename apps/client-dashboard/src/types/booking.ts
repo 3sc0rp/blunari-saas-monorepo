@@ -25,6 +25,8 @@ export interface BookingFormData {
   source: BookingSource;
   depositRequired?: boolean;
   depositAmount?: number;
+  depositPaid?: boolean;
+  payment_intent_id?: string;
 }
 
 export interface BookingFilters {

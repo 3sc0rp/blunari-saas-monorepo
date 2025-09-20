@@ -329,6 +329,7 @@ const getDefaultSettings = (tenant: any): TenantSettings => ({
       defaultAmount: 25.0,
       largePartyThreshold: 8,
       largePartyAmount: 50.0,
+      showPolicyLabel: false,
     },
   },
   integrations: {

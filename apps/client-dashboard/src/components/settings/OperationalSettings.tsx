@@ -279,6 +279,22 @@ const OperationalSettings: React.FC<OperationalSettingsProps> = ({
                 <Label>Enable deposit requirements</Label>
               </div>
 
+                  {form.watch("depositPolicy.enabled") && (
+                    <div className="flex items-center gap-2">
+                      <Controller
+                        control={form.control}
+                        name="depositPolicy.showPolicyLabel"
+                        render={({ field }) => (
+                          <Switch
+                            checked={!!field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        )}
+                      />
+                      <Label>Show deposit policy label to guests</Label>
+                    </div>
+                  )}
+
               {form.watch("depositPolicy.enabled") && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
