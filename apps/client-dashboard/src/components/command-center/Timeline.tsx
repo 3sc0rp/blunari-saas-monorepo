@@ -4,6 +4,7 @@ import type { TableRow, Reservation } from "@/hooks/useCommandCenterData";
 import { format, addHours, startOfDay, differenceInMinutes } from "date-fns";
 import CurrentTimeMarker from './CurrentTimeMarker';
 import DurationBar from './DurationBar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TimelineProps {
   tables: TableRow[];
@@ -80,6 +81,35 @@ export function Timeline({
     }, 0);
     
     return Math.min(100, (totalMinutes / 360) * 100); // 360 minutes = 6 hours
+  };
+
+  // Compute non-overlapping lanes for a set of reservations (per table)
+  const computeLanes = (items: Reservation[]) => {
+    const sorted = [...items].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+    const lanes: Reservation[][] = [];
+    const laneIndexById: Record<string, number> = {};
+
+    for (const r of sorted) {
+      const rStart = new Date(r.start).getTime();
+      const rEnd = new Date(r.end).getTime();
+      let placed = false;
+      for (let i = 0; i < lanes.length; i++) {
+        const last = lanes[i][lanes[i].length - 1];
+        const lastEnd = new Date(last.end).getTime();
+        if (rStart >= lastEnd) {
+          lanes[i].push(r);
+          laneIndexById[r.id] = i;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        lanes.push([r]);
+        laneIndexById[r.id] = lanes.length - 1;
+      }
+    }
+
+    return { laneIndexById, laneCount: Math.max(1, lanes.length) };
   };
 
   // Calculate left/width percentages for a reservation spanning the entire row timeline
@@ -206,6 +236,8 @@ export function Timeline({
           const isEvenRow = tableIndex % 2 === 0;
           const utilization = getTableUtilization(table.id);
           const tableReservations = reservations.filter(r => r.tableId === table.id);
+          const { laneIndexById, laneCount } = computeLanes(tableReservations);
+          const laneHeight = Math.max(rowHeight, 56);
           
           return (
             <div 
@@ -254,7 +286,7 @@ export function Timeline({
                           isHourStart ? "border-white/10" : "border-white/6",
                           isEvenHour ? "bg-white/[0.02]" : "bg-transparent"
                         )}
-                        style={{ minHeight: `${rowHeight}px` }}
+                        style={{ minHeight: `${laneHeight * laneCount}px` }}
                       >
                         {/* Time slot click area */}
                         <button
@@ -267,56 +299,72 @@ export function Timeline({
                     );
                   })}
 
-                  {/* Reservation overlay: render each reservation once spanning the timeline */}
+                  {/* Reservation overlay: render each reservation once spanning the timeline and stack by lanes */}
                   <div className="absolute inset-0">
                     {tableReservations.map((reservation) => {
                       const pos = getReservationPosition(reservation);
+                      const laneIdx = laneIndexById[reservation.id] ?? 0;
                       return (
-                        <div
-                          key={reservation.id}
-                          className={cn(
-                            "absolute top-1 rounded border cursor-pointer p-2 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-accent/50",
-                            "backdrop-blur-sm",
-                            getReservationColor(reservation)
-                          )}
-                          style={{
-                            left: pos.left,
-                            width: pos.width,
-                            zIndex: 25
-                          }}
-                          onClick={() => onReservationClick(reservation)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              onReservationClick(reservation);
-                            }
-                          }}
-                          tabIndex={0}
-                          role="button"
-                          aria-label={`Reservation for ${reservation.guestName}, ${reservation.partySize} guests at ${format(new Date(reservation.start), "H:mm")}, status: ${reservation.status}`}
-                        >
-                          <div className="text-xs font-semibold text-white truncate">
-                            {reservation.guestName}
-                          </div>
-                          <div className="text-xs text-white/80 truncate flex items-center gap-1">
-                            <span className="bg-white/20 px-1 rounded text-[10px] font-medium">
-                              P{reservation.partySize}
-                            </span>
-                            <span>
-                              {format(new Date(reservation.start), "H:mm")}–{format(new Date(reservation.end), "H:mm")}
-                            </span>
-                            {reservation.channel && (
-                              <span className={cn(
-                                "text-[10px] px-1 rounded",
-                                reservation.channel === 'online' && "bg-blue-400/30 text-blue-200",
-                                reservation.channel === 'phone' && "bg-orange-400/30 text-orange-200",
-                                reservation.channel === 'walkin' && "bg-green-400/30 text-green-200"
-                              )}>
-                                {reservation.channel.toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                        <TooltipProvider delayDuration={200} key={reservation.id}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div
+                                className={cn(
+                                  "absolute rounded border cursor-pointer p-2 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-accent/50",
+                                  "backdrop-blur-sm",
+                                  getReservationColor(reservation)
+                                )}
+                                style={{
+                                  left: pos.left,
+                                  width: pos.width,
+                                  top: 4 + laneIdx * laneHeight,
+                                  height: laneHeight - 8,
+                                  zIndex: 25 + laneIdx
+                                }}
+                                onClick={() => onReservationClick(reservation)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    onReservationClick(reservation);
+                                  }
+                                }}
+                                tabIndex={0}
+                                role="button"
+                                aria-label={`Reservation for ${reservation.guestName}, ${reservation.partySize} guests from ${format(new Date(reservation.start), "H:mm")} to ${format(new Date(reservation.end), "H:mm")}, status: ${reservation.status}`}
+                              >
+                                <div className="text-xs font-semibold text-white truncate">
+                                  {reservation.guestName}
+                                </div>
+                                <div className="text-xs text-white/80 truncate flex items-center gap-1">
+                                  <span className="bg-white/20 px-1 rounded text-[10px] font-medium">
+                                    P{reservation.partySize}
+                                  </span>
+                                  <span>
+                                    {format(new Date(reservation.start), "H:mm")}–{format(new Date(reservation.end), "H:mm")}
+                                  </span>
+                                  {reservation.channel && (
+                                    <span className={cn(
+                                      "text-[10px] px-1 rounded",
+                                      reservation.channel === 'online' && "bg-blue-400/30 text-blue-200",
+                                      reservation.channel === 'phone' && "bg-orange-400/30 text-orange-200",
+                                      reservation.channel === 'walkin' && "bg-green-400/30 text-green-200"
+                                    )}>
+                                      {reservation.channel.toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs text-xs">
+                              <div className="space-y-1">
+                                <div className="font-medium">{reservation.guestName}</div>
+                                <div>{format(new Date(reservation.start), "H:mm")}–{format(new Date(reservation.end), "H:mm")}</div>
+                                <div>{reservation.partySize} guests{reservation.channel ? ` • ${reservation.channel}` : ''}</div>
+                                {reservation.status && (<div className="opacity-80">Status: {reservation.status}</div>)}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       );
                     })}
                   </div>
@@ -325,7 +373,7 @@ export function Timeline({
                   <CurrentTimeMarker
                     startHour={17}
                     endHour={23}
-                    slotHeight={rowHeight}
+                    slotHeight={laneHeight * laneCount}
                     slotWidth={80}
                     className="top-0"
                   />
