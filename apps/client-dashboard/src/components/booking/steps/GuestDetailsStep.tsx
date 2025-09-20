@@ -135,7 +135,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
     if (depositRequired && !paymentCompleted) {
       return; // Payment form handles this
     }
-    
+
     // Pass payment info along with guest details
     onComplete({ 
       guest_details: {

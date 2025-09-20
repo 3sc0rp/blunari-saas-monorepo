@@ -313,7 +313,8 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, tenantT
       amount: Number(party_size) >= (depositPolicy.largePartyThreshold || 6) 
         ? (depositPolicy.largePartyAmount || depositPolicy.defaultAmount || 25)
         : (depositPolicy.defaultAmount || 25),
-      description: `Deposit required for parties of ${depositPolicy.largePartyThreshold || 6}+`
+      description: `Deposit required for parties of ${depositPolicy.largePartyThreshold || 6}+`,
+      label: depositPolicy?.showPolicyLabel ? buildPolicyLabel(depositPolicy) : undefined,
     } : null
   };
 
@@ -323,6 +324,13 @@ async function handleAvailabilitySearch(supabase: any, requestData: any, tenantT
     { status: 200, headers },
   );
 }
+function buildPolicyLabel(policy: any): string {
+  const threshold = policy.largePartyThreshold || 6;
+  const base = `Required for parties ≥ ${threshold}`;
+  // Optional: add weekend note if business rules extend later
+  return base;
+}
+
 
 async function resolveTimeWindowForDate(supabase: any, tenantId: string, serviceDate: string, tenantTimezone?: string): Promise<{ start: string; end: string } | null> {
   try {
@@ -405,9 +413,23 @@ async function handleCreateHold(supabase: any, requestData: any, requestId?: str
 
 async function handleCreateHoldLocal(supabase: any, requestData: any, requestId?: string) {
   try {
-    const { tenant_id, slot, party_size, table_id } = requestData;
+    const { tenant_id, slot, party_size, table_id, idempotency_key } = requestData;
     if (!tenant_id || !slot?.time || !party_size) {
       return errorResponse('HOLD_INVALID', 'Missing tenant_id, slot.time or party_size', 400, requestId);
+    }
+    // Simple idempotency: if key present and hold exists with same session, return a stable response
+    if (idempotency_key) {
+      try {
+        const { data: idem } = await supabase
+          .from('idempotency_keys')
+          .select('status_code, response_json')
+          .eq('tenant_id', tenant_id)
+          .eq('idempotency_key', idempotency_key)
+          .maybeSingle();
+        if (idem && idem.response_json?.hold_id) {
+          return new Response(JSON.stringify(idem.response_json), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } });
+        }
+      } catch {}
     }
     const holdDataTs = {
       tenant_id,
@@ -443,8 +465,10 @@ async function handleCreateHoldLocal(supabase: any, requestData: any, requestId?
     if (holdError) {
       return errorResponse('HOLD_FAILED', 'Unable to reserve time slot. Please try again.', 500, requestId, { details: holdError.message });
     }
+    const body = { success: true, hold_id: hold.id, expires_at: hold.expires_at, table_identifiers: ["Available Table"], _local: true, requestId };
+    if (idempotency_key) { try { await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: body }); } catch {} }
     return new Response(
-      JSON.stringify({ success: true, hold_id: hold.id, expires_at: hold.expires_at, table_identifiers: ["Available Table"], _local: true, requestId }),
+      JSON.stringify(body),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } },
     );
   } catch (e) {
@@ -570,7 +594,7 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
 
 async function handleConfirmReservationLocal(supabase: any, requestData: any, requestId: string | undefined, tenant: any) {
   try {
-    const { tenant_id, hold_id, guest_details, idempotency_key, table_id } = requestData;
+    const { tenant_id, hold_id, guest_details, idempotency_key, table_id, deposit } = requestData;
 
     if (!tenant_id || !hold_id || !guest_details?.email) {
       return errorResponse('CONFIRMATION_INVALID', 'Missing tenant_id, hold_id, or guest details', 400, requestId);
@@ -637,6 +661,11 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       } catch {}
     }
 
+    // Enforce deposit if indicated from client (local path)
+    const depositRequired = !!deposit?.required;
+    const depositPaid = !!deposit?.paid;
+    const depositAmount = Number(deposit?.amount_cents || 0);
+
     const bookingData = {
       tenant_id,
       booking_time: holdStart.toISOString(),
@@ -647,8 +676,9 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       special_requests: guest_details.special_requests || null,
       status: 'confirmed',
       duration_minutes: durationMins,
-      deposit_required: false,
-      deposit_paid: false,
+      deposit_required: depositRequired,
+      deposit_amount: depositRequired ? depositAmount : 0,
+      deposit_paid: depositRequired ? depositPaid : false,
     };
 
     // Persist table assignment if provided (support both schemas)
@@ -659,7 +689,7 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
     }
     if (bookingError) {
       const when = holdStart;
-      const legacyInsert = {
+    const legacyInsert = {
         tenant_id,
         table_id: assignedTableId,
         booking_date: (hold.booking_date as string) || when.toISOString().slice(0, 10),
@@ -671,8 +701,9 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
         special_requests: guest_details.special_requests || null,
         status: 'confirmed',
         duration_minutes: durationMins,
-        deposit_required: false,
-        deposit_paid: false,
+      deposit_required: depositRequired,
+      deposit_amount: depositRequired ? depositAmount : 0,
+      deposit_paid: depositRequired ? depositPaid : false,
       } as any;
       const res2 = await supabase.from('bookings').insert(legacyInsert).select().single();
       booking = res2.data; bookingError = res2.error;
@@ -682,7 +713,7 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
     }
 
     const confirmationNumber = `CONF${booking.id.slice(-6).toUpperCase()}`;
-    const body = { success: true, reservation_id: booking.id, confirmation_number: confirmationNumber, status: 'confirmed', summary: { date: booking.booking_time, time: new Date(booking.booking_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }), party_size: booking.party_size, table_info: 'Auto-assigned', deposit_required: false }, _local: true, requestId };
+    const body = { success: true, reservation_id: booking.id, confirmation_number: confirmationNumber, status: 'confirmed', summary: { date: booking.booking_time, time: new Date(booking.booking_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }), party_size: booking.party_size, table_info: 'Auto-assigned', deposit_required: depositRequired, deposit_amount: depositAmount / 100 }, _local: true, requestId };
     if (idempotency_key) {
       try {
         const { data: tables } = await supabase.rpc('pg_tables');

@@ -84,11 +84,16 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Enforce deposit: if depositRequired flag is set in the wizard, the booking
+    // flow should have already processed payment in prior UI. Disable submit if missing.
+    if (formData.depositRequired && !(formData as any).depositPaid) {
+      return;
+    }
     createBooking({
       ...formData,
       tableId: selectedTable,
-    });
+    } as any);
   };
 
   const steps = [
@@ -646,10 +651,10 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
           ) : currentStep === 4 ? (
             <Button
               onClick={handleSubmit}
-              disabled={isCreating}
+              disabled={isCreating || (formData.depositRequired && !(formData as any).depositPaid)}
               className="flex items-center gap-2"
             >
-              {isCreating ? "Creating..." : "Create Booking"}
+              {isCreating ? "Creating..." : (formData.depositRequired && !(formData as any).depositPaid) ? "Complete Payment First" : "Create Booking"}
               <CheckCircle className="h-4 w-4" />
             </Button>
           ) : (

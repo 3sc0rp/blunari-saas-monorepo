@@ -99,7 +99,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           tenant_id: tenant.tenant_id,
           party_size,
           slot: selected_slot,
-        });
+        }, idemKey);
       });
 
       // Step 2: Confirm reservation with idempotency

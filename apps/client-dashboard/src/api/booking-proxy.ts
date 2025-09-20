@@ -239,7 +239,7 @@ export async function searchAvailability(request: SearchRequest) {
   }
 }
 
-export async function createHold(request: HoldRequest) {
+export async function createHold(request: HoldRequest, idempotencyKey?: string) {
   try {
     const data = await callEdgeFunction("widget-booking-live", {
       action: "hold",
@@ -247,6 +247,7 @@ export async function createHold(request: HoldRequest) {
       party_size: request.party_size,
       slot: request.slot,
       table_id: (request as any).table_id,
+      idempotency_key: idempotencyKey,
     });
     return HoldResponseSchema.parse(data);
   } catch (error) {

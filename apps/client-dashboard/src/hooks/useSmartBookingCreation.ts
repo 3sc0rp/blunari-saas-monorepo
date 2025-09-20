@@ -110,16 +110,21 @@ export const useSmartBookingCreation = (tenantId?: string) => {
       if (!tenantId) throw new Error("Missing tenant");
       const bookingDateTime = new Date(`${data.date}T${data.time}`);
 
-      // 1) Create a hold using the live widget function
-      const hold = await createHold({
-        tenant_id: tenantId,
-        party_size: data.partySize,
-        slot: { time: bookingDateTime.toISOString(), available_tables: 1 },
-        table_id: data.tableId,
-      });
+      // Establish a consistent idempotency key for this reservation attempt
+      const idempotencyKey = crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+
+      // 1) Create a hold using the live widget function (include idempotency key)
+      const hold = await createHold(
+        {
+          tenant_id: tenantId,
+          party_size: data.partySize,
+          slot: { time: bookingDateTime.toISOString(), available_tables: 1 },
+          table_id: data.tableId,
+        },
+        idempotencyKey,
+      );
 
       // 2) Confirm reservation with idempotency (assumes deposit handled in UI when required)
-      const idempotencyKey = crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
       const [first_name, ...rest] = (data.customerName || "").trim().split(" ");
       const last_name = rest.join(" ") || "";
 
@@ -136,7 +141,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
           },
           table_id: data.tableId,
           deposit: data.depositRequired
-            ? { required: true, amount_cents: Math.round((data.depositAmount || 0) * 100), paid: (data as any).depositPaid === true }
+            ? { required: true, amount_cents: Math.round((data.depositAmount || 0) * 100), paid: (data as any).depositPaid === true, payment_intent_id: (data as any).payment_intent_id }
             : undefined,
         },
         idempotencyKey,
