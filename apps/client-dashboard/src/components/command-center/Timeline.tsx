@@ -82,29 +82,28 @@ export function Timeline({
     return Math.min(100, (totalMinutes / 360) * 100); // 360 minutes = 6 hours
   };
 
-  // Get reservations for a specific table and time slot
-  const getReservationsForSlot = (tableId: string, slotTime: Date) => {
-    return reservations.filter(reservation => {
-      try {
-        if (reservation.tableId !== tableId) return false;
-        
-        const resStart = new Date(reservation.start);
-        const resEnd = new Date(reservation.end);
-        
-        // Validate dates
-        if (isNaN(resStart.getTime()) || isNaN(resEnd.getTime())) {
-          return false;
-        }
-        
-        const slotEnd = new Date(slotTime.getTime() + (15 * 60 * 1000)); // Add 15 minutes
-        
-        // Check if reservation overlaps with this 30-minute slot
-        return resStart < slotEnd && resEnd > slotTime;
-      } catch (error) {
-        console.warn('Error filtering reservation:', error);
-        return false;
+  // Calculate left/width percentages for a reservation spanning the entire row timeline
+  const getReservationPosition = (reservation: Reservation) => {
+    try {
+      const startTime = timeSlots[0]?.time;
+      const endTime = addHours(timeSlots[0]?.time || new Date(), 6); // 6-hour window
+      if (!startTime || !endTime) {
+        return { left: '0%', width: '0%' };
       }
-    });
+      const resStart = new Date(reservation.start);
+      const resEnd = new Date(reservation.end);
+
+      const totalMin = Math.max(1, differenceInMinutes(endTime, startTime));
+      const leftMin = Math.max(0, Math.min(totalMin, differenceInMinutes(resStart, startTime)));
+      const endMin = Math.max(0, Math.min(totalMin, differenceInMinutes(resEnd, startTime)));
+      const spanMin = Math.max(1, endMin - leftMin);
+
+      const leftPct = (leftMin / totalMin) * 100;
+      const widthPct = (spanMin / totalMin) * 100;
+      return { left: `${leftPct}%`, width: `${widthPct}%` };
+    } catch {
+      return { left: '0%', width: '0%' };
+    }
   };
 
   // Get status color for reservation card
@@ -244,11 +243,9 @@ export function Timeline({
               <div className="flex-1 overflow-x-auto">
                 <div className="flex min-w-max relative">
                   {timeSlots.map((slot, slotIndex) => {
-                    const slotReservations = getReservationsForSlot(table.id, slot.time);
                     const hourIndex = Math.floor(slotIndex / 4); // Every 4 slots = 1 hour
                     const isEvenHour = hourIndex % 2 === 0;
                     const isHourStart = slot.time.getMinutes() === 0;
-                    
                     return (
                       <div
                         key={slotIndex}
@@ -266,55 +263,63 @@ export function Timeline({
                           aria-label={`Create reservation for ${table.name} at ${slot.label}`}
                           tabIndex={0}
                         />
-
-                        {/* Reservation cards */}
-                        {slotReservations.map((reservation) => (
-                          <div
-                            key={reservation.id}
-                            className={cn(
-                              "absolute top-1 left-1 right-1 rounded border cursor-pointer p-2 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-accent/50",
-                              "backdrop-blur-sm",
-                              getReservationColor(reservation)
-                            )}
-                            style={{
-                              width: getReservationWidth(reservation),
-                              zIndex: 20
-                            }}
-                            onClick={() => onReservationClick(reservation)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                onReservationClick(reservation);
-                              }
-                            }}
-                            tabIndex={0}
-                            role="button"
-                            aria-label={`Reservation for ${reservation.guestName}, ${reservation.partySize} guests at ${format(new Date(reservation.start), "H:mm")}, status: ${reservation.status}`}
-                          >
-                            <div className="text-xs font-semibold text-white truncate">
-                              {reservation.guestName}
-                            </div>
-                            <div className="text-xs text-white/80 truncate flex items-center gap-1">
-                              <span className="bg-white/20 px-1 rounded text-[10px] font-medium">
-                                P{reservation.partySize}
-                              </span>
-                              <span>{format(new Date(reservation.start), "H:mm")}</span>
-                              {reservation.channel && (
-                                <span className={cn(
-                                  "text-[10px] px-1 rounded",
-                                  reservation.channel === 'online' && "bg-blue-400/30 text-blue-200",
-                                  reservation.channel === 'phone' && "bg-orange-400/30 text-orange-200",
-                                  reservation.channel === 'walkin' && "bg-green-400/30 text-green-200"
-                                )}>
-                                  {reservation.channel.toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
                       </div>
                     );
                   })}
+
+                  {/* Reservation overlay: render each reservation once spanning the timeline */}
+                  <div className="absolute inset-0">
+                    {tableReservations.map((reservation) => {
+                      const pos = getReservationPosition(reservation);
+                      return (
+                        <div
+                          key={reservation.id}
+                          className={cn(
+                            "absolute top-1 rounded border cursor-pointer p-2 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-accent/50",
+                            "backdrop-blur-sm",
+                            getReservationColor(reservation)
+                          )}
+                          style={{
+                            left: pos.left,
+                            width: pos.width,
+                            zIndex: 25
+                          }}
+                          onClick={() => onReservationClick(reservation)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onReservationClick(reservation);
+                            }
+                          }}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`Reservation for ${reservation.guestName}, ${reservation.partySize} guests at ${format(new Date(reservation.start), "H:mm")}, status: ${reservation.status}`}
+                        >
+                          <div className="text-xs font-semibold text-white truncate">
+                            {reservation.guestName}
+                          </div>
+                          <div className="text-xs text-white/80 truncate flex items-center gap-1">
+                            <span className="bg-white/20 px-1 rounded text-[10px] font-medium">
+                              P{reservation.partySize}
+                            </span>
+                            <span>
+                              {format(new Date(reservation.start), "H:mm")}–{format(new Date(reservation.end), "H:mm")}
+                            </span>
+                            {reservation.channel && (
+                              <span className={cn(
+                                "text-[10px] px-1 rounded",
+                                reservation.channel === 'online' && "bg-blue-400/30 text-blue-200",
+                                reservation.channel === 'phone' && "bg-orange-400/30 text-orange-200",
+                                reservation.channel === 'walkin' && "bg-green-400/30 text-green-200"
+                              )}>
+                                {reservation.channel.toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                   
                   {/* Current Time Marker for this row */}
                   <CurrentTimeMarker
