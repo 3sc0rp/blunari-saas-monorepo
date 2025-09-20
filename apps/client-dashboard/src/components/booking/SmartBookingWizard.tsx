@@ -77,6 +77,51 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
     return pk ? loadStripe(pk) : null;
   }, []);
 
+  const PaymentCapture: React.FC<{ amount: number; customerName: string; email: string; onSuccess: (intentId: string) => void; onError: (err: string) => void }>=({ amount, customerName, email, onSuccess, onError })=>{
+    const stripe = useStripe();
+    const elements = useElements();
+    const [processing, setProcessing] = useState(false);
+    const handlePayment = async () => {
+      if (!stripe || !elements || !tenant?.id) return;
+      setProcessing(true);
+      try {
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-deposit-intent`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ tenant_id: tenant.id, amount: Math.round((amount || 0) * 100), email, description: `Deposit for ${customerName}` })
+        });
+        if (!res.ok) throw new Error('Failed to create payment intent');
+        const { client_secret } = await res.json();
+        const card = elements.getElement(CardElement);
+        if (!card) throw new Error('Card element not found');
+        const { error, paymentIntent } = await stripe.confirmCardPayment(client_secret, { payment_method: { card, billing_details: { name: customerName, email } } });
+        if (error) {
+          onError(error.message || 'Payment failed');
+        } else if (paymentIntent?.status === 'succeeded') {
+          onSuccess(paymentIntent.id);
+        } else {
+          onError('Payment not completed');
+        }
+      } catch (e) {
+        onError((e as Error)?.message || 'Payment failed');
+      } finally { setProcessing(false); }
+    };
+    return (
+      <div className="space-y-2">
+        <div className="p-3 border rounded-md bg-background" aria-live="polite">
+          <CardElement options={{ hidePostalCode: true, style:{ base:{ fontSize:'16px' } } }} />
+        </div>
+        <Button onClick={handlePayment} disabled={processing || !stripe || !elements} className="w-full">
+          {processing ? 'Processing…' : `Pay $${amount || 0} Deposit`}
+        </Button>
+      </div>
+    );
+  };
+
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
@@ -560,9 +605,19 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                 <Elements stripe={stripePromise} options={{appearance:{labels:'floating'},fonts:[],locale:'en'}}>
                   <div className="space-y-2">
                     <Label>Payment Method</Label>
-                    <div className="p-3 border rounded-md bg-background" aria-live="polite">
-                      <CardElement options={{ hidePostalCode: true, style:{base:{fontSize:'16px'}} }} />
-                    </div>
+                    <PaymentCapture
+                      amount={formData.depositAmount || 0}
+                      customerName={formData.customerName}
+                      email={formData.email}
+                      onSuccess={(intentId)=>{
+                        updateFormData({ depositRequired: true, depositPaid: true, payment_intent_id: intentId });
+                      }}
+                      onError={(msg)=>{
+                        if (import.meta.env.VITE_ENABLE_DEV_LOGS) {
+                          console.warn('Deposit payment failed:', msg);
+                        }
+                      }}
+                    />
                     <p className="text-xs text-muted-foreground">
                       Your card will be charged a refundable deposit of ${formData.depositAmount || 0}.
                     </p>
