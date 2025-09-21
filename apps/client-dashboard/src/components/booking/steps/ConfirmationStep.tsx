@@ -145,6 +145,18 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   };
 
   if (reservation) {
+    const displayPartySize = Number(
+      reservation.summary.party_size || party_size || 0,
+    );
+    const displayDateISO =
+      reservation.summary.date || selected_slot?.time || new Date().toISOString();
+    const displayConfirmationNumber =
+      reservation.confirmation_number &&
+      reservation.confirmation_number !== "CONFXXXXXX"
+        ? reservation.confirmation_number
+        : reservation.reservation_id
+          ? `CONF${String(reservation.reservation_id).slice(-6).toUpperCase()}`
+          : "PENDING";
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -161,7 +173,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
             <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg mb-6">
               <div className="text-lg font-semibold mb-2">
-                Confirmation #{reservation.confirmation_number}
+                Confirmation #{displayConfirmationNumber}
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -171,13 +183,13 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
                 <div className="flex justify-between">
                   <span>Date & Time:</span>
                   <span className="font-medium">
-                    {formatDateTime(reservation.summary.date)}
+                    {formatDateTime(displayDateISO)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Party Size:</span>
                   <span className="font-medium">
-                    {reservation.summary.party_size} guests
+                    {displayPartySize} guests
                   </span>
                 </div>
                 {reservation.summary.table_info && (
