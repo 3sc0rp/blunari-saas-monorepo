@@ -69,18 +69,29 @@ serve(async (req) => {
       if (!phone_number) return json(400, { success: false, error: { code: 'MISSING_PHONE', message: 'phone_number required', requestId } });
       const digits = String(phone_number).replace(/\D/g,'');
       const normalized = digits.length === 10 ? `+1${digits}` : (digits.startsWith('1') && digits.length === 11 ? `+${digits}` : String(phone_number));
-      // Create verification via Telnyx
-      const res = await fetch('https://api.telnyx.com/v2/verifications/sms', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${TELNYX_API_KEY}`,
-        },
-        body: JSON.stringify({ phone_number: normalized, verify_profile_id: VERIFY_PROFILE_ID }),
-      });
-      if (!res.ok) {
-        const t = await res.text();
-        return json(500, { success: false, error: { code: 'VERIFY_START_FAILED', message: t.slice(0, 300), requestId } });
+      // Create verification via Telnyx (try new Verify path, then legacy)
+      const payload = JSON.stringify({ phone_number: normalized, verify_profile_id: VERIFY_PROFILE_ID });
+      const startUrls = [
+        'https://api.telnyx.com/v2/verify/verifications/sms',
+        'https://api.telnyx.com/v2/verifications/sms'
+      ];
+      let started = false; let lastErr = '';
+      for (const url of startUrls) {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${TELNYX_API_KEY}`,
+          },
+          body: payload,
+        });
+        if (r.ok) { started = true; break; }
+        lastErr = await r.text();
+      }
+      if (!started) {
+        let message = lastErr.slice(0, 300);
+        try { const j = JSON.parse(lastErr); message = j?.errors?.[0]?.detail || j?.errors?.[0]?.title || message; } catch {}
+        return json(400, { success: false, error: { code: 'VERIFY_START_FAILED', message, requestId } });
       }
       return json(200, { success: true, status: 'pending', requestId });
     }
