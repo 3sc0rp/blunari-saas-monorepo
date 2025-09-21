@@ -968,8 +968,24 @@ async function sendNotifications(opts: { toEmail?: string; toPhone?: string; ten
     }
   } catch {}
 
-  // Email via Fastmail SMTP through Graph API not available; use SMTP relay via telnet is not possible from Edge.
-  // Implement minimal SMTP-over-TCP is not feasible in Edge. Prefer HTTP provider (Resend) if available.
+  // Email via Fastmail JMAP (HTTP)
+  try {
+    const FASTMAIL_API_TOKEN = Deno.env.get('FASTMAIL_API_TOKEN');
+    const FASTMAIL_FROM = Deno.env.get('FASTMAIL_FROM');
+    if (FASTMAIL_API_TOKEN && FASTMAIL_FROM && toEmail) {
+      await sendEmailViaFastmail({
+        apiToken: FASTMAIL_API_TOKEN,
+        from: FASTMAIL_FROM,
+        to: toEmail,
+        subject: `${tenantName || 'Reservation'} Confirmation ${confirmationNumber}`,
+        text: `Your reservation is confirmed for ${dateStr} at ${timeStr}. Party ${partySize}. Reference ${confirmationNumber}.`,
+        html: `<p>Your reservation is confirmed.</p><p><b>${dateStr} at ${timeStr}</b> · Party ${partySize}</p><p>Reference: <b>${confirmationNumber}</b></p>`
+      });
+      return; // sent via Fastmail; stop here
+    }
+  } catch {}
+
+  // Fallback: Email via Resend if configured
   try {
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     const RESEND_FROM = Deno.env.get('RESEND_FROM');
@@ -986,4 +1002,70 @@ async function sendNotifications(opts: { toEmail?: string; toPhone?: string; ten
       });
     }
   } catch {}
+}
+
+async function sendEmailViaFastmail(params: { apiToken: string; from: string; to: string; subject: string; text: string; html?: string }) {
+  const base = Deno.env.get('FASTMAIL_JMAP_BASE_URL') || 'https://api.fastmail.com';
+  const sessionRes = await fetch(`${base}/jmap/session`, {
+    headers: { 'Authorization': `Bearer ${params.apiToken}` }
+  });
+  if (!sessionRes.ok) return;
+  const session = await sessionRes.json();
+  const apiUrl = session.apiUrl || `${base}/jmap/api`; // apiUrl is provided in session
+  const accountId = (session.primaryAccounts && (session.primaryAccounts['urn:ietf:params:jmap:mail'] || Object.values(session.primaryAccounts)[0])) as string;
+  if (!accountId) return;
+
+  // Discover identity to use
+  let identityId: string | undefined;
+  try {
+    const identRes = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${params.apiToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:submission'],
+        methodCalls: [[
+          'Identity/get',
+          { accountId },
+          'c0'
+        ]]
+      })
+    });
+    if (identRes.ok) {
+      const m = await identRes.json();
+      const resp = (m.methodResponses || []).find((r: any[]) => r[0] === 'Identity/get');
+      const list = resp?.[1]?.list || [];
+      const match = list.find((i: any) => (i.email || '').toLowerCase() === params.from.split('<').pop()?.replace('>','').trim().toLowerCase());
+      identityId = (match || list[0])?.id;
+    }
+  } catch {}
+
+  const body = {
+    using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail', 'urn:ietf:params:jmap:submission'],
+    methodCalls: [
+      ['Email/set', {
+        accountId,
+        create: {
+          e1: {
+            from: [{ email: params.from.split('<').pop()?.replace('>','').trim() }],
+            to: [{ email: params.to }],
+            subject: params.subject,
+            textBody: [{ partId: 't1' }],
+            bodyValues: { t1: { value: params.text } },
+            htmlBody: params.html ? [{ partId: 'h1' }] : undefined,
+            bodyValues2: undefined,
+          }
+        }
+      }, 'c1'],
+      ['EmailSubmission/set', {
+        accountId,
+        create: {
+          s1: {
+            emailId: '#e1',
+            ...(identityId ? { identityId } : { envelope: { mailFrom: { email: params.from.split('<').pop()?.replace('>','').trim() }, rcptTo: [{ email: params.to }] } })
+          }
+        }
+      }, 'c2']
+    ]
+  } as any;
+  await fetch(apiUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${params.apiToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 }
