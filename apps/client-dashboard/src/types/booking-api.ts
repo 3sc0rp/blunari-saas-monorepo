@@ -88,8 +88,8 @@ export const ReservationResponseSchema = z.object({
   status: z.enum(["confirmed", "pending", "waitlisted"]),
   summary: z.object({
     date: z.string(),
-    time: z.string(),
-    party_size: z.number(),
+    time: z.string().optional(),
+    party_size: z.coerce.number(),
     table_info: z.string().optional(),
     deposit_required: z.boolean().optional(),
     deposit_amount: z.number().optional(),

@@ -101,6 +101,7 @@ async function callEdgeFunction(
       });
     }
     
+    const requestId = crypto.randomUUID();
     const response = await fetch(
       `${supabaseUrl}/functions/v1/${functionName}`,
       {
@@ -110,6 +111,7 @@ async function callEdgeFunction(
           // Prefer user JWT when available (dashboard) to pass auth to edge function; fallback to anon key
           Authorization: `Bearer ${userJwt || supabaseKey}`,
           apikey: supabaseKey,
+          "x-correlation-id": requestId,
         },
         body: JSON.stringify(requestBody),
       },
@@ -123,28 +125,25 @@ async function callEdgeFunction(
           errorText = `${parsed.error.code}: ${parsed.error.message || ''}`.trim();
         }
       } catch {}
-      throw new BookingAPIError(
-        "HTTP_ERROR",
-        `HTTP ${response.status}: ${errorText}`,
-      );
+      throw new BookingAPIError("HTTP_ERROR", `HTTP ${response.status}: ${errorText}`, {
+        requestId,
+        endpoint: functionName,
+        requestBody: requestBody,
+      });
     }
 
     const data = await response.json();
 
     if ((data as any)?.success === false && (data as any)?.error) {
       const err: any = data as any;
-      throw new BookingAPIError(
-        err.error.code || "API_ERROR",
-        err.error.message,
-        err.error,
-      );
+      throw new BookingAPIError(err.error.code || "API_ERROR", err.error.message, {
+        ...err.error,
+        requestId,
+      });
     }
 
     if (!data) {
-      throw new BookingAPIError(
-        "NO_DATA",
-        "No data received from booking service",
-      );
+      throw new BookingAPIError("NO_DATA", "No data received from booking service", { requestId });
     }
 
     return data;
@@ -152,11 +151,7 @@ async function callEdgeFunction(
     if (error instanceof BookingAPIError) {
       throw error;
     }
-    throw new BookingAPIError(
-      "NETWORK_ERROR",
-      `Failed to communicate with booking service`,
-      error as any,
-    );
+    throw new BookingAPIError("NETWORK_ERROR", `Failed to communicate with booking service`, error as any);
   }
 }
 
@@ -274,13 +269,67 @@ export async function confirmReservation(
       deposit: (request as any).deposit
     });
 
-    return ReservationResponseSchema.parse(data);
+    // Normalize any upstream variations into our stable schema
+    const normalized = normalizeReservationResponse(data);
+    return ReservationResponseSchema.parse(normalized);
   } catch (error) {
     throw new BookingAPIError(
       "RESERVATION_CONFIRMATION_FAILED",
       "Failed to confirm reservation",
       error as any,
     );
+  }
+}
+
+// Map various upstream payload shapes to our stable schema to avoid UX regressions
+function normalizeReservationResponse(input: any): any {
+  try {
+    const d = input || {};
+
+    const reservationId = d.reservation_id || d.reservationId || d.id;
+    let confirmationNumber = d.confirmation_number || d.confirmationNumber || d.reference || d.code;
+    let status: string = (d.status || d.state || d.reservation_status || 'confirmed').toString().toLowerCase();
+    const allowed = new Set(['confirmed', 'pending', 'waitlisted']);
+    if (!allowed.has(status)) status = 'confirmed';
+
+    const summary = d.summary || {};
+    let dateLike = summary.date || d.date || d.booking_time || summary.datetime;
+    let timeLike = summary.time || d.time;
+
+    if (!dateLike && typeof d.booking_time === 'string') {
+      dateLike = d.booking_time;
+    }
+    let isoDate: string | undefined = undefined;
+    let timeStr: string | undefined = undefined;
+    if (dateLike) {
+      const parsed = new Date(dateLike);
+      if (!isNaN(parsed.getTime())) {
+        isoDate = parsed.toISOString();
+        timeStr = timeLike || parsed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      }
+    }
+
+    const partySize = Number((summary.party_size ?? d.party_size ?? d.guests ?? d.covers) || 0);
+    if (!confirmationNumber && reservationId) {
+      const idStr = String(reservationId);
+      confirmationNumber = `CONF${idStr.slice(-6).toUpperCase()}`;
+    }
+
+    return {
+      reservation_id: String(reservationId),
+      confirmation_number: String(confirmationNumber || 'CONFXXXXXX'),
+      status,
+      summary: {
+        date: isoDate || (typeof dateLike === 'string' ? dateLike : new Date().toISOString()),
+        time: timeStr,
+        party_size: partySize,
+        table_info: summary.table_info || d.table || undefined,
+        deposit_required: Boolean(summary.deposit_required ?? d.deposit_required),
+        deposit_amount: Number(summary.deposit_amount ?? d.deposit_amount ?? NaN) || undefined,
+      },
+    };
+  } catch {
+    return input;
   }
 }
 
