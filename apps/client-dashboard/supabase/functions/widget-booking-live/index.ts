@@ -478,7 +478,43 @@ async function handleCreateHoldLocal(supabase: any, requestData: any, requestId?
 
 async function handleConfirmReservation(supabase: any, requestData: any, requestId: string | undefined, tenant: any) {
   try {
-    const { tenant_id, hold_id, guest_details, idempotency_key, deposit } = requestData;
+    const { tenant_id, hold_id, guest_details, idempotency_key, deposit, phone_verification_token } = requestData;
+
+    // Enforce phone verification if configured
+    let requireVerify = (Deno.env.get('REQUIRE_PHONE_VERIFICATION') || 'true').toLowerCase() !== 'false';
+    try {
+      const { data: settings } = await supabase
+        .from('tenant_settings')
+        .select('setting_value')
+        .eq('tenant_id', tenant_id)
+        .eq('setting_key', 'operational')
+        .maybeSingle();
+      const flag = settings?.setting_value?.requirePhoneVerification;
+      if (flag === false) requireVerify = false;
+    } catch {}
+    if (requireVerify) {
+      const token = phone_verification_token || '';
+      if (!token) {
+        return errorResponse('PHONE_NOT_VERIFIED', 'Phone verification required', 400, requestId);
+      }
+      try {
+        const [h, p, s] = String(token).split('.');
+        const expected = simpleHMAC(`${h}.${p}`, getWidgetSecret());
+        if (s !== expected) return errorResponse('PHONE_NOT_VERIFIED', 'Invalid verification token', 400, requestId);
+        const payload = JSON.parse(b64urlDecode(p));
+        if (payload?.purpose !== 'phone-verify' || payload?.tenant_id !== tenant_id) {
+          return errorResponse('PHONE_NOT_VERIFIED', 'Verification token mismatch', 400, requestId);
+        }
+        if (payload?.exp && Math.floor(Date.now() / 1000) > payload.exp) {
+          return errorResponse('PHONE_NOT_VERIFIED', 'Verification expired', 400, requestId);
+        }
+        if (guest_details?.phone && payload?.phone && String(guest_details.phone).replace(/\D/g,'') !== String(payload.phone).replace(/\D/g,'')) {
+          return errorResponse('PHONE_NOT_VERIFIED', 'Phone number changed after verification', 400, requestId);
+        }
+      } catch {
+        return errorResponse('PHONE_NOT_VERIFIED', 'Verification failed', 400, requestId);
+      }
+    }
 
     // Idempotency read (best-effort) — guarded if table exists
     if (idempotency_key) {
@@ -535,6 +571,15 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
     }
 
     await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: guest_details?.email, template: 'reservation.confirmed', data: { reservation_id: apiData.reservation_id, confirmation_number: apiData.confirmation_number, tenant_name: tenant?.name } });
+
+    try { await sendNotifications({
+      toEmail: guest_details?.email,
+      toPhone: guest_details?.phone,
+      tenantName: tenant?.name,
+      whenISO: (apiData?.summary?.date as string) || new Date().toISOString(),
+      partySize: Number(apiData?.summary?.party_size || 0),
+      confirmationNumber: apiData.confirmation_number,
+    }); } catch {}
 
     return new Response(JSON.stringify(responseBody), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } });
   } catch (error) {
@@ -662,7 +707,17 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
     }
 
     // Enforce phone verification if configured/env enables it
-    const requireVerify = (Deno.env.get('REQUIRE_PHONE_VERIFICATION') || 'true').toLowerCase() !== 'false';
+    let requireVerify = (Deno.env.get('REQUIRE_PHONE_VERIFICATION') || 'true').toLowerCase() !== 'false';
+    try {
+      const { data: settings } = await supabase
+        .from('tenant_settings')
+        .select('setting_value')
+        .eq('tenant_id', tenant_id)
+        .eq('setting_key', 'operational')
+        .maybeSingle();
+      const flag = settings?.setting_value?.requirePhoneVerification;
+      if (flag === false) requireVerify = false;
+    } catch {}
     if (requireVerify) {
       const token = phone_verification_token || '';
       if (!token) {

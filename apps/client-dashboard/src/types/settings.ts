@@ -28,6 +28,8 @@ export interface OperationalSettings {
     largePartyAmount: number;
     showPolicyLabel?: boolean;
   };
+  // Require phone verification for public booking confirms
+  requirePhoneVerification?: boolean;
   advanceBookingDays: number;
   cancellationPolicy: string;
 }
