@@ -67,6 +67,8 @@ serve(async (req) => {
 
     if (action === 'start') {
       if (!phone_number) return json(400, { success: false, error: { code: 'MISSING_PHONE', message: 'phone_number required', requestId } });
+      const digits = String(phone_number).replace(/\D/g,'');
+      const normalized = digits.length === 10 ? `+1${digits}` : (digits.startsWith('1') && digits.length === 11 ? `+${digits}` : String(phone_number));
       // Create verification via Telnyx
       const res = await fetch('https://api.telnyx.com/v2/verifications/sms', {
         method: 'POST',
@@ -74,7 +76,7 @@ serve(async (req) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${TELNYX_API_KEY}`,
         },
-        body: JSON.stringify({ phone_number, verify_profile_id: VERIFY_PROFILE_ID }),
+        body: JSON.stringify({ phone_number: normalized, verify_profile_id: VERIFY_PROFILE_ID }),
       });
       if (!res.ok) {
         const t = await res.text();
@@ -85,13 +87,15 @@ serve(async (req) => {
 
     if (action === 'check') {
       if (!phone_number || !code) return json(400, { success: false, error: { code: 'MISSING_PARAMS', message: 'phone_number and code required', requestId } });
+      const digits = String(phone_number).replace(/\D/g,'');
+      const normalized = digits.length === 10 ? `+1${digits}` : (digits.startsWith('1') && digits.length === 11 ? `+${digits}` : String(phone_number));
       const res = await fetch('https://api.telnyx.com/v2/verifications/by_phone_number/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${TELNYX_API_KEY}`,
         },
-        body: JSON.stringify({ phone_number, code }),
+        body: JSON.stringify({ phone_number: normalized, code }),
       });
       if (!res.ok) {
         const t = await res.text();
@@ -99,7 +103,7 @@ serve(async (req) => {
       }
       // issue signed token for confirm step
       const exp = Math.floor(Date.now() / 1000) + 10 * 60; // 10 minutes
-      const token = signVerificationJWT({ purpose: 'phone-verify', phone: phone_number, tenant_id, exp });
+      const token = signVerificationJWT({ purpose: 'phone-verify', phone: normalized, tenant_id, exp });
       return json(200, { success: true, token, requestId });
     }
 

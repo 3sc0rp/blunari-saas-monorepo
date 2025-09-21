@@ -508,8 +508,12 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
         if (payload?.exp && Math.floor(Date.now() / 1000) > payload.exp) {
           return errorResponse('PHONE_NOT_VERIFIED', 'Verification expired', 400, requestId);
         }
-        if (guest_details?.phone && payload?.phone && String(guest_details.phone).replace(/\D/g,'') !== String(payload.phone).replace(/\D/g,'')) {
+        if (guest_details?.phone && payload?.phone) {
+          const a = String(guest_details.phone).replace(/\D/g,'').slice(-10);
+          const b = String(payload.phone).replace(/\D/g,'').slice(-10);
+          if (a !== b) {
           return errorResponse('PHONE_NOT_VERIFIED', 'Phone number changed after verification', 400, requestId);
+          }
         }
       } catch {
         return errorResponse('PHONE_NOT_VERIFIED', 'Verification failed', 400, requestId);
@@ -585,7 +589,7 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
   } catch (error) {
     // Fallback to local booking creation — create PENDING and notify owner for approval
     try {
-      const { tenant_id, hold_id, guest_details, idempotency_key } = requestData;
+      const { tenant_id, hold_id, guest_details, idempotency_key, deposit } = requestData;
       const { data: hold, error: holdError } = await supabase.from("booking_holds").select("*").eq("id", hold_id).maybeSingle();
       if (holdError || !hold) {
         return errorResponse('HOLD_NOT_FOUND', 'Booking hold not found or expired', 404, requestId, { details: holdError?.message });

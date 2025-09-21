@@ -164,6 +164,8 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
   };
 
   const formData = watch();
+  const phoneDigits = (formData?.phone || '').replace(/\D/g, '').slice(0, 10);
+  const tenDigitsOk = phoneDigits.length === 10;
 
   return (
     <div className="space-y-6">
@@ -251,14 +253,14 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                 </p>
               )}
             <div className="flex items-center gap-2">
-              <Button type="button" variant="secondary" disabled={sendingOtp || phoneStatus==='sent' || phoneStatus==='verified' || !formData.phone}
+              <Button type="button" variant="secondary" disabled={sendingOtp || phoneStatus==='sent' || phoneStatus==='verified' || !tenDigitsOk}
                 onClick={async () => {
                   try {
                     setSendingOtp(true);
                     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-                      body: JSON.stringify({ action: 'start', phone_number: formData.phone, tenant_id: tenant.tenant_id })
+                      body: JSON.stringify({ action: 'start', phone_number: `+1${phoneDigits}`, tenant_id: tenant.tenant_id })
                     });
                     setPhoneStatus(res.ok ? 'sent' : 'error');
                   } catch { setPhoneStatus('error'); } finally { setSendingOtp(false); }
@@ -275,7 +277,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-                          body: JSON.stringify({ action: 'check', phone_number: formData.phone, code: otpCode, tenant_id: tenant.tenant_id })
+                          body: JSON.stringify({ action: 'check', phone_number: `+1${phoneDigits}`, code: otpCode, tenant_id: tenant.tenant_id })
                         });
                         const json = await res.json();
                         if (res.ok && json?.token) { setVerifyToken(json.token); (window as any).__phone_verify_token = json.token; setPhoneStatus('verified'); }
