@@ -95,11 +95,14 @@ serve(async (req) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${TELNYX_API_KEY}`,
         },
-        body: JSON.stringify({ phone_number: normalized, code }),
+        body: JSON.stringify({ phone_number: normalized, code, verify_profile_id: VERIFY_PROFILE_ID }),
       });
       if (!res.ok) {
         const t = await res.text();
-        return json(400, { success: false, error: { code: 'VERIFY_FAILED', message: t.slice(0, 300), requestId } });
+        // Normalize common Telnyx errors for the client
+        let message = t.slice(0, 300);
+        try { const j = JSON.parse(t); message = j?.errors?.[0]?.detail || j?.errors?.[0]?.title || message; } catch {}
+        return json(400, { success: false, error: { code: 'VERIFY_FAILED', message, requestId } });
       }
       // issue signed token for confirm step
       const exp = Math.floor(Date.now() / 1000) + 10 * 60; // 10 minutes
