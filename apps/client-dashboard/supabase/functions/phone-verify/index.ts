@@ -82,11 +82,17 @@ serve(async (req) => {
         ? { from: TELNYX_FROM_NUMBER, to: normalized, text: msg }
         : { messaging_profile_id: TELNYX_MESSAGING_PROFILE_ID, to: normalized, text: msg };
       try {
-        await fetch('https://api.telnyx.com/v2/messages', {
+        const resp = await fetch('https://api.telnyx.com/v2/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TELNYX_API_KEY}` },
           body: JSON.stringify(smsBody),
         });
+        if (!resp.ok) {
+          const txt = await resp.text();
+          let msg = txt.slice(0, 400);
+          try { const j = JSON.parse(txt); msg = j?.errors?.[0]?.detail || j?.errors?.[0]?.title || msg; } catch {}
+          return json(400, { success: false, error: { code: 'SMS_SEND_FAILED', message: msg, telnyx: txt } });
+        }
       } catch (e) {
         return json(500, { success: false, error: { code: 'SMS_SEND_FAILED', message: String(e) } });
       }
