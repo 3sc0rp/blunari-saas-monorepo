@@ -122,6 +122,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
   const [otpCode, setOtpCode] = useState<string>("");
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [phoneMsg, setPhoneMsg] = useState<string>("");
 
   // Check if deposit is required based on policy stored from availability search
   const depositPolicy = (window as any).__widget_deposit_policy;
@@ -257,23 +258,31 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                 onClick={async () => {
                   try {
                     setSendingOtp(true);
+                    setPhoneMsg("");
                     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
                       body: JSON.stringify({ action: 'start', phone_number: `+1${phoneDigits}`, tenant_id: tenant.tenant_id })
                     });
-                    setPhoneStatus(res.ok ? 'sent' : 'error');
+                    if (res.ok) {
+                      setPhoneStatus('sent');
+                    } else {
+                      const j = await res.json().catch(()=>null);
+                      setPhoneMsg(j?.error?.message || 'Failed to send code');
+                      setPhoneStatus('error');
+                    }
                   } catch { setPhoneStatus('error'); } finally { setSendingOtp(false); }
                 }}>
                 {sendingOtp ? 'Sending...' : phoneStatus==='sent' ? 'Code Sent' : phoneStatus==='verified' ? 'Verified' : 'Send Code'}
               </Button>
               {phoneStatus==='sent' && (
                 <>
-                  <Input value={otpCode} onChange={(e)=>setOtpCode(e.target.value)} placeholder="123456" className="w-24" />
-                  <Button type="button" disabled={verifyingOtp || otpCode.length < 4}
+                  <Input value={otpCode} onChange={(e)=>setOtpCode(e.target.value.replace(/\D/g, '').slice(0,6))} placeholder="123456" className="w-24" />
+                  <Button type="button" disabled={verifyingOtp || otpCode.length !== 6}
                     onClick={async ()=>{
                       try {
                         setVerifyingOtp(true);
+                        setPhoneMsg("");
                         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
@@ -281,13 +290,14 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                         });
                         const json = await res.json();
                         if (res.ok && json?.token) { setVerifyToken(json.token); (window as any).__phone_verify_token = json.token; setPhoneStatus('verified'); }
-                        else { setPhoneStatus('error'); }
+                        else { setPhoneMsg(json?.error?.message || 'Invalid code'); setPhoneStatus('error'); }
                       } catch { setPhoneStatus('error'); } finally { setVerifyingOtp(false); }
                     }}>
                     {verifyingOtp ? 'Verifying...' : 'Verify'}
                   </Button>
                 </>
               )}
+              {phoneMsg && <div className="text-xs text-destructive">{phoneMsg}</div>}
             </div>
             </div>
 
