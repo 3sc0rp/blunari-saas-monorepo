@@ -56,7 +56,7 @@ serve(async (req) => {
 
   const requestId = crypto.randomUUID();
   try {
-    const { action, phone_number, code, tenant_id } = await req.json().catch(() => ({}));
+    const { action, phone_number, code, tenant_id, challenge_token } = await req.json().catch(() => ({}));
     if (!action) return json(400, { success: false, error: { code: 'MISSING_ACTION', message: 'action required', requestId } });
 
     const TELNYX_API_KEY = Deno.env.get('TELNYX_API_KEY');
@@ -103,8 +103,7 @@ serve(async (req) => {
       const normalized = digits.length === 10 ? `+1${digits}` : (digits.startsWith('1') && digits.length === 11 ? `+${digits}` : String(phone_number));
       // Prefer stateless challenge verification if provided
       try {
-        const body = await req.json().catch(()=>({}));
-        const challenge = body.challenge_token as string | undefined;
+        const challenge = (challenge_token as string | undefined) || undefined;
         if (challenge) {
           const [h, p, s] = challenge.split('.');
           const expected = simpleHMAC(`${h}.${p}`, getSigningSecret());
