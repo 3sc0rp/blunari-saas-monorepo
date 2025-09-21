@@ -77,6 +77,15 @@ serve(async (req) => {
       if (!TELNYX_FROM_NUMBER && !TELNYX_MESSAGING_PROFILE_ID) {
         return json(503, { success: false, error: { code: 'SMS_NOT_CONFIGURED', message: 'Messaging profile or from number not configured' } });
       }
+      
+      // Log configuration for debugging
+      console.log('[phone-verify] Config check:', {
+        hasApiKey: !!TELNYX_API_KEY,
+        hasFromNumber: !!TELNYX_FROM_NUMBER,
+        hasProfileId: !!TELNYX_MESSAGING_PROFILE_ID,
+        fromNumber: TELNYX_FROM_NUMBER ? `${TELNYX_FROM_NUMBER.slice(0, 5)}...` : 'none',
+        profileId: TELNYX_MESSAGING_PROFILE_ID ? `${TELNYX_MESSAGING_PROFILE_ID.slice(0, 8)}...` : 'none'
+      });
       const msg = (Deno.env.get('VERIFY_SMS_TEMPLATE') || 'Your {{app}} verification code is {{code}}').replace('{{code}}', code).replace('{{app}}', (Deno.env.get('APP_NAME') || 'Blunari'));
       const smsBody = TELNYX_FROM_NUMBER
         ? { from: TELNYX_FROM_NUMBER, to: normalized, text: msg }
@@ -166,6 +175,18 @@ serve(async (req) => {
       const token = (auth && auth.token) || '';
       const payload = token ? verifyVerificationJWT(token) : null;
       return json(200, { success: !!payload, payload: payload || null });
+    }
+
+    if (action === 'bypass') {
+      // Emergency bypass for testing when SMS fails - only in dev/test
+      const isDev = (Deno.env.get('DENO_DEPLOYMENT_ID') || '').length === 0;
+      if (!isDev) return json(403, { success: false, error: { code: 'BYPASS_DISABLED', message: 'Bypass only available in development' } });
+      if (!phone_number || !tenant_id) return json(400, { success: false, error: { code: 'MISSING_PARAMS', message: 'phone_number and tenant_id required' } });
+      const digits = String(phone_number).replace(/\D/g,'');
+      const normalized = digits.length === 10 ? `+1${digits}` : String(phone_number);
+      const exp = Math.floor(Date.now() / 1000) + 10 * 60;
+      const token = signVerificationJWT({ purpose: 'phone-verify', phone: normalized, tenant_id, exp });
+      return json(200, { success: true, token, bypass: true, requestId });
     }
 
     return json(400, { success: false, error: { code: 'INVALID_ACTION', message: 'Unknown action', requestId } });

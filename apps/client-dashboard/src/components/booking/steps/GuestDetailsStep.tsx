@@ -276,6 +276,27 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                 }}>
                 {sendingOtp ? 'Sending...' : phoneStatus==='sent' ? 'Code Sent' : phoneStatus==='verified' ? 'Verified' : 'Send Code'}
               </Button>
+              {import.meta.env.MODE === 'development' && phoneStatus === 'error' && (
+                <Button type="button" variant="outline" size="sm"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+                        body: JSON.stringify({ action: 'bypass', phone_number: `+1${phoneDigits}`, tenant_id: tenant.tenant_id })
+                      });
+                      if (res.ok) {
+                        const j = await res.json();
+                        setVerifyToken(j.token);
+                        (window as any).__phone_verify_token = j.token;
+                        setPhoneStatus('verified');
+                        setPhoneMsg('Bypassed for development');
+                      }
+                    } catch {}
+                  }}>
+                  Dev Bypass
+                </Button>
+              )}
               {phoneStatus==='sent' && (
                 <>
                   <Input value={otpCode} onChange={(e)=>setOtpCode(e.target.value.replace(/\D/g, '').slice(0,8))} placeholder="12345" className="w-24" />
