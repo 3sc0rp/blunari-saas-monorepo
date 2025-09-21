@@ -117,6 +117,11 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
+  const [phoneStatus, setPhoneStatus] = useState<'idle'|'sent'|'verified'|'error'>('idle');
+  const [verifyToken, setVerifyToken] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState<string>("");
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   // Check if deposit is required based on policy stored from availability search
   const depositPolicy = (window as any).__widget_deposit_policy;
@@ -134,6 +139,9 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
     // If deposit required but not paid, don't proceed
     if (depositRequired && !paymentCompleted) {
       return; // Payment form handles this
+    }
+    if (phoneStatus !== 'verified') {
+      return; // require phone verification
     }
 
     // Pass payment info along with guest details
@@ -242,6 +250,43 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                   {errors.phone.message}
                 </p>
               )}
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="secondary" disabled={sendingOtp || phoneStatus==='sent' || phoneStatus==='verified' || !formData.phone}
+                onClick={async () => {
+                  try {
+                    setSendingOtp(true);
+                    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+                      body: JSON.stringify({ action: 'start', phone_number: formData.phone, tenant_id: tenant.tenant_id })
+                    });
+                    setPhoneStatus(res.ok ? 'sent' : 'error');
+                  } catch { setPhoneStatus('error'); } finally { setSendingOtp(false); }
+                }}>
+                {sendingOtp ? 'Sending...' : phoneStatus==='sent' ? 'Code Sent' : phoneStatus==='verified' ? 'Verified' : 'Send Code'}
+              </Button>
+              {phoneStatus==='sent' && (
+                <>
+                  <Input value={otpCode} onChange={(e)=>setOtpCode(e.target.value)} placeholder="123456" className="w-24" />
+                  <Button type="button" disabled={verifyingOtp || otpCode.length < 4}
+                    onClick={async ()=>{
+                      try {
+                        setVerifyingOtp(true);
+                        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+                          body: JSON.stringify({ action: 'check', phone_number: formData.phone, code: otpCode, tenant_id: tenant.tenant_id })
+                        });
+                        const json = await res.json();
+                        if (res.ok && json?.token) { setVerifyToken(json.token); (window as any).__phone_verify_token = json.token; setPhoneStatus('verified'); }
+                        else { setPhoneStatus('error'); }
+                      } catch { setPhoneStatus('error'); } finally { setVerifyingOtp(false); }
+                    }}>
+                    {verifyingOtp ? 'Verifying...' : 'Verify'}
+                  </Button>
+                </>
+              )}
+            </div>
             </div>
 
             {/* Special requests */}
@@ -274,10 +319,10 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
               <Button
                 type="submit"
                 className="w-full"
-                disabled={!isValid || loading || (depositRequired && !paymentCompleted)}
+                disabled={!isValid || loading || (depositRequired && !paymentCompleted) || phoneStatus!=='verified'}
                 style={{ backgroundColor: tenant.branding?.primary_color }}
               >
-                {loading ? "Processing..." : depositRequired && !paymentCompleted ? "Complete Payment First" : "Continue to Confirmation"}
+                {loading ? "Processing..." : phoneStatus!=='verified' ? "Verify Phone to Continue" : depositRequired && !paymentCompleted ? "Complete Payment First" : "Continue to Confirmation"}
               </Button>
             </motion.div>
           </form>

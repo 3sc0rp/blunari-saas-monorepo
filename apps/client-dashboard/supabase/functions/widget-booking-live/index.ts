@@ -594,7 +594,7 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
 
 async function handleConfirmReservationLocal(supabase: any, requestData: any, requestId: string | undefined, tenant: any) {
   try {
-    const { tenant_id, hold_id, guest_details, idempotency_key, table_id, deposit } = requestData;
+    const { tenant_id, hold_id, guest_details, idempotency_key, table_id, deposit, phone_verification_token } = requestData;
 
     if (!tenant_id || !hold_id || !guest_details?.email) {
       return errorResponse('CONFIRMATION_INVALID', 'Missing tenant_id, hold_id, or guest details', 400, requestId);
@@ -661,6 +661,33 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       } catch {}
     }
 
+    // Enforce phone verification if configured/env enables it
+    const requireVerify = (Deno.env.get('REQUIRE_PHONE_VERIFICATION') || 'true').toLowerCase() !== 'false';
+    if (requireVerify) {
+      const token = phone_verification_token || '';
+      if (!token) {
+        return errorResponse('PHONE_NOT_VERIFIED', 'Phone verification required', 400, requestId);
+      }
+      // Verify token locally using the same lightweight HMAC as other tokens
+      try {
+        const [h, p, s] = String(token).split('.');
+        const expected = simpleHMAC(`${h}.${p}`, getWidgetSecret());
+        if (s !== expected) return errorResponse('PHONE_NOT_VERIFIED', 'Invalid verification token', 400, requestId);
+        const payload = JSON.parse(b64urlDecode(p));
+        if (payload?.purpose !== 'phone-verify' || payload?.tenant_id !== tenant_id) {
+          return errorResponse('PHONE_NOT_VERIFIED', 'Verification token mismatch', 400, requestId);
+        }
+        if (payload?.exp && Math.floor(Date.now() / 1000) > payload.exp) {
+          return errorResponse('PHONE_NOT_VERIFIED', 'Verification expired', 400, requestId);
+        }
+        if (guest_details?.phone && payload?.phone && String(guest_details.phone).replace(/\D/g,'') !== String(payload.phone).replace(/\D/g,'')) {
+          return errorResponse('PHONE_NOT_VERIFIED', 'Phone number changed after verification', 400, requestId);
+        }
+      } catch {
+        return errorResponse('PHONE_NOT_VERIFIED', 'Verification failed', 400, requestId);
+      }
+    }
+
     // Enforce deposit if indicated from client (local path)
     const depositRequired = !!deposit?.required;
     const depositPaid = !!deposit?.paid;
@@ -725,6 +752,16 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
         }
       } catch {}
     }
+
+    // Post-confirm notifications (best-effort)
+    try { await sendNotifications({
+      toEmail: guest_details?.email,
+      toPhone: guest_details?.phone,
+      tenantName: tenant?.name,
+      whenISO: booking.booking_time,
+      partySize: booking.party_size,
+      confirmationNumber,
+    }); } catch {}
 
     return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } });
   } catch (e) {
@@ -851,4 +888,47 @@ function generateTimeSlots(
   }
   // Return all slots within business hours
   return slots;
+}
+
+async function sendNotifications(opts: { toEmail?: string; toPhone?: string; tenantName?: string; whenISO: string; partySize: number; confirmationNumber: string }) {
+  const { toEmail, toPhone, tenantName, whenISO, partySize, confirmationNumber } = opts;
+  const when = new Date(whenISO);
+  const dateStr = when.toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = when.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  // SMS via Telnyx
+  try {
+    const TELNYX_API_KEY = Deno.env.get('TELNYX_API_KEY');
+    const TELNYX_FROM_NUMBER = Deno.env.get('TELNYX_FROM_NUMBER');
+    const TELNYX_MESSAGING_PROFILE_ID = Deno.env.get('TELNYX_MESSAGING_PROFILE_ID');
+    if (TELNYX_API_KEY && toPhone && (TELNYX_FROM_NUMBER || TELNYX_MESSAGING_PROFILE_ID)) {
+      const body = TELNYX_FROM_NUMBER
+        ? { from: TELNYX_FROM_NUMBER, to: toPhone, text: `${tenantName || 'Your booking'} confirmed for ${dateStr} at ${timeStr}. Party ${partySize}. Ref ${confirmationNumber}. Reply STOP to stop.` }
+        : { messaging_profile_id: TELNYX_MESSAGING_PROFILE_ID, to: toPhone, text: `${tenantName || 'Your booking'} confirmed for ${dateStr} at ${timeStr}. Party ${partySize}. Ref ${confirmationNumber}. Reply STOP to stop.` };
+      await fetch('https://api.telnyx.com/v2/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TELNYX_API_KEY}` },
+        body: JSON.stringify(body),
+      });
+    }
+  } catch {}
+
+  // Email via Fastmail SMTP through Graph API not available; use SMTP relay via telnet is not possible from Edge.
+  // Implement minimal SMTP-over-TCP is not feasible in Edge. Prefer HTTP provider (Resend) if available.
+  try {
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+    const RESEND_FROM = Deno.env.get('RESEND_FROM');
+    if (RESEND_API_KEY && RESEND_FROM && toEmail) {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
+        body: JSON.stringify({
+          from: RESEND_FROM,
+          to: toEmail,
+          subject: `${tenantName || 'Reservation'} Confirmation ${confirmationNumber}`,
+          html: `<p>Your reservation is confirmed.</p><p><b>${dateStr} at ${timeStr}</b> · Party ${partySize}</p><p>Reference: <b>${confirmationNumber}</b></p>`
+        })
+      });
+    }
+  } catch {}
 }
