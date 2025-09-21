@@ -69,37 +69,58 @@ serve(async (req) => {
       if (!phone_number) return json(400, { success: false, error: { code: 'MISSING_PHONE', message: 'phone_number required', requestId } });
       const digits = String(phone_number).replace(/\D/g,'');
       const normalized = digits.length === 10 ? `+1${digits}` : (digits.startsWith('1') && digits.length === 11 ? `+${digits}` : String(phone_number));
-      // Create verification via Telnyx (try new Verify path, then legacy)
-      const payload = JSON.stringify({ phone_number: normalized, verify_profile_id: VERIFY_PROFILE_ID });
-      const startUrls = [
-        'https://api.telnyx.com/v2/verify/verifications/sms',
-        'https://api.telnyx.com/v2/verifications/sms'
-      ];
-      let started = false; let lastErr = '';
-      for (const url of startUrls) {
-        const r = await fetch(url, {
+      // Generate a short-lived code and send via Telnyx Messaging using your number/profile
+      const codeLength = Math.max(4, Math.min(8, parseInt(Deno.env.get('VERIFY_CODE_LENGTH') || '5')));
+      const code = Array.from({ length: codeLength }, () => Math.floor(Math.random() * 10)).join('');
+      const TELNYX_FROM_NUMBER = Deno.env.get('TELNYX_FROM_NUMBER');
+      const TELNYX_MESSAGING_PROFILE_ID = Deno.env.get('TELNYX_MESSAGING_PROFILE_ID');
+      if (!TELNYX_FROM_NUMBER && !TELNYX_MESSAGING_PROFILE_ID) {
+        return json(503, { success: false, error: { code: 'SMS_NOT_CONFIGURED', message: 'Messaging profile or from number not configured' } });
+      }
+      const msg = (Deno.env.get('VERIFY_SMS_TEMPLATE') || 'Your {{app}} verification code is {{code}}').replace('{{code}}', code).replace('{{app}}', (Deno.env.get('APP_NAME') || 'Blunari'));
+      const smsBody = TELNYX_FROM_NUMBER
+        ? { from: TELNYX_FROM_NUMBER, to: normalized, text: msg }
+        : { messaging_profile_id: TELNYX_MESSAGING_PROFILE_ID, to: normalized, text: msg };
+      try {
+        await fetch('https://api.telnyx.com/v2/messages', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${TELNYX_API_KEY}`,
-          },
-          body: payload,
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TELNYX_API_KEY}` },
+          body: JSON.stringify(smsBody),
         });
-        if (r.ok) { started = true; break; }
-        lastErr = await r.text();
+      } catch (e) {
+        return json(500, { success: false, error: { code: 'SMS_SEND_FAILED', message: String(e) } });
       }
-      if (!started) {
-        let message = lastErr.slice(0, 300);
-        try { const j = JSON.parse(lastErr); message = j?.errors?.[0]?.detail || j?.errors?.[0]?.title || message; } catch {}
-        return json(400, { success: false, error: { code: 'VERIFY_START_FAILED', message, requestId } });
-      }
-      return json(200, { success: true, status: 'pending', requestId });
+      // Return a challenge token so we can validate without DB
+      const ttl = Math.max(60, parseInt(Deno.env.get('VERIFY_CODE_TTL_SECONDS') || '300'));
+      const exp = Math.floor(Date.now() / 1000) + ttl;
+      const challenge = signVerificationJWT({ purpose: 'phone-verify-challenge', phone: normalized, h: simpleHMAC(code, getSigningSecret()), exp });
+      return json(200, { success: true, status: 'pending', challenge_token: challenge, requestId });
     }
 
     if (action === 'check') {
       if (!phone_number || !code) return json(400, { success: false, error: { code: 'MISSING_PARAMS', message: 'phone_number and code required', requestId } });
       const digits = String(phone_number).replace(/\D/g,'');
       const normalized = digits.length === 10 ? `+1${digits}` : (digits.startsWith('1') && digits.length === 11 ? `+${digits}` : String(phone_number));
+      // Prefer stateless challenge verification if provided
+      try {
+        const body = await req.json().catch(()=>({}));
+        const challenge = body.challenge_token as string | undefined;
+        if (challenge) {
+          const [h, p, s] = challenge.split('.');
+          const expected = simpleHMAC(`${h}.${p}`, getSigningSecret());
+          if (s !== expected) return json(400, { success: false, error: { code: 'VERIFY_FAILED', message: 'invalid challenge signature', requestId } });
+          const payload = JSON.parse(b64urlDecode(p));
+          if (payload?.purpose !== 'phone-verify-challenge') return json(400, { success: false, error: { code: 'VERIFY_FAILED', message: 'invalid challenge', requestId } });
+          if (payload?.exp && Math.floor(Date.now() / 1000) > payload.exp) return json(400, { success: false, error: { code: 'VERIFY_FAILED', message: 'code expired', requestId } });
+          if (String(payload?.phone) !== normalized) return json(400, { success: false, error: { code: 'VERIFY_FAILED', message: 'phone mismatch', requestId } });
+          const ok = simpleHMAC(String(code), getSigningSecret()) === payload?.h;
+          if (!ok) return json(400, { success: false, error: { code: 'VERIFY_FAILED', message: 'incorrect code', requestId } });
+          const token = signVerificationJWT({ purpose: 'phone-verify', phone: normalized, tenant_id, exp: Math.floor(Date.now() / 1000) + 600 });
+          return json(200, { success: true, token, requestId });
+        }
+      } catch {}
+
+      // Fallback to Telnyx Verify if challenge is not present
       const payload = JSON.stringify({ phone_number: normalized, code, verify_profile_id: VERIFY_PROFILE_ID });
       const endpoints = [
         'https://api.telnyx.com/v2/verifications/by_phone_number/actions/verify',

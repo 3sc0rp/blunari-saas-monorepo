@@ -265,6 +265,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                       body: JSON.stringify({ action: 'start', phone_number: `+1${phoneDigits}`, tenant_id: tenant.tenant_id })
                     });
                     if (res.ok) {
+                      try { const j = await res.json(); (window as any).__phone_verify_challenge = j?.challenge_token; } catch {}
                       setPhoneStatus('sent');
                     } else {
                       const j = await res.json().catch(()=>null);
@@ -286,7 +287,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-                          body: JSON.stringify({ action: 'check', phone_number: `+1${phoneDigits}`, code: otpCode, tenant_id: tenant.tenant_id })
+                          body: JSON.stringify({ action: 'check', phone_number: `+1${phoneDigits}`, code: otpCode, tenant_id: tenant.tenant_id, challenge_token: (window as any).__phone_verify_challenge })
                         });
                         const json = await res.json();
                         if (res.ok && json?.token) { setVerifyToken(json.token); (window as any).__phone_verify_token = json.token; setPhoneStatus('verified'); }
