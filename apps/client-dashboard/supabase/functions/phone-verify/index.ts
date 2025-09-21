@@ -81,19 +81,27 @@ serve(async (req) => {
       const smsBody = TELNYX_FROM_NUMBER
         ? { from: TELNYX_FROM_NUMBER, to: normalized, text: msg }
         : { messaging_profile_id: TELNYX_MESSAGING_PROFILE_ID, to: normalized, text: msg };
+      console.log('[phone-verify] SMS attempt:', { normalized, hasFromNumber: !!TELNYX_FROM_NUMBER, hasProfileId: !!TELNYX_MESSAGING_PROFILE_ID, smsBody });
       try {
         const resp = await fetch('https://api.telnyx.com/v2/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TELNYX_API_KEY}` },
           body: JSON.stringify(smsBody),
         });
+        const respText = await resp.text();
+        console.log('[phone-verify] Telnyx response:', { status: resp.status, body: respText });
         if (!resp.ok) {
-          const txt = await resp.text();
-          let msg = txt.slice(0, 400);
-          try { const j = JSON.parse(txt); msg = j?.errors?.[0]?.detail || j?.errors?.[0]?.title || msg; } catch {}
-          return json(400, { success: false, error: { code: 'SMS_SEND_FAILED', message: msg, telnyx: txt } });
+          let msg = respText.slice(0, 400);
+          try { const j = JSON.parse(respText); msg = j?.errors?.[0]?.detail || j?.errors?.[0]?.title || msg; } catch {}
+          return json(400, { success: false, error: { code: 'SMS_SEND_FAILED', message: msg, telnyx: respText } });
         }
+        // Parse success response for additional info
+        try {
+          const data = JSON.parse(respText);
+          console.log('[phone-verify] SMS sent successfully:', { messageId: data?.data?.id, status: data?.data?.status });
+        } catch {}
       } catch (e) {
+        console.error('[phone-verify] SMS send exception:', e);
         return json(500, { success: false, error: { code: 'SMS_SEND_FAILED', message: String(e) } });
       }
       // Return a challenge token so we can validate without DB
