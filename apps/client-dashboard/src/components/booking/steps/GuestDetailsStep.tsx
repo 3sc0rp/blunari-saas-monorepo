@@ -277,8 +277,8 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
               </Button>
               {phoneStatus==='sent' && (
                 <>
-                  <Input value={otpCode} onChange={(e)=>setOtpCode(e.target.value.replace(/\D/g, '').slice(0,6))} placeholder="123456" className="w-24" />
-                  <Button type="button" disabled={verifyingOtp || otpCode.length !== 6}
+                  <Input value={otpCode} onChange={(e)=>setOtpCode(e.target.value.replace(/\D/g, '').slice(0,8))} placeholder="12345" className="w-24" />
+                  <Button type="button" disabled={verifyingOtp || otpCode.length < 4}
                     onClick={async ()=>{
                       try {
                         setVerifyingOtp(true);
