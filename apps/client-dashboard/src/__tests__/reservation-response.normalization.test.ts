@@ -4,7 +4,7 @@ import { ReservationResponseSchema } from '@/types/booking-api';
 describe('ReservationResponseSchema', () => {
   it('accepts minimal summary with coerced party_size and optional time', () => {
     const payload = {
-      reservation_id: '00000000-0000-0000-0000-000000000001',
+      reservation_id: '550e8400-e29b-41d4-a716-446655440001',
       confirmation_number: 'CONF123456',
       status: 'confirmed',
       summary: {
