@@ -89,19 +89,25 @@ serve(async (req) => {
       if (!phone_number || !code) return json(400, { success: false, error: { code: 'MISSING_PARAMS', message: 'phone_number and code required', requestId } });
       const digits = String(phone_number).replace(/\D/g,'');
       const normalized = digits.length === 10 ? `+1${digits}` : (digits.startsWith('1') && digits.length === 11 ? `+${digits}` : String(phone_number));
-      const res = await fetch('https://api.telnyx.com/v2/verifications/by_phone_number/actions/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${TELNYX_API_KEY}`,
-        },
-        body: JSON.stringify({ phone_number: normalized, code, verify_profile_id: VERIFY_PROFILE_ID }),
-      });
-      if (!res.ok) {
-        const t = await res.text();
-        // Normalize common Telnyx errors for the client
-        let message = t.slice(0, 300);
-        try { const j = JSON.parse(t); message = j?.errors?.[0]?.detail || j?.errors?.[0]?.title || message; } catch {}
+      const payload = JSON.stringify({ phone_number: normalized, code, verify_profile_id: VERIFY_PROFILE_ID });
+      const endpoints = [
+        'https://api.telnyx.com/v2/verifications/by_phone_number/actions/verify',
+        'https://api.telnyx.com/v2/verifications/by_phone_number/verify',
+        'https://api.telnyx.com/v2/verify/verifications/by_phone_number/actions/verify_code'
+      ];
+      let ok = false; let lastErr = '';
+      for (const url of endpoints) {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TELNYX_API_KEY}` },
+          body: payload,
+        });
+        if (r.ok) { ok = true; break; }
+        lastErr = await r.text();
+      }
+      if (!ok) {
+        let message = lastErr.slice(0, 300);
+        try { const j = JSON.parse(lastErr); message = j?.errors?.[0]?.detail || j?.errors?.[0]?.title || message; } catch {}
         return json(400, { success: false, error: { code: 'VERIFY_FAILED', message, requestId } });
       }
       // issue signed token for confirm step
