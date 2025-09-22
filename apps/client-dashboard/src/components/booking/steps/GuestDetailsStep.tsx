@@ -172,7 +172,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
   const formData = watch();
   const phoneDigits = (formData?.phone || '').replace(/\D/g, '').slice(0, 10);
   const tenDigitsOk = phoneDigits.length === 10;
-  const requirePhoneVerification = (import.meta.env.VITE_REQUIRE_PHONE_VERIFICATION || 'false') === 'true';
+  const requirePhoneVerification = (import.meta.env.VITE_REQUIRE_PHONE_VERIFICATION || 'true') === 'true';
 
   return (
     <div className="space-y-6">
