@@ -123,6 +123,8 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [phoneMsg, setPhoneMsg] = useState<string>("");
+  const [messageId, setMessageId] = useState<string | null>(null);
+  const [providerStatus, setProviderStatus] = useState<string | null>(null);
 
   // Check if deposit is required based on policy stored from availability search
   const depositPolicy = (window as any).__widget_deposit_policy;
@@ -265,17 +267,50 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                       body: JSON.stringify({ action: 'start', phone_number: `+1${phoneDigits}`, tenant_id: tenant.tenant_id })
                     });
                     if (res.ok) {
-                      try { const j = await res.json(); (window as any).__phone_verify_challenge = j?.challenge_token; } catch {}
+                      try {
+                        const j = await res.json();
+                        (window as any).__phone_verify_challenge = j?.challenge_token;
+                        setMessageId(j?.message_id || null);
+                        setProviderStatus(j?.provider_status || null);
+                      } catch {}
                       setPhoneStatus('sent');
                     } else {
                       const j = await res.json().catch(()=>null);
                       setPhoneMsg(j?.error?.message || 'Failed to send code');
+                      setMessageId(null);
+                      setProviderStatus(null);
                       setPhoneStatus('error');
                     }
                   } catch { setPhoneStatus('error'); } finally { setSendingOtp(false); }
                 }}>
                 {sendingOtp ? 'Sending...' : phoneStatus==='sent' ? 'Code Sent' : phoneStatus==='verified' ? 'Verified' : 'Send Code'}
               </Button>
+              {messageId && (
+                <div className="text-xs text-muted-foreground">
+                  Message ID: {messageId}{providerStatus ? ` • Status: ${providerStatus}` : ''}
+                </div>
+              )}
+              {messageId && phoneStatus==='sent' && (
+                <Button type="button" variant="ghost" size="sm" onClick={async ()=>{
+                  try {
+                    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+                      body: JSON.stringify({ action: 'status', message_id: messageId })
+                    });
+                    const j = await res.json().catch(()=>null);
+                    if (res.ok) {
+                      const st = j?.data?.data?.status || j?.data?.status || j?.status || null;
+                      if (st) setProviderStatus(String(st));
+                      else setProviderStatus('unknown');
+                    } else {
+                      setPhoneMsg(j?.error?.message || 'Failed to check status');
+                    }
+                  } catch (e) {
+                    setPhoneMsg('Failed to check status');
+                  }
+                }}>Check Status</Button>
+              )}
               {import.meta.env.MODE === 'development' && phoneStatus === 'error' && (
                 <Button type="button" variant="outline" size="sm"
                   onClick={async () => {
