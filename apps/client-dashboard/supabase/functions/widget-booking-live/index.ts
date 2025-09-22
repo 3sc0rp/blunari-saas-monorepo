@@ -480,8 +480,8 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
   try {
     const { tenant_id, hold_id, guest_details, idempotency_key, deposit, phone_verification_token } = requestData;
 
-    // Enforce phone verification if configured
-    let requireVerify = (Deno.env.get('REQUIRE_PHONE_VERIFICATION') || 'true').toLowerCase() !== 'false';
+    // Enforce phone verification if configured (default: disabled until Telnyx is verified)
+    let requireVerify = (Deno.env.get('REQUIRE_PHONE_VERIFICATION') || 'false').toLowerCase() === 'true';
     try {
       const { data: settings } = await supabase
         .from('tenant_settings')
@@ -710,8 +710,8 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       } catch {}
     }
 
-    // Enforce phone verification if configured/env enables it
-    let requireVerify = (Deno.env.get('REQUIRE_PHONE_VERIFICATION') || 'true').toLowerCase() !== 'false';
+    // Enforce phone verification if configured/env enables it (default: disabled)
+    let requireVerify = (Deno.env.get('REQUIRE_PHONE_VERIFICATION') || 'false').toLowerCase() === 'true';
     try {
       const { data: settings } = await supabase
         .from('tenant_settings')
