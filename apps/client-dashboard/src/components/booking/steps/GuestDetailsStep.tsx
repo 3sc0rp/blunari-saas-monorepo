@@ -146,7 +146,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
     if (depositRequired && !paymentCompleted) {
       return; // Payment form handles this
     }
-    if (phoneStatus !== 'verified') {
+    if (requirePhoneVerification && phoneStatus !== 'verified') {
       return; // require phone verification
     }
 
@@ -172,6 +172,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
   const formData = watch();
   const phoneDigits = (formData?.phone || '').replace(/\D/g, '').slice(0, 10);
   const tenDigitsOk = phoneDigits.length === 10;
+  const requirePhoneVerification = (import.meta.env.VITE_REQUIRE_PHONE_VERIFICATION || 'false') === 'true';
 
   return (
     <div className="space-y-6">
@@ -259,10 +260,12 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                 </p>
               )}
             <div className="flex items-center gap-2">
-              <Button type="button" variant="secondary" disabled={!tenDigitsOk}
-                onClick={() => setVerifyOpen(true)}>
-                Verify
-              </Button>
+              {requirePhoneVerification && (
+                <Button type="button" variant="secondary" disabled={!tenDigitsOk}
+                  onClick={() => setVerifyOpen(true)}>
+                  Verify
+                </Button>
+              )}
               {import.meta.env.MODE === 'development' && phoneStatus === 'error' && (
                 <Button type="button" variant="outline" size="sm"
                   onClick={async () => {
@@ -286,6 +289,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
               )}
               {phoneMsg && <div className="text-xs text-destructive">{phoneMsg}</div>}
 
+              {requirePhoneVerification && (
               <Dialog open={verifyOpen} onOpenChange={(o)=>{ setVerifyOpen(o); if(!o){ setPhoneMsg(''); setOtpCode(''); } }}>
                 <DialogContent>
                   <DialogHeader>
@@ -369,6 +373,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                   </div>
                 </DialogContent>
               </Dialog>
+              )}
             </div>
             </div>
 
@@ -402,10 +407,10 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
               <Button
                 type="submit"
                 className="w-full"
-                disabled={!isValid || loading || (depositRequired && !paymentCompleted) || phoneStatus!=='verified'}
+                disabled={!isValid || loading || (depositRequired && !paymentCompleted) || (requirePhoneVerification && phoneStatus!=='verified')}
                 style={{ backgroundColor: tenant.branding?.primary_color }}
               >
-                {loading ? "Processing..." : phoneStatus!=='verified' ? "Verify Phone to Continue" : depositRequired && !paymentCompleted ? "Complete Payment First" : "Continue to Confirmation"}
+                {loading ? "Processing..." : (requirePhoneVerification && phoneStatus!=='verified') ? "Verify Phone to Continue" : depositRequired && !paymentCompleted ? "Complete Payment First" : "Continue to Confirmation"}
               </Button>
             </motion.div>
           </form>
