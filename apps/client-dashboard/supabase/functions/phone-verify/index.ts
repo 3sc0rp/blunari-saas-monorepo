@@ -60,9 +60,9 @@ serve(async (req) => {
     if (!action) return json(400, { success: false, error: { code: 'MISSING_ACTION', message: 'action required', requestId } });
 
     const TELNYX_API_KEY = Deno.env.get('TELNYX_API_KEY');
-    const VERIFY_PROFILE_ID = Deno.env.get('TELNYX_VERIFY_PROFILE_ID');
-    if (!TELNYX_API_KEY || !VERIFY_PROFILE_ID) {
-      return json(503, { success: false, error: { code: 'VERIFY_NOT_CONFIGURED', message: 'Verify not configured', requestId } });
+    const VERIFY_PROFILE_ID = Deno.env.get('TELNYX_VERIFY_PROFILE_ID'); // optional when using Messaging API
+    if (!TELNYX_API_KEY) {
+      return json(503, { success: false, error: { code: 'VERIFY_NOT_CONFIGURED', message: 'Telnyx API key not configured', requestId } });
     }
 
     if (action === 'start') {
@@ -87,31 +87,52 @@ serve(async (req) => {
         profileId: TELNYX_MESSAGING_PROFILE_ID ? `${TELNYX_MESSAGING_PROFILE_ID.slice(0, 8)}...` : 'none'
       });
       const msg = (Deno.env.get('VERIFY_SMS_TEMPLATE') || 'Your {{app}} verification code is {{code}}').replace('{{code}}', code).replace('{{app}}', (Deno.env.get('APP_NAME') || 'Blunari'));
-      const smsBody = TELNYX_FROM_NUMBER
-        ? { from: TELNYX_FROM_NUMBER, to: normalized, text: msg }
-        : { messaging_profile_id: TELNYX_MESSAGING_PROFILE_ID, to: normalized, text: msg };
-      console.log('[phone-verify] SMS attempt:', { normalized, hasFromNumber: !!TELNYX_FROM_NUMBER, hasProfileId: !!TELNYX_MESSAGING_PROFILE_ID, smsBody });
-      try {
-        const resp = await fetch('https://api.telnyx.com/v2/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TELNYX_API_KEY}` },
-          body: JSON.stringify(smsBody),
-        });
-        const respText = await resp.text();
-        console.log('[phone-verify] Telnyx response:', { status: resp.status, body: respText });
-        if (!resp.ok) {
-          let msg = respText.slice(0, 400);
-          try { const j = JSON.parse(respText); msg = j?.errors?.[0]?.detail || j?.errors?.[0]?.title || msg; } catch {}
-          return json(400, { success: false, error: { code: 'SMS_SEND_FAILED', message: msg, telnyx: respText } });
-        }
-        // Parse success response for additional info
+      // Sanitize FROM number to E.164 if possible
+      let sanitizedFrom: string | undefined = undefined;
+      if (TELNYX_FROM_NUMBER) {
+        const fDigits = String(TELNYX_FROM_NUMBER).replace(/\D/g,'');
+        sanitizedFrom = fDigits.length === 10 ? `+1${fDigits}` : (fDigits.length === 11 && fDigits.startsWith('1') ? `+${fDigits}` : (TELNYX_FROM_NUMBER.startsWith('+') ? TELNYX_FROM_NUMBER : TELNYX_FROM_NUMBER));
+      }
+      const base = { to: normalized, text: msg } as any;
+      const attemptBodies: Array<Record<string, unknown>> = [];
+      if (sanitizedFrom && TELNYX_MESSAGING_PROFILE_ID) {
+        attemptBodies.push({ ...base, from: sanitizedFrom, messaging_profile_id: TELNYX_MESSAGING_PROFILE_ID });
+        attemptBodies.push({ ...base, messaging_profile_id: TELNYX_MESSAGING_PROFILE_ID });
+        attemptBodies.push({ ...base, from: sanitizedFrom });
+      } else if (sanitizedFrom) {
+        attemptBodies.push({ ...base, from: sanitizedFrom });
+      } else if (TELNYX_MESSAGING_PROFILE_ID) {
+        attemptBodies.push({ ...base, messaging_profile_id: TELNYX_MESSAGING_PROFILE_ID });
+      }
+      console.log('[phone-verify] SMS attempts planned:', { attempts: attemptBodies.length, to: normalized });
+      let sentOk = false; let lastErrText = '';
+      for (let i = 0; i < attemptBodies.length; i++) {
+        const body = attemptBodies[i];
+        console.log('[phone-verify] Attempt', i+1, 'payload keys:', Object.keys(body));
         try {
-          const data = JSON.parse(respText);
-          console.log('[phone-verify] SMS sent successfully:', { messageId: data?.data?.id, status: data?.data?.status });
-        } catch {}
-      } catch (e) {
-        console.error('[phone-verify] SMS send exception:', e);
-        return json(500, { success: false, error: { code: 'SMS_SEND_FAILED', message: String(e) } });
+          const resp = await fetch('https://api.telnyx.com/v2/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TELNYX_API_KEY}` },
+            body: JSON.stringify(body),
+          });
+          const respText = await resp.text();
+          console.log('[phone-verify] Telnyx response (attempt', i+1, '):', { status: resp.status, body: respText });
+          if (resp.ok) {
+            try { const data = JSON.parse(respText); console.log('[phone-verify] SMS sent successfully:', { messageId: data?.data?.id, status: data?.data?.status }); } catch {}
+            sentOk = true;
+            break;
+          } else {
+            lastErrText = respText;
+          }
+        } catch (e) {
+          lastErrText = String(e);
+          console.error('[phone-verify] SMS send exception (attempt', i+1, '):', e);
+        }
+      }
+      if (!sentOk) {
+        let msg = lastErrText.slice(0, 400);
+        try { const j = JSON.parse(lastErrText); msg = j?.errors?.[0]?.detail || j?.errors?.[0]?.title || msg; } catch {}
+        return json(400, { success: false, error: { code: 'SMS_SEND_FAILED', message: msg, telnyx: lastErrText, requestId } });
       }
       // Return a challenge token so we can validate without DB
       const ttl = Math.max(60, parseInt(Deno.env.get('VERIFY_CODE_TTL_SECONDS') || '300'));
@@ -142,7 +163,10 @@ serve(async (req) => {
         }
       } catch {}
 
-      // Fallback to Telnyx Verify if challenge is not present
+      // Fallback to Telnyx Verify if challenge is not present AND verify profile is configured
+      if (!VERIFY_PROFILE_ID) {
+        return json(400, { success: false, error: { code: 'VERIFY_FAILED', message: 'missing challenge token', requestId } });
+      }
       const payload = JSON.stringify({ phone_number: normalized, code, verify_profile_id: VERIFY_PROFILE_ID });
       const endpoints = [
         'https://api.telnyx.com/v2/verifications/by_phone_number/actions/verify',
@@ -151,13 +175,17 @@ serve(async (req) => {
       ];
       let ok = false; let lastErr = '';
       for (const url of endpoints) {
-        const r = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TELNYX_API_KEY}` },
-          body: payload,
-        });
-        if (r.ok) { ok = true; break; }
-        lastErr = await r.text();
+        try {
+          const r = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TELNYX_API_KEY}` },
+            body: payload,
+          });
+          if (r.ok) { ok = true; break; }
+          lastErr = await r.text();
+        } catch (e) {
+          lastErr = String(e);
+        }
       }
       if (!ok) {
         let message = lastErr.slice(0, 300);
