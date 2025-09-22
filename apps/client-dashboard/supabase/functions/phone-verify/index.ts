@@ -275,7 +275,7 @@ serve(async (req) => {
       const digits = String(phone_number).replace(/\D/g,'');
       const normalized = digits.length === 10 ? `+1${digits}` : String(phone_number);
       const exp = Math.floor(Date.now() / 1000) + 10 * 60;
-      const token = signVerificationJWT({ purpose: 'phone-verify', phone: normalized, tenant_id, exp });
+      const token = signWidgetJWT({ purpose: 'phone-verify', phone: normalized, tenant_id, exp });
       return json(200, { success: true, token, bypass: true, requestId });
     }
 
