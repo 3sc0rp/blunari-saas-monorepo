@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.widget-booking-live]
 verify_jwt = false
+
+[functions.phone-verify]
+verify_jwt = false

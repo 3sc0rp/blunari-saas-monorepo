@@ -25,12 +25,24 @@ function getSigningSecret(): string {
   return Deno.env.get('PHONE_VERIFY_SIGNING_SECRET') || Deno.env.get('WIDGET_JWT_SECRET') || Deno.env.get('VITE_JWT_SECRET') || 'dev-jwt-secret-change-in-production-2025';
 }
 
+function getWidgetSecret(): string {
+  return Deno.env.get('WIDGET_JWT_SECRET') || Deno.env.get('VITE_JWT_SECRET') || 'dev-jwt-secret-change-in-production-2025';
+}
+
 function signVerificationJWT(payload: Record<string, unknown>): string {
   const header = { alg: 'HS256', typ: 'JWT' };
   const p = { ...payload } as any;
   const hEncoded = b64urlEncode(JSON.stringify(header));
   const pEncoded = b64urlEncode(JSON.stringify(p));
   const sig = simpleHMAC(`${hEncoded}.${pEncoded}`, getSigningSecret());
+  return `${hEncoded}.${pEncoded}.${sig}`;
+}
+function signWidgetJWT(payload: Record<string, unknown>): string {
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const p = { ...payload } as any;
+  const hEncoded = b64urlEncode(JSON.stringify(header));
+  const pEncoded = b64urlEncode(JSON.stringify(p));
+  const sig = simpleHMAC(`${hEncoded}.${pEncoded}`, getWidgetSecret());
   return `${hEncoded}.${pEncoded}.${sig}`;
 }
 function verifyVerificationJWT(token: string): any | null {
@@ -46,6 +58,27 @@ function verifyVerificationJWT(token: string): any | null {
   }
 }
 
+function verifyJWTWithEitherSecret(token: string): any | null {
+  try {
+    const [h, p, s] = token.split('.');
+    const expectedA = simpleHMAC(`${h}.${p}`, getSigningSecret());
+    if (s === expectedA) {
+      const payload = JSON.parse(b64urlDecode(p));
+      if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return null;
+      return payload;
+    }
+    const expectedB = simpleHMAC(`${h}.${p}`, getWidgetSecret());
+    if (s === expectedB) {
+      const payload = JSON.parse(b64urlDecode(p));
+      if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return null;
+      return payload;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
@@ -56,7 +89,8 @@ serve(async (req) => {
 
   const requestId = crypto.randomUUID();
   try {
-    const { action, phone_number, code, tenant_id, challenge_token } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const { action, phone_number, code, tenant_id, challenge_token, token } = body as any;
     if (!action) return json(400, { success: false, error: { code: 'MISSING_ACTION', message: 'action required', requestId } });
 
     const TELNYX_API_KEY = Deno.env.get('TELNYX_API_KEY');
@@ -106,6 +140,9 @@ serve(async (req) => {
       }
       console.log('[phone-verify] SMS attempts planned:', { attempts: attemptBodies.length, to: normalized });
       let sentOk = false; let lastErrText = '';
+      let usedAttemptIndex: number | null = null;
+      let lastMessageId: string | undefined = undefined;
+      let lastProviderStatus: string | undefined = undefined;
       for (let i = 0; i < attemptBodies.length; i++) {
         const body = attemptBodies[i];
         console.log('[phone-verify] Attempt', i+1, 'payload keys:', Object.keys(body));
@@ -118,8 +155,9 @@ serve(async (req) => {
           const respText = await resp.text();
           console.log('[phone-verify] Telnyx response (attempt', i+1, '):', { status: resp.status, body: respText });
           if (resp.ok) {
-            try { const data = JSON.parse(respText); console.log('[phone-verify] SMS sent successfully:', { messageId: data?.data?.id, status: data?.data?.status }); } catch {}
+            try { const data = JSON.parse(respText); lastMessageId = data?.data?.id; lastProviderStatus = data?.data?.status; console.log('[phone-verify] SMS sent successfully:', { messageId: lastMessageId, status: lastProviderStatus }); } catch {}
             sentOk = true;
+            usedAttemptIndex = i + 1;
             break;
           } else {
             lastErrText = respText;
@@ -138,7 +176,7 @@ serve(async (req) => {
       const ttl = Math.max(60, parseInt(Deno.env.get('VERIFY_CODE_TTL_SECONDS') || '300'));
       const exp = Math.floor(Date.now() / 1000) + ttl;
       const challenge = signVerificationJWT({ purpose: 'phone-verify-challenge', phone: normalized, h: simpleHMAC(code, getSigningSecret()), exp });
-      return json(200, { success: true, status: 'pending', challenge_token: challenge, requestId });
+      return json(200, { success: true, status: 'pending', challenge_token: challenge, to: normalized, message_id: lastMessageId, provider_status: lastProviderStatus, attempt: usedAttemptIndex, requestId });
     }
 
     if (action === 'check') {
@@ -158,7 +196,8 @@ serve(async (req) => {
           if (String(payload?.phone) !== normalized) return json(400, { success: false, error: { code: 'VERIFY_FAILED', message: 'phone mismatch', requestId } });
           const ok = simpleHMAC(String(code), getSigningSecret()) === payload?.h;
           if (!ok) return json(400, { success: false, error: { code: 'VERIFY_FAILED', message: 'incorrect code', requestId } });
-          const token = signVerificationJWT({ purpose: 'phone-verify', phone: normalized, tenant_id, exp: Math.floor(Date.now() / 1000) + 600 });
+          // Sign verification token with widget secret so booking confirm can validate it
+          const token = signWidgetJWT({ purpose: 'phone-verify', phone: normalized, tenant_id, exp: Math.floor(Date.now() / 1000) + 600 });
           return json(200, { success: true, token, requestId });
         }
       } catch {}
@@ -194,15 +233,38 @@ serve(async (req) => {
       }
       // issue signed token for confirm step
       const exp = Math.floor(Date.now() / 1000) + 10 * 60; // 10 minutes
-      const token = signVerificationJWT({ purpose: 'phone-verify', phone: normalized, tenant_id, exp });
+      const token = signWidgetJWT({ purpose: 'phone-verify', phone: normalized, tenant_id, exp });
       return json(200, { success: true, token, requestId });
     }
 
     if (action === 'validate') {
-      const auth = await req.json().catch(() => ({}));
-      const token = (auth && auth.token) || '';
       const payload = token ? verifyVerificationJWT(token) : null;
       return json(200, { success: !!payload, payload: payload || null });
+    }
+
+    if (action === 'status') {
+      const message_id = (body as any)?.message_id as string | undefined;
+      if (!message_id) return json(400, { success: false, error: { code: 'MISSING_PARAMS', message: 'message_id required', requestId } });
+      try {
+        const resp = await fetch(`https://api.telnyx.com/v2/messages/${encodeURIComponent(message_id)}`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${TELNYX_API_KEY}` },
+        });
+        const text = await resp.text();
+        if (!resp.ok) {
+          let message = text.slice(0, 400);
+          try { const j = JSON.parse(text); message = j?.errors?.[0]?.detail || j?.errors?.[0]?.title || message; } catch {}
+          return json(400, { success: false, error: { code: 'STATUS_FAILED', message, telnyx: text, requestId } });
+        }
+        try {
+          const data = JSON.parse(text);
+          return json(200, { success: true, data, requestId });
+        } catch {
+          return json(200, { success: true, data: text, requestId });
+        }
+      } catch (e) {
+        return json(500, { success: false, error: { code: 'STATUS_ERROR', message: String(e), requestId } });
+      }
     }
 
     if (action === 'bypass') {
