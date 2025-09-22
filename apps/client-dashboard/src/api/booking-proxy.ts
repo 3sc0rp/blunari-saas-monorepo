@@ -266,7 +266,8 @@ export async function confirmReservation(
       hold_id: request.hold_id,
       guest_details: request.guest_details,
       table_id: (request as any).table_id,
-      deposit: (request as any).deposit
+      deposit: (request as any).deposit,
+      phone_verification_token: (request as any).phone_verification_token,
     });
 
     // Normalize any upstream variations into our stable schema
