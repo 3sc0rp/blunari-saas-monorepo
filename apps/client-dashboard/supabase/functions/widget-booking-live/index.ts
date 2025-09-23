@@ -480,45 +480,7 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
   try {
     const { tenant_id, hold_id, guest_details, idempotency_key, deposit, phone_verification_token } = requestData;
 
-    // Enforce phone verification if configured
-    let requireVerify = (Deno.env.get('REQUIRE_PHONE_VERIFICATION') || 'true').toLowerCase() !== 'false';
-    try {
-      const { data: settings } = await supabase
-        .from('tenant_settings')
-        .select('setting_value')
-        .eq('tenant_id', tenant_id)
-        .eq('setting_key', 'operational')
-        .maybeSingle();
-      const flag = settings?.setting_value?.requirePhoneVerification;
-      if (flag === false) requireVerify = false;
-    } catch {}
-    if (requireVerify) {
-      const token = phone_verification_token || '';
-      if (!token) {
-        return errorResponse('PHONE_NOT_VERIFIED', 'Phone verification required', 400, requestId);
-      }
-      try {
-        const [h, p, s] = String(token).split('.');
-        const expected = simpleHMAC(`${h}.${p}`, getWidgetSecret());
-        if (s !== expected) return errorResponse('PHONE_NOT_VERIFIED', 'Invalid verification token', 400, requestId);
-        const payload = JSON.parse(b64urlDecode(p));
-        if (payload?.purpose !== 'phone-verify' || payload?.tenant_id !== tenant_id) {
-          return errorResponse('PHONE_NOT_VERIFIED', 'Verification token mismatch', 400, requestId);
-        }
-        if (payload?.exp && Math.floor(Date.now() / 1000) > payload.exp) {
-          return errorResponse('PHONE_NOT_VERIFIED', 'Verification expired', 400, requestId);
-        }
-        if (guest_details?.phone && payload?.phone) {
-          const a = String(guest_details.phone).replace(/\D/g,'').slice(-10);
-          const b = String(payload.phone).replace(/\D/g,'').slice(-10);
-          if (a !== b) {
-          return errorResponse('PHONE_NOT_VERIFIED', 'Phone number changed after verification', 400, requestId);
-          }
-        }
-      } catch {
-        return errorResponse('PHONE_NOT_VERIFIED', 'Verification failed', 400, requestId);
-      }
-    }
+    // Phone verification disabled
 
     // Idempotency read (best-effort) — guarded if table exists
     if (idempotency_key) {

@@ -118,16 +118,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
-  const [phoneStatus, setPhoneStatus] = useState<'idle'|'sent'|'verified'|'error'>('idle');
-  const [verifyToken, setVerifyToken] = useState<string | null>(null);
-  const [otpCode, setOtpCode] = useState<string>("");
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [phoneMsg, setPhoneMsg] = useState<string>("");
-  const [messageId, setMessageId] = useState<string | null>(null);
-  const [providerStatus, setProviderStatus] = useState<string | null>(null);
-  const [verifyOpen, setVerifyOpen] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState<number>(0);
+  // Phone verification temporarily disabled
 
   // Check if deposit is required based on policy stored from availability search
   const depositPolicy = (window as any).__widget_deposit_policy;
@@ -170,9 +161,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
   };
 
   const formData = watch();
-  const phoneDigits = (formData?.phone || '').replace(/\D/g, '').slice(0, 10);
-  const tenDigitsOk = phoneDigits.length === 10;
-  const requirePhoneVerification = (import.meta.env.VITE_REQUIRE_PHONE_VERIFICATION || 'true') === 'true';
+  const requirePhoneVerification = false;
 
   return (
     <div className="space-y-6">
@@ -260,120 +249,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
                 </p>
               )}
             <div className="flex items-center gap-2">
-              {requirePhoneVerification && (
-                <Button type="button" variant="secondary" disabled={!tenDigitsOk}
-                  onClick={() => setVerifyOpen(true)}>
-                  Verify
-                </Button>
-              )}
-              {import.meta.env.MODE === 'development' && phoneStatus === 'error' && (
-                <Button type="button" variant="outline" size="sm"
-                  onClick={async () => {
-                    try {
-                      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-                        body: JSON.stringify({ action: 'bypass', phone_number: `+1${phoneDigits}`, tenant_id: tenant.tenant_id })
-                      });
-                      if (res.ok) {
-                        const j = await res.json();
-                        setVerifyToken(j.token);
-                        (window as any).__phone_verify_token = j.token;
-                        setPhoneStatus('verified');
-                        setPhoneMsg('Bypassed for development');
-                      }
-                    } catch {}
-                  }}>
-                  Dev Bypass
-                </Button>
-              )}
-              {phoneMsg && <div className="text-xs text-destructive">{phoneMsg}</div>}
-
-              {requirePhoneVerification && (
-              <Dialog open={verifyOpen} onOpenChange={(o)=>{ setVerifyOpen(o); if(!o){ setPhoneMsg(''); setOtpCode(''); } }}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Verify your phone</DialogTitle>
-                    <DialogDescription>We sent a code via SMS. Enter it below.</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-3">
-                    <div className="text-xs text-muted-foreground">{`+1${phoneDigits}`}</div>
-                    <div className="flex items-center gap-2">
-                      <Button type="button" variant="secondary" disabled={sendingOtp || resendCooldown>0}
-                        onClick={async ()=>{
-                          try {
-                            setSendingOtp(true);
-                            setPhoneMsg('');
-                            setMessageId(null);
-                            setProviderStatus(null);
-                            const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-                              body: JSON.stringify({ action: 'start', phone_number: `+1${phoneDigits}`, tenant_id: tenant.tenant_id })
-                            });
-                            const j = await res.json().catch(()=>null);
-                            if (res.ok) {
-                              (window as any).__phone_verify_challenge = j?.challenge_token;
-                              setMessageId(j?.message_id || null);
-                              setProviderStatus(j?.provider_status || null);
-                              setPhoneStatus('sent');
-                              setResendCooldown(30);
-                              const t = setInterval(()=> setResendCooldown((s)=>{ if(s<=1){ clearInterval(t); return 0; } return s-1; }), 1000);
-                            } else {
-                              setPhoneMsg(j?.error?.message || 'Failed to send code');
-                              setPhoneStatus('error');
-                            }
-                          } finally { setSendingOtp(false); }
-                        }}>
-                        {resendCooldown>0 ? `Resend in ${resendCooldown}s` : (sendingOtp ? 'Sending...' : 'Send code')}
-                      </Button>
-                      {messageId && (
-                        <Button type="button" variant="ghost" size="sm" onClick={async ()=>{
-                          try {
-                            const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-                              body: JSON.stringify({ action: 'status', message_id: messageId })
-                            });
-                            const j = await res.json().catch(()=>null);
-                            if (res.ok) {
-                              const st = j?.data?.data?.to?.[0]?.status || j?.data?.data?.status || j?.data?.status || j?.status || null;
-                              setProviderStatus(st ? String(st) : 'unknown');
-                            } else {
-                              setPhoneMsg(j?.error?.message || 'Failed to check status');
-                            }
-                          } catch {}
-                        }}>Check Status</Button>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input value={otpCode} onChange={(e)=>setOtpCode(e.target.value.replace(/\D/g, '').slice(0,8))} placeholder="12345" className="w-32" />
-                      <Button type="button" disabled={verifyingOtp || otpCode.length < 4}
-                        onClick={async ()=>{
-                          try {
-                            setVerifyingOtp(true);
-                            setPhoneMsg('');
-                            const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phone-verify`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-                              body: JSON.stringify({ action: 'check', phone_number: `+1${phoneDigits}`, code: otpCode, tenant_id: tenant.tenant_id, challenge_token: (window as any).__phone_verify_challenge })
-                            });
-                            const json = await res.json();
-                            if (res.ok && json?.token) { setVerifyToken(json.token); (window as any).__phone_verify_token = json.token; setPhoneStatus('verified'); setVerifyOpen(false); }
-                            else { setPhoneMsg(json?.error?.message || 'Invalid code'); setPhoneStatus('error'); }
-                          } catch { setPhoneStatus('error'); } finally { setVerifyingOtp(false); }
-                        }}>
-                        {verifyingOtp ? 'Verifying...' : 'Verify'}
-                      </Button>
-                    </div>
-                    {messageId && (
-                      <div className="text-xs text-muted-foreground">Message ID: {messageId}{providerStatus ? ` • Status: ${providerStatus}` : ''}</div>
-                    )}
-                    {phoneMsg && <div className="text-xs text-destructive">{phoneMsg}</div>}
-                  </div>
-                </DialogContent>
-              </Dialog>
-              )}
+              {/* Phone verification disabled */}
             </div>
             </div>
 
