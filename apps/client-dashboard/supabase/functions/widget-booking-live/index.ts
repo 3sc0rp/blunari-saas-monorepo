@@ -916,6 +916,7 @@ async function sendNotifications(opts: { toEmail?: string; toPhone?: string; ten
   const when = new Date(whenISO);
   const dateStr = when.toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const timeStr = when.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  console.log('[notifications] start', { hasToEmail: !!toEmail, hasToPhone: !!toPhone, confirmationNumber });
 
   // SMS via Telnyx
   try {
@@ -938,8 +939,9 @@ async function sendNotifications(opts: { toEmail?: string; toPhone?: string; ten
   try {
     const FASTMAIL_API_TOKEN = Deno.env.get('FASTMAIL_API_TOKEN') || Deno.env.get('FASTMAIL_SMTP_PASSWORD');
     const FASTMAIL_FROM = Deno.env.get('FASTMAIL_FROM') || Deno.env.get('FASTMAIL_FROM_EMAIL');
+    console.log('[notifications] fastmail config', { hasToken: !!FASTMAIL_API_TOKEN, hasFrom: !!FASTMAIL_FROM, toEmail });
     if (FASTMAIL_API_TOKEN && FASTMAIL_FROM && toEmail) {
-      await sendEmailViaFastmail({
+      const ok = await sendEmailViaFastmail({
         apiToken: FASTMAIL_API_TOKEN,
         from: FASTMAIL_FROM,
         to: toEmail,
@@ -947,16 +949,18 @@ async function sendNotifications(opts: { toEmail?: string; toPhone?: string; ten
         text: `Your reservation is confirmed for ${dateStr} at ${timeStr}. Party ${partySize}. Reference ${confirmationNumber}.`,
         html: `<p>Your reservation is confirmed.</p><p><b>${dateStr} at ${timeStr}</b> · Party ${partySize}</p><p>Reference: <b>${confirmationNumber}</b></p>`
       });
-      return; // sent via Fastmail; stop here
+      console.log('[notifications] fastmail result', { ok });
+      if (ok) return; // sent via Fastmail; stop here
     }
-  } catch {}
+  } catch (e) { console.error('[notifications] fastmail error', e); }
 
   // Fallback: Email via Resend if configured
   try {
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     const RESEND_FROM = Deno.env.get('RESEND_FROM') || Deno.env.get('SMTP_FROM');
+    console.log('[notifications] resend config', { hasKey: !!RESEND_API_KEY, hasFrom: !!RESEND_FROM, toEmail });
     if (RESEND_API_KEY && RESEND_FROM && toEmail) {
-      await fetch('https://api.resend.com/emails', {
+      const resp = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
         body: JSON.stringify({
@@ -966,20 +970,22 @@ async function sendNotifications(opts: { toEmail?: string; toPhone?: string; ten
           html: `<p>Your reservation is confirmed.</p><p><b>${dateStr} at ${timeStr}</b> · Party ${partySize}</p><p>Reference: <b>${confirmationNumber}</b></p>`
         })
       });
+      const text = await resp.text();
+      console.log('[notifications] resend response', { status: resp.status, body: text.slice(0, 400) });
     }
   } catch {}
 }
 
-async function sendEmailViaFastmail(params: { apiToken: string; from: string; to: string; subject: string; text: string; html?: string }) {
+async function sendEmailViaFastmail(params: { apiToken: string; from: string; to: string; subject: string; text: string; html?: string }): Promise<boolean> {
   const base = Deno.env.get('FASTMAIL_JMAP_BASE_URL') || 'https://api.fastmail.com';
   const sessionRes = await fetch(`${base}/jmap/session`, {
     headers: { 'Authorization': `Bearer ${params.apiToken}` }
   });
-  if (!sessionRes.ok) return;
+  if (!sessionRes.ok) { console.error('[fastmail] session error', { status: sessionRes.status }); return false; }
   const session = await sessionRes.json();
   const apiUrl = session.apiUrl || `${base}/jmap/api`; // apiUrl is provided in session
   const accountId = (session.primaryAccounts && (session.primaryAccounts['urn:ietf:params:jmap:mail'] || Object.values(session.primaryAccounts)[0])) as string;
-  if (!accountId) return;
+  if (!accountId) { console.error('[fastmail] no accountId'); return false; }
 
   // Discover identity to use
   let identityId: string | undefined;
@@ -1033,5 +1039,11 @@ async function sendEmailViaFastmail(params: { apiToken: string; from: string; to
       }, 'c2']
     ]
   } as any;
-  await fetch(apiUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${params.apiToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const sendRes = await fetch(apiUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${params.apiToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!sendRes.ok) { console.error('[fastmail] send error', { status: sendRes.status }); return false; }
+  try {
+    const j = await sendRes.json();
+    const ok = Array.isArray(j.methodResponses) && j.methodResponses.some((r: any[]) => r[0] === 'EmailSubmission/set' && r[1]?.created?.s1);
+    return !!ok;
+  } catch { return true; }
 }
