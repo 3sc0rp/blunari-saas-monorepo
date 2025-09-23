@@ -33,8 +33,9 @@ export const supabase = createClient<Database>(
       params: {
         eventsPerSecond: 10,
       },
-      heartbeatIntervalMs: 30000,
-      reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 30000),
+      // Use defaults that are friendlier to browser idle/visibility changes
+      heartbeatIntervalMs: 15000,
+      reconnectAfterMs: (tries: number) => Math.min(tries * 2000, 60000),
     },
     global: {
       fetch: (url, options = {}) => {

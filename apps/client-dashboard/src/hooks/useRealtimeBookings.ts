@@ -88,7 +88,11 @@ export const useRealtimeBookings = (tenantId?: string) => {
         },
       )
       .subscribe((status) => {
-        setIsConnected(status === "SUBSCRIBED");
+        if (status === "SUBSCRIBED") {
+          setIsConnected(true);
+        } else if (status === "TIMED_OUT" || status === "CHANNEL_ERROR" || status === "CLOSED") {
+          setIsConnected(false);
+        }
       });
 
     return () => {
@@ -96,6 +100,16 @@ export const useRealtimeBookings = (tenantId?: string) => {
       setIsConnected(false);
     };
   }, [tenantId, sessionReady, queryClient]);
+
+  // Fallback: if realtime isn't connected, refresh periodically so UI still updates
+  useEffect(() => {
+    if (!tenantId) return;
+    if (isConnected) return; // realtime active
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["bookings", tenantId] });
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [isConnected, tenantId, queryClient]);
 
   return {
     bookings,
