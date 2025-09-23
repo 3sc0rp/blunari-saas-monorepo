@@ -936,8 +936,8 @@ async function sendNotifications(opts: { toEmail?: string; toPhone?: string; ten
 
   // Email via Fastmail JMAP (HTTP)
   try {
-    const FASTMAIL_API_TOKEN = Deno.env.get('FASTMAIL_API_TOKEN');
-    const FASTMAIL_FROM = Deno.env.get('FASTMAIL_FROM');
+    const FASTMAIL_API_TOKEN = Deno.env.get('FASTMAIL_API_TOKEN') || Deno.env.get('FASTMAIL_SMTP_PASSWORD');
+    const FASTMAIL_FROM = Deno.env.get('FASTMAIL_FROM') || Deno.env.get('FASTMAIL_FROM_EMAIL');
     if (FASTMAIL_API_TOKEN && FASTMAIL_FROM && toEmail) {
       await sendEmailViaFastmail({
         apiToken: FASTMAIL_API_TOKEN,
@@ -954,7 +954,7 @@ async function sendNotifications(opts: { toEmail?: string; toPhone?: string; ten
   // Fallback: Email via Resend if configured
   try {
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-    const RESEND_FROM = Deno.env.get('RESEND_FROM');
+    const RESEND_FROM = Deno.env.get('RESEND_FROM') || Deno.env.get('SMTP_FROM');
     if (RESEND_API_KEY && RESEND_FROM && toEmail) {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
