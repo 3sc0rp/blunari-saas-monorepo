@@ -238,7 +238,8 @@ serve(async (req) => {
     }
 
     if (action === 'validate') {
-      const payload = token ? verifyVerificationJWT(token) : null;
+      // Accept tokens signed with either the signing secret or the widget secret
+      const payload = token ? verifyJWTWithEitherSecret(token) : null;
       return json(200, { success: !!payload, payload: payload || null });
     }
 
