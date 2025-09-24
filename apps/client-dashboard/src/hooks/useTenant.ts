@@ -221,6 +221,77 @@ export function useTenant() {
         });
       }
 
+      // If we reach here, user has a session but no tenant mapping. Ensure one exists by provisioning.
+      try {
+        // Derive a friendly default name/slug from the user's email
+        const userEmail: string = session.user.email || 'owner@example.com';
+        const localPart = userEmail.split('@')[0] || 'restaurant';
+        const slugBase = localPart
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
+          .slice(0, 40);
+
+        // Attempt up to 3 slug variants to avoid collisions
+        let finalTenant: TenantInfo | null = null;
+        for (let attempt = 0; attempt < 3 && !finalTenant; attempt += 1) {
+          const candidateSlug = attempt === 0 ? slugBase : `${slugBase}-${attempt + 1}`;
+          const payload = {
+            email: userEmail,
+            password: '',
+            restaurant_name: `${localPart}'s Restaurant`,
+            restaurant_slug: candidateSlug,
+            timezone: 'America/New_York',
+            currency: 'USD',
+            admin_user_id: session.user.id
+          };
+
+          try {
+            const { data: provData, error: provErr } = await supabase.functions.invoke('tenant-provision', {
+              body: payload,
+            });
+            if (provErr) {
+              logger.warn('tenant-provision error', provErr);
+              // If slug conflict, try next candidate
+              if (provErr.message && /slug|unique|duplicate/i.test(provErr.message)) {
+                continue;
+              }
+              break;
+            }
+
+            const provisionedTenantId = (provData as any)?.tenant_id as string | undefined;
+            if (provisionedTenantId) {
+              const { data: tenantById } = await supabase
+                .from('tenants')
+                .select('id, slug, name, timezone, currency')
+                .eq('id', provisionedTenantId)
+                .maybeSingle();
+              if (tenantById) {
+                finalTenant = tenantById as any;
+              }
+            }
+          } catch (provCatchErr) {
+            logger.warn('Provisioning attempt failed', provCatchErr instanceof Error ? provCatchErr.message : provCatchErr);
+          }
+        }
+
+        if (finalTenant) {
+          if (!signal.aborted) {
+            // Cache the result for user-based resolution
+            cachedTenant = finalTenant;
+            cacheExpiry = Date.now() + CACHE_DURATION;
+            commitTenant(finalTenant, 'auto-provisioned');
+          }
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
+          return;
+        }
+      } catch (ensureErr) {
+        logger.warn('Auto-provisioning flow failed', ensureErr instanceof Error ? ensureErr.message : 'Unknown error');
+      }
+
       const responseData: any = null;
       const functionError: any = null;
 
