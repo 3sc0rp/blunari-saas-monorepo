@@ -250,16 +250,34 @@ export function useTenant() {
             const { data: provData, error: provErr } = await supabase.functions.invoke('tenant-provision', {
               body: payload,
             });
-            if (provErr) {
-              logger.warn('tenant-provision error', provErr);
-              // If slug conflict, try next candidate
-              if (provErr.message && /slug|unique|duplicate/i.test(provErr.message)) {
-                continue;
+            let provisionedTenantId: string | undefined = (provData as any)?.tenant_id as string | undefined;
+
+            // If edge function fails (e.g., not yet deployed), fall back to RPC direct call
+            if (provErr || !provisionedTenantId) {
+              if (provErr) logger.warn('tenant-provision error', provErr);
+              const { data: rpcId, error: rpcErr } = await supabase.rpc('provision_tenant', {
+                p_user_id: session.user.id,
+                p_restaurant_name: payload.restaurant_name,
+                p_restaurant_slug: candidateSlug,
+                p_timezone: payload.timezone,
+                p_currency: payload.currency,
+                p_description: null,
+                p_phone: null,
+                p_email: payload.email,
+                p_website: null,
+                p_address: null,
+                p_cuisine_type_id: null,
+              });
+              if (rpcErr) {
+                logger.warn('provision_tenant RPC error', rpcErr);
+                if (rpcErr.message && /slug|unique|duplicate/i.test(rpcErr.message)) {
+                  continue;
+                }
+                break;
               }
-              break;
+              provisionedTenantId = rpcId as unknown as string | undefined;
             }
 
-            const provisionedTenantId = (provData as any)?.tenant_id as string | undefined;
             if (provisionedTenantId) {
               const { data: tenantById } = await supabase
                 .from('tenants')
