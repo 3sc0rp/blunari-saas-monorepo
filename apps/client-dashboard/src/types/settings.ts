@@ -36,15 +36,21 @@ export interface OperationalSettings {
 
 export interface IntegrationSettings {
   sms: {
-    provider: "twilio" | "disabled";
+    provider: "twilio" | "telnyx" | "disabled";
     twilioAccountSid?: string;
     twilioAuthToken?: string;
     fromNumber?: string;
+    telnyxMessagingProfileId?: string;
+    telnyxFromNumber?: string;
     enabled: boolean;
   };
   email: {
-    provider: "resend" | "disabled";
+    provider: "resend" | "fastmail" | "smtp" | "disabled";
     resendApiKey?: string;
+    smtpHost?: string;
+    smtpPort?: number;
+    smtpUser?: string;
+    smtpPass?: string;
     fromEmail?: string;
     fromName?: string;
     enabled: boolean;

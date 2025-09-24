@@ -218,7 +218,7 @@ export const useSettings = () => {
     },
   });
 
-  // Update integration settings
+  // Update integration settings (now includes per-tenant email/sms from/provider fields)
   const updateIntegrationMutation = useMutation({
     mutationFn: async (integrations: Partial<IntegrationSettings>) => {
       const currentIntegrations = settings?.integrations || {};

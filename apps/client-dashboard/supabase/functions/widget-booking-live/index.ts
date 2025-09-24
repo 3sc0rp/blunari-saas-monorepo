@@ -548,10 +548,12 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
       } catch {}
     }
 
+    // Enqueue notification with per-tenant settings awareness
     if (isBackgroundOpsConfigured()) {
       await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: guest_details?.email, template: 'reservation.confirmed', data: { reservation_id: apiData.reservation_id, confirmation_number: apiData.confirmation_number, tenant_name: tenant?.name, when: apiData?.summary?.date, party_size: apiData?.summary?.party_size } });
     } else {
-      try { await sendNotifications({
+      // Inline send with tenant-specific from values when configured
+      try { await sendNotificationsWithTenantSettings(supabase, tenant_id, {
         toEmail: guest_details?.email,
         toPhone: guest_details?.phone,
         tenantName: tenant?.name,
@@ -792,7 +794,7 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
     if (isBackgroundOpsConfigured()) {
       await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: guest_details?.email, template: 'reservation.confirmed', data: { reservation_id: booking.id, confirmation_number: confirmationNumber, tenant_name: tenant?.name, when: booking.booking_time, party_size: booking.party_size } });
     } else {
-      try { await sendNotifications({
+      try { await sendNotificationsWithTenantSettings(supabase, tenant_id, {
         toEmail: guest_details?.email,
         toPhone: guest_details?.phone,
         tenantName: tenant?.name,
@@ -1003,6 +1005,87 @@ async function sendNotifications(opts: { toEmail?: string; toPhone?: string; ten
       console.log('[notifications] resend response', { status: resp.status, body: text.slice(0, 400) });
     }
   } catch {}
+}
+
+// Same as sendNotifications, but first reads per-tenant integration settings from tenant_settings.integrations
+async function sendNotificationsWithTenantSettings(
+  supabase: any,
+  tenantId: string,
+  opts: { toEmail?: string; toPhone?: string; tenantName?: string; whenISO: string; partySize: number; confirmationNumber: string },
+) {
+  let integrations: any = {};
+  try {
+    const { data: setting } = await supabase
+      .from('tenant_settings')
+      .select('setting_value')
+      .eq('tenant_id', tenantId)
+      .eq('setting_key', 'integrations')
+      .maybeSingle();
+    integrations = setting?.setting_value || {};
+  } catch {}
+
+  const when = new Date(opts.whenISO);
+  const dateStr = when.toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = when.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  // Prefer per-tenant SMS settings (uses global API key)
+  try {
+    const TELNYX_API_KEY = Deno.env.get('TELNYX_API_KEY');
+    if (TELNYX_API_KEY && opts.toPhone && integrations?.sms?.enabled !== false) {
+      if (integrations?.sms?.provider === 'telnyx' && (integrations?.sms?.telnyxFromNumber || integrations?.sms?.telnyxMessagingProfileId)) {
+        const body = integrations.sms.telnyxFromNumber
+          ? { from: integrations.sms.telnyxFromNumber, to: opts.toPhone, text: `${opts.tenantName || 'Your booking'} confirmed for ${dateStr} at ${timeStr}. Party ${opts.partySize}. Ref ${opts.confirmationNumber}. Reply STOP to stop.` }
+          : { messaging_profile_id: integrations.sms.telnyxMessagingProfileId, to: opts.toPhone, text: `${opts.tenantName || 'Your booking'} confirmed for ${dateStr} at ${timeStr}. Party ${opts.partySize}. Ref ${opts.confirmationNumber}. Reply STOP to stop.` };
+        await fetch('https://api.telnyx.com/v2/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TELNYX_API_KEY}` },
+          body: JSON.stringify(body),
+        });
+      }
+    }
+  } catch {}
+
+  // Prefer per-tenant email settings
+  try {
+    if (opts.toEmail && integrations?.email?.enabled !== false) {
+      if (integrations?.email?.provider === 'fastmail') {
+        const apiToken = Deno.env.get('FASTMAIL_API_TOKEN') || Deno.env.get('FASTMAIL_SMTP_PASSWORD');
+        const fromEmail = integrations?.email?.fromEmail || Deno.env.get('FASTMAIL_FROM') || Deno.env.get('FASTMAIL_FROM_EMAIL');
+        if (apiToken && fromEmail) {
+          const ok = await sendEmailViaFastmail({
+            apiToken,
+            from: fromEmail,
+            to: opts.toEmail,
+            subject: `${opts.tenantName || 'Reservation'} Confirmation ${opts.confirmationNumber}`,
+            text: `Your reservation is confirmed for ${dateStr} at ${timeStr}. Party ${opts.partySize}. Reference ${opts.confirmationNumber}.`,
+            html: `<p>Your reservation is confirmed.</p><p><b>${dateStr} at ${timeStr}</b> · Party ${opts.partySize}</p><p>Reference: <b>${opts.confirmationNumber}</b></p>`
+          });
+          if (ok) return true;
+        }
+      } else if (integrations?.email?.provider === 'resend') {
+        const apiKey = integrations?.email?.resendApiKey || Deno.env.get('RESEND_API_KEY');
+        const fromEmail = integrations?.email?.fromEmail || Deno.env.get('RESEND_FROM') || Deno.env.get('SMTP_FROM');
+        if (apiKey && fromEmail) {
+          const resp = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({
+              from: fromEmail,
+              to: opts.toEmail,
+              subject: `${opts.tenantName || 'Reservation'} Confirmation ${opts.confirmationNumber}`,
+              html: `<p>Your reservation is confirmed.</p><p><b>${dateStr} at ${timeStr}</b> · Party ${opts.partySize}</p><p>Reference: <b>${opts.confirmationNumber}</b></p>`
+            })
+          });
+          // If accepted, stop here
+          if (resp.ok) return true;
+        }
+      }
+    }
+  } catch {}
+
+  // Fallback to global env configuration
+  await sendNotifications(opts);
+  return true;
 }
 
 async function sendEmailViaFastmail(params: { apiToken: string; from: string; to: string; subject: string; text: string; html?: string }): Promise<boolean> {
