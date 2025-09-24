@@ -95,11 +95,6 @@ async function startServer() {
         origin: config.ALLOWED_ORIGINS,
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        // Reflect requested headers to avoid incremental CORS preflight failures
-        allowedHeaders: (req, cb) => {
-          const reqHeaders = req.header("Access-Control-Request-Headers");
-          cb(null, reqHeaders || "*");
-        },
         exposedHeaders: ["x-rate-limit-remaining", "x-rate-limit-reset"],
       }),
     );
