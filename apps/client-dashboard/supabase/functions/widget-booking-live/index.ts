@@ -536,16 +536,18 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
       } catch {}
     }
 
-    await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: guest_details?.email, template: 'reservation.confirmed', data: { reservation_id: apiData.reservation_id, confirmation_number: apiData.confirmation_number, tenant_name: tenant?.name } });
-
-    try { await sendNotifications({
-      toEmail: guest_details?.email,
-      toPhone: guest_details?.phone,
-      tenantName: tenant?.name,
-      whenISO: (apiData?.summary?.date as string) || new Date().toISOString(),
-      partySize: Number(apiData?.summary?.party_size || 0),
-      confirmationNumber: apiData.confirmation_number,
-    }); } catch {}
+    if (isBackgroundOpsConfigured()) {
+      await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: guest_details?.email, template: 'reservation.confirmed', data: { reservation_id: apiData.reservation_id, confirmation_number: apiData.confirmation_number, tenant_name: tenant?.name, when: apiData?.summary?.date, party_size: apiData?.summary?.party_size } });
+    } else {
+      try { await sendNotifications({
+        toEmail: guest_details?.email,
+        toPhone: guest_details?.phone,
+        tenantName: tenant?.name,
+        whenISO: (apiData?.summary?.date as string) || new Date().toISOString(),
+        partySize: Number(apiData?.summary?.party_size || 0),
+        confirmationNumber: apiData.confirmation_number,
+      }); } catch {}
+    }
 
     return new Response(JSON.stringify(responseBody), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } });
   } catch (error) {
@@ -775,14 +777,18 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
     }
 
     // Post-confirm notifications (best-effort)
-    try { await sendNotifications({
-      toEmail: guest_details?.email,
-      toPhone: guest_details?.phone,
-      tenantName: tenant?.name,
-      whenISO: booking.booking_time,
-      partySize: booking.party_size,
-      confirmationNumber,
-    }); } catch {}
+    if (isBackgroundOpsConfigured()) {
+      await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: guest_details?.email, template: 'reservation.confirmed', data: { reservation_id: booking.id, confirmation_number: confirmationNumber, tenant_name: tenant?.name, when: booking.booking_time, party_size: booking.party_size } });
+    } else {
+      try { await sendNotifications({
+        toEmail: guest_details?.email,
+        toPhone: guest_details?.phone,
+        tenantName: tenant?.name,
+        whenISO: booking.booking_time,
+        partySize: booking.party_size,
+        confirmationNumber,
+      }); } catch {}
+    }
 
     return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } });
   } catch (e) {
