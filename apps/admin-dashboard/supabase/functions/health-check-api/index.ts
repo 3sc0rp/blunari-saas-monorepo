@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { createCorsHeaders } from "../_shared/cors";
+const createCorsHeaders = (origin: string | null = null) => ({
+  "Access-Control-Allow-Origin": origin || "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+  "Access-Control-Max-Age": "86400",
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -10,32 +15,18 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      // Use anon key; we don't need service role to verify a JWT token
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
     );
 
-    // Verify authentication
+    // Optional authentication (allow anonymous checks)
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "No authorization header" }),
-        {
-          status: 401,
-          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseClient.auth.getUser(authHeader.replace("Bearer ", ""));
-
-    if (authError || !user) {
-      console.error("Health check auth error:", authError);
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-  headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
-      });
+    if (authHeader) {
+      try {
+        await supabaseClient.auth.getUser(authHeader.replace("Bearer ", ""));
+      } catch (e) {
+        // Ignore auth errors – health endpoint is public
+      }
     }
 
     // Parse request body (if any) - health check doesn't require body parameters
@@ -76,7 +67,7 @@ serve(async (req) => {
       );
     }
 
-    const response = await fetch(`${backgroundOpsUrl}/api/v1/health`, {
+    const response = await fetch(`${backgroundOpsUrl.replace(/\/$/, '')}/health`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -86,35 +77,30 @@ serve(async (req) => {
 
     console.log(`Health check response status: ${response.status}`);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(
-        `Background service health error: ${response.status} - ${errorText}`,
-      );
-      throw new Error(`Health check failed: ${response.status} - ${errorText}`);
-    }
+    // Continue even if Background Ops is temporarily unhealthy; report status instead of throwing
+    let data: any = {};
+    try { data = await response.json(); } catch { data = { raw: await response.text() }; }
 
-    const data = await response.json();
     console.log(`Health check data: ${JSON.stringify(data)}`);
 
     // Store health check result in database
-    await supabaseClient.from("system_health_metrics").insert({
-      metric_name: "background_ops_health",
-      metric_value: response.status === 200 ? 1 : 0,
-      metric_unit: "status",
-      service_name: "background-ops",
-      status_code: response.status,
-      metadata: data,
-    });
+    try {
+      await supabaseClient.from("system_health_metrics").insert({
+        metric_name: "background_ops_health",
+        metric_value: response.ok ? 1 : 0,
+        metric_unit: "status",
+        service_name: "background-ops",
+        status_code: response.status,
+        metadata: data,
+      });
+    } catch (metricsError) {
+      console.warn("system_health_metrics insert skipped:", metricsError);
+    }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        status: response.status === 200 ? "healthy" : "unhealthy",
-        ...data,
-      }),
+      JSON.stringify({ success: true, status: response.ok ? "healthy" : "unhealthy", ...data }),
       {
-        status: 200,
+        status: response.ok ? 200 : 200,
         headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
       },
     );
