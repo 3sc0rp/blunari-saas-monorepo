@@ -17,6 +17,7 @@ export function useOperationsHealth() {
   });
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [edgeOk, setEdgeOk] = useState<boolean | null>(null);
 
   const refreshBackgroundOps = useCallback(async () => {
     setIsChecking(true);
@@ -41,21 +42,37 @@ export function useOperationsHealth() {
     }
   }, []);
 
+  const refreshEdge = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("widget-booking-live", {
+        body: { action: "health" },
+      });
+      if (error) throw error;
+      setEdgeOk(data?.status === 'ok' || data?.success === true);
+    } catch {
+      setEdgeOk(false);
+    }
+  }, []);
+
   useEffect(() => {
     refreshBackgroundOps();
+    refreshEdge();
     const id = setInterval(refreshBackgroundOps, 60_000);
+    const id2 = setInterval(refreshEdge, 60_000);
     return () => clearInterval(id);
-  }, [refreshBackgroundOps]);
+  }, [refreshBackgroundOps, refreshEdge]);
 
   const summary = useMemo(() => ({
     backgroundOps,
     isChecking,
     error,
-  }), [backgroundOps, isChecking, error]);
+    edgeOk,
+  }), [backgroundOps, isChecking, error, edgeOk]);
 
   return {
     ...summary,
     refreshBackgroundOps,
+    refreshEdge,
   };
 }
 

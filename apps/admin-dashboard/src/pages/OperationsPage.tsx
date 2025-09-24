@@ -82,7 +82,7 @@ const mockSystemHealth = {
 };
 
 const OperationsPage: React.FC = () => {
-  const { backgroundOps, isChecking, refreshBackgroundOps } = useOperationsHealth();
+  const { backgroundOps, edgeOk, isChecking, refreshBackgroundOps, refreshEdge } = useOperationsHealth();
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8 space-y-8">
@@ -119,6 +119,21 @@ const OperationsPage: React.FC = () => {
                 {backgroundOps.ok ? "Healthy" : backgroundOps.status === "configuration_error" ? "Config Error" : "Unhealthy"}
               </div>
               <p className="text-xs text-muted-foreground">Background Ops · <button className="underline" onClick={refreshBackgroundOps} disabled={isChecking}>{isChecking ? "Checking..." : "Check now"}</button></p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center">
+                <Server className="h-4 w-4 mr-2" />
+                Edge Functions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${edgeOk ? "text-green-600" : edgeOk === false ? "text-red-600" : ""}`}>
+                {edgeOk == null ? "Unknown" : edgeOk ? "Healthy" : "Unhealthy"}
+              </div>
+              <p className="text-xs text-muted-foreground">widget-booking-live · <button className="underline" onClick={refreshEdge}>Check now</button></p>
             </CardContent>
           </Card>
 
