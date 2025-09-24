@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/node:18-dev AS builder
+FROM cgr.dev/chainguard/node:latest-dev AS builder
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ RUN npx tsc --project tsconfig.prod.json
 RUN npm prune --production
 
 # Production stage
-FROM cgr.dev/chainguard/node:18 AS production
+FROM cgr.dev/chainguard/node:latest AS production
 
 WORKDIR /app
 
