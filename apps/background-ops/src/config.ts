@@ -49,6 +49,8 @@ export const config = {
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS?.split(",") || [
     "http://localhost:8080",
     "https://blunari.com",
+    "https://admin.blunari.ai",
+    "https://services.blunari.ai",
   ],
 
   // External APIs
