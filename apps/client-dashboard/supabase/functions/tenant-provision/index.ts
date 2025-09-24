@@ -60,35 +60,9 @@ serve(async (req) => {
 
     console.log("Starting tenant provisioning for:", email, restaurant_name);
 
-    // Step 1: Check if user account exists, but don't create new users here to avoid automatic emails
-    let userId: string | null = null;
-
-    // First check if user already exists
-    const { data: existingUser, error: getUserError } =
-      await supabaseAdmin.auth.admin.getUserByEmail(email);
-
-    if (existingUser?.user) {
-      userId = existingUser.user.id;
-      console.log("User already exists:", userId);
-
-      // Update password if provided
-      if (password) {
-        const { error: updateError } = await (supabaseAdmin.auth.admin as any).updateUserById(
-          userId,
-          { password },
-        );
-        if (updateError) {
-          console.error("Error updating password:", updateError);
-          throw updateError;
-        }
-      }
-    } else {
-      console.log("User will be created during password setup to avoid automatic emails");
-      // Don't create user here - this prevents automatic confirmation emails
-      // User will be created when password setup email is sent manually
-      // For now, use a placeholder - the provision_tenant function will handle this
-      userId = null;
-    }
+    // Step 1: Trust caller-provided admin_user_id when present (we invoke this after login)
+    // Avoid using deprecated/unsupported admin getUserByEmail. We do not create/update users here.
+    let userId: string | null = admin_user_id ?? null;
 
     // Step 2: Check if tenant already exists for this user (skip if no user yet)
     if (userId) {
@@ -117,11 +91,11 @@ serve(async (req) => {
     }
 
     // Step 3: Create tenant using the existing function
-    // Use a temporary admin user ID for tenant creation if no user exists yet
+    // Pass through the userId when available so the mapping is created
     const { data: tenantId, error: provisionError } = await supabaseAdmin.rpc(
       "provision_tenant",
       {
-        p_user_id: userId || admin_user_id || null,
+        p_user_id: userId || null,
         p_restaurant_name: restaurant_name,
         p_restaurant_slug: restaurant_slug,
         p_timezone: timezone,
