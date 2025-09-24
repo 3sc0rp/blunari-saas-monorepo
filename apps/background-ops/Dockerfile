@@ -1,4 +1,4 @@
-FROM node:18-alpine AS builder
+FROM cgr.dev/chainguard/node:18-dev AS builder
 
 WORKDIR /app
 
@@ -6,35 +6,24 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm install
+RUN npm ci
 
 # Copy source code and production tsconfig
 COPY . .
 
 # Build the application
 RUN npx tsc --project tsconfig.prod.json
+# Prune dev dependencies to production only
+RUN npm prune --production
 
 # Production stage
-FROM node:18-alpine AS production
+FROM cgr.dev/chainguard/node:18 AS production
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-
-# Install only production dependencies
-RUN npm install --only=production
-
-# Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S background-ops -u 1001
-
-# Change ownership of the app directory
-RUN chown -R background-ops:nodejs /app
-USER background-ops
+COPY --from=builder /app/node_modules ./node_modules
+COPY package*.json ./
 
 # Expose port
 EXPOSE 3000
@@ -44,4 +33,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node dist/healthcheck.js
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["node", "dist/server.js"]
