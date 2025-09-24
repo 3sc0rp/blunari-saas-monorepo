@@ -104,6 +104,7 @@ async function startServer() {
           "x-tenant-id",
           "x-request-id",
           "x-idempotency-key",
+          "x-csrf-token",
         ],
         exposedHeaders: ["x-rate-limit-remaining", "x-rate-limit-reset"],
       }),

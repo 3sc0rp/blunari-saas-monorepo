@@ -286,19 +286,18 @@ class MetricsService {
     unit: string;
     tags?: Record<string, string>;
   }) {
-    // For legacy compatibility - records as a generic counter
-    const counter = new client.Counter({
-      name: `bg_ops_legacy_${data.name}`,
-      help: `Legacy metric: ${data.name}`,
-      labelNames: ["unit", ...(data.tags ? Object.keys(data.tags) : [])],
-    });
-
-    register.registerMetric(counter);
-    counter.inc({ unit: data.unit, ...(data.tags || {}) }, data.value);
-
-    logger.info(
-      `Recorded legacy metric: ${data.name} = ${data.value} ${data.unit}`,
-    );
+    // Use a Gauge with dynamic get-or-create to avoid duplicate registration
+    const metricName = `bg_ops_legacy_${data.name}`;
+    let gauge = register.getSingleMetric(metricName) as client.Gauge<string> | undefined;
+    if (!gauge) {
+      gauge = new client.Gauge({
+        name: metricName,
+        help: `Legacy metric: ${data.name}`,
+        labelNames: ["unit", ...(data.tags ? Object.keys(data.tags) : [])],
+      });
+      register.registerMetric(gauge);
+    }
+    gauge.set({ unit: data.unit, ...(data.tags || {}) }, data.value);
   }
 
   async recordSystemSnapshot() {

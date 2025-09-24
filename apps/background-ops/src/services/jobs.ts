@@ -734,18 +734,18 @@ async function sendNotificationDirect(job: BaseJob) {
     const provider = global?.sms?.provider || payload.smsProvider || "telnyx";
     const from = global?.sms?.telnyxFromNumber || global?.sms?.twilioFromNumber || payload.smsFrom || config.TWILIO_PHONE_NUMBER || "";
     const text = `${data?.tenant_name || "Your booking"} confirmed for ${data?.when || ""}. Party ${data?.party_size || ""}. Ref ${data?.confirmation_number || ""}.`;
-    if (provider === "telnyx" && Deno?.env?.get && Deno.env.get("TELNYX_API_KEY")) {
+    if (provider === "telnyx" && process.env.TELNYX_API_KEY) {
       const body = from
         ? { from, to, text }
         : { messaging_profile_id: global?.sms?.telnyxMessagingProfileId, to, text };
       const resp = await fetch("https://api.telnyx.com/v2/messages", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Deno.env.get("TELNYX_API_KEY")}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.TELNYX_API_KEY}` },
         body: JSON.stringify(body),
       });
       return { type, to, provider, delivered: resp.ok, messageId: `telnyx_${Date.now()}` };
     }
-    return { type, to, provider, delivered: true, messageId: `sms_${Date.now()}` };
+    throw new Error("SMS provider not configured");
   }
 
   throw new Error(`Unsupported notification type: ${type}`);

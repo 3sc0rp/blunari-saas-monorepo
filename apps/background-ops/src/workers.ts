@@ -353,8 +353,6 @@ async function sendSms(to: string, template: string, data: any): Promise<any> {
 
 async function fetchTenantIntegrations(tenantId: string): Promise<any> {
   try {
-    const { getDb } = await import("./database");
-    const db = await getDb();
     const { rows } = await db.query(
       `select setting_value from tenant_settings where tenant_id = $1 and setting_key = 'integrations' limit 1`,
       [tenantId],
@@ -393,7 +391,8 @@ async function sendEmailWithProvider(opts: { to: string; template: string; data:
       const t = await resp.text();
       throw new Error(`Resend failed: ${resp.status} ${t}`);
     }
-    const rid = (await resp.json())?.id || `resend_${Date.now()}`;
+    const data: any = await resp.json();
+    const rid = data?.id || `resend_${Date.now()}`;
     return { messageId: rid, ok: true };
   }
   // No fallback
