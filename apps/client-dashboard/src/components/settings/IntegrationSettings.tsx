@@ -82,113 +82,12 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                 <MessageSquare className="h-5 w-5 text-primary" />
                 SMS Integration
               </div>
-              {getStatusBadge(form.watch("sms.enabled"))}
+              {getStatusBadge(false)}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="sms.enabled"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <FormLabel>Enable SMS Notifications</FormLabel>
-                    <div className="text-sm text-muted-foreground">
-                      Send booking confirmations and reminders via SMS
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            {form.watch("sms.enabled") && (
-              <>
-                <FormField
-                  control={form.control}
-                  name="sms.provider"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>SMS Provider</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select SMS provider" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="telnyx">Telnyx</SelectItem>
-                          <SelectItem value="twilio">Twilio</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {form.watch("sms.provider") === "telnyx" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="sms.telnyxMessagingProfileId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Telnyx Messaging Profile ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g. 4900-..." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="sms.telnyxFromNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Telnyx From Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g. +18445551234" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-
-                {form.watch("sms.provider") === "twilio" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="sms.fromNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Twilio From Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g. +18445551234" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {getStatusIcon(form.watch("sms.enabled"))}
-              <span>
-                {form.watch("sms.enabled")
-                  ? "SMS integration is active and ready to send messages"
-                  : "SMS integration is disabled"}
-              </span>
+            <div className="text-sm text-muted-foreground">
+              SMS confirmations are sent from Blunari’s centralized messaging numbers. Tenant overrides are disabled.
             </div>
           </CardContent>
         </Card>
@@ -201,152 +100,12 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                 <Mail className="h-5 w-5 text-primary" />
                 Email Integration
               </div>
-              {getStatusBadge(form.watch("email.enabled"))}
+              {getStatusBadge(true)}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email.enabled"
-              render={({ field }) => (
-                <FormItem className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <FormLabel>Enable Email Notifications</FormLabel>
-                    <div className="text-sm text-muted-foreground">
-                      Send booking confirmations and marketing emails
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            {form.watch("email.enabled") && (
-              <>
-                <FormField
-                  control={form.control}
-                  name="email.provider"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email Provider</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select email provider" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="resend">Resend</SelectItem>
-                          <SelectItem value="fastmail">Fastmail (SMTP/JMAP)</SelectItem>
-                          <SelectItem value="smtp">Custom SMTP</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="email.fromEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>From Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. reservations@yourdomain.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {form.watch("email.provider") === "resend" && (
-                  <FormField
-                    control={form.control}
-                    name="email.resendApiKey"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Resend API Key</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="re_********" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {(form.watch("email.provider") === "fastmail" || form.watch("email.provider") === "smtp") && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="email.smtpHost"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>SMTP Host</FormLabel>
-                          <FormControl>
-                            <Input placeholder="smtp.fastmail.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email.smtpPort"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>SMTP Port</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="465" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email.smtpUser"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>SMTP Username</FormLabel>
-                          <FormControl>
-                            <Input placeholder="user@yourdomain.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email.smtpPass"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>SMTP Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="********" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {getStatusIcon(form.watch("email.enabled"))}
-              <span>
-                {form.watch("email.enabled")
-                  ? "Email integration is active and ready to send emails"
-                  : "Email integration is disabled"}
-              </span>
+            <div className="text-sm text-muted-foreground">
+              Email confirmations are sent from Blunari’s global sender. Tenant-specific provider/from settings are managed centrally and not configurable here.
             </div>
           </CardContent>
         </Card>
@@ -575,8 +334,8 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isUpdating}>
-            {isUpdating ? "Saving..." : "Save Integration Settings"}
+          <Button type="submit" disabled>
+            Managed Centrally
           </Button>
         </div>
       </form>

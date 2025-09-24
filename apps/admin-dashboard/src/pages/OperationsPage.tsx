@@ -24,6 +24,7 @@ import {
   Cpu,
 } from "lucide-react";
 import { useOperationsHealth } from "@/hooks/useOperationsHealth";
+import GlobalCommunications from "@/components/operations/GlobalCommunications";
 
 // Mock system health data
 const mockSystemHealth = {
@@ -324,6 +325,9 @@ const OperationsPage: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+            <div className="mt-6">
+              <GlobalCommunications />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
