@@ -110,12 +110,24 @@ serve(async (req) => {
         .from('tenants')
         .select('id, name, slug, timezone, currency')
         .eq('slug', tokenPayload.slug)
-        // allow non-active in dev/test paths so widget can work during setup
-        // .eq('status', 'active') // relaxed
         .maybeSingle();
       if (!tenantError && tenant) {
         resolvedTenantId = tenant.id;
         resolvedTenant = tenant;
+      } else if (tokenPayload.slug === 'demo') {
+        // Fallback: map demo slug to configured tenant id for testing
+        const demoId = Deno.env.get('DEMO_TENANT_ID');
+        if (demoId) {
+          resolvedTenantId = demoId;
+          try {
+            const { data: t } = await supabase
+              .from('tenants')
+              .select('id, name, slug, timezone, currency')
+              .eq('id', demoId)
+              .maybeSingle();
+            resolvedTenant = t || null;
+          } catch {}
+        }
       }
     }
 
