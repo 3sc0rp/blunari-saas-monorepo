@@ -89,19 +89,8 @@ export function useTenant() {
     }
     timeoutRef.current = window.setTimeout(() => {
       if (signal.aborted) return;
-      if (import.meta.env.MODE === 'development' && debugEnabled) logger.info('Tenant resolution timeout (5s), using fallback tenant', {
-        component: 'useTenant',
-        slug: params.slug,
-        reason
-      });
-        const fallbackTenant: TenantInfo = {
-          id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
-          slug: 'demo',
-          name: 'Demo Restaurant',
-          timezone: 'America/New_York',
-          currency: 'USD'
-        };
-      commitTenant(fallbackTenant, 'timeout-fallback');
+      logger.warn('Tenant resolution timeout (5s)', { component: 'useTenant', slug: params.slug, reason });
+      setState(prev => ({ ...prev, loading: false, error: 'Tenant resolution timeout', requestId: prev.requestId }));
     }, 5000);
 
     try {
@@ -159,63 +148,15 @@ export function useTenant() {
       }
 
       if (!session) {
-        logger.info('No active session found, using anonymous fallback', {
-          component: 'useTenant'
-        });
-        
-        // Instead of redirecting immediately, try to create a demo tenant for development
-        if (import.meta.env.MODE === 'development') {
-          const fallbackTenant: TenantInfo = {
-            id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // Demo tenant ID - CONSISTENT
-            slug: 'demo',
-            name: 'Demo Restaurant',
-            timezone: 'America/New_York',
-            currency: 'USD'
-          };
-          
-          if (!signal.aborted) {
-            commitTenant(fallbackTenant, 'no-session-dev-fallback');
-          }
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-          }
-          return;
-        }
-        
         if (!signal.aborted) {
           commitTenant(null, 'no-session');
-          // Only navigate if we're not already on the auth page
-          if (window.location.pathname !== '/auth') {
-            navigate('/auth');
-          }
+          if (window.location.pathname !== '/auth') navigate('/auth');
         }
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
+        if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
         return;
       }
 
-      // Use direct fallback in development instead of calling edge function
-      if (import.meta.env.MODE === 'development') {
-        if (debugEnabled) console.log('[useTenant] Development mode - using fallback tenant');
-        const fallbackTenant: TenantInfo = {
-          id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-          slug: 'demo',
-          name: 'Demo Restaurant',
-          timezone: 'America/New_York',
-          currency: 'USD'
-        };
-        if (!signal.aborted) {
-          commitTenant(fallbackTenant, 'dev-mode-fallback');
-        }
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-        return;
-      }
+      // Always resolve from DB; no demo fallbacks
 
       // First, try DIRECT database resolution (no edge functions)
       try {
@@ -281,7 +222,6 @@ export function useTenant() {
         });
       }
 
-      // Disable tenant edge function to avoid noisy 400/401s; fallback will be used
       const responseData: any = null;
       const functionError: any = null;
 
@@ -324,18 +264,7 @@ export function useTenant() {
             errorType: 'access_denied'
           });
           
-          // Use fallback tenant instead of redirecting to auth
-          const fallbackTenant: TenantInfo = {
-            id: '99e1607d-da99-4f72-9182-a417072eb629', // Demo tenant ID
-            slug: 'demo',
-            name: 'Demo Restaurant',
-            timezone: 'America/New_York',
-            currency: 'USD'
-          };
-          
-          if (!signal.aborted) {
-            commitTenant(fallbackTenant, '403-fallback');
-          }
+          if (!signal.aborted) commitTenant(null, '403-forbidden');
           if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
@@ -350,35 +279,9 @@ export function useTenant() {
           });
           
           // Use fallback tenant for development, redirect for production
-          if (import.meta.env.MODE === 'development') {
-            const fallbackTenant: TenantInfo = {
-              id: '99e1607d-da99-4f72-9182-a417072eb629', // Demo tenant ID
-              slug: 'demo',
-              name: 'Demo Restaurant',
-              timezone: 'America/New_York',
-              currency: 'USD'
-            };
-            
-            if (!signal.aborted) {
-              commitTenant(fallbackTenant, '401-dev-fallback');
-            }
-            if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current);
-              timeoutRef.current = null;
-            }
-            return;
-          } else {
-            // In production, redirect to auth for 401 errors
-            if (!signal.aborted) {
-              commitTenant(null, '401-prod-redirect');
-              navigate('/auth');
-            }
-            if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current);
-              timeoutRef.current = null;
-            }
-            return;
-          }
+          if (!signal.aborted) { commitTenant(null, '401-unauthorized'); navigate('/auth'); }
+          if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
+          return;
         }
         
         // Enhanced fallback logic for any other tenant function failure
@@ -388,17 +291,7 @@ export function useTenant() {
           status: functionError.status
         });
         
-        const fallbackTenant: TenantInfo = {
-          id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
-          slug: params.slug || 'demo',
-          name: params.slug ? `${params.slug} Restaurant` : 'Demo Restaurant',
-          timezone: 'America/New_York',
-          currency: 'USD'
-        };
-        
-        if (!signal.aborted) {
-          commitTenant(fallbackTenant, 'function-failure-fallback');
-        }
+        if (!signal.aborted) commitTenant(null, 'function-failure');
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
@@ -416,17 +309,7 @@ export function useTenant() {
         });
         
         // Always use fallback tenant instead of showing errors to user
-        const fallbackTenant: TenantInfo = {
-          id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
-          slug: params.slug || 'demo',
-          name: params.slug ? `${params.slug} Restaurant` : 'Demo Restaurant',
-          timezone: 'America/New_York',
-          currency: 'USD'
-        };
-        
-        if (!signal.aborted) {
-          commitTenant(fallbackTenant, 'error-response-fallback');
-        }
+        if (!signal.aborted) commitTenant(null, 'error-response');
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
@@ -454,23 +337,12 @@ export function useTenant() {
         return;
       }
 
-      // Fallback error - Always use fallback tenant for production reliability
-      logger.info('No tenant data received, using production fallback', {
+      // No data
+      logger.info('No tenant data received', {
         component: 'useTenant',
         slug: params.slug
       });
-      
-      const fallbackTenant: TenantInfo = {
-        id: session?.user?.id || '99e1607d-da99-4f72-9182-a417072eb629',
-        slug: params.slug || 'demo',
-        name: params.slug ? `${params.slug} Restaurant` : 'Restaurant Dashboard',
-        timezone: 'America/New_York',
-        currency: 'USD'
-      };
-      
-      if (!signal.aborted) {
-        commitTenant(fallbackTenant, 'no-data-fallback');
-      }
+      if (!signal.aborted) commitTenant(null, 'no-data');
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;

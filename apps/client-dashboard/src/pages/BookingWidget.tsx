@@ -42,8 +42,8 @@ const BookingWidgetPage: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   // Use the public widget runtime for previews and embed code
-  const bookingUrl = `/public-widget/book/${tenant?.slug || "demo"}`;
-  const cateringUrl = `/public-widget/catering/${tenant?.slug || "demo"}`;
+  const bookingUrl = tenant?.slug ? `/public-widget/book/${tenant.slug}` : '/public-widget/book/unknown';
+  const cateringUrl = tenant?.slug ? `/public-widget/catering/${tenant.slug}` : '/public-widget/catering/unknown';
   const currentUrl = widgetType === "booking" ? bookingUrl : cateringUrl;
   const fullCurrentUrl = `${window.location.origin}${currentUrl}`;
 
