@@ -36,4 +36,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node dist/healthcheck.js
 
 # Start the application
-CMD ["node", "dist/server.js"]
+CMD ["/usr/bin/node", "dist/server.js"]
