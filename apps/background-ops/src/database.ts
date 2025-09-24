@@ -32,6 +32,12 @@ export async function setupDatabase() {
 
 async function createTables() {
   const tables = [
+    // Platform settings key-value store for brand-wide configuration
+    `CREATE TABLE IF NOT EXISTS platform_settings (
+      key TEXT PRIMARY KEY,
+      value JSONB NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    )`,
     // System metrics table
     `CREATE TABLE IF NOT EXISTS system_metrics (
       id SERIAL PRIMARY KEY,

@@ -4,6 +4,7 @@ import { jobsService } from "./services/jobs";
 import { metricsService } from "./services/metrics";
 import { config } from "./config";
 import { BaseJob, JobStatus, JOB_SCHEMAS } from "./types/jobs";
+import { db } from "./database";
 
 let isWorkerRunning = false;
 let metricsInterval: NodeJS.Timeout;
@@ -380,16 +381,28 @@ async function fetchTenantIntegrations(tenantId: string): Promise<any> {
   }
 }
 
-async function sendEmailWithProvider(opts: { to: string; template: string; data: any; provider: string; from: string; apiKey?: string; smtp?: { host?: string; port?: number; user?: string; pass?: string } }): Promise<any> {
+async function resolveGlobalComms() {
+  try {
+    const { rows } = await db.query(`select value from platform_settings where key = 'global_communications' limit 1`);
+    return rows?.[0]?.value || {};
+  } catch {
+    return {};
+  }
+}
+
+async function sendEmailWithProvider(opts: { to: string; template: string; data: any; provider?: string; from?: string; apiKey?: string; smtp?: { host?: string; port?: number; user?: string; pass?: string } }): Promise<any> {
+  const global = await resolveGlobalComms();
+  const provider = global?.email?.provider || opts.provider || "resend";
+  const from = global?.email?.fromEmail || opts.from || config.EMAIL_FROM;
   // Simple templating
   const subject = `${opts.data?.tenant_name || 'Reservation'} Confirmation ${opts.data?.confirmation_number || ''}`.trim();
   const html = `<p>Your reservation is confirmed.</p><p><b>${opts.data?.when || ''}</b> · Party ${opts.data?.party_size || ''}</p><p>Reference: <b>${opts.data?.confirmation_number || ''}</b></p>`;
 
-  if (opts.provider === "resend" && opts.apiKey) {
+  if (provider === "resend" && (global?.email?.resendApiKey || opts.apiKey || config.RESEND_API_KEY)) {
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${opts.apiKey}` },
-      body: JSON.stringify({ from: opts.from, to: opts.to, subject, html }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${global?.email?.resendApiKey || opts.apiKey || config.RESEND_API_KEY}` },
+      body: JSON.stringify({ from, to: opts.to, subject, html }),
     });
     return { messageId: `resend_${Date.now()}`, ok: resp.ok };
   }
@@ -398,10 +411,13 @@ async function sendEmailWithProvider(opts: { to: string; template: string; data:
   return sendEmail(opts.to, opts.template, opts.data, opts.provider);
 }
 
-async function sendSmsWithProvider(opts: { to: string; template: string; data: any; provider: string; from: string; telnyxMessagingProfileId?: string }): Promise<any> {
+async function sendSmsWithProvider(opts: { to: string; template: string; data: any; provider?: string; from?: string; telnyxMessagingProfileId?: string }): Promise<any> {
+  const global = await resolveGlobalComms();
+  const provider = global?.sms?.provider || opts.provider || "telnyx";
+  const from = global?.sms?.telnyxFromNumber || global?.sms?.twilioFromNumber || opts.from || config.TWILIO_PHONE_NUMBER || process.env.TELNYX_FROM_NUMBER || "";
   const text = `${opts.data?.tenant_name || 'Your booking'} confirmed for ${opts.data?.when || ''}. Party ${opts.data?.party_size || ''}. Ref ${opts.data?.confirmation_number || ''}.`;
-  if (opts.provider === "telnyx" && process.env.TELNYX_API_KEY && (opts.from || opts.telnyxMessagingProfileId)) {
-    const body = opts.from ? { from: opts.from, to: opts.to, text } : { messaging_profile_id: opts.telnyxMessagingProfileId, to: opts.to, text };
+  if (provider === "telnyx" && process.env.TELNYX_API_KEY && (from || global?.sms?.telnyxMessagingProfileId || opts.telnyxMessagingProfileId)) {
+    const body = from ? { from, to: opts.to, text } : { messaging_profile_id: global?.sms?.telnyxMessagingProfileId || opts.telnyxMessagingProfileId, to: opts.to, text };
     const resp = await fetch("https://api.telnyx.com/v2/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.TELNYX_API_KEY}` },
