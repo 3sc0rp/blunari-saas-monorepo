@@ -95,19 +95,11 @@ async function startServer() {
         origin: config.ALLOWED_ORIGINS,
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowedHeaders: [
-          "Content-Type",
-          "Authorization",
-          "x-api-key",
-          "x-signature",
-          "x-timestamp",
-          "x-tenant-id",
-          "x-request-id",
-          "x-idempotency-key",
-          "x-csrf-token",
-          "referrer-policy",
-          "x-content-type-options",
-        ],
+        // Reflect requested headers to avoid incremental CORS preflight failures
+        allowedHeaders: (req, cb) => {
+          const reqHeaders = req.header("Access-Control-Request-Headers");
+          cb(null, reqHeaders || "*");
+        },
         exposedHeaders: ["x-rate-limit-remaining", "x-rate-limit-reset"],
       }),
     );
