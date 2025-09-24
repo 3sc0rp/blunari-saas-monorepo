@@ -9,7 +9,7 @@ primary_region = "dfw"
   PORT = "3000"
 
 [processes]
-  app = "/usr/bin/node dist/server.js"
+  app = "dist/server.js"
 
 [http_service]
   internal_port = 3000
