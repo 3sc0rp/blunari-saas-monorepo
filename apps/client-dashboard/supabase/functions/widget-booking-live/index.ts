@@ -827,7 +827,7 @@ async function enqueueNotificationJob(opts: { tenantId: string; requestId?: stri
     const signatureBuf = await crypto.subtle.sign('HMAC', key, data);
     const signatureHex = Array.from(new Uint8Array(signatureBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
 
-    await fetch(endpoint, {
+    const resp = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -840,6 +840,10 @@ async function enqueueNotificationJob(opts: { tenantId: string; requestId?: stri
       },
       body: bodyStr
     });
+    try {
+      const text = await resp.text();
+      console.log('[background-ops] enqueue', { status: resp.status, ok: resp.ok, body: text.slice(0, 200) });
+    } catch {}
     // Ignore failures intentionally
   } catch {
     // Swallow errors to keep booking flow resilient
