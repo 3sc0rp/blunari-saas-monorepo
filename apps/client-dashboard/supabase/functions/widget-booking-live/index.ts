@@ -98,6 +98,14 @@ serve(async (req) => {
       return errorResponse('MISSING_ACTION', 'Action parameter is required', 400, requestId);
     }
 
+    // Early health endpoint – does not require token or tenant resolution
+    if (action === 'health') {
+      return new Response(
+        JSON.stringify({ success: true, service: 'widget-booking-live', status: 'ok', requestId, time: new Date().toISOString() }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } }
+      );
+    }
+
     // Validate and resolve widget token → slug → tenant_id, with authenticated fallback for dashboard usage
     const token = requestData.token || new URL(req.url).searchParams.get('token');
     const tokenPayload = token ? validateWidgetToken(token) : null;
