@@ -2,6 +2,9 @@ FROM cgr.dev/chainguard/node:latest-dev AS builder
 
 WORKDIR /app
 
+# Ensure we can write lockfiles and node_modules during build
+USER root
+
 # Copy package files
 COPY package*.json ./
 
