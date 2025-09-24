@@ -180,22 +180,11 @@ export function useTenant() {
           }
         }
 
-        // 2) User-based resolution
+        // 2) User-based resolution (auto_provisioning only; some environments lack user_tenant_access)
         if (session?.user?.id) {
           let resolvedTenantId: string | null = null;
 
-          // First try user_tenant_access (common mapping)
-          try {
-            const { data: uta } = await supabase
-              .from('user_tenant_access')
-              .select('tenant_id')
-              .eq('user_id', session.user.id)
-              .eq('active', true)
-              .maybeSingle();
-            resolvedTenantId = (uta as any)?.tenant_id || null;
-          } catch {}
-
-          // Then try auto_provisioning as a fallback mapping
+          // Resolve via auto_provisioning mapping
           const { data: autoProv, error: autoErr } = await supabase
             .from('auto_provisioning')
             .select('tenant_id')
@@ -372,15 +361,7 @@ export function useTenant() {
       
       // FIX: Always use fallback tenant instead of showing error to user
       if (!signal.aborted) {
-        const fallbackTenant: TenantInfo = {
-          id: '99e1607d-da99-4f72-9182-a417072eb629',
-          slug: params.slug || 'demo',
-          name: params.slug ? `${params.slug} Restaurant` : 'Restaurant Dashboard',
-          timezone: 'America/New_York',
-          currency: 'USD'
-        };
-        
-        commitTenant(fallbackTenant, 'catch-fallback');
+        commitTenant(null, 'catch-fallback');
       }
     } finally {
       // no-op; timeout cleared in all return paths and catch
