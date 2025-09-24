@@ -790,6 +790,13 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
   }
 }
 
+function isBackgroundOpsConfigured(): boolean {
+  const url = Deno.env.get('BACKGROUND_OPS_URL');
+  const apiKey = Deno.env.get('BACKGROUND_OPS_API_KEY');
+  const signingSecret = Deno.env.get('BACKGROUND_OPS_SIGNING_SECRET');
+  return !!(url && apiKey && signingSecret);
+}
+
 async function enqueueNotificationJob(opts: { tenantId: string; requestId?: string; type: 'email' | 'sms'; to: string; template: string; data: Record<string, unknown> }) {
   try {
     const url = Deno.env.get('BACKGROUND_OPS_URL');
