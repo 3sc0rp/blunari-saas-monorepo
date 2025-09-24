@@ -106,6 +106,7 @@ async function startServer() {
           "x-idempotency-key",
           "x-csrf-token",
           "referrer-policy",
+          "x-content-type-options",
         ],
         exposedHeaders: ["x-rate-limit-remaining", "x-rate-limit-reset"],
       }),
