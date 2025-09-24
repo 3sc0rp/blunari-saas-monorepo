@@ -184,15 +184,25 @@ export function useTenant() {
         if (session?.user?.id) {
           let resolvedTenantId: string | null = null;
 
-          // QUERY ORDER CHANGE: Prefer auto_provisioning (present in your DB) and
-          // avoid user_tenant_access which may not exist in some environments.
+          // First try user_tenant_access (common mapping)
+          try {
+            const { data: uta } = await supabase
+              .from('user_tenant_access')
+              .select('tenant_id')
+              .eq('user_id', session.user.id)
+              .eq('active', true)
+              .maybeSingle();
+            resolvedTenantId = (uta as any)?.tenant_id || null;
+          } catch {}
+
+          // Then try auto_provisioning as a fallback mapping
           const { data: autoProv, error: autoErr } = await supabase
             .from('auto_provisioning')
             .select('tenant_id')
             .eq('user_id', session.user.id)
             .eq('status', 'completed')
             .maybeSingle();
-          if (!autoErr && autoProv?.tenant_id) {
+          if (!resolvedTenantId && !autoErr && autoProv?.tenant_id) {
             resolvedTenantId = (autoProv as any).tenant_id as string;
           }
 
