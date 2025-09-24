@@ -8,6 +8,9 @@ primary_region = "dfw"
   NODE_ENV = "production"
   PORT = "3000"
 
+[processes]
+  app = "/usr/bin/node dist/server.js"
+
 [http_service]
   internal_port = 3000
   force_https = true
