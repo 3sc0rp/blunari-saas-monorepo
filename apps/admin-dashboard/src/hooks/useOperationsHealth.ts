@@ -18,7 +18,7 @@ export function useOperationsHealth() {
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [edgeOk, setEdgeOk] = useState<boolean | null>(null);
-  const [metrics, setMetrics] = useState<{ cpu?: number; mem?: number; disk?: number; db?: number; users?: number }>({});
+  const [metrics, setMetrics] = useState<{ cpu?: number; mem?: number; disk?: number; db?: number; users?: number; queue?: { waiting: number; active: number; completed: number; failed: number; delayed: number } }>({});
 
   const refreshBackgroundOps = useCallback(async () => {
     setIsChecking(true);
@@ -69,6 +69,7 @@ export function useOperationsHealth() {
         disk: Number(m.disk_usage_percent ?? 0),
         db: Number(m.db_active_connections ?? 0),
         users: Number(m.active_users_last_5m ?? 0),
+        queue: m.queue || { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0 },
       });
     } catch {
       // keep previous

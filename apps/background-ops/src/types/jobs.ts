@@ -55,6 +55,8 @@ export const NotificationJobSchema = z.object({
   type: z.enum(["email", "sms", "push"]),
   template: z.string(),
   data: z.record(z.any()),
+  // Allow simplified 'to' field while keeping legacy recipient* for compatibility
+  to: z.string().optional(),
   recipientEmail: z.string().email().optional(),
   recipientPhone: z.string().optional(),
   language: z.string().default("en"),

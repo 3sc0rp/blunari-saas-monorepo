@@ -22,6 +22,7 @@ import {
   FileText,
   Settings,
   Cpu,
+  ListChecks,
 } from "lucide-react";
 import { useOperationsHealth } from "@/hooks/useOperationsHealth";
 import GlobalCommunications from "@/components/operations/GlobalCommunications";
@@ -220,6 +221,40 @@ const OperationsPage: React.FC = () => {
               health={mockSystemHealth}
               onRefresh={() => console.log("Refreshing health data...")}
             />
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-6">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center">
+                    <ListChecks className="h-4 w-4 mr-2" />
+                    Queue Depth
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-5 gap-4 text-center">
+                    <div>
+                      <div className="text-xl font-bold">{metrics.queue?.waiting ?? 0}</div>
+                      <p className="text-xs text-muted-foreground">Waiting</p>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold">{metrics.queue?.active ?? 0}</div>
+                      <p className="text-xs text-muted-foreground">Active</p>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold">{metrics.queue?.completed ?? 0}</div>
+                      <p className="text-xs text-muted-foreground">Completed</p>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold">{metrics.queue?.failed ?? 0}</div>
+                      <p className="text-xs text-muted-foreground">Failed</p>
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold">{metrics.queue?.delayed ?? 0}</div>
+                      <p className="text-xs text-muted-foreground">Delayed</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="jobs">

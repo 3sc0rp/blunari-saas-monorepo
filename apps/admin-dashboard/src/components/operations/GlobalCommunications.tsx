@@ -36,6 +36,15 @@ export const GlobalCommunications: React.FC = () => {
   const [settings, setSettings] = useState<GlobalCommSettings>(DEFAULTS);
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [lastDelivery, setLastDelivery] = useState<null | {
+    jobId: string;
+    status: string;
+    messageId?: string;
+    type?: string;
+    to?: string;
+    provider?: string;
+    error?: string;
+  }>(null);
 
   const load = async () => {
     setLoading(true);
@@ -72,9 +81,66 @@ export const GlobalCommunications: React.FC = () => {
   const testSend = async () => {
     setTesting(true);
     try {
-      const { error } = await supabase.functions.invoke("health-check-api", { body: {} });
+      const emailTo = prompt("Enter an email to send test to") || "";
+      if (!emailTo) throw new Error("Recipient email is required");
+      const { data, error } = await supabase.functions.invoke("jobs-api", {
+        body: {
+          action: "create",
+          type: "notification.send",
+          payload: {
+            userId: "admin",
+            type: "email",
+            to: emailTo,
+            template: "booking_confirmation",
+            data: {
+              tenant_name: "Blunari",
+              when: new Date().toLocaleString(),
+              party_size: 2,
+              confirmation_number: Math.random().toString(36).slice(2, 10).toUpperCase(),
+            },
+          },
+          priority: 1,
+        },
+      });
       if (error) throw error;
-      toast({ title: "Test queued", description: "Check Background Ops logs for delivery." });
+      const jobId = data?.data?.id || data?.id;
+      toast({ title: "Test queued", description: `Job ${jobId || "created"}` });
+
+      if (jobId) {
+        // Poll job status until completed/failed or timeout
+        const start = Date.now();
+        let status = "pending";
+        while (Date.now() - start < 30000) {
+          const { data: jobResp, error: jobErr } = await supabase.functions.invoke("jobs-api", {
+            body: { action: "get", id: jobId },
+          });
+          if (jobErr) break;
+          const job = jobResp?.data || jobResp; // normalize
+          status = job?.status || status;
+          if (status === "completed" || status === "failed") {
+            const result = job?.result || {};
+            setLastDelivery({
+              jobId,
+              status,
+              messageId: result?.messageId,
+              type: result?.type,
+              to: result?.to,
+              provider: result?.provider,
+              error: job?.error,
+            });
+            toast({
+              title: status === "completed" ? "Delivery succeeded" : "Delivery failed",
+              description:
+                status === "completed"
+                  ? `messageId=${result?.messageId || "n/a"} via ${result?.provider || ""}`
+                  : job?.error || "Unknown error",
+              variant: status === "completed" ? "default" : "destructive",
+            });
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
     } catch (e: any) {
       toast({ title: "Test failed", description: e.message, variant: "destructive" });
     } finally {
@@ -154,6 +220,13 @@ export const GlobalCommunications: React.FC = () => {
           <Button variant="outline" onClick={testSend} disabled={testing}>Test Send</Button>
           <Button onClick={save} disabled={loading}>{loading ? "Saving..." : "Save"}</Button>
         </div>
+        {lastDelivery && (
+          <div className="text-xs text-muted-foreground mt-2">
+            Last delivery: {lastDelivery.status} · Job {lastDelivery.jobId}
+            {lastDelivery.messageId ? ` · messageId ${lastDelivery.messageId}` : ""}
+            {lastDelivery.provider ? ` · ${lastDelivery.provider}` : ""}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

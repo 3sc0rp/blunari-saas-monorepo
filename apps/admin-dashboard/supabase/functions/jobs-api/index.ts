@@ -363,7 +363,7 @@ serve(async (req) => {
 
     let endpoint = "/api/v1/jobs";
     let method = "GET";
-    let body = null;
+    let body: string | null = null;
 
     switch (action) {
       case "list":
@@ -398,11 +398,37 @@ serve(async (req) => {
         });
     }
 
+    // Build HMAC signature headers for authenticated endpoints
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const requestId = crypto.randomUUID();
+    const tenantId = "platform"; // global communications jobs are platform-wide
+    const payloadString = body || "{}";
+    const signingSecret = Deno.env.get("BACKGROUND_OPS_SIGNING_SECRET") ?? "";
+
+    const encoder = new TextEncoder();
+    const data = encoder.encode(payloadString + timestamp + tenantId + requestId);
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(signingSecret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const signatureBuffer = await crypto.subtle.sign("HMAC", key, data);
+    const signature = Array.from(new Uint8Array(signatureBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
     const response = await fetch(`${backgroundOpsUrl}${endpoint}`, {
       method,
       headers: {
         "Content-Type": "application/json",
         "x-api-key": backgroundOpsApiKey,
+        "x-signature": `sha256=${signature}`,
+        "x-timestamp": timestamp,
+        "x-tenant-id": tenantId,
+        "x-request-id": requestId,
+        "x-idempotency-key": requestId,
       },
       body,
     });

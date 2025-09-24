@@ -188,7 +188,7 @@ async function processHoldExpiration(job: BaseJob): Promise<any> {
 
 async function processNotificationSend(job: BaseJob): Promise<any> {
   const startTime = Date.now();
-  const { type, to, template, data, provider = "resend" } = job.payload;
+  const { type, to, recipientEmail, recipientPhone, template, data, provider = "resend" } = job.payload;
 
   logger.info(
     `Sending ${type} notification via ${provider} to ${to} using template ${template}`,
@@ -204,7 +204,7 @@ async function processNotificationSend(job: BaseJob): Promise<any> {
       const emailProvider = tenantIntegrations?.email?.provider || provider;
       const fromEmail = tenantIntegrations?.email?.fromEmail || process.env.EMAIL_FROM || "noreply@blunari.ai";
       result = await sendEmailWithProvider({
-        to,
+        to: to || recipientEmail,
         template,
         data,
         provider: emailProvider,
@@ -222,7 +222,7 @@ async function processNotificationSend(job: BaseJob): Promise<any> {
     } else if (type === "sms") {
       const smsProvider = tenantIntegrations?.sms?.provider || "telnyx";
       const fromNumber = tenantIntegrations?.sms?.telnyxFromNumber || tenantIntegrations?.sms?.fromNumber || process.env.TWILIO_PHONE_NUMBER || process.env.TELNYX_FROM_NUMBER || "";
-      result = await sendSmsWithProvider({ to, template, data, provider: smsProvider, from: fromNumber, telnyxMessagingProfileId: tenantIntegrations?.sms?.telnyxMessagingProfileId });
+      result = await sendSmsWithProvider({ to: to || recipientPhone, template, data, provider: smsProvider, from: fromNumber, telnyxMessagingProfileId: tenantIntegrations?.sms?.telnyxMessagingProfileId });
       const duration = Date.now() - startTime;
       metricsService.recordSmsSend(duration, "success");
     } else {
@@ -231,7 +231,7 @@ async function processNotificationSend(job: BaseJob): Promise<any> {
 
     return {
       type,
-      to,
+      to: to || recipientEmail || recipientPhone,
       template,
       provider,
       delivered: true,
@@ -344,26 +344,11 @@ async function sendEmail(
   data: any,
   provider: string,
 ): Promise<any> {
-  // TODO: Implement email sending via Resend or Nodemailer
-  logger.info(`[MOCK] Sending email to ${to} via ${provider}`);
-
-  return {
-    messageId: `email_${Date.now()}`,
-    provider,
-    template,
-    delivered: true,
-  };
+  throw new Error("Email provider not configured");
 }
 
 async function sendSms(to: string, template: string, data: any): Promise<any> {
-  // TODO: Implement SMS sending via Twilio
-  logger.info(`[MOCK] Sending SMS to ${to}`);
-
-  return {
-    messageId: `sms_${Date.now()}`,
-    to,
-    delivered: true,
-  };
+  throw new Error("SMS provider not configured");
 }
 
 async function fetchTenantIntegrations(tenantId: string): Promise<any> {
@@ -404,11 +389,15 @@ async function sendEmailWithProvider(opts: { to: string; template: string; data:
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${global?.email?.resendApiKey || opts.apiKey || config.RESEND_API_KEY}` },
       body: JSON.stringify({ from, to: opts.to, subject, html }),
     });
-    return { messageId: `resend_${Date.now()}`, ok: resp.ok };
+    if (!resp.ok) {
+      const t = await resp.text();
+      throw new Error(`Resend failed: ${resp.status} ${t}`);
+    }
+    const rid = (await resp.json())?.id || `resend_${Date.now()}`;
+    return { messageId: rid, ok: true };
   }
-
-  // TODO: add fastmail/smtp transport if needed later
-  return sendEmail(opts.to, opts.template, opts.data, opts.provider);
+  // No fallback
+  return sendEmail(opts.to, opts.template, opts.data, opts.provider || "");
 }
 
 async function sendSmsWithProvider(opts: { to: string; template: string; data: any; provider?: string; from?: string; telnyxMessagingProfileId?: string }): Promise<any> {
