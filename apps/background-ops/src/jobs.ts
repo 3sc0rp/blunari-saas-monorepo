@@ -17,18 +17,10 @@ export function startScheduledJobs() {
     }
   });
 
-  // Health checks every 5 minutes
+  // Health checks every 5 minutes (removed: job type not implemented)
+  // Keep the slot for future use or emit a simple log for now
   cron.schedule("*/5 * * * *", async () => {
-    try {
-      await jobsService.createJob({
-        type: "health_check",
-        data: { check_all_services: true },
-        priority: 7,
-      });
-      logger.debug("Health check job queued");
-    } catch (error) {
-      logger.error("Error queuing health check:", error);
-    }
+    logger.debug("Scheduled health check tick (no-op)");
   });
 
   // Cleanup old data every hour
@@ -56,51 +48,19 @@ export function startScheduledJobs() {
     }
   });
 
-  // Aggregate metrics every 15 minutes
+  // Aggregate metrics every 15 minutes (removed: job type not implemented)
   cron.schedule("*/15 * * * *", async () => {
-    try {
-      await jobsService.createJob({
-        type: "metrics_aggregation",
-        data: { interval: "15m" },
-        priority: 5,
-      });
-      logger.debug("Metrics aggregation job queued");
-    } catch (error) {
-      logger.error("Error queuing metrics aggregation:", error);
-    }
+    logger.debug("Scheduled metrics aggregation tick (no-op)");
   });
 
-  // Generate daily reports at midnight
+  // Generate daily reports at midnight (removed: job type not implemented)
   cron.schedule("0 0 * * *", async () => {
-    try {
-      await jobsService.createJob({
-        type: "daily_report",
-        data: {
-          date: new Date().toISOString().split("T")[0],
-          include_metrics: true,
-          include_uptime: true,
-          include_activity: true,
-        },
-        priority: 6,
-      });
-      logger.info("Daily report job queued");
-    } catch (error) {
-      logger.error("Error queuing daily report:", error);
-    }
+    logger.debug("Scheduled daily report tick (no-op)");
   });
 
-  // Cleanup completed jobs every 6 hours
+  // Cleanup completed jobs every 6 hours (removed: job type not implemented)
   cron.schedule("0 */6 * * *", async () => {
-    try {
-      await jobsService.createJob({
-        type: "cleanup_completed_jobs",
-        data: { retention_hours: 48 },
-        priority: 2,
-      });
-      logger.debug("Job cleanup queued");
-    } catch (error) {
-      logger.error("Error queuing job cleanup:", error);
-    }
+    logger.debug("Scheduled job cleanup tick (no-op)");
   });
 
   // Send status summary every hour
