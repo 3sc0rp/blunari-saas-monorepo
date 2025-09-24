@@ -23,6 +23,7 @@ import {
   Settings,
   Cpu,
 } from "lucide-react";
+import { useOperationsHealth } from "@/hooks/useOperationsHealth";
 
 // Mock system health data
 const mockSystemHealth = {
@@ -80,6 +81,7 @@ const mockSystemHealth = {
 };
 
 const OperationsPage: React.FC = () => {
+  const { backgroundOps, isChecking, refreshBackgroundOps } = useOperationsHealth();
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8 space-y-8">
@@ -112,8 +114,10 @@ const OperationsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">Healthy</div>
-              <p className="text-xs text-muted-foreground">99.9% uptime</p>
+              <div className={`text-2xl font-bold ${backgroundOps.ok ? "text-green-600" : "text-red-600"}`}>
+                {backgroundOps.ok ? "Healthy" : backgroundOps.status === "configuration_error" ? "Config Error" : "Unhealthy"}
+              </div>
+              <p className="text-xs text-muted-foreground">Background Ops · <button className="underline" onClick={refreshBackgroundOps} disabled={isChecking}>{isChecking ? "Checking..." : "Check now"}</button></p>
             </CardContent>
           </Card>
 
