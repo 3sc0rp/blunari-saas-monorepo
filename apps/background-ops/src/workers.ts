@@ -196,14 +196,32 @@ async function processNotificationSend(job: BaseJob): Promise<any> {
   try {
     let result: any;
 
+    // Resolve per-tenant integration settings
+    const tenantIntegrations = await fetchTenantIntegrations(job.tenantId);
+
     if (type === "email") {
-      // TODO: Implement email sending logic
-      result = await sendEmail(to, template, data, provider);
+      const emailProvider = tenantIntegrations?.email?.provider || provider;
+      const fromEmail = tenantIntegrations?.email?.fromEmail || process.env.EMAIL_FROM || "noreply@blunari.ai";
+      result = await sendEmailWithProvider({
+        to,
+        template,
+        data,
+        provider: emailProvider,
+        from: fromEmail,
+        apiKey: tenantIntegrations?.email?.resendApiKey || process.env.RESEND_API_KEY,
+        smtp: {
+          host: tenantIntegrations?.email?.smtpHost || process.env.SMTP_HOST,
+          port: tenantIntegrations?.email?.smtpPort ? Number(tenantIntegrations.email.smtpPort) : (process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined),
+          user: tenantIntegrations?.email?.smtpUser || process.env.SMTP_USER,
+          pass: tenantIntegrations?.email?.smtpPass || process.env.SMTP_PASS,
+        },
+      });
       const duration = Date.now() - startTime;
-      metricsService.recordEmailSend(provider, template, duration, "success");
+      metricsService.recordEmailSend(emailProvider, template, duration, "success");
     } else if (type === "sms") {
-      // TODO: Implement SMS sending logic
-      result = await sendSms(to, template, data);
+      const smsProvider = tenantIntegrations?.sms?.provider || "telnyx";
+      const fromNumber = tenantIntegrations?.sms?.telnyxFromNumber || tenantIntegrations?.sms?.fromNumber || process.env.TWILIO_PHONE_NUMBER || process.env.TELNYX_FROM_NUMBER || "";
+      result = await sendSmsWithProvider({ to, template, data, provider: smsProvider, from: fromNumber, telnyxMessagingProfileId: tenantIntegrations?.sms?.telnyxMessagingProfileId });
       const duration = Date.now() - startTime;
       metricsService.recordSmsSend(duration, "success");
     } else {
@@ -345,6 +363,53 @@ async function sendSms(to: string, template: string, data: any): Promise<any> {
     to,
     delivered: true,
   };
+}
+
+async function fetchTenantIntegrations(tenantId: string): Promise<any> {
+  try {
+    const { getDb } = await import("./database");
+    const db = await getDb();
+    const { rows } = await db.query(
+      `select setting_value from tenant_settings where tenant_id = $1 and setting_key = 'integrations' limit 1`,
+      [tenantId],
+    );
+    return rows?.[0]?.setting_value || {};
+  } catch (e) {
+    logger.warn("Failed to fetch tenant integrations; using defaults", e);
+    return {};
+  }
+}
+
+async function sendEmailWithProvider(opts: { to: string; template: string; data: any; provider: string; from: string; apiKey?: string; smtp?: { host?: string; port?: number; user?: string; pass?: string } }): Promise<any> {
+  // Simple templating
+  const subject = `${opts.data?.tenant_name || 'Reservation'} Confirmation ${opts.data?.confirmation_number || ''}`.trim();
+  const html = `<p>Your reservation is confirmed.</p><p><b>${opts.data?.when || ''}</b> · Party ${opts.data?.party_size || ''}</p><p>Reference: <b>${opts.data?.confirmation_number || ''}</b></p>`;
+
+  if (opts.provider === "resend" && opts.apiKey) {
+    const resp = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${opts.apiKey}` },
+      body: JSON.stringify({ from: opts.from, to: opts.to, subject, html }),
+    });
+    return { messageId: `resend_${Date.now()}`, ok: resp.ok };
+  }
+
+  // TODO: add fastmail/smtp transport if needed later
+  return sendEmail(opts.to, opts.template, opts.data, opts.provider);
+}
+
+async function sendSmsWithProvider(opts: { to: string; template: string; data: any; provider: string; from: string; telnyxMessagingProfileId?: string }): Promise<any> {
+  const text = `${opts.data?.tenant_name || 'Your booking'} confirmed for ${opts.data?.when || ''}. Party ${opts.data?.party_size || ''}. Ref ${opts.data?.confirmation_number || ''}.`;
+  if (opts.provider === "telnyx" && process.env.TELNYX_API_KEY && (opts.from || opts.telnyxMessagingProfileId)) {
+    const body = opts.from ? { from: opts.from, to: opts.to, text } : { messaging_profile_id: opts.telnyxMessagingProfileId, to: opts.to, text };
+    const resp = await fetch("https://api.telnyx.com/v2/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.TELNYX_API_KEY}` },
+      body: JSON.stringify(body),
+    });
+    return { messageId: `telnyx_${Date.now()}`, ok: resp.ok };
+  }
+  return sendSms(opts.to, opts.template, opts.data);
 }
 
 // Scheduled workers that run independently

@@ -58,6 +58,11 @@ export const NotificationJobSchema = z.object({
   recipientEmail: z.string().email().optional(),
   recipientPhone: z.string().optional(),
   language: z.string().default("en"),
+  // Hints/overrides resolved per-tenant (optional)
+  emailFrom: z.string().optional(),
+  emailProvider: z.enum(["resend", "fastmail", "smtp"]).optional(),
+  smsFrom: z.string().optional(),
+  smsProvider: z.enum(["telnyx", "twilio"]).optional(),
 });
 
 // Analytics Aggregation Job
