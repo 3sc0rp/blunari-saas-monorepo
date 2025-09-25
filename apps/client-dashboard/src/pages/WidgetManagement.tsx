@@ -188,6 +188,14 @@ const WidgetManagement: React.FC = () => {
   // Live data preview toggle (renders real widget iframe instead of static mock)
   // Live preview only mode – always true
   const livePreview = true;
+  // Freeze preview during typing-heavy edits for 500ms to reduce churn
+  const [freeze, setFreeze] = useState(false);
+  const scheduleFreeze = useRef<number | null>(null);
+  const softFreeze = useCallback(() => {
+    if (scheduleFreeze.current) window.clearTimeout(scheduleFreeze.current);
+    setFreeze(true);
+    scheduleFreeze.current = window.setTimeout(() => setFreeze(false), 500);
+  }, []);
   const [isLoading, setIsLoading] = useState(false); // generic spinner (saving etc.)
   const [copyBusy, setCopyBusy] = useState(false); // copy-to-clipboard only
   // Deploy tab state
@@ -628,7 +636,7 @@ const WidgetManagement: React.FC = () => {
   const liveWidgetUrl = useMemo(() => {
     if (!liveWidgetBaseUrl) return null;
     return `${liveWidgetBaseUrl}&device=${previewDevice}`;
-  }, [liveWidgetBaseUrl, previewDevice]);
+  }, [liveWidgetBaseUrl, previewDevice, freeze]);
 
   const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {

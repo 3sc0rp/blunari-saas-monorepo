@@ -182,6 +182,9 @@ function WidgetApp() {
 
   // Self-heal if a JS chunk fails to load (e.g., after a deploy with new hashes)
   React.useEffect(() => {
+    // Disable self-heal in dashboard preview to avoid loops with extensions/ad-blockers
+    const qp = new URLSearchParams(window.location.search);
+    if (qp.get('preview') === '1') return;
     const handler = (event: any) => {
       try {
         const target = event?.target as HTMLElement | null;
