@@ -184,127 +184,69 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     };
   }, []);
 
+  const loadConfigRef = useRef(false);
+  
   useEffect(() => {
-    // Allow load attempts even while tenant still resolving slug->id so draft recovery works
-    debug('loadEffect start', { activeWidgetType, tenantIdentifier, tenantId, tenantSlug });
-    // Guard: Only run full load logic if signature (widgetType + tenantIdentifier) changes
-    // This prevents re-running on every local field edit / hasUnsavedChanges toggle
+    // Prevent duplicate loads during initialization
+    if (loadConfigRef.current) return;
+    loadConfigRef.current = true;
+    
     const signature = `${activeWidgetType}::${tenantIdentifier}`;
-    // Track last signature using hook ref (avoid cross-component global)
     if (lastLoadSigRef.current === signature) {
       debug('loadEffect skipped (unchanged signature)', signature);
       return;
     }
     lastLoadSigRef.current = signature;
+    
+    debug('loadEffect start', { activeWidgetType, tenantIdentifier });
+    
     try {
-      // Enhanced loading with tenant-specific storage
-  const storageKey = `blunari-widget-config-${activeWidgetType}-${tenantIdentifier}`;
-  const saved = safeStorage.get(storageKey);
-      // Load any draft (could be for transient slug or pre-id state)
-  const draftKey = `blunari-widget-config-draft-${activeWidgetType}-${tenantIdentifier}`;
-  const draftRaw = safeStorage.get(draftKey);
-      let draft: any = null;
-      if (draftRaw) {
-        try { draft = JSON.parse(draftRaw); } catch (e) {
-          // Ignore malformed draft JSON; will fall back to defaults.
-        }
-      }
-
-      // One-time migration: If we now key by tenantId but legacy composite key exists, migrate it
-      if (!migratedLegacyKeys && tenantId && tenantSlug) {
-        const legacyKey = `blunari-widget-config-${activeWidgetType}-${tenantId}-${tenantSlug}`;
-        if (!saved) {
-          const legacySaved = safeStorage.get(legacyKey);
-            if (legacySaved) {
-              safeStorage.set(storageKey, legacySaved);
-              safeStorage.remove(legacyKey);
-            }
-        }
-        setMigratedLegacyKeys(true);
-      }
+      const storageKey = `blunari-widget-config-${activeWidgetType}-${tenantIdentifier}`;
+      const saved = safeStorage.get(storageKey);
+      const defaults = getDefaultConfig(activeWidgetType);
       
       if (saved) {
-        const parsed = JSON.parse(saved);
-        
-        // For default tenant, always allow loading
-        if (tenantIdentifier === 'default-tenant' || (tenantId && parsed.tenantId === tenantId) || (!tenantId && tenantSlug && parsed.tenantSlug === tenantSlug)) {
-          const merged = { ...getDefaultConfig(activeWidgetType), ...parsed };
+        try {
+          const parsed = JSON.parse(saved);
+          const merged = { ...defaults, ...parsed };
           
-          // Basic validation before applying
           if (merged.width && merged.height && merged.primaryColor) {
-            if (!shallowEqual(merged, currentConfig)) {
-              debug('Applying saved config');
-              setCurrentConfig(merged);
-            } else {
-              debug('Saved config identical, skip state set');
-            }
+            setCurrentConfig(merged);
             setLastSavedTimestamp(parsed.lastSaved || null);
             setLastSavedConfigSnapshot(merged);
-            console.log(`[Widget Config] Loaded ${activeWidgetType} config for tenant: ${tenantIdentifier}`);
+            setHasUnsavedChanges(false);
+            debug('Loaded saved config');
           } else {
-            console.warn(`[Widget Config] Invalid saved config for ${activeWidgetType}, using defaults`);
-            setCurrentConfig(getDefaultConfig(activeWidgetType));
+            setCurrentConfig(defaults);
             setLastSavedTimestamp(null);
+            setHasUnsavedChanges(false);
+            debug('Invalid saved config, using defaults');
           }
-        } else {
-          // Instead of discarding, keep data but mark unsaved so user can resave under new stable key
-          console.warn(`[Widget Config] Config tenant mismatch (likely slug change). Preserving values as unsaved draft.`);
-          const preserved = { ...getDefaultConfig(activeWidgetType), ...parsed };
-          if (!shallowEqual(preserved, currentConfig)) {
-            debug('Applying preserved mismatched config');
-            setCurrentConfig(preserved);
-          }
-          setHasUnsavedChanges(true);
+        } catch (parseErr) {
+          console.warn('Failed to parse saved config:', parseErr);
+          setCurrentConfig(defaults);
           setLastSavedTimestamp(null);
+          setHasUnsavedChanges(false);
         }
       } else {
-        // No saved config – prefer draft if present
-        if (draft) {
-          console.log(`[Widget Config] Using draft for ${activeWidgetType} - ${tenantIdentifier}`);
-          const draftMerged = { ...getDefaultConfig(activeWidgetType), ...draft };
-          if (!shallowEqual(draftMerged, currentConfig)) {
-            debug('Applying draft config');
-            setCurrentConfig(draftMerged);
-          }
-          setLastSavedTimestamp(null);
-          setHasUnsavedChanges(true);
-        } else {
-          console.log(`[Widget Config] No saved or draft config for ${activeWidgetType} - ${tenantIdentifier}, using defaults`);
-          const defaults = getDefaultConfig(activeWidgetType);
-          if (!shallowEqual(defaults, currentConfig)) {
-            debug('Applying defaults');
-            setCurrentConfig(defaults);
-          }
-          setLastSavedTimestamp(null);
-        }
+        setCurrentConfig(defaults);
+        setLastSavedTimestamp(null);
+        setHasUnsavedChanges(false);
+        debug('No saved config, using defaults');
       }
-
-      // If both saved and draft exist, choose the most recently updated
-      if (saved && draft) {
-        const parsedSaved = JSON.parse(saved);
-        const savedTime = new Date(parsedSaved.lastSaved || 0).getTime();
-        const draftTime = draft.draftUpdated || 0;
-        if (draftTime > savedTime) {
-          console.log('[Widget Config] Draft newer than saved; applying draft and marking unsaved');
-          const newer = { ...getDefaultConfig(activeWidgetType), ...draft };
-          if (!shallowEqual(newer, currentConfig)) {
-            debug('Applying newer draft over saved');
-            setCurrentConfig(newer);
-          }
-          setHasUnsavedChanges(true);
-          setLastSavedTimestamp(parsedSaved.lastSaved || null);
-        }
-      }
-      
-      // Reset change tracking
-      // Only clear unsaved flag if we loaded a matching config (otherwise keep true for migrated/mismatched data)
-      if (!hasUnsavedChanges) setHasUnsavedChanges(false);
     } catch (err) {
-      console.warn('Failed to load saved configuration:', err);
+      console.error('Config load error:', err);
       setCurrentConfig(getDefaultConfig(activeWidgetType));
       setLastSavedTimestamp(null);
+      setHasUnsavedChanges(false);
     }
+    
     debug('loadEffect end');
+  }, [activeWidgetType, tenantIdentifier]);
+  
+  // Reset load flag when signature changes
+  useEffect(() => {
+    loadConfigRef.current = false;
   }, [activeWidgetType, tenantIdentifier]);
 
   const resetToDefaults = useCallback(() => {
@@ -390,3 +332,4 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     isDraft: hasUnsavedChanges && !!lastSavedConfigSnapshot,
   } as const;
 }
+
