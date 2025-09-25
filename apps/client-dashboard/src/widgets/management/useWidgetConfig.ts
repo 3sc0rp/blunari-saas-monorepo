@@ -18,6 +18,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
   const [lastSavedConfigSnapshot, setLastSavedConfigSnapshot] = useState<WidgetConfig | null>(null);
   const [changedKeysCount, setChangedKeysCount] = useState(0);
   const autosaveTimerRef = useRef<number | null>(null);
+  const lastLoadSigRef = useRef<string | null>(null);
   const AUTOSAVE_DELAY = 1800; // ms
   const currentConfig = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
   const setCurrentConfig = activeWidgetType === 'booking' ? setBookingConfig : setCateringConfig;
@@ -174,19 +175,27 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     }
   }, [currentConfig, setCurrentConfig, lastSavedConfigSnapshot, activeWidgetType, tenantIdentifier, tenantId, tenantSlug, shallowEqual, saveConfiguration, bookingConfig, cateringConfig]);
 
+  // Clear pending autosave on unmount to avoid late writes
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) {
+        window.clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     // Allow load attempts even while tenant still resolving slug->id so draft recovery works
     debug('loadEffect start', { activeWidgetType, tenantIdentifier, tenantId, tenantSlug });
     // Guard: Only run full load logic if signature (widgetType + tenantIdentifier) changes
     // This prevents re-running on every local field edit / hasUnsavedChanges toggle
     const signature = `${activeWidgetType}::${tenantIdentifier}`;
-    // Track last signature in ref
-    const g = (window as any).__blunariWidgetConfigLoad = (window as any).__blunariWidgetConfigLoad || { last: null };
-    if (g.last === signature) {
+    // Track last signature using hook ref (avoid cross-component global)
+    if (lastLoadSigRef.current === signature) {
       debug('loadEffect skipped (unchanged signature)', signature);
       return;
     }
-    g.last = signature;
+    lastLoadSigRef.current = signature;
     try {
       // Enhanced loading with tenant-specific storage
   const storageKey = `blunari-widget-config-${activeWidgetType}-${tenantIdentifier}`;
