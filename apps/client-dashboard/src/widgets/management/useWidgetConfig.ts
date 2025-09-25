@@ -81,15 +81,17 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       console.warn('Failed to persist draft config', e);
     }
     // Debounced autosave attempt (only if tenantId resolved to stable)
-    if (autosaveTimerRef.current) {
-      window.clearTimeout(autosaveTimerRef.current);
-    }
+    if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current);
     if (tenantId) {
+      const cfgSnapshot = { ...tentative };
       autosaveTimerRef.current = window.setTimeout(() => {
-        saveConfiguration({ silent: true, allowAutosave: true });
+        // Only autosave if no further changes occurred
+        if (shallowEqual(cfgSnapshot, (activeWidgetType === 'booking' ? bookingConfig : cateringConfig))) {
+          saveConfiguration({ silent: true, allowAutosave: true });
+        }
       }, AUTOSAVE_DELAY);
     }
-  }, [currentConfig, setCurrentConfig, lastSavedConfigSnapshot, activeWidgetType, tenantIdentifier, tenantId, tenantSlug, shallowEqual]);
+  }, [currentConfig, setCurrentConfig, lastSavedConfigSnapshot, activeWidgetType, tenantIdentifier, tenantId, tenantSlug, shallowEqual, saveConfiguration, bookingConfig, cateringConfig]);
 
   const saveConfiguration = useCallback(async (options?: { silent?: boolean; allowAutosave?: boolean }) => {
     const silent = options?.silent;
