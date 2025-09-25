@@ -1,0 +1,52 @@
+-- RLS: authorize inserts/updates via auto_provisioning membership
+
+CREATE OR REPLACE FUNCTION public._has_tenant_access(_tenant uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.auto_provisioning ap
+    WHERE ap.user_id = auth.uid()
+      AND ap.tenant_id = _tenant
+      AND ap.status = 'completed'
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public._has_tenant_access(uuid) TO authenticated;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='catering_packages' AND policyname='catering_packages_insert_check'
+  ) THEN
+    DROP POLICY catering_packages_insert_check ON public.catering_packages;
+  END IF;
+  CREATE POLICY catering_packages_insert_check
+  ON public.catering_packages
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    tenant_id = public.get_current_user_tenant_id()
+    OR public._has_tenant_access(tenant_id)
+  );
+
+  IF EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='catering_packages' AND policyname='catering_packages_update_check'
+  ) THEN
+    DROP POLICY catering_packages_update_check ON public.catering_packages;
+  END IF;
+  CREATE POLICY catering_packages_update_check
+  ON public.catering_packages
+  FOR UPDATE TO authenticated
+  USING (
+    tenant_id = public.get_current_user_tenant_id()
+    OR public._has_tenant_access(tenant_id)
+  )
+  WITH CHECK (
+    tenant_id = public.get_current_user_tenant_id()
+    OR public._has_tenant_access(tenant_id)
+  );
+END$$;
+
+
