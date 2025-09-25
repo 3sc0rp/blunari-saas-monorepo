@@ -1523,8 +1523,10 @@ const WidgetManagement: React.FC = () => {
                                 title={`${activeWidgetType} live widget preview`}
                                 src={liveWidgetUrl || undefined}
                                 style={{ width: currentConfig.width, height: currentConfig.height, border: '0', display: 'block', background: '#fff' }}
-                                // Sandbox: include allow-same-origin so third-party SDKs (e.g., Stripe) do not see origin "null"
-                                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation-by-user-activation"
+                                // Optional sandbox (configurable). Disable by default to keep a real origin for third-party SDKs.
+                                sandbox={iframeSandbox ? "allow-scripts allow-forms allow-popups" : undefined}
+                                allow="payment"
+                                allowPaymentRequest
                                 referrerPolicy="strict-origin-when-cross-origin"
                                 onLoad={() => { if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') { console.log('[WidgetManagement] iframe loaded', { url: liveWidgetUrl }); } }}
                               />
