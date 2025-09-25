@@ -1523,8 +1523,7 @@ const WidgetManagement: React.FC = () => {
                                 title={`${activeWidgetType} live widget preview`}
                                 src={liveWidgetUrl || undefined}
                                 style={{ width: currentConfig.width, height: currentConfig.height, border: '0', display: 'block', background: '#fff' }}
-                                // Optional sandbox (configurable). Disable by default to keep a real origin for third-party SDKs.
-                                sandbox={iframeSandbox ? "allow-scripts allow-forms allow-popups" : undefined}
+                                // No sandbox in preview to avoid origin "null" for third‑party SDKs like Stripe
                                 allow="payment"
                                 allowPaymentRequest
                                 referrerPolicy="strict-origin-when-cross-origin"
