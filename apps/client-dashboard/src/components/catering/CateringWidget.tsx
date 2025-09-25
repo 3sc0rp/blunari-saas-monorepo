@@ -86,6 +86,11 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [guestCountFilter, setGuestCountFilter] = useState<number | null>(null);
   const [dietary, setDietary] = useState<string[]>([]);
+  const quickChips = [
+    { key: 'popular', label: 'Popular', apply: () => setQuery('') },
+    { key: 'budget', label: 'Budget Friendly', apply: () => setMaxPrice(Math.round((priceCap || 0) * 0.6)) },
+    { key: 'large', label: 'Large Parties', apply: () => setGuestCountFilter(100) },
+  ];
   const [selectedPackage, setSelectedPackage] =
     useState<CateringPackage | null>(null);
   const [orderForm, setOrderForm] = useState<OrderForm>({
@@ -449,8 +454,22 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                     </div>
 
                     {/* Filters */}
-                    <Card>
+                    <Card className="sticky top-20 z-40 backdrop-blur supports-[backdrop-filter]:bg-white/70">
                       <CardContent className="p-4">
+                        {/* Quick chips */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {quickChips.map(chip => (
+                            <Button key={chip.key} size="sm" variant="secondary" onClick={chip.apply}>
+                              {chip.label}
+                            </Button>
+                          ))}
+                          {dietary.length > 0 && (
+                            <Button size="sm" variant="ghost" onClick={()=>setDietary([])}>
+                              Clear dietary
+                            </Button>
+                          )}
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                           <div className="md:col-span-1">
                             <Label className="text-sm">Search</Label>
