@@ -27,7 +27,9 @@ import {
   FileText,
   Star,
   ArrowLeft,
+  Search,
 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { useCateringData } from "@/hooks/useCateringData";
 import { useTenantBySlug } from "@/hooks/useTenantBySlug";
 import {
@@ -35,6 +37,7 @@ import {
   CateringPackage,
   CateringServiceType,
   DietaryRestriction,
+  DIETARY_ACCOMMODATIONS,
 } from "@/types/catering";
 import ErrorBoundary from "@/components/booking/ErrorBoundary";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -79,6 +82,10 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   } = useCateringData(tenant?.id);
 
   const [currentStep, setCurrentStep] = useState<Step>("packages");
+  const [query, setQuery] = useState("");
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
+  const [guestCountFilter, setGuestCountFilter] = useState<number | null>(null);
+  const [dietary, setDietary] = useState<string[]>([]);
   const [selectedPackage, setSelectedPackage] =
     useState<CateringPackage | null>(null);
   const [orderForm, setOrderForm] = useState<OrderForm>({
@@ -103,6 +110,51 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   const displayError = tenantError || cateringError || submitError;
   const isInDemoMode =
     !tablesExist && diagnosticInfo?.cateringTablesAvailable === false;
+
+  // Derive sensible defaults for filters from data
+  const priceCap = React.useMemo(() => {
+    const vals = (packages || []).map((p) => Number(p.price_per_person || 0));
+    return vals.length ? Math.max(...vals) : 0;
+  }, [packages]);
+
+  React.useEffect(() => {
+    if (priceCap && maxPrice == null) setMaxPrice(priceCap);
+  }, [priceCap, maxPrice]);
+
+  // Apply stable sorting and filters
+  const filteredPackages = React.useMemo(() => {
+    const list = [...(packages || [])]
+      .sort((a, b) => {
+        const pop = Number(!!b.popular) - Number(!!a.popular);
+        if (pop !== 0) return pop;
+        const ao = (a.display_order || 0) - (b.display_order || 0);
+        if (ao !== 0) return ao;
+        const ad = new Date(a.created_at || 0).getTime();
+        const bd = new Date(b.created_at || 0).getTime();
+        return bd - ad;
+      })
+      .filter((p) => {
+        if (query && !(`${p.name}`.toLowerCase().includes(query.toLowerCase()) || `${p.description || ""}`.toLowerCase().includes(query.toLowerCase()))) {
+          return false;
+        }
+        if (maxPrice != null && Number(p.price_per_person || 0) > maxPrice) {
+          return false;
+        }
+        if (guestCountFilter != null) {
+          const withinMin = guestCountFilter >= (p.min_guests || 0);
+          const withinMax = p.max_guests ? guestCountFilter <= p.max_guests : true;
+          if (!withinMin || !withinMax) return false;
+        }
+        if (dietary.length) {
+          const pkgDiets = new Set(p.dietary_accommodations || []);
+          for (const d of dietary) {
+            if (!pkgDiets.has(d as any)) return false;
+          }
+        }
+        return true;
+      });
+    return list;
+  }, [packages, query, maxPrice, guestCountFilter, dietary]);
 
   // Loading states with better UX
   if (tenantLoading || packagesLoading) {
@@ -386,29 +438,67 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold mb-2">
-                      Choose Your Catering Package
-                    </h2>
-                    <p className="text-muted-foreground">
-                      Select from our professional catering packages
-                    </p>
+                  <div className="space-y-6 mb-8">
+                    <div className="text-center">
+                      <h2 className="text-3xl font-bold mb-2">
+                        Choose Your Catering Package
+                      </h2>
+                      <p className="text-muted-foreground">
+                        Select from our professional catering packages
+                      </p>
+                    </div>
+
+                    {/* Filters */}
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                          <div className="md:col-span-1">
+                            <Label className="text-sm">Search</Label>
+                            <div className="relative">
+                              <Search className="w-4 h-4 absolute left-2 top-2.5 text-muted-foreground" />
+                              <Input className="pl-8" placeholder="Search packages..." value={query} onChange={(e)=>setQuery(e.target.value)} />
+                            </div>
+                          </div>
+                          <div className="md:col-span-1">
+                            <Label className="text-sm">Max Price</Label>
+                            <div className="px-1">
+                              <Slider
+                                max={Math.max(priceCap, 100)}
+                                step={50}
+                                value={[maxPrice ?? priceCap]}
+                                onValueChange={(v)=>setMaxPrice(v?.[0] ?? priceCap)}
+                                aria-label="max price"
+                              />
+                              <div className="text-xs text-muted-foreground mt-1">Up to {new Intl.NumberFormat('en-US',{style:'currency', currency:'USD'}).format((maxPrice ?? priceCap)/100)} per person</div>
+                            </div>
+                          </div>
+                          <div className="md:col-span-1">
+                            <Label className="text-sm">Guests</Label>
+                            <Input type="number" placeholder="e.g. 50" value={guestCountFilter ?? ''} onChange={(e)=>setGuestCountFilter(e.target.value? Number(e.target.value): null)} />
+                          </div>
+                          <div className="md:col-span-1">
+                            <Label className="text-sm">Dietary</Label>
+                            <div className="flex flex-wrap gap-1">
+                              {DIETARY_ACCOMMODATIONS.slice(0,6).map(d => (
+                                <Badge
+                                  key={d.value}
+                                  variant={dietary.includes(d.value) ? 'default' : 'outline'}
+                                  className="cursor-pointer"
+                                  onClick={()=> setDietary(prev => prev.includes(d.value) ? prev.filter(x=>x!==d.value) : [...prev, d.value])}
+                                >
+                                  {d.label}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
 
-                  {packages && packages.length > 0 ? (
+                  {filteredPackages && filteredPackages.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {[...packages]
-                        .sort((a, b) => {
-                          // Stable sort: popular desc, display_order asc, created_at desc
-                          const pop = Number(!!b.popular) - Number(!!a.popular);
-                          if (pop !== 0) return pop;
-                          const ao = (a.display_order || 0) - (b.display_order || 0);
-                          if (ao !== 0) return ao;
-                          const ad = new Date(a.created_at || 0).getTime();
-                          const bd = new Date(b.created_at || 0).getTime();
-                          return bd - ad;
-                        })
-                        .map((pkg) => (
+                      {filteredPackages.map((pkg) => (
                         <motion.div
                           key={pkg.id}
                           whileHover={{ y: -2 }}
@@ -440,7 +530,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                             <CardContent>
                       {pkg.image_url && (
                         <div className="mb-3">
-                          <img src={pkg.image_url} alt={pkg.name} className="w-full h-32 object-cover rounded" />
+                          <img loading="lazy" src={pkg.image_url} alt={pkg.name} className="w-full h-32 object-cover rounded" />
                         </div>
                       )}
                       {pkg.description && (
