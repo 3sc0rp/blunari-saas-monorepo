@@ -1556,13 +1556,11 @@ const WidgetManagement: React.FC = () => {
                                 style={{ width: currentConfig.width, height: currentConfig.height, border: '0', display: 'block', background: '#fff' }}
                                 // No sandbox in preview to avoid origin "null" for third‑party SDKs like Stripe
                                 allow="payment"
-                                allowPaymentRequest
                                 referrerPolicy="strict-origin-when-cross-origin"
                                 onLoad={() => {
                                   try {
                                     // Notify child we are ready (idempotent)
                                     const correlationId = 'wm-'+Date.now();
-                                    (document.getElementById('widget-root') as any);
                                     const w = (document.querySelector('[data-widget-preview] iframe') as HTMLIFrameElement | null)?.contentWindow;
                                     w && w.postMessage({ type: 'parent_ready', widgetId: iframeKeyRef.current, correlationId }, '*');
                                   } catch {}

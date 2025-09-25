@@ -187,15 +187,23 @@ function WidgetApp() {
         const target = event?.target as HTMLElement | null;
         const isScript = target && (target as any).tagName === 'SCRIPT';
         const src = isScript ? ((target as any).src || '') : '';
-        if (isScript && /\/chunks\//.test(src) && src.startsWith(window.location.origin)) {
-          const key = 'blunari_widget_chunk_retry';
-          if (!sessionStorage.getItem(key)) {
-            sessionStorage.setItem(key, '1');
-            const url = new URL(window.location.href);
-            url.searchParams.set('v', String(Date.now()));
-            window.location.replace(url.toString());
-          }
-        }
+        if (!isScript) return;
+        if (!/\/chunks\//.test(src)) return;
+        if (!src.startsWith(window.location.origin)) return;
+
+        // If we've already tried with a cache-buster, don't loop
+        const currentUrl = new URL(window.location.href);
+        if (currentUrl.searchParams.has('v')) return;
+
+        // Persist the retry decision across iframe reloads (sessionStorage would reset)
+        const key = `blunari_widget_chunk_retry:${src.replace(window.location.origin, '')}`;
+        const now = Date.now();
+        const last = Number(localStorage.getItem(key) || '0');
+        if (now - last < 10 * 60 * 1000) return; // only once per 10 minutes per chunk
+        localStorage.setItem(key, String(now));
+
+        currentUrl.searchParams.set('v', String(now));
+        window.location.replace(currentUrl.toString());
       } catch {}
     };
     window.addEventListener('error', handler, true);
