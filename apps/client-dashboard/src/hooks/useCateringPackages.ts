@@ -77,16 +77,8 @@ export const useCateringPackages = (tenantId?: string) => {
   // Create catering package
   const createPackageMutation = useMutation({
     mutationFn: async (packageData: CreateCateringPackageRequest) => {
-      // Try RPC first (sets tenant_id server-side); if it fails, fallback to direct insert
+      // Prefer direct insert (uses RLS WITH CHECK + trigger). If blocked, fallback to RPC.
       try {
-        const { data, error } = await supabase.rpc(
-          "catering_create_package",
-          { payload: { ...packageData, tenant_id: tenantId } as any },
-        );
-        if (error) throw error;
-        return data as unknown as CateringPackage;
-      } catch (rpcErr) {
-        // Fallback: direct insert with explicit tenant_id (RLS WITH CHECK allows it)
         const { data, error } = await supabase
           .from("catering_packages" as any)
           .insert({
@@ -98,6 +90,14 @@ export const useCateringPackages = (tenantId?: string) => {
           })
           .select()
           .single();
+        if (error) throw error;
+        return data as unknown as CateringPackage;
+      } catch (directErr: any) {
+        // Fallback to RPC (SECURITY DEFINER sets tenant_id server-side)
+        const { data, error } = await supabase.rpc(
+          "catering_create_package",
+          { payload: { ...packageData, tenant_id: tenantId } as any },
+        );
         if (error) throw error;
         return data as unknown as CateringPackage;
       }
