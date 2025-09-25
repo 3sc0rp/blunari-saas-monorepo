@@ -305,7 +305,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       setLastSavedTimestamp(null);
     }
     debug('loadEffect end');
-  }, [activeWidgetType, tenantIdentifier, tenantId, tenantSlug, isLoading, setCurrentConfig, migratedLegacyKeys, shallowEqual]);
+  }, [activeWidgetType, tenantIdentifier]);
 
   const resetToDefaults = useCallback(() => {
     setCurrentConfig(getDefaultConfig(activeWidgetType));
