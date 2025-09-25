@@ -622,29 +622,12 @@ const WidgetManagement: React.FC = () => {
       iframeKeyRef.current = nextKey;
     }
     return url + '&preview=1';
-  }, [livePreview, activeWidgetType, resolvedTenantSlug, widgetToken, tenant?.timezone, tenant?.currency]);
+  }, [livePreview, activeWidgetType, resolvedTenantSlug, widgetToken]);
 
-  // Compute a lightweight signature of config values that materially affect widget rendering.
-  const currentConfigSignature = useMemo(() => {
-    const c = currentConfig;
-    if (!c) return 'none';
-    return [
-      c.theme, c.primaryColor, c.secondaryColor, c.backgroundColor, c.textColor,
-      c.borderRadius, c.width, c.height, c.animationType, c.enableAnimations,
-      c.showLogo, c.showDescription, c.showFooter
-    ].join('|');
-  }, [currentConfig]);
-
-  // Device-specific URL with conditional cache-busting only when config signature changes.
+  // Stable preview URL - only changes when base URL or device changes
   const liveWidgetUrl = useMemo(() => {
     if (!liveWidgetBaseUrl) return null;
-    const deviceParam = `&device=${previewDevice}`;
-    // Only append a cache-buster if signature actually changed and minimum time elapsed (debounce)
-    if (lastConfigSignatureRef.current !== currentConfigSignature) {
-      lastConfigSignatureRef.current = currentConfigSignature;
-      return `${liveWidgetBaseUrl}${deviceParam}&cfg=${encodeURIComponent(currentConfigSignature)}`;
-    }
-    return `${liveWidgetBaseUrl}${deviceParam}`;
+    return `${liveWidgetBaseUrl}&device=${previewDevice}`;
   }, [liveWidgetBaseUrl, previewDevice]);
 
   const copyToClipboard = useCallback(async (text: string, label: string) => {
