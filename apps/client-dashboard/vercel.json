@@ -48,7 +48,9 @@
         { "key": "cache-control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate" },
         { "key": "x-content-type-options", "value": "nosniff" },
         { "key": "referrer-policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "content-security-policy", "value": "default-src 'self'; connect-src 'self' https://*.supabase.co https://services.blunari.ai; img-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors *;" }
+        { "key": "content-security-policy", "value": "default-src 'self'; connect-src 'self' https://*.supabase.co https://services.blunari.ai https://m.stripe.com https://m.stripe.network; img-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors *;" },
+        { "key": "Origin-Agent-Cluster", "value": "?1" },
+        { "key": "Permissions-Policy", "value": "payment=(self)" }
       ]
     },
     {
