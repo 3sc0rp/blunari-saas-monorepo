@@ -77,20 +77,13 @@ export const useCateringPackages = (tenantId?: string) => {
   // Create catering package
   const createPackageMutation = useMutation({
     mutationFn: async (packageData: CreateCateringPackageRequest) => {
-      const { data, error } = await supabase
-        .from("catering_packages" as any)
-        .insert({
-          ...packageData,
-          tenant_id: tenantId!,
-          active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
+      // Prefer RPC to set tenant_id on the server using SECURITY DEFINER
+      const { data, error } = await supabase.rpc(
+        "catering_create_package",
+        { payload: packageData as any },
+      );
       if (error) throw error;
-      return data;
+      return data as unknown as CateringPackage;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
