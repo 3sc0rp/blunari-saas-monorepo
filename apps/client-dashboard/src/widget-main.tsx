@@ -180,6 +180,28 @@ function WidgetApp() {
     } catch {}
   }, []);
 
+  // Self-heal if a JS chunk fails to load (e.g., after a deploy with new hashes)
+  React.useEffect(() => {
+    const handler = (event: any) => {
+      try {
+        const target = event?.target as HTMLElement | null;
+        const isScript = target && (target as any).tagName === 'SCRIPT';
+        const src = isScript ? ((target as any).src || '') : '';
+        if (isScript && /\/chunks\//.test(src) && src.startsWith(window.location.origin)) {
+          const key = 'blunari_widget_chunk_retry';
+          if (!sessionStorage.getItem(key)) {
+            sessionStorage.setItem(key, '1');
+            const url = new URL(window.location.href);
+            url.searchParams.set('v', String(Date.now()));
+            window.location.replace(url.toString());
+          }
+        }
+      } catch {}
+    };
+    window.addEventListener('error', handler, true);
+    return () => window.removeEventListener('error', handler, true);
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
