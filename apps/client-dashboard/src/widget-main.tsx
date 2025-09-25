@@ -173,7 +173,10 @@ function WidgetApp() {
       const params = new URLSearchParams(window.location.search);
       const correlationId = params.get('cid') || '';
       const payload = { type: 'widget_loaded', widgetId: '', correlationId } as any;
-      setTimeout(() => { try { window.postMessage(payload, '*'); } catch {} }, 120);
+      // Debounce duplicate emits to avoid parent loops
+      let sent = false;
+      const send = () => { if (sent) return; sent = true; try { window.postMessage(payload, '*'); } catch {} };
+      setTimeout(send, 120);
     } catch {}
   }, []);
 

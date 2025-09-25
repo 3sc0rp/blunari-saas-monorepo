@@ -1558,7 +1558,16 @@ const WidgetManagement: React.FC = () => {
                                 allow="payment"
                                 allowPaymentRequest
                                 referrerPolicy="strict-origin-when-cross-origin"
-                                onLoad={() => { if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') { console.log('[WidgetManagement] iframe loaded', { url: liveWidgetUrl }); } }}
+                                onLoad={() => {
+                                  try {
+                                    // Notify child we are ready (idempotent)
+                                    const correlationId = 'wm-'+Date.now();
+                                    (document.getElementById('widget-root') as any);
+                                    const w = (document.querySelector('[data-widget-preview] iframe') as HTMLIFrameElement | null)?.contentWindow;
+                                    w && w.postMessage({ type: 'parent_ready', widgetId: iframeKeyRef.current, correlationId }, '*');
+                                  } catch {}
+                                  if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') { console.log('[WidgetManagement] iframe loaded', { url: liveWidgetUrl }); }
+                                }}
                               />
                               <div className="absolute top-2 left-2">
                                 <Badge variant="secondary" className="text-xs">Live</Badge>
