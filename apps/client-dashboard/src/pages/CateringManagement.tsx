@@ -19,6 +19,7 @@ import {
   type CateringPackage,
 } from "@/types/catering";
 import { ChefHat, ImageIcon, Plus, Trash, Star, ArrowUpDown, Search } from "lucide-react";
+import { FileUpload } from "@/components/ui/file-upload";
 
 export default function CateringManagement(): JSX.Element {
   const { tenant, isLoading: tenantLoading } = useTenant();
@@ -37,6 +38,8 @@ export default function CateringManagement(): JSX.Element {
 
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<'popular'|'name'|'price'|'display_order'>('display_order');
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
   const sorted = useMemo(() => {
     const q = (query || '').toLowerCase();
     const filtered = q ? packages.filter(p => (p.name||'').toLowerCase().includes(q) || (p.description||'').toLowerCase().includes(q)) : packages;
@@ -49,6 +52,46 @@ export default function CateringManagement(): JSX.Element {
     });
     return arr;
   }, [packages, query, sortKey]);
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string, index: number) => {
+    if (sortKey !== 'display_order') return;
+    setDragIndex(index);
+    setDragId(id);
+    try { e.dataTransfer.effectAllowed = 'move'; } catch {}
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (sortKey !== 'display_order') return;
+    e.preventDefault();
+    try { e.dataTransfer.dropEffect = 'move'; } catch {}
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, toIndex: number) => {
+    if (sortKey !== 'display_order') return;
+    e.preventDefault();
+    if (dragIndex == null || dragId == null) return;
+    if (toIndex === dragIndex) return;
+
+    // Build new id order based on current filtered+sorted view
+    const ids = sorted.map(p => p.id);
+    const [moved] = ids.splice(dragIndex, 1);
+    ids.splice(toIndex, 0, moved);
+
+    // Assign sequential display_order values (10,20,...) for stability
+    const idToOrder: Record<string, number> = {};
+    ids.forEach((id, i) => { idToOrder[id] = (i + 1) * 10; });
+
+    // Update only those whose order changed
+    for (const p of sorted) {
+      const desired = idToOrder[p.id];
+      if (desired != null && (p.display_order || 0) !== desired) {
+        updatePackage({ packageId: p.id, updates: { display_order: desired as any } });
+      }
+    }
+
+    setDragIndex(null);
+    setDragId(null);
+  };
 
   if (tenantLoading) {
     return (
@@ -138,14 +181,21 @@ export default function CateringManagement(): JSX.Element {
         </Card>
       ) : (
         <div className="space-y-4">
-          {sorted.map((pkg) => (
-            <PackageRow
+          {sorted.map((pkg, index) => (
+            <div
               key={pkg.id}
-              pkg={pkg}
-              onUpdate={(updates) => updatePackage({ packageId: pkg.id, updates })}
-              onDelete={() => deletePackage(pkg.id)}
-              busy={isUpdating || isDeleting}
-            />
+              draggable={sortKey === 'display_order'}
+              onDragStart={(e) => handleDragStart(e, pkg.id, index)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, index)}
+            >
+              <PackageRow
+                pkg={pkg}
+                onUpdate={(updates) => updatePackage({ packageId: pkg.id, updates })}
+                onDelete={() => deletePackage(pkg.id)}
+                busy={isUpdating || isDeleting}
+              />
+            </div>
           ))}
         </div>
       )}
@@ -188,13 +238,21 @@ function PackageRow({
               defaultValue={local.name}
               onBlur={(e) => commit({ name: e.target.value })}
             />
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <ImageIcon className="w-4 h-4" />
-              <Input
-                placeholder="Image URL"
-                defaultValue={local.image_url || ""}
-                onBlur={(e) => commit({ image_url: e.target.value })}
+            <div className="space-y-2">
+              <FileUpload
+                label="Package Image"
+                value={local.image_url || ""}
+                onChange={(url) => commit({ image_url: url })}
+                description="JPEG/PNG up to 5MB"
               />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <ImageIcon className="w-4 h-4" />
+                <Input
+                  placeholder="Or paste an image URL"
+                  defaultValue={local.image_url || ""}
+                  onBlur={(e) => commit({ image_url: e.target.value })}
+                />
+              </div>
             </div>
           </div>
 
