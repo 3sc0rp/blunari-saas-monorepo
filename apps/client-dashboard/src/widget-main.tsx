@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fetchPublicBranding } from './public-branding';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import BookingPage from './pages/BookingPage';
+import CateringWidget from '@/components/catering/CateringWidget';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Toaster } from '@/components/ui/toaster';
@@ -128,7 +129,7 @@ function WidgetApp() {
           <BrowserRouter>
             <Routes>
               <Route path="/public-widget/book/:slug" element={<BookingPage />} />
-              <Route path="/public-widget/catering/:slug" element={<BookingPage />} />
+              <Route path="/public-widget/catering/:slug" element={<CateringWidget slug={':slug'} />} />
             </Routes>
             <Toaster />
             <Sonner />

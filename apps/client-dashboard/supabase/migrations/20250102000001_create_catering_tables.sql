@@ -239,6 +239,27 @@ ALTER TABLE public.catering_quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.catering_staff_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.catering_feedback ENABLE ROW LEVEL SECURITY;
 
+-- Enable realtime replication for catering tables
+-- (Supabase Realtime listens to changes on tables in this publication)
+DO $$
+BEGIN
+  PERFORM 1 FROM pg_publication WHERE pubname = 'supabase_realtime';
+  IF NOT FOUND THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+  -- Add tables to publication idempotently
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE
+      public.catering_packages,
+      public.catering_orders,
+      public.catering_menu_items,
+      public.catering_package_items;
+  EXCEPTION WHEN duplicate_object THEN
+    -- ignore if already added
+    NULL;
+  END;
+END$$;
+
 -- Create RLS policies for tenant isolation
 -- Public can view active catering packages for ordering
 CREATE POLICY "Public can view active catering packages"

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +56,23 @@ export const useCateringPackages = (tenantId?: string) => {
     enabled: !!tenantId,
     staleTime: 300000, // Consider data fresh for 5 minutes
   });
+
+  // Realtime subscription to reflect updates instantly in dashboard
+  useEffect(() => {
+    if (!tenantId) return;
+    const channel = supabase
+      .channel(`rt-catering-packages-${tenantId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'catering_packages', filter: `tenant_id=eq.${tenantId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["catering-packages", tenantId] });
+        }
+      )
+      .subscribe();
+
+    return () => { try { supabase.removeChannel(channel); } catch {} };
+  }, [tenantId, queryClient]);
 
   // Create catering package
   const createPackageMutation = useMutation({

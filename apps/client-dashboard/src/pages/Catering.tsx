@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -93,6 +94,9 @@ export default function CateringPage() {
     packages,
     isLoading: packagesLoading,
     error: packagesError,
+    createPackage,
+    updatePackage,
+    deletePackage,
   } = useCateringPackages(tenant?.id);
   const {
     orders,
@@ -277,11 +281,12 @@ export default function CateringPage() {
       </div>
 
       <Tabs defaultValue="packages" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="packages">Browse Packages</TabsTrigger>
           <TabsTrigger value="orders">My Orders</TabsTrigger>
           <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="manage">Manage Packages</TabsTrigger>
         </TabsList>
 
         {/* Packages Tab */}
@@ -414,6 +419,98 @@ export default function CateringPage() {
               </p>
             </div>
           )}
+        </TabsContent>
+
+        {/* Manage Packages Tab (tenant editors) */}
+        <TabsContent value="manage" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Manage Catering Packages</CardTitle>
+              <CardDescription>Create, edit, and publish packages. Updates are live in the public widget.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-end">
+                <Button onClick={() => createPackage({
+                  name: "New Package",
+                  description: "Describe this package",
+                  price_per_person: 2500,
+                  min_guests: 10,
+                  includes_setup: false,
+                  includes_service: true,
+                  includes_cleanup: false,
+                  dietary_accommodations: []
+                })}>New Package</Button>
+              </div>
+
+              {packages.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No packages yet. Create your first package.</div>
+              ) : (
+                <div className="space-y-4">
+                  {packages.map((pkg) => (
+                    <div key={pkg.id} className="border rounded-md p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                      <div className="md:col-span-4">
+                        <Input
+                          defaultValue={pkg.name}
+                          onBlur={(e) => updatePackage({ packageId: pkg.id, updates: { name: e.target.value } })}
+                        />
+                        <div className="text-xs text-muted-foreground mt-1">Package ID: {pkg.id.slice(0, 8)}</div>
+                      </div>
+                      <div className="md:col-span-3">
+                        <Input
+                          type="number"
+                          defaultValue={pkg.price_per_person}
+                          onBlur={(e) => updatePackage({ packageId: pkg.id, updates: { price_per_person: Number(e.target.value || 0) } })}
+                        />
+                        <div className="text-xs text-muted-foreground mt-1">Price per person (cents)</div>
+                      </div>
+                      <div className="md:col-span-2">
+                        <Input
+                          type="number"
+                          defaultValue={pkg.min_guests}
+                          onBlur={(e) => updatePackage({ packageId: pkg.id, updates: { min_guests: Number(e.target.value || 0) } })}
+                        />
+                        <div className="text-xs text-muted-foreground mt-1">Min guests</div>
+                      </div>
+                      <div className="md:col-span-1 flex items-center gap-2">
+                        <Switch
+                          checked={pkg.popular}
+                          onCheckedChange={(val) => updatePackage({ packageId: pkg.id, updates: { popular: !!val } })}
+                        />
+                        <span className="text-sm">Popular</span>
+                      </div>
+                      <div className="md:col-span-2 flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => updatePackage({ packageId: pkg.id, updates: { active: !pkg.active } })}>
+                          {pkg.active ? "Unpublish" : "Publish"}
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive">Delete</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete package?</AlertDialogTitle>
+                              <AlertDialogDescription>This will unpublish the package immediately.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deletePackage(pkg.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                      <div className="md:col-span-12">
+                        <Textarea
+                          defaultValue={pkg.description || ""}
+                          onBlur={(e) => updatePackage({ packageId: pkg.id, updates: { description: e.target.value } })}
+                          placeholder="Describe what's included"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Orders Tab */}

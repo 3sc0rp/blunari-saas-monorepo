@@ -169,6 +169,26 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
     }
   }, [tenantId, checkTableExistence]);
 
+  // Realtime subscription: refresh packages when tenant updates catering_packages
+  useEffect(() => {
+    if (!tenantId) return;
+    const channel = supabase
+      .channel(`rt-catering-widget-${tenantId}`)
+      .on(
+        'postgres_changes' as any,
+        { event: '*', schema: 'public', table: 'catering_packages', filter: `tenant_id=eq.${tenantId}` },
+        () => {
+          // Refetch to reflect changes immediately in the widget
+          fetchPackages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch {}
+    };
+  }, [tenantId, fetchPackages]);
+
   const createOrder = useCallback(
     async (orderData: CreateCateringOrderRequest) => {
       if (!tenantId) {
