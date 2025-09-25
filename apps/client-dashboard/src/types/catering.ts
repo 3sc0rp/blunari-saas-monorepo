@@ -87,6 +87,7 @@ export interface CateringPackage {
   includes_cleanup: boolean;
   dietary_accommodations: DietaryRestriction[];
   image_url?: string;
+  display_order?: number;
   popular: boolean;
   active: boolean;
   created_at: string;
