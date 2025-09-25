@@ -583,15 +583,46 @@ const WidgetManagement: React.FC = () => {
   const lastConfigSignatureRef = useRef<string>('');
   const liveWidgetBaseUrl = useMemo(() => {
     if (!livePreview) return null;
-    const url = generateWidgetUrl(activeWidgetType);
-    if (!url) return null;
-    const slug = resolvedTenantSlug || 'tenant';
+    const slug = resolvedTenantSlug;
+    if (!slug || !widgetToken) return null;
+    const cfg = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
+    if (!cfg) return null;
+    const baseUrl = window.location.origin;
+    const widgetPath = activeWidgetType === 'booking' ? '/public-widget/book' : '/public-widget/catering';
+    const p = new URLSearchParams();
+    p.set('slug', slug);
+    p.set('token', widgetToken);
+    p.set('widget_version', '2.0');
+    if (tenant?.timezone) p.set('timezone', tenant.timezone);
+    if (tenant?.currency) p.set('currency', tenant.currency);
+    if (cfg.theme) p.set('theme', cfg.theme);
+    if (cfg.primaryColor) p.set('primaryColor', cfg.primaryColor);
+    if (cfg.secondaryColor) p.set('secondaryColor', cfg.secondaryColor);
+    if (cfg.backgroundColor) p.set('backgroundColor', cfg.backgroundColor);
+    if (cfg.textColor) p.set('textColor', cfg.textColor);
+    p.set('borderRadius', String(cfg.borderRadius || 8));
+    p.set('width', String(cfg.width || 400));
+    p.set('height', String(cfg.height || 600));
+    if (cfg.welcomeMessage) p.set('welcomeMessage', cfg.welcomeMessage);
+    if (cfg.buttonText) p.set('buttonText', cfg.buttonText);
+    p.set('showLogo', String(cfg.showLogo ?? true));
+    p.set('showDescription', String(cfg.showDescription ?? true));
+    p.set('showFooter', String(cfg.showFooter ?? true));
+    p.set('enableAnimations', String(cfg.enableAnimations ?? true));
+    p.set('animationType', cfg.animationType || 'fade');
+    if (activeWidgetType === 'booking') {
+      if (cfg.enableTableOptimization !== undefined) p.set('enableTableOptimization', String(cfg.enableTableOptimization));
+      if (cfg.maxPartySize) p.set('maxPartySize', String(cfg.maxPartySize));
+      if (cfg.requireDeposit !== undefined) p.set('requireDeposit', String(cfg.requireDeposit));
+      if (cfg.enableSpecialRequests !== undefined) p.set('enableSpecialRequests', String(cfg.enableSpecialRequests));
+    }
+    const url = `${baseUrl}${widgetPath}/${slug}?${p.toString()}`;
     const nextKey = `${slug}:${activeWidgetType}`;
     if (iframeKeyRef.current !== nextKey) {
       iframeKeyRef.current = nextKey;
     }
     return url + '&preview=1';
-  }, [livePreview, activeWidgetType, generateWidgetUrl, resolvedTenantSlug]);
+  }, [livePreview, activeWidgetType, resolvedTenantSlug, widgetToken, currentConfigSignature, tenant?.timezone, tenant?.currency]);
 
   // Compute a lightweight signature of config values that materially affect widget rendering.
   const currentConfigSignature = useMemo(() => {
@@ -608,13 +639,13 @@ const WidgetManagement: React.FC = () => {
   const liveWidgetUrl = useMemo(() => {
     if (!liveWidgetBaseUrl) return null;
     const deviceParam = `&device=${previewDevice}`;
-    // Only append a cache-buster if config signature changed (prevents constant reload loops)
+    // Only append a cache-buster if signature actually changed and minimum time elapsed (debounce)
     if (lastConfigSignatureRef.current !== currentConfigSignature) {
       lastConfigSignatureRef.current = currentConfigSignature;
       return `${liveWidgetBaseUrl}${deviceParam}&cfg=${encodeURIComponent(currentConfigSignature)}`;
     }
     return `${liveWidgetBaseUrl}${deviceParam}`;
-  }, [liveWidgetBaseUrl, previewDevice, currentConfigSignature]);
+  }, [liveWidgetBaseUrl, previewDevice]);
 
   const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {
