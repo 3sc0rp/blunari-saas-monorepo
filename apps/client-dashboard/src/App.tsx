@@ -47,6 +47,7 @@ const WaitlistManagement = lazy(() =>
 );
 const CustomerProfiles = lazy(() => import(/* webpackChunkName: "customers" */ "./pages/CustomerProfiles"));
 const Catering = lazy(() => import(/* webpackChunkName: "catering" */ "./pages/Catering"));
+const CateringManagement = lazy(() => import(/* webpackChunkName: "catering-management" */ "./pages/CateringManagement"));
 const Messages = lazy(() => import(/* webpackChunkName: "messages" */ "./pages/Messages"));
 const KitchenDisplaySystem = lazy(() => import(/* webpackChunkName: "kitchen" */ "./pages/KitchenDisplaySystem"));
 const StaffManagement = lazy(() => import(/* webpackChunkName: "staff" */ "./pages/StaffManagement"));
@@ -177,6 +178,11 @@ function App() {
                               <Route path="catering" element={
                                 <Suspense fallback={<LazyLoadingFallback component="Catering Management" />}>
                                   <Catering />
+                                </Suspense>
+                              } />
+                              <Route path="catering-management" element={
+                                <Suspense fallback={<LazyLoadingFallback component="Catering Management" />}>
+                                  <CateringManagement />
                                 </Suspense>
                               } />
                               

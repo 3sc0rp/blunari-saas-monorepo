@@ -77,6 +77,7 @@ const managementNavigation = [
       // Removed duplicate navigation entry for Tables (Live Floor already links to /dashboard/tables)
       { title: "Customers", url: "/dashboard/customers", icon: Users },
       { title: "Catering", url: "/dashboard/catering", icon: ChefHat },
+      { title: "Catering Management", url: "/dashboard/catering-management", icon: UtensilsCrossed },
     ],
   },
   {

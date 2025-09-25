@@ -42,6 +42,7 @@ const navigation = [
   { name: "Tables", href: "/dashboard/tables", icon: TableProperties },
   { name: "Customers", href: "/dashboard/customers", icon: Users },
   { name: "Catering", href: "/dashboard/catering", icon: UtensilsCrossed },
+  { name: "Catering Management", href: "/dashboard/catering-management", icon: ChefHat },
   { name: "Booking Widget", href: "/dashboard/widget-preview", icon: Code },
   { name: "POS Integrations", href: "/dashboard/pos-integrations", icon: Plug },
   { name: "Waitlist", href: "/dashboard/waitlist", icon: Clock },
