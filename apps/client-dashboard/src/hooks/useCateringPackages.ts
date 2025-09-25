@@ -31,6 +31,7 @@ export const useCateringPackages = (tenantId?: string) => {
           .eq("tenant_id", tenantId)
           .eq("active", true)
           .order("popular", { ascending: false })
+          .order("display_order", { ascending: true, nulls: 'last' as any })
           .order("created_at", { ascending: false });
 
         if (error) {

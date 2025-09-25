@@ -18,7 +18,7 @@ import {
   DIETARY_ACCOMMODATIONS,
   type CateringPackage,
 } from "@/types/catering";
-import { ChefHat, ImageIcon, Plus, Trash, Star } from "lucide-react";
+import { ChefHat, ImageIcon, Plus, Trash, Star, ArrowUpDown, Search } from "lucide-react";
 
 export default function CateringManagement(): JSX.Element {
   const { tenant, isLoading: tenantLoading } = useTenant();
@@ -35,10 +35,20 @@ export default function CateringManagement(): JSX.Element {
   const [creatingName, setCreatingName] = useState("Signature Buffet");
   const [creatingPrice, setCreatingPrice] = useState<number>(2500);
 
-  const sorted = useMemo(
-    () => [...packages].sort((a, b) => Number(b.popular) - Number(a.popular)),
-    [packages],
-  );
+  const [query, setQuery] = useState('');
+  const [sortKey, setSortKey] = useState<'popular'|'name'|'price'|'display_order'>('display_order');
+  const sorted = useMemo(() => {
+    const q = (query || '').toLowerCase();
+    const filtered = q ? packages.filter(p => (p.name||'').toLowerCase().includes(q) || (p.description||'').toLowerCase().includes(q)) : packages;
+    const arr = [...filtered];
+    arr.sort((a,b) => {
+      if (sortKey === 'popular') return Number(b.popular) - Number(a.popular);
+      if (sortKey === 'name') return (a.name||'').localeCompare(b.name||'');
+      if (sortKey === 'price') return (b.price_per_person||0) - (a.price_per_person||0);
+      return (a.display_order||0) - (b.display_order||0);
+    });
+    return arr;
+  }, [packages, query, sortKey]);
 
   if (tenantLoading) {
     return (
@@ -66,6 +76,16 @@ export default function CateringManagement(): JSX.Element {
           </p>
         </div>
         <ChefHat className="w-6 h-6 text-primary" />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="w-4 h-4 absolute left-2 top-2.5 text-muted-foreground" />
+          <Input className="pl-8" placeholder="Search packages..." value={query} onChange={(e)=>setQuery(e.target.value)} />
+        </div>
+        <Button variant="outline" size="sm" onClick={()=>setSortKey(sortKey==='display_order'?'popular':sortKey==='popular'?'name':sortKey==='name'?'price':'display_order')}>
+          <ArrowUpDown className="w-4 h-4 mr-2" /> Sort: {sortKey.replace('_',' ')}
+        </Button>
       </div>
 
       <Card>

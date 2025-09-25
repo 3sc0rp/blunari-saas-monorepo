@@ -403,13 +403,13 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                           whileHover={{ y: -2 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <Card className="h-full cursor-pointer hover:shadow-lg transition-all border-2 hover:border-orange-200">
+                  <Card className="h-full cursor-pointer hover:shadow-lg transition-all border-2 hover:border-orange-200">
                             <CardHeader>
                               <div className="flex items-start justify-between">
                                 <CardTitle className="text-lg">
                                   {pkg.name}
                                 </CardTitle>
-                                {pkg.popular && (
+                        {pkg.popular && (
                                   <Badge
                                     variant="secondary"
                                     className="bg-orange-100 text-orange-700"
@@ -427,9 +427,16 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                               </div>
                             </CardHeader>
                             <CardContent>
-                              <p className="text-muted-foreground mb-4">
-                                {pkg.description}
-                              </p>
+                      {pkg.image_url && (
+                        <div className="mb-3">
+                          <img src={pkg.image_url} alt={pkg.name} className="w-full h-32 object-cover rounded" />
+                        </div>
+                      )}
+                      {pkg.description && (
+                        <p className="text-muted-foreground mb-3 line-clamp-2">
+                          {pkg.description}
+                        </p>
+                      )}
 
                               <div className="space-y-2 mb-4">
                                 <div className="flex items-center gap-2 text-sm">
@@ -444,7 +451,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                                 </div>
                               </div>
 
-                              <div className="space-y-1 mb-4">
+                      <div className="space-y-1 mb-4">
                                 {pkg.includes_setup && (
                                   <div className="flex items-center gap-2 text-sm text-green-600">
                                     <CheckCircle className="w-3 h-3" />
@@ -465,8 +472,8 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                                 )}
                               </div>
 
-                              {pkg.dietary_accommodations &&
-                                pkg.dietary_accommodations.length > 0 && (
+                      {pkg.dietary_accommodations &&
+                        pkg.dietary_accommodations.length > 0 && (
                                   <div className="mb-4">
                                     <p className="text-xs text-muted-foreground mb-1">
                                       Dietary accommodations:
