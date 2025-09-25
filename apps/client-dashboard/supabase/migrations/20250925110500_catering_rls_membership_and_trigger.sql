@@ -7,13 +7,7 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.user_tenant_access uta
-    WHERE uta.user_id = auth.uid()
-      AND uta.tenant_id = _tenant
-      AND uta.active = true
-  );
+  SELECT false
 $$;
 
 GRANT EXECUTE ON FUNCTION public._has_tenant_access(uuid) TO authenticated;
