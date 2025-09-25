@@ -397,7 +397,18 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
                   {packages && packages.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {packages.map((pkg) => (
+                      {[...packages]
+                        .sort((a, b) => {
+                          // Stable sort: popular desc, display_order asc, created_at desc
+                          const pop = Number(!!b.popular) - Number(!!a.popular);
+                          if (pop !== 0) return pop;
+                          const ao = (a.display_order || 0) - (b.display_order || 0);
+                          if (ao !== 0) return ao;
+                          const ad = new Date(a.created_at || 0).getTime();
+                          const bd = new Date(b.created_at || 0).getTime();
+                          return bd - ad;
+                        })
+                        .map((pkg) => (
                         <motion.div
                           key={pkg.id}
                           whileHover={{ y: -2 }}
@@ -506,17 +517,22 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                       ))}
                     </div>
                   ) : (
-                    <Card className="text-center p-8">
-                      <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">
-                        No Packages Available
-                      </h3>
-                      <p className="text-muted-foreground mb-4">
-                        This restaurant doesn't have catering packages set up
-                        yet. Please contact them directly for custom catering
-                        options.
-                      </p>
-                    </Card>
+                    <div className="max-w-xl mx-auto">
+                      <Card className="text-center p-8">
+                        <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">
+                          No Packages Available
+                        </h3>
+                        <p className="text-muted-foreground mb-4">
+                          This restaurant hasn't published any catering packages yet.
+                        </p>
+                        <div className="text-sm text-muted-foreground">
+                          <p>If you are the restaurant owner, log into your dashboard and add packages in
+                            <Badge variant="outline" className="mx-1">Catering Management</Badge>.
+                          </p>
+                        </div>
+                      </Card>
+                    </div>
                   )}
                 </motion.div>
               )}
