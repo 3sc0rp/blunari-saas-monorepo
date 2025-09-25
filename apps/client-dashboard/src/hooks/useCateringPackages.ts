@@ -80,7 +80,7 @@ export const useCateringPackages = (tenantId?: string) => {
       // Prefer RPC to set tenant_id on the server using SECURITY DEFINER
       const { data, error } = await supabase.rpc(
         "catering_create_package",
-        { payload: packageData as any },
+        { payload: { ...packageData, tenant_id: tenantId } as any },
       );
       if (error) throw error;
       return data as unknown as CateringPackage;
