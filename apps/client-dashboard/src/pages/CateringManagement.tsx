@@ -293,6 +293,11 @@ function PackageRow({
             </div>
           </div>
 
+          <div className="md:col-span-2 space-y-2">
+            <Label>Display Order</Label>
+            <Input type="number" defaultValue={local.display_order || 0} onBlur={(e)=>commit({ display_order: Number(e.target.value||0) as any })} />
+          </div>
+
           <div className="md:col-span-2 flex items-start justify-end gap-2">
             <Button variant="destructive" onClick={onDelete} disabled={busy}>
               <Trash className="w-4 h-4 mr-2" /> Delete
