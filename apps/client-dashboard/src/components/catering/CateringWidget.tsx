@@ -753,7 +753,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                                 }))
                               }
                             >
-                              <SelectTrigger>
+                              <SelectTrigger id="service_type" aria-labelledby="service_type-label">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>

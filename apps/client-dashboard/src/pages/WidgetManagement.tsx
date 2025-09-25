@@ -1089,9 +1089,9 @@ const WidgetManagement: React.FC = () => {
                   text={currentConfig.textColor}
                 />
                 <div className="space-y-2">
-                  <Label>Theme</Label>
+                  <Label htmlFor="wm_theme">Theme</Label>
                   <Select value={currentConfig.theme} onValueChange={(value: 'light' | 'dark' | 'auto') => updateConfig({ theme: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger id="wm_theme">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
