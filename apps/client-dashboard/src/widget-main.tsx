@@ -5,7 +5,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fetchPublicBranding } from './public-branding';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import BookingPage from './pages/BookingPage';
 import CateringWidget from '@/components/catering/CateringWidget';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -129,7 +129,7 @@ function WidgetApp() {
           <BrowserRouter>
             <Routes>
               <Route path="/public-widget/book/:slug" element={<BookingPage />} />
-              <Route path="/public-widget/catering/:slug" element={<CateringWidget slug={':slug'} />} />
+              <Route path="/public-widget/catering/:slug" element={<CateringWidgetRoute />} />
             </Routes>
             <Toaster />
             <Sonner />
@@ -139,6 +139,19 @@ function WidgetApp() {
       </QueryClientProvider>
     </ErrorBoundary>
   );
+}
+
+function CateringWidgetRoute() {
+  const params = useParams<{ slug: string }>();
+  const slug = params.slug || '';
+  if (!slug) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-sm text-muted-foreground">Missing restaurant identifier.</div>
+      </div>
+    );
+  }
+  return <CateringWidget slug={slug} />;
 }
 
 const rootEl = document.getElementById('widget-root') || (() => {
