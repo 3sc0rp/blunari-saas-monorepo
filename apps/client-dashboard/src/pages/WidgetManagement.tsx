@@ -466,11 +466,12 @@ const WidgetManagement: React.FC = () => {
     if (tenant?.timezone) params.set('timezone', tenant.timezone);
     if (tenant?.currency) params.set('currency', tenant.currency);
 
-    params.set('theme', config.theme || 'light');
-    params.set('primaryColor', config.primaryColor || '#3b82f6');
-    params.set('secondaryColor', config.secondaryColor || '#1e40af');
-    params.set('backgroundColor', config.backgroundColor || '#ffffff');
-    params.set('textColor', config.textColor || '#1f2937');
+    // Theme & color overrides used by widget-main to set CSS variables
+    if (config.theme) params.set('theme', config.theme);
+    if (config.primaryColor) params.set('primaryColor', config.primaryColor);
+    if (config.secondaryColor) params.set('secondaryColor', config.secondaryColor);
+    if (config.backgroundColor) params.set('backgroundColor', config.backgroundColor);
+    if (config.textColor) params.set('textColor', config.textColor);
 
     params.set('borderRadius', String(config.borderRadius || 8));
     params.set('width', String(config.width || 400));
