@@ -46,53 +46,6 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     }
   };
 
-  const updateConfig = useCallback((updates: Partial<WidgetConfig>) => {
-    const tentative = { ...currentConfig, ...updates };
-    if (shallowEqual(tentative, currentConfig)) {
-      debug('updateConfig skipped (no changes)');
-      return;
-    }
-    setCurrentConfig(tentative);
-    setHasUnsavedChanges(true);
-    setValidationErrors(validateConfig(tentative));
-
-    // Track changed keys relative to last saved snapshot
-    if (lastSavedConfigSnapshot) {
-      const changed = Object.keys(tentative).filter(k => (tentative as any)[k] !== (lastSavedConfigSnapshot as any)[k]);
-      setChangedKeysCount(changed.length);
-    } else {
-      setChangedKeysCount(Object.keys(tentative).length); // everything considered changed until initial snapshot
-    }
-
-    try {
-      // Write to a draft key immediately (does not require tenant stable id yet)
-      const draftKey = `blunari-widget-config-draft-${activeWidgetType}-${tenantIdentifier}`;
-      const draftPayload = {
-        ...tentative,
-        draft: true,
-        draftUpdated: Date.now(),
-        tenantId,
-        tenantSlug,
-        widgetType: activeWidgetType,
-      };
-  safeStorage.set(draftKey, JSON.stringify(draftPayload));
-    } catch (e) {
-      // Non-fatal
-      console.warn('Failed to persist draft config', e);
-    }
-    // Debounced autosave attempt (only if tenantId resolved to stable)
-    if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current);
-    if (tenantId) {
-      const cfgSnapshot = { ...tentative };
-      autosaveTimerRef.current = window.setTimeout(() => {
-        // Only autosave if no further changes occurred
-        if (shallowEqual(cfgSnapshot, (activeWidgetType === 'booking' ? bookingConfig : cateringConfig))) {
-          saveConfiguration({ silent: true, allowAutosave: true });
-        }
-      }, AUTOSAVE_DELAY);
-    }
-  }, [currentConfig, setCurrentConfig, lastSavedConfigSnapshot, activeWidgetType, tenantIdentifier, tenantId, tenantSlug, shallowEqual, saveConfiguration, bookingConfig, cateringConfig]);
-
   const saveConfiguration = useCallback(async (options?: { silent?: boolean; allowAutosave?: boolean }) => {
     const silent = options?.silent;
     const allowAutosave = options?.allowAutosave;
@@ -173,6 +126,53 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
       setSaving(false);
     }
   }, [currentConfig, activeWidgetType, tenantIdentifier, tenantId, tenantSlug, isLoading, toast, saving, lastSavedConfigSnapshot]);
+
+  const updateConfig = useCallback((updates: Partial<WidgetConfig>) => {
+    const tentative = { ...currentConfig, ...updates };
+    if (shallowEqual(tentative, currentConfig)) {
+      debug('updateConfig skipped (no changes)');
+      return;
+    }
+    setCurrentConfig(tentative);
+    setHasUnsavedChanges(true);
+    setValidationErrors(validateConfig(tentative));
+
+    // Track changed keys relative to last saved snapshot
+    if (lastSavedConfigSnapshot) {
+      const changed = Object.keys(tentative).filter(k => (tentative as any)[k] !== (lastSavedConfigSnapshot as any)[k]);
+      setChangedKeysCount(changed.length);
+    } else {
+      setChangedKeysCount(Object.keys(tentative).length); // everything considered changed until initial snapshot
+    }
+
+    try {
+      // Write to a draft key immediately (does not require tenant stable id yet)
+      const draftKey = `blunari-widget-config-draft-${activeWidgetType}-${tenantIdentifier}`;
+      const draftPayload = {
+        ...tentative,
+        draft: true,
+        draftUpdated: Date.now(),
+        tenantId,
+        tenantSlug,
+        widgetType: activeWidgetType,
+      };
+      safeStorage.set(draftKey, JSON.stringify(draftPayload));
+    } catch (e) {
+      // Non-fatal
+      console.warn('Failed to persist draft config', e);
+    }
+    // Debounced autosave attempt (only if tenantId resolved to stable)
+    if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current);
+    if (tenantId) {
+      const cfgSnapshot = { ...tentative };
+      autosaveTimerRef.current = window.setTimeout(() => {
+        // Only autosave if no further changes occurred
+        if (shallowEqual(cfgSnapshot, (activeWidgetType === 'booking' ? bookingConfig : cateringConfig))) {
+          saveConfiguration({ silent: true, allowAutosave: true });
+        }
+      }, AUTOSAVE_DELAY);
+    }
+  }, [currentConfig, setCurrentConfig, lastSavedConfigSnapshot, activeWidgetType, tenantIdentifier, tenantId, tenantSlug, shallowEqual, saveConfiguration, bookingConfig, cateringConfig]);
 
   useEffect(() => {
     // Allow load attempts even while tenant still resolving slug->id so draft recovery works
