@@ -622,7 +622,7 @@ const WidgetManagement: React.FC = () => {
       iframeKeyRef.current = nextKey;
     }
     return url + '&preview=1';
-  }, [livePreview, activeWidgetType, resolvedTenantSlug, widgetToken, currentConfigSignature, tenant?.timezone, tenant?.currency]);
+  }, [livePreview, activeWidgetType, resolvedTenantSlug, widgetToken, tenant?.timezone, tenant?.currency]);
 
   // Compute a lightweight signature of config values that materially affect widget rendering.
   const currentConfigSignature = useMemo(() => {
