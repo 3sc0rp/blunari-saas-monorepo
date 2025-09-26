@@ -676,6 +676,11 @@ async function fetchRealWidgetAnalytics(
         requestHeaders['Authorization'] = `Bearer ${anonKey}`;
       }
     }
+    // Ensure apikey header is present for invoke contexts that require it
+    const anonKeyForApi = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (anonKeyForApi && !requestHeaders['apikey']) {
+      requestHeaders['apikey'] = anonKeyForApi;
+    }
 
     console.log('🚀 About to call Edge Function with:', {
       tenantId,
@@ -735,7 +740,7 @@ async function fetchRealWidgetAnalytics(
         internalCode = AnalyticsErrorCode.AUTHENTICATION_ERROR; // closest existing enum
       }
 
-      console.error('Edge Function error details:', {
+      console.warn('Edge Function error details:', {
         name: response.error.name,
         message: edgeMessage,
         status: rawStatus,
@@ -852,7 +857,7 @@ async function fetchRealWidgetAnalytics(
   return { data: response.data.data, meta: response.data.meta };
     
   } catch (err) {
-    console.error('Edge Function request failed:', err, 'cid:', correlationId);
+    console.warn('Edge Function request failed (handled):', (err as any)?.message || err, 'cid:', correlationId);
     throw Object.assign(err instanceof Error ? err : new Error('Edge failure'), { code: (err as any)?.code || 'EDGE_REQUEST_FAIL' });
   }
 }
