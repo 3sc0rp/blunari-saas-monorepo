@@ -103,6 +103,25 @@ export const useCateringPackages = (tenantId?: string) => {
         return data as unknown as CateringPackage;
       }
     },
+    onMutate: async (packageData: CreateCateringPackageRequest) => {
+      await queryClient.cancelQueries({ queryKey: ["catering-packages", tenantId] });
+      const prev = queryClient.getQueryData<CateringPackage[]>(["catering-packages", tenantId]);
+      const optimistic: CateringPackage = {
+        id: `temp_${Date.now()}` as any,
+        tenant_id: tenantId!,
+        active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        display_order: (prev?.length || 0) * 10 + 10,
+        popular: false,
+        ...packageData as any,
+      };
+      if (prev) queryClient.setQueryData(["catering-packages", tenantId], [optimistic, ...prev]);
+      return { prev };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(["catering-packages", tenantId], context.prev);
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: ["catering-packages", tenantId],
@@ -146,6 +165,18 @@ export const useCateringPackages = (tenantId?: string) => {
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ packageId, updates }) => {
+      await queryClient.cancelQueries({ queryKey: ["catering-packages", tenantId] });
+      const prev = queryClient.getQueryData<CateringPackage[]>(["catering-packages", tenantId]);
+      if (prev) {
+        const next = prev.map(p => p.id === packageId ? ({ ...p, ...updates, updated_at: new Date().toISOString() } as any) : p);
+        queryClient.setQueryData(["catering-packages", tenantId], next);
+      }
+      return { prev };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(["catering-packages", tenantId], context.prev);
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: ["catering-packages", tenantId],
@@ -183,6 +214,18 @@ export const useCateringPackages = (tenantId?: string) => {
 
       if (error) throw error;
       return data;
+    },
+    onMutate: async (packageId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["catering-packages", tenantId] });
+      const prev = queryClient.getQueryData<CateringPackage[]>(["catering-packages", tenantId]);
+      if (prev) {
+        const next = prev.filter(p => p.id !== packageId);
+        queryClient.setQueryData(["catering-packages", tenantId], next);
+      }
+      return { prev };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(["catering-packages", tenantId], context.prev);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
@@ -223,6 +266,18 @@ export const useCateringPackages = (tenantId?: string) => {
 
       if (error) throw error;
       return data;
+    },
+    onMutate: async (packageId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["catering-packages", tenantId] });
+      const prev = queryClient.getQueryData<CateringPackage[]>(["catering-packages", tenantId]);
+      if (prev) {
+        const next = prev.map(p => p.id === packageId ? ({ ...p, popular: !p.popular, updated_at: new Date().toISOString() } as any) : p);
+        queryClient.setQueryData(["catering-packages", tenantId], next);
+      }
+      return { prev };
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.prev) queryClient.setQueryData(["catering-packages", tenantId], context.prev);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
