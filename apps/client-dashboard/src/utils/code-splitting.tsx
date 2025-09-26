@@ -20,13 +20,21 @@ const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
 export const Dashboard = lazy(() => import('@/pages/Dashboard'));
 export const Auth = lazy(() => import('@/pages/Auth'));
 
-// High-priority pages (preloaded)
-export const Bookings = lazy(() => 
-  import('@/pages/Bookings').then(module => {
-    // Preload related components if they exist
-    return module;
-  }).catch(() => import('@/pages/Dashboard')) // Fallback to Dashboard
-);
+// Retry-capable dynamic wrapper (local to this file to avoid reordering exported helpers)
+const lazyWithRetry = (importer: () => Promise<any>, retries = 2, delay = 400) => async () => {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await importer();
+    } catch (e) {
+      if (attempt === retries) throw e; // surface to ErrorBoundary after final attempt
+      await new Promise(r => setTimeout(r, delay * (attempt + 1)));
+    }
+  }
+  throw new Error('lazyWithRetry: unreachable');
+};
+
+// High-priority page (Bookings) with retry instead of silent Dashboard fallback (maintains intent clarity)
+export const Bookings = lazy(lazyWithRetry(() => import('@/pages/Bookings')));
 
 // Medium-priority pages (lazy loaded)
 export const Analytics = lazy(() => import('@/pages/Analytics'));
