@@ -94,10 +94,10 @@ export const useCateringPackages = (tenantId?: string) => {
         if (error) throw error;
         return data as unknown as CateringPackage;
       } catch (directErr: any) {
-        // Fallback to RPC (SECURITY DEFINER sets tenant_id server-side)
+        // Fallback to RPC (SECURITY DEFINER sets tenant_id server-side; payload may omit tenant_id)
         const { data, error } = await supabase.rpc(
           "catering_create_package",
-          { payload: { ...packageData, tenant_id: tenantId } as any },
+          { payload: { ...packageData } as any },
         );
         if (error) throw error;
         return data as unknown as CateringPackage;
@@ -246,6 +246,32 @@ export const useCateringPackages = (tenantId?: string) => {
     },
   });
 
+  // Reorder packages atomically via RPC
+  const reorderPackagesMutation = useMutation({
+    mutationFn: async (items: { id: string; display_order: number }[]) => {
+      // Optimistic update
+      const prev = queryClient.getQueryData<CateringPackage[]>(["catering-packages", tenantId]);
+      if (prev) {
+        const idToOrder: Record<string, number> = {};
+        items.forEach(i => { idToOrder[i.id] = i.display_order; });
+        const next = [...prev].map(p => ({ ...p, display_order: idToOrder[p.id] ?? p.display_order } as any));
+        queryClient.setQueryData(["catering-packages", tenantId], next);
+      }
+
+      const { error } = await supabase.rpc('catering_reorder_packages', { payload: { items } as any });
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["catering-packages", tenantId] });
+      toast({ title: 'Order Updated', description: 'Package order saved.' });
+    },
+    onError: (error, _vars, _ctx) => {
+      queryClient.invalidateQueries({ queryKey: ["catering-packages", tenantId] });
+      toast({ title: 'Reorder Failed', description: error instanceof Error ? error.message : 'Failed to reorder packages', variant: 'destructive' });
+    }
+  });
+
   // Get popular packages
   const getPopularPackages = () => {
     return packages.filter((pkg) => pkg.popular);
@@ -305,5 +331,7 @@ export const useCateringPackages = (tenantId?: string) => {
     getPackagesByPriceRange,
     getPackagesByGuestCount,
     getPackageMetrics,
+    reorderPackages: reorderPackagesMutation.mutate,
+    isReordering: reorderPackagesMutation.isPending,
   };
 };

@@ -185,6 +185,9 @@ const WidgetManagement: React.FC = () => {
   const [showSafeArea, setShowSafeArea] = useState<boolean>(() => {
     try { return safeStorage.get(`wm.preview.safe.${tenantSlug || tenant?.slug || 'default'}`) !== '0'; } catch { return true; }
   });
+  const [previewSandbox, setPreviewSandbox] = useState<boolean>(false);
+  // Preview diagnostics state
+  const [lastWidgetError, setLastWidgetError] = useState<any>(null);
   // Live data preview toggle (renders real widget iframe instead of static mock)
   // Live preview only mode – always true
   const livePreview = true;
@@ -227,6 +230,7 @@ const WidgetManagement: React.FC = () => {
           lastErrorToastAtRef.current = now;
           const message = data?.error?.message || 'Widget runtime error';
           const chunk = data?.error?.chunk ? ` (chunk ${data.error.chunk})` : '';
+          setLastWidgetError(data?.error || { message });
           toast({
             title: 'Widget Error',
             description: `${message}${chunk}`,
@@ -1568,6 +1572,10 @@ const WidgetManagement: React.FC = () => {
                 <Switch id="safearea-toggle" checked={showSafeArea} onCheckedChange={setShowSafeArea} aria-label="Toggle notch and safe-area" />
               </div>
               <div className="flex items-center gap-2">
+                <Label htmlFor="sandbox-toggle" className="text-sm" title="Enable iframe sandbox (testing only)">Sandbox</Label>
+                <Switch id="sandbox-toggle" checked={previewSandbox} onCheckedChange={setPreviewSandbox} aria-label="Toggle iframe sandbox" />
+              </div>
+              <div className="flex items-center gap-2">
                 {/* Live toggle removed */}
               </div>
             </div>
@@ -1609,6 +1617,7 @@ const WidgetManagement: React.FC = () => {
                                 style={{ width: currentConfig.width, height: currentConfig.height, border: '0', display: 'block', background: '#fff' }}
                                 // No sandbox in preview to avoid origin "null" for third‑party SDKs like Stripe
                                 allow="payment"
+                                sandbox={previewSandbox ? 'allow-scripts allow-forms allow-popups' : undefined}
                                 referrerPolicy="strict-origin-when-cross-origin"
                                 onLoad={() => {
                                   try {
@@ -1714,6 +1723,19 @@ const WidgetManagement: React.FC = () => {
                     <Download className="w-4 h-4 mr-1" />
                     Screenshot
                   </Button>
+                  {lastWidgetError && (
+                    <Alert className="ml-2 max-w-md">
+                      <AlertTitle className="flex items-center gap-2"><AlertCircle className="w-4 h-4 text-red-500"/>Runtime Error</AlertTitle>
+                      <AlertDescription className="text-xs">
+                        {String(lastWidgetError.message || 'An error occurred')}
+                        {lastWidgetError.chunk && (
+                          <>
+                            <br />Chunk: <code className="px-1 py-0.5 bg-muted rounded">{String(lastWidgetError.chunk)}</code>
+                          </>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               </div>
             </CardContent>

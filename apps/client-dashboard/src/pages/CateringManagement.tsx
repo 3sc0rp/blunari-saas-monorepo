@@ -31,6 +31,8 @@ export default function CateringManagement(): JSX.Element {
     isCreating,
     isUpdating,
     isDeleting,
+    reorderPackages,
+    isReordering,
   } = useCateringPackages(tenant?.id);
 
   const [creatingName, setCreatingName] = useState("Signature Buffet");
@@ -77,16 +79,15 @@ export default function CateringManagement(): JSX.Element {
     const [moved] = ids.splice(dragIndex, 1);
     ids.splice(toIndex, 0, moved);
 
-    // Assign sequential display_order values (10,20,...) for stability
-    const idToOrder: Record<string, number> = {};
-    ids.forEach((id, i) => { idToOrder[id] = (i + 1) * 10; });
-
-    // Update only those whose order changed
-    for (const p of sorted) {
-      const desired = idToOrder[p.id];
-      if (desired != null && (p.display_order || 0) !== desired) {
-        updatePackage({ packageId: p.id, updates: { display_order: desired as any } });
-      }
+    // Build atomic reorder payload
+    const items = ids.map((id, i) => ({ id, display_order: (i + 1) * 10 }));
+    try {
+      await new Promise<void>((resolve, reject) => {
+        // use react-query mutate with callbacks
+        (reorderPackages as any)(items, { onSuccess: () => resolve(), onError: (e: any) => reject(e) });
+      });
+    } catch (err) {
+      console.error('Reorder failed', err);
     }
 
     setDragIndex(null);
