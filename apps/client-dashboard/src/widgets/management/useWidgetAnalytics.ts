@@ -843,7 +843,8 @@ async function fetchAnalyticsDirectly(
     
     const { data: ordersData, error: ordersError } = await supabase
       .from(tableName as any)
-      .select('*')
+      // RLS-OK: selecting limited columns; relies on row-level policy enforcing tenant_id scoping
+      .select('id, created_at, status, party_size, total_amount')
       .eq('tenant_id', tenantId)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', now.toISOString());
