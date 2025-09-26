@@ -49,7 +49,10 @@ export async function createWidgetToken(
     }
   } catch {}
 
-  // Fallback: local signing in development only (not secure). Avoid in production.
+  // Fallback: local signing in development only (NOT secure). Prevent use if not dev.
+  if (!(import.meta.env.DEV)) {
+    throw new Error('Widget token signing unavailable (edge function failed and local signing disabled in production)');
+  }
   const now = Math.floor(Date.now() / 1000);
   const payload: WidgetTokenPayload = {
     slug,
@@ -112,9 +115,10 @@ export function validateWidgetToken(token: string): WidgetTokenPayload | null {
  * Get JWT secret from environment or use development fallback
  */
 function getJWTSecret(): string {
-  // In production, this should come from environment variables
-  // For development, we use a fixed secret (not secure for production!)
-  return import.meta.env.VITE_JWT_SECRET || 'dev-jwt-secret-change-in-production-2025';
+  if (!import.meta.env.DEV && !import.meta.env.VITE_JWT_SECRET) {
+    throw new Error('Missing JWT secret in production environment');
+  }
+  return import.meta.env.VITE_JWT_SECRET || 'local-dev-insecure-secret';
 }
 
 /**
@@ -150,13 +154,13 @@ function getCrypto(): any {
  * NOT SECURE - Replace with proper crypto in production
  */
 function simpleHMAC(data: string, secret: string): string {
-  // This is a very basic HMAC implementation for demonstration
-  // DO NOT USE IN PRODUCTION - Use proper crypto libraries
-  let hash = secret;
-  for (let i = 0; i < data.length; i++) {
-    hash = ((hash.charCodeAt(i % hash.length) ^ data.charCodeAt(i)) % 256).toString(16).padStart(2, '0') + hash;
+  // Insecure placeholder – only used in dev if no crypto available.
+  let hash = 0; // simple numeric accumulator
+  const combined = secret + '|' + data;
+  for (let i = 0; i < combined.length; i++) {
+    hash = (hash * 31 + combined.charCodeAt(i)) >>> 0;
   }
-  return base64UrlEncode(hash.substring(0, 64));
+  return base64UrlEncode(hash.toString(16));
 }
 
 /**

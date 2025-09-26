@@ -350,14 +350,10 @@ export function useWidgetAnalytics({
     try {
   debug(`Fetching REAL analytics for tenant ${tenantId}, widget ${widgetType}`);
       
-      // For development/demo purposes, use direct database fallback if tenant looks like demo/test or tenantId not UUID
-      if (!forceEdge && (
-        tenantId.includes('demo') ||
-        tenantId.includes('test') ||
-        (tenantSlug && /demo|test/i.test(tenantSlug)) ||
-        !tenantId.match(/^[0-9a-f-]{36}$/i)
-      )) {
-  debug('🎭 Demo tenant detected, using database fallback');
+      // Conditional database fallback: only when explicitly allowed via env OR tenantId not UUID (legacy data)
+      const ALLOW_DB_FALLBACK = String((import.meta as any).env?.VITE_ALLOW_ANALYTICS_DB_FALLBACK || '').toLowerCase() === 'true';
+      if (!forceEdge && (ALLOW_DB_FALLBACK || !tenantId.match(/^[0-9a-f-]{36}$/i))) {
+  debug('⚠️ Using direct database fallback (edge disabled or non-UUID tenantId)');
         const promise = fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
         inflightMap.set(cacheKey, promise);
         try {
@@ -370,7 +366,7 @@ export function useWidgetAnalytics({
             error: null,
             lastUpdated: new Date(),
             mode: 'direct-db',
-            correlationId: correlationBase.current + ':demo',
+            correlationId: correlationBase.current + ':db-fallback',
             lastErrorCode: null,
             meta: { estimation: true, time_range: timeRange }
           });

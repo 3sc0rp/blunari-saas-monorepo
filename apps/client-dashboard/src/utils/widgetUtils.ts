@@ -22,7 +22,8 @@ export interface WidgetConfig {
   spacing: number;
 }
 
-export interface AnalyticsData {
+// Legacy detailed analytics shape (kept for backward compatibility). Prefer simplified AnalyticsData below.
+export interface DetailedAnalyticsData {
   totalViews: number;
   totalInteractions: number;
   totalConversions: number;
@@ -200,7 +201,7 @@ export const generateEmbedCode = (
       return { embedCode: '', isValid: false, error: urlResult.error };
     }
 
-    const safeTenantName = (tenantName || 'Restaurant').replace(/[<>&"']/g, '');
+  const safeTenantName = (tenantName || 'Tenant').replace(/[<>&"']/g, '');
     const safeHeight = config.compactMode ? '400px' : '600px';
     const safeBorderRadius = Math.max(0, Math.min(50, config.borderRadius));
     const safeShadowIntensity = Math.max(0, Math.min(10, config.shadowIntensity));

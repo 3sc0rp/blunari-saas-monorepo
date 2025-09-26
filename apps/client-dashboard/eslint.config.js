@@ -26,6 +26,18 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "warn", // Change from error to warning
       "react-hooks/exhaustive-deps": "warn", // Ensure this is warning, not error
+      // Soft guard: disallow obvious demo literals when TENANT_HARDEN=1 (CI can set env and use alternate config if desired)
+      ...(process.env.TENANT_HARDEN === '1'
+        ? {
+            'no-restricted-syntax': [
+              'error',
+              {
+                selector: "Literal[value=/demo|placeholder|sample|owner@example.com|dev-jwt-secret/i]",
+                message: 'Remove demo/test/placeholder artifacts from production source.'
+              }
+            ]
+          }
+        : {})
     },
   },
 );

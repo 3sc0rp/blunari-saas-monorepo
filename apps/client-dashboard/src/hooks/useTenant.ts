@@ -1,18 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { TenantInfo, TenantInfoZ } from '@/lib/contracts';
-import { parseError, toastError } from '@/lib/errors';
+import { TenantInfo } from '@/lib/contracts';
+import { parseError } from '@/lib/errors';
 import { logger } from '@/utils/logger';
 import { handleTenantError } from '@/utils/productionErrorManager';
-import { callTenantFunction } from '@/utils/supabaseAuthManager';
-import { z } from 'zod';
-
-const TenantErrorZ = z.object({
-  code: z.string(),
-  message: z.string(),
-  requestId: z.string()
-});
 
 interface TenantState {
   tenant: TenantInfo | null;
@@ -224,8 +216,19 @@ export function useTenant() {
       // If we reach here, user has a session but no tenant mapping. Ensure one exists by provisioning.
       try {
         // Derive a friendly default name/slug from the user's email
-        const userEmail: string = session.user.email || 'owner@example.com';
-        const localPart = userEmail.split('@')[0] || 'restaurant';
+        const userEmail: string | null = session.user.email || null;
+        if (!userEmail) {
+          logger.warn('Cannot auto-provision tenant: user email missing', { component: 'useTenant' });
+          if (!signal.aborted) {
+            commitTenant(null, 'missing-email');
+          }
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
+          return;
+        }
+        const localPart = userEmail.split('@')[0] || 'tenant';
         const slugBase = localPart
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
@@ -239,7 +242,7 @@ export function useTenant() {
           const payload = {
             email: userEmail,
             password: '',
-            restaurant_name: `${localPart}'s Restaurant`,
+            restaurant_name: localPart.length > 1 ? localPart : 'Tenant',
             restaurant_slug: candidateSlug,
             timezone: 'America/New_York',
             currency: 'USD',
@@ -269,7 +272,7 @@ export function useTenant() {
                 p_cuisine_type_id: null,
               });
               if (rpcErr) {
-                logger.warn('provision_tenant RPC error', rpcErr);
+                logger.warn('provision_tenant RPC error', { error: rpcErr });
                 if (rpcErr.message && /slug|unique|duplicate/i.test(rpcErr.message)) {
                   continue;
                 }
@@ -307,130 +310,13 @@ export function useTenant() {
           return;
         }
       } catch (ensureErr) {
-        logger.warn('Auto-provisioning flow failed', ensureErr instanceof Error ? ensureErr.message : 'Unknown error');
+  logger.warn('Auto-provisioning flow failed', { error: ensureErr instanceof Error ? ensureErr.message : 'Unknown error' });
       }
-
-      const responseData: any = null;
-      const functionError: any = null;
-
-      // FIX: Check if component is still mounted before updating state
-      if (signal.aborted) return;
-
-      if (functionError) {
-        logger.warn('Tenant function error detected', {
-          component: 'useTenant',
-          error: functionError.message || 'Unknown function error',
-          errorCode: functionError.code,
-          status: functionError.status,
-          slug: params.slug
-        });
-        
-        // Handle specific error cases
-        if (functionError.requiresAuth || functionError.status === 401) {
-          logger.info('Authentication required, redirecting to auth', {
-            component: 'useTenant',
-            errorType: 'auth_required'
-          });
-          
-          if (!signal.aborted) {
-            commitTenant(null, 'requires-auth');
-            // Only navigate if we're not already on the auth page
-            if (window.location.pathname !== '/auth') {
-              navigate('/auth');
-            }
-          }
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-          }
-          return;
-        }
-        
-        if (functionError.status === 403 || functionError.message?.includes('403') || functionError.message?.includes('forbidden')) {
-          logger.info('Access forbidden, using fallback tenant', {
-            component: 'useTenant',
-            errorType: 'access_denied'
-          });
-          
-          if (!signal.aborted) commitTenant(null, '403-forbidden');
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-            timeoutRef.current = null;
-          }
-          return;
-        }
-        
-        if (functionError.message?.includes('401') || functionError.message?.includes('unauthorized')) {
-          logger.info('Authentication error, using fallback tenant for development', {
-            component: 'useTenant',
-            errorType: 'auth_error'
-          });
-          
-          // Use fallback tenant for development, redirect for production
-          if (!signal.aborted) { commitTenant(null, '401-unauthorized'); navigate('/auth'); }
-          if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
-          return;
-        }
-        
-        // Enhanced fallback logic for any other tenant function failure
-        logger.info('Tenant function failed, using production fallback', {
-          component: 'useTenant',
-          errorMessage: functionError.message,
-          status: functionError.status
-        });
-        
-        if (!signal.aborted) commitTenant(null, 'function-failure');
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-        return;
+      // If we still have no tenant, commit a null state (fallback)
+      if (!signal.aborted) {
+        logger.info('Tenant resolution yielded no tenant', { component: 'useTenant', slug: params.slug });
+        commitTenant(null, 'no-tenant');
       }
-
-      // Handle error responses from the function with enhanced fallback
-      if (responseData?.error) {
-        const tenantError = TenantErrorZ.parse(responseData.error);
-        logger.info('Tenant error response, using fallback', {
-          component: 'useTenant',
-          errorCode: tenantError.code,
-          errorMessage: tenantError.message
-        });
-        
-        // Always use fallback tenant instead of showing errors to user
-        if (!signal.aborted) commitTenant(null, 'error-response');
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-        return;
-      }
-
-      // Handle successful response
-      if (responseData?.data) {
-        const tenant = TenantInfoZ.parse(responseData.data);
-        
-        // Cache the result (only for user-based resolution)
-        if (!params.slug) {
-          cachedTenant = tenant;
-          cacheExpiry = Date.now() + CACHE_DURATION;
-        }
-        
-        if (!signal.aborted) {
-          commitTenant(tenant, 'success');
-        }
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-        return;
-      }
-
-      // No data
-      logger.info('No tenant data received', {
-        component: 'useTenant',
-        slug: params.slug
-      });
-      if (!signal.aborted) commitTenant(null, 'no-data');
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;

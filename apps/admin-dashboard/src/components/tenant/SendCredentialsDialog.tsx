@@ -113,7 +113,7 @@ export function SendCredentialsDialog({
               type="email"
               value={ownerEmail}
               onChange={(e) => setOwnerEmail(e.target.value)}
-              placeholder="owner@example.com"
+              placeholder="user@restaurant.example"
             />
           </div>
           <div className="space-y-2">

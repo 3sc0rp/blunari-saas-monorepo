@@ -1,0 +1,37 @@
+name: tenant-hardening
+
+on:
+  pull_request:
+    paths:
+      - 'apps/client-dashboard/**'
+      - '.github/workflows/tenant-hardening.yml'
+      - '.eslintrc.tenant-hardening.cjs'
+  push:
+    branches: [ master ]
+    paths:
+      - 'apps/client-dashboard/**'
+      - '.eslintrc.tenant-hardening.cjs'
+
+jobs:
+  lint-tenant-hardening:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tenant hardening lint
+        run: >-
+          npx eslint "apps/client-dashboard/src/**/*.{ts,tsx}" --config .eslintrc.tenant-hardening.cjs
+
+      - name: Report success
+        if: success()
+        run: echo "Tenant hardening lint passed"

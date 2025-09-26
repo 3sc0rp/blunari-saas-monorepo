@@ -61,7 +61,7 @@ export const TenantStatusCard: React.FC<TenantStatusCardProps> = ({
             <div>
               <p className="font-medium text-destructive">Tenant Loading Error</p>
               <p className="text-sm text-muted-foreground">
-                Unable to load tenant information. Using demo configuration for widget preview.
+                Unable to load tenant information. Widget preview disabled until tenant resolves.
               </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Current tenant slug: {tenantSlug}

@@ -36,7 +36,6 @@ export const Staff = lazy(() => import('@/pages/Staff'));
 
 // Low-priority pages (heavily lazy loaded)
 export const DebugTenant = lazy(() => import('@/pages/DebugTenant').catch(() => import('@/pages/Dashboard')));
-export const DemoPage = lazy(() => import('@/pages/DemoPage').catch(() => import('@/pages/Dashboard')));
 
 // Heavy components (loaded only when needed) - Using fallback components for safety
 export const ChartComponents = {
@@ -123,7 +122,6 @@ export const preloadStrategy = {
     if ('requestIdleCallback' in window) {
       requestIdleCallback(() => {
         import('@/pages/DebugTenant').catch(() => {});
-        import('@/pages/DemoPage').catch(() => {});
       });
     }
   }
