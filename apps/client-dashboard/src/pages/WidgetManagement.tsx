@@ -188,6 +188,7 @@ const WidgetManagement: React.FC = () => {
   const [previewSandbox, setPreviewSandbox] = useState<boolean>(false);
   // Preview diagnostics state
   const [lastWidgetError, setLastWidgetError] = useState<any>(null);
+  const [lastWidgetMetrics, setLastWidgetMetrics] = useState<{ loadTimeMs?: number; domContentLoadedMs?: number; transferSize?: number } | null>(null);
   // Live data preview toggle (renders real widget iframe instead of static mock)
   // Live preview only mode – always true
   const livePreview = true;
@@ -221,6 +222,7 @@ const WidgetManagement: React.FC = () => {
           return;
         }
         if (data.type === 'widget_metrics') {
+          setLastWidgetMetrics(data.metrics || null);
           if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') console.log('[WidgetManagement] widget_metrics', data.metrics);
           return;
         }
@@ -1723,18 +1725,31 @@ const WidgetManagement: React.FC = () => {
                     <Download className="w-4 h-4 mr-1" />
                     Screenshot
                   </Button>
-                  {lastWidgetError && (
-                    <Alert className="ml-2 max-w-md">
-                      <AlertTitle className="flex items-center gap-2"><AlertCircle className="w-4 h-4 text-red-500"/>Runtime Error</AlertTitle>
-                      <AlertDescription className="text-xs">
-                        {String(lastWidgetError.message || 'An error occurred')}
-                        {lastWidgetError.chunk && (
-                          <>
-                            <br />Chunk: <code className="px-1 py-0.5 bg-muted rounded">{String(lastWidgetError.chunk)}</code>
-                          </>
-                        )}
-                      </AlertDescription>
-                    </Alert>
+                  {(lastWidgetError || lastWidgetMetrics) && (
+                    <div className="ml-2 flex flex-col gap-2 max-w-md">
+                      {lastWidgetError && (
+                        <Alert>
+                          <AlertTitle className="flex items-center gap-2"><AlertCircle className="w-4 h-4 text-red-500"/>Runtime Error</AlertTitle>
+                          <AlertDescription className="text-xs">
+                            {String(lastWidgetError.message || 'An error occurred')}
+                            {lastWidgetError.chunk && (
+                              <>
+                                <br />Chunk: <code className="px-1 py-0.5 bg-muted rounded">{String(lastWidgetError.chunk)}</code>
+                              </>
+                            )}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      {lastWidgetMetrics && (
+                        <div className="text-[11px] text-muted-foreground">
+                          <span className="mr-2">Load: {lastWidgetMetrics.loadTimeMs ?? 0}ms</span>
+                          <span className="mr-2">DOM: {lastWidgetMetrics.domContentLoadedMs ?? 0}ms</span>
+                          {typeof lastWidgetMetrics.transferSize === 'number' && (
+                            <span>Bytes: {lastWidgetMetrics.transferSize}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
