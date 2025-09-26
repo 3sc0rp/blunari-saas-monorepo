@@ -841,10 +841,14 @@ async function fetchAnalyticsDirectly(
     // Fetch booking/order data based on widget type
     const tableName = widgetType === 'booking' ? 'bookings' : 'catering_orders';
     
+    // Select only columns that exist per table to avoid 42703 errors (bookings lacks total_amount)
+    const bookingColumns = 'id, created_at, status, party_size';
+    const cateringColumns = 'id, created_at, status, total_amount';
+    const selectedColumns = widgetType === 'booking' ? bookingColumns : cateringColumns;
     const { data: ordersData, error: ordersError } = await supabase
       .from(tableName as any)
       // RLS-OK: selecting limited columns; relies on row-level policy enforcing tenant_id scoping
-      .select('id, created_at, status, party_size, total_amount')
+      .select(selectedColumns)
       .eq('tenant_id', tenantId)
       .gte('created_at', startDate.toISOString())
       .lte('created_at', now.toISOString());
@@ -892,10 +896,12 @@ async function fetchAnalyticsDirectly(
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
       const dateStr = date.toISOString().split('T')[0];
       const dayOrders = orders.filter((order: any) => order.created_at.startsWith(dateStr));
-      const dayRevenue = dayOrders
-        .map((o: any) => o.total_amount)
-        .filter((v: any) => typeof v === 'number' && v > 0)
-        .reduce((sum: number, v: number) => sum + v, 0);
+      const dayRevenue = widgetType === 'catering'
+        ? dayOrders
+            .map((o: any) => o.total_amount)
+            .filter((v: any) => typeof v === 'number' && v > 0)
+            .reduce((sum: number, v: number) => sum + v, 0)
+        : undefined;
       analytics.dailyStats.push({
         date: dateStr,
         views: 0,
