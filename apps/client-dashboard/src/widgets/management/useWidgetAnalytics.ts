@@ -181,6 +181,10 @@ export interface AnalyticsState {
   lastErrorCode?: string | null;
   /** Additional metadata about the data */
   meta?: AnalyticsMeta | null;
+  /** Raw HTTP status from last edge function error (if any) */
+  edgeStatus?: number | null;
+  /** Raw edge function JSON error code (e.g. MISSING_TENANT_ID) */
+  edgeFunctionCode?: string | null;
 }
 
 /**
@@ -229,7 +233,9 @@ export function useWidgetAnalytics({
     mode: undefined,
     correlationId: undefined,
     lastErrorCode: null,
-    meta: null
+    meta: null,
+    edgeStatus: null,
+    edgeFunctionCode: null
   });
 
   const sessionCheckedRef = useRef(false);
@@ -345,7 +351,7 @@ export function useWidgetAnalytics({
     }
 
   isLoadingRef.current = true;
-  setState(prev => ({ ...prev, loading: true, error: null, lastErrorCode: null }));
+  setState(prev => ({ ...prev, loading: true, error: null, lastErrorCode: null, edgeStatus: null, edgeFunctionCode: null }));
 
     try {
   debug(`Fetching REAL analytics for tenant ${tenantId}, widget ${widgetType}`);
@@ -437,7 +443,9 @@ export function useWidgetAnalytics({
               estimation: undefined,
               version: undefined,
               time_range: timeRange
-            }
+            },
+            edgeStatus: null,
+            edgeFunctionCode: null
           });
           debug('✅ Successfully loaded real analytics data (attempt', attempt, ')');
           break;
@@ -483,7 +491,9 @@ export function useWidgetAnalytics({
           mode: 'direct-db',
           correlationId: correlationBase.current + ':fallback',
           lastErrorCode: analyticsError.code,
-          meta: { estimation: true, time_range: timeRange }
+          meta: { estimation: true, time_range: timeRange },
+          edgeStatus: (lastErr as any)?.context?.rawStatus || null,
+          edgeFunctionCode: (lastErr as any)?.context?.edgeCode || null
         });
       }
     } catch (error) {
@@ -516,7 +526,9 @@ export function useWidgetAnalytics({
           mode: 'direct-db',
           correlationId: correlationBase.current + ':catch-fallback',
           lastErrorCode: analyticsError.code,
-          meta: { estimation: true, time_range: timeRange }
+          meta: { estimation: true, time_range: timeRange },
+          edgeStatus: (error as any)?.context?.rawStatus || null,
+          edgeFunctionCode: (error as any)?.context?.edgeCode || null
         });
         
   debug('✅ Successfully loaded analytics via database fallback');
@@ -532,7 +544,9 @@ export function useWidgetAnalytics({
             mode: undefined,
             correlationId: correlationBase.current + ':unavailable',
             lastErrorCode: (fallbackError as any)?.code || analyticsError.code,
-            meta: { estimation: false, time_range: timeRange }
+            meta: { estimation: false, time_range: timeRange },
+            edgeStatus: (fallbackError as any)?.context?.rawStatus || (error as any)?.context?.rawStatus || null,
+            edgeFunctionCode: (fallbackError as any)?.context?.edgeCode || (error as any)?.context?.edgeCode || null
         }));
         isLoadingRef.current = false;
       }
@@ -693,79 +707,96 @@ async function fetchRealWidgetAnalytics(
     });
 
     if (response.error) {
-      console.error('Edge Function error details:', {
-        name: response.error.name,
-        message: response.error.message,
-        status: (response.error as any)?.context?.response?.status || (response.error as any)?.status,
-        context: (response.error as any)?.context
-      });
+      const rawStatus = (response.error as any)?.context?.response?.status || (response.error as any)?.status;
+      let errorBodyText: string | undefined;
+      let parsedErrorJson: any = undefined;
       try {
         const res: any = (response.error as any)?.context?.response;
         if (res && typeof res.text === 'function') {
-          const bodyText = await (res.clone ? res.clone() : res).text();
-          console.error('Edge Function error body:', bodyText?.slice(0, 2000));
+          const cloned = res.clone ? res.clone() : res;
+            errorBodyText = await cloned.text();
+            if (errorBodyText) {
+              try { parsedErrorJson = JSON.parse(errorBodyText); } catch { /* non-JSON body */ }
+            }
         }
-      } catch (e) {
-        console.warn('Failed to read Edge Function error body', e);
+      } catch (readErr) {
+        console.warn('Failed to read Edge Function error body', readErr);
       }
-      console.error('Real analytics function error:', response.error, 'cid:', correlationId);
-      
-      // If it's a 400 error, try with anon key authentication
-      if (response.error.message?.includes('400') || response.error.message?.includes('Bad Request')) {
-        console.log('Retrying Edge Function with anon key authentication...');
-        
+
+      const edgeCode = parsedErrorJson?.code;
+      const edgeMessage = parsedErrorJson?.error || response.error.message;
+      // Map raw edge function error codes to internal analytics error codes
+      let internalCode: AnalyticsErrorCode = AnalyticsErrorCode.EDGE_FUNCTION_ERROR;
+      if (rawStatus === 400 || edgeCode?.startsWith?.('MISSING_') || edgeCode?.startsWith?.('INVALID_')) {
+        internalCode = AnalyticsErrorCode.VALIDATION_ERROR;
+      } else if (edgeCode === 'RATE_LIMIT_EXCEEDED' || rawStatus === 429) {
+        internalCode = AnalyticsErrorCode.RATE_LIMIT_ERROR;
+      } else if (edgeCode === 'ORIGIN_NOT_ALLOWED' || rawStatus === 403) {
+        internalCode = AnalyticsErrorCode.AUTHENTICATION_ERROR; // closest existing enum
+      }
+
+      console.error('Edge Function error details:', {
+        name: response.error.name,
+        message: edgeMessage,
+        status: rawStatus,
+        edgeCode,
+        internalCode,
+        correlationId,
+        bodyPreview: errorBodyText?.slice(0, 500)
+      });
+      if (parsedErrorJson && !edgeCode) {
+        console.warn('Parsed error JSON lacked code field:', parsedErrorJson);
+      }
+
+      // Retry w/ anon key only for potential auth / token mismatch scenarios (400 or 401 without explicit validation code)
+      const shouldRetryAnon = !edgeCode && (rawStatus === 400 || rawStatus === 401 || response.error.message?.includes('Bad Request'));
+      if (shouldRetryAnon) {
+        console.log('Retrying Edge Function with anon key authentication (diagnostic path)...');
         try {
           const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-          const retryHeaders: Record<string, string> = {
-            'Content-Type': 'application/json',
-            'x-correlation-id': correlationId || '',
-            'x-widget-version': '2.0'
-          };
-          
           if (anonKey) {
-            retryHeaders['Authorization'] = `Bearer ${anonKey}`;
+            const retryHeaders: Record<string, string> = {
+              'Content-Type': 'application/json',
+              'x-correlation-id': correlationId || '',
+              'x-widget-version': '2.0',
+              'Authorization': `Bearer ${anonKey}`
+            };
+            const retryResponse = await supabase.functions.invoke('widget-analytics', {
+              body: { tenantId, widgetType, timeRange, version: '2.0' },
+              headers: retryHeaders
+            });
+            if (!retryResponse.error && retryResponse.data?.success) {
+              console.log('✅ Retry with anon key succeeded');
+              return { data: retryResponse.data.data, meta: retryResponse.data.meta };
+            }
+            console.warn('Retry with anon key still failed');
           }
-          
-          const retryResponse = await supabase.functions.invoke('widget-analytics', {
-            body: {
-              tenantId,
-              widgetType,
-              timeRange,
-              version: '2.0'
-            },
-            headers: retryHeaders
-          });
-          
-          if (!retryResponse.error && retryResponse.data?.success) {
-            console.log('✅ Retry without auth succeeded!');
-            return { data: retryResponse.data.data, meta: retryResponse.data.meta };
-          }
-        } catch (retryError) {
-          console.warn('Retry without auth also failed:', retryError);
+        } catch (retryErr) {
+          console.warn('Retry with anon key threw error:', retryErr);
         }
       }
-      
-      // Enhanced error handling with analytics error reporting
+
+      // Report structured error
       const edgeError = new EdgeFunctionError(
-        'Edge Function failed',
-        response.error.message?.includes('400') ? 
-          AnalyticsErrorCode.VALIDATION_ERROR : 
-          AnalyticsErrorCode.EDGE_FUNCTION_ERROR,
+        edgeMessage || 'Edge Function failed',
+        internalCode,
         response,
         {
           tenantId,
           widgetType,
-          timeRange,
-          correlationId
+            timeRange,
+            correlationId,
+            rawStatus,
+            edgeCode,
+            parsedError: parsedErrorJson || errorBodyText
         }
       );
-      
       analyticsErrorReporter.reportError(edgeError);
-      
-      // Check if we should attempt database fallback
-      if (response.error.message?.includes('400')) {
-        console.log('Bad request - switching to empty data');
-        return { 
+
+      // Validation / client errors: return empty dataset (do NOT fallback to DB – signals real misconfiguration)
+      if (internalCode === AnalyticsErrorCode.VALIDATION_ERROR) {
+        console.log('Validation error from Edge Function – returning empty analytics dataset');
+        return {
           data: {
             totalViews: 0,
             totalClicks: 0,
@@ -776,17 +807,22 @@ async function fetchRealWidgetAnalytics(
             topSources: [],
             dailyStats: []
           },
-          meta: { 
+          meta: {
             estimation: true,
             version: '2.0',
-            time_range: timeRange 
+            time_range: timeRange
           }
         };
       }
-      
-      // For other errors, try database fallback
-      console.log('Attempting direct database fallback due to Edge Function error...');
-      throw Object.assign(new Error('Edge function error'), { code: response.error.name || 'EDGE_ERROR' });
+
+      // Rate limit errors: propagate so hook can surface friendly message instead of DB fallback noise
+      if (internalCode === AnalyticsErrorCode.RATE_LIMIT_ERROR) {
+        throw Object.assign(new Error('Rate limit exceeded for widget analytics'), { code: internalCode });
+      }
+
+      // Other errors – allow outer logic to attempt DB fallback
+      console.log('Attempting direct database fallback due to non-validation Edge Function error...');
+      throw Object.assign(new Error('Edge function error'), { code: response.error.name || internalCode || 'EDGE_ERROR' });
     }
 
     // Check if Edge Function returned success
