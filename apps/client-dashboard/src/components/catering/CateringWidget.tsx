@@ -111,6 +111,11 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Respect reduced motion preference for animations
+  const reduceMotion = React.useMemo(() => {
+    try { return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
+  }, []);
+
   // Enhanced error handling with user feedback
   const displayError = tenantError || cateringError || submitError;
   const isInDemoMode =
@@ -195,9 +200,9 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   if (displayError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/20">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md" role="alert" aria-live="assertive">
           <CardContent className="p-8 text-center">
-            <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" aria-hidden="true" />
             <h2 className="text-lg font-semibold mb-2">
               {tenantError ? "Restaurant Not Found" : "Service Issue"}
             </h2>
@@ -218,6 +223,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
               onClick={() => window.location.reload()}
               variant="outline"
               className="mt-4"
+              aria-label="Reload the page"
             >
               Try Again
             </Button>
@@ -357,14 +363,14 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
     <ErrorBoundary>
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
         {/* Header */}
-        <div className="bg-white border-b shadow-sm sticky top-0 z-50">
+        <div className="bg-white border-b shadow-sm sticky top-0 z-50" role="banner">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <ChefHat className="w-8 h-8 text-orange-500" />
+                <ChefHat className="w-8 h-8 text-orange-500" aria-hidden="true" />
                 <div>
-                  <h1 className="text-xl font-bold">{tenant.name}</h1>
-                  <p className="text-sm text-muted-foreground">
+                  <h1 className="text-xl font-bold" id="catering-title">{tenant.name}</h1>
+                  <p className="text-sm text-muted-foreground" aria-describedby="catering-title">
                     Catering Services
                   </p>
                 </div>
@@ -374,8 +380,9 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                   variant="ghost"
                   onClick={() => setCurrentStep("packages")}
                   className="flex items-center gap-2"
+                  aria-label="Back to Packages"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                   Back to Packages
                 </Button>
               )}
@@ -386,7 +393,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
             {/* Progress Steps */}
-            <div className="mb-8">
+            <div className="mb-8" role="navigation" aria-label="Checkout steps">
               <div className="flex items-center justify-between max-w-2xl mx-auto">
                 {[
                   { key: "packages", label: "Choose Package", icon: ChefHat },
@@ -405,7 +412,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                   const IconComponent = step.icon;
 
                   return (
-                    <div key={step.key} className="flex items-center">
+                    <div key={step.key} className="flex items-center" aria-current={isActive ? 'step' : undefined}>
                       <div
                         className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all ${
                           isActive
@@ -415,7 +422,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                               : "bg-muted text-muted-foreground"
                         }`}
                       >
-                        <IconComponent className="w-4 h-4" />
+                        <IconComponent className="w-4 h-4" aria-hidden="true" />
                         <span className="text-sm font-medium hidden sm:inline">
                           {step.label}
                         </span>
@@ -438,10 +445,10 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
               {currentStep === "packages" && (
                 <motion.div
                   key="packages"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
+                  initial={reduceMotion ? {} : { opacity: 0, x: 20 }}
+                  animate={reduceMotion ? {} : { opacity: 1, x: 0 }}
+                  exit={reduceMotion ? {} : { opacity: 0, x: -20 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.3 }}
                 >
                   <div className="space-y-6 mb-8">
                     <div className="text-center">
@@ -472,28 +479,28 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                           <div className="md:col-span-1">
-                            <Label className="text-sm">Search</Label>
+                            <Label className="text-sm" htmlFor="catering-search">Search</Label>
                             <div className="relative">
-                              <Search className="w-4 h-4 absolute left-2 top-2.5 text-muted-foreground" />
-                              <Input className="pl-8" placeholder="Search packages..." value={query} onChange={(e)=>setQuery(e.target.value)} />
+                              <Search className="w-4 h-4 absolute left-2 top-2.5 text-muted-foreground" aria-hidden="true" />
+                              <Input id="catering-search" className="pl-8" placeholder="Search packages..." aria-label="Search packages" value={query} onChange={(e)=>setQuery(e.target.value)} />
                             </div>
                           </div>
                           <div className="md:col-span-1">
-                            <Label className="text-sm">Max Price</Label>
+                            <Label className="text-sm" id="max-price-label">Max Price</Label>
                             <div className="px-1">
                               <Slider
                                 max={Math.max(priceCap, 100)}
                                 step={50}
                                 value={[maxPrice ?? priceCap]}
                                 onValueChange={(v)=>setMaxPrice(v?.[0] ?? priceCap)}
-                                aria-label="max price"
+                                aria-labelledby="max-price-label"
                               />
                               <div className="text-xs text-muted-foreground mt-1">Up to {new Intl.NumberFormat('en-US',{style:'currency', currency:'USD'}).format((maxPrice ?? priceCap)/100)} per person</div>
                             </div>
                           </div>
                           <div className="md:col-span-1">
-                            <Label className="text-sm">Guests</Label>
-                            <Input type="number" placeholder="e.g. 50" value={guestCountFilter ?? ''} onChange={(e)=>setGuestCountFilter(e.target.value? Number(e.target.value): null)} />
+                            <Label className="text-sm" htmlFor="guest-filter">Guests</Label>
+                            <Input id="guest-filter" type="number" placeholder="e.g. 50" value={guestCountFilter ?? ''} onChange={(e)=>setGuestCountFilter(e.target.value? Number(e.target.value): null)} />
                           </div>
                           <div className="md:col-span-1">
                             <Label className="text-sm">Dietary</Label>
@@ -504,6 +511,8 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                                   variant={dietary.includes(d.value) ? 'default' : 'outline'}
                                   className="cursor-pointer"
                                   onClick={()=> setDietary(prev => prev.includes(d.value) ? prev.filter(x=>x!==d.value) : [...prev, d.value])}
+                                  role="button"
+                                  aria-pressed={dietary.includes(d.value)}
                                 >
                                   {d.label}
                                 </Badge>
@@ -650,10 +659,10 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
               {currentStep === "customize" && selectedPackage && (
                 <motion.div
                   key="customize"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
+                  initial={reduceMotion ? {} : { opacity: 0, x: 20 }}
+                  animate={reduceMotion ? {} : { opacity: 1, x: 0 }}
+                  exit={reduceMotion ? {} : { opacity: 0, x: -20 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.3 }}
                 >
                   <div className="text-center mb-8">
                     <h2 className="text-2xl font-bold mb-2">
@@ -850,10 +859,10 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
               {currentStep === "details" && (
                 <motion.div
                   key="details"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
+                  initial={reduceMotion ? {} : { opacity: 0, x: 20 }}
+                  animate={reduceMotion ? {} : { opacity: 1, x: 0 }}
+                  exit={reduceMotion ? {} : { opacity: 0, x: -20 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.3 }}
                 >
                   <div className="text-center mb-8">
                     <h2 className="text-2xl font-bold mb-2">
