@@ -29,6 +29,9 @@ export async function createWidgetToken(
   configVersion: string,
   widgetType: 'booking' | 'catering'
 ): Promise<string> {
+  if (String((import.meta as any).env?.VITE_ENABLE_WIDGET_TOKENS || '').toLowerCase() !== 'true') {
+    throw new Error('Widget token feature disabled: set VITE_ENABLE_WIDGET_TOKENS=true to enable');
+  }
   // Prefer server-signed token via Edge Function for security.
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

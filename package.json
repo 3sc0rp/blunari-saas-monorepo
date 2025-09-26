@@ -32,6 +32,7 @@
     "quality:check": "node dev.js quality:check",
     "quality:fix": "node dev.js quality:fix",
   "lint:tenant": "eslint \"apps/client-dashboard/src/**/*.{ts,tsx}\" --config .eslintrc.tenant-hardening.cjs",
+  "lint:client-strict": "eslint \"apps/client-dashboard/src/**/*.{ts,tsx}\" --config apps/client-dashboard/.eslintrc.strict.cjs",
   "secrets:setup": "node scripts/setup-secrets.js",
   "verify:admin-live": "node scripts/live-admin-login-check.mjs",
   "preflight": "node scripts/preflight-check.mjs"
