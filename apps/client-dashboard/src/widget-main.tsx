@@ -25,6 +25,11 @@ const queryClient = new QueryClient({
 });
 
 function WidgetApp() {
+  // Share parent origin/correlation across effects for diagnostics channel
+  const parentOriginRef = React.useRef<string>('');
+  const correlationIdRef = React.useRef<string>('');
+  const widgetIdRef = React.useRef<string>('');
+
   // Apply basic branding (primary/accent) as CSS vars when slug present
   React.useEffect(() => {
     const path = window.location.pathname;
@@ -97,7 +102,7 @@ function WidgetApp() {
     if (textHsl) root.style.setProperty('--text', textHsl);
   }, []);
 
-  // Parent postMessage handshake + resize events
+  // Parent postMessage handshake + resize events + diagnostics channel
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const rawParent = params.get('parent_origin') || '';
@@ -108,7 +113,8 @@ function WidgetApp() {
       try { parentOrigin = new URL(document.referrer).origin; } catch {}
     }
     const correlationId = params.get('cid') || '';
-    const widgetIdRef = { current: '' } as { current: string };
+    parentOriginRef.current = parentOrigin;
+    correlationIdRef.current = correlationId;
 
     function handleMessage(e: MessageEvent) {
       const sameWindow = e.source === window;
@@ -178,6 +184,71 @@ function WidgetApp() {
       const send = () => { if (sent) return; sent = true; try { window.postMessage(payload, '*'); } catch {} };
       setTimeout(send, 120);
     } catch {}
+  }, []);
+
+  // Diagnostics channel: report runtime errors and basic performance metrics to parent/host
+  React.useEffect(() => {
+    const widgetVersion = (() => {
+      try { return new URLSearchParams(window.location.search).get('widget_version') || ''; } catch { return ''; }
+    })();
+
+    function postToParent(data: any) {
+      try { window.parent && window.parent.postMessage(data, parentOriginRef.current || '*'); } catch {}
+      try { window.postMessage(data, parentOriginRef.current || '*'); } catch {}
+    }
+
+    const handleError = (event: any) => {
+      try {
+        const err = event?.error || event;
+        const message = err?.message || event?.message || 'Unknown error';
+        const stack = err?.stack || null;
+        const filename = event?.filename || null;
+        const lineno = event?.lineno || null;
+        const colno = event?.colno || null;
+        const chunk = typeof filename === 'string' && filename.includes('/chunks/') ? filename.split('/chunks/')[1] : null;
+        postToParent({
+          type: 'widget_error',
+          widgetId: widgetIdRef.current,
+          correlationId: correlationIdRef.current,
+          error: { message, stack, filename, lineno, colno, chunk, widgetVersion }
+        });
+      } catch {}
+    };
+
+    const handleRejection = (event: any) => {
+      try {
+        const reason = event?.reason;
+        const message = (reason && (reason.message || String(reason))) || 'Unhandled rejection';
+        const stack = reason?.stack || null;
+        postToParent({
+          type: 'widget_error',
+          widgetId: widgetIdRef.current,
+          correlationId: correlationIdRef.current,
+          error: { message, stack, widgetVersion }
+        });
+      } catch {}
+    };
+
+    const handleLoad = () => {
+      try {
+        const nav = performance.getEntriesByType('navigation')[0] as any;
+        const metrics = {
+          loadTimeMs: Math.round(nav?.loadEventEnd || 0),
+          domContentLoadedMs: Math.round(nav?.domContentLoadedEventEnd || 0),
+          transferSize: nav?.transferSize ?? undefined,
+        };
+        postToParent({ type: 'widget_metrics', widgetId: widgetIdRef.current, correlationId: correlationIdRef.current, metrics });
+      } catch {}
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+    window.addEventListener('load', handleLoad);
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+      window.removeEventListener('load', handleLoad);
+    };
   }, []);
 
   // Self-heal if a JS chunk fails to load (e.g., after a deploy with new hashes)

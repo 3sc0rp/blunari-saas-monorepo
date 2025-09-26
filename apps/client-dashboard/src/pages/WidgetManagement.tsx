@@ -196,6 +196,50 @@ const WidgetManagement: React.FC = () => {
     setFreeze(true);
     scheduleFreeze.current = window.setTimeout(() => setFreeze(false), 500);
   }, []);
+
+  // Diagnostics + handshake message handling (single-flight guard)
+  const lastWidgetLoadedAtRef = useRef<number>(0);
+  const lastErrorToastAtRef = useRef<number>(0);
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      try {
+        const data = e.data as any;
+        if (!data || typeof data !== 'object') return;
+        // Single-flight guard: ignore repeated widget_loaded within 5s
+        if (data.type === 'widget_loaded') {
+          const now = Date.now();
+          if (now - lastWidgetLoadedAtRef.current < 5000) return;
+          lastWidgetLoadedAtRef.current = now;
+          if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') console.log('[WidgetManagement] widget_loaded', data);
+          return;
+        }
+        if (data.type === 'widget_resize') {
+          // handled by embed code and iframe auto-height; no-op here
+          return;
+        }
+        if (data.type === 'widget_metrics') {
+          if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') console.log('[WidgetManagement] widget_metrics', data.metrics);
+          return;
+        }
+        if (data.type === 'widget_error') {
+          const now = Date.now();
+          if (now - lastErrorToastAtRef.current < 1000) return; // avoid toast spam bursts
+          lastErrorToastAtRef.current = now;
+          const message = data?.error?.message || 'Widget runtime error';
+          const chunk = data?.error?.chunk ? ` (chunk ${data.error.chunk})` : '';
+          toast({
+            title: 'Widget Error',
+            description: `${message}${chunk}`,
+            variant: 'destructive'
+          });
+          if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') console.error('[WidgetManagement] widget_error', data.error);
+          return;
+        }
+      } catch {}
+    }
+    window.addEventListener('message', onMessage, false);
+    return () => window.removeEventListener('message', onMessage, false);
+  }, [toast]);
   const [isLoading, setIsLoading] = useState(false); // generic spinner (saving etc.)
   const [copyBusy, setCopyBusy] = useState(false); // copy-to-clipboard only
   // Deploy tab state
@@ -593,37 +637,12 @@ const WidgetManagement: React.FC = () => {
     if (!livePreview) return null;
     const slug = resolvedTenantSlug;
     if (!slug || !widgetToken) return null;
-    const cfg = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
-    if (!cfg) return null;
     const baseUrl = window.location.origin;
     const widgetPath = activeWidgetType === 'booking' ? '/public-widget/book' : '/public-widget/catering';
     const p = new URLSearchParams();
     p.set('slug', slug);
     p.set('token', widgetToken);
     p.set('widget_version', '2.0');
-    if (tenant?.timezone) p.set('timezone', tenant.timezone);
-    if (tenant?.currency) p.set('currency', tenant.currency);
-    if (cfg.theme) p.set('theme', cfg.theme);
-    if (cfg.primaryColor) p.set('primaryColor', cfg.primaryColor);
-    if (cfg.secondaryColor) p.set('secondaryColor', cfg.secondaryColor);
-    if (cfg.backgroundColor) p.set('backgroundColor', cfg.backgroundColor);
-    if (cfg.textColor) p.set('textColor', cfg.textColor);
-    p.set('borderRadius', String(cfg.borderRadius || 8));
-    p.set('width', String(cfg.width || 400));
-    p.set('height', String(cfg.height || 600));
-    if (cfg.welcomeMessage) p.set('welcomeMessage', cfg.welcomeMessage);
-    if (cfg.buttonText) p.set('buttonText', cfg.buttonText);
-    p.set('showLogo', String(cfg.showLogo ?? true));
-    p.set('showDescription', String(cfg.showDescription ?? true));
-    p.set('showFooter', String(cfg.showFooter ?? true));
-    p.set('enableAnimations', String(cfg.enableAnimations ?? true));
-    p.set('animationType', cfg.animationType || 'fade');
-    if (activeWidgetType === 'booking') {
-      if (cfg.enableTableOptimization !== undefined) p.set('enableTableOptimization', String(cfg.enableTableOptimization));
-      if (cfg.maxPartySize) p.set('maxPartySize', String(cfg.maxPartySize));
-      if (cfg.requireDeposit !== undefined) p.set('requireDeposit', String(cfg.requireDeposit));
-      if (cfg.enableSpecialRequests !== undefined) p.set('enableSpecialRequests', String(cfg.enableSpecialRequests));
-    }
     const url = `${baseUrl}${widgetPath}/${slug}?${p.toString()}`;
     const nextKey = `${slug}:${activeWidgetType}`;
     if (iframeKeyRef.current !== nextKey) {
@@ -632,11 +651,54 @@ const WidgetManagement: React.FC = () => {
     return url + '&preview=1';
   }, [livePreview, activeWidgetType, resolvedTenantSlug, widgetToken]);
 
-  // Stable preview URL - only changes when base URL or device changes
+  // Gate heavy preview updates behind Apply; allow light params to update live.
+  const [pendingHeavyChange, setPendingHeavyChange] = useState(false);
+  const heavyParamSig = useMemo(() => {
+    const cfg = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
+    return [cfg?.width, cfg?.height, cfg?.animationType, cfg?.enableAnimations, (cfg as any)?.alignment].join('|');
+  }, [activeWidgetType, bookingConfig, cateringConfig]);
+  const lightParamSig = useMemo(() => {
+    const cfg = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
+    return [cfg?.theme, cfg?.primaryColor, cfg?.secondaryColor, cfg?.backgroundColor, cfg?.textColor, cfg?.borderRadius, cfg?.fontSize, cfg?.welcomeMessage, cfg?.buttonText, cfg?.showLogo, cfg?.showDescription, cfg?.showFooter, tenant?.timezone, tenant?.currency].join('|');
+  }, [activeWidgetType, bookingConfig, cateringConfig, tenant?.timezone, tenant?.currency]);
+  const appliedHeavySigRef = useRef<string>('');
+  useEffect(() => {
+    if (!appliedHeavySigRef.current) appliedHeavySigRef.current = heavyParamSig;
+    if (heavyParamSig !== appliedHeavySigRef.current) setPendingHeavyChange(true);
+  }, [heavyParamSig]);
+
+  // Stable preview URL with live light params and applied heavy params
   const liveWidgetUrl = useMemo(() => {
     if (!liveWidgetBaseUrl) return null;
-    return `${liveWidgetBaseUrl}&device=${previewDevice}`;
-  }, [liveWidgetBaseUrl, previewDevice, freeze]);
+    const url = new URL(liveWidgetBaseUrl, window.location.origin);
+    const p = url.searchParams;
+    const cfg = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
+    // Light params
+    if (tenant?.timezone) p.set('timezone', tenant.timezone);
+    if (tenant?.currency) p.set('currency', tenant.currency);
+    if (cfg?.theme) p.set('theme', cfg.theme);
+    if (cfg?.primaryColor) p.set('primaryColor', cfg.primaryColor);
+    if (cfg?.secondaryColor) p.set('secondaryColor', cfg.secondaryColor);
+    if (cfg?.backgroundColor) p.set('backgroundColor', cfg.backgroundColor);
+    if (cfg?.textColor) p.set('textColor', cfg.textColor);
+    if (cfg?.borderRadius != null) p.set('borderRadius', String(cfg.borderRadius));
+    if (cfg?.fontSize != null) p.set('fontSize', String(cfg.fontSize));
+    if (cfg?.welcomeMessage) p.set('welcomeMessage', cfg.welcomeMessage);
+    if (cfg?.buttonText) p.set('buttonText', cfg.buttonText);
+    if (cfg?.showLogo != null) p.set('showLogo', String(cfg.showLogo));
+    if (cfg?.showDescription != null) p.set('showDescription', String(cfg.showDescription));
+    if (cfg?.showFooter != null) p.set('showFooter', String(cfg.showFooter));
+    // Heavy params only when applied
+    if (!pendingHeavyChange) {
+      if (cfg?.width != null) p.set('width', String(cfg.width));
+      if (cfg?.height != null) p.set('height', String(cfg.height));
+      if (cfg?.enableAnimations != null) p.set('enableAnimations', String(cfg.enableAnimations));
+      if (cfg?.animationType) p.set('animationType', cfg.animationType);
+      if ((cfg as any)?.alignment) p.set('alignment', (cfg as any).alignment);
+    }
+    p.set('device', previewDevice);
+    return url.toString();
+  }, [liveWidgetBaseUrl, previewDevice, freeze, lightParamSig, pendingHeavyChange, activeWidgetType, bookingConfig, cateringConfig, tenant?.timezone, tenant?.currency]);
 
   const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {
@@ -1561,6 +1623,14 @@ const WidgetManagement: React.FC = () => {
                               <div className="absolute top-2 left-2">
                                 <Badge variant="secondary" className="text-xs">Live</Badge>
                                   </div>
+                              {pendingHeavyChange && (
+                                <div className="absolute bottom-2 right-2 flex items-center gap-2 bg-white/90 dark:bg-gray-900/90 border rounded px-2 py-1 shadow-sm">
+                                  <span className="text-xs text-muted-foreground">Apply layout changes</span>
+                                  <Button size="sm" variant="default" onClick={() => { appliedHeavySigRef.current = heavyParamSig; setPendingHeavyChange(false); }}>
+                                    Apply
+                                  </Button>
+                                </div>
+                              )}
                             </>
                           ) : (
                             <div className="h-full flex items-center justify-center p-6 text-center text-sm text-red-600">
