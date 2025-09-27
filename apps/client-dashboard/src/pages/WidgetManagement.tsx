@@ -686,8 +686,8 @@ const WidgetManagement: React.FC = () => {
   }, [activeWidgetType, bookingConfig, cateringConfig]);
   const lightParamSig = useMemo(() => {
     const cfg = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
-    return [cfg?.theme, cfg?.primaryColor, cfg?.secondaryColor, cfg?.backgroundColor, cfg?.textColor, cfg?.borderRadius, cfg?.fontSize, cfg?.welcomeMessage, cfg?.buttonText, cfg?.showLogo, cfg?.showDescription, cfg?.showFooter, tenant?.timezone, tenant?.currency].join('|');
-  }, [activeWidgetType, bookingConfig, cateringConfig, tenant?.timezone, tenant?.currency]);
+    return [cfg?.theme, cfg?.primaryColor, cfg?.secondaryColor, cfg?.backgroundColor, cfg?.textColor, cfg?.borderRadius, cfg?.fontSize, cfg?.welcomeMessage, cfg?.buttonText, cfg?.showLogo, cfg?.showDescription, cfg?.showFooter].join('|');
+  }, [activeWidgetType, bookingConfig, cateringConfig]);
   const appliedHeavySigRef = useRef<string>('');
   useEffect(() => {
     if (!appliedHeavySigRef.current) appliedHeavySigRef.current = heavyParamSig;
@@ -697,6 +697,7 @@ const WidgetManagement: React.FC = () => {
   // Stable preview URL with live light params and applied heavy params
   const liveWidgetUrl = useMemo(() => {
     if (!liveWidgetBaseUrl) return null;
+    if (freeze) return null; // Respect freeze to prevent URL changes during rapid edits
     const url = new URL(liveWidgetBaseUrl, window.location.origin);
     const p = url.searchParams;
     const cfg = activeWidgetType === 'booking' ? bookingConfig : cateringConfig;
@@ -725,7 +726,7 @@ const WidgetManagement: React.FC = () => {
     }
     p.set('device', previewDevice);
     return url.toString();
-  }, [liveWidgetBaseUrl, previewDevice, freeze, lightParamSig, pendingHeavyChange, activeWidgetType, bookingConfig, cateringConfig, tenant?.timezone, tenant?.currency]);
+  }, [liveWidgetBaseUrl, previewDevice, freeze, lightParamSig, pendingHeavyChange, activeWidgetType, bookingConfig, cateringConfig]);
 
   const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {
@@ -1639,7 +1640,7 @@ const WidgetManagement: React.FC = () => {
                           {liveWidgetUrl ? (
                             <>
                               <iframe
-                                key={iframeKeyRef.current}
+                                key={`stable-${activeWidgetType}-${resolvedTenantSlug}`}
                                 title={`${activeWidgetType} live widget preview`}
                                 src={liveWidgetUrl || undefined}
                                 style={{ width: currentConfig.width, height: currentConfig.height, border: '0', display: 'block', background: '#fff' }}
