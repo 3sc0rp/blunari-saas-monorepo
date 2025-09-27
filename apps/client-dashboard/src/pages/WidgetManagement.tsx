@@ -204,11 +204,27 @@ const WidgetManagement: React.FC = () => {
   // Diagnostics + handshake message handling (single-flight guard)
   const lastWidgetLoadedAtRef = useRef<number>(0);
   const lastErrorToastAtRef = useRef<number>(0);
+  const iframeElRef = useRef<HTMLIFrameElement | null>(null);
+  const [previewOrigin, setPreviewOrigin] = useState<string>('');
   useEffect(() => {
     function onMessage(e: MessageEvent) {
       try {
         const data = e.data as any;
         if (!data || typeof data !== 'object') return;
+        // Only accept messages from our iframe and allowed origins
+        if (iframeElRef.current && e.source && e.source !== iframeElRef.current.contentWindow) {
+          return;
+        }
+        if (!previewSandbox) {
+          if (previewOrigin && e.origin !== previewOrigin && e.origin !== window.location.origin) {
+            return;
+          }
+        } else {
+          // Sandbox may yield 'null' origin; allow it in testing mode
+          if (e.origin && previewOrigin && e.origin !== previewOrigin && e.origin !== window.location.origin) {
+            return;
+          }
+        }
         // Single-flight guard: ignore repeated widget_loaded within 5s
         if (data.type === 'widget_loaded') {
           const now = Date.now();
@@ -654,7 +670,9 @@ const WidgetManagement: React.FC = () => {
     if (iframeKeyRef.current !== nextKey) {
       iframeKeyRef.current = nextKey;
     }
-    return url + '&preview=1';
+    const full = url + '&preview=1';
+    try { setPreviewOrigin(new URL(full).origin); } catch {}
+    return full;
   }, [livePreview, activeWidgetType, resolvedTenantSlug, widgetToken]);
 
   // Gate heavy preview updates behind Apply; allow light params to update live.
@@ -1252,15 +1270,17 @@ const WidgetManagement: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="space-y-2">
                     <Label>Width (px)</Label>
                     <Input
                       type="number"
                       value={currentConfig.width}
-                      onChange={(e) => updateConfig({ width: safeParseInt(e.target.value, 400, 300, 800) })}
+                    onChange={(e) => { softFreeze(); updateConfig({ width: safeParseInt(e.target.value, 400, 300, 800) }); }}
                       min="300"
                       max="800"
                       className={validationErrors.find(e => e.field === 'width') ? 'border-red-500' : ''}
+                    disabled={pendingHeavyChange}
+                    title={pendingHeavyChange ? 'Apply pending changes to modify layout settings' : undefined}
                     />
                   </div>
                   
@@ -1269,10 +1289,12 @@ const WidgetManagement: React.FC = () => {
                     <Input
                       type="number"
                       value={currentConfig.height}
-                      onChange={(e) => updateConfig({ height: safeParseInt(e.target.value, 600, 400, 1000) })}
+                    onChange={(e) => { softFreeze(); updateConfig({ height: safeParseInt(e.target.value, 600, 400, 1000) }); }}
                       min="400"
                       max="1000"
                       className={validationErrors.find(e => e.field === 'height') ? 'border-red-500' : ''}
+                    disabled={pendingHeavyChange}
+                    title={pendingHeavyChange ? 'Apply pending changes to modify layout settings' : undefined}
                     />
                   </div>
                 </div>
@@ -1301,8 +1323,8 @@ const WidgetManagement: React.FC = () => {
                 
                 <div className="space-y-2">
                   <Label>Content Alignment</Label>
-                  <Select value={currentConfig.alignment} onValueChange={(value: 'left' | 'center' | 'right') => updateConfig({ alignment: value })}>
-                    <SelectTrigger>
+                  <Select value={currentConfig.alignment} onValueChange={(value: 'left' | 'center' | 'right') => { softFreeze(); updateConfig({ alignment: value }); }}>
+                    <SelectTrigger disabled={pendingHeavyChange} title={pendingHeavyChange ? 'Apply pending changes to modify layout settings' : undefined}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1379,7 +1401,8 @@ const WidgetManagement: React.FC = () => {
                     <Switch
                       id="enable-animations"
                       checked={currentConfig.enableAnimations}
-                      onCheckedChange={(checked) => updateConfig({ enableAnimations: checked })}
+                      onCheckedChange={(checked) => { softFreeze(); updateConfig({ enableAnimations: checked }); }}
+                      disabled={pendingHeavyChange}
                     />
                   </div>
                   
@@ -1621,6 +1644,7 @@ const WidgetManagement: React.FC = () => {
                                 allow="payment"
                                 sandbox={previewSandbox ? 'allow-scripts allow-forms allow-popups' : undefined}
                                 referrerPolicy="strict-origin-when-cross-origin"
+                                ref={iframeElRef}
                                 onLoad={() => {
                                   try {
                                     // Notify child we are ready (idempotent)
@@ -1789,7 +1813,7 @@ const WidgetManagement: React.FC = () => {
                   <SelectItem value="30d">30 Days</SelectItem>
                 </SelectContent>
               </Select>
-              {analyticsError && (
+                      {analyticsError && (
                 <Badge variant="destructive" className="text-xs">Error</Badge>
               )}
               <Button
@@ -1829,6 +1853,14 @@ const WidgetManagement: React.FC = () => {
               </Button>
             </div>
           </div>
+          {analyticsError && (
+            <Alert className="mt-3">
+              <AlertTitle className="flex items-center gap-2"><AlertCircle className="w-4 h-4 text-red-500"/>Analytics Unavailable</AlertTitle>
+              <AlertDescription className="text-xs">
+                {String(analyticsError)}
+              </AlertDescription>
+            </Alert>
+          )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Metrics cards */}
