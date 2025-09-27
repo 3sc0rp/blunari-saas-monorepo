@@ -68,35 +68,68 @@ export const useRealtimeBookings = (tenantId?: string) => {
     retry: 1,
   });
 
-  // Set up real-time subscription
+  // Set up real-time subscription with error handling
   useEffect(() => {
     if (!tenantId || !sessionReady) return;
 
-    const channel = supabase
-      .channel("tenant-bookings")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "bookings",
-          filter: `tenant_id=eq.${tenantId}`,
-        },
-        (payload) => {
-          // Invalidate and refetch bookings when changes occur
-          queryClient.invalidateQueries({ queryKey: ["bookings", tenantId] });
-        },
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          setIsConnected(true);
-        } else if (status === "TIMED_OUT" || status === "CHANNEL_ERROR" || status === "CLOSED") {
-          setIsConnected(false);
-        }
-      });
+    let retryTimeout: NodeJS.Timeout | null = null;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    const createChannel = () => {
+      const channelName = `tenant-bookings-${tenantId}-${Date.now()}`;
+      const channel = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "bookings",
+            filter: `tenant_id=eq.${tenantId}`,
+          },
+          (payload) => {
+            // Invalidate and refetch bookings when changes occur
+            queryClient.invalidateQueries({ queryKey: ["bookings", tenantId] });
+          },
+        )
+        .subscribe((status, err) => {
+          if (status === "SUBSCRIBED") {
+            setIsConnected(true);
+            retryCount = 0; // Reset retry count on success
+          } else if (status === "TIMED_OUT" || status === "CHANNEL_ERROR" || status === "CLOSED") {
+            setIsConnected(false);
+            if (err) {
+              console.warn('Realtime subscription error:', err);
+            }
+            // Retry with exponential backoff
+            if (retryCount < maxRetries) {
+              retryCount++;
+              const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 30000);
+              retryTimeout = setTimeout(() => {
+                try {
+                  supabase.removeChannel(channel);
+                  createChannel();
+                } catch (retryErr) {
+                  console.warn('Realtime retry failed:', retryErr);
+                }
+              }, delay);
+            }
+          }
+        });
+
+      return channel;
+    };
+
+    const channel = createChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (retryTimeout) clearTimeout(retryTimeout);
+      try {
+        supabase.removeChannel(channel);
+      } catch (err) {
+        console.warn('Error removing realtime channel:', err);
+      }
       setIsConnected(false);
     };
   }, [tenantId, sessionReady, queryClient]);

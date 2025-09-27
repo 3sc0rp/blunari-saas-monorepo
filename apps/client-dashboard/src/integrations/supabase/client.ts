@@ -34,8 +34,22 @@ export const supabase = createClient<Database>(
         eventsPerSecond: 10,
       },
       // Use defaults that are friendlier to browser idle/visibility changes
-      heartbeatIntervalMs: 15000,
-      reconnectAfterMs: (tries: number) => Math.min(tries * 2000, 60000),
+      heartbeatIntervalMs: 30000, // Increased to reduce connection churn
+      reconnectAfterMs: (tries: number) => Math.min(tries * 5000, 120000), // More conservative backoff
+      // Add error handling for WebSocket failures
+      transport: 'websocket',
+      timeout: 20000,
+      // Graceful degradation when WebSocket fails
+      logger: (level: string, message: string, details?: any) => {
+        if (level === 'error' && message.includes('WebSocket')) {
+          // Suppress noisy WebSocket errors in console unless debug enabled
+          if (import.meta.env.VITE_ENABLE_SUPABASE_DEBUG === 'true') {
+            console.warn('[Supabase Realtime]', message, details);
+          }
+        } else if (import.meta.env.MODE === 'development') {
+          console.log('[Supabase Realtime]', level, message, details);
+        }
+      }
     },
     global: {
       fetch: (url, options = {}) => {
