@@ -189,6 +189,8 @@ const WidgetManagement: React.FC = () => {
   // Preview diagnostics state
   const [lastWidgetError, setLastWidgetError] = useState<any>(null);
   const [lastWidgetMetrics, setLastWidgetMetrics] = useState<{ loadTimeMs?: number; domContentLoadedMs?: number; transferSize?: number } | null>(null);
+  type PreviewEvent = { t: number; type: string; payload?: any };
+  const [previewEvents, setPreviewEvents] = useState<PreviewEvent[]>([]);
   // Live data preview toggle (renders real widget iframe instead of static mock)
   // Live preview only mode – always true
   const livePreview = true;
@@ -230,15 +232,18 @@ const WidgetManagement: React.FC = () => {
           const now = Date.now();
           if (now - lastWidgetLoadedAtRef.current < 5000) return;
           lastWidgetLoadedAtRef.current = now;
+          setPreviewEvents(prev => [{ t: now, type: 'widget_loaded', payload: { widgetId: data.widgetId, correlationId: data.correlationId } }, ...prev].slice(0, 50));
           if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') console.log('[WidgetManagement] widget_loaded', data);
           return;
         }
         if (data.type === 'widget_resize') {
           // handled by embed code and iframe auto-height; no-op here
+          setPreviewEvents(prev => [{ t: Date.now(), type: 'widget_resize', payload: { height: data.height } }, ...prev].slice(0, 50));
           return;
         }
         if (data.type === 'widget_metrics') {
           setLastWidgetMetrics(data.metrics || null);
+          setPreviewEvents(prev => [{ t: Date.now(), type: 'widget_metrics', payload: data.metrics }, ...prev].slice(0, 50));
           if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') console.log('[WidgetManagement] widget_metrics', data.metrics);
           return;
         }
@@ -249,6 +254,7 @@ const WidgetManagement: React.FC = () => {
           const message = data?.error?.message || 'Widget runtime error';
           const chunk = data?.error?.chunk ? ` (chunk ${data.error.chunk})` : '';
           setLastWidgetError(data?.error || { message });
+          setPreviewEvents(prev => [{ t: now, type: 'widget_error', payload: data.error }, ...prev].slice(0, 50));
           toast({
             title: 'Widget Error',
             description: `${message}${chunk}`,
@@ -527,14 +533,10 @@ const WidgetManagement: React.FC = () => {
   const baseUrl = window.location.origin;
   // New standalone public widget bundle path (served by public-widget.html)
   const widgetPath = type === 'booking' ? '/public-widget/book' : '/public-widget/catering';
-      // Require a server-signed widget token to proceed
-      if (!widgetToken) {
-        return '';
-      }
       
     const params = new URLSearchParams();
     params.set('slug', effectiveSlug);
-    params.set('token', widgetToken);
+    if (widgetToken) params.set('token', widgetToken);
     params.set('widget_version', '2.0');
 
     if (tenant?.timezone) params.set('timezone', tenant.timezone);
@@ -1750,6 +1752,12 @@ const WidgetManagement: React.FC = () => {
                     <Download className="w-4 h-4 mr-1" />
                     Screenshot
                   </Button>
+                  {liveWidgetUrl && (
+                    <Button variant="outline" size="sm" onClick={() => copyToClipboard(liveWidgetUrl, 'Preview URL')} aria-label="Copy preview URL" title="Copy preview URL">
+                      <Copy className="w-4 h-4 mr-1" />
+                      Copy URL
+                    </Button>
+                  )}
                   {(lastWidgetError || lastWidgetMetrics) && (
                     <div className="ml-2 flex flex-col gap-2 max-w-md">
                       {lastWidgetError && (
@@ -1772,6 +1780,13 @@ const WidgetManagement: React.FC = () => {
                           {typeof lastWidgetMetrics.transferSize === 'number' && (
                             <span>Bytes: {lastWidgetMetrics.transferSize}</span>
                           )}
+                        </div>
+                      )}
+                      {previewEvents.length > 0 && (
+                        <div className="text-[11px] text-muted-foreground max-h-24 overflow-auto border rounded p-2 bg-muted/30">
+                          {previewEvents.map((ev, i) => (
+                            <div key={i} className="truncate"><span className="font-mono">{new Date(ev.t).toLocaleTimeString()}</span> — {ev.type}</div>
+                          ))}
                         </div>
                       )}
                     </div>
