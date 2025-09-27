@@ -682,10 +682,7 @@ async function fetchRealWidgetAnalytics(
     if (anonKeyForApi && !requestHeaders['apikey']) {
       requestHeaders['apikey'] = anonKeyForApi;
     }
-    // Provide tenant context headers to satisfy stricter validation on edge
-    requestHeaders['x-tenant-id'] = tenantId;
-    if (tenantSlug) requestHeaders['x-tenant-slug'] = tenantSlug;
-    try { requestHeaders['x-embed-origin'] = window.location.origin; } catch {}
+    // Avoid custom headers that can trigger CORS preflight rejections
 
     console.log('🚀 About to call Edge Function with:', {
       tenantId,
