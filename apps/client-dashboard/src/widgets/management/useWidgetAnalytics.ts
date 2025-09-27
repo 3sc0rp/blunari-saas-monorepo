@@ -768,12 +768,10 @@ async function fetchRealWidgetAnalytics(
           if (anonKey) {
             const retryHeaders: Record<string, string> = {
               'Content-Type': 'application/json',
-              'x-correlation-id': correlationId || '',
-              'x-widget-version': '2.0',
               'Authorization': `Bearer ${anonKey}`
             };
             const retryResponse = await supabase.functions.invoke('widget-analytics', {
-              body: { tenantId, widgetType, timeRange, version: '2.0' },
+              body: { tenantId, tenant_id: tenantId, tenant_slug: tenantSlug, widgetType, widget_type: widgetType, timeRange, time_range: timeRange, version: '2.0', cid: correlationId || '' },
               headers: retryHeaders
             });
             if (!retryResponse.error && retryResponse.data?.success) {
@@ -784,6 +782,49 @@ async function fetchRealWidgetAnalytics(
           }
         } catch (retryErr) {
           console.warn('Retry with anon key threw error:', retryErr);
+        }
+      }
+
+      // If server indicates an empty body / 400, try a direct fetch with explicit JSON.stringify
+      if ((edgeMessage || '').toLowerCase().includes('empty') || rawStatus === 400) {
+        try {
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+          const token = accessToken || anonKey;
+          if (supabaseUrl && token && anonKey) {
+            const payload = {
+              tenantId,
+              tenant_id: tenantId,
+              tenantSlug,
+              tenant_slug: tenantSlug,
+              widgetType,
+              widget_type: widgetType,
+              timeRange,
+              time_range: timeRange,
+              version: '2.0',
+              cid: correlationId || ''
+            };
+            const fetchRes = await fetch(`${supabaseUrl}/functions/v1/widget-analytics`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'apikey': anonKey
+              },
+              body: JSON.stringify(payload)
+            });
+            if (fetchRes.ok) {
+              const data = await fetchRes.json();
+              if (data?.success && data?.data) {
+                return { data: data.data, meta: data.meta };
+              }
+            } else {
+              const txt = await fetchRes.text();
+              console.warn('Direct fetch to widget-analytics failed', fetchRes.status, txt);
+            }
+          }
+        } catch (dfErr) {
+          console.warn('Direct fetch fallback threw error:', dfErr);
         }
       }
 
