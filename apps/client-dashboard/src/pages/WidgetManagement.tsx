@@ -658,12 +658,13 @@ const WidgetManagement: React.FC = () => {
   const liveWidgetBaseUrl = useMemo(() => {
     if (!livePreview) return null;
     const slug = resolvedTenantSlug;
-    if (!slug || !widgetToken) return null;
+    // For dashboard preview, permit loading without a signed token
+    if (!slug) return null;
     const baseUrl = window.location.origin;
     const widgetPath = activeWidgetType === 'booking' ? '/public-widget/book' : '/public-widget/catering';
     const p = new URLSearchParams();
     p.set('slug', slug);
-    p.set('token', widgetToken);
+    if (widgetToken) p.set('token', widgetToken);
     p.set('widget_version', '2.0');
     const url = `${baseUrl}${widgetPath}/${slug}?${p.toString()}`;
     const nextKey = `${slug}:${activeWidgetType}`;
