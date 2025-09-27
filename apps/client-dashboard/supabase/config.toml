@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.phone-verify]
 verify_jwt = false
+
+[functions.widget-analytics]
+verify_jwt = false
