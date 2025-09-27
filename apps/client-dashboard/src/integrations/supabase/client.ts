@@ -53,15 +53,31 @@ export const supabase = createClient<Database>(
     global: {
       fetch: (url, options = {}) => {
         const enableVerbose = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_SUPABASE_DEBUG === 'true';
+        const method = (options as any).method || 'GET';
         if (enableVerbose) {
-          console.log('[Supabase] Request:', { url, method: (options as any).method || 'GET' });
+          console.log('[Supabase] Request:', { url, method });
         }
-        return fetch(url, {
-          ...(options as any),
-          keepalive: false,
-        }).then(res => {
+        return fetch(url, { ...(options as any), keepalive: false }).then(async res => {
           if (enableVerbose) {
-            console.log('[Supabase] Response:', { url, status: res.status, ok: res.ok });
+            let bodyPreview: string | undefined;
+            if (!res.ok && res.headers.get('content-type')?.includes('application/json')) {
+              try {
+                const clone = res.clone();
+                const txt = await clone.text();
+                bodyPreview = txt.slice(0, 400);
+              } catch {}
+            }
+            console.log('[Supabase] Response:', { url, status: res.status, ok: res.ok, preview: bodyPreview });
+          }
+          // Extra targeted diagnostics for widget-analytics 400s
+          if (!res.ok && /\/functions\/v1\/widget-analytics$/.test(url) && res.status === 400) {
+            try {
+              const clone = res.clone();
+              const txt = await clone.text();
+              console.warn('[WidgetAnalytics][HTTP 400] Raw body:', txt.slice(0, 1000));
+            } catch (e) {
+              console.warn('[WidgetAnalytics][HTTP 400] Failed to read error body', e);
+            }
           }
           return res;
         });
