@@ -36,8 +36,7 @@ export const supabase = createClient<Database>(
       // Use defaults that are friendlier to browser idle/visibility changes
       heartbeatIntervalMs: 30000, // Increased to reduce connection churn
       reconnectAfterMs: (tries: number) => Math.min(tries * 5000, 120000), // More conservative backoff
-      // Add error handling for WebSocket failures
-      transport: 'websocket',
+      // Use default WebSocket transport (string value is invalid in v2 and causes constructor error)
       timeout: 20000,
       // Graceful degradation when WebSocket fails
       logger: (level: string, message: string, details?: any) => {
