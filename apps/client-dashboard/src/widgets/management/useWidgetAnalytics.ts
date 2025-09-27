@@ -870,7 +870,6 @@ async function fetchRealWidgetAnalytics(
       // Validation / client errors: return empty dataset and start cooldown
       if (internalCode === AnalyticsErrorCode.VALIDATION_ERROR) {
         console.log('Validation error from Edge Function – returning empty analytics dataset');
-        edgeCooldownRef.current = Date.now() + 5 * 60 * 1000; // 5 minutes
         return {
           data: {
             totalViews: 0,
@@ -897,30 +896,26 @@ async function fetchRealWidgetAnalytics(
 
       // For 400 errors that may be due to edge function not existing or misconfigured, disable edge for this session
       if (rawStatus === 400 && !edgeCode) {
-        console.warn('Edge Function widget-analytics may not exist or is misconfigured; disabling for session');
-        edgeCooldownRef.current = Date.now() + 60 * 60 * 1000; // 1 hour cooldown
-        const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
-        setState({
-          data: fallbackData,
-          loading: false,
-          error: 'Analytics service unavailable — showing basic stats',
-          lastUpdated: new Date(),
-          mode: 'direct-db',
-          correlationId: correlationBase.current + ':edge-disabled',
-          lastErrorCode: 'EDGE_DISABLED',
-          meta: { estimation: true, time_range: timeRange },
-          edgeStatus: rawStatus,
-          edgeFunctionCode: edgeCode || 'MISSING_FUNCTION'
-        });
-        isLoadingRef.current = false;
-        return;
+        console.warn('Edge Function widget-analytics may not exist or is misconfigured');
+        // Throw a specialized error; caller decides on fallback & cooldown
+        throw new EdgeFunctionError(
+          'Edge function missing or misconfigured',
+          AnalyticsErrorCode.EDGE_FUNCTION_ERROR,
+          response,
+          {
+            tenantId,
+            widgetType,
+            timeRange,
+            correlationId,
+            rawStatus,
+            edgeCode: edgeCode || 'MISSING_FUNCTION',
+            misconfigured: true
+          }
+        );
       }
 
       // Other errors – allow outer logic to attempt DB fallback; start cooldown on 400s
       console.log('Attempting direct database fallback due to non-validation Edge Function error...');
-      if (rawStatus === 400) {
-        edgeCooldownRef.current = Date.now() + 5 * 60 * 1000;
-      }
       throw Object.assign(new Error('Edge function error'), { code: response.error.name || internalCode || 'EDGE_ERROR' });
     }
 
