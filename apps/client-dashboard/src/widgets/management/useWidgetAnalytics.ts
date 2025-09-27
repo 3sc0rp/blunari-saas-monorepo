@@ -662,9 +662,7 @@ async function fetchRealWidgetAnalytics(
     console.log('📡 Invoking Edge Function with body:', { tenantId, widgetType, timeRange });
     // Build headers object - always include Authorization (use anon key if no user token)
     const requestHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'x-correlation-id': correlationId || '',
-      'x-widget-version': '2.0'
+      'Content-Type': 'application/json'
     };
     
     // Always provide Authorization header - use user token if available, otherwise anon key
@@ -706,7 +704,8 @@ async function fetchRealWidgetAnalytics(
         widget_type: widgetType,
         timeRange,
         time_range: timeRange,
-        version: '2.0'
+        version: '2.0',
+        cid: correlationId || ''
       },
       headers: requestHeaders
     });
