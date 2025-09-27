@@ -111,16 +111,170 @@ serve(async (req: Request) => {
     return errorOut(400, 'INVALID_TIME_RANGE', 'timeRange must be 1d|7d|30d', { received: timeRange, expected: Array.from(VALID_TIME_RANGES) });
   }
 
-  // Stub analytics until full query implemented
+  // Determine date range
+  const now = new Date();
+  const daysBack = timeRange === '30d' ? 30 : timeRange === '7d' ? 7 : 1;
+  const rangeStart = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+
+  // Helper for date -> yyyy-mm-dd
+  const toDateKey = (d: Date) => d.toISOString().split('T')[0];
+
+  // Build SQL for core metrics; use RPC via REST (postgres fetch) since Edge runtime doesn't bundle supabase-js here.
+  // We'll query PostgREST endpoints directly using fetch.
+  const supabaseUrl = (req.headers.get('x-forwarded-host') ? `https://${req.headers.get('x-forwarded-host')}` : '') || Deno.env.get('SUPABASE_URL') || '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const authHeader = req.headers.get('authorization') || (serviceKey ? `Bearer ${serviceKey}` : (anonKey ? `Bearer ${anonKey}` : ''));
+
+  if (!supabaseUrl) {
+    return errorOut(500, 'MISSING_SUPABASE_URL', 'SUPABASE_URL env not available');
+  }
+
+  // Query helper
+  async function pgSelect(path: string, query: Record<string,string>) {
+    const qs = new URLSearchParams(query).toString();
+    const url = `${supabaseUrl}/rest/v1/${path}?${qs}`;
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': authHeader,
+        'apikey': anonKey || serviceKey || '',
+        'Accept': 'application/json'
+      }
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`PostgREST ${path} ${res.status}: ${txt.slice(0,300)}`);
+    }
+    return res.json();
+  }
+
+  // Parallel queries based on widgetType
+  // analytics_events: gather views & clicks and sources
+  // bookings OR catering_orders: completion stats & counts
+  const dateFilter = `gte.created_at=${rangeStart.toISOString()}&lte.created_at=${now.toISOString()}`; // used only when needed
+
+  // Build filters (RLS restricts to tenant automatically, but we still filter by tenant_id to avoid overfetch if service key accidentally used)
+  const fromDateISO = rangeStart.toISOString();
+  const toDateISO = now.toISOString();
+
+  // Fetch analytics events (views / clicks + session durations if present)
+  let events: any[] = [];
+  try {
+    events = await pgSelect('analytics_events', {
+      select: 'event_type,event_data,created_at',
+      tenant_id: `eq.${tenantId}`,
+      created_at: `gte.${fromDateISO}`,
+      order: 'created_at.asc',
+      limit: String(2000) // safety cap
+    });
+  } catch (e) {
+    console.warn('analytics_events query failed', String(e));
+  }
+
+  // Count views and clicks
+  let totalViews = 0;
+  let totalClicks = 0;
+  let totalSessionDuration = 0;
+  let sessionCount = 0;
+  const sourceCounts: Record<string, number> = {};
+  const dailyMap: Record<string, { views: number; clicks: number; bookings: number; revenue: number }> = {};
+  for (let i = 0; i < daysBack; i++) {
+    const d = new Date(now.getTime() - (daysBack - 1 - i) * 24*60*60*1000);
+    dailyMap[toDateKey(d)] = { views: 0, clicks: 0, bookings: 0, revenue: 0 };
+  }
+
+  for (const ev of events) {
+    const dateKey = (ev.created_at || '').split('T')[0];
+    const bucket = dailyMap[dateKey];
+    if (ev.event_type === 'widget_view') {
+      totalViews++;
+      if (bucket) bucket.views++;
+      const src = ev.event_data?.source || ev.event_data?.referrer || 'unknown';
+      sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+    } else if (ev.event_type === 'widget_click') {
+      totalClicks++;
+      if (bucket) bucket.clicks++;
+    } else if (ev.event_type === 'session_end') {
+      const dur = Number(ev.event_data?.duration_ms || 0);
+      if (!Number.isNaN(dur) && dur > 0) {
+        totalSessionDuration += dur;
+        sessionCount++;
+      }
+    }
+  }
+
+  // Fetch booking / catering data
+  let orderRows: any[] = [];
+  if (widgetType === 'booking') {
+    try {
+      orderRows = await pgSelect('bookings', {
+        select: 'id,status,created_at,completed_at,party_size,source,total_amount',
+        tenant_id: `eq.${tenantId}`,
+        created_at: `gte.${fromDateISO}`,
+        order: 'created_at.asc',
+        limit: String(5000)
+      });
+    } catch (e) { console.warn('bookings query failed', String(e)); }
+  } else {
+    try {
+      orderRows = await pgSelect('catering_orders', {
+        select: 'id,status,created_at,completed_at,guest_count,total_amount,referral_source',
+        tenant_id: `eq.${tenantId}`,
+        created_at: `gte.${fromDateISO}`,
+        order: 'created_at.asc',
+        limit: String(5000)
+      });
+    } catch (e) { console.warn('catering_orders query failed', String(e)); }
+  }
+
+  let totalBookings = 0;
+  let completedCount = 0;
+  let totalRevenue = 0;
+  for (const r of orderRows) {
+    totalBookings++;
+    const createdAt = r.created_at || r.confirmed_at || r.completed_at;
+    const dateKey = (createdAt || '').split('T')[0];
+    const bucket = dailyMap[dateKey];
+    if (bucket) {
+      bucket.bookings++;
+      if (widgetType === 'catering') {
+        const amt = Number(r.total_amount || 0);
+        if (!Number.isNaN(amt)) {
+          bucket.revenue += amt / 100; // convert cents to whole units
+          totalRevenue += amt / 100;
+        }
+      }
+    }
+    if (r.status === 'confirmed' || r.status === 'completed') completedCount++;
+  }
+
+  const avgSessionDuration = sessionCount > 0 ? totalSessionDuration / sessionCount : 0;
+  const conversionRate = totalViews > 0 ? (totalBookings / totalViews) * 100 : 0;
+  const completionRate = totalBookings > 0 ? (completedCount / totalBookings) * 100 : 0;
+
+  const topSources = Object.entries(sourceCounts)
+    .sort((a,b) => b[1]-a[1])
+    .slice(0,5)
+    .map(([source,count]) => ({ source, count }));
+
+  const dailyStats = Object.entries(dailyMap).map(([date,vals]) => ({
+    date,
+    views: vals.views,
+    clicks: vals.clicks,
+    bookings: vals.bookings,
+    revenue: widgetType === 'catering' ? Number(vals.revenue.toFixed(2)) : undefined
+  }));
+
   const data = {
-    totalViews: 0,
-    totalClicks: 0,
-    conversionRate: 0,
-    avgSessionDuration: 0,
-    totalBookings: 0,
-    completionRate: 0,
-    topSources: [],
-    dailyStats: []
+    totalViews,
+    totalClicks,
+    conversionRate: Number(conversionRate.toFixed(2)),
+    avgSessionDuration: Math.round(avgSessionDuration),
+    totalBookings,
+    completionRate: Number(completionRate.toFixed(2)),
+    topSources,
+    dailyStats,
+    ...(widgetType === 'catering' ? { totalRevenue: Number(totalRevenue.toFixed(2)) } : {})
   };
 
   try {
@@ -134,13 +288,12 @@ serve(async (req: Request) => {
         authMethod: req.headers.get('authorization') ? 'authenticated' : 'anonymous',
         generatedAt: new Date().toISOString(),
         durationMs: Math.round((performance.now?.() || Date.now()) - started),
-        version: 'local-dev-stub',
+        version: '1.0-real',
         correlationId: cid
       }
     });
   } catch (err) {
-    // Fallback defensive catch – should not normally trigger
-    console.error('widget-analytics unexpected error', err, { cid });
-    return errorOut(500, 'INTERNAL_ERROR', 'Unexpected failure');
+    console.error('widget-analytics response build error', err, { cid });
+    return errorOut(500, 'INTERNAL_ERROR', 'Unexpected failure building response');
   }
 });
