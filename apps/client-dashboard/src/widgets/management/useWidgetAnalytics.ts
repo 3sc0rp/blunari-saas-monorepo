@@ -241,6 +241,8 @@ export function useWidgetAnalytics({
   const sessionCheckedRef = useRef(false);
   const correlationBase = useRef<string>('');
   const isLoadingRef = useRef(false);
+  // Suppress repeated Edge attempts after a validation/400 error
+  const edgeCooldownRef = useRef<number>(0);
   if (!correlationBase.current) {
     correlationBase.current = Math.random().toString(36).slice(2, 10);
   }
@@ -400,6 +402,26 @@ export function useWidgetAnalytics({
           correlationId: correlationBase.current + ':noauth',
           lastErrorCode: null,
           meta: { estimation: true, time_range: timeRange }
+        });
+        isLoadingRef.current = false;
+        return;
+      }
+
+      // Honor temporary cooldown to avoid noisy repeated 400s
+      if (!forceEdge && edgeCooldownRef.current && Date.now() < edgeCooldownRef.current) {
+        debug('⏳ Edge in cooldown; using database fallback');
+        const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
+        setState({
+          data: fallbackData,
+          loading: false,
+          error: 'Analytics service temporarily unavailable — showing basic stats',
+          lastUpdated: new Date(),
+          mode: 'direct-db',
+          correlationId: correlationBase.current + ':cooldown',
+          lastErrorCode: 'EDGE_COOLDOWN',
+          meta: { estimation: true, time_range: timeRange },
+          edgeStatus: null,
+          edgeFunctionCode: null
         });
         isLoadingRef.current = false;
         return;
@@ -845,9 +867,10 @@ async function fetchRealWidgetAnalytics(
       );
       analyticsErrorReporter.reportError(edgeError);
 
-      // Validation / client errors: return empty dataset (do NOT fallback to DB – signals real misconfiguration)
+      // Validation / client errors: return empty dataset and start cooldown
       if (internalCode === AnalyticsErrorCode.VALIDATION_ERROR) {
         console.log('Validation error from Edge Function – returning empty analytics dataset');
+        edgeCooldownRef.current = Date.now() + 5 * 60 * 1000; // 5 minutes
         return {
           data: {
             totalViews: 0,
@@ -872,8 +895,11 @@ async function fetchRealWidgetAnalytics(
         throw Object.assign(new Error('Rate limit exceeded for widget analytics'), { code: internalCode });
       }
 
-      // Other errors – allow outer logic to attempt DB fallback
+      // Other errors – allow outer logic to attempt DB fallback; start cooldown on 400s
       console.log('Attempting direct database fallback due to non-validation Edge Function error...');
+      if (rawStatus === 400) {
+        edgeCooldownRef.current = Date.now() + 5 * 60 * 1000;
+      }
       throw Object.assign(new Error('Edge function error'), { code: response.error.name || internalCode || 'EDGE_ERROR' });
     }
 
