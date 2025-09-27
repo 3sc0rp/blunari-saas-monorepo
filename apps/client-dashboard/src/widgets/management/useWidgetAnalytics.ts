@@ -895,6 +895,27 @@ async function fetchRealWidgetAnalytics(
         throw Object.assign(new Error('Rate limit exceeded for widget analytics'), { code: internalCode });
       }
 
+      // For 400 errors that may be due to edge function not existing or misconfigured, disable edge for this session
+      if (rawStatus === 400 && !edgeCode) {
+        console.warn('Edge Function widget-analytics may not exist or is misconfigured; disabling for session');
+        edgeCooldownRef.current = Date.now() + 60 * 60 * 1000; // 1 hour cooldown
+        const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
+        setState({
+          data: fallbackData,
+          loading: false,
+          error: 'Analytics service unavailable — showing basic stats',
+          lastUpdated: new Date(),
+          mode: 'direct-db',
+          correlationId: correlationBase.current + ':edge-disabled',
+          lastErrorCode: 'EDGE_DISABLED',
+          meta: { estimation: true, time_range: timeRange },
+          edgeStatus: rawStatus,
+          edgeFunctionCode: edgeCode || 'MISSING_FUNCTION'
+        });
+        isLoadingRef.current = false;
+        return;
+      }
+
       // Other errors – allow outer logic to attempt DB fallback; start cooldown on 400s
       console.log('Attempting direct database fallback due to non-validation Edge Function error...');
       if (rawStatus === 400) {
