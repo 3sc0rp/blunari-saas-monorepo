@@ -219,7 +219,8 @@ export function useWidgetAnalytics({
   widgetType,
   refreshInterval = 300000, // 5 minutes default
   forceEdge = false,
-}: UseWidgetAnalyticsOptions): AnalyticsState & {
+  enabled = true,
+}: UseWidgetAnalyticsOptions & { enabled?: boolean }): AnalyticsState & {
   refresh: (timeRange?: AnalyticsTimeRange) => Promise<void>;
   isAvailable: boolean;
   rateLimitRemaining: number;
@@ -247,7 +248,7 @@ export function useWidgetAnalytics({
     correlationBase.current = Math.random().toString(36).slice(2, 10);
   }
 
-  const isAvailable = Boolean(tenantId && tenantSlug);
+  const isAvailable = Boolean(tenantId && tenantSlug) && enabled !== false;
 
   const fetchAnalytics = useCallback(async (timeRange: AnalyticsTimeRange = '7d'): Promise<void> => {
   debug('🔍 Analytics hook parameters:', {

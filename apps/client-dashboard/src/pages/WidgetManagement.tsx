@@ -752,6 +752,7 @@ const WidgetManagement: React.FC = () => {
     tenantId: tenant?.id || null,
     tenantSlug: resolvedTenantSlug || null,
     widgetType: activeWidgetType,
+    enabled: selectedTab === 'analytics'
   });
 
   // Re-fetch analytics when range changes or widget type changes
