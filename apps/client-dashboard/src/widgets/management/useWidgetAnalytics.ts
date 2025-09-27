@@ -418,7 +418,7 @@ export function useWidgetAnalytics({
           let inflight = inflightMap.get(cacheKey);
           if (!inflight) {
             inflight = (async () => {
-              const rr = await fetchRealWidgetAnalytics(tenantId, widgetType, session.access_token, timeRange, cid);
+              const rr = await fetchRealWidgetAnalytics(tenantId, widgetType, session.access_token, timeRange, cid, tenantSlug || undefined);
               return rr.data;
             })();
             inflightMap.set(cacheKey, inflight);
@@ -633,7 +633,8 @@ async function fetchRealWidgetAnalytics(
   widgetType: WidgetType,
   accessToken: string,
   timeRange: AnalyticsTimeRange = '7d',
-  correlationId?: string
+  correlationId?: string,
+  tenantSlug?: string
 ): Promise<AnalyticsResponse> {
   
   console.log('Calling real analytics Edge Function...');
@@ -681,6 +682,10 @@ async function fetchRealWidgetAnalytics(
     if (anonKeyForApi && !requestHeaders['apikey']) {
       requestHeaders['apikey'] = anonKeyForApi;
     }
+    // Provide tenant context headers to satisfy stricter validation on edge
+    requestHeaders['x-tenant-id'] = tenantId;
+    if (tenantSlug) requestHeaders['x-tenant-slug'] = tenantSlug;
+    try { requestHeaders['x-embed-origin'] = window.location.origin; } catch {}
 
     console.log('🚀 About to call Edge Function with:', {
       tenantId,
@@ -696,9 +701,14 @@ async function fetchRealWidgetAnalytics(
 
     const response = await supabase.functions.invoke('widget-analytics', {
       body: {
+        // Provide both camelCase and snake_case keys for compatibility
         tenantId,
+        tenant_id: tenantId,
+        ...(tenantSlug ? { tenantSlug, tenant_slug: tenantSlug } : {}),
         widgetType,
+        widget_type: widgetType,
         timeRange,
+        time_range: timeRange,
         version: '2.0'
       },
       headers: requestHeaders
