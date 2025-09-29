@@ -225,14 +225,6 @@ export function TopBar({
             Export
           </Button>
 
-          {/* Live Status */}
-          <div className="flex items-center gap-2 px-3 py-1.5 glass rounded-md border border-white/10">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-sm font-medium text-white/90 uppercase tracking-wider">
-              LIVE
-            </span>
-          </div>
-
           {/* Notification Bell */}
           <UIPopover open={notifOpen} onOpenChange={setNotifOpen}>
             <UIPopoverTrigger asChild>
