@@ -204,6 +204,111 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
     }
   }, [moveReservationAction]);
 
+  // Memoized computation for table status counts (calculated from bookings)
+  const tableStatusCounts = useMemo(() => {
+    try {
+      // Initialize counts with default values
+      const counts = {
+        available: 0,
+        seated: 0,
+        reserved: 0,
+        phone: 0,
+        walkIn: 0,
+        maintenance: 0
+      };
+
+      if (!Array.isArray(tables) || tables.length === 0) {
+        console.log('StatusLegend: No tables data available');
+        return counts;
+      }
+
+      console.log('StatusLegend: Processing tables:', tables.length, 'tables');
+
+      const currentTime = new Date();
+      
+      // Calculate table status based on active bookings
+      tables.forEach(table => {
+        let tableStatus = 'available'; // Default status
+        
+        if (Array.isArray(reservations)) {
+          // Find active booking for this table
+          const activeBooking = reservations.find(reservation => {
+            if (reservation.tableId !== table.id) return false;
+            
+            const bookingStart = new Date(reservation.start);
+            const bookingEnd = new Date(reservation.end);
+            
+            // Check if booking is currently active
+            if (reservation.status === 'seated' && bookingStart <= currentTime && currentTime <= bookingEnd) {
+              return true;
+            }
+            
+            // Check if booking is confirmed and upcoming (within 30 minutes)
+            if (reservation.status === 'confirmed' && bookingStart > currentTime) {
+              const minutesUntil = (bookingStart.getTime() - currentTime.getTime()) / (1000 * 60);
+              return minutesUntil <= 30; // Consider reserved if booking is within 30 minutes
+            }
+            
+            return false;
+          });
+
+          if (activeBooking) {
+            if (activeBooking.status === 'seated') {
+              tableStatus = 'seated';
+            } else if (activeBooking.status === 'confirmed') {
+              tableStatus = 'reserved';
+            }
+          }
+        }
+        
+        // Count the status
+        switch (tableStatus) {
+          case 'available':
+            counts.available++;
+            break;
+          case 'seated':
+            counts.seated++;
+            break;
+          case 'reserved':
+            counts.reserved++;
+            break;
+          case 'maintenance':
+            counts.maintenance++;
+            break;
+          default:
+            counts.available++;
+        }
+        
+        console.log(`Table ${table.name}: calculated status = ${tableStatus}`);
+      });
+
+      // Count phone holds and walk-ins from reservations
+      if (Array.isArray(reservations) && reservations.length > 0) {
+        console.log('StatusLegend: Processing reservations for phone/walk-in counts');
+        reservations.forEach(reservation => {
+          if (reservation.channel === 'phone' && (reservation.status === 'confirmed' || reservation.status === 'seated')) {
+            counts.phone++;
+          } else if (reservation.channel === 'walkin' && (reservation.status === 'confirmed' || reservation.status === 'seated')) {
+            counts.walkIn++;
+          }
+        });
+      }
+
+      console.log('StatusLegend: Final calculated counts:', counts);
+      return counts;
+    } catch (err) {
+      console.error('Error calculating table status counts:', err);
+      return {
+        available: 0,
+        seated: 0,
+        reserved: 0,
+        phone: 0,
+        walkIn: 0,
+        maintenance: 0
+      };
+    }
+  }, [tables, reservations]);
+
   // Memoized computation for kitchen load calculation
   const calculatedKitchenLoad = useMemo(() => {
     try {
@@ -315,7 +420,7 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
           <h3 id="status-legend-heading" className="sr-only">
             Table Status Legend
           </h3>
-          <StatusLegend />
+          <StatusLegend counts={tableStatusCounts} />
         </section>
       </aside>
 

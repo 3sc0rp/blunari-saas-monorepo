@@ -32,6 +32,14 @@ export function StatusLegend({ counts, className }: StatusLegendProps) {
 
   const finalCounts = { ...defaultCounts, ...counts };
 
+  // Debug logging to help with troubleshooting
+  React.useEffect(() => {
+    console.log('StatusLegend: Received counts:', counts);
+    console.log('StatusLegend: Final counts:', finalCounts);
+  }, [counts, finalCounts]);
+
+  // Use final counts (real data)
+
   const statusItems: StatusItem[] = [
     {
       status: "available",
@@ -115,6 +123,11 @@ export function StatusLegend({ counts, className }: StatusLegendProps) {
             {Object.values(finalCounts).reduce((sum, count) => sum + count, 0)}
           </span>
         </div>
+        {Object.values(finalCounts).reduce((sum, count) => sum + count, 0) === 0 && (
+          <div className="text-xs text-white/40 mt-1 text-center">
+            No table data available
+          </div>
+        )}
       </div>
 
       {/* Status indicators key */}
