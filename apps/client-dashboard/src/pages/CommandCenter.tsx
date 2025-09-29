@@ -324,21 +324,70 @@ export default function CommandCenter() {
     return counts;
   }, [reservations]);
 
-  // Convert KPI data to KpiCard format with enhanced data
+  // Convert KPI data to KpiCard format with enhanced data based on filtered results
   const kpiCards = useMemo<KpiCard[]>(() => {
-    return kpis.map((item) => {
-      return {
+    if (!reservations || reservations.length === 0) {
+      return kpis.map((item) => ({
         id: item.id,
         label: item.label,
         value: item.value,
         spark: item.spark,
         tone: item.tone,
         hint: item.hint,
-        trendDirection: 'up', // Could be enhanced based on sparkline data
+        trendDirection: 'up' as const,
         sublabel: undefined,
-      };
-    });
-  }, [kpis]);
+      }));
+    }
+
+    // Calculate real KPIs from actual data
+    const confirmedCount = filteredReservations.filter(r => r.status.toLowerCase() === 'confirmed').length;
+    const seatedCount = filteredReservations.filter(r => r.status.toLowerCase() === 'seated').length;
+    const completedCount = filteredReservations.filter(r => r.status.toLowerCase() === 'completed').length;
+    const totalGuests = filteredReservations.reduce((sum, r) => sum + r.partySize, 0);
+
+    return [
+      {
+        id: 'total-bookings',
+        label: 'Total Bookings',
+        value: filteredReservations.length.toString(),
+        spark: [],
+        tone: 'positive' as const,
+        hint: `Total bookings ${Object.keys(filters).some(key => filters[key as keyof FiltersState]) ? '(filtered)' : ''}`,
+        trendDirection: 'up' as const,
+        sublabel: undefined,
+      },
+      {
+        id: 'confirmed-bookings',
+        label: 'Confirmed',
+        value: confirmedCount.toString(),
+        spark: [],
+        tone: 'positive' as const,
+        hint: 'Confirmed reservations',
+        trendDirection: 'up' as const,
+        sublabel: undefined,
+      },
+      {
+        id: 'seated-guests',
+        label: 'Currently Seated',
+        value: seatedCount.toString(),
+        spark: [],
+        tone: 'neutral' as const,
+        hint: 'Currently seated guests',
+        trendDirection: 'up' as const,
+        sublabel: undefined,
+      },
+      {
+        id: 'total-guests',
+        label: 'Total Guests',
+        value: totalGuests.toString(),
+        spark: [],
+        tone: 'positive' as const,
+        hint: `Total guests across all ${Object.keys(filters).some(key => filters[key as keyof FiltersState]) ? 'filtered ' : ''}reservations`,
+        trendDirection: 'up' as const,
+        sublabel: undefined,
+      }
+    ];
+  }, [kpis, filteredReservations, reservations, filters]);
 
   const handleExport = () => {
     try {
@@ -547,15 +596,29 @@ export default function CommandCenter() {
             filterCounts={filterCounts}
           />
           {/* Filter result summary */}
-          <div className="text-sm text-white/60">
-            Showing {legacyReservations.length} of {reservations.length} reservations
+          <div className="flex items-center gap-4 text-sm text-white/60">
+            <div>
+              Showing {legacyReservations.length} of {reservations.length} reservations
+              {Object.keys(filters).some(key => {
+                const value = filters[key as keyof FiltersState];
+                return value && (Array.isArray(value) ? value.length > 0 : true);
+              }) && (
+                <span className="ml-2 text-blue-300">
+                  (filtered)
+                </span>
+              )}
+            </div>
+            {/* Quick filter reset button */}
             {Object.keys(filters).some(key => {
               const value = filters[key as keyof FiltersState];
               return value && (Array.isArray(value) ? value.length > 0 : true);
             }) && (
-              <span className="ml-2 text-blue-300">
-                (filtered)
-              </span>
+              <button
+                onClick={() => setFilters({})}
+                className="text-xs text-blue-400 hover:text-blue-300 underline"
+              >
+                Clear all filters
+              </button>
             )}
           </div>
         </div>
