@@ -61,7 +61,7 @@ export function Timeline({
       
       slots.push({
         time,
-        label: format(time, "H:mm"),
+        label: format(time, "h:mm a"), // Use 12-hour format with AM/PM
         isCurrentTime
       });
     }
@@ -229,7 +229,7 @@ export function Timeline({
                         isHourStart ? "text-sm font-bold" : "text-xs opacity-75",
                         slot.isCurrentTime && "animate-pulse"
                       )}>
-                        {isHourStart ? format(slot.time, "H:mm") : format(slot.time, ":mm")}
+                        {isHourStart ? format(slot.time, "h:mm a") : format(slot.time, ":mm")}
                       </div>
                       {slot.isCurrentTime && (
                         <div className="w-1 h-1 bg-accent rounded-full mt-1 animate-pulse" />
@@ -463,7 +463,7 @@ export function Timeline({
                                 }}
                                 tabIndex={0}
                                 role="button"
-                                aria-label={`Reservation for ${reservation.guestName}, ${reservation.partySize} guests from ${format(new Date(reservation.start), "H:mm")} to ${format(new Date(reservation.end), "H:mm")}, status: ${reservation.status}`}
+                                aria-label={`Reservation for ${reservation.guestName}, ${reservation.partySize} guests from ${format(new Date(reservation.start), "h:mm a")} to ${format(new Date(reservation.end), "h:mm a")}, status: ${reservation.status}`}
                               >
                                 {/* Resize handles */}
                                 {onReservationChange && (
@@ -503,7 +503,7 @@ export function Timeline({
                                     <div className="flex items-center gap-1">
                                       <Clock className="w-3 h-3 opacity-75" />
                                       <span className="font-medium">
-                                        {format(new Date(reservation.start), "H:mm")}–{format(new Date(reservation.end), "H:mm")}
+                                        {format(new Date(reservation.start), "h:mm a")}–{format(new Date(reservation.end), "h:mm a")}
                                       </span>
                                     </div>
                                     
@@ -533,7 +533,7 @@ export function Timeline({
                             <TooltipContent side="top" className="max-w-xs text-xs">
                               <div className="space-y-1">
                                 <div className="font-medium">{reservation.guestName}</div>
-                                <div>{format(new Date(reservation.start), "H:mm")}–{format(new Date(reservation.end), "H:mm")}</div>
+                                <div>{format(new Date(reservation.start), "h:mm a")}–{format(new Date(reservation.end), "h:mm a")}</div>
                                 <div>{reservation.partySize} guests{reservation.channel ? ` • ${reservation.channel}` : ''}</div>
                                 {reservation.status && (<div className="opacity-80">Status: {reservation.status}</div>)}
                               </div>

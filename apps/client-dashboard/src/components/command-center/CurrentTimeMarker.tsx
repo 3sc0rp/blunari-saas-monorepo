@@ -61,9 +61,9 @@ export const CurrentTimeMarker: React.FC<CurrentTimeMarkerProps> = ({
   }
 
   const timeString = currentTime.toLocaleTimeString([], { 
-    hour: '2-digit', 
+    hour: 'numeric', 
     minute: '2-digit',
-    hour12: false 
+    hour12: true 
   });
 
   return (
