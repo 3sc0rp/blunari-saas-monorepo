@@ -194,26 +194,7 @@ export default function CommandCenter() {
   const error = realtimeError?.message || simpleError;
   const refetch = isConnected ? refreshData : simpleRefetch;
 
-  // Add debug logging in development mode
-  console.log('🏢 Command Center State:', {
-    loading,
-    error,
-    hasKpis: kpis?.length > 0,
-    hasTables: tables?.length > 0,
-    hasReservations: reservations?.length > 0,
-    kpiCount: kpis?.length,
-    tableCount: tables?.length,
-    reservationCount: reservations?.length,
-    connectionStatus: connectionStatus?.overall,
-    isRealtime: isConnected,
-    tenantId: policies?.tenantId,
-    realtimeBookingsCount: realtimeBookings?.length,
-    realtimeTablesCount: realtimeTables?.length,
-    activeFilters: Object.keys(filters).filter(key => {
-      const value = filters[key as keyof FiltersState];
-      return value && (Array.isArray(value) ? value.length > 0 : true);
-    })
-  });
+  // Command Center state ready
 
   // Apply filters to reservations before transformation
   const filteredReservations = useMemo(() => {
@@ -222,7 +203,7 @@ export default function CommandCenter() {
 
       // Log filter application for debugging
       if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-        console.log('🔍 Applying filters to', reservations.length, 'reservations', { filters });
+        // Applying filters to reservations
       }
 
       const filtered = reservations.filter(reservation => {
@@ -267,7 +248,7 @@ export default function CommandCenter() {
       });
 
       if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-        console.log('🔍 Filtered result:', filtered.length, 'reservations');
+        // Filter applied successfully
       }
 
       return filtered;
@@ -647,13 +628,13 @@ export default function CommandCenter() {
           }
         }}
         onEdit={() => {
-          console.log('Edit reservation:', selectedReservationId);
+          // Edit reservation functionality
         }}
         onMove={() => {
-          console.log('Move reservation:', selectedReservationId);
+          // Move reservation functionality
         }}
         onMessage={() => {
-          console.log('Message guest:', selectedReservationId);
+          // Message guest functionality
         }}
         onCancel={async () => {
           if (!selectedReservationId) return;

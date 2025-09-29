@@ -6,7 +6,88 @@
 import '@testing-library/jest-dom';
 import { afterEach, beforeAll, afterAll, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
-import { TestUtils } from './utils/testing';
+
+// Mock Supabase modules
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    auth: {
+      getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })),
+      getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+      signInWithPassword: vi.fn(() => Promise.resolve({ data: { user: null, session: null }, error: null })),
+      signOut: vi.fn(() => Promise.resolve({ error: null }))
+    },
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+          limit: vi.fn(() => Promise.resolve({ data: [], error: null }))
+        })),
+        order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+        limit: vi.fn(() => Promise.resolve({ data: [], error: null }))
+      })),
+      insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+      update: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ data: null, error: null }))
+      })),
+      delete: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ data: null, error: null }))
+      }))
+    })),
+    channel: vi.fn(() => ({
+      on: vi.fn(() => ({ subscribe: vi.fn() })),
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn()
+    })),
+    removeChannel: vi.fn()
+  }))
+}));
+
+// Mock the Supabase client instance
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    auth: {
+      getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })),
+      getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+      signInWithPassword: vi.fn(() => Promise.resolve({ data: { user: null, session: null }, error: null })),
+      signOut: vi.fn(() => Promise.resolve({ error: null }))
+    },
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+          limit: vi.fn(() => Promise.resolve({ data: [], error: null }))
+        })),
+        order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+        limit: vi.fn(() => Promise.resolve({ data: [], error: null }))
+      })),
+      insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
+      update: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ data: null, error: null }))
+      })),
+      delete: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ data: null, error: null }))
+      }))
+    })),
+    channel: vi.fn(() => ({
+      on: vi.fn(() => ({ subscribe: vi.fn() })),
+      subscribe: vi.fn(),
+      unsubscribe: vi.fn()
+    })),
+    removeChannel: vi.fn()
+  }
+}));
+
+// Simple test utilities
+const TestUtils = {
+  initialize: () => {
+    // Test environment initialization
+  },
+  cleanup: () => {
+    // Test environment cleanup
+  }
+};
 
 // Setup test environment
 beforeAll(() => {

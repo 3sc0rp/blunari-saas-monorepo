@@ -162,9 +162,7 @@ export const bundleAnalysis = {
     bundleAnalysis.loadedModules.add(moduleName);
     bundleAnalysis.loadingTimes.set(moduleName, loadTime);
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📦 Module loaded: ${moduleName} (${loadTime}ms)`);
-    }
+    // Module load recorded for performance tracking
   },
   
   // Get performance report

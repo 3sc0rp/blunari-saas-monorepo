@@ -216,7 +216,7 @@ const WidgetVersionManagement: React.FC<WidgetVersionManagementProps> = ({
     setIsCreatingVersion(true)
     try {
       // This would be an actual API call
-      console.log('Creating new version:', newVersion)
+      // Creating new version with provided details
       
       // Mock success
       await new Promise(resolve => setTimeout(resolve, 2000))
@@ -239,7 +239,7 @@ const WidgetVersionManagement: React.FC<WidgetVersionManagementProps> = ({
   const deployVersion = async (versionId: string, environment: string, strategy: string) => {
     setIsDeploying(true)
     try {
-      console.log('Deploying version:', versionId, 'to', environment)
+      // Deploying version to specified environment
       
       // Mock deployment
       await new Promise(resolve => setTimeout(resolve, 3000))
@@ -253,7 +253,7 @@ const WidgetVersionManagement: React.FC<WidgetVersionManagementProps> = ({
 
   const rollbackVersion = async (versionId: string, reason: string) => {
     try {
-      console.log('Rolling back version:', versionId, 'reason:', reason)
+      // Rolling back version with provided reason
       
       // Mock rollback
       await new Promise(resolve => setTimeout(resolve, 2000))
@@ -266,7 +266,7 @@ const WidgetVersionManagement: React.FC<WidgetVersionManagementProps> = ({
 
   const toggleFeatureFlag = async (flagId: string, enabled: boolean) => {
     try {
-      console.log('Toggling feature flag:', flagId, enabled)
+      // Toggling feature flag state
       
       setFeatureFlags(prev => prev.map(flag => 
         flag.id === flagId ? { ...flag, is_enabled: enabled } : flag
