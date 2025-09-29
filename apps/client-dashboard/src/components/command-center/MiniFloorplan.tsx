@@ -55,6 +55,64 @@ export function MiniFloorplan({
   onFocusTable, 
   focusTableId 
 }: MiniFloorplanProps) {
+  // Create mapping from hardcoded positions to real table data
+  const tablePositionsWithRealData = useMemo(() => {
+    const positions: Array<{
+      id: string;
+      x: number;
+      y: number;
+      section: string;
+      name: string;
+      size: 'small' | 'medium' | 'large';
+      realTable?: TableRow;
+    }> = [];
+
+    // Map real tables to hardcoded positions
+    if (Array.isArray(tables) && tables.length > 0) {
+      // For each hardcoded position, try to find a matching real table
+      TABLE_POSITIONS.forEach((hardcodedPos, index) => {
+        let matchingTable: TableRow | undefined;
+        
+        // Try to find table by matching table number in name (e.g., "Table 1" matches "table-1")
+        const tableNumber = hardcodedPos.id.replace('table-', '').replace('booth-', '');
+        matchingTable = tables.find(table => 
+          table.name.toLowerCase().includes(tableNumber) ||
+          table.name.toLowerCase().includes(`table ${tableNumber}`) ||
+          table.name.toLowerCase().includes(`table${tableNumber}`)
+        );
+
+        // If no match by name, use table by index (fallback)
+        if (!matchingTable && index < tables.length) {
+          matchingTable = tables[index];
+        }
+
+        positions.push({
+          id: matchingTable?.id || hardcodedPos.id,
+          x: hardcodedPos.x,
+          y: hardcodedPos.y,
+          section: hardcodedPos.section,
+          name: matchingTable?.name || hardcodedPos.id,
+          size: hardcodedPos.size,
+          realTable: matchingTable
+        });
+      });
+    } else {
+      // No real tables, use hardcoded positions as fallback
+      TABLE_POSITIONS.forEach(hardcodedPos => {
+        positions.push({
+          id: hardcodedPos.id,
+          x: hardcodedPos.x,
+          y: hardcodedPos.y,
+          section: hardcodedPos.section,
+          name: hardcodedPos.id,
+          size: hardcodedPos.size
+        });
+      });
+    }
+
+    return positions;
+  }, [tables]);
+
   // Memoized computation of table statuses for performance
   const tableStatuses = useMemo<Record<string, { status: string; occupancy: number | null; isReserved: boolean }>>(() => {
     try {
@@ -225,7 +283,7 @@ export function MiniFloorplan({
         role="group"
         aria-label="Restaurant tables"
       >
-        {TABLE_POSITIONS.map((position) => {
+        {tablePositionsWithRealData.map((position) => {
           const isBoothStyle = position.id.startsWith('booth-');
           const status = getTableStatus(position.id);
           const focused = focusTableId === position.id;
@@ -238,15 +296,15 @@ export function MiniFloorplan({
               onKeyDown={(e) => handleKeyDown(e, position.id)}
               className={cn(
                 "absolute transition-all duration-200 cursor-pointer transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-opacity-50",
-                getSizeClasses(position.size, isBoothStyle),
+                getSizeClasses(position.size || 'medium', isBoothStyle),
                 getStatusColor(status, focused)
               )}
               style={{
                 left: `${position.x}px`,
                 top: `${position.y}px`,
               }}
-              title={`${position.id} (${position.section}) - ${status}${tableInfo?.occupancy ? ` - ${tableInfo.occupancy} guests` : ''}`}
-              aria-label={`Table ${position.id} in ${position.section} section, currently ${status}${tableInfo?.occupancy ? ` with ${tableInfo.occupancy} guests` : ''}`}
+              title={`${position.name} (${position.section}) - ${status}${tableInfo?.occupancy ? ` - ${tableInfo.occupancy} guests` : ''}`}
+              aria-label={`Table ${position.name} in ${position.section} section, currently ${status}${tableInfo?.occupancy ? ` with ${tableInfo.occupancy} guests` : ''}`}
               aria-pressed={focused}
               tabIndex={0}
             />
