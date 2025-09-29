@@ -585,7 +585,7 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
   } catch (error) {
     // Fallback to local booking creation — create PENDING and notify owner for approval
     try {
-      const { tenant_id, hold_id, guest_details, idempotency_key } = requestData;
+      const { tenant_id, hold_id, guest_details, idempotency_key, deposit } = requestData;
       const { data: hold, error: holdError } = await supabase.from("booking_holds").select("*").eq("id", hold_id).maybeSingle();
       if (holdError || !hold) {
         return errorResponse('HOLD_NOT_FOUND', 'Booking hold not found or expired', 404, requestId, { details: holdError?.message });
@@ -617,7 +617,7 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
         status: "pending",
         duration_minutes: hold.duration_minutes,
         deposit_required: !!deposit?.required || false,
-        deposit_amount: deposit?.amount_cents || 0,
+        deposit_amount: Math.max(0, Number(deposit?.amount_cents || 0)),
         deposit_paid: !!deposit?.paid || false,
       };
 
@@ -1050,9 +1050,11 @@ async function sendEmailViaFastmail(params: { apiToken: string; from: string; to
             to: [{ email: params.to }],
             subject: params.subject,
             textBody: [{ partId: 't1' }],
-            bodyValues: { t1: { value: params.text } },
             htmlBody: params.html ? [{ partId: 'h1' }] : undefined,
-            bodyValues2: undefined,
+            bodyValues: {
+              t1: { value: params.text },
+              ...(params.html ? { h1: { value: params.html } } : {})
+            },
           }
         }
       }, 'c1'],
