@@ -1,31 +1,52 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// CORS headers for cross-origin requests
 const createCorsHeaders = (requestOrigin: string | null = null) => {
   const environment = Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development';
-  const normalize = (origin: string | null) => { try { if (!origin) return null; const u = new URL(origin); return `${u.protocol}//${u.host}`; } catch { return null; } };
-  const origin = normalize(requestOrigin);
-  const isAllowed = (o: string | null) => {
-    if (!o) return false;
-    try { const { hostname, protocol } = new URL(o); if (protocol !== 'https:') return false; if (hostname.endsWith('.blunari.ai') || ['app.blunari.ai','demo.blunari.ai','admin.blunari.ai','services.blunari.ai','blunari.ai','www.blunari.ai'].includes(hostname)) return true; return false; } catch { return false; }
-  };
+  
   let allowedOrigin = '*';
-  if (environment === 'production') {
-    allowedOrigin = isAllowed(origin) ? (origin as string) : 'https://app.blunari.ai';
+  if (environment === 'production' && requestOrigin) {
+    const allowedOrigins = [
+      'https://app.blunari.ai',
+      'https://demo.blunari.ai',
+      'https://admin.blunari.ai', 
+      'https://services.blunari.ai',
+      'https://blunari.ai',
+      'https://www.blunari.ai'
+    ];
+    
+    if (allowedOrigins.some(origin => requestOrigin.startsWith(origin))) {
+      allowedOrigin = requestOrigin;
+    }
+  } else if (environment === 'development') {
+    allowedOrigin = requestOrigin || '*';
   }
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id, x-idempotency-key, x-correlation-id, accept, accept-language, content-length',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-tenant-id, x-request-id',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE, PATCH',
     'Access-Control-Max-Age': '86400',
-    'Vary': 'Origin',
+    'Content-Type': 'application/json'
   };
 };
 
-function corsJson(data: any, requestOrigin: string | null = null, status = 200) {
-  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', ...createCorsHeaders(requestOrigin) } });
-}
+const createCorsResponse = (data: any, status: number = 200, requestOrigin: string | null = null) => {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: createCorsHeaders(requestOrigin)
+  });
+};
+
+const createErrorResponse = (error: string, message: string, status: number = 500, requestId?: string, requestOrigin: string | null = null) => {
+  return createCorsResponse({
+    error,
+    message,
+    requestId,
+    timestamp: new Date().toISOString()
+  }, status, requestOrigin);
+};
 
 interface UpdateReservationRequest {
   reservationId: string;
@@ -37,15 +58,42 @@ interface UpdateReservationRequest {
 
 serve(async (req) => {
   const requestOrigin = req.headers.get('origin');
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: createCorsHeaders(requestOrigin) });
-  if (req.method !== 'POST' && req.method !== 'PATCH') return corsJson({ error: 'METHOD_NOT_ALLOWED', message: 'Use POST/PATCH' }, requestOrigin, 405);
+  
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: createCorsHeaders(requestOrigin) });
+  }
+  
+  // Only allow POST and PATCH methods
+  if (req.method !== 'POST' && req.method !== 'PATCH') {
+    return createErrorResponse('METHOD_NOT_ALLOWED', 'Use POST/PATCH', 405, undefined, requestOrigin);
+  }
+
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   try {
-    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase environment variables');
+      return createErrorResponse('SERVER_CONFIG_ERROR', 'Server configuration error', 500, requestId, requestOrigin);
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Authenticate user
     const authHeader = req.headers.get('Authorization')?.replace('Bearer ', '');
-    if (!authHeader) return corsJson({ error: 'AUTH_REQUIRED', message: 'Authorization header required' }, requestOrigin, 401);
+    if (!authHeader) {
+      return createErrorResponse('AUTH_REQUIRED', 'Authorization header required', 401, requestId, requestOrigin);
+    }
+    
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader);
-    if (authError || !user) return corsJson({ error: 'AUTH_INVALID', message: 'Invalid token' }, requestOrigin, 401);
+    if (authError || !user) {
+      console.error('Authentication failed:', authError?.message);
+      return createErrorResponse('AUTH_INVALID', 'Invalid token', 401, requestId, requestOrigin);
+    }
 
     // Resolve tenant
     const { data: tenantRow } = await supabase
@@ -55,12 +103,16 @@ serve(async (req) => {
       .eq('status', 'completed')
       .maybeSingle();
     const tenantId = tenantRow?.tenant_id as string | undefined;
-    if (!tenantId) return corsJson({ error: 'TENANT_NOT_FOUND', message: 'No tenant for user' }, requestOrigin, 404);
+    if (!tenantId) {
+      return createErrorResponse('TENANT_NOT_FOUND', 'No tenant for user', 404, requestId, requestOrigin);
+    }
 
     const body = await req.json() as UpdateReservationRequest;
-    if (!body.reservationId) return corsJson({ error: 'VALIDATION_ERROR', message: 'reservationId required' }, requestOrigin, 400);
+    if (!body.reservationId) {
+      return createErrorResponse('VALIDATION_ERROR', 'reservationId required', 400, requestId, requestOrigin);
+    }
     if (!body.tableId && !body.start && !body.end && !body.status) {
-      return corsJson({ error: 'VALIDATION_ERROR', message: 'Nothing to update' }, requestOrigin, 400);
+      return createErrorResponse('VALIDATION_ERROR', 'Nothing to update', 400, requestId, requestOrigin);
     }
 
     const updates: Record<string, any> = {};
@@ -69,7 +121,7 @@ serve(async (req) => {
       const start = new Date(body.start);
       const end = new Date(body.end);
       if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
-        return corsJson({ error: 'VALIDATION_ERROR', message: 'Invalid start/end' }, requestOrigin, 400);
+        return createErrorResponse('VALIDATION_ERROR', 'Invalid start/end', 400, requestId, requestOrigin);
       }
       updates.booking_time = start.toISOString();
       updates.duration_minutes = Math.round((end.getTime() - start.getTime()) / 60000);
@@ -83,31 +135,42 @@ serve(async (req) => {
       .eq('id', body.reservationId)
       .select()
       .maybeSingle();
-    if (updateError) return corsJson({ error: 'DATABASE_ERROR', message: updateError.message }, requestOrigin, 500);
-    if (!updated) return corsJson({ error: 'NOT_FOUND', message: 'Reservation not found' }, requestOrigin, 404);
+    if (updateError) {
+      console.error('Database update error:', updateError.message);
+      return createErrorResponse('DATABASE_ERROR', updateError.message, 500, requestId, requestOrigin);
+    }
+    if (!updated) {
+      return createErrorResponse('NOT_FOUND', 'Reservation not found', 404, requestId, requestOrigin);
+    }
 
-    return corsJson({ data: {
-      id: updated.id,
-      tenantId: updated.tenant_id,
-      tableId: updated.table_id,
-      section: 'Main',
-      start: updated.booking_time,
-      end: new Date(new Date(updated.booking_time).getTime() + (updated.duration_minutes || 90) * 60000).toISOString(),
-      partySize: updated.party_size,
-      channel: 'WEB',
-      vip: Boolean(updated.special_requests?.toLowerCase?.().includes('vip')),
-      guestName: updated.guest_name,
-      guestPhone: updated.guest_phone,
-      guestEmail: updated.guest_email,
-      status: (updated.status || 'confirmed').toString().toUpperCase(),
-      depositRequired: !!updated.deposit_amount,
-      depositAmount: updated.deposit_amount,
-      specialRequests: updated.special_requests || undefined,
-      createdAt: updated.created_at,
-      updatedAt: updated.updated_at
-    } });
+    console.log(`Reservation ${body.reservationId} updated successfully`);
+
+    return createCorsResponse({ 
+      data: {
+        id: updated.id,
+        tenantId: updated.tenant_id,
+        tableId: updated.table_id,
+        section: 'Main',
+        start: updated.booking_time,
+        end: new Date(new Date(updated.booking_time).getTime() + (updated.duration_minutes || 90) * 60000).toISOString(),
+        partySize: updated.party_size,
+        channel: 'WEB',
+        vip: Boolean(updated.special_requests?.toLowerCase?.().includes('vip')),
+        guestName: updated.guest_name,
+        guestPhone: updated.guest_phone,
+        guestEmail: updated.guest_email,
+        status: (updated.status || 'confirmed').toString().toUpperCase(),
+        depositRequired: !!updated.deposit_amount,
+        depositAmount: updated.deposit_amount,
+        specialRequests: updated.special_requests || undefined,
+        createdAt: updated.created_at,
+        updatedAt: updated.updated_at
+      },
+      requestId: requestId
+    }, 200, requestOrigin);
   } catch (e) {
-    return corsJson({ error: 'INTERNAL_ERROR', message: `${e}` }, requestOrigin, 500);
+    console.error('Internal error in update-reservation:', e);
+    return createErrorResponse('INTERNAL_ERROR', `${e}`, 500, requestId, requestOrigin);
   }
 });
 
