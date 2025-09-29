@@ -257,8 +257,13 @@ export function Timeline({
                         isHourStart ? "text-sm font-bold" : "text-xs opacity-75",
                         slot.isCurrentTime && "animate-pulse"
                       )}>
-                        {isHourStart ? format(slot.time, "h:mm a") : format(slot.time, ":mm")}
+                        {isHourStart ? format(slot.time, "h a") : format(slot.time, "h:mm")}
                       </div>
+                      {!isHourStart && (
+                        <div className="text-[10px] text-white/40 leading-none">
+                          {format(slot.time, "mm")}
+                        </div>
+                      )}
                       {slot.isCurrentTime && (
                         <div className="w-1 h-1 bg-accent rounded-full mt-1 animate-pulse" />
                       )}
