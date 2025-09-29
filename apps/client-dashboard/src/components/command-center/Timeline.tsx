@@ -215,12 +215,20 @@ export function Timeline({
       <div className="sticky top-0 z-10 bg-gradient-to-r from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-b border-white/20 shadow-lg">
         <div className="flex">
           {/* Enhanced table column header */}
-          <div className="w-40 p-4 text-sm font-medium text-white/90 border-r border-white/20 bg-gradient-to-b from-slate-800/60 to-slate-800/40">
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="w-4 h-4 text-white/70" />
-              <span className="uppercase tracking-wide text-xs text-white/70 font-semibold">Tables</span>
+          <div className="w-44 p-4 text-sm font-medium text-white/90 border-r border-white/20 bg-gradient-to-b from-slate-800/60 to-slate-800/40">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-white/70" />
+                <span className="uppercase tracking-wide text-xs text-white/70 font-semibold">Tables</span>
+              </div>
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
             </div>
-            <div className="text-xs text-white/50">{tables.length} active</div>
+            <div className="space-y-1">
+              <div className="text-xs text-white/80 font-medium">{tables.length} Active Tables</div>
+              <div className="text-[10px] text-white/50 leading-tight">
+                {reservations.length} Total Bookings
+              </div>
+            </div>
           </div>
           
           {/* Time slot headers */}
@@ -351,14 +359,16 @@ export function Timeline({
                     <Badge 
                       variant="outline" 
                       className={cn(
-                        "text-[10px] px-2 py-0.5 font-semibold border backdrop-blur-sm",
-                        table.status === 'available' && "bg-emerald-500/25 text-emerald-200 border-emerald-400/50",
-                        table.status === 'occupied' && "bg-purple-500/25 text-purple-200 border-purple-400/50",
-                        table.status === 'reserved' && "bg-amber-500/25 text-amber-200 border-amber-400/50",
-                        table.status === 'maintenance' && "bg-red-500/25 text-red-200 border-red-400/50"
+                        "text-[9px] px-2 py-1 font-bold uppercase tracking-wider border backdrop-blur-sm shadow-sm",
+                        table.status === 'available' && "bg-emerald-500/30 text-emerald-100 border-emerald-400/60 shadow-emerald-500/20",
+                        table.status === 'occupied' && "bg-purple-500/30 text-purple-100 border-purple-400/60 shadow-purple-500/20",
+                        table.status === 'reserved' && "bg-amber-500/30 text-amber-100 border-amber-400/60 shadow-amber-500/20",
+                        table.status === 'maintenance' && "bg-red-500/30 text-red-100 border-red-400/60 shadow-red-500/20"
                       )}
                     >
-                      {table.status}
+                      {table.status === 'available' ? 'Open' : 
+                       table.status === 'occupied' ? 'Busy' :
+                       table.status === 'reserved' ? 'Hold' : 'Fix'}
                     </Badge>
                   </div>
                   
@@ -374,15 +384,33 @@ export function Timeline({
                     </div>
                   </div>
                   
-                  {/* Booking count indicator */}
-                  {tableReservations.length > 0 && (
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <Calendar className="w-3 h-3 text-accent" />
-                      <span className="text-white/70 font-medium">
-                        <span className="text-white font-semibold">{tableReservations.length}</span> booking{tableReservations.length !== 1 ? 's' : ''}
-                      </span>
+                  {/* Enhanced booking count indicator */}
+                  <div className="flex items-center justify-between text-xs">
+                    {tableReservations.length > 0 ? (
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3 h-3 text-accent" />
+                        <span className="text-white/70 font-medium">
+                          <span className="text-accent font-bold">{tableReservations.length}</span> booking{tableReservations.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-white/40">
+                        <Calendar className="w-3 h-3" />
+                        <span className="font-medium">No bookings</span>
+                      </div>
+                    )}
+                    
+                    {/* Table utilization indicator */}
+                    <div className={cn(
+                      "px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider",
+                      utilization > 75 ? "bg-red-500/20 text-red-300" :
+                      utilization > 50 ? "bg-amber-500/20 text-amber-300" :
+                      utilization > 25 ? "bg-blue-500/20 text-blue-300" :
+                      "bg-emerald-500/20 text-emerald-300"
+                    )}>
+                      {Math.round(utilization)}%
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
