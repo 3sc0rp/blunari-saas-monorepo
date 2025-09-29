@@ -143,21 +143,41 @@ export function Timeline({
     }
   };
 
-  // Get status color for reservation card
+  // Get enhanced status color with gradients for reservation card
   const getReservationColor = (reservation: Reservation) => {
+    const baseClasses = 'shadow-lg border-2 backdrop-blur-md';
+    
     switch (reservation.status) {
       case 'confirmed':
-        return 'bg-blue-500/80 border-blue-400';
+        return `${baseClasses} bg-gradient-to-r from-blue-500/90 via-blue-600/85 to-blue-500/90 border-blue-400/60 shadow-blue-500/30`;
       case 'seated':
-        return 'bg-purple-500/80 border-purple-400';
+        return `${baseClasses} bg-gradient-to-r from-purple-500/90 via-purple-600/85 to-purple-500/90 border-purple-400/60 shadow-purple-500/30`;
       case 'completed':
-        return 'bg-gray-500/80 border-gray-400';
+        return `${baseClasses} bg-gradient-to-r from-emerald-500/90 via-emerald-600/85 to-emerald-500/90 border-emerald-400/60 shadow-emerald-500/30`;
       case 'no_show':
-        return 'bg-red-500/80 border-red-400';
+        return `${baseClasses} bg-gradient-to-r from-red-500/90 via-red-600/85 to-red-500/90 border-red-400/60 shadow-red-500/30`;
       case 'cancelled':
-        return 'bg-gray-600/80 border-gray-500';
+        return `${baseClasses} bg-gradient-to-r from-gray-500/90 via-gray-600/85 to-gray-500/90 border-gray-400/60 shadow-gray-500/30`;
       default:
-        return 'bg-slate-500/80 border-slate-400';
+        return `${baseClasses} bg-gradient-to-r from-slate-500/90 via-slate-600/85 to-slate-500/90 border-slate-400/60 shadow-slate-500/30`;
+    }
+  };
+
+  // Get status icon for reservation
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return <Calendar className="w-3 h-3 text-blue-200" />;
+      case 'seated':
+        return <Users className="w-3 h-3 text-purple-200" />;
+      case 'completed':
+        return <Clock className="w-3 h-3 text-emerald-200" />;
+      case 'no_show':
+        return <Clock className="w-3 h-3 text-red-200" />;
+      case 'cancelled':
+        return <Clock className="w-3 h-3 text-gray-200" />;
+      default:
+        return <Calendar className="w-3 h-3 text-slate-200" />;
     }
   };
 
@@ -305,45 +325,62 @@ export function Timeline({
                 focusTableId === table.id && "bg-accent/10 hover:bg-accent/15"
               )}
             >
-              {/* Enhanced table info */}
+              {/* Premium table info panel */}
               <div className={cn(
-                "w-40 p-4 border-r border-white/20 bg-gradient-to-r transition-all duration-200",
-                isEvenRow ? "from-slate-800/50 to-slate-800/30" : "from-slate-800/30 to-slate-800/20",
-                focusTableId === table.id && "from-accent/20 to-accent/10 border-accent/30",
-                "hover:from-slate-700/50 hover:to-slate-700/30"
+                "w-44 p-4 border-r border-white/20 bg-gradient-to-br transition-all duration-300",
+                isEvenRow ? "from-slate-800/60 via-slate-800/40 to-slate-800/30" : "from-slate-800/40 via-slate-800/25 to-slate-800/15",
+                focusTableId === table.id && "from-accent/25 via-accent/15 to-accent/10 border-accent/40 shadow-lg shadow-accent/10",
+                "hover:from-slate-700/60 hover:via-slate-700/40 hover:to-slate-700/30 backdrop-blur-sm"
               )}>
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div className="text-sm font-bold text-white leading-tight">
-                      {table.name}
+                <div className="space-y-3">
+                  {/* Table header with enhanced status */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-3 h-3 rounded-full shadow-sm",
+                        table.status === 'available' && "bg-emerald-400 shadow-emerald-400/30",
+                        table.status === 'occupied' && "bg-purple-400 shadow-purple-400/30",
+                        table.status === 'reserved' && "bg-amber-400 shadow-amber-400/30",
+                        table.status === 'maintenance' && "bg-red-400 shadow-red-400/30"
+                      )} />
+                      <div className="text-sm font-bold text-white leading-tight drop-shadow-sm">
+                        {table.name}
+                      </div>
                     </div>
+                    
                     <Badge 
-                      variant="secondary" 
+                      variant="outline" 
                       className={cn(
-                        "text-xs px-2 py-0.5 font-medium",
-                        table.status === 'available' && "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-                        table.status === 'occupied' && "bg-purple-500/20 text-purple-300 border-purple-500/30",
-                        table.status === 'reserved' && "bg-amber-500/20 text-amber-300 border-amber-500/30",
-                        table.status === 'maintenance' && "bg-red-500/20 text-red-300 border-red-500/30"
+                        "text-[10px] px-2 py-0.5 font-semibold border backdrop-blur-sm",
+                        table.status === 'available' && "bg-emerald-500/25 text-emerald-200 border-emerald-400/50",
+                        table.status === 'occupied' && "bg-purple-500/25 text-purple-200 border-purple-400/50",
+                        table.status === 'reserved' && "bg-amber-500/25 text-amber-200 border-amber-400/50",
+                        table.status === 'maintenance' && "bg-red-500/25 text-red-200 border-red-400/50"
                       )}
                     >
                       {table.status}
                     </Badge>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-xs text-white/70">
-                    <Users className="w-3 h-3" />
-                    <span>{table.capacity} seats</span>
+                  {/* Table details */}
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5 text-white/80">
+                      <Users className="w-3.5 h-3.5 text-blue-400" />
+                      <span className="font-medium">{table.capacity} seats</span>
+                    </div>
+                    
+                    <div className="text-white/60 font-medium bg-white/10 px-2 py-0.5 rounded-md text-[10px]">
+                      {table.section}
+                    </div>
                   </div>
                   
-                  <div className="text-xs text-white/60">
-                    {table.section}
-                  </div>
-                  
+                  {/* Booking count indicator */}
                   {tableReservations.length > 0 && (
-                    <div className="flex items-center gap-1 text-xs">
-                      <div className="w-2 h-2 bg-accent rounded-full" />
-                      <span className="text-accent font-medium">{tableReservations.length} booking{tableReservations.length !== 1 ? 's' : ''}</span>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <Calendar className="w-3 h-3 text-accent" />
+                      <span className="text-white/70 font-medium">
+                        <span className="text-white font-semibold">{tableReservations.length}</span> booking{tableReservations.length !== 1 ? 's' : ''}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -440,10 +477,10 @@ export function Timeline({
                             <TooltipTrigger asChild>
                               <div
                                 className={cn(
-                                  "absolute rounded-lg border-2 cursor-pointer p-3 transition-all duration-200",
-                                  "hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-accent/50",
-                                  "backdrop-blur-md hover:backdrop-blur-lg",
-                                  "group overflow-hidden",
+                                  "absolute rounded-xl cursor-pointer p-3 transition-all duration-300 ease-out",
+                                  "hover:shadow-2xl hover:scale-[1.02] hover:z-50 focus:outline-none focus:ring-2 focus:ring-white/40",
+                                  "group overflow-hidden transform-gpu will-change-transform",
+                                  "border-l-4 relative",
                                   getReservationColor(reservation)
                                 )}
                                 style={{
@@ -482,28 +519,42 @@ export function Timeline({
                                     />
                                   </>
                                 )}
-                                {/* Enhanced reservation content */}
-                                <div className="relative h-full flex flex-col justify-between">
-                                  <div className="flex items-start justify-between mb-1">
-                                    <div className="flex items-center gap-1 text-white">
-                                      <User className="w-3 h-3 opacity-75" />
-                                      <span className="text-xs font-bold truncate max-w-[100px]">
-                                        {reservation.guestName}
-                                      </span>
+                                {/* Premium reservation content with enhanced customer display */}
+                                <div className="relative h-full flex flex-col justify-between z-10">
+                                  {/* Header with customer name and status */}
+                                  <div className="flex items-start justify-between mb-1.5">
+                                    <div className="flex items-center gap-1.5 text-white min-w-0 flex-1">
+                                      {getStatusIcon(reservation.status)}
+                                      <div className="min-w-0 flex-1">
+                                        <div className="text-xs font-bold truncate text-white drop-shadow-sm">
+                                          {reservation.guestName}
+                                        </div>
+                                        <div className="text-[10px] text-white/80 font-medium capitalize">
+                                          {reservation.status}
+                                        </div>
+                                      </div>
                                     </div>
-                                    <Badge 
-                                      variant="secondary" 
-                                      className="bg-white/25 text-white text-[10px] px-1.5 py-0.5 font-bold"
-                                    >
-                                      {reservation.partySize}
-                                    </Badge>
+                                    <div className="flex items-center gap-1.5 ml-2">
+                                      <Badge 
+                                        variant="secondary" 
+                                        className="bg-white/30 text-white text-[10px] px-2 py-0.5 font-bold shadow-sm backdrop-blur-sm border border-white/20"
+                                      >
+                                        <Users className="w-2.5 h-2.5 mr-1" />
+                                        {reservation.partySize}
+                                      </Badge>
+                                    </div>
                                   </div>
                                   
-                                  <div className="flex items-center justify-between text-xs text-white/90">
-                                    <div className="flex items-center gap-1">
-                                      <Clock className="w-3 h-3 opacity-75" />
-                                      <span className="font-medium">
-                                        {format(new Date(reservation.start), "h:mm a")}–{format(new Date(reservation.end), "h:mm a")}
+                                  {/* Time and channel information */}
+                                  <div className="flex items-center justify-between text-xs">
+                                    <div className="flex items-center gap-1 text-white/95">
+                                      <Clock className="w-3 h-3 opacity-80" />
+                                      <span className="font-semibold text-[11px] drop-shadow-sm">
+                                        {format(new Date(reservation.start), "h:mm a")}
+                                      </span>
+                                      <span className="text-white/70 mx-0.5">–</span>
+                                      <span className="font-semibold text-[11px] drop-shadow-sm">
+                                        {format(new Date(reservation.end), "h:mm a")}
                                       </span>
                                     </div>
                                     
@@ -511,31 +562,93 @@ export function Timeline({
                                       <Badge 
                                         variant="outline"
                                         className={cn(
-                                          "text-[10px] px-1.5 py-0.5 border-white/30",
-                                          reservation.channel === 'online' && "bg-blue-400/20 text-blue-200 border-blue-400/40",
-                                          reservation.channel === 'phone' && "bg-orange-400/20 text-orange-200 border-orange-400/40",
-                                          reservation.channel === 'walkin' && "bg-green-400/20 text-green-200 border-green-400/40"
+                                          "text-[9px] px-1.5 py-0.5 border-white/40 backdrop-blur-sm font-semibold",
+                                          reservation.channel === 'online' && "bg-blue-400/30 text-blue-100 border-blue-400/50",
+                                          reservation.channel === 'phone' && "bg-orange-400/30 text-orange-100 border-orange-400/50",
+                                          reservation.channel === 'walkin' && "bg-green-400/30 text-green-100 border-green-400/50"
                                         )}
                                       >
                                         {reservation.channel === 'online' && <Globe className="w-2 h-2 mr-0.5" />}
                                         {reservation.channel === 'phone' && <Phone className="w-2 h-2 mr-0.5" />}
                                         {reservation.channel === 'walkin' && <User className="w-2 h-2 mr-0.5" />}
-                                        {reservation.channel.toUpperCase()}
+                                        {reservation.channel.charAt(0).toUpperCase() + reservation.channel.slice(1)}
                                       </Badge>
                                     )}
                                   </div>
                                   
-                                  {/* Subtle animation overlay on hover */}
-                                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg" />
+                                  {/* Enhanced hover effects */}
+                                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-all duration-300 rounded-xl" />
+                                  <div className="absolute inset-0 ring-0 group-hover:ring-2 group-hover:ring-white/20 transition-all duration-300 rounded-xl" />
                                 </div>
+                                
+                                {/* Premium glass effect overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 rounded-xl pointer-events-none" />
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs text-xs">
-                              <div className="space-y-1">
-                                <div className="font-medium">{reservation.guestName}</div>
-                                <div>{format(new Date(reservation.start), "h:mm a")}–{format(new Date(reservation.end), "h:mm a")}</div>
-                                <div>{reservation.partySize} guests{reservation.channel ? ` • ${reservation.channel}` : ''}</div>
-                                {reservation.status && (<div className="opacity-80">Status: {reservation.status}</div>)}
+                            <TooltipContent side="top" className="max-w-sm text-xs bg-slate-900/95 border-slate-700 shadow-xl backdrop-blur-md">
+                              <div className="space-y-2 p-1">
+                                <div className="flex items-center justify-between border-b border-slate-700/50 pb-2">
+                                  <div className="font-semibold text-white text-sm">{reservation.guestName}</div>
+                                  <Badge variant="outline" className={cn(
+                                    "text-[10px] px-2 py-0.5 font-medium border",
+                                    reservation.status === 'confirmed' && "bg-blue-500/20 text-blue-200 border-blue-500/40",
+                                    reservation.status === 'seated' && "bg-purple-500/20 text-purple-200 border-purple-500/40",
+                                    reservation.status === 'completed' && "bg-emerald-500/20 text-emerald-200 border-emerald-500/40",
+                                    reservation.status === 'no_show' && "bg-red-500/20 text-red-200 border-red-500/40",
+                                    reservation.status === 'cancelled' && "bg-gray-500/20 text-gray-200 border-gray-500/40"
+                                  )}>
+                                    {reservation.status?.toUpperCase() || 'PENDING'}
+                                  </Badge>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-2 text-slate-300">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3 text-blue-400" />
+                                      <span className="font-medium text-white">{format(new Date(reservation.start), "h:mm a")}</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-400 ml-4">Start time</div>
+                                  </div>
+                                  
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3 text-purple-400" />
+                                      <span className="font-medium text-white">{format(new Date(reservation.end), "h:mm a")}</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-400 ml-4">End time</div>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center justify-between pt-1">
+                                  <div className="flex items-center gap-1">
+                                    <Users className="w-3 h-3 text-emerald-400" />
+                                    <span className="font-medium text-white">{reservation.partySize} guests</span>
+                                  </div>
+                                  
+                                  {reservation.channel && (
+                                    <div className="flex items-center gap-1">
+                                      {reservation.channel === 'online' && <Globe className="w-3 h-3 text-blue-400" />}
+                                      {reservation.channel === 'phone' && <Phone className="w-3 h-3 text-orange-400" />}
+                                      {reservation.channel === 'walkin' && <User className="w-3 h-3 text-green-400" />}
+                                      <span className="text-slate-300 capitalize text-[11px]">{reservation.channel}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {(reservation.guestPhone || reservation.specialRequests) && (
+                                  <div className="border-t border-slate-700/50 pt-2 space-y-1">
+                                    {reservation.guestPhone && (
+                                      <div className="text-[11px] text-slate-400">
+                                        📱 {reservation.guestPhone}
+                                      </div>
+                                    )}
+                                    {reservation.specialRequests && (
+                                      <div className="text-[11px] text-slate-400">
+                                        📝 {reservation.specialRequests}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </TooltipContent>
                           </Tooltip>
