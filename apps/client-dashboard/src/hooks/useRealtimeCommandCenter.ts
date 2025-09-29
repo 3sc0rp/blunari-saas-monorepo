@@ -6,6 +6,10 @@ import { logger } from "@/utils/logger";
 import { handleSubscriptionError, handleFallbackUsage } from "@/utils/productionErrorManager";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
+interface UseRealtimeCommandCenterOptions {
+  selectedDate?: string;
+}
+
 interface RealtimeTable {
   id: string;
   tenant_id: string;
@@ -83,7 +87,8 @@ const isValidUUID = (str: string): boolean => {
   return uuidRegex.test(str);
 };
 
-export const useRealtimeCommandCenter = () => {
+export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOptions = {}) => {
+  const { selectedDate } = options;
   const { tenant } = useTenant();
   const tenantId = tenant?.id;
   const queryClient = useQueryClient();
@@ -124,18 +129,19 @@ export const useRealtimeCommandCenter = () => {
     });
   }, []);
 
-  // Get today's date range
-  const today = useMemo(() => {
-    const now = new Date();
-    const startOfDay = new Date(now);
+  // Get date range for selected date
+  const dateRange = useMemo(() => {
+    const targetDate = selectedDate ? new Date(selectedDate) : new Date();
+    const startOfDay = new Date(targetDate);
     startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(now);
+    const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
     return {
       start: startOfDay.toISOString(),
       end: endOfDay.toISOString(),
+      dateString: startOfDay.toISOString().split('T')[0]
     };
-  }, []);
+  }, [selectedDate]);
 
   // Enhanced bookings query with proper error handling
   const {
@@ -143,7 +149,7 @@ export const useRealtimeCommandCenter = () => {
     isLoading: bookingsLoading,
     error: bookingsError,
   } = useQuery({
-    queryKey: ["command-center", "bookings", tenantId, today.start],
+    queryKey: ["command-center", "bookings", tenantId, dateRange.start],
     queryFn: async (): Promise<RealtimeBooking[]> => {
       if (!tenantId) {
         throw new Error("Tenant ID is required for fetching bookings");
@@ -163,8 +169,8 @@ export const useRealtimeCommandCenter = () => {
           table:restaurant_tables(*)
         `)
         .eq("tenant_id", tenantId)
-        .gte("booking_time", today.start)
-        .lte("booking_time", today.end)
+        .gte("booking_time", dateRange.start)
+        .lte("booking_time", dateRange.end)
         .order("booking_time", { ascending: true });
 
       if (error) {
@@ -468,7 +474,7 @@ export const useRealtimeCommandCenter = () => {
         }
 
         // Bookings subscription with enhanced configuration
-        const bookingHandlers = createSubscriptionHandler('bookings', ["command-center", "bookings", tenantId, today.start]);
+        const bookingHandlers = createSubscriptionHandler('bookings', ["command-center", "bookings", tenantId, dateRange.start]);
         bookingsChannel = supabase
           .channel(`command-center-bookings-${tenantId}`, {
             config: {
@@ -604,7 +610,7 @@ export const useRealtimeCommandCenter = () => {
         overall: 'disconnected'
       });
     };
-  }, [tenantId, queryClient, today.start, updateConnectionStatus]);
+  }, [tenantId, queryClient, dateRange.start, updateConnectionStatus]);
 
   // CRITICAL FIX: Enhanced auto-refresh with connection-based intervals and proper cleanup
   useEffect(() => {

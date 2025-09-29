@@ -152,7 +152,7 @@ export default function CommandCenter() {
     connectionStatus,
     isConnected,
     refreshData
-  } = useRealtimeCommandCenter();
+  } = useRealtimeCommandCenter({ selectedDate });
 
   // Fallback to simple hook if real-time fails
   const { 
