@@ -1,24 +1,58 @@
 /* Enhanced Timeline Styles */
 
-/* Smooth scrollbar styling */
+/* Firefox scrollbar support */
+.timeline-container,
+.timeline-container * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.6) rgba(15, 23, 42, 0.4);
+}
+
+/* Modern scroll behavior */
+.timeline-container {
+  scroll-behavior: smooth;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+/* Enhanced scrollbar styling to match dark theme */
 .timeline-container::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 .timeline-container::-webkit-scrollbar-track {
-  background: rgba(30, 41, 59, 0.3);
-  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .timeline-container::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
+  background: linear-gradient(135deg, 
+    rgba(100, 116, 139, 0.6) 0%, 
+    rgba(71, 85, 105, 0.7) 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .timeline-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
+  background: linear-gradient(135deg, 
+    rgba(148, 163, 184, 0.8) 0%, 
+    rgba(100, 116, 139, 0.9) 100%);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.timeline-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.6) 0%, 
+    rgba(37, 99, 235, 0.7) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.timeline-container::-webkit-scrollbar-corner {
+  background: rgba(15, 23, 42, 0.6);
 }
 
 /* Glass morphism effect */
@@ -293,12 +327,68 @@
   border: 1px solid #bbf7d0;
 }
 
+/* Global scrollbar theming for timeline components */
+.timeline-container *::-webkit-scrollbar,
+.glass::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.timeline-container *::-webkit-scrollbar-track,
+.glass::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.timeline-container *::-webkit-scrollbar-thumb,
+.glass::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, 
+    rgba(100, 116, 139, 0.6) 0%, 
+    rgba(71, 85, 105, 0.7) 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.timeline-container *::-webkit-scrollbar-thumb:hover,
+.glass::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, 
+    rgba(148, 163, 184, 0.8) 0%, 
+    rgba(100, 116, 139, 0.9) 100%);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.timeline-container *::-webkit-scrollbar-thumb:active,
+.glass::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.6) 0%, 
+    rgba(37, 99, 235, 0.7) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Horizontal scrollbar specific styling */
+.timeline-container::-webkit-scrollbar:horizontal {
+  height: 8px;
+}
+
+.timeline-container *::-webkit-scrollbar:horizontal {
+  height: 8px;
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .reservation-card,
   .table-row,
   .zoom-control {
     animation: none;
+    transition: none;
+  }
+  
+  .timeline-container::-webkit-scrollbar-thumb,
+  .timeline-container *::-webkit-scrollbar-thumb {
     transition: none;
   }
 }
