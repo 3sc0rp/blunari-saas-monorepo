@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";\nimport { ZoomIn, ZoomOut, Clock, Users, Calendar, Phone, Globe, User } from "lucide-react";\nimport "./Timeline.css";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import type { TableRow, Reservation } from "@/hooks/useCommandCenterData";
 import { format, addHours, startOfDay, differenceInMinutes } from "date-fns";
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ZoomIn, ZoomOut, Clock, Users, Calendar, Phone, Globe, User } from "lucide-react";
 import "./Timeline.css";
-import { ZoomIn, ZoomOut, Clock, Users, Calendar, Phone, Globe, User } from "lucide-react";
 
 interface TimelineProps {
   tables: TableRow[];
