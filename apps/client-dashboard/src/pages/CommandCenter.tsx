@@ -8,6 +8,7 @@ import { AuthDebugger } from "@/components/command-center/AuthDebugger";
 import { TenantTestComponent } from "@/components/TenantTestComponent";
 import { DebugEdgeFunctions } from "@/components/debug/DebugEdgeFunctions";
 import { useCommandCenterDataSimple } from "@/hooks/useCommandCenterDataSimple";
+import { useRealtimeCommandCenter } from "@/hooks/useRealtimeCommandCenter";
 import { useReservationActions } from "@/hooks/useReservationActions.ts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -141,7 +142,57 @@ export default function CommandCenter() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [filters, handleNewReservation]);
 
-  const { kpis = [], tables = [], reservations = [], policies, loading, error, refetch } = useCommandCenterDataSimple();
+  // Use real-time hook for live data updates
+  const {
+    bookings: realtimeBookings = [],
+    tables: realtimeTables = [],
+    metrics,
+    isLoading: realtimeLoading,
+    error: realtimeError,
+    connectionStatus,
+    isConnected,
+    refreshData
+  } = useRealtimeCommandCenter();
+
+  // Fallback to simple hook if real-time fails
+  const { 
+    kpis = [], 
+    tables: simpleTables = [], 
+    reservations: simpleReservations = [], 
+    policies, 
+    loading: simpleLoading, 
+    error: simpleError, 
+    refetch: simpleRefetch 
+  } = useCommandCenterDataSimple();
+
+  // Determine which data source to use
+  const tables = realtimeTables.length > 0 ? realtimeTables.map(t => ({
+    id: t.id,
+    name: t.name,
+    seats: t.capacity,
+    section: 'Main Dining',
+    status: t.status || 'AVAILABLE'
+  })) : simpleTables;
+
+  const reservations = realtimeBookings.length > 0 ? realtimeBookings.map(b => ({
+    id: b.id,
+    guestName: b.guest_name,
+    guestEmail: b.guest_email,
+    guestPhone: b.guest_phone,
+    partySize: b.party_size,
+    start: b.booking_time,
+    end: new Date(new Date(b.booking_time).getTime() + (b.duration_minutes * 60000)).toISOString(),
+    status: b.status.toUpperCase(),
+    tableId: b.table_id,
+    channel: 'WEB', // Default channel, could be enhanced
+    specialRequests: b.special_requests,
+    depositAmount: 0, // Default deposit
+    vip: false // Default VIP status
+  })) : simpleReservations;
+
+  const loading = realtimeLoading || simpleLoading;
+  const error = realtimeError?.message || simpleError;
+  const refetch = isConnected ? refreshData : simpleRefetch;
 
   // Add debug logging in development mode
   if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
@@ -153,9 +204,77 @@ export default function CommandCenter() {
       hasReservations: reservations?.length > 0,
       kpiCount: kpis?.length,
       tableCount: tables?.length,
-      reservationCount: reservations?.length
+      reservationCount: reservations?.length,
+      connectionStatus: connectionStatus?.overall,
+      isRealtime: isConnected,
+      activeFilters: Object.keys(filters).filter(key => {
+        const value = filters[key as keyof FiltersState];
+        return value && (Array.isArray(value) ? value.length > 0 : true);
+      })
     });
   }
+
+  // Apply filters to reservations before transformation
+  const filteredReservations = useMemo(() => {
+    try {
+      if (!reservations || reservations.length === 0) return [];
+
+      // Log filter application for debugging
+      if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+        console.log('🔍 Applying filters to', reservations.length, 'reservations', { filters });
+      }
+
+      const filtered = reservations.filter(reservation => {
+        // Party size filter
+        if (filters.party && filters.party.length > 0) {
+          if (!filters.party.includes(reservation.partySize)) {
+            return false;
+          }
+        }
+
+        // Channel filter
+        if (filters.channel && filters.channel.length > 0) {
+          const reservationChannel = reservation.channel === 'WEB' ? 'WEB' : 
+                                   reservation.channel === 'PHONE' ? 'PHONE' : 'WALKIN';
+          if (!filters.channel.includes(reservationChannel)) {
+            return false;
+          }
+        }
+
+        // Status filter
+        if (filters.status && filters.status.length > 0) {
+          const lowerStatus = reservation.status.toLowerCase();
+          if (!filters.status.includes(lowerStatus)) {
+            return false;
+          }
+        }
+
+        // Deposits filter
+        if (filters.deposits !== null) {
+          const hasDeposit = reservation.depositAmount > 0;
+          if (filters.deposits === 'ON' && !hasDeposit) return false;
+          if (filters.deposits === 'OFF' && hasDeposit) return false;
+        }
+
+        // VIP filter
+        if (filters.vip !== null) {
+          if (filters.vip && !reservation.vip) return false;
+          if (!filters.vip && reservation.vip) return false;
+        }
+
+        return true;
+      });
+
+      if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+        console.log('🔍 Filtered result:', filtered.length, 'reservations');
+      }
+
+      return filtered;
+    } catch (error) {
+      console.error('Error filtering reservations:', error);
+      return reservations;
+    }
+  }, [reservations, filters, isConnected]);
 
   // Transform data for legacy components with error handling
   const legacyTables = useMemo<LegacyTableRow[]>(() => {
@@ -169,11 +288,39 @@ export default function CommandCenter() {
   
   const legacyReservations = useMemo<LegacyReservation[]>(() => {
     try {
-      return reservations.map(transformReservationToLegacy);
+      return filteredReservations.map(transformReservationToLegacy);
     } catch (error) {
       console.error('Error transforming reservations:', error);
       return [];
     }
+  }, [filteredReservations]);
+
+  // Calculate filter counts based on actual data
+  const filterCounts = useMemo(() => {
+    const counts = {
+      channels: { WEB: 0, PHONE: 0, WALKIN: 0 },
+      statuses: { confirmed: 0, seated: 0, completed: 0, cancelled: 0, no_show: 0 },
+      partySizes: {} as Record<number, number>
+    };
+
+    reservations.forEach(reservation => {
+      // Channel counts
+      const channel = reservation.channel === 'WEB' ? 'WEB' : 
+                     reservation.channel === 'PHONE' ? 'PHONE' : 'WALKIN';
+      counts.channels[channel]++;
+
+      // Status counts  
+      const status = reservation.status.toLowerCase() as keyof typeof counts.statuses;
+      if (counts.statuses[status] !== undefined) {
+        counts.statuses[status]++;
+      }
+
+      // Party size counts
+      const partySize = reservation.partySize;
+      counts.partySizes[partySize] = (counts.partySizes[partySize] || 0) + 1;
+    });
+
+    return counts;
   }, [reservations]);
 
   // Convert KPI data to KpiCard format with enhanced data
@@ -318,12 +465,6 @@ export default function CommandCenter() {
           <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-4">
             <div className="text-red-400 font-semibold mb-2">❌ Command Center Error</div>
             <div className="text-red-300 text-sm mb-3">{error}</div>
-            {requestId && (
-              <div className="text-xs text-red-200">
-                requestId: <code className="px-1 py-0.5 bg-red-950/40 rounded">{requestId}</code>
-                <a className="ml-3 underline hover:no-underline" href={`https://admin.blunari.ai/logs?requestId=${encodeURIComponent(requestId)}`} target="_blank" rel="noreferrer">View logs</a>
-              </div>
-            )}
           </div>
         )}
 
@@ -331,6 +472,46 @@ export default function CommandCenter() {
         {import.meta.env.MODE === 'development' && (
           <div className="max-w-lg">
             <TenantTestComponent />
+          </div>
+        )}
+
+        {/* Connection Status Indicator */}
+        {connectionStatus && (
+          <div className="flex items-center gap-2 text-sm">
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${
+              connectionStatus.overall === 'connected' 
+                ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                : connectionStatus.overall === 'connecting'
+                ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                : connectionStatus.overall === 'error'
+                ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                connectionStatus.overall === 'connected' ? 'bg-green-400' :
+                connectionStatus.overall === 'connecting' ? 'bg-yellow-400 animate-pulse' :
+                connectionStatus.overall === 'error' ? 'bg-red-400' : 'bg-gray-400'
+              }`} />
+              <span className="font-medium">
+                {connectionStatus.overall === 'connected' ? 'Live' :
+                 connectionStatus.overall === 'connecting' ? 'Connecting' :
+                 connectionStatus.overall === 'error' ? 'Offline' : 'Disconnected'}
+              </span>
+            </div>
+            {connectionStatus.overall !== 'connected' && (
+              <span className="text-white/50">Using polling mode</span>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => refetch()}
+              className="h-6 w-6 p-0 text-white/70 hover:text-white"
+              title="Refresh data"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </Button>
           </div>
         )}
 
@@ -357,11 +538,26 @@ export default function CommandCenter() {
         />
 
         {/* Filters */}
-        <Filters 
-          value={filters}
-          onChange={setFilters}
-          disabled={loading}
-        />
+        <div className="flex items-center justify-between gap-4">
+          <Filters 
+            value={filters}
+            onChange={setFilters}
+            disabled={loading}
+            filterCounts={filterCounts}
+          />
+          {/* Filter result summary */}
+          <div className="text-sm text-white/60">
+            Showing {legacyReservations.length} of {reservations.length} reservations
+            {Object.keys(filters).some(key => {
+              const value = filters[key as keyof FiltersState];
+              return value && (Array.isArray(value) ? value.length > 0 : true);
+            }) && (
+              <span className="ml-2 text-blue-300">
+                (filtered)
+              </span>
+            )}
+          </div>
+        </div>
 
         {/* Main Split Layout */}
         <MainSplit
@@ -384,18 +580,6 @@ export default function CommandCenter() {
         onOpenChange={(open) => {
           if (!open) {
             setSelectedReservationId(null);
-          }
-        }}
-        onDelete={async () => {
-          if (!selectedReservationId) return;
-          try {
-            const { error } = await supabase.from('bookings').delete().eq('id', selectedReservationId);
-            if (error) throw error;
-            toast.success('Reservation deleted');
-            setSelectedReservationId(null);
-            await refetch();
-          } catch (e: any) {
-            toast.error(`Delete failed: ${e?.message || e}`);
           }
         }}
         onEdit={() => {

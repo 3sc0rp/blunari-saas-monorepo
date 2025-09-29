@@ -18,24 +18,20 @@ export interface FiltersState {
   vip?: boolean | null;
 }
 
+interface FilterCounts {
+  channels: { WEB: number; PHONE: number; WALKIN: number };
+  statuses: { confirmed: number; seated: number; completed: number; cancelled: number; no_show: number };
+  partySizes: Record<number, number>;
+}
+
 interface FiltersProps {
   value: FiltersState;
   onChange: (value: FiltersState) => void;
   disabled?: boolean;
+  filterCounts?: FilterCounts;
 }
 
 const PARTY_SIZES = [1, 2, 3, 4, 5, 6, 7, 8];
-const CHANNELS = [
-  { id: 'WEB' as const, label: 'Web', count: 23 },
-  { id: 'PHONE' as const, label: 'Phone', count: 12 },
-  { id: 'WALKIN' as const, label: 'Walk-in', count: 8 }
-];
-const STATUSES = [
-  { id: 'confirmed', label: 'Confirmed', count: 31 },
-  { id: 'seated', label: 'Seated', count: 18 },
-  { id: 'completed', label: 'Completed', count: 7 },
-  { id: 'cancelled', label: 'Cancelled', count: 3 }
-];
 
 interface FilterChipProps {
   label: string;
@@ -133,8 +129,22 @@ const MultiSelectContent: React.FC<{
   );
 };
 
-export function Filters({ value, onChange, disabled = false }: FiltersProps) {
+export function Filters({ value, onChange, disabled = false, filterCounts }: FiltersProps) {
   const [partySizeOpen, setPartySizeOpen] = useState(false);
+
+  // Create dynamic channel and status arrays based on actual data
+  const CHANNELS = [
+    { id: 'WEB' as const, label: 'Web', count: filterCounts?.channels?.WEB || 0 },
+    { id: 'PHONE' as const, label: 'Phone', count: filterCounts?.channels?.PHONE || 0 },
+    { id: 'WALKIN' as const, label: 'Walk-in', count: filterCounts?.channels?.WALKIN || 0 }
+  ];
+
+  const STATUSES = [
+    { id: 'confirmed', label: 'Confirmed', count: filterCounts?.statuses?.confirmed || 0 },
+    { id: 'seated', label: 'Seated', count: filterCounts?.statuses?.seated || 0 },
+    { id: 'completed', label: 'Completed', count: filterCounts?.statuses?.completed || 0 },
+    { id: 'cancelled', label: 'Cancelled', count: filterCounts?.statuses?.cancelled || 0 }
+  ];
 
   const getActiveFiltersCount = () => {
     let count = 0;
@@ -190,7 +200,7 @@ export function Filters({ value, onChange, disabled = false }: FiltersProps) {
       <FilterChip
         label="Party Size"
         active={!!value.party?.length}
-        count={value.party?.length}
+        count={value.party?.reduce((sum, size) => sum + (filterCounts?.partySizes?.[size] || 0), 0)}
         className={value.party?.length ? "bg-blue-500/20 border-blue-400/30 text-blue-300" : ""}
       >
         <div className="space-y-3">
