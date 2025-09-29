@@ -19,6 +19,12 @@ interface ReservationActionResult {
   requestId?: string;
 }
 
+// Helper function to validate UUID format
+const isValidUUID = (str: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 export function useReservationActions() {
   const { tenantId } = useTenant();
   const queryClient = useQueryClient();
@@ -80,7 +86,25 @@ export function useReservationActions() {
         throw new Error('Tenant not found');
       }
 
+      // Log the request for debugging
+      console.log('Move reservation request:', request);
+
+      // Check if reservation ID format is valid
+      if (!isValidUUID(request.reservationId)) {
+        const errorMsg = `Invalid reservation ID format: ${request.reservationId}. Expected UUID format.`;
+        console.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
       // Validate request
+      try {
+        const validatedRequest = validateMoveReservationRequest(request);
+        console.log('Validated request:', validatedRequest);
+      } catch (validationError) {
+        console.error('Validation error:', validationError);
+        throw new Error(`Invalid reservation data: ${validationError instanceof Error ? validationError.message : 'Unknown validation error'}`);
+      }
+
       const validatedRequest = validateMoveReservationRequest(request);
 
       // Get auth token
@@ -119,6 +143,10 @@ export function useReservationActions() {
     },
     onError: (error) => {
       const parsedError = parseError(error);
+      console.error('Move reservation error details:', {
+        error: parsedError,
+        originalError: error
+      });
       toastError(parsedError, 'Failed to move reservation');
     }
   });

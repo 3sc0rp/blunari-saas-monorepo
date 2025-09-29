@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { TopBar } from "@/components/command-center/TopBar";
 import { KpiStrip, type KpiCard } from "@/components/command-center/KpiStrip";
 import { Filters } from "@/components/command-center/Filters";
@@ -193,6 +193,19 @@ export default function CommandCenter() {
   const loading = realtimeLoading || simpleLoading;
   const error = realtimeError?.message || simpleError;
   const refetch = isConnected ? refreshData : simpleRefetch;
+
+  // Debug logging for reservation IDs
+  useEffect(() => {
+    if (reservations && reservations.length > 0) {
+      console.log('CommandCenter - Reservation ID analysis:', reservations.map(r => ({
+        id: r.id,
+        guestName: r.guestName || 'Unknown',
+        idLength: r.id?.length || 0,
+        isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(r.id || ''),
+        sample: r.id
+      })).slice(0, 3));
+    }
+  }, [reservations]);
 
   // Command Center state ready
 

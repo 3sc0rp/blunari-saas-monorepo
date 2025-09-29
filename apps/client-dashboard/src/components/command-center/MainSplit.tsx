@@ -198,7 +198,14 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
 
   const handleReservationChange = useCallback(async (u: { id: string; start: string; end: string }) => {
     try {
-      await moveReservationAction({ reservationId: u.id, start: u.start, end: u.end });
+      console.log('Moving reservation:', { reservationId: u.id, start: u.start, end: u.end });
+      const result = await moveReservationAction({ reservationId: u.id, start: u.start, end: u.end });
+      
+      if (!result.ok) {
+        console.error('Move reservation failed:', result.error, 'Request ID:', result.requestId);
+      } else {
+        console.log('Reservation moved successfully:', result.data);
+      }
     } catch (err) {
       console.error('Error updating reservation time:', err);
     }
