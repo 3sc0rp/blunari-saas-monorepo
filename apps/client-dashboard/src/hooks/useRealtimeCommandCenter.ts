@@ -150,6 +150,7 @@ export const useRealtimeCommandCenter = () => {
       }
 
       // Validate UUID format before making database call
+      console.log('[useRealtimeCommandCenter] Bookings query - Tenant ID:', tenantId);
       if (!isValidUUID(tenantId)) {
         console.warn("Invalid tenant ID format, skipping bookings query:", tenantId);
         return [];

@@ -195,24 +195,25 @@ export default function CommandCenter() {
   const refetch = isConnected ? refreshData : simpleRefetch;
 
   // Add debug logging in development mode
-  if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-    console.log('🏢 Command Center State:', {
-      loading,
-      error,
-      hasKpis: kpis?.length > 0,
-      hasTables: tables?.length > 0,
-      hasReservations: reservations?.length > 0,
-      kpiCount: kpis?.length,
-      tableCount: tables?.length,
-      reservationCount: reservations?.length,
-      connectionStatus: connectionStatus?.overall,
-      isRealtime: isConnected,
-      activeFilters: Object.keys(filters).filter(key => {
-        const value = filters[key as keyof FiltersState];
-        return value && (Array.isArray(value) ? value.length > 0 : true);
-      })
-    });
-  }
+  console.log('🏢 Command Center State:', {
+    loading,
+    error,
+    hasKpis: kpis?.length > 0,
+    hasTables: tables?.length > 0,
+    hasReservations: reservations?.length > 0,
+    kpiCount: kpis?.length,
+    tableCount: tables?.length,
+    reservationCount: reservations?.length,
+    connectionStatus: connectionStatus?.overall,
+    isRealtime: isConnected,
+    tenantId: policies?.tenantId,
+    realtimeBookingsCount: realtimeBookings?.length,
+    realtimeTablesCount: realtimeTables?.length,
+    activeFilters: Object.keys(filters).filter(key => {
+      const value = filters[key as keyof FiltersState];
+      return value && (Array.isArray(value) ? value.length > 0 : true);
+    })
+  });
 
   // Apply filters to reservations before transformation
   const filteredReservations = useMemo(() => {

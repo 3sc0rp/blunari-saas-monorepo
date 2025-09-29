@@ -8,7 +8,7 @@ export function useCommandCenterDataSimple() {
   const query = useQuery({
     queryKey: ['command-center-simple', tenantId],
     queryFn: async () => {
-      const devLogs = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
+      const devLogs = true; // Always enable debug logs temporarily
       if (devLogs) {
         console.log('[useCommandCenterDataSimple] === DIRECT DB QUERIES ONLY ===');
         console.log('[useCommandCenterDataSimple] Tenant ID:', tenantId);
@@ -48,7 +48,8 @@ export function useCommandCenterDataSimple() {
             .eq('tenant_id', tenantId)
         ]);
 
-        if (devLogs) console.log('[useCommandCenterDataSimple] Query results:', {
+        console.log('[useCommandCenterDataSimple] Query results:', {
+          tenantId,
           tables: { count: tablesResult.data?.length, error: tablesResult.error },
           bookings: { count: bookingsResult.data?.length, error: bookingsResult.error }
         });
