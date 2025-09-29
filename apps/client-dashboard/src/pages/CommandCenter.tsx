@@ -529,55 +529,7 @@ export default function CommandCenter() {
           </div>
         )}
 
-        {/* Enhanced Connection Status Indicator */}
-        {connectionStatus && (
-          <div className="flex items-center gap-3 text-sm">
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-sm transition-all duration-200 ${
-              connectionStatus.overall === 'connected' 
-                ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/10 text-emerald-300 border border-emerald-500/30 shadow-emerald-500/10' 
-                : connectionStatus.overall === 'connecting'
-                ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/10 text-amber-300 border border-amber-500/30 shadow-amber-500/10'
-                : connectionStatus.overall === 'error'
-                ? 'bg-gradient-to-r from-red-500/20 to-pink-500/10 text-red-300 border border-red-500/30 shadow-red-500/10'
-                : 'bg-gradient-to-r from-slate-500/20 to-gray-500/10 text-slate-300 border border-slate-500/30'
-            } shadow-lg`}>
-              <div className="relative">
-                <div className={`w-2.5 h-2.5 rounded-full ${
-                  connectionStatus.overall === 'connected' ? 'bg-emerald-400' :
-                  connectionStatus.overall === 'connecting' ? 'bg-amber-400 animate-pulse' :
-                  connectionStatus.overall === 'error' ? 'bg-red-400' : 'bg-slate-400'
-                }`} />
-                {connectionStatus.overall === 'connected' && (
-                  <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping opacity-75" />
-                )}
-              </div>
-              <span className="font-semibold text-xs uppercase tracking-wide">
-                {connectionStatus.overall === 'connected' ? 'Live Data' :
-                 connectionStatus.overall === 'connecting' ? 'Connecting' :
-                 connectionStatus.overall === 'error' ? 'Offline Mode' : 'Disconnected'}
-              </span>
-            </div>
-            
-            {connectionStatus.overall !== 'connected' && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
-                <span className="text-white/60 text-xs font-medium">Polling Mode Active</span>
-              </div>
-            )}
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => refetch()}
-              className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
-              title="Refresh data"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </Button>
-          </div>
-        )}
+
 
         {/* Top Bar */}
         <TopBar 
