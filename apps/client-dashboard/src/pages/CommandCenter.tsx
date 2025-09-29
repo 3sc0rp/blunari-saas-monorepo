@@ -480,7 +480,7 @@ export default function CommandCenter() {
   return (
     <main 
       aria-label="Bookings Command Center" 
-      className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 p-6"
+      className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 lg:p-6"
     >
       {/* Skip to main content link for accessibility */}
       <a 
@@ -490,12 +490,22 @@ export default function CommandCenter() {
         Skip to main content
       </a>
 
-      <div id="main-content" className="max-w-full space-y-6">
-        {/* Debug Panel - Remove in production */}
+      <div id="main-content" className="max-w-full space-y-4 lg:space-y-6">
+        {/* Enhanced Error Panel */}
         {error && (
-          <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-4">
-            <div className="text-red-400 font-semibold mb-2">❌ Command Center Error</div>
-            <div className="text-red-300 text-sm mb-3">{error}</div>
+          <div className="bg-gradient-to-r from-red-900/30 to-red-800/20 border border-red-500/30 rounded-xl p-4 backdrop-blur-sm shadow-lg">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-red-400 font-bold text-sm">Command Center Error</div>
+                <div className="text-red-300/80 text-xs">Please refresh or contact support if this persists</div>
+              </div>
+            </div>
+            <div className="text-red-300 text-sm bg-red-900/20 p-3 rounded-lg font-mono">{error}</div>
           </div>
         )}
 
@@ -506,40 +516,50 @@ export default function CommandCenter() {
           </div>
         )}
 
-        {/* Connection Status Indicator */}
+        {/* Enhanced Connection Status Indicator */}
         {connectionStatus && (
-          <div className="flex items-center gap-2 text-sm">
-            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md ${
+          <div className="flex items-center gap-3 text-sm">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-sm transition-all duration-200 ${
               connectionStatus.overall === 'connected' 
-                ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/10 text-emerald-300 border border-emerald-500/30 shadow-emerald-500/10' 
                 : connectionStatus.overall === 'connecting'
-                ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/10 text-amber-300 border border-amber-500/30 shadow-amber-500/10'
                 : connectionStatus.overall === 'error'
-                ? 'bg-red-500/20 text-red-300 border border-red-500/30'
-                : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
-            }`}>
-              <div className={`w-2 h-2 rounded-full ${
-                connectionStatus.overall === 'connected' ? 'bg-green-400' :
-                connectionStatus.overall === 'connecting' ? 'bg-yellow-400 animate-pulse' :
-                connectionStatus.overall === 'error' ? 'bg-red-400' : 'bg-gray-400'
-              }`} />
-              <span className="font-medium">
-                {connectionStatus.overall === 'connected' ? 'Live' :
+                ? 'bg-gradient-to-r from-red-500/20 to-pink-500/10 text-red-300 border border-red-500/30 shadow-red-500/10'
+                : 'bg-gradient-to-r from-slate-500/20 to-gray-500/10 text-slate-300 border border-slate-500/30'
+            } shadow-lg`}>
+              <div className="relative">
+                <div className={`w-2.5 h-2.5 rounded-full ${
+                  connectionStatus.overall === 'connected' ? 'bg-emerald-400' :
+                  connectionStatus.overall === 'connecting' ? 'bg-amber-400 animate-pulse' :
+                  connectionStatus.overall === 'error' ? 'bg-red-400' : 'bg-slate-400'
+                }`} />
+                {connectionStatus.overall === 'connected' && (
+                  <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                )}
+              </div>
+              <span className="font-semibold text-xs uppercase tracking-wide">
+                {connectionStatus.overall === 'connected' ? 'Live Data' :
                  connectionStatus.overall === 'connecting' ? 'Connecting' :
-                 connectionStatus.overall === 'error' ? 'Offline' : 'Disconnected'}
+                 connectionStatus.overall === 'error' ? 'Offline Mode' : 'Disconnected'}
               </span>
             </div>
+            
             {connectionStatus.overall !== 'connected' && (
-              <span className="text-white/50">Using polling mode</span>
+              <div className="flex items-center gap-2 px-3 py-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
+                <span className="text-white/60 text-xs font-medium">Polling Mode Active</span>
+              </div>
             )}
+            
             <Button
               variant="ghost"
               size="sm"
               onClick={() => refetch()}
-              className="h-6 w-6 p-0 text-white/70 hover:text-white"
+              className="h-8 w-8 p-0 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
               title="Refresh data"
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </Button>
@@ -568,39 +588,53 @@ export default function CommandCenter() {
           loading={loading}
         />
 
-        {/* Filters */}
-        <div className="flex items-center justify-between gap-4">
-          <Filters 
-            value={filters}
-            onChange={setFilters}
-            disabled={loading}
-            filterCounts={filterCounts}
-          />
-          {/* Filter result summary */}
-          <div className="flex items-center gap-4 text-sm text-white/60">
-            <div>
-              Showing {legacyReservations.length} of {reservations.length} reservations
+        {/* Enhanced Filters Section */}
+        <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-white/10 p-4 space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <Filters 
+              value={filters}
+              onChange={setFilters}
+              disabled={loading}
+              filterCounts={filterCounts}
+            />
+            
+            {/* Enhanced filter result summary */}
+            <div className="flex items-center gap-4 text-sm">
+              <div className="bg-slate-700/50 px-4 py-2 rounded-lg border border-slate-600/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full" />
+                  <span className="text-white/90 font-medium">
+                    Showing {legacyReservations.length} of {reservations.length} reservations
+                  </span>
+                  {Object.keys(filters).some(key => {
+                    const value = filters[key as keyof FiltersState];
+                    return value && (Array.isArray(value) ? value.length > 0 : true);
+                  }) && (
+                    <span className="ml-2 px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium border border-blue-500/30">
+                      Filtered
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Enhanced filter reset button */}
               {Object.keys(filters).some(key => {
                 const value = filters[key as keyof FiltersState];
                 return value && (Array.isArray(value) ? value.length > 0 : true);
               }) && (
-                <span className="ml-2 text-blue-300">
-                  (filtered)
-                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFilters({})}
+                  className="h-8 text-xs bg-slate-700/50 hover:bg-slate-600/50 border-slate-600/50 text-white/80 hover:text-white"
+                >
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Clear Filters
+                </Button>
               )}
             </div>
-            {/* Quick filter reset button */}
-            {Object.keys(filters).some(key => {
-              const value = filters[key as keyof FiltersState];
-              return value && (Array.isArray(value) ? value.length > 0 : true);
-            }) && (
-              <button
-                onClick={() => setFilters({})}
-                className="text-xs text-blue-400 hover:text-blue-300 underline"
-              >
-                Clear all filters
-              </button>
-            )}
           </div>
         </div>
 

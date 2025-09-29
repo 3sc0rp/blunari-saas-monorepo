@@ -67,46 +67,78 @@ const TableManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-      >
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Table Management
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your restaurant floor plan and table status
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 lg:p-6">
+      <div className="space-y-6">
+        {/* Enhanced Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
+        >
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <LayoutGrid className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white">
+                  Table Management
+                </h1>
+                <p className="text-white/70">
+                  Manage your restaurant floor plan and table status
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2 px-3 py-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                <div className="w-2 h-2 bg-green-400 rounded-full" />
+                <span className="text-white/80 font-medium">{tables.length} Tables Active</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                <Users className="w-3 h-3 text-white/60" />
+                <span className="text-white/80 font-medium">{tables.reduce((acc, t) => acc + t.capacity, 0)} Total Seats</span>
+              </div>
+            </div>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === "floor" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("floor")}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            Floor Plan
-          </Button>
-          {/* 3D View removed */}
-          <Button
-            variant={viewMode === "grid" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("grid")}
-          >
-            <LayoutGrid className="h-4 w-4 mr-2" />
-            Grid View
-          </Button>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Table
-          </Button>
-        </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-slate-800/50 rounded-xl p-1 border border-slate-700/50">
+              <Button
+                variant={viewMode === "floor" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("floor")}
+                className={
+                  viewMode === "floor" 
+                    ? "h-8 px-4 rounded-lg transition-all duration-200 bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg" 
+                    : "h-8 px-4 rounded-lg transition-all duration-200 text-white/70 hover:text-white hover:bg-white/10"
+                }
+              >
+                <Eye className="h-3 w-3 mr-2" />
+                Floor Plan
+              </Button>
+              <Button
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className={
+                  viewMode === "grid" 
+                    ? "h-8 px-4 rounded-lg transition-all duration-200 bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg" 
+                    : "h-8 px-4 rounded-lg transition-all duration-200 text-white/70 hover:text-white hover:bg-white/10"
+                }
+              >
+                <LayoutGrid className="h-3 w-3 mr-2" />
+                Grid View
+              </Button>
+            </div>
+            
+            {/* Action Button */}
+            <Button className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white border-0 shadow-lg">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Table
+            </Button>
+          </div>
       </motion.div>
 
       {/* Table Statistics */}
@@ -130,59 +162,74 @@ const TableManagement: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-5 gap-4"
+          className="grid grid-cols-2 lg:grid-cols-5 gap-4"
         >
-          <Card>
+          <Card className="bg-slate-800/30 border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-200">
             <CardContent className="pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{tableStats.total}</div>
-                <div className="text-sm text-muted-foreground">
+              <div className="text-center space-y-2">
+                <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto">
+                  <LayoutGrid className="w-4 h-4 text-blue-400" />
+                </div>
+                <div className="text-2xl font-bold text-white">{tableStats.total}</div>
+                <div className="text-sm text-white/60 font-medium">
                   Total Tables
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-800/30 border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-200">
             <CardContent className="pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-success">
+              <div className="text-center space-y-2">
+                <div className="w-8 h-8 bg-emerald-500/20 rounded-lg flex items-center justify-center mx-auto">
+                  <div className="w-3 h-3 bg-emerald-400 rounded-full" />
+                </div>
+                <div className="text-2xl font-bold text-emerald-400">
                   {tableStats.available}
                 </div>
-                <div className="text-sm text-muted-foreground">Available</div>
+                <div className="text-sm text-white/60 font-medium">Available</div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-800/30 border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-200">
             <CardContent className="pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-destructive">
+              <div className="text-center space-y-2">
+                <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto">
+                  <Users className="w-4 h-4 text-purple-400" />
+                </div>
+                <div className="text-2xl font-bold text-purple-400">
                   {tableStats.occupied}
                 </div>
-                <div className="text-sm text-muted-foreground">Occupied</div>
+                <div className="text-sm text-white/60 font-medium">Occupied</div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-800/30 border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-200">
             <CardContent className="pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-warning">
+              <div className="text-center space-y-2">
+                <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center mx-auto">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                </div>
+                <div className="text-2xl font-bold text-amber-400">
                   {tableStats.reserved}
                 </div>
-                <div className="text-sm text-muted-foreground">Reserved</div>
+                <div className="text-sm text-white/60 font-medium">Reserved</div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-800/30 border-slate-700/50 backdrop-blur-sm hover:bg-slate-800/50 transition-all duration-200">
             <CardContent className="pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-muted-foreground">
+              <div className="text-center space-y-2">
+                <div className="w-8 h-8 bg-red-500/20 rounded-lg flex items-center justify-center mx-auto">
+                  <Settings className="w-4 h-4 text-red-400" />
+                </div>
+                <div className="text-2xl font-bold text-red-400">
                   {tableStats.maintenance}
                 </div>
-                <div className="text-sm text-muted-foreground">Maintenance</div>
+                <div className="text-sm text-white/60 font-medium">Maintenance</div>
               </div>
             </CardContent>
           </Card>
@@ -213,6 +260,7 @@ const TableManagement: React.FC = () => {
           />
         )}
       </motion.div>
+      </div>
     </div>
   );
 };
@@ -232,9 +280,14 @@ const FloorPlanView: React.FC<{
   getTableIcon,
 }) => {
   return (
-    <Card>
+    <Card className="bg-slate-800/30 border-slate-700/50 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle>Restaurant Floor Plan</CardTitle>
+        <CardTitle className="flex items-center gap-3 text-white">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <LayoutGrid className="w-4 h-4 text-white" />
+          </div>
+          Restaurant Floor Plan
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="relative bg-muted/20 rounded-lg p-8 min-h-[500px] border-2 border-dashed border-border">

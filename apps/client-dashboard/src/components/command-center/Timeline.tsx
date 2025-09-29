@@ -1,10 +1,15 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";\nimport { ZoomIn, ZoomOut, Clock, Users, Calendar, Phone, Globe, User } from "lucide-react";\nimport "./Timeline.css";
 import { cn } from "@/lib/utils";
 import type { TableRow, Reservation } from "@/hooks/useCommandCenterData";
 import { format, addHours, startOfDay, differenceInMinutes } from "date-fns";
 import CurrentTimeMarker from './CurrentTimeMarker';
 import DurationBar from './DurationBar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ZoomIn, ZoomOut, Clock, Users, Calendar, Phone, Globe, User } from "lucide-react";
+import "./Timeline.css";
+import { ZoomIn, ZoomOut, Clock, Users, Calendar, Phone, Globe, User } from "lucide-react";
 
 interface TimelineProps {
   tables: TableRow[];
@@ -187,12 +192,16 @@ export function Timeline({
       role="region"
       aria-label="Restaurant table timeline showing reservations throughout the day"
     >
-      {/* Header with time slots */}
-      <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur border-b border-white/15">
+      {/* Enhanced Header with time slots */}
+      <div className="sticky top-0 z-10 bg-gradient-to-r from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-b border-white/20 shadow-lg">
         <div className="flex">
-          {/* Table column header */}
-          <div className="w-32 p-3 text-sm font-medium text-white/90 border-r border-white/15 bg-slate-800/50">
-            <span className="uppercase tracking-wide text-xs text-white/70">Tables</span>
+          {/* Enhanced table column header */}
+          <div className="w-40 p-4 text-sm font-medium text-white/90 border-r border-white/20 bg-gradient-to-b from-slate-800/60 to-slate-800/40">
+            <div className="flex items-center gap-2 mb-1">
+              <Calendar className="w-4 h-4 text-white/70" />
+              <span className="uppercase tracking-wide text-xs text-white/70 font-semibold">Tables</span>
+            </div>
+            <div className="text-xs text-white/50">{tables.length} active</div>
           </div>
           
           {/* Time slot headers */}
@@ -207,16 +216,29 @@ export function Timeline({
                   <div
                     key={index}
                     className={cn(
-                      "flex-1 p-3 text-xs font-medium text-center border-r",
-                      "transition-colors",
-                      isHourStart ? "border-white/15" : "border-white/6",
-                      slot.isCurrentTime && "bg-accent/20 text-accent font-semibold",
-                      isEvenHour ? "bg-white/[0.02]" : "bg-transparent",
-                      isHourStart && "font-semibold uppercase tracking-wide text-white/80"
+                      "flex-1 p-4 text-xs font-medium text-center border-r relative",
+                      "transition-all duration-200 hover:bg-white/5",
+                      isHourStart ? "border-white/20" : "border-white/8",
+                      slot.isCurrentTime && "bg-gradient-to-b from-accent/30 to-accent/10 text-accent font-bold shadow-inner",
+                      isEvenHour ? "bg-white/[0.03]" : "bg-transparent",
+                      isHourStart && "font-bold text-white/90 bg-gradient-to-b from-white/10 to-transparent"
                     )}
                     style={{ minWidth: `${slotWidth}px` }}
                   >
-                    {isHourStart ? format(slot.time, "H:mm") : format(slot.time, ":mm")}
+                    <div className="flex flex-col items-center">
+                      <div className={cn(
+                        isHourStart ? "text-sm font-bold" : "text-xs opacity-75",
+                        slot.isCurrentTime && "animate-pulse"
+                      )}>
+                        {isHourStart ? format(slot.time, "H:mm") : format(slot.time, ":mm")}
+                      </div>
+                      {slot.isCurrentTime && (
+                        <div className="w-1 h-1 bg-accent rounded-full mt-1 animate-pulse" />
+                      )}
+                    </div>
+                    {isHourStart && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                    )}
                   </div>
                 );
               })}
@@ -229,18 +251,36 @@ export function Timeline({
                 slotWidth={80}
                 className="top-0"
               />
-              {/* Zoom controls */}
-              <div className="absolute right-2 top-2 flex gap-1">
-                {[80,120,160].map((w)=> (
-                  <button
-                    key={w}
-                    className={cn("px-2 py-1 rounded text-[10px] border", Number(w)===slotWidth ? "bg-accent/20 border-accent text-accent" : "bg-white/5 border-white/15 text-white/70 hover:bg-white/10")}
-                    onClick={()=> setSlotWidth(w as any)}
-                    aria-label={`Set zoom to ${w===80? '15': w===120? '30': '60'} minute slots`}
-                  >
-                    {w===80? '15m': w===120? '30m':'60m'}
-                  </button>
-                ))}
+              {/* Enhanced zoom controls */}
+              <div className="absolute right-4 top-3 flex items-center gap-2 bg-slate-800/80 backdrop-blur rounded-lg p-1 border border-white/10">
+                <div className="flex items-center gap-1 px-2">
+                  <Clock className="w-3 h-3 text-white/60" />
+                  <span className="text-xs text-white/70 font-medium">Zoom:</span>
+                </div>
+                <div className="flex gap-1">
+                  {[
+                    { width: 80, label: '15m', icon: ZoomIn },
+                    { width: 120, label: '30m', icon: Clock },
+                    { width: 160, label: '60m', icon: ZoomOut }
+                  ].map(({ width, label, icon: Icon }) => (
+                    <Button
+                      key={width}
+                      variant={width === slotWidth ? "default" : "ghost"}
+                      size="sm"
+                      className={cn(
+                        "h-7 px-2 text-xs",
+                        width === slotWidth 
+                          ? "bg-accent text-accent-foreground shadow-sm" 
+                          : "text-white/70 hover:text-white hover:bg-white/10"
+                      )}
+                      onClick={() => setSlotWidth(width as any)}
+                      aria-label={`Set zoom to ${label} slots`}
+                    >
+                      <Icon className="w-3 h-3 mr-1" />
+                      {label}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -266,25 +306,47 @@ export function Timeline({
                 focusTableId === table.id && "bg-accent/10 hover:bg-accent/15"
               )}
             >
-              {/* Table info */}
+              {/* Enhanced table info */}
               <div className={cn(
-                "w-32 p-4 border-r border-white/15 bg-slate-800/30",
-                isEvenRow && "bg-slate-800/40"
+                "w-40 p-4 border-r border-white/20 bg-gradient-to-r transition-all duration-200",
+                isEvenRow ? "from-slate-800/50 to-slate-800/30" : "from-slate-800/30 to-slate-800/20",
+                focusTableId === table.id && "from-accent/20 to-accent/10 border-accent/30",
+                "hover:from-slate-700/50 hover:to-slate-700/30"
               )}>
-                <div className="text-sm font-semibold text-white leading-tight">
-                  {table.name}
-                </div>
-                <div className="text-xs text-white/60 mt-1">
-                  {table.capacity} seats • {table.section}
-                </div>
-                <div className={cn(
-                  "text-xs font-medium mt-2 px-2 py-0.5 rounded-full inline-block",
-                  table.status === 'available' && "text-blue-300 bg-blue-500/20",
-                  table.status === 'occupied' && "text-purple-300 bg-purple-500/20",
-                  table.status === 'reserved' && "text-amber-300 bg-amber-500/20",
-                  table.status === 'maintenance' && "text-red-300 bg-red-500/20"
-                )}>
-                  {table.status}
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div className="text-sm font-bold text-white leading-tight">
+                      {table.name}
+                    </div>
+                    <Badge 
+                      variant="secondary" 
+                      className={cn(
+                        "text-xs px-2 py-0.5 font-medium",
+                        table.status === 'available' && "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+                        table.status === 'occupied' && "bg-purple-500/20 text-purple-300 border-purple-500/30",
+                        table.status === 'reserved' && "bg-amber-500/20 text-amber-300 border-amber-500/30",
+                        table.status === 'maintenance' && "bg-red-500/20 text-red-300 border-red-500/30"
+                      )}
+                    >
+                      {table.status}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-xs text-white/70">
+                    <Users className="w-3 h-3" />
+                    <span>{table.capacity} seats</span>
+                  </div>
+                  
+                  <div className="text-xs text-white/60">
+                    {table.section}
+                  </div>
+                  
+                  {tableReservations.length > 0 && (
+                    <div className="flex items-center gap-1 text-xs">
+                      <div className="w-2 h-2 bg-accent rounded-full" />
+                      <span className="text-accent font-medium">{tableReservations.length} booking{tableReservations.length !== 1 ? 's' : ''}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -379,8 +441,10 @@ export function Timeline({
                             <TooltipTrigger asChild>
                               <div
                                 className={cn(
-                                  "absolute rounded border cursor-pointer p-2 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-accent/50",
-                                  "backdrop-blur-sm",
+                                  "absolute rounded-lg border-2 cursor-pointer p-3 transition-all duration-200",
+                                  "hover:shadow-xl hover:scale-105 focus:outline-none focus:ring-2 focus:ring-accent/50",
+                                  "backdrop-blur-md hover:backdrop-blur-lg",
+                                  "group overflow-hidden",
                                   getReservationColor(reservation)
                                 )}
                                 style={{
@@ -419,26 +483,51 @@ export function Timeline({
                                     />
                                   </>
                                 )}
-                                <div className="text-xs font-semibold text-white truncate">
-                                  {reservation.guestName}
-                                </div>
-                                <div className="text-xs text-white/80 truncate flex items-center gap-1">
-                                  <span className="bg-white/20 px-1 rounded text-[10px] font-medium">
-                                    P{reservation.partySize}
-                                  </span>
-                                  <span>
-                                    {format(new Date(reservation.start), "H:mm")}–{format(new Date(reservation.end), "H:mm")}
-                                  </span>
-                                  {reservation.channel && (
-                                    <span className={cn(
-                                      "text-[10px] px-1 rounded",
-                                      reservation.channel === 'online' && "bg-blue-400/30 text-blue-200",
-                                      reservation.channel === 'phone' && "bg-orange-400/30 text-orange-200",
-                                      reservation.channel === 'walkin' && "bg-green-400/30 text-green-200"
-                                    )}>
-                                      {reservation.channel.toUpperCase()}
-                                    </span>
-                                  )}
+                                {/* Enhanced reservation content */}
+                                <div className="relative h-full flex flex-col justify-between">
+                                  <div className="flex items-start justify-between mb-1">
+                                    <div className="flex items-center gap-1 text-white">
+                                      <User className="w-3 h-3 opacity-75" />
+                                      <span className="text-xs font-bold truncate max-w-[100px]">
+                                        {reservation.guestName}
+                                      </span>
+                                    </div>
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="bg-white/25 text-white text-[10px] px-1.5 py-0.5 font-bold"
+                                    >
+                                      {reservation.partySize}
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="flex items-center justify-between text-xs text-white/90">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3 opacity-75" />
+                                      <span className="font-medium">
+                                        {format(new Date(reservation.start), "H:mm")}–{format(new Date(reservation.end), "H:mm")}
+                                      </span>
+                                    </div>
+                                    
+                                    {reservation.channel && (
+                                      <Badge 
+                                        variant="outline"
+                                        className={cn(
+                                          "text-[10px] px-1.5 py-0.5 border-white/30",
+                                          reservation.channel === 'online' && "bg-blue-400/20 text-blue-200 border-blue-400/40",
+                                          reservation.channel === 'phone' && "bg-orange-400/20 text-orange-200 border-orange-400/40",
+                                          reservation.channel === 'walkin' && "bg-green-400/20 text-green-200 border-green-400/40"
+                                        )}
+                                      >
+                                        {reservation.channel === 'online' && <Globe className="w-2 h-2 mr-0.5" />}
+                                        {reservation.channel === 'phone' && <Phone className="w-2 h-2 mr-0.5" />}
+                                        {reservation.channel === 'walkin' && <User className="w-2 h-2 mr-0.5" />}
+                                        {reservation.channel.toUpperCase()}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  
+                                  {/* Subtle animation overlay on hover */}
+                                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg" />
                                 </div>
                               </div>
                             </TooltipTrigger>
