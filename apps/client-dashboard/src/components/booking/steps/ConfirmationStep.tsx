@@ -170,17 +170,17 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
             {reservation.status === 'pending' ? (
               <>
                 <Clock className="w-16 h-16 text-orange-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Reservation Submitted!</h2>
+                <h2 className="text-2xl font-bold mb-2">Reservation Submitted</h2>
                 <p className="text-muted-foreground mb-6">
-                  Your reservation request is pending approval
+                  Your request is pending approval. You will receive an email once it is reviewed.
                 </p>
               </>
             ) : (
               <>
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
+                <h2 className="text-2xl font-bold mb-2">Booking Confirmed</h2>
                 <p className="text-muted-foreground mb-6">
-                  Your table has been reserved successfully
+                  Your table has been reserved successfully.
                 </p>
               </>
             )}

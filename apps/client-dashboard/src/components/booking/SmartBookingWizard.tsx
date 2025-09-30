@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/popover";
 import { useSmartBookingCreation } from "@/hooks/useSmartBookingCreation";
 import { useTenant } from "@/hooks/useTenant";
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import {
   CalendarIcon,
@@ -639,15 +640,23 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-success">
+                  <CardTitle className={`flex items-center gap-2 ${createdReservation?.status === 'pending' ? 'text-warning' : 'text-success'}`}>
                     <CheckCircle className="h-5 w-5" />
-                    Booking Confirmed
+                    {createdReservation?.status === 'pending' ? 'Reservation Submitted (Pending Approval)' : 'Booking Confirmed'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Confirmation No.: {createdReservation?.confirmation_number || createdReservation?.reservation_id}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <p className="text-muted-foreground">
+                      {createdReservation?.status === 'pending' ? 'Request ID:' : 'Confirmation No.:'} {createdReservation?.confirmation_number || createdReservation?.reservation_id}
+                    </p>
+                    <Badge variant={createdReservation?.status === 'pending' ? 'outline' : 'default'} className={createdReservation?.status === 'pending' ? 'border-warning text-warning' : 'bg-success text-success-foreground'}>
+                      {createdReservation?.status === 'pending' ? 'Pending Review' : 'Confirmed'}
+                    </Badge>
+                    {createdReservation?.status === 'pending' && (
+                      <PendingVerificationIndicator reservation={createdReservation} tenantId={tenant?.id} formData={formData} />
+                    )}
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                     <div>
                       <span className="text-muted-foreground">Name: </span>
@@ -666,8 +675,14 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
                       <span>{formData.time}</span>
                     </div>
                   </div>
-                  <div className="pt-2">
+                  {createdReservation?.status === 'pending' && (
+                    <div className="p-3 rounded-md bg-warning/10 text-xs leading-relaxed">
+                      This reservation isn\'t confirmed yet. You\'ll receive an email once it\'s approved. You can safely close this window.
+                    </div>
+                  )}
+                  <div className="flex gap-2 pt-2">
                     <Button variant="outline" onClick={resetForm}>Create Another</Button>
+                    <Button onClick={() => onOpenChange(false)} variant="ghost">Close</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -721,6 +736,40 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
       </DialogContent>
     </Dialog>
   );
+};
+
+// Lightweight component verifying the pending booking actually exists in DB; warns if not found quickly
+const PendingVerificationIndicator: React.FC<{ reservation: any; tenantId?: string; formData: any }> = ({ reservation, tenantId, formData }) => {
+  const [state, setState] = React.useState<'checking' | 'found' | 'not_found'>('checking');
+  React.useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!tenantId || !reservation) { setState('not_found'); return; }
+      try {
+        // Wait a moment for DB commit
+        await new Promise(r => setTimeout(r, 300));
+        const { data } = await supabase
+          .from('bookings')
+          .select('id, booking_time, guest_email')
+          .eq('tenant_id', tenantId)
+          .eq('guest_email', formData.email)
+          .order('created_at', { ascending: false })
+          .limit(6);
+        if (cancelled) return;
+        const canonicalTarget = new Date(`${formData.date}T${formData.time}`).getTime();
+        const matched = (data || []).some(r => Math.abs(new Date(r.booking_time).getTime() - canonicalTarget) < 10 * 60 * 1000);
+        setState(matched ? 'found' : 'not_found');
+      } catch {
+        if (!cancelled) setState('not_found');
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [tenantId, reservation, formData?.email, formData?.date, formData?.time]);
+
+  if (state === 'found') return <Badge variant="outline" className="border-success text-success">Persisted</Badge>;
+  if (state === 'checking') return <Badge variant="outline" className="border-muted text-muted-foreground">Verifying…</Badge>;
+  return <Badge variant="outline" className="border-destructive text-destructive">Not Yet In DB</Badge>;
 };
 
 export default SmartBookingWizard;
