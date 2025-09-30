@@ -59,7 +59,7 @@ export function TopBar({
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState("demo-restaurant");
   const [contextFilter, setContextFilter] = useState("all");
-  const { notifications, unreadCount, loading: notifLoading, markRead, markAllRead } = useTenantNotifications();
+  const { notifications, unreadCount, loading: notifLoading, markRead, markAllRead, playNotificationSound } = useTenantNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -258,6 +258,17 @@ export function TopBar({
                 </div>
                 <div className="flex items-center gap-1">
                   <Button size="sm" variant="ghost" className="h-7 px-2 text-[12px]" onClick={onNotify}>Send Reminders</Button>
+                  {import.meta.env.MODE === 'development' && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-7 px-2 text-[12px]" 
+                      onClick={() => playNotificationSound('new_reservation')}
+                      title="Test notification sound"
+                    >
+                      🔊 Test
+                    </Button>
+                  )}
                   <Button size="sm" variant="ghost" className="h-7 px-2 text-[12px]" onClick={() => { markAllRead(); }}>Mark all read</Button>
                 </div>
               </div>

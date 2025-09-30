@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useState, useMemo } from "react";
 import { FiltersState } from "@/components/command-center/Filters";
+import { useTenant } from "@/hooks/useTenant";
+import { createTestReservationNotification } from "@/utils/testNotification";
 import { 
   Filters as FiltersType, 
   shouldUseMocks,
@@ -54,6 +56,7 @@ const transformReservationToLegacy = (reservation: ContractReservation): LegacyR
 });
 
 export default function CommandCenter() {
+  const { tenantId } = useTenant();
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
@@ -561,6 +564,28 @@ export default function CommandCenter() {
         {import.meta.env.MODE === 'development' && error && (
           <div className="mb-4">
             <DebugEdgeFunctions />
+          </div>
+        )}
+        
+        {/* Test Notification Button - Development Only */}
+        {import.meta.env.MODE === 'development' && (
+          <div className="mb-4 flex gap-2">
+            <button
+              onClick={async () => {
+                try {
+                  if (!tenantId) {
+                    console.error('No tenant ID available for test notification');
+                    return;
+                  }
+                  await createTestReservationNotification(tenantId);
+                } catch (error) {
+                  console.error('Test notification failed:', error);
+                }
+              }}
+              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+            >
+              🔔 Test New Reservation Notification
+            </button>
           </div>
         )}
 
