@@ -35,7 +35,7 @@ interface RealtimeBooking {
   party_size: number;
   booking_time: string;
   duration_minutes: number;
-  status: "confirmed" | "seated" | "completed" | "cancelled" | "no_show";
+  status: "pending" | "confirmed" | "seated" | "completed" | "cancelled" | "no_show";
   table_id?: string;
   special_requests?: string;
   created_at: string;

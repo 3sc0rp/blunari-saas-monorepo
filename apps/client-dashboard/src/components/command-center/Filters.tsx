@@ -20,7 +20,7 @@ export interface FiltersState {
 
 interface FilterCounts {
   channels: { WEB: number; PHONE: number; WALKIN: number };
-  statuses: { confirmed: number; seated: number; completed: number; cancelled: number; no_show: number };
+  statuses: { pending: number; confirmed: number; seated: number; completed: number; cancelled: number; no_show: number };
   partySizes: Record<number, number>;
 }
 
@@ -140,6 +140,7 @@ export function Filters({ value, onChange, disabled = false, filterCounts }: Fil
   ];
 
   const STATUSES = [
+    { id: 'pending', label: 'Pending', count: filterCounts?.statuses?.pending || 0 },
     { id: 'confirmed', label: 'Confirmed', count: filterCounts?.statuses?.confirmed || 0 },
     { id: 'seated', label: 'Seated', count: filterCounts?.statuses?.seated || 0 },
     { id: 'completed', label: 'Completed', count: filterCounts?.statuses?.completed || 0 },

@@ -46,7 +46,7 @@ const transformReservationToLegacy = (reservation: ContractReservation): LegacyR
   partySize: reservation.partySize,
   start: reservation.start,
   end: reservation.end,
-  status: reservation.status.toLowerCase() as 'confirmed' | 'seated' | 'completed' | 'no_show' | 'cancelled',
+  status: reservation.status.toLowerCase() as 'pending' | 'confirmed' | 'seated' | 'completed' | 'no_show' | 'cancelled',
   channel: reservation.channel === 'WEB' ? 'online' : 
            reservation.channel === 'PHONE' ? 'phone' : 'walkin',
   deposit: reservation.depositAmount,
@@ -312,7 +312,7 @@ export default function CommandCenter() {
   const filterCounts = useMemo(() => {
     const counts = {
       channels: { WEB: 0, PHONE: 0, WALKIN: 0 },
-      statuses: { confirmed: 0, seated: 0, completed: 0, cancelled: 0, no_show: 0 },
+      statuses: { pending: 0, confirmed: 0, seated: 0, completed: 0, cancelled: 0, no_show: 0 },
       partySizes: {} as Record<number, number>
     };
 
