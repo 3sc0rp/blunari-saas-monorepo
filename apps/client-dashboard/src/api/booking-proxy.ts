@@ -183,7 +183,12 @@ export async function getTenantBySlug(slug: string) {
     }
 
     const json = await res.json();
-    const payload = (json && typeof json === 'object' && 'data' in json) ? (json as any).data : json;
+    // Handle both response formats: {data: ...}, {tenant: ...}, or direct tenant object
+    const payload = (json && typeof json === 'object' && 'data' in json) 
+      ? (json as any).data 
+      : (json && typeof json === 'object' && 'tenant' in json)
+        ? (json as any).tenant
+        : json;
     const transformedData = {
       tenant_id: payload.id,
       slug: payload.slug || slug,
