@@ -43,6 +43,7 @@ const BookingWidgetPage: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [widgetToken, setWidgetToken] = useState<string>("");
   const [tokenLoading, setTokenLoading] = useState(false);
+  const [tokenError, setTokenError] = useState<string>("");
 
   // Generate widget URLs with proper authentication tokens
   const generateWidgetUrls = async () => {
@@ -50,6 +51,7 @@ const BookingWidgetPage: React.FC = () => {
 
     try {
       setTokenLoading(true);
+      setTokenError("");
       const token = await createWidgetToken(tenant.slug, "2.0", widgetType);
       setWidgetToken(token);
       
@@ -68,6 +70,9 @@ const BookingWidgetPage: React.FC = () => {
       };
     } catch (error) {
       console.error('Failed to generate widget token:', error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      setTokenError(errorMessage);
+      
       toast({
         title: "Token Generation Failed",
         description: "Unable to generate widget authentication token. Using fallback URLs.",
