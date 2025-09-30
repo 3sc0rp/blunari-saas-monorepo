@@ -71,7 +71,7 @@ export const GuestDetailsSchema = z.object({
   first_name: z.string().min(1),
   last_name: z.string().min(1),
   email: z.string().email(),
-  phone: z.string().min(10),
+  phone: z.union([z.string().min(10), z.literal(""), z.undefined()]).optional(),
   special_requests: z.string().optional(),
 });
 

@@ -155,7 +155,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
             first_name: first_name || data.customerName || "Guest",
             last_name: last_name || "Guest", // Ensure non-empty last_name
             email: data.email,
-            phone: data.phone || "0000000000", // Ensure minimum 10 chars
+            phone: data.phone || null, // Phone is optional after verification removal
             special_requests: data.specialRequests,
           },
           table_id: data.tableId,
