@@ -159,6 +159,13 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         : reservation.reservation_id
           ? `CONF${String(reservation.reservation_id).slice(-6).toUpperCase()}`
           : "PENDING";
+    
+    // Debug logging to see what status we actually got
+    if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+      console.log('[ConfirmationStep] Reservation object:', reservation);
+      console.log('[ConfirmationStep] Status:', reservation.status);
+      console.log('[ConfirmationStep] Is pending?:', reservation.status === 'pending');
+    }
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
