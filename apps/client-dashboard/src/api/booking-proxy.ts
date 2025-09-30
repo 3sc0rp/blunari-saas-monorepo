@@ -275,10 +275,29 @@ export async function confirmReservation(
         source: (request as any).source,
     });
 
+    // Debug logging in development
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+      console.log('[confirmReservation] Raw data from edge function:', JSON.stringify(data, null, 2));
+    }
+
     // Normalize any upstream variations into our stable schema
     const normalized = normalizeReservationResponse(data);
-    return ReservationResponseSchema.parse(normalized);
+    
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+      console.log('[confirmReservation] After normalization:', JSON.stringify(normalized, null, 2));
+    }
+    
+    const validated = ReservationResponseSchema.parse(normalized);
+    
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+      console.log('[confirmReservation] After schema validation:', JSON.stringify(validated, null, 2));
+    }
+    
+    return validated;
   } catch (error) {
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+      console.log('[confirmReservation] Error occurred:', error);
+    }
     throw new BookingAPIError(
       "RESERVATION_CONFIRMATION_FAILED",
       "Failed to confirm reservation",
@@ -294,9 +313,24 @@ function normalizeReservationResponse(input: any): any {
 
     const reservationId = d.reservation_id || d.reservationId || d.id;
     let confirmationNumber = d.confirmation_number || d.confirmationNumber || d.reference || d.code;
-    let status: string = (d.status || d.state || d.reservation_status || 'confirmed').toString().toLowerCase();
+    let status: string = (d.status || d.state || d.reservation_status || 'pending').toString().toLowerCase();
+    
+    // Debug logging in development
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+      console.log('[normalizeReservationResponse] Input data:', JSON.stringify(d, null, 2));
+      console.log('[normalizeReservationResponse] Raw status from input:', d.status);
+      console.log('[normalizeReservationResponse] Resolved status:', status);
+    }
+    
     const allowed = new Set(['confirmed', 'pending', 'waitlisted']);
-    if (!allowed.has(status)) status = 'confirmed';
+    if (!allowed.has(status)) {
+      if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+        console.log('[normalizeReservationResponse] Status not in allowed set, defaulting to pending for moderation. Original:', status);
+      }
+      status = 'pending';  // Default to pending for moderation workflow
+    } else if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+      console.log('[normalizeReservationResponse] Status is valid:', status);
+    }
 
     const summary = d.summary || {};
     let dateLike = summary.date || d.date || d.booking_time || summary.datetime;
@@ -321,7 +355,7 @@ function normalizeReservationResponse(input: any): any {
       confirmationNumber = `CONF${idStr.slice(-6).toUpperCase()}`;
     }
 
-    return {
+    const normalizedResult = {
       reservation_id: String(reservationId),
       confirmation_number: String(confirmationNumber || 'CONFXXXXXX'),
       status,
@@ -334,7 +368,16 @@ function normalizeReservationResponse(input: any): any {
         deposit_amount: Number(summary.deposit_amount ?? d.deposit_amount ?? NaN) || undefined,
       },
     };
-  } catch {
+
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+      console.log('[normalizeReservationResponse] Final normalized result:', JSON.stringify(normalizedResult, null, 2));
+    }
+    return normalizedResult;
+  } catch (error) {
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+      console.log('[normalizeReservationResponse] Error in normalization:', error);
+      console.log('[normalizeReservationResponse] Returning raw input:', input);
+    }
     return input;
   }
 }

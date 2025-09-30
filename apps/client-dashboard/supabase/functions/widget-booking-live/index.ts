@@ -41,17 +41,53 @@ function getWidgetSecret(): string {
 function validateWidgetToken(token: string): { slug: string; configVersion?: string; widgetType?: string } | null {
   try {
     const parts = token.split('.');
-    if (parts.length !== 3) return null;
+    if (parts.length !== 3) {
+      console.log('[validateWidgetToken] Invalid token format - not 3 parts:', parts.length);
+      return null;
+    }
+    
     const [h, p, s] = parts;
     const header = JSON.parse(b64urlDecode(h));
-    if (!header || header.alg !== 'HS256' || header.typ !== 'JWT') return null;
+    if (!header || header.alg !== 'HS256' || header.typ !== 'JWT') {
+      console.log('[validateWidgetToken] Invalid header:', header);
+      return null;
+    }
+    
     const payload = JSON.parse(b64urlDecode(p));
-    if (!payload || !payload.slug) return null;
-    if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return null;
-    const expected = simpleHMAC(`${h}.${p}`, getWidgetSecret());
-    if (expected !== s) return null;
+    if (!payload || !payload.slug) {
+      console.log('[validateWidgetToken] Invalid payload - missing slug:', payload);
+      return null;
+    }
+    
+    if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) {
+      console.log('[validateWidgetToken] Token expired:', {
+        exp: payload.exp,
+        now: Math.floor(Date.now() / 1000)
+      });
+      return null;
+    }
+    
+    const secret = getWidgetSecret();
+    const expected = simpleHMAC(`${h}.${p}`, secret);
+    if (expected !== s) {
+      console.log('[validateWidgetToken] Signature mismatch:', {
+        expected,
+        received: s,
+        secretLength: secret.length,
+        secretStart: secret.substring(0, 10)
+      });
+      return null;
+    }
+    
+    console.log('[validateWidgetToken] Valid token:', {
+      slug: payload.slug,
+      configVersion: payload.configVersion,
+      widgetType: payload.widgetType
+    });
+    
     return { slug: payload.slug, configVersion: payload.configVersion, widgetType: payload.widgetType };
-  } catch {
+  } catch (error) {
+    console.log('[validateWidgetToken] Exception:', error);
     return null;
   }
 }
@@ -75,6 +111,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
     const USE_LOCAL_BOOKING = (Deno.env.get('USE_LOCAL_BOOKING') || 'true').toLowerCase() !== 'false';
+    
+    // Debug logging for booking path selection
+    console.log('[widget-booking-live] Environment check:', {
+      USE_LOCAL_BOOKING_ENV: Deno.env.get('USE_LOCAL_BOOKING'),
+      USE_LOCAL_BOOKING_COMPUTED: USE_LOCAL_BOOKING,
+      requestId
+    });
 
     if (req.method !== "POST") {
       return errorResponse('METHOD_NOT_ALLOWED', 'Method not allowed', 405, requestId);
@@ -100,7 +143,22 @@ serve(async (req) => {
 
     // Validate and resolve widget token → slug → tenant_id, with authenticated fallback for dashboard usage
     const token = requestData.token || new URL(req.url).searchParams.get('token');
+    
+    // Debug token validation
+    console.log('[widget-booking-live] Token validation:', {
+      hasToken: !!token,
+      tokenLength: token?.length,
+      tokenStart: token?.substring(0, 20),
+      requestId
+    });
+    
     const tokenPayload = token ? validateWidgetToken(token) : null;
+    
+    console.log('[widget-booking-live] Token payload:', {
+      hasPayload: !!tokenPayload,
+      slug: tokenPayload?.slug,
+      requestId
+    });
 
     let resolvedTenantId: string | null = null;
     let resolvedTenant: any = null;
@@ -186,10 +244,12 @@ serve(async (req) => {
       }
       return await handleCreateHold(supabase, requestData, requestId);
     } else if (action === "confirm") {
-      console.log('[widget-booking-live] confirm', { requestId, tenant: resolvedTenantId });
+      console.log('[widget-booking-live] confirm', { requestId, tenant: resolvedTenantId, USE_LOCAL_BOOKING });
       if (USE_LOCAL_BOOKING) {
+        console.log('[widget-booking-live] Taking LOCAL booking path');
         return await handleConfirmReservationLocal(supabase, requestData, requestId, resolvedTenant);
       }
+      console.log('[widget-booking-live] Taking EXTERNAL API booking path');
       return await handleConfirmReservation(supabase, requestData, requestId, resolvedTenant);
     } else {
       return errorResponse('INVALID_ACTION', 'Invalid action specified', 400, requestId);
@@ -627,6 +687,7 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
 
 async function handleConfirmReservationLocal(supabase: any, requestData: any, requestId: string | undefined, tenant: any) {
   try {
+    console.log('[widget-booking-live] handleConfirmReservationLocal called', { requestId });
     const { tenant_id, hold_id, guest_details, idempotency_key, table_id, deposit } = requestData;
 
     if (!tenant_id || !hold_id || !guest_details?.email) {
@@ -709,48 +770,99 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       guest_email: guest_details.email,
       guest_phone: guest_details.phone || null,
       special_requests: guest_details.special_requests || null,
-      status: 'pending',
+      status: 'pending', // Use pending status for moderation workflow
       duration_minutes: durationMins,
       deposit_required: depositRequired,
       deposit_amount: depositRequired ? depositAmount : 0,
-      deposit_paid: depositRequired ? depositPaid : false,
-      stripe_payment_intent_id: (deposit && (deposit as any).payment_intent_id) ? String((deposit as any).payment_intent_id) : null,
+      deposit_paid: depositRequired ? depositPaid : false
+      // Remove unsupported columns for schema compatibility
     };
 
     // Persist table assignment if provided (support both schemas)
     let booking: any = null; let bookingError: any = null;
-    {
-      const res = await supabase.from('bookings').insert({ ...bookingData, table_id: assignedTableId }).select().single();
-      booking = res.data; bookingError = res.error;
-    }
+    
+    const insertData = { ...bookingData, table_id: assignedTableId };
+    console.log('[widget-booking-live] First insert attempt (new schema):', {
+      booking_time: insertData.booking_time,
+      status: insertData.status,
+      tenant_id: insertData.tenant_id,
+      guest_name: insertData.guest_name
+    });
+    
+    const res = await supabase.from('bookings').insert(insertData).select().single();
+    booking = res.data; bookingError = res.error;
     if (bookingError) {
+      console.log('[widget-booking-live] First insert failed, trying legacy schema:', bookingError.message);
+      
+      // Try legacy schema (single booking_time TIMESTAMPTZ column)
       const when = holdStart;
-    const legacyInsert = {
+      const legacyInsert = {
         tenant_id,
         table_id: assignedTableId,
-        booking_date: (hold.booking_date as string) || when.toISOString().slice(0, 10),
-        booking_time: (typeof hold.booking_time === 'string' && !hold.booking_time.includes('T')) ? hold.booking_time : when.toISOString().slice(11, 19),
+        booking_time: when.toISOString(), // Use full timestamp for legacy schema
         party_size: hold.party_size,
         guest_name: `${guest_details.first_name || ''} ${guest_details.last_name || ''}`.trim() || 'Guest',
         guest_email: guest_details.email,
         guest_phone: guest_details.phone || null,
         special_requests: guest_details.special_requests || null,
-        status: 'pending',
+        status: 'pending', // Use pending status - will fail if schema doesn't support it
         duration_minutes: durationMins,
-      deposit_required: depositRequired,
-      deposit_amount: depositRequired ? depositAmount : 0,
-      deposit_paid: depositRequired ? depositPaid : false,
-      stripe_payment_intent_id: (deposit && (deposit as any).payment_intent_id) ? String((deposit as any).payment_intent_id) : null,
+        deposit_required: depositRequired,
+        deposit_amount: depositRequired ? depositAmount : 0,
+        deposit_paid: depositRequired ? depositPaid : false
+        // Remove columns that don't exist in legacy schema: stripe_payment_intent_id, source
       } as any;
+      
+      console.log('[widget-booking-live] Trying legacy insert:', { 
+        booking_time: legacyInsert.booking_time,
+        status: legacyInsert.status 
+      });
+      
       const res2 = await supabase.from('bookings').insert(legacyInsert).select().single();
       booking = res2.data; bookingError = res2.error;
+      
+      if (bookingError) {
+        console.log('[widget-booking-live] Legacy insert also failed:', bookingError.message);
+      } else {
+        console.log('[widget-booking-live] Legacy insert successful:', booking.id);
+      }
     }
     if (bookingError) {
       return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: bookingError.message });
     }
 
-    const confirmationNumber = `PEND${booking.id.slice(-6).toUpperCase()}`;
-    const body = { success: true, reservation_id: booking.id, confirmation_number: confirmationNumber, status: 'pending', summary: { date: booking.booking_time, time: new Date(booking.booking_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }), party_size: booking.party_size, table_info: 'Pending approval', deposit_required: depositRequired, deposit_amount: depositAmount / 100 }, _local: true, requestId };
+    // Determine confirmation number and status based on what was actually saved
+    const actualStatus = booking.status || 'confirmed';
+    const confirmationNumber = actualStatus === 'pending' 
+      ? `PEND${booking.id.slice(-6).toUpperCase()}`
+      : `CONF${booking.id.slice(-6).toUpperCase()}`;
+    
+    const tableInfo = actualStatus === 'pending' ? 'Pending approval' : 'Confirmed';
+    
+    const body = { 
+      success: true, 
+      reservation_id: booking.id, 
+      confirmation_number: confirmationNumber, 
+      status: actualStatus, 
+      summary: { 
+        date: booking.booking_time, 
+        time: new Date(booking.booking_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }), 
+        party_size: booking.party_size, 
+        table_info: tableInfo, 
+        deposit_required: depositRequired, 
+        deposit_amount: depositAmount / 100 
+      }, 
+      _local: true, 
+      requestId 
+    };
+    
+    console.log('[widget-booking-live] Local booking created successfully', { 
+      bookingId: booking.id, 
+      confirmationNumber, 
+      status: actualStatus,
+      schemaNote: actualStatus === 'confirmed' ? 'Legacy schema forced confirmed status' : 'New schema supports pending',
+      requestId 
+    });
     if (idempotency_key) {
       try {
         const { data: tables } = await supabase.rpc('pg_tables');
