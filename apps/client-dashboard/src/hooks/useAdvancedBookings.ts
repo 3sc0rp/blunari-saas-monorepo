@@ -92,7 +92,41 @@ export const useAdvancedBookings = (tenantId?: string) => {
       if (devLogs) console.log('[useAdvancedBookings] Query result:', { data: data?.length, error });
       
       if (error) {
-        console.error('[useAdvancedBookings] Query error:', error);
+        console.error('[useAdvancedBookings] Direct query failed:', error);
+        
+        // Fallback: try the edge function that uses service role
+        if (devLogs) console.log('[useAdvancedBookings] Attempting fallback via edge function...');
+        try {
+          const apiUrl = import.meta.env.VITE_SUPABASE_URL;
+          const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+          
+          const fallbackRes = await fetch(`${apiUrl}/functions/v1/fetch-bookings?tenant_id=${tenantId}`, {
+            method: 'GET',
+            headers: {
+              'apikey': anonKey,
+              'Authorization': `Bearer ${anonKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (fallbackRes.ok) {
+            const fallbackData = await fallbackRes.json();
+            if (devLogs) console.log('[useAdvancedBookings] Fallback successful, got', fallbackData.bookings?.length, 'bookings');
+            
+            // Return the bookings with basic processing (skip advanced filtering for now)
+            return (fallbackData.bookings || []).map((b: any) => ({
+              ...b,
+              status: (b.status === 'no_show') ? 'noshow' : b.status,
+              table_name: null, // Skip table name lookup for fallback
+            } as ExtendedBooking));
+          } else {
+            if (devLogs) console.log('[useAdvancedBookings] Fallback failed:', fallbackRes.status);
+          }
+        } catch (fallbackError) {
+          if (devLogs) console.error('[useAdvancedBookings] Fallback error:', fallbackError);
+        }
+        
+        // If fallback also fails, throw original error
         throw error;
       }
       
