@@ -171,6 +171,10 @@ export const useSmartBookingCreation = (tenantId?: string) => {
       return reservation;
     },
     onSuccess: (reservation) => {
+      if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+        console.log('[SmartBookingCreation] Reservation created raw response:', reservation);
+        console.log('[SmartBookingCreation] Active tenantId:', tenantId);
+      }
       setCreatedReservation(reservation);
       setCurrentStep(5);
       // Force-refresh key booking views for the real tenant only
