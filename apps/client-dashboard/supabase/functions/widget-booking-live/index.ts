@@ -629,6 +629,28 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
       const confirmationNumber = `PEND${booking.id.slice(-6).toUpperCase()}`;
       const body = { success: true, reservation_id: booking.id, confirmation_number: confirmationNumber, status: "pending", summary: { date: booking.booking_time, time: new Date(booking.booking_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }), party_size: booking.party_size, table_info: "Pending Approval", deposit_required: false }, _fallback: true, requestId };
       if (idempotency_key) { try { await supabase.from('idempotency_keys').insert({ tenant_id, idempotency_key, request_id: requestId, status_code: 200, response_json: body }); } catch {} }
+      
+      // Create in-app notification for command center (fallback path)
+      try {
+        await createCommandCenterNotification(supabase, {
+          tenantId: tenant_id,
+          type: 'new_reservation',
+          title: 'New Reservation (Pending)',
+          message: `New reservation for ${booking.party_size} guests on ${new Date(booking.booking_time).toLocaleDateString()} - Pending approval`,
+          data: {
+            reservation_id: booking.id,
+            confirmation_number: confirmationNumber,
+            guest_name: guest_details?.name,
+            guest_email: guest_details?.email,
+            party_size: booking.party_size,
+            booking_time: booking.booking_time,
+            status: 'pending'
+          }
+        });
+      } catch (notifError) {
+        console.log('Failed to create command center notification (fallback):', notifError);
+      }
+      
       await enqueueNotificationJob({ tenantId: tenant_id, requestId, type: 'email', to: tenant?.email || 'owner@blunari.ai', template: 'reservation.review', data: { reservation_id: booking.id, tenant_name: tenant?.name } });
       return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json", 'x-request-id': requestId || '' } });
     } catch (fallbackError) {
@@ -808,6 +830,27 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       } catch {}
     }
 
+    // Create in-app notification for command center
+    try {
+      await createCommandCenterNotification(supabase, {
+        tenantId: tenant_id,
+        type: 'new_reservation',
+        title: 'New Reservation',
+        message: `New reservation for ${booking.party_size} guests on ${new Date(booking.booking_time).toLocaleDateString()} at ${new Date(booking.booking_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`,
+        data: {
+          reservation_id: booking.id,
+          confirmation_number: confirmationNumber,
+          guest_name: guest_details?.name,
+          guest_email: guest_details?.email,
+          party_size: booking.party_size,
+          booking_time: booking.booking_time,
+          table_id: assignedTableId
+        }
+      });
+    } catch (notifError) {
+      console.log('Failed to create command center notification:', notifError);
+    }
+
     // Post-confirm notifications (best-effort)
     try { await sendNotifications({
       toEmail: guest_details?.email,
@@ -821,6 +864,38 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
     return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } });
   } catch (e) {
     return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: `${e}` });
+  }
+}
+
+// Create in-app notification for command center real-time updates
+async function createCommandCenterNotification(supabase: any, opts: {
+  tenantId: string;
+  type: string;
+  title: string;
+  message: string;
+  data?: Record<string, unknown>;
+}) {
+  try {
+    const notificationData = {
+      tenant_id: opts.tenantId,
+      notification_type: opts.type,
+      title: opts.title,
+      message: opts.message,
+      data: opts.data || {},
+      created_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('notification_queue')
+      .insert(notificationData);
+
+    if (error) {
+      console.error('Failed to create command center notification:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error creating command center notification:', error);
+    throw error;
   }
 }
 

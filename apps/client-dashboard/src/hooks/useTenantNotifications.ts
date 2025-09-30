@@ -16,11 +16,49 @@ function getReadStorageKey(tenantId?: string | null) {
   return `notif_read_${tenantId || 'unknown'}`;
 }
 
+// Sound notification utilities
+const playNotificationSound = (type: 'new_reservation' | 'general' = 'general') => {
+  try {
+    // Create audio context for browser notification sound
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    // Different tones for different notification types
+    const frequencies = {
+      new_reservation: [800, 600, 400], // Descending tone for new reservations
+      general: [400, 600] // Simple two-tone for general notifications
+    };
+    
+    const freq = frequencies[type] || frequencies.general;
+    
+    freq.forEach((frequency, index) => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime + index * 0.3);
+      gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + index * 0.3 + 0.1);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + index * 0.3 + 0.25);
+      
+      oscillator.start(audioContext.currentTime + index * 0.3);
+      oscillator.stop(audioContext.currentTime + index * 0.3 + 0.25);
+    });
+  } catch (error) {
+    // Fallback to system notification sound or silent fail
+    console.log('Notification sound unavailable:', error);
+  }
+};
+
 export function useTenantNotifications() {
   const { tenantId } = useTenant();
   const [notifications, setNotifications] = useState<TenantNotification[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastNotificationCount = useRef<number>(0);
 
   const readSet = useMemo(() => {
     try {
@@ -91,7 +129,29 @@ export function useTenantNotifications() {
               data: n.data,
               created_at: n.created_at,
             };
+            
+            // Play notification sound for new notifications
+            const isNewReservation = mapped.type === 'new_reservation' || 
+                                  mapped.title?.toLowerCase().includes('reservation') ||
+                                  mapped.message?.toLowerCase().includes('reservation');
+            
+            if (isNewReservation) {
+              playNotificationSound('new_reservation');
+            } else {
+              playNotificationSound('general');
+            }
+            
             setNotifications((prev) => [mapped, ...prev].slice(0, 50));
+            
+            // Show browser notification if permission granted
+            if (Notification.permission === 'granted') {
+              new Notification(mapped.title || 'New Notification', {
+                body: mapped.message,
+                icon: '/logo.png',
+                badge: '/logo.png',
+                tag: mapped.id // Prevent duplicate notifications
+              });
+            }
           }
         )
         .subscribe();
@@ -123,6 +183,13 @@ export function useTenantNotifications() {
     persistReadSet(next);
   };
 
+  // Request notification permission on first load
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   return {
     notifications,
     unreadCount,
@@ -130,6 +197,7 @@ export function useTenantNotifications() {
     refresh,
     markRead,
     markAllRead,
+    playNotificationSound, // Expose for manual testing
   };
 }
 
