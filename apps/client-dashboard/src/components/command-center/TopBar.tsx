@@ -40,6 +40,8 @@ interface TopBarProps {
   onNewReservation?: () => void;
   onExport?: () => void;
   onNotify?: () => void;
+  onSearch?: (query: string) => void;
+  searchQuery?: string;
 }
 
 export function TopBar({ 
@@ -47,12 +49,13 @@ export function TopBar({
   selectedDate = new Date().toISOString().split('T')[0], 
   onNewReservation = () => {},
   onExport = () => {},
-  onNotify = () => {}
+  onNotify = () => {},
+  onSearch = () => {},
+  searchQuery = ""
 }: TopBarProps) {
   const navigate = useNavigate();
   const { setMode } = useUIMode();
   const { triggerModeTransition } = useModeTransition();
-  const [searchQuery, setSearchQuery] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState("demo-restaurant");
   const [contextFilter, setContextFilter] = useState("all");
@@ -127,7 +130,7 @@ export function TopBar({
               type="text"
               placeholder="Search Guests"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => onSearch(e.target.value)}
               className="glass border-white/10 text-white placeholder:text-white/50 pl-10 w-[180px] h-10 focus:ring-accent"
             />
           </div>

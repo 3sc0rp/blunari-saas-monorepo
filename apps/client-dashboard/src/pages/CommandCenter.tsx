@@ -60,6 +60,7 @@ export default function CommandCenter() {
   const [filters, setFilters] = useState<FiltersState>({});
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
   const [focusTableId, setFocusTableId] = useState<string | undefined>();
+  const [searchQuery, setSearchQuery] = useState<string>("");
   // Convert FiltersState to contracts.Filters
   const contractFilters = useMemo<FiltersType>(() => ({
     section: 'all', // Current FiltersState doesn't have section, defaulting to 'all'
@@ -257,6 +258,20 @@ export default function CommandCenter() {
           if (!filters.vip && reservation.vip) return false;
         }
 
+        // Search filter
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase().trim();
+          const matchesName = reservation.guestName?.toLowerCase().includes(query);
+          const matchesPhone = reservation.guestPhone?.toLowerCase().includes(query);
+          const matchesEmail = reservation.guestEmail?.toLowerCase().includes(query);
+          const matchesRequests = reservation.specialRequests?.toLowerCase().includes(query);
+          const matchesId = reservation.id.toLowerCase().includes(query);
+          
+          if (!matchesName && !matchesPhone && !matchesEmail && !matchesRequests && !matchesId) {
+            return false;
+          }
+        }
+
         return true;
       });
 
@@ -269,7 +284,7 @@ export default function CommandCenter() {
       console.error('Error filtering reservations:', error);
       return reservations;
     }
-  }, [reservations, filters, isConnected]);
+  }, [reservations, filters, isConnected, searchQuery]);
 
   // Transform data for legacy components with error handling
   const legacyTables = useMemo<LegacyTableRow[]>(() => {
@@ -538,6 +553,8 @@ export default function CommandCenter() {
           onNewReservation={handleNewReservation}
           onExport={handleExport}
           onNotify={handleNotify}
+          onSearch={setSearchQuery}
+          searchQuery={searchQuery}
         />
 
         {/* Debug Component - Remove in production */}
