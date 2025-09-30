@@ -33,7 +33,15 @@
     "quality:fix": "node dev.js quality:fix",
   "secrets:setup": "node scripts/setup-secrets.js",
   "verify:admin-live": "node scripts/live-admin-login-check.mjs",
-  "preflight": "node scripts/preflight-check.mjs"
+  "preflight": "node scripts/preflight-check.mjs",
+  "cleanup:preview": "node scripts/preview-test-bookings.js",
+  "cleanup:test-data": "node scripts/cleanup-test-bookings.js",
+  "cleanup:auto": "node scripts/auto-cleanup.js",
+  "validate:production": "node scripts/production-validation.js",
+  "deploy:functions": "node scripts/deploy-functions.js",
+  "deploy:check": "npm run cleanup:auto && npm run validate:production",
+  "deploy:full": "npm run deploy:functions && npm run deploy:check",
+  "test:production-flow": "node scripts/production-flow-test.js"
   },
   "devDependencies": {
     "@turbo/gen": "^1.10.12",
