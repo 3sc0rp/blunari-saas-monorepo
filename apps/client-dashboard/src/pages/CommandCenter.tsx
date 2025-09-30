@@ -701,13 +701,47 @@ export default function CommandCenter() {
           }
         }}
         onApprove={async () => {
-          if (!selectedReservationId) return;
-          const res = await moveReservationAction({ reservationId: selectedReservationId, status: 'CONFIRMED' as any });
-          if ((res as any)?.ok === false) {
-            toast.error(`Approve failed: ${(res as any).error}`);
-          } else {
-            toast.success('Reservation confirmed');
-            await refetch();
+          if (!selectedReservationId || !tenantId) return;
+          try {
+            const response = await supabase.functions.invoke('reservation-status', {
+              body: {
+                reservation_id: selectedReservationId,
+                action: 'approve',
+                tenant_id: tenantId
+              }
+            });
+            
+            if (response.error) {
+              toast.error(`Approval failed: ${response.error.message}`);
+            } else {
+              toast.success('Reservation approved! Customer has been notified.');
+              await refetch();
+              setSelectedReservationId(null);
+            }
+          } catch (error) {
+            toast.error(`Approval failed: ${(error as any)?.message || 'Unknown error'}`);
+          }
+        }}
+        onDecline={async () => {
+          if (!selectedReservationId || !tenantId) return;
+          try {
+            const response = await supabase.functions.invoke('reservation-status', {
+              body: {
+                reservation_id: selectedReservationId,
+                action: 'decline',
+                tenant_id: tenantId
+              }
+            });
+            
+            if (response.error) {
+              toast.error(`Decline failed: ${response.error.message}`);
+            } else {
+              toast.success('Reservation declined. Customer has been notified.');
+              await refetch();
+              setSelectedReservationId(null);
+            }
+          } catch (error) {
+            toast.error(`Decline failed: ${(error as any)?.message || 'Unknown error'}`);
           }
         }}
       />

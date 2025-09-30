@@ -19,7 +19,7 @@ export interface Reservation {
   partySize: number;
   start: string;
   end: string;
-  status: 'confirmed' | 'seated' | 'completed' | 'no_show' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'seated' | 'completed' | 'no_show' | 'cancelled';
   channel: 'online' | 'phone' | 'walkin';
   deposit?: number;
   isVip?: boolean;

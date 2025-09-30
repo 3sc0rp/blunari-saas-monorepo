@@ -709,7 +709,7 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       guest_email: guest_details.email,
       guest_phone: guest_details.phone || null,
       special_requests: guest_details.special_requests || null,
-      status: 'confirmed',
+      status: 'pending',
       duration_minutes: durationMins,
       deposit_required: depositRequired,
       deposit_amount: depositRequired ? depositAmount : 0,
@@ -735,7 +735,7 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
         guest_email: guest_details.email,
         guest_phone: guest_details.phone || null,
         special_requests: guest_details.special_requests || null,
-        status: 'confirmed',
+        status: 'pending',
         duration_minutes: durationMins,
       deposit_required: depositRequired,
       deposit_amount: depositRequired ? depositAmount : 0,
@@ -749,8 +749,8 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: bookingError.message });
     }
 
-    const confirmationNumber = `CONF${booking.id.slice(-6).toUpperCase()}`;
-    const body = { success: true, reservation_id: booking.id, confirmation_number: confirmationNumber, status: 'confirmed', summary: { date: booking.booking_time, time: new Date(booking.booking_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }), party_size: booking.party_size, table_info: 'Auto-assigned', deposit_required: depositRequired, deposit_amount: depositAmount / 100 }, _local: true, requestId };
+    const confirmationNumber = `PEND${booking.id.slice(-6).toUpperCase()}`;
+    const body = { success: true, reservation_id: booking.id, confirmation_number: confirmationNumber, status: 'pending', summary: { date: booking.booking_time, time: new Date(booking.booking_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }), party_size: booking.party_size, table_info: 'Pending approval', deposit_required: depositRequired, deposit_amount: depositAmount / 100 }, _local: true, requestId };
     if (idempotency_key) {
       try {
         const { data: tables } = await supabase.rpc('pg_tables');
@@ -765,9 +765,9 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
     try {
       await createCommandCenterNotification(supabase, {
         tenantId: tenant_id,
-        type: 'new_reservation',
-        title: 'New Reservation',
-        message: `New reservation for ${booking.party_size} guests on ${new Date(booking.booking_time).toLocaleDateString()} at ${new Date(booking.booking_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`,
+        type: 'reservation_pending',
+        title: 'Reservation Pending Approval',
+        message: `New reservation request for ${booking.party_size} guests on ${new Date(booking.booking_time).toLocaleDateString()} at ${new Date(booking.booking_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - requires approval`,
         data: {
           reservation_id: booking.id,
           confirmation_number: confirmationNumber,
@@ -782,10 +782,9 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       console.log('Failed to create command center notification:', notifError);
     }
 
-    // Post-confirm notifications (best-effort)
-    try { await sendNotifications({
+    // Post-submission notification to customer (pending status)
+    try { await sendPendingNotifications({
       toEmail: guest_details?.email,
-      toPhone: guest_details?.phone,
       tenantName: tenant?.name,
       whenISO: booking.booking_time,
       partySize: booking.party_size,
@@ -1076,4 +1075,47 @@ async function sendEmailViaFastmail(params: { apiToken: string; from: string; to
     ]
   } as any;
   await fetch(apiUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${params.apiToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+}
+
+async function sendPendingNotifications(opts: { toEmail?: string; tenantName?: string; whenISO: string; partySize: number; confirmationNumber: string }) {
+  const { toEmail, tenantName, whenISO, partySize, confirmationNumber } = opts;
+  const when = new Date(whenISO);
+  const dateStr = when.toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = when.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  // Email via Fastmail JMAP (HTTP) - pending notification
+  try {
+    const FASTMAIL_API_TOKEN = Deno.env.get('FASTMAIL_API_TOKEN');
+    const FASTMAIL_FROM = Deno.env.get('FASTMAIL_FROM');
+    if (FASTMAIL_API_TOKEN && FASTMAIL_FROM && toEmail) {
+      await sendEmailViaFastmail({
+        apiToken: FASTMAIL_API_TOKEN,
+        from: FASTMAIL_FROM,
+        to: toEmail,
+        subject: `${tenantName || 'Reservation'} Request Received ${confirmationNumber}`,
+        text: `Your reservation request has been received for ${dateStr} at ${timeStr}. Party ${partySize}. Reference ${confirmationNumber}. We will notify you once your request is reviewed.`,
+        html: `<p>Your reservation request has been received and is pending approval.</p><p><b>${dateStr} at ${timeStr}</b> · Party ${partySize}</p><p>Reference: <b>${confirmationNumber}</b></p><p>We will email you once your request has been reviewed.</p>`
+      });
+      return;
+    }
+  } catch {}
+
+  // Fallback: Email via Resend if configured
+  try {
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+    const RESEND_FROM = Deno.env.get('RESEND_FROM');
+    if (RESEND_API_KEY && RESEND_FROM && toEmail) {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: RESEND_FROM,
+          to: toEmail,
+          subject: `${tenantName || 'Reservation'} Request Received ${confirmationNumber}`,
+          text: `Your reservation request has been received for ${dateStr} at ${timeStr}. Party ${partySize}. Reference ${confirmationNumber}. We will notify you once your request is reviewed.`,
+          html: `<p>Your reservation request has been received and is pending approval.</p><p><b>${dateStr} at ${timeStr}</b> · Party ${partySize}</p><p>Reference: <b>${confirmationNumber}</b></p><p>We will email you once your request has been reviewed.</p>`
+        }),
+      });
+    }
+  } catch {}
 }

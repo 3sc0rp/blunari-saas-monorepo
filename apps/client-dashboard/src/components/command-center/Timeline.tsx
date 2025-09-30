@@ -628,7 +628,8 @@ export function Timeline({
                                     reservation.status === 'seated' && "bg-purple-500/20 text-purple-200 border-purple-500/40",
                                     reservation.status === 'completed' && "bg-emerald-500/20 text-emerald-200 border-emerald-500/40",
                                     reservation.status === 'no_show' && "bg-red-500/20 text-red-200 border-red-500/40",
-                                    reservation.status === 'cancelled' && "bg-gray-500/20 text-gray-200 border-gray-500/40"
+                                    reservation.status === 'cancelled' && "bg-gray-500/20 text-gray-200 border-gray-500/40",
+                                    reservation.status === 'pending' && "bg-orange-500/20 text-orange-200 border-orange-500/40"
                                   )}>
                                     {reservation.status?.toUpperCase() || 'PENDING'}
                                   </Badge>

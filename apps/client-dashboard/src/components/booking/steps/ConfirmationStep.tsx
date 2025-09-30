@@ -108,20 +108,22 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       const confirmedReservation = await measureStep(
         "Confirming reservation",
         async () => {
-          return confirmReservation(
-            {
-              tenant_id: tenant.tenant_id,
-              hold_id: hold.hold_id,
-              guest_details,
-              deposit: (guest_details as any)?.payment_intent_id ? {
-                required: true,
-                amount_cents: Math.round(((window as any).__widget_deposit_policy?.amount || 0) * 100),
-                paid: true,
-                payment_intent_id: (guest_details as any).payment_intent_id
-              } : undefined,
-            },
-            idempotencyKey,
-          );
+          const confirmationData: any = {
+            tenant_id: tenant.tenant_id,
+            hold_id: hold.hold_id,
+            guest_details,
+          };
+
+          if ((guest_details as any)?.payment_intent_id) {
+            confirmationData.deposit = {
+              required: true,
+              amount_cents: Math.round(((window as any).__widget_deposit_policy?.amount || 0) * 100),
+              paid: true,
+              payment_intent_id: (guest_details as any).payment_intent_id
+            };
+          }
+
+          return confirmReservation(confirmationData, idempotencyKey);
         },
       );
 
@@ -165,15 +167,27 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       >
         <Card>
           <CardContent className="pt-6">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
-            <p className="text-muted-foreground mb-6">
-              Your table has been reserved successfully
-            </p>
+            {reservation.status === 'pending' ? (
+              <>
+                <Clock className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold mb-2">Reservation Submitted!</h2>
+                <p className="text-muted-foreground mb-6">
+                  Your reservation request is pending approval
+                </p>
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
+                <p className="text-muted-foreground mb-6">
+                  Your table has been reserved successfully
+                </p>
+              </>
+            )}
 
-            <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg mb-6">
+            <div className={`${reservation.status === 'pending' ? 'bg-orange-50 dark:bg-orange-950' : 'bg-green-50 dark:bg-green-950'} p-4 rounded-lg mb-6`}>
               <div className="text-lg font-semibold mb-2">
-                Confirmation #{displayConfirmationNumber}
+                {reservation.status === 'pending' ? 'Request' : 'Confirmation'} #{displayConfirmationNumber}
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -216,8 +230,21 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
               </div>
             )}
 
+            {reservation.status === 'pending' ? (
+              <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg mb-4">
+                <h3 className="font-medium mb-2">What happens next?</h3>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• The restaurant will review your request</li>
+                  <li>• You'll receive an email once it's approved or declined</li>
+                  <li>• This usually takes a few hours during business hours</li>
+                </ul>
+              </div>
+            ) : null}
+            
             <div className="text-sm text-muted-foreground">
-              A confirmation email has been sent to {guest_details?.email}
+              {reservation.status === 'pending' 
+                ? `A confirmation email has been sent to ${guest_details?.email}` 
+                : `A confirmation email has been sent to ${guest_details?.email}`}
             </div>
           </CardContent>
         </Card>
