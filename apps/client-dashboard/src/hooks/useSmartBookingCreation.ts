@@ -125,8 +125,12 @@ export const useSmartBookingCreation = (tenantId?: string) => {
   // Create booking mutation (server-side via Edge Function for RLS-safe inserts)
   const createBookingMutation = useMutation({
     mutationFn: async (data: BookingFormData & { tableId?: string }) => {
-      // Use demo tenant if no tenantId provided (for testing)
-      const effectiveTenantId = tenantId || "f47ac10b-58cc-4372-a567-0e02b2c3d479";
+      // Guard: tenantId must be present in normal runtime. Fallback only allowed in explicit dev flag.
+      const allowDemo = import.meta.env.MODE === 'development' && import.meta.env.VITE_ALLOW_DEMO_TENANT === 'true';
+      if (!tenantId && !allowDemo) {
+        throw new Error('Tenant context not ready yet. Please wait for restaurant data to load before creating a booking.');
+      }
+      const effectiveTenantId = tenantId || (allowDemo ? 'f47ac10b-58cc-4372-a567-0e02b2c3d479' : undefined)!;
       const bookingDateTime = new Date(`${data.date}T${data.time}`);
 
       // Establish a consistent idempotency key for this reservation attempt
@@ -169,15 +173,18 @@ export const useSmartBookingCreation = (tenantId?: string) => {
     onSuccess: (reservation) => {
       setCreatedReservation(reservation);
       setCurrentStep(5);
-      // Force-refresh key booking views immediately; Realtime will follow-up
-      const effectiveTenantId = tenantId || "f47ac10b-58cc-4372-a567-0e02b2c3d479";
-      queryClient.invalidateQueries({ queryKey: ["advanced-bookings", effectiveTenantId] });
-      queryClient.invalidateQueries({ queryKey: ["today-data", effectiveTenantId] });
-      queryClient.invalidateQueries({ queryKey: ["bookings"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      // Force-refresh key booking views for the real tenant only
+      if (tenantId) {
+        queryClient.invalidateQueries({ queryKey: ["advanced-bookings", tenantId] });
+        queryClient.invalidateQueries({ queryKey: ["today-data", tenantId] });
+        queryClient.invalidateQueries({ queryKey: ["bookings"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard-metrics"] });
+      }
       toast({
-        title: "Booking Created Successfully",
-        description: `Reservation ${reservation.confirmation_number || reservation.reservation_id} created.`,
+        title: reservation.status === 'pending' ? 'Reservation Submitted' : 'Booking Created Successfully',
+        description: reservation.status === 'pending'
+          ? `Reservation ${reservation.confirmation_number || reservation.reservation_id} is pending.`
+          : `Reservation ${reservation.confirmation_number || reservation.reservation_id} created.`,
       });
     },
     onError: (error) => {
