@@ -71,11 +71,11 @@ export const useAdvancedBookings = (tenantId?: string) => {
         query = query.lte("party_size", filters.partySize.max);
       }
 
-      // Apply source filter (temporarily disabled due to TypeScript issues and missing source data)
-      // TODO: Re-enable after fixing TypeScript types and ensuring all bookings have source field
-      // if (filters.sources && filters.sources.length > 0) {
-      //   query = query.in('source', filters.sources);
-      // }
+      // Apply source filter
+      if (filters.sources && filters.sources.length > 0) {
+        const sourceValues = filters.sources as string[];
+        query = (query as any).in('source', sourceValues);
+      }
 
       // Apply text search across key fields
       if (filters.search && filters.search.trim().length > 0) {
