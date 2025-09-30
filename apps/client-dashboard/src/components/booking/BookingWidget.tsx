@@ -35,6 +35,8 @@ interface BookingWidgetProps {
 }
 
 const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
+  console.log('[BookingWidget] Component mounted with slug:', slug);
+  
   const [tenantLoading, setTenantLoading] = useState(true);
   const [tenantError, setTenantError] = useState<string | null>(null);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
@@ -62,10 +64,34 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
         setTenantLoading(true);
         setTenantError(null);
 
+        // Debug logging for widget token
+        console.log('[BookingWidget] Loading tenant for slug:', slug);
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        console.log('[BookingWidget] URL token present:', !!token);
+        console.log('[BookingWidget] Token length:', token?.length);
+        console.log('[BookingWidget] Environment check:', {
+          hasSupabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
+          hasSupabaseKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+          supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+        });
+        
+        // Check if we have required environment variables
+        if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+          throw new Error('Missing Supabase configuration in environment variables');
+        }
+
+        // Check if we have a valid token for widget access
+        if (!token) {
+          console.warn('[BookingWidget] No widget token found in URL - this may cause API calls to fail');
+        }
+        
         const tenantInfo = await getTenantBySlug(slug);
+        console.log('[BookingWidget] Tenant loaded successfully:', tenantInfo.name);
         setTenant(tenantInfo);
         setState((prev) => ({ ...prev, tenant: tenantInfo }));
       } catch (err) {
+        console.error('[BookingWidget] Tenant loading failed:', err);
         const errorMsg =
           err instanceof Error
             ? err.message
