@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useTenant } from "@/hooks/useTenant";
 import { useAdvancedBookings } from "@/hooks/useAdvancedBookings";
+import { RecentBookingsProbe } from "@/components/debug/RecentBookingsProbe";
+import { supabase } from "@/integrations/supabase/client";
 import BookingCard from "@/components/dashboard/BookingCard";
 import AdvancedBookingStatusOverview from "@/components/booking/AdvancedBookingStatusOverview";
 import SmartBookingWizard from "@/components/booking/SmartBookingWizard";
@@ -59,9 +61,27 @@ const BookingManagement: React.FC = () => {
 
   const [showWizard, setShowWizard] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [moderating, setModerating] = useState<string | null>(null);
+  const moderate = async (bookingId: string, nextStatus: 'confirmed' | 'cancelled') => {
+    setModerating(`${bookingId}:${nextStatus}`);
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: nextStatus })
+        .eq('id', bookingId)
+        .eq('status', 'pending');
+      if (error) throw error;
+      // Trigger refetch implicitly by touching filters (cheap hack without extra invalidation wiring)
+      setFilters(f => ({ ...f }));
+    } catch (e) {
+      console.error('[moderation] failed', e);
+    } finally {
+      setModerating(null);
+    }
+  };
 
   // Group bookings by status
-  const bookingsByStatus = React.useMemo(() => {
+  const bookingsByStatus = useMemo(() => {
     const groups = {
       confirmed: bookings.filter((b) => b.status === "confirmed"),
       pending: bookings.filter((b) => b.status === "pending"),
@@ -73,10 +93,7 @@ const BookingManagement: React.FC = () => {
     return groups;
   }, [bookings]);
 
-  const currentBookings =
-    selectedStatus === "all"
-      ? bookings
-      : bookingsByStatus[selectedStatus as keyof typeof bookingsByStatus] || [];
+  const currentBookings = selectedStatus === 'all' ? bookings : (bookingsByStatus as any)[selectedStatus] || [];
 
   const statusCounts = {
     all: bookings.length,
@@ -218,7 +235,7 @@ const BookingManagement: React.FC = () => {
         </div>
 
         {/* Today's Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="bg-surface border-surface-2 shadow-elev-1">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -266,6 +283,19 @@ const BookingManagement: React.FC = () => {
                   <p className="text-h3 font-bold text-text font-tabular">
                     {metrics.confirmedToday}
                   </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-surface border-surface-2 shadow-elev-1">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-accent/10 rounded-lg">
+                  <Users className="w-5 h-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-text-muted">Pending Total</p>
+                  <p className="text-h3 font-bold text-text font-tabular">{bookingsByStatus.pending.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -424,6 +454,28 @@ const BookingManagement: React.FC = () => {
         />
       </motion.div>
 
+      {/* Moderation / Pending Queue quick view */}
+      {bookingsByStatus.pending.length > 0 && (
+        <Card className="border-dashed border-warning/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Pending Moderation ({bookingsByStatus.pending.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {bookingsByStatus.pending.slice(0,6).map(p => (
+              <div key={p.id} className="flex items-center justify-between text-xs bg-surface-2 rounded px-2 py-1">
+                <span className="truncate max-w-[140px]" title={p.guest_name || p.guest_email}>{p.guest_name || p.guest_email}</span>
+                <span className="hidden md:inline">{new Date(p.booking_time).toLocaleDateString()} {new Date(p.booking_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <span>Party {p.party_size}</span>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" disabled={!!moderating} onClick={() => moderate(p.id,'confirmed')}>Accept</Button>
+                  <Button size="sm" variant="destructive" disabled={!!moderating} onClick={() => moderate(p.id,'cancelled')}>Decline</Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Virtualized Bookings Table */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -448,6 +500,7 @@ const BookingManagement: React.FC = () => {
 
       {/* Smart Booking Wizard */}
       <SmartBookingWizard open={showWizard} onOpenChange={setShowWizard} />
+      {tenant?.id && <RecentBookingsProbe tenantId={tenant.id} />}
     </div>
   );
 };

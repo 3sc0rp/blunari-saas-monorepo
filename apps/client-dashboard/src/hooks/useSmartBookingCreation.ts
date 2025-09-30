@@ -170,7 +170,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
 
       return reservation;
     },
-    onSuccess: (reservation) => {
+    onSuccess: async (reservation) => {
       if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
         console.log('[SmartBookingCreation] Reservation created raw response:', reservation);
         console.log('[SmartBookingCreation] Active tenantId:', tenantId);
@@ -190,6 +190,38 @@ export const useSmartBookingCreation = (tenantId?: string) => {
           ? `Reservation ${reservation.confirmation_number || reservation.reservation_id} is pending.`
           : `Reservation ${reservation.confirmation_number || reservation.reservation_id} created.`,
       });
+
+      // Post-create verification: ensure row exists in DB; if not, warn user
+      if (tenantId) {
+        try {
+          const conf = reservation.confirmation_number || reservation.reservation_id;
+          // Grace period small delay to allow replication / commit
+          await new Promise(r => setTimeout(r, 400));
+          const { data: rowCheck1 } = await supabase
+            .from('bookings')
+            .select('id, status, booking_time')
+            .eq('tenant_id', tenantId)
+            .eq('guest_email', formData.email)
+            .order('created_at', { ascending: false })
+            .limit(5);
+          const found = (rowCheck1 || []).some(r => {
+            const tDiff = Math.abs(new Date(r.booking_time).getTime() - new Date(`${formData.date}T${formData.time}`).getTime());
+            return tDiff < 10 * 60 * 1000; // within 10 min
+          });
+          if (!found) {
+            toast({
+              title: 'Reservation Persistence Uncertain',
+              description: 'We could not immediately verify the booking in the database. It may appear shortly or you may retry.',
+              variant: 'destructive'
+            });
+            if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+              console.warn('[SmartBookingCreation] Post-create verification failed to locate booking row');
+            }
+          }
+        } catch (e) {
+          console.warn('[SmartBookingCreation] Verification query failed', e);
+        }
+      }
     },
     onError: (error) => {
       toast({
