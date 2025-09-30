@@ -13,12 +13,13 @@ const TodaysBookings = () => {
   const { bookings, isLoading } = useTodaysBookings(tenant?.id);
 
   const getBookingStats = () => {
+    const pending = bookings.filter((b) => b.status === "pending").length;
     const confirmed = bookings.filter((b) => b.status === "confirmed").length;
     const seated = bookings.filter((b) => b.status === "seated").length;
     const completed = bookings.filter((b) => b.status === "completed").length;
     const total = bookings.length;
 
-    return { confirmed, seated, completed, total };
+    return { pending, confirmed, seated, completed, total };
   };
 
   const stats = getBookingStats();
@@ -54,6 +55,12 @@ const TodaysBookings = () => {
 
         {/* Quick Stats */}
         <div className="flex gap-4 pt-2">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+            <span className="text-body-sm text-muted-foreground">
+              {stats.pending} pending
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-primary rounded-full"></div>
             <span className="text-body-sm text-muted-foreground">
@@ -95,6 +102,7 @@ const TodaysBookings = () => {
                     table: booking.table_id || "TBD",
                     phone: booking.guest_phone || "",
                     status: booking.status as
+                      | "pending"
                       | "confirmed"
                       | "seated"
                       | "completed"

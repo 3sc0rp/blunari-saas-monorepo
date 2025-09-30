@@ -10,7 +10,7 @@ interface Booking {
   guests: number;
   table: string;
   phone: string;
-  status: "confirmed" | "seated" | "completed" | "cancelled";
+  status: "pending" | "confirmed" | "seated" | "completed" | "cancelled";
   specialRequests?: string;
 }
 
@@ -22,6 +22,8 @@ interface BookingCardProps {
 const BookingCard = ({ booking, onUpdate }: BookingCardProps) => {
   const getStatusColor = (status: Booking["status"]) => {
     switch (status) {
+      case "pending":
+        return "bg-orange-500/10 text-orange-600 border-orange-500/20";
       case "confirmed":
         return "bg-primary/10 text-primary border-primary/20";
       case "seated":
@@ -76,22 +78,44 @@ const BookingCard = ({ booking, onUpdate }: BookingCardProps) => {
         )}
 
         <div className="flex gap-2 pt-2">
-          <Button variant="outline" size="sm" className="flex-1">
-            <Phone className="h-4 w-4 mr-2" />
-            Call
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1">
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Message
-          </Button>
-          {booking.status === "confirmed" && (
-            <Button
-              size="sm"
-              className="flex-1 bg-gradient-primary"
-              onClick={() => onUpdate?.({ status: "seated" })}
-            >
-              Seat
-            </Button>
+          {booking.status === "pending" ? (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                onClick={() => onUpdate?.({ status: "cancelled" })}
+              >
+                Reject
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 bg-gradient-primary"
+                onClick={() => onUpdate?.({ status: "confirmed" })}
+              >
+                Approve
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" className="flex-1">
+                <Phone className="h-4 w-4 mr-2" />
+                Call
+              </Button>
+              <Button variant="outline" size="sm" className="flex-1">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Message
+              </Button>
+              {booking.status === "confirmed" && (
+                <Button
+                  size="sm"
+                  className="flex-1 bg-gradient-primary"
+                  onClick={() => onUpdate?.({ status: "seated" })}
+                >
+                  Seat
+                </Button>
+              )}
+            </>
           )}
         </div>
       </CardContent>
