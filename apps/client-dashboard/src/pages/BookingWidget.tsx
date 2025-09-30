@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Card,
@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTenant } from "@/hooks/useTenant";
 import { useToast } from "@/hooks/use-toast";
+import { createWidgetToken } from "@/widgets/management/tokenUtils";
 import {
   Code,
   Eye,
@@ -40,12 +41,71 @@ const BookingWidgetPage: React.FC = () => {
   const [widgetType, setWidgetType] = useState<WidgetType>("booking");
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [widgetToken, setWidgetToken] = useState<string>("");
+  const [tokenLoading, setTokenLoading] = useState(false);
 
-  // Use the public widget runtime for previews and embed code
-  const bookingUrl = `/public-widget/book/${tenant?.slug || "demo"}`;
-  const cateringUrl = `/public-widget/catering/${tenant?.slug || "demo"}`;
-  const currentUrl = widgetType === "booking" ? bookingUrl : cateringUrl;
-  const fullCurrentUrl = `${window.location.origin}${currentUrl}`;
+  // Generate widget URLs with proper authentication tokens
+  const generateWidgetUrls = async () => {
+    if (!tenant?.slug) return { bookingUrl: "", cateringUrl: "", currentUrl: "", fullCurrentUrl: "" };
+
+    try {
+      setTokenLoading(true);
+      const token = await createWidgetToken(tenant.slug, "2.0", widgetType);
+      setWidgetToken(token);
+      
+      const baseUrl = widgetType === "booking" 
+        ? `/public-widget/book/${tenant.slug}` 
+        : `/public-widget/catering/${tenant.slug}`;
+      
+      const urlWithToken = `${baseUrl}?token=${encodeURIComponent(token)}`;
+      const fullUrl = `${window.location.origin}${urlWithToken}`;
+      
+      return {
+        bookingUrl: `/public-widget/book/${tenant.slug}?token=${encodeURIComponent(token)}`,
+        cateringUrl: `/public-widget/catering/${tenant.slug}?token=${encodeURIComponent(token)}`,
+        currentUrl: urlWithToken,
+        fullCurrentUrl: fullUrl
+      };
+    } catch (error) {
+      console.error('Failed to generate widget token:', error);
+      toast({
+        title: "Token Generation Failed",
+        description: "Unable to generate widget authentication token. Using fallback URLs.",
+        variant: "destructive"
+      });
+      
+      // Fallback URLs without tokens (may not work properly)
+      const bookingUrl = `/public-widget/book/${tenant.slug}`;
+      const cateringUrl = `/public-widget/catering/${tenant.slug}`;
+      const currentUrl = widgetType === "booking" ? bookingUrl : cateringUrl;
+      
+      return {
+        bookingUrl,
+        cateringUrl, 
+        currentUrl,
+        fullCurrentUrl: `${window.location.origin}${currentUrl}`
+      };
+    } finally {
+      setTokenLoading(false);
+    }
+  };
+
+  // State for widget URLs
+  const [urls, setUrls] = useState({
+    bookingUrl: "",
+    cateringUrl: "",
+    currentUrl: "",
+    fullCurrentUrl: ""
+  });
+
+  // Generate URLs when tenant or widget type changes
+  useEffect(() => {
+    if (tenant?.slug) {
+      generateWidgetUrls().then(setUrls);
+    }
+  }, [tenant?.slug, widgetType]);
+
+  const { bookingUrl, cateringUrl, currentUrl, fullCurrentUrl } = urls;
 
   const embedCode = `<iframe 
   src="${fullCurrentUrl}"
@@ -95,8 +155,12 @@ const BookingWidgetPage: React.FC = () => {
     }
   };
 
-  const refreshPreview = () => {
+  const refreshPreview = async () => {
     setRefreshing(true);
+    if (tenant?.slug) {
+      const newUrls = await generateWidgetUrls();
+      setUrls(newUrls);
+    }
     setTimeout(() => setRefreshing(false), 1000);
   };
 
@@ -132,12 +196,12 @@ const BookingWidgetPage: React.FC = () => {
           <Button
             variant="outline"
             onClick={refreshPreview}
-            disabled={refreshing}
+            disabled={refreshing || tokenLoading}
           >
             <RefreshCw
-              className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`}
+              className={`w-4 h-4 mr-2 ${refreshing || tokenLoading ? "animate-spin" : ""}`}
             />
-            Refresh
+            {tokenLoading ? "Generating Token..." : "Refresh"}
           </Button>
 
           <Button asChild>
@@ -331,6 +395,21 @@ const BookingWidgetPage: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {tokenError ? (
+                <div className="p-4 border border-red-200 rounded-lg bg-red-50 text-red-700 mb-4">
+                  <p className="font-medium">Token Generation Error</p>
+                  <p className="text-sm mt-1">{tokenError}</p>
+                  <Button 
+                    onClick={generateWidgetUrls} 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    disabled={tokenLoading}
+                  >
+                    Retry Token Generation
+                  </Button>
+                </div>
+              ) : null}
               <Textarea
                 value={embedCode}
                 readOnly
