@@ -80,7 +80,6 @@ export const ReservationRequestSchema = z.object({
   hold_id: z.string().uuid(),
   guest_details: GuestDetailsSchema,
   table_id: z.string().uuid().optional(),
-  phone_verification_token: z.string().optional(),
 });
 
 export const ReservationResponseSchema = z.object({
