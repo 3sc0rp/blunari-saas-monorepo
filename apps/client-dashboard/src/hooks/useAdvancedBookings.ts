@@ -71,10 +71,11 @@ export const useAdvancedBookings = (tenantId?: string) => {
         query = query.lte("party_size", filters.partySize.max);
       }
 
-      // Apply source filter
-      if (filters.sources && filters.sources.length > 0) {
-        query = query.in('source', filters.sources as any);
-      }
+      // Apply source filter (temporarily disabled due to TypeScript issues and missing source data)
+      // TODO: Re-enable after fixing TypeScript types and ensuring all bookings have source field
+      // if (filters.sources && filters.sources.length > 0) {
+      //   query = query.in('source', filters.sources);
+      // }
 
       // Apply text search across key fields
       if (filters.search && filters.search.trim().length > 0) {
@@ -82,10 +83,20 @@ export const useAdvancedBookings = (tenantId?: string) => {
         query = query.or(`guest_name.ilike.%${term}%,guest_email.ilike.%${term}%,guest_phone.ilike.%${term}%,special_requests.ilike.%${term}%`);
       }
 
+      if (devLogs) console.log('[useAdvancedBookings] Executing query...');
+      
       const [bookingsRes, tablesRes] = await Promise.all([
         query.order("booking_time", { ascending: true }),
         supabase.from("restaurant_tables").select("id,name").eq("tenant_id", tenantId)
       ]);
+      
+      if (devLogs) console.log('[useAdvancedBookings] Raw query executed, got response');
+      if (devLogs) console.log('[useAdvancedBookings] Bookings response:', { 
+        dataLength: bookingsRes.data?.length, 
+        error: bookingsRes.error,
+        status: bookingsRes.status,
+        statusText: bookingsRes.statusText
+      });
       const data = bookingsRes.data;
       const error = bookingsRes.error;
 
@@ -93,6 +104,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
       
       if (error) {
         console.error('[useAdvancedBookings] Direct query failed:', error);
+        console.error('[useAdvancedBookings] Error details:', { code: error.code, message: error.message, details: error.details });
         
         // Fallback: try the edge function that uses service role
         if (devLogs) console.log('[useAdvancedBookings] Attempting fallback via edge function...');
@@ -120,7 +132,8 @@ export const useAdvancedBookings = (tenantId?: string) => {
               table_name: null, // Skip table name lookup for fallback
             } as ExtendedBooking));
           } else {
-            if (devLogs) console.log('[useAdvancedBookings] Fallback failed:', fallbackRes.status);
+            const errorText = await fallbackRes.text();
+            if (devLogs) console.log('[useAdvancedBookings] Fallback failed:', fallbackRes.status, errorText);
           }
         } catch (fallbackError) {
           if (devLogs) console.error('[useAdvancedBookings] Fallback error:', fallbackError);

@@ -19,6 +19,7 @@ import { useAdvancedBookings } from "@/hooks/useAdvancedBookings";
 import OptimizedBookingsTable from "@/components/booking/VirtualizedBookingsTable";
 import BookingsCalendar from "@/components/booking/BookingsCalendar";
 import ReservationDrawer from "@/components/booking/ReservationDrawer";
+import { BookingDebugger } from "@/components/debug/BookingDebugger";
 import SmartBookingWizard from "@/components/booking/SmartBookingWizard";
 import AdvancedFilters from "@/components/booking/AdvancedFilters";
 import { toast } from "sonner";
@@ -284,6 +285,9 @@ const Bookings: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Debug Section */}
+      <BookingDebugger />
 
       {/* Quick Filters */}
       <div className="flex flex-wrap items-center gap-2 mb-2">
