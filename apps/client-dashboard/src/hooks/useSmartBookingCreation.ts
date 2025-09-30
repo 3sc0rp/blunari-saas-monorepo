@@ -209,9 +209,22 @@ export const useSmartBookingCreation = (tenantId?: string) => {
             return tDiff < 10 * 60 * 1000; // within 10 min
           });
           if (!found) {
+            console.error('[SmartBookingCreation] Verification failed - booking not found in database');
+            console.error('Expected booking:', {
+              email: formData.email,
+              date: formData.date,
+              time: formData.time,
+              expectedDateTime: `${formData.date}T${formData.time}`
+            });
+            console.error('Found bookings:', rowCheck1?.map(r => ({
+              id: r.id,
+              booking_time: r.booking_time,
+              status: r.status
+            })));
+            
             toast({
-              title: 'Reservation Persistence Uncertain',
-              description: 'We could not immediately verify the booking in the database. It may appear shortly or you may retry.',
+              title: 'Booking Creation Failed',
+              description: 'The booking was not successfully created. Please try again or contact support.',
               variant: 'destructive'
             });
             if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {

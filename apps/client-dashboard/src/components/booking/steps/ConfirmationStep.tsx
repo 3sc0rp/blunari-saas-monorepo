@@ -127,10 +127,41 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         },
       );
 
+      // Additional verification step
+      console.log('[ConfirmationStep] Reservation created:', confirmedReservation);
+      
+      // Wait a moment and verify the booking was actually created
+      setTimeout(async () => {
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          const { data: verifyBooking } = await supabase
+            .from('bookings')
+            .select('id, status, guest_name, booking_time')
+            .eq('id', confirmedReservation.reservation_id)
+            .maybeSingle();
+            
+          if (!verifyBooking) {
+            console.error('[ConfirmationStep] Verification failed - booking not found in database');
+            toast.error('Booking verification failed. Please check your reservations or contact support.');
+          } else {
+            console.log('[ConfirmationStep] Booking verified successfully:', verifyBooking);
+          }
+        } catch (verifyError) {
+          console.warn('[ConfirmationStep] Verification check failed:', verifyError);
+        }
+      }, 2000);
+
       setReservation(confirmedReservation);
       setCurrentStatus("completed");
       onComplete(confirmedReservation);
     } catch (error) {
+      console.error('[ConfirmationStep] Booking confirmation failed:', error);
+      console.error('Booking details:', {
+        tenant_id: tenant?.tenant_id,
+        party_size,
+        selected_slot,
+        guest_details
+      });
       onError(error as Error);
     } finally {
       setProcessing(false);
