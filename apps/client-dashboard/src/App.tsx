@@ -42,6 +42,7 @@ import NotFound from "./pages/NotFound";
 const Analytics = lazy(() => import(/* webpackChunkName: "analytics" */ "./pages/Analytics"));
 const Tables = lazy(() => import(/* webpackChunkName: "tables" */ "./pages/Tables"));
 const CommandCenter = lazy(() => import(/* webpackChunkName: "command-center" */ "./pages/CommandCenter"));
+const TestWidget = lazy(() => import(/* webpackChunkName: "test-widget" */ "./pages/test-widget"));
 const WaitlistManagement = lazy(() => 
   import(/* webpackChunkName: "waitlist" */ "./pages/WaitlistManagement")
 );
@@ -213,6 +214,12 @@ function App() {
                               <Route path="command-center" element={
                                 <Suspense fallback={<LazyLoadingFallback component="Command Center" />}>
                                   <CommandCenter />
+                                </Suspense>
+                              } />
+                              
+                              <Route path="test-widget" element={
+                                <Suspense fallback={<LazyLoadingFallback component="Test Widget" />}>
+                                  <TestWidget />
                                 </Suspense>
                               } />
                               </Route>

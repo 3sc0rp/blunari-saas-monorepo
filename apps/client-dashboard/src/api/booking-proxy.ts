@@ -91,17 +91,25 @@ async function callEdgeFunction(
 
     const userJwt = await getUserAccessToken(supabaseUrl);
     
-    // Debug logging in development
-    if (import.meta.env.MODE === 'development') {
-      console.log('[booking-proxy] Auth details:', {
-        hasUserJwt: !!userJwt,
-        usingAnonKey: !userJwt,
-        functionName,
-        requestBody: { ...requestBody, token: requestBody.token ? '[REDACTED]' : undefined }
-      });
-    }
+    // Enhanced debug logging
+    console.log('[booking-proxy] === API CALL DETAILS ===');
+    console.log('[booking-proxy] Function:', functionName);
+    console.log('[booking-proxy] Auth details:', {
+      hasUserJwt: !!userJwt,
+      usingAnonKey: !userJwt,
+      hasWidgetToken: !!requestBody.token,
+      tokenPreview: requestBody.token?.toString().substring(0, 20) + '...',
+      supabaseUrl,
+      hasSupabaseKey: !!supabaseKey
+    });
+    console.log('[booking-proxy] Request body:', {
+      ...requestBody,
+      token: requestBody.token ? '[REDACTED]' : undefined
+    });
     
     const requestId = crypto.randomUUID();
+    console.log('[booking-proxy] Making request with ID:', requestId);
+    
     const response = await fetch(
       `${supabaseUrl}/functions/v1/${functionName}`,
       {
@@ -116,9 +124,24 @@ async function callEdgeFunction(
         body: JSON.stringify(requestBody),
       },
     );
+    
+    console.log('[booking-proxy] Response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      requestId
+    });
 
     if (!response.ok) {
       let errorText = await response.text();
+      console.error('[booking-proxy] API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+        requestId,
+        functionName
+      });
+      
       try {
         const parsed = JSON.parse(errorText);
         if (parsed?.error?.code) {
@@ -133,9 +156,11 @@ async function callEdgeFunction(
     }
 
     const data = await response.json();
+    console.log('[booking-proxy] Response data:', data);
 
     if ((data as any)?.success === false && (data as any)?.error) {
       const err: any = data as any;
+      console.error('[booking-proxy] API returned error:', err);
       throw new BookingAPIError(err.error.code || "API_ERROR", err.error.message, {
         ...err.error,
         requestId,

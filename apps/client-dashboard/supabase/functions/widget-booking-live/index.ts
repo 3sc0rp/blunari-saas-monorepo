@@ -105,6 +105,14 @@ serve(async (req) => {
   }
 
   const requestId = crypto.randomUUID();
+  
+  // Enhanced debugging - log all requests
+  console.log(`[${requestId}] === NEW REQUEST ===`, {
+    method: req.method,
+    url: req.url,
+    headers: Object.fromEntries(req.headers.entries()),
+    timestamp: new Date().toISOString()
+  });
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -126,13 +134,18 @@ serve(async (req) => {
     let requestData: any;
     try {
       const bodyText = await req.text();
+      console.log(`[${requestId}] Raw body:`, bodyText || '<empty>');
+      
       if (!bodyText || bodyText.trim() === "") {
         const url = new URL(req.url);
         requestData = Object.fromEntries(url.searchParams.entries());
+        console.log(`[${requestId}] Using URL params as data:`, requestData);
       } else {
         requestData = JSON.parse(bodyText);
+        console.log(`[${requestId}] Parsed JSON data:`, requestData);
       }
     } catch (parseError) {
+      console.error(`[${requestId}] JSON parse error:`, parseError);
       return errorResponse('INVALID_JSON', 'Invalid JSON in request body', 400, requestId, { parseError: `${parseError}` });
     }
 
@@ -789,10 +802,12 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       guest_name: insertData.guest_name
     });
     
+    console.log('[widget-booking-live] Attempting first insert with data:', JSON.stringify(insertData, null, 2));
     const res = await supabase.from('bookings').insert(insertData).select().single();
     booking = res.data; bookingError = res.error;
     if (bookingError) {
       console.log('[widget-booking-live] First insert failed, trying legacy schema:', bookingError.message);
+      console.log('[widget-booking-live] Full error details:', JSON.stringify(bookingError, null, 2));
       
       // Try legacy schema (single booking_time TIMESTAMPTZ column)
       const when = holdStart;
@@ -813,18 +828,17 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
         // Remove columns that don't exist in legacy schema: stripe_payment_intent_id, source
       } as any;
       
-      console.log('[widget-booking-live] Trying legacy insert:', { 
-        booking_time: legacyInsert.booking_time,
-        status: legacyInsert.status 
-      });
+      console.log('[widget-booking-live] Trying legacy insert with data:', JSON.stringify(legacyInsert, null, 2));
       
       const res2 = await supabase.from('bookings').insert(legacyInsert).select().single();
       booking = res2.data; bookingError = res2.error;
       
       if (bookingError) {
         console.log('[widget-booking-live] Legacy insert also failed:', bookingError.message);
+        console.log('[widget-booking-live] Legacy error details:', JSON.stringify(bookingError, null, 2));
       } else {
         console.log('[widget-booking-live] Legacy insert successful:', booking.id);
+        console.log('[widget-booking-live] Created booking data:', JSON.stringify(booking, null, 2));
       }
     }
     if (bookingError) {

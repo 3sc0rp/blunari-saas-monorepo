@@ -64,16 +64,26 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
         setTenantLoading(true);
         setTenantError(null);
 
-        // Debug logging for widget token
+        // Enhanced debug logging for widget token
+        console.log('[BookingWidget] === WIDGET INITIALIZATION ===');
         console.log('[BookingWidget] Loading tenant for slug:', slug);
+        console.log('[BookingWidget] Full URL:', window.location.href);
+        
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
-        console.log('[BookingWidget] URL token present:', !!token);
-        console.log('[BookingWidget] Token length:', token?.length);
+        console.log('[BookingWidget] Token details:', {
+          present: !!token,
+          length: token?.length,
+          preview: token?.substring(0, 20) + '...',
+          allParams: Object.fromEntries(urlParams.entries())
+        });
+        
         console.log('[BookingWidget] Environment check:', {
           hasSupabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
           hasSupabaseKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
           supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+          enableDevLogs: import.meta.env.VITE_ENABLE_DEV_LOGS,
+          mode: import.meta.env.MODE
         });
         
         // Check if we have required environment variables

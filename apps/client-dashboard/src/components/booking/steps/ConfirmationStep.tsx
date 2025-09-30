@@ -85,8 +85,31 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   };
 
   const handleConfirmBooking = async () => {
+    console.log('[ConfirmationStep] === STARTING BOOKING CONFIRMATION ===');
+    console.log('[ConfirmationStep] Current state:', {
+      hasTenant: !!tenant,
+      tenantId: tenant?.tenant_id,
+      partySize: party_size,
+      selectedSlot: selected_slot,
+      hasGuestDetails: !!guest_details,
+      guestEmail: guest_details?.email,
+      idemKey
+    });
+    
+    // Check URL token
+    const urlToken = new URLSearchParams(window.location.search).get('token');
+    console.log('[ConfirmationStep] URL token present:', !!urlToken);
+    console.log('[ConfirmationStep] URL token preview:', urlToken?.substring(0, 20) + '...');
+    
     if (!tenant || !party_size || !selected_slot || !guest_details) {
-      onError(new Error("Missing required booking information"));
+      const missingItems = [];
+      if (!tenant) missingItems.push('tenant');
+      if (!party_size) missingItems.push('party_size');
+      if (!selected_slot) missingItems.push('selected_slot');
+      if (!guest_details) missingItems.push('guest_details');
+      
+      console.error('[ConfirmationStep] Missing required data:', missingItems);
+      onError(new Error(`Missing required booking information: ${missingItems.join(', ')}`));
       return;
     }
 
@@ -94,16 +117,27 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
     try {
       // Step 1: Create hold
+      console.log('[ConfirmationStep] Step 1: Creating hold with data:', {
+        tenant_id: tenant.tenant_id,
+        party_size,
+        slot: selected_slot,
+        idemKey
+      });
+      
       const hold = await measureStep("Creating hold", async () => {
-        return createHold({
+        const holdResult = await createHold({
           tenant_id: tenant.tenant_id,
           party_size,
           slot: selected_slot,
         }, idemKey);
+        console.log('[ConfirmationStep] Hold creation result:', holdResult);
+        return holdResult;
       });
 
       // Step 2: Confirm reservation with idempotency
       const idempotencyKey = idemKey;
+      console.log('[ConfirmationStep] Step 2: Confirming reservation with hold_id:', hold.hold_id);
+      console.log('[ConfirmationStep] Using idempotency key:', idempotencyKey);
 
       const confirmedReservation = await measureStep(
         "Confirming reservation",
@@ -121,9 +155,14 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
               paid: true,
               payment_intent_id: (guest_details as any).payment_intent_id
             };
+            console.log('[ConfirmationStep] Including deposit data:', confirmationData.deposit);
           }
 
-          return confirmReservation(confirmationData, idempotencyKey);
+          console.log('[ConfirmationStep] Final confirmation data:', confirmationData);
+          
+          const result = await confirmReservation(confirmationData, idempotencyKey);
+          console.log('[ConfirmationStep] Confirmation result:', result);
+          return result;
         },
       );
 
