@@ -159,6 +159,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
             special_requests: data.specialRequests,
           },
           table_id: data.tableId,
+          source: data.source || 'internal',
         },
         idempotencyKey,
       );

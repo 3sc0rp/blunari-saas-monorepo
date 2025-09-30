@@ -80,6 +80,8 @@ export const ReservationRequestSchema = z.object({
   hold_id: z.string().uuid(),
   guest_details: GuestDetailsSchema,
   table_id: z.string().uuid().optional(),
+  // Optional booking source (internal vs widget etc.)
+  source: z.string().optional(),
 });
 
 export const ReservationResponseSchema = z.object({
