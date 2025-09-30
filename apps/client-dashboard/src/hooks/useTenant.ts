@@ -326,7 +326,7 @@ export function useTenant() {
           
           // Use fallback tenant instead of redirecting to auth
           const fallbackTenant: TenantInfo = {
-            id: '99e1607d-da99-4f72-9182-a417072eb629', // Demo tenant ID
+            id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
             slug: 'demo',
             name: 'Demo Restaurant',
             timezone: 'America/New_York',
@@ -352,7 +352,7 @@ export function useTenant() {
           // Use fallback tenant for development, redirect for production
           if (import.meta.env.MODE === 'development') {
             const fallbackTenant: TenantInfo = {
-              id: '99e1607d-da99-4f72-9182-a417072eb629', // Demo tenant ID
+              id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
               slug: 'demo',
               name: 'Demo Restaurant',
               timezone: 'America/New_York',
@@ -461,7 +461,7 @@ export function useTenant() {
       });
       
       const fallbackTenant: TenantInfo = {
-        id: session?.user?.id || '99e1607d-da99-4f72-9182-a417072eb629',
+        id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
         slug: params.slug || 'demo',
         name: params.slug ? `${params.slug} Restaurant` : 'Restaurant Dashboard',
         timezone: 'America/New_York',
@@ -491,7 +491,7 @@ export function useTenant() {
       // FIX: Always use fallback tenant instead of showing error to user
       if (!signal.aborted) {
         const fallbackTenant: TenantInfo = {
-          id: '99e1607d-da99-4f72-9182-a417072eb629',
+          id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
           slug: params.slug || 'demo',
           name: params.slug ? `${params.slug} Restaurant` : 'Restaurant Dashboard',
           timezone: 'America/New_York',
