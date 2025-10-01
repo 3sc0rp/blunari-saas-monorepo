@@ -190,7 +190,54 @@ export async function getTenantBySlug(slug: string) {
   try {
     console.log('[getTenantBySlug] Looking up tenant with slug:', slug);
     
-    // Import supabase client for direct database query
+    // Check if we're in a widget context (has token in URL)
+    const urlToken = (() => {
+      try { 
+        return typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null; 
+      } catch { 
+        return null; 
+      }
+    })();
+    
+    console.log('[getTenantBySlug] Context detection:', {
+      hasUrlToken: !!urlToken,
+      willUseEdgeFunction: !!urlToken,
+      willUseDirectDB: !urlToken
+    });
+    
+    // If widget token present, use edge function to resolve tenant
+    if (urlToken) {
+      console.log('[getTenantBySlug] Using edge function (widget context)');
+      const data = await callEdgeFunction('widget-booking-live', {
+        action: 'tenant',
+        slug,
+      });
+      
+      // Transform response to expected format
+      const tenant = data as any;
+      const transformedData = {
+        tenant_id: tenant.tenant_id || tenant.id,
+        slug: tenant.slug || slug,
+        name: tenant.name || slug,
+        timezone: tenant.timezone || 'UTC',
+        currency: tenant.currency || 'USD',
+        business_hours: Array.isArray(tenant.business_hours) ? tenant.business_hours : [],
+        branding: tenant.branding || {
+          primary_color: '#3b82f6',
+          secondary_color: '#1e40af',
+        },
+        features: tenant.features || {
+          deposit_enabled: false,
+          revenue_optimization: true,
+        },
+      };
+      
+      console.log('[getTenantBySlug] Tenant resolved via edge function:', transformedData.name);
+      return TenantInfoSchema.parse(transformedData);
+    }
+    
+    // Dashboard context: use direct database query
+    console.log('[getTenantBySlug] Using direct DB query (dashboard context)');
     const { supabase } = await import('@/integrations/supabase/client');
     
     // Query tenants table directly
@@ -210,7 +257,7 @@ export async function getTenantBySlug(slug: string) {
       throw new BookingAPIError('TENANT_NOT_FOUND', `Restaurant not found: ${slug}`);
     }
     
-    console.log('[getTenantBySlug] Tenant found:', { id: tenant.id, name: tenant.name });
+    console.log('[getTenantBySlug] Tenant found via DB:', { id: tenant.id, name: tenant.name });
     
     const transformedData = {
       tenant_id: tenant.id,

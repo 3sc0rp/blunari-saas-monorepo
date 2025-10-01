@@ -292,7 +292,45 @@ serve(async (req) => {
     // Override any client-provided tenant_id
     requestData.tenant_id = resolvedTenantId;
 
-    if (action === "search") {
+    if (action === "tenant") {
+      console.log('[widget-booking-live] tenant lookup', { requestId, tenant: resolvedTenantId });
+      // Return tenant information (already resolved from token or auth)
+      if (!resolvedTenant) {
+        // Fetch full tenant details
+        const { data: tenant, error: tenantError } = await supabase
+          .from('tenants')
+          .select('id, slug, name, timezone, currency, business_hours')
+          .eq('id', resolvedTenantId)
+          .maybeSingle();
+        
+        if (tenantError || !tenant) {
+          return errorResponse('TENANT_NOT_FOUND', 'Tenant not found', 404, requestId);
+        }
+        resolvedTenant = tenant;
+      }
+      
+      const responseData = {
+        tenant_id: resolvedTenant.id,
+        slug: resolvedTenant.slug,
+        name: resolvedTenant.name,
+        timezone: resolvedTenant.timezone || 'UTC',
+        currency: resolvedTenant.currency || 'USD',
+        business_hours: resolvedTenant.business_hours || [],
+        branding: {
+          primary_color: '#3b82f6',
+          secondary_color: '#1e40af',
+        },
+        features: {
+          deposit_enabled: false,
+          revenue_optimization: true,
+        },
+      };
+      
+      return new Response(
+        JSON.stringify(responseData),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId || '' } }
+      );
+    } else if (action === "search") {
       console.log('[widget-booking-live] search', { requestId, tenant: resolvedTenantId, tz: resolvedTenant?.timezone });
       return await handleAvailabilitySearch(supabase, requestData, resolvedTenant?.timezone, requestId);
     } else if (action === "hold") {
