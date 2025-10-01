@@ -32,12 +32,16 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    if (!supabaseKey) {
+      console.warn('[widget-booking-live] Service role key missing at runtime');
+    }
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     if (req.method !== "POST") return errorResponse('METHOD_NOT_ALLOWED','Method not allowed',405,requestId);
 
-    let requestData: any = {};
-    try { const bodyText = await req.text(); requestData = bodyText ? JSON.parse(bodyText) : {}; } catch { return errorResponse('INVALID_JSON','Invalid JSON',400,requestId); }
+  let requestData: any = {};
+  try { const bodyText = await req.text(); requestData = bodyText ? JSON.parse(bodyText) : {}; } catch { return errorResponse('INVALID_JSON','Invalid JSON',400,requestId); }
+  console.log('[widget-booking-live] Incoming body', { requestId, keys: Object.keys(requestData||{}), action: requestData.action, raw: requestData });
     const action = requestData.action;
     if (!action) return errorResponse('MISSING_ACTION','Action parameter is required',400,requestId);
 
@@ -46,8 +50,9 @@ serve(async (req) => {
 
     // Resolve tenant via token, tenant_id, or (temporary) slug fallback
     const urlObj = new URL(req.url);
-    const token = requestData.token || urlObj.searchParams.get('token');
-    const slugParam = (requestData.slug || urlObj.searchParams.get('slug') || '').trim() || null;
+  const token = requestData.token || urlObj.searchParams.get('token');
+  const slugRaw = requestData.slug || requestData.tenant_slug || urlObj.searchParams.get('slug') || urlObj.searchParams.get('restaurant') || urlObj.searchParams.get('tenant');
+  const slugParam = (typeof slugRaw === 'string' ? slugRaw.trim() : '').toLowerCase() || null;
     const allowSlugFallback = (Deno.env.get('WIDGET_ALLOW_SLUG_FALLBACK') || 'true').toLowerCase() === 'true';
     const tokenPayload = token ? validateWidgetToken(token) : null;
     let resolvedTenantId: string | null = null; let resolvedTenant: any = null; let authMode: string = 'none';
@@ -75,8 +80,38 @@ serve(async (req) => {
       if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'explicit_tenant_id'; }
     }
     if (!resolvedTenantId && !tokenPayload && slugParam && allowSlugFallback) {
-      const { data: tenant, error: tErr } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', slugParam).maybeSingle();
-      console.log('[widget-booking-live][auth] Slug fallback lookup', { slugParam, found: !!tenant, error: tErr?.message });
+      // multi-step slug resolution
+      // 1. direct eq (normalized lowercase assumption)
+      let lastError: string | undefined;
+      const attempts: Array<{strategy:string; found:boolean; error?:string}> = [];
+      const trySelect = async (fn: () => Promise<any>, strategy: string) => {
+        try { const { data, error } = await fn(); if (error) { attempts.push({ strategy, found:false, error: error.message }); lastError = error.message; return null; } if (data) { attempts.push({ strategy, found:true }); return data; } attempts.push({ strategy, found:false }); return null; } catch (e:any) { attempts.push({ strategy, found:false, error: String(e?.message||e) }); lastError = String(e?.message||e); return null; }
+      };
+      const baseSelect = () => supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', slugParam).maybeSingle();
+      const ilikeSelect = () => supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').ilike('slug', slugParam);
+      const nameSelect = () => supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').ilike('name', slugParam);
+      let tenant = await trySelect(baseSelect, 'slug_eq');
+      if (!tenant) {
+        const { data: list1, error: l1Err } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').ilike('slug', `%${slugParam}%`);
+        if (l1Err) { attempts.push({ strategy:'slug_ilike_wild', found:false, error:l1Err.message }); }
+        else if (Array.isArray(list1) && list1.length === 1) { tenant = list1[0]; attempts.push({ strategy:'slug_ilike_wild', found:true }); }
+        else attempts.push({ strategy:'slug_ilike_wild', found:false });
+      }
+      if (!tenant) {
+        const { data: list2, error: l2Err } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').ilike('name', `%${slugParam}%`);
+        if (l2Err) { attempts.push({ strategy:'name_ilike_wild', found:false, error:l2Err.message }); }
+        else if (Array.isArray(list2) && list2.length === 1) { tenant = list2[0]; attempts.push({ strategy:'name_ilike_wild', found:true }); }
+        else attempts.push({ strategy:'name_ilike_wild', found:false });
+      }
+      if (!tenant) {
+        // single-tenant fallback (dev only) if only one tenant exists
+        const { data: allTenants, error: allErr } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours');
+        if (!allErr && Array.isArray(allTenants) && allTenants.length === 1) {
+          tenant = allTenants[0];
+          attempts.push({ strategy:'single_tenant_global_fallback', found:true });
+        } else attempts.push({ strategy:'single_tenant_global_fallback', found:false, error: allErr?.message });
+      }
+      console.log('[widget-booking-live][auth] Slug fallback multi strategy result', { slugParam, found: !!tenant, attempts, lastError });
       if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'slug_fallback'; }
     }
     if (!resolvedTenantId) {
