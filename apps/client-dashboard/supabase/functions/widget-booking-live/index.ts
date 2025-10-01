@@ -687,6 +687,13 @@ async function handleConfirmReservation(supabase: any, requestData: any, request
 
     const apiData = await apiResponse.json();
 
+    // Validate that the API returned the required fields
+    if (!apiData.reservation_id || !apiData.confirmation_number || !apiData.status) {
+      console.error('[handleConfirmReservation] External API returned incomplete data:', apiData);
+      // Throw error to trigger fallback to local booking creation
+      throw new Error(`External API returned incomplete response: missing ${!apiData.reservation_id ? 'reservation_id' : !apiData.confirmation_number ? 'confirmation_number' : 'status'}`);
+    }
+
     const responseBody = { success: true, reservation_id: apiData.reservation_id, confirmation_number: apiData.confirmation_number, status: apiData.status, summary: apiData.summary, requestId };
 
     // Idempotency write (best-effort) if table exists
