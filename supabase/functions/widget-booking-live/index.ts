@@ -31,17 +31,20 @@ serve(async (req) => {
   const requestId = crypto.randomUUID();
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    if (!supabaseKey) {
-      console.warn('[widget-booking-live] Service role key missing at runtime');
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || '';
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || '';
+    const supabaseKey = serviceRoleKey || anonKey; // fallback to anon if service role not configured
+    const usingServiceRole = !!serviceRoleKey;
+    if (!serviceRoleKey) {
+      console.warn('[widget-booking-live] Service role key missing; falling back to anon key. Some RLS-protected reads may fail.');
     }
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
 
     if (req.method !== "POST") return errorResponse('METHOD_NOT_ALLOWED','Method not allowed',405,requestId);
 
   let requestData: any = {};
   try { const bodyText = await req.text(); requestData = bodyText ? JSON.parse(bodyText) : {}; } catch { return errorResponse('INVALID_JSON','Invalid JSON',400,requestId); }
-  console.log('[widget-booking-live] Incoming body', { requestId, keys: Object.keys(requestData||{}), action: requestData.action, raw: requestData });
+  console.log('[widget-booking-live] Incoming body', { requestId, keys: Object.keys(requestData||{}), action: requestData.action, rawKeys: Object.keys(requestData||{}), hasToken: !!requestData.token, hasSlug: !!requestData.slug });
     const action = requestData.action;
     if (!action) return errorResponse('MISSING_ACTION','Action parameter is required',400,requestId);
 
@@ -66,7 +69,8 @@ serve(async (req) => {
       tokenSlug: tokenPayload?.slug,
       providedTenantId: requestData.tenant_id || null,
       slugParam,
-      allowSlugFallback
+      allowSlugFallback,
+      usingServiceRole
     });
 
     if (tokenPayload?.slug) {
@@ -126,17 +130,43 @@ serve(async (req) => {
         }
       }
       if (!resolvedTenantId) {
-        console.warn('[widget-booking-live][auth] AUTH FAILURE', { requestId, hasToken: !!token, tokenValid: !!tokenPayload, slugParam, allowSlugFallback });
-        return errorResponse('INVALID_TOKEN', 'Valid widget token or tenant_id required', 401, requestId, {
-          hasToken: !!token,
+        // FINAL SUPER-FALLBACK: environment-provided public mapping for demo/testing
+        try {
+          const mappingRaw = Deno.env.get('PUBLIC_TENANT_FALLBACKS');
+          if (slugParam && mappingRaw) {
+            const map = JSON.parse(mappingRaw);
+            if (map && typeof map === 'object' && map[slugParam]) {
+              const cfg = map[slugParam];
+              resolvedTenantId = cfg.id || cfg.tenant_id || cfg.uuid || crypto.randomUUID();
+              resolvedTenant = {
+                id: resolvedTenantId,
+                slug: slugParam,
+                name: cfg.name || slugParam,
+                timezone: cfg.timezone || 'UTC',
+                currency: cfg.currency || 'USD',
+                business_hours: cfg.business_hours || []
+              };
+              authMode = 'env_fallback';
+              console.warn('[widget-booking-live][auth] Using PUBLIC_TENANT_FALLBACKS mapping for slug', slugParam);
+            }
+          }
+        } catch (e) {
+          console.warn('[widget-booking-live][auth] PUBLIC_TENANT_FALLBACKS parse error', e);
+        }
+        if (!resolvedTenantId) {
+          console.warn('[widget-booking-live][auth] AUTH FAILURE', { requestId, hasToken: !!token, tokenValid: !!tokenPayload, slugParam, allowSlugFallback, usingServiceRole });
+          return errorResponse('INVALID_TOKEN', 'Valid widget token or tenant_id required', 401, requestId, {
+            hasToken: !!token,
             tokenValid: !!tokenPayload,
             tokenSlice: token ? token.slice(0,12) : null,
             slugProvided: !!slugParam,
             slugValue: slugParam,
             slugFallbackEnabled: allowSlugFallback,
+            usingServiceRole,
             action: requestData.action,
             hint: allowSlugFallback ? 'Slug fallback enabled but tenant not found. Verify slug exists in tenants.slug.' : 'Provide a signed widget token or tenant_id.'
-        });
+          });
+        }
       }
     }
     requestData.tenant_id = resolvedTenantId;
