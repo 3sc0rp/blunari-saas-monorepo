@@ -358,7 +358,7 @@ export async function confirmReservation(
     console.log('[confirmReservation] Request:', JSON.stringify(request, null, 2));
     console.log('[confirmReservation] Idempotency key:', idempotencyKey);
     
-    const data = await callEdgeFunction("widget-booking-live", {
+    let rawData = await callEdgeFunction("widget-booking-live", {
       action: "confirm",
       idempotency_key: idempotencyKey,
       tenant_id: request.tenant_id,
@@ -370,12 +370,42 @@ export async function confirmReservation(
     });
 
     console.log('[confirmReservation] ✅ Raw data received from edge function:');
-    console.log(JSON.stringify(data, null, 2));
-    console.log('[confirmReservation] Data type:', typeof data);
-    console.log('[confirmReservation] Data keys:', data ? Object.keys(data as any) : 'NO KEYS - data is null/undefined');
+    console.log(JSON.stringify(rawData, null, 2));
+    console.log('[confirmReservation] Data type:', typeof rawData);
+    console.log('[confirmReservation] Data keys:', rawData ? Object.keys(rawData as any) : 'NO KEYS - data is null/undefined');
+
+    // CRITICAL CHECK: Is the response wrapped in a 'data' property?
+    if (rawData && (rawData as any).data && typeof (rawData as any).data === 'object') {
+      console.log('[confirmReservation] ⚠️  Response is wrapped in a "data" property - unwrapping...');
+      rawData = (rawData as any).data;
+      console.log('[confirmReservation] Unwrapped data:', JSON.stringify(rawData, null, 2));
+      console.log('[confirmReservation] Unwrapped data keys:', Object.keys(rawData as any));
+    }
+
+    // CRITICAL CHECK: Is there an error in the response?
+    if (rawData && (rawData as any).error) {
+      console.error('[confirmReservation] ❌ Edge function returned an error:', (rawData as any).error);
+      throw new BookingAPIError(
+        'EDGE_FUNCTION_ERROR',
+        (rawData as any).error?.message || 'Edge function returned an error',
+        { error: (rawData as any).error, rawResponse: rawData }
+      );
+    }
+
+    // CRITICAL CHECK: Is this an empty object?
+    if (rawData && typeof rawData === 'object' && Object.keys(rawData as any).length === 0) {
+      console.error('[confirmReservation] ❌ Edge function returned an empty object!');
+      console.error('[confirmReservation] This usually means the edge function failed silently.');
+      console.error('[confirmReservation] Request was:', { request, idempotencyKey });
+      throw new BookingAPIError(
+        'EMPTY_RESPONSE',
+        'The server returned an empty response. The booking may not have been created.',
+        { rawResponse: rawData, request, idempotencyKey }
+      );
+    }
 
     // Normalize any upstream variations into our stable schema
-    const normalized = normalizeReservationResponse(data);
+    const normalized = normalizeReservationResponse(rawData);
     
     console.log('[confirmReservation] ✅ After normalization:');
     console.log(JSON.stringify(normalized, null, 2));
@@ -524,8 +554,10 @@ function normalizeReservationResponse(input: any): any {
     return normalizedResult;
   } catch (error) {
     console.error('[normalizeReservationResponse] ❌ Error in normalization:', error);
-    console.error('[normalizeReservationResponse] Returning raw input:', input);
-    return input;
+    console.error('[normalizeReservationResponse] Input was:', input);
+    // Re-throw the error instead of returning the malformed input
+    // This ensures validation will properly fail rather than passing through bad data
+    throw error;
   }
 }
 

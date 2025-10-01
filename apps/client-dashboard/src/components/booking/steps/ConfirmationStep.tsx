@@ -210,7 +210,27 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         selected_slot,
         guest_details
       });
-      onError(error as Error);
+
+      // Provide more helpful error messages based on the error type
+      const err = error as any;
+      let userMessage = err?.message || 'Failed to confirm booking';
+
+      if (err?.code === 'EMPTY_RESPONSE') {
+        userMessage = 'The booking server did not respond properly. Please try again or contact support if this persists.';
+      } else if (err?.code === 'EDGE_FUNCTION_ERROR') {
+        userMessage = `Booking failed: ${err?.details?.error?.message || 'Server error'}`;
+      } else if (err?.code === 'SCHEMA_VALIDATION_FAILED') {
+        userMessage = 'The booking response was invalid. This may be a temporary server issue. Please try again.';
+      } else if (err?.code === 'MISSING_RESERVATION_ID') {
+        userMessage = 'The booking was not created on the server. Please try again.';
+      }
+
+      // Create a new error with the user-friendly message
+      const userError = new Error(userMessage);
+      (userError as any).code = err?.code;
+      (userError as any).details = err?.details;
+
+      onError(userError);
     } finally {
       setProcessing(false);
     }
