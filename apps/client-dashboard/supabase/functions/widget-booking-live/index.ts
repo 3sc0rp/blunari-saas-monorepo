@@ -192,53 +192,98 @@ serve(async (req) => {
 
     // Fallback: accept authenticated dashboard requests (no widget token)
     if (!resolvedTenantId) {
+      console.log(`[${requestId}] Attempting auth fallback (no widget token)`);
       try {
         const bearer = req.headers.get('Authorization')?.replace('Bearer ', '');
+        console.log(`[${requestId}] Bearer token present:`, !!bearer, 'Length:', bearer?.length);
+        
         if (bearer) {
           // Use service client to verify JWT to avoid relying on ANON env
-          const { data: auth } = await supabase.auth.getUser(bearer);
+          console.log(`[${requestId}] Calling supabase.auth.getUser with bearer token`);
+          const { data: auth, error: authError } = await supabase.auth.getUser(bearer);
+          
+          if (authError) {
+            console.error(`[${requestId}] Auth error:`, authError);
+          }
+          
           const user = (auth as any)?.user;
+          console.log(`[${requestId}] User found:`, !!user, 'User ID:', user?.id);
+          
           if (user) {
             // If client provided tenant_id, accept it for authenticated dashboard flows
             if (requestData?.tenant_id) {
               const explicitTenantId = String(requestData.tenant_id);
               resolvedTenantId = explicitTenantId;
+              console.log(`[${requestId}] Using explicit tenant_id from request:`, resolvedTenantId);
             }
 
             // Try user_tenant_access first (best-effort; ignore errors if table missing)
             if (!resolvedTenantId) {
-              const { data: uta } = await supabase
+              console.log(`[${requestId}] Checking user_tenant_access table`);
+              const { data: uta, error: utaError } = await supabase
                 .from('user_tenant_access')
                 .select('tenant_id')
                 .eq('user_id', user.id)
                 .eq('active', true)
                 .maybeSingle();
+              
+              if (utaError) {
+                console.log(`[${requestId}] user_tenant_access error (table may not exist):`, utaError.message);
+              }
+              
               resolvedTenantId = (uta as any)?.tenant_id || null;
+              console.log(`[${requestId}] Resolved from user_tenant_access:`, resolvedTenantId);
             }
 
             // Fallback to auto_provisioning (best-effort)
             if (!resolvedTenantId) {
-              const { data: ap } = await supabase
+              console.log(`[${requestId}] Checking auto_provisioning table`);
+              const { data: ap, error: apError } = await supabase
                 .from('auto_provisioning')
                 .select('tenant_id')
                 .eq('user_id', user.id)
                 .eq('status', 'completed')
                 .maybeSingle();
+              
+              if (apError) {
+                console.log(`[${requestId}] auto_provisioning error (table may not exist):`, apError.message);
+              }
+              
               resolvedTenantId = (ap as any)?.tenant_id || null;
+              console.log(`[${requestId}] Resolved from auto_provisioning:`, resolvedTenantId);
             }
 
             if (resolvedTenantId) {
-              const { data: t } = await supabase
+              console.log(`[${requestId}] Fetching tenant details for:`, resolvedTenantId);
+              const { data: t, error: tError } = await supabase
                 .from('tenants')
                 .select('id, name, slug, timezone, currency')
                 .eq('id', resolvedTenantId)
                 .maybeSingle();
+              
+              if (tError) {
+                console.error(`[${requestId}] Error fetching tenant:`, tError);
+              }
+              
               resolvedTenant = t || null;
+              console.log(`[${requestId}] Tenant resolved:`, !!resolvedTenant, 'Name:', resolvedTenant?.name);
             }
+          } else {
+            console.log(`[${requestId}] No user found from bearer token`);
           }
+        } else {
+          console.log(`[${requestId}] No bearer token in Authorization header`);
         }
-      } catch {}
+      } catch (error) {
+        console.error(`[${requestId}] Exception in auth fallback:`, error);
+      }
     }
+    
+    console.log(`[${requestId}] Final auth resolution:`, {
+      resolvedTenantId,
+      resolvedTenant: resolvedTenant?.name,
+      source: tokenPayload?.slug ? 'widget_token' : (resolvedTenantId ? 'user_jwt' : 'none')
+    });
 
     if (!resolvedTenantId) {
       return errorResponse('INVALID_TOKEN', 'Valid widget token or authenticated session required', 401, requestId);
