@@ -159,7 +159,26 @@ async function callEdgeFunction(
       });
     }
 
-    const data = await response.json();
+    // Get response text first for debugging
+    const responseText = await response.text();
+    console.log('[booking-proxy] Raw response text:', responseText);
+    console.log('[booking-proxy] Response text length:', responseText.length);
+    
+    // Try to parse JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('[booking-proxy] Failed to parse response as JSON!');
+      console.error('[booking-proxy] Parse error:', parseError);
+      console.error('[booking-proxy] Response was:', responseText);
+      throw new BookingAPIError("PARSE_ERROR", "Failed to parse server response", {
+        requestId,
+        responseText,
+        parseError
+      });
+    }
+    
     console.log('[booking-proxy] Response data:', data);
     console.log('[booking-proxy] Response keys:', Object.keys(data || {}));
     console.log('[booking-proxy] Response has reservation_id?', !!(data as any)?.reservation_id);
