@@ -59,8 +59,8 @@ function generateWidgetToken(slug) {
   return `${h}.${p}.${signature}`;
 }
 
-// Test with a known slug - you should replace this with your actual slug
-const TEST_SLUG = 'test-restaurant'; // Change this to your actual restaurant slug
+// Test with a known slug - using actual tenant from your database
+const TEST_SLUG = 'mpizza'; // Using your tenant: meer's pizza
 
 console.log(`📝 Test Parameters:`);
 console.log(`   Slug: ${TEST_SLUG}`);

@@ -198,18 +198,25 @@ serve(async (req) => {
         console.log(`[${requestId}] Bearer token present:`, !!bearer, 'Length:', bearer?.length);
         
         if (bearer) {
-          // Use service client to verify JWT to avoid relying on ANON env
-          console.log(`[${requestId}] Calling supabase.auth.getUser with bearer token`);
-          const { data: auth, error: authError } = await supabase.auth.getUser(bearer);
+          // Check if this looks like a JWT (has 3 parts separated by dots) before trying to validate
+          const looksLikeJWT = bearer.split('.').length === 3;
+          console.log(`[${requestId}] Token format check: looks like JWT:`, looksLikeJWT);
           
-          if (authError) {
-            console.error(`[${requestId}] Auth error:`, authError);
-          }
-          
-          const user = (auth as any)?.user;
-          console.log(`[${requestId}] User found:`, !!user, 'User ID:', user?.id);
-          
-          if (user) {
+          if (!looksLikeJWT) {
+            console.log(`[${requestId}] Bearer token is not a JWT (probably anon key), skipping auth check`);
+          } else {
+            // Use service client to verify JWT to avoid relying on ANON env
+            console.log(`[${requestId}] Calling supabase.auth.getUser with bearer token`);
+            const { data: auth, error: authError } = await supabase.auth.getUser(bearer);
+            
+            if (authError) {
+              console.log(`[${requestId}] Auth check failed (expected for anon key):`, authError.message);
+            }
+            
+            const user = (auth as any)?.user;
+            console.log(`[${requestId}] User found:`, !!user, 'User ID:', user?.id);
+            
+            if (user) {
             // If client provided tenant_id, accept it for authenticated dashboard flows
             if (requestData?.tenant_id) {
               const explicitTenantId = String(requestData.tenant_id);
@@ -268,8 +275,9 @@ serve(async (req) => {
               resolvedTenant = t || null;
               console.log(`[${requestId}] Tenant resolved:`, !!resolvedTenant, 'Name:', resolvedTenant?.name);
             }
-          } else {
-            console.log(`[${requestId}] No user found from bearer token`);
+            } else {
+              console.log(`[${requestId}] No user found from bearer token`);
+            }
           }
         } else {
           console.log(`[${requestId}] No bearer token in Authorization header`);
