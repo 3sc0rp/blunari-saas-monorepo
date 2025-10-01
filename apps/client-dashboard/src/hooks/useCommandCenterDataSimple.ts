@@ -53,20 +53,38 @@ export function useCommandCenterDataSimple() {
             status: table.status || 'AVAILABLE'
           }));
 
-          const reservations = (functionData.bookings || []).map((booking: any) => ({
-            id: booking.id,
-            guestName: booking.guest_name,
-            email: booking.guest_email,
-            phone: booking.guest_phone,
-            partySize: booking.party_size,
-            start: booking.booking_time,
-            end: new Date(new Date(booking.booking_time).getTime() + (Number(booking.duration_minutes || 120) * 60000)).toISOString(),
-            status: booking.status.toUpperCase(),
-            tableId: booking.table_id,
-            specialRequests: booking.special_requests,
-            depositRequired: booking.deposit_required || false,
-            depositAmount: booking.deposit_amount || 0
-          }));
+          // Auto-assignment helper: deterministically assign a table if booking has no table_id
+          const autoAssignTableId = (b: any) => {
+            if (!tables.length) return undefined;
+            // Try exact / minimum capacity fit first
+            const capacityFit = [...tables]
+              .filter(t => t.seats >= (b.party_size || 1))
+              .sort((a, b2) => a.seats - b2.seats)[0];
+            if (capacityFit) return capacityFit.id;
+            // Fallback: hash booking id to stable index
+            const hash = (b.id || '').split('').reduce((acc: number, ch: string) => acc + ch.charCodeAt(0), 0);
+            return tables[hash % tables.length].id;
+          };
+
+          const reservations = (functionData.bookings || []).map((booking: any) => {
+            const startTs = booking.booking_time;
+            const endIso = new Date(new Date(startTs).getTime() + (Number(booking.duration_minutes || 120) * 60000)).toISOString();
+            return {
+              id: booking.id,
+              guestName: booking.guest_name,
+              email: booking.guest_email,
+              phone: booking.guest_phone,
+              partySize: booking.party_size,
+              start: startTs,
+              end: endIso,
+              // Keep status lowercase to match timeline & filter logic
+              status: (booking.status || 'pending').toLowerCase(),
+              tableId: booking.table_id || autoAssignTableId(booking),
+              specialRequests: booking.special_requests,
+              depositRequired: booking.deposit_required || false,
+              depositAmount: booking.deposit_amount || 0
+            };
+          });
 
           const kpis = [
             {
@@ -151,20 +169,35 @@ export function useCommandCenterDataSimple() {
           status: table.status || 'AVAILABLE'
         }));
 
-        const reservations = (bookingsResult.data || []).map((booking: any) => ({
-          id: booking.id,
-          guestName: booking.guest_name,
-          email: booking.guest_email,
-          phone: booking.guest_phone,
-          partySize: booking.party_size,
-          start: booking.booking_time,
-          end: new Date(new Date(booking.booking_time).getTime() + (Number(booking.duration_minutes || 120) * 60000)).toISOString(),
-          status: booking.status.toUpperCase(),
-          tableId: booking.table_id,
-          specialRequests: booking.special_requests,
-          depositRequired: booking.deposit_required || false,
-          depositAmount: booking.deposit_amount || 0
-        }));
+        // Reuse auto-assignment in fallback path
+        const autoAssignFallback = (b: any) => {
+          if (!tables.length) return undefined;
+          const capacityFit = [...tables]
+            .filter(t => t.seats >= (b.party_size || 1))
+            .sort((a, b2) => a.seats - b2.seats)[0];
+          if (capacityFit) return capacityFit.id;
+            const hash = (b.id || '').split('').reduce((acc: number, ch: string) => acc + ch.charCodeAt(0), 0);
+          return tables[hash % tables.length].id;
+        };
+
+        const reservations = (bookingsResult.data || []).map((booking: any) => {
+          const startTs = booking.booking_time;
+            const endIso = new Date(new Date(startTs).getTime() + (Number(booking.duration_minutes || 120) * 60000)).toISOString();
+          return {
+            id: booking.id,
+            guestName: booking.guest_name,
+            email: booking.guest_email,
+            phone: booking.guest_phone,
+            partySize: booking.party_size,
+            start: startTs,
+            end: endIso,
+            status: (booking.status || 'pending').toLowerCase(),
+            tableId: booking.table_id || autoAssignFallback(booking),
+            specialRequests: booking.special_requests,
+            depositRequired: booking.deposit_required || false,
+            depositAmount: booking.deposit_amount || 0
+          };
+        });
 
         const kpis = [
           {
