@@ -28,9 +28,6 @@ serve(async (req) => {
     if (!tenantId) return new Response(JSON.stringify({ error: 'MISSING_TENANT_ID', requestId }), { status: 400, headers: corsHeaders });
 
     const dateStr: string = body.date || new Date().toISOString().slice(0,10);
-    // Build UTC window [dateT00:00Z, date+1)
-    const dayStart = new Date(`${dateStr}T00:00:00.000Z`);
-    const dayEnd = new Date(dayStart.getTime() + 86400000);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -39,15 +36,13 @@ serve(async (req) => {
     }
     const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-    console.log('[command-center-bookings] Fetch window', { requestId, tenantId, dateStr, dayStart: dayStart.toISOString(), dayEnd: dayEnd.toISOString() });
-    // Parallel fetch tables + bookings in window
+    console.log('[command-center-bookings] Fetching ALL bookings for tenant', { requestId, tenantId, dateStr });
+    // Fetch ALL tables + bookings (no time filtering - command center needs to see everything)
     const [tablesRes, bookingsRes] = await Promise.all([
       supabase.from('restaurant_tables').select('id,name,capacity').eq('tenant_id', tenantId).eq('active', true),
       supabase.from('bookings')
-        .select('id,tenant_id,table_id,guest_name,guest_email,guest_phone,party_size,booking_time,duration_minutes,status,special_requests,deposit_required,deposit_amount')
+        .select('id,tenant_id,table_id,guest_name,guest_email,guest_phone,party_size,booking_time,duration_minutes,status,special_requests,deposit_required,deposit_amount,created_at')
         .eq('tenant_id', tenantId)
-        .gte('booking_time', dayStart.toISOString())
-        .lt('booking_time', dayEnd.toISOString())
         .order('booking_time', { ascending: true })
     ]);
     console.log('[command-center-bookings] Query results', { requestId, tablesError: tablesRes.error?.message, bookingsError: bookingsRes.error?.message, tablesCount: tablesRes.data?.length, bookingsCount: bookingsRes.data?.length });
@@ -58,18 +53,8 @@ serve(async (req) => {
     let bookingsData = bookingsRes.data;
     let bookingsErr = bookingsRes.error;
     if (bookingsErr) {
-      console.warn('[command-center-bookings] Primary bookings query failed, attempting fallback without time window', { requestId, error: bookingsErr.message });
-      const fallback = await supabase.from('bookings')
-        .select('id,tenant_id,table_id,guest_name,guest_email,guest_phone,party_size,booking_time,duration_minutes,status,special_requests,deposit_required,deposit_amount')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      if (fallback.error) {
-        console.error('[command-center-bookings] Fallback bookings also failed', { requestId, error: fallback.error });
-        return new Response(JSON.stringify({ error: 'BOOKINGS_FETCH_FAILED', details: bookingsErr.message, fallbackError: fallback.error.message, hint: 'Check if booking_time column exists or if function permissions differ.', requestId }), { status: 500, headers: corsHeaders });
-      }
-      bookingsData = fallback.data;
-      bookingsErr = null;
+      console.error('[command-center-bookings] Bookings fetch failed', { requestId, error: bookingsErr.message });
+      return new Response(JSON.stringify({ error: 'BOOKINGS_FETCH_FAILED', details: bookingsErr.message, requestId }), { status: 500, headers: corsHeaders });
     }
 
     const tables = (tablesRes.data || []).map((t: any) => ({
@@ -91,7 +76,8 @@ serve(async (req) => {
       status: (b.status || 'pending'),
       special_requests: b.special_requests,
       deposit_required: b.deposit_required,
-      deposit_amount: b.deposit_amount
+      deposit_amount: b.deposit_amount,
+      created_at: b.created_at
     }));
 
     return new Response(JSON.stringify({ success: true, requestId, tenant_id: tenantId, date: dateStr, tables, bookings, count: { tables: tables.length, bookings: bookings.length } }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'x-request-id': requestId } });

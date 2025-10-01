@@ -16,6 +16,7 @@ try {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZmJia2NheGh6bG5icXh3Z296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjI2OTEzNTEsImV4cCI6MjAzODI2NzM1MX0.i2aJY6vULSIbKC5lmYJxMOJ3GaNsxaLSOnPxQO4bm0I'
     },
     body: JSON.stringify(payload),
   });
