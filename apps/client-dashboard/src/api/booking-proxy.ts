@@ -188,45 +188,37 @@ async function callEdgeFunction(
 
 export async function getTenantBySlug(slug: string) {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !supabaseKey) throw new Error('Missing Supabase configuration');
-
-    // Call lightweight public tenant resolver Edge Function
-    const token = (() => {
-      try { return new URLSearchParams(window.location.search).get('token') || undefined; } catch { return undefined; }
-    })();
-
-    const res = await fetch(`${supabaseUrl}/functions/v1/tenant`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Send anon key for rate limiting context; widget token enables auth-less path server-side
-        Authorization: `Bearer ${supabaseKey}`,
-        apikey: supabaseKey,
-      },
-      body: JSON.stringify({ slug, token })
-    });
-
-    if (!res.ok) {
-      const txt = await res.text();
-      throw new BookingAPIError('TENANT_LOOKUP_FAILED', `HTTP ${res.status}: ${txt}`);
+    console.log('[getTenantBySlug] Looking up tenant with slug:', slug);
+    
+    // Import supabase client for direct database query
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    // Query tenants table directly
+    const { data: tenant, error } = await supabase
+      .from('tenants')
+      .select('id, slug, name, timezone, currency, business_hours')
+      .eq('slug', slug)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('[getTenantBySlug] Database error:', error);
+      throw new BookingAPIError('TENANT_LOOKUP_FAILED', `Database error: ${error.message}`);
     }
-
-    const json = await res.json();
-    // Handle both response formats: {data: ...}, {tenant: ...}, or direct tenant object
-    const payload = (json && typeof json === 'object' && 'data' in json) 
-      ? (json as any).data 
-      : (json && typeof json === 'object' && 'tenant' in json)
-        ? (json as any).tenant
-        : json;
+    
+    if (!tenant) {
+      console.error('[getTenantBySlug] Tenant not found for slug:', slug);
+      throw new BookingAPIError('TENANT_NOT_FOUND', `Restaurant not found: ${slug}`);
+    }
+    
+    console.log('[getTenantBySlug] Tenant found:', { id: tenant.id, name: tenant.name });
+    
     const transformedData = {
-      tenant_id: payload.id,
-      slug: payload.slug || slug,
-      name: payload.name || slug,
-      timezone: payload.timezone || 'UTC',
-      currency: payload.currency || 'USD',
-      business_hours: Array.isArray(payload.business_hours) ? payload.business_hours : [],
+      tenant_id: tenant.id,
+      slug: tenant.slug || slug,
+      name: tenant.name || slug,
+      timezone: tenant.timezone || 'UTC',
+      currency: tenant.currency || 'USD',
+      business_hours: Array.isArray(tenant.business_hours) ? tenant.business_hours : [],
       branding: {
         primary_color: '#3b82f6',
         secondary_color: '#1e40af',
@@ -239,6 +231,7 @@ export async function getTenantBySlug(slug: string) {
 
     return TenantInfoSchema.parse(transformedData);
   } catch (error) {
+    console.error('[getTenantBySlug] Error:', error);
     if (error instanceof BookingAPIError) {
       throw error;
     }
