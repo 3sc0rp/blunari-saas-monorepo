@@ -965,6 +965,25 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       );
     }
 
+    // CRITICAL: Check if booking object exists even when there's no error
+    if (!booking || !booking.id) {
+      console.error(`[${requestId}] ❌ CRITICAL: No booking data returned despite no error!`);
+      console.error(`[${requestId}] booking object:`, booking);
+      console.error(`[${requestId}] This usually means RLS policies blocked the INSERT`);
+      
+      return errorResponse(
+        'BOOKING_NOT_CREATED',
+        'Booking was not created. This may be a permissions issue.',
+        500,
+        requestId,
+        {
+          details: 'INSERT succeeded but no data returned',
+          booking: booking,
+          hint: 'Check RLS policies on bookings table'
+        }
+      );
+    }
+
     // Determine confirmation number and status based on what was actually saved
     const actualStatus = booking.status || 'confirmed';
     const confirmationNumber = actualStatus === 'pending' 
