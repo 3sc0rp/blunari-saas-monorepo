@@ -44,27 +44,42 @@ serve(async (req) => {
     if (action === 'ping') return new Response(JSON.stringify({ success:true, pong:true, requestId }), { status:200, headers: { ...corsHeaders, 'Content-Type':'application/json' } });
     if (action === 'diag') return new Response(JSON.stringify({ success:true, requestId, env:{ serviceRolePresent: !!supabaseKey, supabaseHost: (()=>{ try { return new URL(supabaseUrl).host; } catch { return 'invalid'; } })() } }), { status:200, headers: { ...corsHeaders, 'Content-Type':'application/json' } });
 
-    // Resolve tenant via token or explicit tenant_id
-    const token = requestData.token || new URL(req.url).searchParams.get('token');
+    // Resolve tenant via token, tenant_id, or (temporary) slug fallback
+    const urlObj = new URL(req.url);
+    const token = requestData.token || urlObj.searchParams.get('token');
+    const slugParam = requestData.slug || urlObj.searchParams.get('slug');
+    const allowSlugFallback = (Deno.env.get('WIDGET_ALLOW_SLUG_FALLBACK') || 'true').toLowerCase() === 'true';
     const tokenPayload = token ? validateWidgetToken(token) : null;
-    let resolvedTenantId: string | null = null; let resolvedTenant: any = null;
+    let resolvedTenantId: string | null = null; let resolvedTenant: any = null; let authMode: string = 'none';
     if (tokenPayload?.slug) {
       const { data: tenant } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', tokenPayload.slug).maybeSingle();
-      if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; }
+      if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'token'; }
     }
     if (!resolvedTenantId && requestData.tenant_id) {
       resolvedTenantId = requestData.tenant_id;
       const { data: tenant } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('id', resolvedTenantId).maybeSingle();
-      if (tenant) resolvedTenant = tenant;
+      if (tenant) { resolvedTenant = tenant; authMode = 'explicit_tenant_id'; }
     }
-    if (!resolvedTenantId) return errorResponse('INVALID_TOKEN','Valid widget token or tenant_id required',401,requestId);
+    if (!resolvedTenantId && !tokenPayload && slugParam && allowSlugFallback) {
+      const { data: tenant } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', slugParam).maybeSingle();
+      if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'slug_fallback'; }
+    }
+    if (!resolvedTenantId) {
+      return errorResponse('INVALID_TOKEN', 'Valid widget token or tenant_id required', 401, requestId, {
+        hasToken: !!token,
+        tokenValid: !!tokenPayload,
+        slugProvided: !!slugParam,
+        slugFallbackEnabled: allowSlugFallback,
+        hint: allowSlugFallback ? 'Slug fallback enabled but no tenant found for provided slug' : 'Provide signed token or tenant_id'
+      });
+    }
     requestData.tenant_id = resolvedTenantId;
 
     if (action === 'tenant') {
       if (!resolvedTenant) { const { data: tenant } = await supabase.from('tenants').select('id,slug,name,timezone,currency,business_hours').eq('id', resolvedTenantId).maybeSingle(); resolvedTenant = tenant; }
       if (!resolvedTenant) return errorResponse('TENANT_NOT_FOUND','Tenant not found',404,requestId);
-      const responseData = { tenant_id: resolvedTenant.id, slug: resolvedTenant.slug, name: resolvedTenant.name, timezone: resolvedTenant.timezone || 'UTC', currency: resolvedTenant.currency || 'USD', business_hours: resolvedTenant.business_hours || [], branding: { primary_color:'#3b82f6', secondary_color:'#1e40af' }, features: { deposit_enabled:false, revenue_optimization:true } };
-      return new Response(JSON.stringify(responseData), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json', 'x-request-id': requestId } });
+  const responseData = { tenant_id: resolvedTenant.id, slug: resolvedTenant.slug, name: resolvedTenant.name, timezone: resolvedTenant.timezone || 'UTC', currency: resolvedTenant.currency || 'USD', business_hours: resolvedTenant.business_hours || [], branding: { primary_color:'#3b82f6', secondary_color:'#1e40af' }, features: { deposit_enabled:false, revenue_optimization:true }, auth_mode: authMode };
+  return new Response(JSON.stringify(responseData), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json', 'x-request-id': requestId, 'x-auth-mode': authMode } });
     }
     if (action === 'search') { return await handleAvailabilitySearch(supabase, requestData, resolvedTenant?.timezone, requestId); }
     if (action === 'hold') { return await handleCreateHoldLocal(supabase, requestData, requestId); }
