@@ -335,6 +335,10 @@ export async function confirmReservation(
   idempotencyKey: string,
 ) {
   try {
+    console.log('[confirmReservation] === STARTING CONFIRMATION ===');
+    console.log('[confirmReservation] Request:', JSON.stringify(request, null, 2));
+    console.log('[confirmReservation] Idempotency key:', idempotencyKey);
+    
     const data = await callEdgeFunction("widget-booking-live", {
       action: "confirm",
       idempotency_key: idempotencyKey,
@@ -342,27 +346,25 @@ export async function confirmReservation(
       hold_id: request.hold_id,
       guest_details: request.guest_details,
       table_id: (request as any).table_id,
-        deposit: (request as any).deposit,
-        source: (request as any).source,
+      deposit: (request as any).deposit,
+      source: (request as any).source,
     });
 
-    // Debug logging in development
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log('[confirmReservation] Raw data from edge function:', JSON.stringify(data, null, 2));
-    }
+    console.log('[confirmReservation] ✅ Raw data received from edge function:');
+    console.log(JSON.stringify(data, null, 2));
+    console.log('[confirmReservation] Data type:', typeof data);
+    console.log('[confirmReservation] Data keys:', data ? Object.keys(data as any) : 'NO KEYS - data is null/undefined');
 
     // Normalize any upstream variations into our stable schema
     const normalized = normalizeReservationResponse(data);
     
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log('[confirmReservation] After normalization:', JSON.stringify(normalized, null, 2));
-    }
+    console.log('[confirmReservation] ✅ After normalization:');
+    console.log(JSON.stringify(normalized, null, 2));
     
     const validated = ReservationResponseSchema.parse(normalized);
     
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log('[confirmReservation] After schema validation:', JSON.stringify(validated, null, 2));
-    }
+    console.log('[confirmReservation] ✅ After schema validation:');
+    console.log(JSON.stringify(validated, null, 2));
     
     // Critical check: If reservation_id is null, the booking creation failed
     if (!validated.reservation_id) {
@@ -375,10 +377,12 @@ export async function confirmReservation(
       );
     }
     
+    console.log('[confirmReservation] ✅ SUCCESS - Returning validated reservation:', validated.reservation_id);
     return validated;
   } catch (error) {
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log('[confirmReservation] Error occurred:', error);
+    console.error('[confirmReservation] ❌ Error occurred:', error);
+    if (error instanceof BookingAPIError) {
+      throw error;
     }
     throw new BookingAPIError(
       "RESERVATION_CONFIRMATION_FAILED",
@@ -393,16 +397,25 @@ function normalizeReservationResponse(input: any): any {
   try {
     const d = input || {};
 
-    const reservationId = d.reservation_id || d.reservationId || d.id;
-    let confirmationNumber = d.confirmation_number || d.confirmationNumber || d.reference || d.code;
-    let status: string = (d.status || d.state || d.reservation_status || 'pending').toString().toLowerCase();
-    
     // Debug logging in development
     console.log('[normalizeReservationResponse] === RESPONSE NORMALIZATION ===');
     console.log('[normalizeReservationResponse] Input data keys:', Object.keys(d));
     console.log('[normalizeReservationResponse] Input data:', JSON.stringify(d, null, 2));
-    console.log('[normalizeReservationResponse] Extracted reservation_id:', reservationId);
-    console.log('[normalizeReservationResponse] reservation_id type:', typeof reservationId);
+    
+    // Extract reservation_id - check all possible field names
+    const reservationId = d.reservation_id || d.reservationId || d.id || d.booking_id;
+    
+    console.log('[normalizeReservationResponse] Checking for reservation_id:');
+    console.log('  d.reservation_id:', d.reservation_id);
+    console.log('  d.reservationId:', d.reservationId);
+    console.log('  d.id:', d.id);
+    console.log('  d.booking_id:', d.booking_id);
+    console.log('  => Selected reservationId:', reservationId);
+    console.log('  => Type:', typeof reservationId);
+    
+    let confirmationNumber = d.confirmation_number || d.confirmationNumber || d.reference || d.code;
+    let status: string = (d.status || d.state || d.reservation_status || 'pending').toString().toLowerCase();
+    
     console.log('[normalizeReservationResponse] Raw status from input:', d.status);
     console.log('[normalizeReservationResponse] Resolved status:', status);
     
@@ -416,15 +429,27 @@ function normalizeReservationResponse(input: any): any {
         // Check all fields that might contain the ID
         allFields: Object.keys(d)
       });
+      // Return early with error - don't proceed without an ID
+      return {
+        reservation_id: null,
+        confirmation_number: 'ERROR',
+        status: 'error',
+        summary: {
+          date: new Date().toISOString(),
+          time: undefined,
+          party_size: 0,
+          table_info: undefined,
+          deposit_required: false,
+          deposit_amount: undefined,
+        },
+      };
     }
     
     const allowed = new Set(['confirmed', 'pending', 'waitlisted']);
     if (!allowed.has(status)) {
-      if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-        console.log('[normalizeReservationResponse] Status not in allowed set, defaulting to pending for moderation. Original:', status);
-      }
+      console.log('[normalizeReservationResponse] Status not in allowed set, defaulting to pending for moderation. Original:', status);
       status = 'pending';  // Default to pending for moderation workflow
-    } else if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+    } else {
       console.log('[normalizeReservationResponse] Status is valid:', status);
     }
 
@@ -452,7 +477,7 @@ function normalizeReservationResponse(input: any): any {
     }
 
     const normalizedResult = {
-      reservation_id: reservationId ? String(reservationId) : null, // Don't convert undefined to "undefined"
+      reservation_id: String(reservationId), // Always convert to string since we validated it exists
       confirmation_number: String(confirmationNumber || 'CONFXXXXXX'),
       status,
       summary: {
@@ -465,15 +490,11 @@ function normalizeReservationResponse(input: any): any {
       },
     };
 
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log('[normalizeReservationResponse] Final normalized result:', JSON.stringify(normalizedResult, null, 2));
-    }
+    console.log('[normalizeReservationResponse] ✅ Final normalized result:', JSON.stringify(normalizedResult, null, 2));
     return normalizedResult;
   } catch (error) {
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log('[normalizeReservationResponse] Error in normalization:', error);
-      console.log('[normalizeReservationResponse] Returning raw input:', input);
-    }
+    console.error('[normalizeReservationResponse] ❌ Error in normalization:', error);
+    console.error('[normalizeReservationResponse] Returning raw input:', input);
     return input;
   }
 }
