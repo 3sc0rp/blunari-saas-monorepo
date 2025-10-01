@@ -178,21 +178,45 @@ export default function CommandCenter() {
     status: t.status || 'AVAILABLE'
   })) : simpleTables;
 
-  const reservations = realtimeBookings.length > 0 ? realtimeBookings.map(b => ({
-    id: b.id,
-    guestName: b.guest_name,
-    guestEmail: b.guest_email,
-    guestPhone: b.guest_phone,
-    partySize: b.party_size,
-    start: b.booking_time,
-    end: new Date(new Date(b.booking_time).getTime() + (b.duration_minutes * 60000)).toISOString(),
-    status: b.status.toUpperCase(),
-    tableId: b.table_id,
-    channel: 'WEB', // Default channel, could be enhanced
-    specialRequests: b.special_requests,
-    depositAmount: 0, // Default deposit
-    vip: false // Default VIP status
-  })) : simpleReservations;
+  const reservations = realtimeBookings.length > 0 ? (() => {
+    // Helper: deterministically assign a table if none was set so reservation becomes visible
+    const autoAssign = (booking: typeof realtimeBookings[number]) => {
+      if (!booking || booking.table_id) return booking.table_id;
+      if (!tables.length) return undefined;
+      // Capacity fit first
+      const fit = [...tables]
+        .filter(t => t.seats >= (booking.party_size || 1))
+        .sort((a, b) => a.seats - b.seats)[0];
+      if (fit) return fit.id;
+      // Stable hash fallback
+      const hash = (booking.id || '').split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+      return tables[hash % tables.length].id;
+    };
+
+    const mapped = realtimeBookings.map(b => ({
+      id: b.id,
+      guestName: b.guest_name,
+      guestEmail: b.guest_email,
+      guestPhone: b.guest_phone,
+      partySize: b.party_size,
+      start: b.booking_time,
+      end: new Date(new Date(b.booking_time).getTime() + (b.duration_minutes * 60000)).toISOString(),
+      status: (b.status || 'pending').toLowerCase(),
+      tableId: autoAssign(b),
+      channel: 'WEB', // TODO: derive real channel when available
+      specialRequests: b.special_requests,
+      depositAmount: 0,
+      vip: false
+    }));
+
+    if (mapped.length) {
+      const unassigned = mapped.filter(r => !r.tableId).length;
+      if (unassigned > 0) {
+        console.warn('[CommandCenter] Some realtime bookings remain unassigned after auto-assignment', { unassigned, total: mapped.length });
+      }
+    }
+    return mapped;
+  })() : simpleReservations;
 
   const loading = realtimeLoading || simpleLoading;
   const error = realtimeError?.message || simpleError;
