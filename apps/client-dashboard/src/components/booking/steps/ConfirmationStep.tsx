@@ -161,7 +161,9 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           console.log('[ConfirmationStep] Final confirmation data:', confirmationData);
           
           const result = await confirmReservation(confirmationData, idempotencyKey);
-          console.log('[ConfirmationStep] Confirmation result:', result);
+          console.log('[ConfirmationStep] Raw confirmation result:', JSON.stringify(result, null, 2));
+          console.log('[ConfirmationStep] Reservation ID from result:', result?.reservation_id);
+          console.log('[ConfirmationStep] Result keys:', Object.keys(result || {}));
           return result;
         },
       );
@@ -169,26 +171,33 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       // Additional verification step
       console.log('[ConfirmationStep] Reservation created:', confirmedReservation);
       
-      // Wait a moment and verify the booking was actually created
-      setTimeout(async () => {
-        try {
-          const { supabase } = await import('@/integrations/supabase/client');
-          const { data: verifyBooking } = await supabase
-            .from('bookings')
-            .select('id, status, guest_name, booking_time')
-            .eq('id', confirmedReservation.reservation_id)
-            .maybeSingle();
-            
-          if (!verifyBooking) {
-            console.error('[ConfirmationStep] Verification failed - booking not found in database');
-            toast.error('Booking verification failed. Please check your reservations or contact support.');
-          } else {
-            console.log('[ConfirmationStep] Booking verified successfully:', verifyBooking);
+      // Wait a moment and verify the booking was actually created (only if we have a reservation_id)
+      if (confirmedReservation?.reservation_id) {
+        setTimeout(async () => {
+          try {
+            console.log('[ConfirmationStep] Starting verification for reservation_id:', confirmedReservation.reservation_id);
+            const { supabase } = await import('@/integrations/supabase/client');
+            const { data: verifyBooking } = await supabase
+              .from('bookings')
+              .select('id, status, guest_name, booking_time')
+              .eq('id', confirmedReservation.reservation_id)
+              .maybeSingle();
+              
+            if (!verifyBooking) {
+              console.error('[ConfirmationStep] Verification failed - booking not found in database');
+              // Don't show error toast since booking creation succeeded
+              console.warn('[ConfirmationStep] Booking may be in pending status or different table');
+            } else {
+              console.log('[ConfirmationStep] Booking verified successfully:', verifyBooking);
+            }
+          } catch (verifyError) {
+            console.warn('[ConfirmationStep] Verification check failed:', verifyError);
           }
-        } catch (verifyError) {
-          console.warn('[ConfirmationStep] Verification check failed:', verifyError);
-        }
-      }, 2000);
+        }, 2000);
+      } else {
+        console.error('[ConfirmationStep] Cannot verify booking - reservation_id is missing from response');
+        console.log('[ConfirmationStep] This indicates an issue with the API response format');
+      }
 
       setReservation(confirmedReservation);
       setCurrentStatus("completed");

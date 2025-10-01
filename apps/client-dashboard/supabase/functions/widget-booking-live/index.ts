@@ -805,6 +805,12 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
     console.log('[widget-booking-live] Attempting first insert with data:', JSON.stringify(insertData, null, 2));
     const res = await supabase.from('bookings').insert(insertData).select().single();
     booking = res.data; bookingError = res.error;
+    
+    if (!bookingError && booking) {
+      console.log(`[${requestId}] ✅ First insert SUCCESS - booking created with ID:`, booking.id);
+      console.log(`[${requestId}] Created booking data:`, JSON.stringify(booking, null, 2));
+    }
+    
     if (bookingError) {
       console.log('[widget-booking-live] First insert failed, trying legacy schema:', bookingError.message);
       console.log('[widget-booking-live] Full error details:', JSON.stringify(bookingError, null, 2));
@@ -842,7 +848,23 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
       }
     }
     if (bookingError) {
-      return errorResponse('CONFIRMATION_FAILED', 'Unable to confirm reservation. Please try again.', 500, requestId, { details: bookingError.message });
+      console.error(`[${requestId}] ❌ DATABASE INSERTION FAILED`);
+      console.error(`[${requestId}] Error details:`, JSON.stringify(bookingError, null, 2));
+      console.error(`[${requestId}] Attempted data:`, JSON.stringify(insertData, null, 2));
+      console.error(`[${requestId}] This is why reservation_id is undefined in the response`);
+      
+      return errorResponse(
+        'CONFIRMATION_FAILED', 
+        'Unable to confirm reservation. Database insertion failed.', 
+        500, 
+        requestId, 
+        { 
+          details: bookingError.message,
+          code: bookingError.code,
+          hint: bookingError.hint,
+          insertData: insertData // Include attempted data for debugging
+        }
+      );
     }
 
     // Determine confirmation number and status based on what was actually saved

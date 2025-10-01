@@ -318,6 +318,17 @@ export async function confirmReservation(
       console.log('[confirmReservation] After schema validation:', JSON.stringify(validated, null, 2));
     }
     
+    // Critical check: If reservation_id is null, the booking creation failed
+    if (!validated.reservation_id) {
+      console.error('[confirmReservation] ❌ CRITICAL: Booking creation failed - no reservation_id returned');
+      console.error('[confirmReservation] This means the edge function failed to create the booking');
+      throw new BookingAPIError(
+        "BOOKING_CREATION_FAILED",
+        "Booking creation failed. Please try again or contact support.",
+        { validated, normalized }
+      );
+    }
+    
     return validated;
   } catch (error) {
     if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
@@ -341,10 +352,24 @@ function normalizeReservationResponse(input: any): any {
     let status: string = (d.status || d.state || d.reservation_status || 'pending').toString().toLowerCase();
     
     // Debug logging in development
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log('[normalizeReservationResponse] Input data:', JSON.stringify(d, null, 2));
-      console.log('[normalizeReservationResponse] Raw status from input:', d.status);
-      console.log('[normalizeReservationResponse] Resolved status:', status);
+    console.log('[normalizeReservationResponse] === RESPONSE NORMALIZATION ===');
+    console.log('[normalizeReservationResponse] Input data keys:', Object.keys(d));
+    console.log('[normalizeReservationResponse] Input data:', JSON.stringify(d, null, 2));
+    console.log('[normalizeReservationResponse] Extracted reservation_id:', reservationId);
+    console.log('[normalizeReservationResponse] reservation_id type:', typeof reservationId);
+    console.log('[normalizeReservationResponse] Raw status from input:', d.status);
+    console.log('[normalizeReservationResponse] Resolved status:', status);
+    
+    if (!reservationId) {
+      console.error('[normalizeReservationResponse] ❌ CRITICAL: No reservation_id found in response!');
+      console.error('[normalizeReservationResponse] Available fields to check:', {
+        reservation_id: d.reservation_id,
+        reservationId: d.reservationId, 
+        id: d.id,
+        booking_id: d.booking_id,
+        // Check all fields that might contain the ID
+        allFields: Object.keys(d)
+      });
     }
     
     const allowed = new Set(['confirmed', 'pending', 'waitlisted']);
@@ -381,7 +406,7 @@ function normalizeReservationResponse(input: any): any {
     }
 
     const normalizedResult = {
-      reservation_id: String(reservationId),
+      reservation_id: reservationId ? String(reservationId) : null, // Don't convert undefined to "undefined"
       confirmation_number: String(confirmationNumber || 'CONFXXXXXX'),
       status,
       summary: {

@@ -85,8 +85,8 @@ export const ReservationRequestSchema = z.object({
 });
 
 export const ReservationResponseSchema = z.object({
-  // Upstream may return non-UUID identifiers; accept any non-empty string
-  reservation_id: z.string().min(1),
+  // Upstream may return non-UUID identifiers; accept any non-empty string OR null for failed responses
+  reservation_id: z.string().min(1).nullable(),
   confirmation_number: z.string(),
   status: z.enum(["confirmed", "pending", "waitlisted"]),
   summary: z.object({
