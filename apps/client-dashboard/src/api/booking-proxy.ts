@@ -361,7 +361,25 @@ export async function confirmReservation(
     console.log('[confirmReservation] ✅ After normalization:');
     console.log(JSON.stringify(normalized, null, 2));
     
-    const validated = ReservationResponseSchema.parse(normalized);
+    // Try to parse and catch detailed Zod errors
+    let validated;
+    try {
+      validated = ReservationResponseSchema.parse(normalized);
+    } catch (zodError: any) {
+      console.error('[confirmReservation] ❌ Schema validation failed!');
+      console.error('[confirmReservation] Zod error details:', JSON.stringify(zodError, null, 2));
+      if (zodError?.issues) {
+        console.error('[confirmReservation] Validation issues:');
+        zodError.issues.forEach((issue: any) => {
+          console.error(`  - Path: ${issue.path.join('.')} | Message: ${issue.message} | Received: ${JSON.stringify(issue.received)}`);
+        });
+      }
+      throw new BookingAPIError(
+        'SCHEMA_VALIDATION_FAILED',
+        'Response from server does not match expected format',
+        { zodError, normalized }
+      );
+    }
     
     console.log('[confirmReservation] ✅ After schema validation:');
     console.log(JSON.stringify(validated, null, 2));
@@ -429,20 +447,13 @@ function normalizeReservationResponse(input: any): any {
         // Check all fields that might contain the ID
         allFields: Object.keys(d)
       });
-      // Return early with error - don't proceed without an ID
-      return {
-        reservation_id: null,
-        confirmation_number: 'ERROR',
-        status: 'error',
-        summary: {
-          date: new Date().toISOString(),
-          time: undefined,
-          party_size: 0,
-          table_info: undefined,
-          deposit_required: false,
-          deposit_amount: undefined,
-        },
-      };
+      console.error('[normalizeReservationResponse] Cannot proceed without reservation_id - throwing error');
+      // Don't return a partial object - throw an error instead
+      throw new BookingAPIError(
+        'MISSING_RESERVATION_ID',
+        'Server did not return a reservation ID. The booking may not have been created.',
+        { rawResponse: d }
+      );
     }
     
     const allowed = new Set(['confirmed', 'pending', 'waitlisted']);
