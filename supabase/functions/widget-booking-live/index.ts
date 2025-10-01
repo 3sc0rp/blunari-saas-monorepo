@@ -73,43 +73,40 @@ serve(async (req) => {
       usingServiceRole
     });
 
+    const TENANT_COLS = 'id,name,slug,timezone,currency';
     if (tokenPayload?.slug) {
-      const { data: tenant, error: tErr } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', tokenPayload.slug).maybeSingle();
+      const { data: tenant, error: tErr } = await supabase.from('tenants').select(TENANT_COLS).eq('slug', tokenPayload.slug).maybeSingle();
       console.log('[widget-booking-live][auth] Token slug lookup result', { found: !!tenant, error: tErr?.message });
       if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'token'; }
     }
     if (!resolvedTenantId && requestData.tenant_id) {
-      const { data: tenant, error: tErr } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('id', requestData.tenant_id).maybeSingle();
+      const { data: tenant, error: tErr } = await supabase.from('tenants').select(TENANT_COLS).eq('id', requestData.tenant_id).maybeSingle();
       console.log('[widget-booking-live][auth] Explicit tenant_id lookup', { id: requestData.tenant_id, found: !!tenant, error: tErr?.message });
       if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'explicit_tenant_id'; }
     }
     if (!resolvedTenantId && !tokenPayload && slugParam && allowSlugFallback) {
-      // multi-step slug resolution
-      // 1. direct eq (normalized lowercase assumption)
+      // multi-step slug resolution (without selecting non-existent business_hours column)
       let lastError: string | undefined;
       const attempts: Array<{strategy:string; found:boolean; error?:string}> = [];
       const trySelect = async (fn: () => Promise<any>, strategy: string) => {
         try { const { data, error } = await fn(); if (error) { attempts.push({ strategy, found:false, error: error.message }); lastError = error.message; return null; } if (data) { attempts.push({ strategy, found:true }); return data; } attempts.push({ strategy, found:false }); return null; } catch (e:any) { attempts.push({ strategy, found:false, error: String(e?.message||e) }); lastError = String(e?.message||e); return null; }
       };
-      const baseSelect = () => supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', slugParam).maybeSingle();
-      const ilikeSelect = () => supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').ilike('slug', slugParam);
-      const nameSelect = () => supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').ilike('name', slugParam);
+      const baseSelect = () => supabase.from('tenants').select(TENANT_COLS).eq('slug', slugParam).maybeSingle();
       let tenant = await trySelect(baseSelect, 'slug_eq');
       if (!tenant) {
-        const { data: list1, error: l1Err } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').ilike('slug', `%${slugParam}%`);
+        const { data: list1, error: l1Err } = await supabase.from('tenants').select(TENANT_COLS).ilike('slug', `%${slugParam}%`);
         if (l1Err) { attempts.push({ strategy:'slug_ilike_wild', found:false, error:l1Err.message }); }
         else if (Array.isArray(list1) && list1.length === 1) { tenant = list1[0]; attempts.push({ strategy:'slug_ilike_wild', found:true }); }
         else attempts.push({ strategy:'slug_ilike_wild', found:false });
       }
       if (!tenant) {
-        const { data: list2, error: l2Err } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').ilike('name', `%${slugParam}%`);
+        const { data: list2, error: l2Err } = await supabase.from('tenants').select(TENANT_COLS).ilike('name', `%${slugParam}%`);
         if (l2Err) { attempts.push({ strategy:'name_ilike_wild', found:false, error:l2Err.message }); }
         else if (Array.isArray(list2) && list2.length === 1) { tenant = list2[0]; attempts.push({ strategy:'name_ilike_wild', found:true }); }
         else attempts.push({ strategy:'name_ilike_wild', found:false });
       }
       if (!tenant) {
-        // single-tenant fallback (dev only) if only one tenant exists
-        const { data: allTenants, error: allErr } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours');
+        const { data: allTenants, error: allErr } = await supabase.from('tenants').select(TENANT_COLS);
         if (!allErr && Array.isArray(allTenants) && allTenants.length === 1) {
           tenant = allTenants[0];
           attempts.push({ strategy:'single_tenant_global_fallback', found:true });
@@ -122,12 +119,9 @@ serve(async (req) => {
       // Final attempt: if this is a tenant metadata request and we have a slug, allow open lookup (soft public data)
       if (requestData.action === 'tenant' && slugParam && allowSlugFallback) {
         console.log('[widget-booking-live][auth] Allowing open tenant lookup via slug (public metadata)');
-        const { data: tenant, error: tErr } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', slugParam).maybeSingle();
-        if (tenant) {
-          resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'slug_public';
-        } else {
-          console.warn('[widget-booking-live][auth] Public slug lookup failed', { slugParam, error: tErr?.message });
-        }
+        const { data: tenant, error: tErr } = await supabase.from('tenants').select(TENANT_COLS).eq('slug', slugParam).maybeSingle();
+        if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'slug_public'; }
+        else { console.warn('[widget-booking-live][auth] Public slug lookup failed', { slugParam, error: tErr?.message }); }
       }
       if (!resolvedTenantId) {
         // FINAL SUPER-FALLBACK: environment-provided public mapping for demo/testing
@@ -172,10 +166,16 @@ serve(async (req) => {
     requestData.tenant_id = resolvedTenantId;
 
     if (action === 'tenant') {
-      if (!resolvedTenant) { const { data: tenant } = await supabase.from('tenants').select('id,slug,name,timezone,currency,business_hours').eq('id', resolvedTenantId).maybeSingle(); resolvedTenant = tenant; }
+      if (!resolvedTenant) { const { data: tenant } = await supabase.from('tenants').select(TENANT_COLS).eq('id', resolvedTenantId).maybeSingle(); resolvedTenant = tenant; }
       if (!resolvedTenant) return errorResponse('TENANT_NOT_FOUND','Tenant not found',404,requestId);
-  const responseData = { tenant_id: resolvedTenant.id, slug: resolvedTenant.slug, name: resolvedTenant.name, timezone: resolvedTenant.timezone || 'UTC', currency: resolvedTenant.currency || 'USD', business_hours: resolvedTenant.business_hours || [], branding: { primary_color:'#3b82f6', secondary_color:'#1e40af' }, features: { deposit_enabled:false, revenue_optimization:true }, auth_mode: authMode };
-  return new Response(JSON.stringify(responseData), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json', 'x-request-id': requestId, 'x-auth-mode': authMode } });
+      // attempt optional business hours fetch (table may exist even if column did not)
+      let businessHours: any[] = [];
+      try {
+        const { data: bhData, error: bhErr } = await supabase.from('business_hours').select('day_of_week,is_open,open_time,close_time').eq('tenant_id', resolvedTenant.id);
+        if (!bhErr && Array.isArray(bhData)) businessHours = bhData;
+      } catch {}
+      const responseData = { tenant_id: resolvedTenant.id, slug: resolvedTenant.slug, name: resolvedTenant.name, timezone: resolvedTenant.timezone || 'UTC', currency: resolvedTenant.currency || 'USD', business_hours: businessHours, branding: { primary_color:'#3b82f6', secondary_color:'#1e40af' }, features: { deposit_enabled:false, revenue_optimization:true }, auth_mode: authMode };
+      return new Response(JSON.stringify(responseData), { status:200, headers:{ ...corsHeaders, 'Content-Type':'application/json', 'x-request-id': requestId, 'x-auth-mode': authMode } });
     }
     if (action === 'search') { return await handleAvailabilitySearch(supabase, requestData, resolvedTenant?.timezone, requestId); }
     if (action === 'hold') { return await handleCreateHoldLocal(supabase, requestData, requestId); }
