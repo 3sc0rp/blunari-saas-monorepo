@@ -34,7 +34,96 @@ export function useCommandCenterDataSimple() {
       }
 
       try {
-        // Direct queries only - no edge functions
+        // Try calling the service-role backed function first for better RLS handling
+        const { data: functionData, error: functionError } = await (supabase as any).functions.invoke('command-center-bookings', {
+          body: { tenant_id: tenantId, date: new Date().toISOString().slice(0,10) }
+        });
+
+        if (!functionError && functionData?.success) {
+          if (devLogs) console.log('[useCommandCenterDataSimple] Function call succeeded', {
+            tables: functionData.tables?.length,
+            bookings: functionData.bookings?.length
+          });
+
+          const tables = (functionData.tables || []).map((table: any) => ({
+            id: table.id,
+            name: table.name,
+            seats: table.capacity,
+            section: 'Main Dining',
+            status: table.status || 'AVAILABLE'
+          }));
+
+          const reservations = (functionData.bookings || []).map((booking: any) => ({
+            id: booking.id,
+            guestName: booking.guest_name,
+            email: booking.guest_email,
+            phone: booking.guest_phone,
+            partySize: booking.party_size,
+            start: booking.booking_time,
+            end: new Date(new Date(booking.booking_time).getTime() + (Number(booking.duration_minutes || 120) * 60000)).toISOString(),
+            status: booking.status.toUpperCase(),
+            tableId: booking.table_id,
+            specialRequests: booking.special_requests,
+            depositRequired: booking.deposit_required || false,
+            depositAmount: booking.deposit_amount || 0
+          }));
+
+          const kpis = [
+            {
+              id: 'total-bookings',
+              label: 'Total Bookings',
+              value: functionData.bookings?.length?.toString() || '0',
+              spark: [],
+              tone: 'positive' as const,
+              hint: 'Total bookings in system'
+            },
+            {
+              id: 'active-tables',
+              label: 'Active Tables',
+              value: functionData.tables?.length?.toString() || '0',
+              spark: [],
+              tone: 'neutral' as const,
+              hint: 'Currently active tables'
+            },
+            {
+              id: 'confirmed-bookings',
+              label: 'Confirmed',
+              value: (functionData.bookings?.filter((b: any) => b.status === 'confirmed')?.length || 0).toString(),
+              spark: [],
+              tone: 'positive' as const,
+              hint: 'Confirmed bookings'
+            }
+          ];
+
+          if (devLogs) console.log('[useCommandCenterDataSimple] Returning function data:', {
+            kpis: kpis.length,
+            tables: tables.length,
+            reservations: reservations.length
+          });
+
+          return {
+            kpis,
+            tables,
+            reservations,
+            policies: {
+              tenantId,
+              depositsEnabled: false,
+              depositAmount: 25,
+              minPartyForDeposit: 6,
+              advanceBookingDays: 30,
+              cancellationPolicy: 'flexible' as const
+            },
+            loading: false,
+            error: null,
+            liveConnected: false,
+            requestId: functionData.requestId,
+            refetch: () => Promise.resolve()
+          };
+        }
+
+        if (devLogs) console.log('[useCommandCenterDataSimple] Function call failed, falling back to direct queries', { error: functionError });
+
+        // Fallback to direct queries if function fails
         const [tablesResult, bookingsResult] = await Promise.all([
           supabase
             .from('restaurant_tables')
