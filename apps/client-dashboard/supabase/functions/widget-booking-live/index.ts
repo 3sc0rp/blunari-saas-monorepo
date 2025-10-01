@@ -983,24 +983,58 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
 
       // Fallback attempt: try manual lookup using recent inserted characteristics
       try {
-        console.log(`[${requestId}] 🔍 Attempting manual lookup fallback for booking...`);
-        const fallbackQuery = supabase
-          .from('bookings')
-          .select('*')
-          .eq('tenant_id', tenant_id)
-          .eq('guest_email', guest_details?.email || null)
-          .gte('created_at', new Date(Date.now() - 1000 * 60 * 5).toISOString()) // last 5 minutes
-          .order('created_at', { ascending: false })
-          .limit(1);
-        const { data: fallbackData, error: fallbackError } = await fallbackQuery.maybeSingle();
-        if (fallbackError) {
-          console.error(`[${requestId}] ❌ Fallback lookup failed:`, fallbackError.message);
-        } else if (fallbackData) {
-          console.log(`[${requestId}] ✅ Fallback lookup SUCCESS - recovered booking id ${fallbackData.id}`);
-          booking = fallbackData; // adopt recovered booking and continue
+        console.log(`[${requestId}] 🔍 Attempting manual lookup fallback for booking (broad heuristic)...`);
+        const timeWindowStart = new Date(Date.now() - 1000 * 60 * 10).toISOString(); // last 10 minutes
+        // First attempt: narrow (email + tenant)
+        let recovered: any = null;
+        if (guest_details?.email) {
+          const { data: byEmail, error: byEmailErr } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('tenant_id', tenant_id)
+            .eq('guest_email', guest_details.email)
+            .gte('created_at', timeWindowStart)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (byEmailErr) {
+            console.log(`[${requestId}] Fallback (email) error:`, byEmailErr.message);
+          } else if (byEmail) {
+            recovered = byEmail;
+            console.log(`[${requestId}] ✅ Fallback (email) recovered booking ${recovered.id}`);
+          }
         } else {
-          console.error(`[${requestId}] ⚠️ Fallback lookup returned no rows.`);
+          console.log(`[${requestId}] Fallback: guest email missing; widening search criteria.`);
         }
+        // Second attempt: recent by tenant + party size + status pending
+        if (!recovered) {
+          const { data: recentList, error: recentErr } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('tenant_id', tenant_id)
+            .eq('party_size', hold?.party_size || bookingData?.party_size)
+            .eq('status', 'pending')
+            .gte('created_at', timeWindowStart)
+            .order('created_at', { ascending: false })
+            .limit(5);
+          if (recentErr) {
+            console.log(`[${requestId}] Fallback (recent list) error:`, recentErr.message);
+          } else if (Array.isArray(recentList) && recentList.length) {
+            // Pick the one with booking_time closest to our intended booking_time
+            const targetTs = new Date(bookingData.booking_time).getTime();
+            let best = recentList[0];
+            let bestDiff = Math.abs(new Date(best.booking_time).getTime() - targetTs);
+            for (const r of recentList.slice(1)) {
+              const diff = Math.abs(new Date(r.booking_time).getTime() - targetTs);
+              if (diff < bestDiff) { best = r; bestDiff = diff; }
+            }
+            recovered = best;
+            console.log(`[${requestId}] ✅ Fallback (heuristic) recovered booking ${recovered.id} diffMs=${bestDiff}`);
+          } else {
+            console.log(`[${requestId}] Fallback (heuristic) found no candidates.`);
+          }
+        }
+        if (recovered) booking = recovered;
       } catch (fallbackEx) {
         console.error(`[${requestId}] Exception during fallback lookup:`, fallbackEx);
       }
