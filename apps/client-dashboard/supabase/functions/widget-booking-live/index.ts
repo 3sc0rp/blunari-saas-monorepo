@@ -118,6 +118,16 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    // Diagnostic: log limited info about service role key presence (never full key)
+    try {
+      console.log('[widget-booking-live] Supabase client init diagnostics:', {
+        hasUrl: !!supabaseUrl,
+        urlHost: (() => { try { return new URL(supabaseUrl).host; } catch { return 'invalid-url'; } })(),
+        serviceRoleKeyPresent: !!supabaseKey,
+        serviceRoleKeyLength: supabaseKey ? supabaseKey.length : 0,
+        serviceRoleKeyPrefix: supabaseKey ? supabaseKey.substring(0, 8) : 'missing'
+      });
+    } catch (e) { console.log('[widget-booking-live] Unable to log supabase init diagnostics', e); }
     const USE_LOCAL_BOOKING = (Deno.env.get('USE_LOCAL_BOOKING') || 'true').toLowerCase() !== 'false';
     
     // Debug logging for booking path selection
@@ -969,19 +979,52 @@ async function handleConfirmReservationLocal(supabase: any, requestData: any, re
     if (!booking || !booking.id) {
       console.error(`[${requestId}] ❌ CRITICAL: No booking data returned despite no error!`);
       console.error(`[${requestId}] booking object:`, booking);
-      console.error(`[${requestId}] This usually means RLS policies blocked the INSERT`);
-      
-      return errorResponse(
-        'BOOKING_NOT_CREATED',
-        'Booking was not created. This may be a permissions issue.',
-        500,
-        requestId,
-        {
-          details: 'INSERT succeeded but no data returned',
-          booking: booking,
-          hint: 'Check RLS policies on bookings table'
+      console.error(`[${requestId}] This usually means one of: (1) RLS blocking SELECT, (2) service role key missing, (3) PostgREST returning 201 without representation.`);
+
+      // Fallback attempt: try manual lookup using recent inserted characteristics
+      try {
+        console.log(`[${requestId}] 🔍 Attempting manual lookup fallback for booking...`);
+        const fallbackQuery = supabase
+          .from('bookings')
+          .select('*')
+          .eq('tenant_id', tenant_id)
+          .eq('guest_email', guest_details?.email || null)
+          .gte('created_at', new Date(Date.now() - 1000 * 60 * 5).toISOString()) // last 5 minutes
+          .order('created_at', { ascending: false })
+          .limit(1);
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery.maybeSingle();
+        if (fallbackError) {
+          console.error(`[${requestId}] ❌ Fallback lookup failed:`, fallbackError.message);
+        } else if (fallbackData) {
+          console.log(`[${requestId}] ✅ Fallback lookup SUCCESS - recovered booking id ${fallbackData.id}`);
+          booking = fallbackData; // adopt recovered booking and continue
+        } else {
+          console.error(`[${requestId}] ⚠️ Fallback lookup returned no rows.`);
         }
-      );
+      } catch (fallbackEx) {
+        console.error(`[${requestId}] Exception during fallback lookup:`, fallbackEx);
+      }
+
+      // If still no booking, return error response
+      if (!booking || !booking.id) {
+        return errorResponse(
+          'BOOKING_NOT_CREATED',
+          'Booking was not created. This may be a permissions or policy issue.',
+          500,
+          requestId,
+          {
+            details: 'INSERT succeeded but no data returned (and fallback lookup failed)',
+            booking: booking,
+            diagnostics: {
+              // Re-check env presence (avoid relying on outer variable shadowing)
+              serviceRoleKeyPresent: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+              tenant_id,
+              guest_email: guest_details?.email || null
+            },
+            hint: 'Verify SUPABASE_SERVICE_ROLE_KEY env var and RLS select policy.'
+          }
+        );
+      }
     }
 
     // Determine confirmation number and status based on what was actually saved
