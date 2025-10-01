@@ -47,30 +47,48 @@ serve(async (req) => {
     // Resolve tenant via token, tenant_id, or (temporary) slug fallback
     const urlObj = new URL(req.url);
     const token = requestData.token || urlObj.searchParams.get('token');
-    const slugParam = requestData.slug || urlObj.searchParams.get('slug');
+    const slugParam = (requestData.slug || urlObj.searchParams.get('slug') || '').trim() || null;
     const allowSlugFallback = (Deno.env.get('WIDGET_ALLOW_SLUG_FALLBACK') || 'true').toLowerCase() === 'true';
     const tokenPayload = token ? validateWidgetToken(token) : null;
     let resolvedTenantId: string | null = null; let resolvedTenant: any = null; let authMode: string = 'none';
+
+    // AUTH DIAGNOSTICS
+    console.log('[widget-booking-live][auth] Incoming auth attempt', {
+      requestId,
+      hasToken: !!token,
+      tokenLength: token?.length,
+      tokenValid: !!tokenPayload,
+      tokenSlug: tokenPayload?.slug,
+      providedTenantId: requestData.tenant_id || null,
+      slugParam,
+      allowSlugFallback
+    });
+
     if (tokenPayload?.slug) {
-      const { data: tenant } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', tokenPayload.slug).maybeSingle();
+      const { data: tenant, error: tErr } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', tokenPayload.slug).maybeSingle();
+      console.log('[widget-booking-live][auth] Token slug lookup result', { found: !!tenant, error: tErr?.message });
       if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'token'; }
     }
     if (!resolvedTenantId && requestData.tenant_id) {
-      resolvedTenantId = requestData.tenant_id;
-      const { data: tenant } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('id', resolvedTenantId).maybeSingle();
-      if (tenant) { resolvedTenant = tenant; authMode = 'explicit_tenant_id'; }
+      const { data: tenant, error: tErr } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('id', requestData.tenant_id).maybeSingle();
+      console.log('[widget-booking-live][auth] Explicit tenant_id lookup', { id: requestData.tenant_id, found: !!tenant, error: tErr?.message });
+      if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'explicit_tenant_id'; }
     }
     if (!resolvedTenantId && !tokenPayload && slugParam && allowSlugFallback) {
-      const { data: tenant } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', slugParam).maybeSingle();
+      const { data: tenant, error: tErr } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', slugParam).maybeSingle();
+      console.log('[widget-booking-live][auth] Slug fallback lookup', { slugParam, found: !!tenant, error: tErr?.message });
       if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'slug_fallback'; }
     }
     if (!resolvedTenantId) {
+      console.warn('[widget-booking-live][auth] AUTH FAILURE', { requestId, hasToken: !!token, tokenValid: !!tokenPayload, slugParam, allowSlugFallback });
       return errorResponse('INVALID_TOKEN', 'Valid widget token or tenant_id required', 401, requestId, {
         hasToken: !!token,
         tokenValid: !!tokenPayload,
+        tokenSlice: token ? token.slice(0,12) : null,
         slugProvided: !!slugParam,
+        slugValue: slugParam,
         slugFallbackEnabled: allowSlugFallback,
-        hint: allowSlugFallback ? 'Slug fallback enabled but no tenant found for provided slug' : 'Provide signed token or tenant_id'
+        hint: allowSlugFallback ? 'Slug fallback enabled but tenant not found. Verify slug exists in tenants.slug.' : 'Provide a signed widget token or tenant_id.'
       });
     }
     requestData.tenant_id = resolvedTenantId;
