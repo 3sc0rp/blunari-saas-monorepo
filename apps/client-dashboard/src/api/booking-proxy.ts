@@ -96,15 +96,19 @@ async function callEdgeFunction(
     console.log('[booking-proxy] Function:', functionName);
     console.log('[booking-proxy] Auth details:', {
       hasUserJwt: !!userJwt,
+      userJwtPreview: userJwt ? userJwt.substring(0, 30) + '...' : 'NONE',
       usingAnonKey: !userJwt,
       hasWidgetToken: !!requestBody.token,
-      tokenPreview: requestBody.token?.toString().substring(0, 20) + '...',
+      widgetTokenPreview: requestBody.token?.toString().substring(0, 20) + '...',
+      authorizationHeader: userJwt ? 'Using User JWT' : 'Using Anon Key',
       supabaseUrl,
       hasSupabaseKey: !!supabaseKey
     });
     console.log('[booking-proxy] Request body:', {
       ...requestBody,
-      token: requestBody.token ? '[REDACTED]' : undefined
+      token: requestBody.token ? '[REDACTED]' : undefined,
+      hasTenantId: !!requestBody.tenant_id,
+      tenantId: requestBody.tenant_id
     });
     
     const requestId = crypto.randomUUID();
@@ -157,6 +161,8 @@ async function callEdgeFunction(
 
     const data = await response.json();
     console.log('[booking-proxy] Response data:', data);
+    console.log('[booking-proxy] Response keys:', Object.keys(data || {}));
+    console.log('[booking-proxy] Response has reservation_id?', !!(data as any)?.reservation_id);
 
     if ((data as any)?.success === false && (data as any)?.error) {
       const err: any = data as any;
