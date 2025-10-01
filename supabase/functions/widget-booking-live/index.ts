@@ -80,16 +80,29 @@ serve(async (req) => {
       if (tenant) { resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'slug_fallback'; }
     }
     if (!resolvedTenantId) {
-      console.warn('[widget-booking-live][auth] AUTH FAILURE', { requestId, hasToken: !!token, tokenValid: !!tokenPayload, slugParam, allowSlugFallback });
-      return errorResponse('INVALID_TOKEN', 'Valid widget token or tenant_id required', 401, requestId, {
-        hasToken: !!token,
-        tokenValid: !!tokenPayload,
-        tokenSlice: token ? token.slice(0,12) : null,
-        slugProvided: !!slugParam,
-        slugValue: slugParam,
-        slugFallbackEnabled: allowSlugFallback,
-        hint: allowSlugFallback ? 'Slug fallback enabled but tenant not found. Verify slug exists in tenants.slug.' : 'Provide a signed widget token or tenant_id.'
-      });
+      // Final attempt: if this is a tenant metadata request and we have a slug, allow open lookup (soft public data)
+      if (requestData.action === 'tenant' && slugParam && allowSlugFallback) {
+        console.log('[widget-booking-live][auth] Allowing open tenant lookup via slug (public metadata)');
+        const { data: tenant, error: tErr } = await supabase.from('tenants').select('id,name,slug,timezone,currency,business_hours').eq('slug', slugParam).maybeSingle();
+        if (tenant) {
+          resolvedTenantId = tenant.id; resolvedTenant = tenant; authMode = 'slug_public';
+        } else {
+          console.warn('[widget-booking-live][auth] Public slug lookup failed', { slugParam, error: tErr?.message });
+        }
+      }
+      if (!resolvedTenantId) {
+        console.warn('[widget-booking-live][auth] AUTH FAILURE', { requestId, hasToken: !!token, tokenValid: !!tokenPayload, slugParam, allowSlugFallback });
+        return errorResponse('INVALID_TOKEN', 'Valid widget token or tenant_id required', 401, requestId, {
+          hasToken: !!token,
+            tokenValid: !!tokenPayload,
+            tokenSlice: token ? token.slice(0,12) : null,
+            slugProvided: !!slugParam,
+            slugValue: slugParam,
+            slugFallbackEnabled: allowSlugFallback,
+            action: requestData.action,
+            hint: allowSlugFallback ? 'Slug fallback enabled but tenant not found. Verify slug exists in tenants.slug.' : 'Provide a signed widget token or tenant_id.'
+        });
+      }
     }
     requestData.tenant_id = resolvedTenantId;
 
