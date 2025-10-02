@@ -65,7 +65,7 @@ export function TopBar({
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState("demo-restaurant");
   const [contextFilter, setContextFilter] = useState("all");
-  const { notifications, unreadCount, loading: notifLoading, markRead, markAllRead, playNotificationSound, refresh } = useTenantNotifications();
+  const { notifications, unreadCount, loading: notifLoading, markRead, markAllRead, markManyRead, isRead, counts, loadMore, playNotificationSound, refresh } = useTenantNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifTab, setNotifTab] = useState<'all' | 'unread' | 'reservations' | 'system'>('all');
   const [notifFilter, setNotifFilter] = useState<{search: string; type: string | null;}>({ search: '', type: null });
@@ -74,10 +74,7 @@ export function TopBar({
   const filteredNotifications = React.useMemo(() => {
     let list = notifications;
     if (notifTab === 'unread') {
-      // Unread determined by absence of id in localStorage set (markRead side effect) - we re-derive quickly
-      const readIds = new Set<string>();
-      try { const raw = localStorage.getItem(`notif_read_${'unknown'}`); if (raw) JSON.parse(raw).forEach((id: string) => readIds.add(id)); } catch {}
-      list = list.filter(n => !readIds.has(n.id));
+      list = list.filter(n => !isRead(n.id));
     } else if (notifTab === 'reservations') {
       list = list.filter(n => (n.type || '').includes('reservation'));
     } else if (notifTab === 'system') {
@@ -114,7 +111,7 @@ export function TopBar({
   };
 
   const handleMarkAllVisible = () => {
-    filteredNotifications.forEach(n => markRead(n.id));
+    markManyRead(filteredNotifications.map(n => n.id));
   };
 
   const handleQuickAck = (nId: string) => {
@@ -340,10 +337,10 @@ export function TopBar({
                     className={cn('text-[11px] px-3 py-1 rounded-full border transition-colors',
                       notifTab === tab ? 'bg-accent/30 border-accent/50 text-white' : 'bg-white/5 border-white/10 text-white/60 hover:text-white/80')}
                   >
-                    {tab === 'all' && 'All'}
-                    {tab === 'unread' && 'Unread'}
-                    {tab === 'reservations' && 'Reservations'}
-                    {tab === 'system' && 'System'}
+                    {tab === 'all' && `All (${counts.all})`}
+                    {tab === 'unread' && `Unread (${counts.unread})`}
+                    {tab === 'reservations' && `Reservations (${counts.reservations})`}
+                    {tab === 'system' && `System (${counts.system})`}
                   </button>
                 ))}
                 <div className="relative ml-auto">
@@ -372,10 +369,7 @@ export function TopBar({
                   <div key={group.label} className="py-1">
                     <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-white/40 font-semibold">{group.label}</div>
                     {group.items.map(n => {
-                      const read = (() => {
-                        try { const raw = localStorage.getItem('notif_read_unknown'); if (raw) return JSON.parse(raw).includes(n.id); } catch {}
-                        return false;
-                      })();
+                      const read = isRead(n.id);
                       return (
                         <div
                           key={n.id}
@@ -413,9 +407,12 @@ export function TopBar({
                 ))}
               </div>
               {/* Footer */}
-              <div className="px-3 py-2 border-t border-white/10 flex items-center justify-between text-[10px] text-white/40">
+              <div className="px-3 py-2 border-t border-white/10 flex items-center justify-between text-[10px] text-white/40 gap-2">
                 <span>{filteredNotifications.length} shown</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-auto">
+                  {notifications.length >=  counts.all && notifications.length < 300 && (
+                    <button className="hover:text-white/70" onClick={() => loadMore()}>Load more</button>
+                  )}
                   <button className="hover:text-white/70" onClick={() => setNotifFilter({ search: '', type: null })}>Reset</button>
                   <button className="hover:text-white/70" onClick={() => setNotifOpen(false)}>Close</button>
                 </div>

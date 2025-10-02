@@ -57,22 +57,32 @@ export function useTenantNotifications() {
   const { tenantId } = useTenant();
   const [notifications, setNotifications] = useState<TenantNotification[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const lastNotificationCount = useRef<number>(0);
-
-  const readSet = useMemo(() => {
+  const [pageSize, setPageSize] = useState<number>(30);
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
     try {
       const raw = localStorage.getItem(getReadStorageKey(tenantId));
       return new Set<string>(raw ? JSON.parse(raw) : []);
     } catch {
       return new Set<string>();
     }
+  });
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastNotificationCount = useRef<number>(0);
+
+  // Rehydrate read IDs whenever tenant changes
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(getReadStorageKey(tenantId));
+      setReadIds(new Set<string>(raw ? JSON.parse(raw) : []));
+    } catch {
+      setReadIds(new Set());
+    }
   }, [tenantId]);
 
-  const persistReadSet = (next: Set<string>) => {
+  const persistReadIds = (next: Set<string>) => {
     try {
       localStorage.setItem(getReadStorageKey(tenantId), JSON.stringify(Array.from(next)));
-    } catch {}
+    } catch {/* silent */}
   };
 
   const refresh = async () => {
@@ -84,7 +94,7 @@ export function useTenantNotifications() {
         .select('id, tenant_id, notification_type, title, message, data, created_at')
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
-        .limit(30);
+        .limit(pageSize);
       if (error) throw error;
       const mapped: TenantNotification[] = (data || []).map((n: any) => ({
         id: n.id,
@@ -141,7 +151,7 @@ export function useTenantNotifications() {
               playNotificationSound('general');
             }
             
-            setNotifications((prev) => [mapped, ...prev].slice(0, 50));
+            setNotifications((prev) => [mapped, ...prev].slice(0, Math.max(pageSize, 50)));
             
             // Show browser notification if permission granted
             if (Notification.permission === 'granted') {
@@ -166,22 +176,44 @@ export function useTenantNotifications() {
   }, [tenantId]);
 
   const unreadCount = useMemo(() => {
-    // Consider unread those not in read set and within last 7 days
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    return notifications.filter((n) => !readSet.has(n.id) && new Date(n.created_at).getTime() >= weekAgo).length;
-  }, [notifications, readSet]);
+    return notifications.filter((n) => !readIds.has(n.id) && new Date(n.created_at).getTime() >= weekAgo).length;
+  }, [notifications, readIds]);
+
+  const isRead = (id: string) => readIds.has(id);
 
   const markRead = (id: string) => {
-    const next = new Set(readSet);
+    if (readIds.has(id)) return;
+    const next = new Set(readIds);
     next.add(id);
-    persistReadSet(next);
+    setReadIds(next);
+    persistReadIds(next);
   };
 
   const markAllRead = () => {
-    const next = new Set(readSet);
+    const next = new Set(readIds);
     notifications.forEach((n) => next.add(n.id));
-    persistReadSet(next);
+    setReadIds(next);
+    persistReadIds(next);
   };
+
+  const markManyRead = (ids: string[]) => {
+    const next = new Set(readIds);
+    ids.forEach(id => next.add(id));
+    setReadIds(next);
+    persistReadIds(next);
+  };
+
+  const loadMore = () => {
+    setPageSize(ps => Math.min(ps + 30, 300));
+  };
+
+  const counts = useMemo(() => {
+    const reservations = notifications.filter(n => (n.type || '').includes('reservation')).length;
+    const system = notifications.length - reservations;
+    const unread = notifications.filter(n => !readIds.has(n.id)).length;
+    return { all: notifications.length, reservations, system, unread };
+  }, [notifications, readIds]);
 
   // Request notification permission on first load
   useEffect(() => {
@@ -197,6 +229,10 @@ export function useTenantNotifications() {
     refresh,
     markRead,
     markAllRead,
+    markManyRead,
+    isRead,
+    counts,
+    loadMore,
     playNotificationSound, // Expose for manual testing
   };
 }
