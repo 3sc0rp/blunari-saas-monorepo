@@ -398,40 +398,40 @@ export default function CommandCenter() {
         label: 'Total Bookings',
         value: totalBookingsForSelectedDate.toString(),
         spark: [],
-        tone: 'positive' as const,
+  tone: 'success' as const,
         hint: `Bookings for ${selectedDate} (${filteredReservations.length} in current view)` ,
         trendDirection: 'up' as const,
-        sublabel: selectedDate,
+        // sublabel removed (date) to avoid UI overflow
       },
       {
         id: 'confirmed-bookings',
         label: 'Confirmed',
         value: confirmedCount.toString(),
         spark: [],
-        tone: 'positive' as const,
+  tone: 'success' as const,
         hint: `Confirmed for ${selectedDate}`,
         trendDirection: 'up' as const,
-        sublabel: selectedDate,
+        // sublabel removed
       },
       {
         id: 'seated-guests',
         label: 'Currently Seated',
         value: seatedCount.toString(),
         spark: [],
-        tone: 'neutral' as const,
+  tone: 'default' as const,
         hint: `Seated for ${selectedDate}`,
         trendDirection: 'up' as const,
-        sublabel: selectedDate,
+        // sublabel removed
       },
       {
         id: 'total-guests',
         label: 'Total Guests',
         value: totalGuestsForSelectedDate.toString(),
         spark: [],
-        tone: 'positive' as const,
+  tone: 'success' as const,
         hint: `Guests for ${selectedDate} (${totalGuestsAll} across all loaded)`,
         trendDirection: 'up' as const,
-        sublabel: selectedDate,
+        // sublabel removed
       }
     ];
   }, [kpis, filteredReservations, reservations, filters, selectedDate]);
