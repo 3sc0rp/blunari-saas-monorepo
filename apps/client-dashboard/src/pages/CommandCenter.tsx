@@ -375,27 +375,22 @@ export default function CommandCenter() {
       }));
     }
 
-    // Calculate real KPIs from actual data
-    const confirmedCount = filteredReservations.filter(r => r.status.toLowerCase() === 'confirmed').length;
-    const seatedCount = filteredReservations.filter(r => r.status.toLowerCase() === 'seated').length;
-    const completedCount = filteredReservations.filter(r => r.status.toLowerCase() === 'completed').length;
-    // Total guests across all filtered reservations (may span multiple days if data source returns all)
-  const totalGuestsAll = filteredReservations.reduce((sum, r) => sum + r.partySize, 0); // used in KPI hint
-    // Total guests for the currently selected calendar date only
-    const totalGuestsForSelectedDate = filteredReservations
-      .filter(r => {
-        try {
-          return new Date(r.start).toISOString().slice(0,10) === selectedDate;
-        } catch { return false; }
-      })
-      .reduce((sum, r) => sum + r.partySize, 0);
-
-    // Bookings count for selected date only
-    const totalBookingsForSelectedDate = filteredReservations.filter(r => {
+    // Helper: scope reservations to the currently selected calendar date
+    const dateFilteredReservations = filteredReservations.filter(r => {
       try {
         return new Date(r.start).toISOString().slice(0,10) === selectedDate;
       } catch { return false; }
-    }).length;
+    });
+
+    // Calculate KPIs from date-scoped data to avoid contradictory counts
+    const totalBookingsForSelectedDate = dateFilteredReservations.length;
+    const confirmedCount = dateFilteredReservations.filter(r => r.status.toLowerCase() === 'confirmed').length;
+    const seatedCount = dateFilteredReservations.filter(r => r.status.toLowerCase() === 'seated').length;
+    const completedCount = dateFilteredReservations.filter(r => r.status.toLowerCase() === 'completed').length;
+
+    // Guests (scoped vs overall for context tooltip)
+    const totalGuestsForSelectedDate = dateFilteredReservations.reduce((sum, r) => sum + r.partySize, 0);
+    const totalGuestsAll = filteredReservations.reduce((sum, r) => sum + r.partySize, 0); // used in hint only
 
     return [
       {
@@ -404,7 +399,7 @@ export default function CommandCenter() {
         value: totalBookingsForSelectedDate.toString(),
         spark: [],
         tone: 'positive' as const,
-        hint: `Bookings for ${selectedDate} (${filteredReservations.length} across all loaded${Object.keys(filters).some(key => filters[key as keyof FiltersState]) ? ' / filtered' : ''})`,
+        hint: `Bookings for ${selectedDate} (${filteredReservations.length} in current view)` ,
         trendDirection: 'up' as const,
         sublabel: selectedDate,
       },
@@ -414,9 +409,9 @@ export default function CommandCenter() {
         value: confirmedCount.toString(),
         spark: [],
         tone: 'positive' as const,
-        hint: 'Confirmed reservations',
+        hint: `Confirmed for ${selectedDate}`,
         trendDirection: 'up' as const,
-        sublabel: undefined,
+        sublabel: selectedDate,
       },
       {
         id: 'seated-guests',
@@ -424,9 +419,9 @@ export default function CommandCenter() {
         value: seatedCount.toString(),
         spark: [],
         tone: 'neutral' as const,
-        hint: 'Currently seated guests',
+        hint: `Seated for ${selectedDate}`,
         trendDirection: 'up' as const,
-        sublabel: undefined,
+        sublabel: selectedDate,
       },
       {
         id: 'total-guests',
@@ -434,7 +429,7 @@ export default function CommandCenter() {
         value: totalGuestsForSelectedDate.toString(),
         spark: [],
         tone: 'positive' as const,
-        hint: `Guests for ${selectedDate} (${totalGuestsAll} across all loaded)` ,
+        hint: `Guests for ${selectedDate} (${totalGuestsAll} across all loaded)`,
         trendDirection: 'up' as const,
         sublabel: selectedDate,
       }
