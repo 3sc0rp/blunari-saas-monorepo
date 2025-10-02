@@ -10,7 +10,13 @@ import {
   Calendar,
   ChevronDown,
   MoreVertical,
-  Focus
+  Focus,
+  CheckCircle2,
+  AlertTriangle,
+  Info,
+  Filter,
+  Trash2,
+  CheckCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,8 +65,61 @@ export function TopBar({
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState("demo-restaurant");
   const [contextFilter, setContextFilter] = useState("all");
-  const { notifications, unreadCount, loading: notifLoading, markRead, markAllRead, playNotificationSound } = useTenantNotifications();
+  const { notifications, unreadCount, loading: notifLoading, markRead, markAllRead, playNotificationSound, refresh } = useTenantNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [notifTab, setNotifTab] = useState<'all' | 'unread' | 'reservations' | 'system'>('all');
+  const [notifFilter, setNotifFilter] = useState<{search: string; type: string | null;}>({ search: '', type: null });
+
+  // Derived + memoized filtered notifications
+  const filteredNotifications = React.useMemo(() => {
+    let list = notifications;
+    if (notifTab === 'unread') {
+      // Unread determined by absence of id in localStorage set (markRead side effect) - we re-derive quickly
+      const readIds = new Set<string>();
+      try { const raw = localStorage.getItem(`notif_read_${'unknown'}`); if (raw) JSON.parse(raw).forEach((id: string) => readIds.add(id)); } catch {}
+      list = list.filter(n => !readIds.has(n.id));
+    } else if (notifTab === 'reservations') {
+      list = list.filter(n => (n.type || '').includes('reservation'));
+    } else if (notifTab === 'system') {
+      list = list.filter(n => !(n.type || '').includes('reservation'));
+    }
+    if (notifFilter.type) list = list.filter(n => n.type === notifFilter.type);
+    if (notifFilter.search.trim()) {
+      const q = notifFilter.search.toLowerCase();
+      list = list.filter(n => (n.title || '').toLowerCase().includes(q) || (n.message || '').toLowerCase().includes(q));
+    }
+    return list.slice(0, 100); // safety cap
+  }, [notifications, notifTab, notifFilter]);
+
+  const grouped = React.useMemo(() => {
+    // Group by day (Today, Yesterday, Older)
+    const now = new Date();
+    const todayKey = now.toDateString();
+    const y = new Date(now.getTime() - 86400000).toDateString();
+    const buckets: Record<string, typeof filteredNotifications> = {};
+    filteredNotifications.forEach(n => {
+      const k = new Date(n.created_at).toDateString();
+      const label = k === todayKey ? 'Today' : k === y ? 'Yesterday' : new Date(n.created_at).getFullYear() === now.getFullYear() ? new Date(n.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : new Date(n.created_at).toLocaleDateString();
+      buckets[label] = buckets[label] || [];
+      buckets[label].push(n);
+    });
+    return Object.entries(buckets).map(([label, items]) => ({ label, items }));
+  }, [filteredNotifications]);
+
+  const notificationIcon = (type?: string) => {
+    if (!type) return <Info className="w-4 h-4 text-white/50" />;
+    if (type.includes('reservation')) return <Calendar className="w-4 h-4 text-blue-300" />;
+    if (type.includes('warning') || type.includes('error')) return <AlertTriangle className="w-4 h-4 text-amber-400" />;
+    return <Info className="w-4 h-4 text-white/50" />;
+  };
+
+  const handleMarkAllVisible = () => {
+    filteredNotifications.forEach(n => markRead(n.id));
+  };
+
+  const handleQuickAck = (nId: string) => {
+    markRead(nId);
+  };
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -229,7 +288,7 @@ export function TopBar({
           </Button>
 
           {/* Notification Bell */}
-          <UIPopover open={notifOpen} onOpenChange={setNotifOpen}>
+          <UIPopover open={notifOpen} onOpenChange={(o) => { setNotifOpen(o); if (o) refresh(); }}>
             <UIPopoverTrigger asChild>
               <div className="relative">
                 <Button
@@ -248,63 +307,118 @@ export function TopBar({
                 )}
               </div>
             </UIPopoverTrigger>
-            <UIPopoverContent className="w-[360px] glass border-white/10 p-0">
-              <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-white/90">Notifications</span>
+            <UIPopoverContent className="w-[420px] glass border-white/10 p-0" align="end">
+              {/* Header */}
+              <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm font-medium text-white/90 flex items-center gap-1">
+                    <Bell className="w-4 h-4" /> Notifications
+                  </span>
                   {unreadCount > 0 && (
                     <Badge className="bg-red-500/90 text-white h-5 px-1 text-[11px]">{Math.min(unreadCount, 99)} new</Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-[12px]" onClick={onNotify}>Send Reminders</Button>
-                  {import.meta.env.MODE === 'development' && (
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-7 px-2 text-[12px]" 
-                      onClick={() => playNotificationSound('new_reservation')}
-                      title="Test notification sound"
-                    >
-                      🔊 Test
-                    </Button>
-                  )}
-                  <Button size="sm" variant="ghost" className="h-7 px-2 text-[12px]" onClick={() => { markAllRead(); }}>Mark all read</Button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={() => refresh()} title="Refresh">
+                    ↻
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={onNotify}>Send Reminders</Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={handleMarkAllVisible} title="Mark visible as read">
+                    <CheckCheck className="w-3 h-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={() => { markAllRead(); }} title="Mark all read">
+                    <CheckCircle2 className="w-3 h-3" />
+                  </Button>
                 </div>
               </div>
-              <div className="max-h-80 overflow-auto p-2">
+              {/* Tabs & Filters */}
+              <div className="px-3 py-2 border-b border-white/5 flex items-center gap-2 overflow-x-auto scrollbar-thin">
+                {(['all','unread','reservations','system'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setNotifTab(tab)}
+                    className={cn('text-[11px] px-3 py-1 rounded-full border transition-colors',
+                      notifTab === tab ? 'bg-accent/30 border-accent/50 text-white' : 'bg-white/5 border-white/10 text-white/60 hover:text-white/80')}
+                  >
+                    {tab === 'all' && 'All'}
+                    {tab === 'unread' && 'Unread'}
+                    {tab === 'reservations' && 'Reservations'}
+                    {tab === 'system' && 'System'}
+                  </button>
+                ))}
+                <div className="relative ml-auto">
+                  <Filter className="w-3.5 h-3.5 text-white/40 absolute left-2 top-1/2 -translate-y-1/2" />
+                  <Input
+                    value={notifFilter.search}
+                    onChange={(e) => setNotifFilter(f => ({ ...f, search: e.target.value }))}
+                    placeholder="Search"
+                    className="pl-7 h-8 text-[12px] bg-white/5 border-white/10 focus:ring-accent"
+                  />
+                </div>
+              </div>
+              {/* Body */}
+              <div className="max-h-96 overflow-auto p-0 divide-y divide-white/5 custom-scrollbar">
                 {notifLoading && (
-                  <div className="space-y-2">
-                    <div className="h-10 rounded-md bg-white/5 animate-pulse" />
-                    <div className="h-10 rounded-md bg-white/5 animate-pulse" />
-                    <div className="h-10 rounded-md bg-white/5 animate-pulse" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-9 rounded-md bg-white/5 animate-pulse" />
+                    <div className="h-9 rounded-md bg-white/5 animate-pulse" />
+                    <div className="h-9 rounded-md bg-white/5 animate-pulse" />
                   </div>
                 )}
-                {!notifLoading && notifications.length === 0 && (
-                  <div className="py-6 text-center text-xs text-white/60">No notifications</div>
+                {!notifLoading && filteredNotifications.length === 0 && (
+                  <div className="py-8 text-center text-xs text-white/60">No notifications</div>
                 )}
-                {!notifLoading && notifications.length > 0 && (
-                  <div className="space-y-2">
-                    {notifications.slice(0, 10).map((n) => (
-                      <button
-                        key={n.id}
-                        onClick={() => markRead(n.id)}
-                        className="w-full text-left p-2 rounded-md bg-white/5 hover:bg-white/10 transition-colors border border-white/10 focus:outline-none focus:ring-2 focus:ring-accent"
-                        aria-label={`Notification: ${n.title || n.type}`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="text-xs font-medium text-white/90 truncate">{n.title || n.type}</div>
-                            <div className="text-[11px] text-white/70 line-clamp-2">{n.message}</div>
-                          </div>
-                          <div className="text-[10px] text-white/50 whitespace-nowrap">
-                            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                {!notifLoading && grouped.map(group => (
+                  <div key={group.label} className="py-1">
+                    <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-white/40 font-semibold">{group.label}</div>
+                    {group.items.map(n => {
+                      const read = (() => {
+                        try { const raw = localStorage.getItem('notif_read_unknown'); if (raw) return JSON.parse(raw).includes(n.id); } catch {}
+                        return false;
+                      })();
+                      return (
+                        <div
+                          key={n.id}
+                          className={cn('px-3 py-2 flex items-start gap-3 group hover:bg-white/5 transition-colors', !read && 'bg-accent/5')}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleQuickAck(n.id)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleQuickAck(n.id); }}
+                          aria-label={`Notification ${n.title || n.type}`}
+                        >
+                          <div className="mt-0.5">{notificationIcon(n.type)}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={cn('text-[12px] font-medium truncate', !read ? 'text-white' : 'text-white/80')}>{n.title || n.type}</span>
+                              {!read && <span className="w-2 h-2 rounded-full bg-accent shadow shadow-accent/40" />}
+                            </div>
+                            <div className="text-[11px] text-white/60 line-clamp-2">{n.message}</div>
+                            <div className="mt-1 flex items-center gap-3 text-[10px] text-white/40">
+                              <span>{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleQuickAck(n.id); }}
+                                className="text-[10px] text-accent hover:underline"
+                              >Mark read</button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(n.message || ''); }}
+                                className="text-[10px] text-white/50 hover:text-white/70"
+                                title="Copy message"
+                              >Copy</button>
+                            </div>
                           </div>
                         </div>
-                      </button>
-                    ))}
+                      );
+                    })}
                   </div>
-                )}
+                ))}
+              </div>
+              {/* Footer */}
+              <div className="px-3 py-2 border-t border-white/10 flex items-center justify-between text-[10px] text-white/40">
+                <span>{filteredNotifications.length} shown</span>
+                <div className="flex items-center gap-2">
+                  <button className="hover:text-white/70" onClick={() => setNotifFilter({ search: '', type: null })}>Reset</button>
+                  <button className="hover:text-white/70" onClick={() => setNotifOpen(false)}>Close</button>
+                </div>
               </div>
             </UIPopoverContent>
           </UIPopover>
