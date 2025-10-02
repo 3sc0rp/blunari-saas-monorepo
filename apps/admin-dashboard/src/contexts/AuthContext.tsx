@@ -34,6 +34,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   adminRole: string | null;
+  adminLoaded: boolean;
   signUp: (
     email: string,
     password: string,
@@ -63,6 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminRole, setAdminRole] = useState<string | null>(null);
+  const [adminLoaded, setAdminLoaded] = useState(false); // indicates evaluateAdminStatus finished at least once
 
   // Helper: determine if email belongs to internal staff domain
   const isInternalEmail = (email?: string | null) => {
@@ -102,12 +104,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setAdminRole(role);
       setIsAdmin(finalIsAdmin);
+      setAdminLoaded(true);
     } catch (e) {
       if (process.env.NODE_ENV === 'development') {
         console.warn('evaluateAdminStatus failed', e);
       }
       setIsAdmin(false);
       setAdminRole(null);
+      setAdminLoaded(true);
     }
   }, [profile, user]);
 
@@ -182,6 +186,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setTenant(null);
         setIsAdmin(false);
         setAdminRole(null);
+        setAdminLoaded(true);
       }
 
       setLoading(false);
@@ -201,6 +206,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             evaluateAdminStatus(session.user.id, session.user.email);
           }
         }, 0);
+      } else {
+        setAdminLoaded(true);
       }
 
       setLoading(false);
@@ -370,6 +377,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     loading,
     isAdmin,
     adminRole,
+    adminLoaded,
     signUp,
     signIn,
     signOut,

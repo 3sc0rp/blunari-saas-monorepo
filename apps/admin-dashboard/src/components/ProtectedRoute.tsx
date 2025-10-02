@@ -11,7 +11,7 @@ export const ProtectedRoute = ({
   children,
   requireTenant = false,
 }: ProtectedRouteProps) => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, adminLoaded } = useAuth();
   const navigate = useNavigate();
 
   // Test bypass: allow UI smoke tests without real auth when a flag is present
@@ -29,17 +29,15 @@ export const ProtectedRoute = ({
   })();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user && !testBypass) {
-        navigate("/");
-        return;
-      }
-      // If user exists but is not admin (tenant-only account), force sign-out route / show denial
-      if (user && !isAdmin && !testBypass) {
-        navigate("/unauthorized", { replace: true });
-      }
+    if (loading || !adminLoaded) return; // wait until admin evaluation completes
+    if (!user && !testBypass) {
+      navigate("/");
+      return;
     }
-  }, [user, loading, navigate, testBypass, isAdmin]);
+    if (user && adminLoaded && !isAdmin && !testBypass) {
+      navigate("/unauthorized", { replace: true });
+    }
+  }, [user, loading, adminLoaded, navigate, testBypass, isAdmin]);
 
   if (loading) {
     return (
@@ -52,7 +50,18 @@ export const ProtectedRoute = ({
     );
   }
 
-  if ((!user || (user && !isAdmin && !testBypass)) ) {
+  if (loading || !adminLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">Verifying admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if ((!user || (user && !isAdmin && !testBypass))) {
     return null; // Will redirect to auth
   }
 
