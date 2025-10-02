@@ -65,6 +65,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [adminLoaded, setAdminLoaded] = useState(false); // indicates evaluateAdminStatus finished at least once
+  const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes role cache
+  const HEARTBEAT_MS = 5 * 60 * 1000; // revalidate every 5 minutes
+  const lastIsAdminRef = (typeof window !== 'undefined') ? (window as any).__lastIsAdminRef || { current: false } : { current: false };
+  if (typeof window !== 'undefined') { (window as any).__lastIsAdminRef = lastIsAdminRef; }
 
   // Helper: determine if email belongs to internal staff domain
   const isInternalEmail = (email?: string | null) => {
@@ -105,6 +109,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setAdminRole(role);
       setIsAdmin(finalIsAdmin);
       setAdminLoaded(true);
+
+      // Persist cache locally for faster subsequent loads
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(
+            `ADMIN_ROLE_CACHE_${userId}`,
+            JSON.stringify({ role, isAdmin: finalIsAdmin, ts: Date.now() })
+          );
+        }
+      } catch {}
+
+      // Detect revocation: previously true, now false
+      if (lastIsAdminRef.current && !finalIsAdmin) {
+        try {
+          await supabase.rpc('log_security_event', {
+            p_event_type: 'admin_role_revoked',
+            p_severity: 'warning',
+            p_event_data: { user_id: userId, prev_role: adminRole, now_role: role, timestamp: new Date().toISOString() }
+          });
+        } catch (e) {
+          if (process.env.NODE_ENV === 'development') console.warn('Failed to log revoke event', e);
+        }
+      }
+      lastIsAdminRef.current = finalIsAdmin;
     } catch (e) {
       if (process.env.NODE_ENV === 'development') {
         console.warn('evaluateAdminStatus failed', e);
@@ -112,6 +140,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsAdmin(false);
       setAdminRole(null);
       setAdminLoaded(true);
+      if (lastIsAdminRef.current) {
+        // Log downgrade to no admin (e.g., network fail) at lower severity once per failure window
+        try {
+          await supabase.rpc('log_security_event', {
+            p_event_type: 'admin_role_check_failed',
+            p_severity: 'info',
+            p_event_data: { user_id: user?.id, error: (e as any)?.message || String(e) }
+          });
+        } catch {}
+      }
+      lastIsAdminRef.current = false;
     }
   }, [profile, user]);
 
@@ -174,6 +213,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null);
 
       if (session?.user) {
+        // Warm from cache immediately (optimistic) before remote evaluation
+        try {
+          const cacheRaw = typeof window !== 'undefined' ? window.localStorage.getItem(`ADMIN_ROLE_CACHE_${session.user.id}`) : null;
+          if (cacheRaw) {
+            const cache = JSON.parse(cacheRaw);
+            if (cache.ts && (Date.now() - cache.ts) < CACHE_TTL_MS) {
+              setIsAdmin(!!cache.isAdmin);
+              setAdminRole(cache.role || null);
+              // We still mark adminLoaded=false until evaluate finishes for fresh correctness
+            }
+          }
+        } catch {}
         // Defer profile fetching to avoid auth state deadlock
         setTimeout(() => {
           if (isMounted) {
@@ -200,6 +251,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null);
 
       if (session?.user) {
+        // Attempt cached role fast-path
+        try {
+          const cacheRaw = typeof window !== 'undefined' ? window.localStorage.getItem(`ADMIN_ROLE_CACHE_${session.user.id}`) : null;
+          if (cacheRaw) {
+            const cache = JSON.parse(cacheRaw);
+            if (cache.ts && (Date.now() - cache.ts) < CACHE_TTL_MS) {
+              setIsAdmin(!!cache.isAdmin);
+              setAdminRole(cache.role || null);
+            }
+          }
+        } catch {}
         setTimeout(() => {
           if (isMounted) {
             fetchProfile(session.user.id);
@@ -209,6 +271,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         setAdminLoaded(true);
       }
+
+  // Heartbeat revalidation of admin role
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => {
+      evaluateAdminStatus(user.id, user.email);
+    }, HEARTBEAT_MS);
+    return () => clearInterval(id);
+  }, [user, evaluateAdminStatus]);
 
       setLoading(false);
     });
