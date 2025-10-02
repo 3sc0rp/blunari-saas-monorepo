@@ -204,6 +204,14 @@ export function useTenantNotifications() {
     persistReadIds(next);
   };
 
+  const markUnread = (id: string) => {
+    if (!readIds.has(id)) return; // already unread from perspective
+    const next = new Set(readIds);
+    next.delete(id);
+    setReadIds(next);
+    persistReadIds(next);
+  };
+
   const loadMore = () => {
     setPageSize(ps => Math.min(ps + 30, 300));
   };
@@ -230,6 +238,7 @@ export function useTenantNotifications() {
     markRead,
     markAllRead,
     markManyRead,
+  markUnread,
     isRead,
     counts,
     loadMore,

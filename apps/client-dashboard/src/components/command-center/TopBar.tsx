@@ -65,7 +65,7 @@ export function TopBar({
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedVenue, setSelectedVenue] = useState("demo-restaurant");
   const [contextFilter, setContextFilter] = useState("all");
-  const { notifications, unreadCount, loading: notifLoading, markRead, markAllRead, markManyRead, isRead, counts, loadMore, playNotificationSound, refresh } = useTenantNotifications();
+  const { notifications, unreadCount, loading: notifLoading, markRead, markAllRead, markManyRead, markUnread, isRead, counts, loadMore, playNotificationSound, refresh } = useTenantNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifTab, setNotifTab] = useState<'all' | 'unread' | 'reservations' | 'system'>('all');
   const [notifFilter, setNotifFilter] = useState<{search: string; type: string | null;}>({ search: '', type: null });
@@ -390,9 +390,16 @@ export function TopBar({
                             <div className="mt-1 flex items-center gap-3 text-[10px] text-white/40">
                               <span>{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</span>
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleQuickAck(n.id); }}
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  if (isRead(n.id)) { 
+                                    markUnread(n.id); 
+                                  } else { 
+                                    handleQuickAck(n.id); 
+                                  }
+                                }}
                                 className="text-[10px] text-accent hover:underline"
-                              >Mark read</button>
+                              >{isRead(n.id) ? 'Mark Unread' : 'Mark Read'}</button>
                               <button
                                 onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(n.message || ''); }}
                                 className="text-[10px] text-white/50 hover:text-white/70"
