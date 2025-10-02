@@ -379,18 +379,34 @@ export default function CommandCenter() {
     const confirmedCount = filteredReservations.filter(r => r.status.toLowerCase() === 'confirmed').length;
     const seatedCount = filteredReservations.filter(r => r.status.toLowerCase() === 'seated').length;
     const completedCount = filteredReservations.filter(r => r.status.toLowerCase() === 'completed').length;
-    const totalGuests = filteredReservations.reduce((sum, r) => sum + r.partySize, 0);
+    // Total guests across all filtered reservations (may span multiple days if data source returns all)
+  const totalGuestsAll = filteredReservations.reduce((sum, r) => sum + r.partySize, 0); // used in KPI hint
+    // Total guests for the currently selected calendar date only
+    const totalGuestsForSelectedDate = filteredReservations
+      .filter(r => {
+        try {
+          return new Date(r.start).toISOString().slice(0,10) === selectedDate;
+        } catch { return false; }
+      })
+      .reduce((sum, r) => sum + r.partySize, 0);
+
+    // Bookings count for selected date only
+    const totalBookingsForSelectedDate = filteredReservations.filter(r => {
+      try {
+        return new Date(r.start).toISOString().slice(0,10) === selectedDate;
+      } catch { return false; }
+    }).length;
 
     return [
       {
         id: 'total-bookings',
         label: 'Total Bookings',
-        value: filteredReservations.length.toString(),
+        value: totalBookingsForSelectedDate.toString(),
         spark: [],
         tone: 'positive' as const,
-        hint: `Total bookings ${Object.keys(filters).some(key => filters[key as keyof FiltersState]) ? '(filtered)' : ''}`,
+        hint: `Bookings for ${selectedDate} (${filteredReservations.length} across all loaded${Object.keys(filters).some(key => filters[key as keyof FiltersState]) ? ' / filtered' : ''})`,
         trendDirection: 'up' as const,
-        sublabel: undefined,
+        sublabel: selectedDate,
       },
       {
         id: 'confirmed-bookings',
@@ -415,15 +431,15 @@ export default function CommandCenter() {
       {
         id: 'total-guests',
         label: 'Total Guests',
-        value: totalGuests.toString(),
+        value: totalGuestsForSelectedDate.toString(),
         spark: [],
         tone: 'positive' as const,
-        hint: `Total guests across all ${Object.keys(filters).some(key => filters[key as keyof FiltersState]) ? 'filtered ' : ''}reservations`,
+        hint: `Guests for ${selectedDate} (${totalGuestsAll} across all loaded)` ,
         trendDirection: 'up' as const,
-        sublabel: undefined,
+        sublabel: selectedDate,
       }
     ];
-  }, [kpis, filteredReservations, reservations, filters]);
+  }, [kpis, filteredReservations, reservations, filters, selectedDate]);
 
   const handleExport = () => {
     try {
