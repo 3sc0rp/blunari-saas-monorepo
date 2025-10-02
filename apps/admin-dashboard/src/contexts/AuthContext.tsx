@@ -32,6 +32,8 @@ interface AuthContextType {
   profile: UserProfile | null;
   tenant: UserTenant | null;
   loading: boolean;
+  isAdmin: boolean;
+  adminRole: string | null;
   signUp: (
     email: string,
     password: string,
@@ -59,6 +61,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tenant, setTenant] = useState<UserTenant | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminRole, setAdminRole] = useState<string | null>(null);
+
+  // Helper: determine if email belongs to internal staff domain
+  const isInternalEmail = (email?: string | null) => {
+    if (!email) return false;
+    const domain = email.split('@')[1]?.toLowerCase();
+    const allowedDomains = (import.meta.env.VITE_ADMIN_ALLOWED_DOMAINS || 'blunari.ai').split(',').map(d => d.trim().toLowerCase());
+    return allowedDomains.includes(domain);
+  };
+
+  const evaluateAdminStatus = useCallback(async (userId: string, email?: string | null) => {
+    try {
+      // Query employees table for active role
+      const { data: employee, error: empErr } = await supabase
+        .from('employees')
+        .select('role,status')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      // Fallback: admin_users table (if exists)
+      let adminUser: any = null;
+      if (!employee) {
+        const { data: adminRow } = await supabase
+          .from('admin_users')
+          .select('role,is_active')
+          .eq('user_id', userId)
+          .maybeSingle();
+        adminUser = adminRow;
+      }
+
+      const profileBasedRole = (profile as any)?.role; // legacy support
+      const role = employee?.role || adminUser?.role || profileBasedRole || null;
+      const active = (employee?.status === 'ACTIVE') || (adminUser?.is_active === true);
+      const staffDomainsOk = isInternalEmail(email || user?.email || null);
+
+      const adminAllowed = !!role && ['SUPER_ADMIN','ADMIN','SUPPORT','OPS'].includes(role) && active;
+      const finalIsAdmin = adminAllowed || staffDomainsOk;
+
+      setAdminRole(role);
+      setIsAdmin(finalIsAdmin);
+    } catch (e) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('evaluateAdminStatus failed', e);
+      }
+      setIsAdmin(false);
+      setAdminRole(null);
+    }
+  }, [profile, user]);
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
@@ -123,11 +174,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setTimeout(() => {
           if (isMounted) {
             fetchProfile(session.user.id);
+            evaluateAdminStatus(session.user.id, session.user.email);
           }
         }, 0);
       } else {
         setProfile(null);
         setTenant(null);
+        setIsAdmin(false);
+        setAdminRole(null);
       }
 
       setLoading(false);
@@ -144,6 +198,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setTimeout(() => {
           if (isMounted) {
             fetchProfile(session.user.id);
+            evaluateAdminStatus(session.user.id, session.user.email);
           }
         }, 0);
       }
@@ -165,6 +220,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       lastName: string,
     ) => {
       try {
+        const allowSelfSignup = (import.meta.env.VITE_ENABLE_ADMIN_SELF_SIGNUP || 'false').toLowerCase() === 'true';
+        if (!allowSelfSignup) {
+          return { error: { message: 'Public admin sign-up disabled. Use an internal invite.' } } as any;
+        }
+        if (!isInternalEmail(email)) {
+          return { error: { message: 'Only internal staff emails may register here.' } } as any;
+        }
         // Enhanced validation with security checks
         if (!email || !password || !firstName || !lastName) {
           return { error: { message: "All fields are required" } };
@@ -255,6 +317,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password,
       });
 
+      if (!error) {
+        // After successful login evaluate admin status quickly
+        if (session?.user) {
+          evaluateAdminStatus(session.user.id, sanitizedEmail);
+        } else {
+          // fetch session again
+          const { data: s } = await supabase.auth.getSession();
+          const u = s?.session?.user;
+          if (u) evaluateAdminStatus(u.id, u.email);
+        }
+      }
+
       // Log authentication attempt
       try {
         await supabase.rpc("log_security_event", {
@@ -294,6 +368,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     profile,
     tenant,
     loading,
+    isAdmin,
+    adminRole,
     signUp,
     signIn,
     signOut,

@@ -30,6 +30,7 @@ import { AnalyticsPage } from "@/pages/AnalyticsPage";
 import { SupportPage } from "@/pages/SupportPage";
 import ComprehensiveCateringManagement from "@/pages/ComprehensiveCateringManagement";
 import NotFound from "@/pages/NotFound";
+import Unauthorized from "@/pages/Unauthorized";
 
 const queryClient = new QueryClient();
 
@@ -108,6 +109,7 @@ function App() {
                   </Route>
 
                   {/* 404 */}
+                  <Route path="/unauthorized" element={<Unauthorized />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

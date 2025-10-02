@@ -11,7 +11,7 @@ export const ProtectedRoute = ({
   children,
   requireTenant = false,
 }: ProtectedRouteProps) => {
-  const { user, tenant, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   // Test bypass: allow UI smoke tests without real auth when a flag is present
@@ -32,10 +32,14 @@ export const ProtectedRoute = ({
     if (!loading) {
       if (!user && !testBypass) {
         navigate("/");
+        return;
       }
-      // For internal staff app - no tenant requirement, go directly to dashboard
+      // If user exists but is not admin (tenant-only account), force sign-out route / show denial
+      if (user && !isAdmin && !testBypass) {
+        navigate("/unauthorized", { replace: true });
+      }
     }
-  }, [user, loading, navigate, testBypass]);
+  }, [user, loading, navigate, testBypass, isAdmin]);
 
   if (loading) {
     return (
@@ -48,7 +52,7 @@ export const ProtectedRoute = ({
     );
   }
 
-  if (!user && !testBypass) {
+  if ((!user || (user && !isAdmin && !testBypass)) ) {
     return null; // Will redirect to auth
   }
 
