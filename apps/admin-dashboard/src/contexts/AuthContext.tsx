@@ -80,30 +80,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const evaluateAdminStatus = useCallback(async (userId: string, email?: string | null) => {
     try {
-      // Query employees table for active role
+      // Query employees table for active role (primary source of truth)
       const { data: employee, error: empErr } = await supabase
         .from('employees')
         .select('role,status')
         .eq('user_id', userId)
         .maybeSingle();
 
-      // Fallback: admin_users table (if exists)
-      let adminUser: any = null;
-      if (!employee) {
-        const { data: adminRow } = await supabase
-          .from('admin_users')
-          .select('role,is_active')
-          .eq('user_id', userId)
-          .maybeSingle();
-        adminUser = adminRow;
+      if (empErr) {
+        console.warn('[AuthContext] Error fetching employee record:', empErr);
       }
 
-      const profileBasedRole = (profile as any)?.role; // legacy support
-      const role = employee?.role || adminUser?.role || profileBasedRole || null;
-      const active = (employee?.status === 'ACTIVE') || (adminUser?.is_active === true);
+      // Determine role and active status
+      const role = employee?.role || null;
+      const active = employee?.status === 'ACTIVE';
       const staffDomainsOk = isInternalEmail(email || user?.email || null);
 
-      const adminAllowed = !!role && ['SUPER_ADMIN','ADMIN','SUPPORT','OPS'].includes(role) && active;
+      // Admin allowed if: has employee record with valid role and active status
+      const adminAllowed = !!role && ['SUPER_ADMIN','ADMIN','SUPPORT','OPS','VIEWER'].includes(role) && active;
+      
+      // Final determination: either proper employee record OR internal domain
       const finalIsAdmin = adminAllowed || staffDomainsOk;
 
       setAdminRole(role);

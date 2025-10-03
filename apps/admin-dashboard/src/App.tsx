@@ -29,6 +29,7 @@ import { NotificationsPage } from "@/pages/NotificationsPage";
 import { AnalyticsPage } from "@/pages/AnalyticsPage";
 import { SupportPage } from "@/pages/SupportPage";
 import ComprehensiveCateringManagement from "@/pages/ComprehensiveCateringManagement";
+import AcceptInvitation from "@/pages/AcceptInvitation";
 import NotFound from "@/pages/NotFound";
 import Unauthorized from "@/pages/Unauthorized";
 
@@ -53,6 +54,7 @@ function App() {
                 <Routes>
                   {/* Auth Routes */}
                   <Route path="/" element={<Auth />} />
+                  <Route path="/accept-invitation" element={<AcceptInvitation />} />
 
                   {/* Protected Admin Routes */}
                   <Route

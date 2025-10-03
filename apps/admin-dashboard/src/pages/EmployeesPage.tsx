@@ -42,6 +42,7 @@ import {
 import { InviteEmployeeDialog } from "@/components/employees/InviteEmployeeDialog";
 import { EmployeeDetailsDialog } from "@/components/employees/EmployeeDetailsDialog";
 import { BulkActionsDialog } from "@/components/employees/BulkActionsDialog";
+import { InvitationsList } from "@/components/employees/InvitationsList";
 
 interface Employee {
   id: string;
@@ -467,6 +468,9 @@ export const EmployeesPage = () => {
           onEmployeeUpdated={fetchEmployees}
         />
       )}
+
+      {/* Invitations Management */}
+      <InvitationsList />
     </div>
   );
 };

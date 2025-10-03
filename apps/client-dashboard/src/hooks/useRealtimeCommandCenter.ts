@@ -129,19 +129,37 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
     });
   }, []);
 
-  // Get date range for selected date
+  // Get date range for selected date (timezone-aware)
   const dateRange = useMemo(() => {
-    const targetDate = selectedDate ? new Date(selectedDate) : new Date();
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    return {
-      start: startOfDay.toISOString(),
-      end: endOfDay.toISOString(),
-      dateString: startOfDay.toISOString().split('T')[0]
-    };
-  }, [selectedDate]);
+    const targetDateString = selectedDate || new Date().toISOString().split('T')[0];
+    
+    // Use tenant timezone if available, fallback to UTC
+    const timezone = (tenant as any)?.timezone || 'UTC';
+    
+    try {
+      // Import dynamically to avoid circular deps
+      const { getDateRangeInTimezone } = require('@/utils/dateUtils');
+      const range = getDateRangeInTimezone(targetDateString, timezone);
+      return {
+        start: range.start,
+        end: range.end,
+        dateString: targetDateString
+      };
+    } catch (error) {
+      console.warn('[useRealtimeCommandCenter] Error getting timezone-safe date range, falling back to UTC:', error);
+      // Fallback to simple UTC date range
+      const targetDate = new Date(targetDateString);
+      const startOfDay = new Date(targetDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+      return {
+        start: startOfDay.toISOString(),
+        end: endOfDay.toISOString(),
+        dateString: targetDateString
+      };
+    }
+  }, [selectedDate, tenant]);
 
   // Enhanced bookings query with proper error handling
   const {

@@ -63,26 +63,59 @@ export const InviteEmployeeDialog = ({
 
     setLoading(true);
     try {
+      // Get current session for authorization
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Not authenticated");
+        return;
+      }
+
       // Call edge function to send invitation
-      const { error } = await supabase.functions.invoke("invite-employee", {
+      const { data, error } = await supabase.functions.invoke("invite-staff", {
         body: {
           email: sanitizedEmail,
           role,
           department_id: departmentId || null,
         },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Failed to send invitation");
+      }
 
-      toast.success("Employee invitation sent successfully");
-      onInviteSent();
-      onOpenChange(false);
-      setEmail("");
-      setRole("");
-      setDepartmentId("");
-    } catch (error) {
+      if (data?.error) {
+        // Handle application-level errors
+        const errorMsg = data.message || data.error;
+        toast.error(errorMsg);
+        return;
+      }
+
+      if (data?.success) {
+        toast.success(
+          data.message || "Employee invitation sent successfully",
+          {
+            description: `Invitation link: ${data.invitation?.email}`,
+          }
+        );
+        
+        // Log the invitation link for development (remove in production with real email)
+        console.log("[InviteEmployee] Invitation link:", data.invitation?.invitation_link);
+        
+        onInviteSent();
+        onOpenChange(false);
+        setEmail("");
+        setRole("");
+        setDepartmentId("");
+      } else {
+        toast.error("Unexpected response from server");
+      }
+    } catch (error: any) {
       console.error("Error inviting employee:", error);
-      toast.error("Failed to send invitation");
+      toast.error(error?.message || "Failed to send invitation");
     } finally {
       setLoading(false);
     }

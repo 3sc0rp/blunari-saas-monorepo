@@ -19,6 +19,7 @@ import { useState, useMemo } from "react";
 import { FiltersState } from "@/components/command-center/Filters";
 import { useTenant } from "@/hooks/useTenant";
 import { createTestReservationNotification } from "@/utils/testNotification";
+import { getTodayInTimezone } from "@/utils/dateUtils";
 import { 
   Filters as FiltersType, 
   shouldUseMocks,
@@ -56,10 +57,17 @@ const transformReservationToLegacy = (reservation: ContractReservation): LegacyR
 });
 
 export default function CommandCenter() {
-  const { tenantId } = useTenant();
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const { tenantId, tenant } = useTenant();
+  const tenantTimezone = (tenant as any)?.timezone || 'UTC';
+  
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    // Initialize with today in tenant's timezone
+    try {
+      return getTodayInTimezone(tenantTimezone);
+    } catch {
+      return new Date().toISOString().split('T')[0];
+    }
+  });
   const [filters, setFilters] = useState<FiltersState>({});
   const [selectedReservationId, setSelectedReservationId] = useState<string | null>(null);
   const [focusTableId, setFocusTableId] = useState<string | undefined>();
@@ -85,7 +93,13 @@ export default function CommandCenter() {
 
   const [newOpen, setNewOpen] = useState(false);
   const [formTableId, setFormTableId] = useState<string>("");
-  const [formDate, setFormDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [formDate, setFormDate] = useState<string>(() => {
+    try {
+      return getTodayInTimezone(tenantTimezone);
+    } catch {
+      return new Date().toISOString().split('T')[0];
+    }
+  });
   const [formTime, setFormTime] = useState<string>("18:00");
   const [formDuration, setFormDuration] = useState<number>(120);
   const [formParty, setFormParty] = useState<number>(2);
