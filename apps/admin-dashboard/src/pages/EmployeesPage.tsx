@@ -94,20 +94,36 @@ export const EmployeesPage = () => {
 
   const fetchEmployees = async () => {
     try {
-      // Fix the query to properly join with profiles table
+      // Use the employees_with_profiles view for simplified querying
       const { data, error } = await supabase
-        .from("employees")
-        .select(
-          `
-          *,
-          profiles!inner(*),
-          departments(name)
-        `,
-        )
+        .from("employees_with_profiles")
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setEmployees((data || []) as unknown as Employee[]);
+
+      // Transform to match Employee interface
+      const enrichedEmployees = (data || []).map((emp: any) => ({
+        id: emp.id,
+        employee_id: emp.employee_id,
+        role: emp.role,
+        status: emp.status,
+        hire_date: emp.hire_date,
+        last_login: emp.last_login,
+        last_activity: emp.last_activity,
+        user_id: emp.user_id,
+        department_id: emp.department_id,
+        permissions: emp.permissions,
+        profiles: {
+          first_name: emp.first_name,
+          last_name: emp.last_name,
+          email: emp.email,
+          avatar_url: emp.avatar_url,
+        },
+        departments: emp.department_name ? { name: emp.department_name } : null,
+      }));
+
+      setEmployees(enrichedEmployees as Employee[]);
     } catch (error) {
       console.error("Error fetching employees:", error);
       toast.error("Failed to load employees");
