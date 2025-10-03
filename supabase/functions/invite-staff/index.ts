@@ -251,14 +251,13 @@ serve(async (req) => {
     // Get inviter name for email personalization
     const { data: inviterProfile } = await supabase
       .from('profiles')
-      .select('display_name, first_name, last_name')
-      .eq('user_id', user.id)
+      .select('email, first_name, last_name')
+      .eq('id', user.id)  // profiles table uses 'id' as the user reference
       .maybeSingle();
 
-    const inviterName = inviterProfile?.display_name 
-      || (inviterProfile?.first_name && inviterProfile?.last_name 
-          ? `${inviterProfile.first_name} ${inviterProfile.last_name}` 
-          : undefined);
+    const inviterName = inviterProfile?.first_name && inviterProfile?.last_name 
+      ? `${inviterProfile.first_name} ${inviterProfile.last_name}` 
+      : inviterProfile?.email || undefined;
 
     // TODO: Email functionality - will be added in next iteration
     // For now, invitation link is returned in response for manual distribution
