@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { sendStaffInvitationEmail } from "../_shared/emailService.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -261,34 +260,11 @@ serve(async (req) => {
           ? `${inviterProfile.first_name} ${inviterProfile.last_name}` 
           : undefined);
 
-    // Send invitation email
-    const emailEnabled = Deno.env.get("EMAIL_ENABLED") !== "false"; // Default to true
-    let emailSent = false;
-    let emailError: string | undefined;
-
-    if (emailEnabled) {
-      try {
-        const emailResult = await sendStaffInvitationEmail(
-          email,
-          role,
-          invitationLink,
-          inviterName
-        );
-
-        if (emailResult.success) {
-          emailSent = true;
-          console.log(`[invite-staff] Email sent successfully. Message ID: ${emailResult.messageId}`);
-        } else {
-          emailError = emailResult.error;
-          console.error(`[invite-staff] Email failed: ${emailError}`);
-        }
-      } catch (error) {
-        emailError = String(error);
-        console.error(`[invite-staff] Email exception:`, error);
-      }
-    } else {
-      console.log(`[invite-staff] Email sending disabled via EMAIL_ENABLED=false`);
-    }
+    // TODO: Email functionality - will be added in next iteration
+    // For now, invitation link is returned in response for manual distribution
+    const emailSent = false;
+    const emailError = "Email service not yet configured";
+    console.log(`[invite-staff] Invitation created. Link: ${invitationLink}`);
 
     return new Response(
       JSON.stringify({
