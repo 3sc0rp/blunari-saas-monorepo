@@ -157,23 +157,8 @@ serve(async (req) => {
       );
     }
 
-    // Check if user already exists
-    const { data: existingUser } = await supabase
-      .from("employees")
-      .select("id, status")
-      .eq("user_id", (await supabase.auth.admin.getUserByEmail(email)).data?.user?.id || "")
-      .maybeSingle();
-
-    if (existingUser) {
-      return new Response(
-        JSON.stringify({ 
-          error: "USER_EXISTS", 
-          message: `User with email ${email} is already a staff member (status: ${existingUser.status})`,
-          requestId 
-        }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // Check if invitation already exists for this email
+    // (We'll check for existing employee during invitation acceptance)
 
     // Check for existing pending invitation
     const { data: existingInvite } = await supabase
