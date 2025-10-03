@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "./useTenant";
 import { logger } from "@/utils/logger";
 import { handleSubscriptionError, handleFallbackUsage } from "@/utils/productionErrorManager";
+import { getDateRangeInTimezone } from "@/utils/dateUtils";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface UseRealtimeCommandCenterOptions {
@@ -137,8 +138,6 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
     const timezone = (tenant as any)?.timezone || 'UTC';
     
     try {
-      // Import dynamically to avoid circular deps
-      const { getDateRangeInTimezone } = require('@/utils/dateUtils');
       const range = getDateRangeInTimezone(targetDateString, timezone);
       return {
         start: range.start,
