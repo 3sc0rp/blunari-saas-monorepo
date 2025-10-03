@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "./useTenant";
 import { logger } from "@/utils/logger";
 import { handleSubscriptionError, handleFallbackUsage } from "@/utils/productionErrorManager";
-import { getDateRangeInTimezone } from "@/utils/dateUtils";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 interface UseRealtimeCommandCenterOptions {
@@ -130,35 +129,23 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
     });
   }, []);
 
-  // Get date range for selected date (timezone-aware)
+  // Get date range for selected date (timezone-aware with safe fallback)
   const dateRange = useMemo(() => {
     const targetDateString = selectedDate || new Date().toISOString().split('T')[0];
     
-    // Use tenant timezone if available, fallback to UTC
-    const timezone = (tenant as any)?.timezone || 'UTC';
+    // Simple UTC-based date range (safe default)
+    const targetDate = new Date(targetDateString + 'T00:00:00.000Z');
+    const startOfDay = new Date(targetDate);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setUTCHours(23, 59, 59, 999);
     
-    try {
-      const range = getDateRangeInTimezone(targetDateString, timezone);
-      return {
-        start: range.start,
-        end: range.end,
-        dateString: targetDateString
-      };
-    } catch (error) {
-      console.warn('[useRealtimeCommandCenter] Error getting timezone-safe date range, falling back to UTC:', error);
-      // Fallback to simple UTC date range
-      const targetDate = new Date(targetDateString);
-      const startOfDay = new Date(targetDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
-      const endOfDay = new Date(targetDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
-      return {
-        start: startOfDay.toISOString(),
-        end: endOfDay.toISOString(),
-        dateString: targetDateString
-      };
-    }
-  }, [selectedDate, tenant]);
+    return {
+      start: startOfDay.toISOString(),
+      end: endOfDay.toISOString(),
+      dateString: targetDateString
+    };
+  }, [selectedDate]);
 
   // Enhanced bookings query with proper error handling
   const {
