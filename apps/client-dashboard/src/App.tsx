@@ -49,6 +49,7 @@ const WaitlistManagement = lazy(() =>
 const CustomerProfiles = lazy(() => import(/* webpackChunkName: "customers" */ "./pages/CustomerProfiles"));
 const Catering = lazy(() => import(/* webpackChunkName: "catering" */ "./pages/Catering"));
 const CateringManagement = lazy(() => import(/* webpackChunkName: "catering-management" */ "./pages/CateringManagement"));
+const CateringOrderTracking = lazy(() => import(/* webpackChunkName: "catering-tracking" */ "./pages/CateringOrderTracking"));
 const Messages = lazy(() => import(/* webpackChunkName: "messages" */ "./pages/Messages"));
 const KitchenDisplaySystem = lazy(() => import(/* webpackChunkName: "kitchen" */ "./pages/KitchenDisplaySystem"));
 const StaffManagement = lazy(() => import(/* webpackChunkName: "staff" */ "./pages/StaffManagement"));
@@ -121,7 +122,13 @@ function App() {
                             {/* Non-protected routes with minimal loading */}
                             <Route path="/" element={<Index />} />
                             <Route path="/auth/*" element={<Auth />} />
-                            {/* Public 3D experience removed */}
+                            
+                            {/* Public catering order tracking */}
+                            <Route path="/catering-order/:orderId" element={
+                              <Suspense fallback={<LazyLoadingFallback component="Order Tracking" />}>
+                                <CateringOrderTracking />
+                              </Suspense>
+                            } />
                             
                             {/* Protected dashboard routes with optimized Suspense */}
                             <Route 
