@@ -71,7 +71,7 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
     requirePhone: false,
     requireVenue: true,
     welcomeMessage: 'Explore Our Catering Packages',
-    successMessage: 'Thank you! We\\'ll contact you soon with a quote.',
+    successMessage: "Thank you! We'll contact you soon with a quote.",
     minAdvanceNoticeDays: 3,
     active: true,
   });

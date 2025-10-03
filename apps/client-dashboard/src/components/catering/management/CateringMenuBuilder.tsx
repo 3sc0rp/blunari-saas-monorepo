@@ -225,7 +225,7 @@ export function CateringMenuBuilder({ tenantId }: CateringMenuBuilderProps) {
             <List className="w-4 h-4 mr-2" />
             All Items
           </TabsTrigger>
-        </Tabs>
+        </TabsList>
 
         {/* Categories View */}
         <TabsContent value="categories" className="space-y-6">
