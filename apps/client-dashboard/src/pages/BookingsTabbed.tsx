@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTenant } from "@/hooks/useTenant";
 import { useAdvancedBookings } from "@/hooks/useAdvancedBookings";
 import OptimizedBookingsTable from "@/components/booking/VirtualizedBookingsTable";
@@ -23,8 +24,12 @@ import {
   CalendarDays,
   Settings,
   TrendingUp,
+  Eye,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import type { ExtendedBooking, BookingStatus } from "@/types/booking";
+import { useWidgetAnalytics, formatAnalyticsValue, analyticsFormatters } from '@/widgets/management/useWidgetAnalytics';
 
 /**
  * Tab-Based Booking Management
@@ -48,6 +53,28 @@ export default function BookingsTabbed() {
   const [showWizard, setShowWizard] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<ExtendedBooking | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [analyticsRange, setAnalyticsRange] = useState<'1d' | '7d' | '30d'>('7d');
+
+  // Use real analytics hook for booking widget
+  const { 
+    data: analyticsData, 
+    loading: analyticsLoading, 
+    error: analyticsError,
+    refresh: refreshAnalytics,
+    isAvailable: analyticsAvailable,
+    meta: analyticsMeta
+  } = useWidgetAnalytics({
+    tenantId: tenant?.id || null,
+    tenantSlug: tenant?.slug || null,
+    widgetType: 'booking',
+  });
+
+  // Re-fetch analytics when range changes
+  useEffect(() => {
+    if (!analyticsAvailable) return;
+    if (analyticsRange === '7d' && !analyticsData) return;
+    refreshAnalytics(analyticsRange);
+  }, [analyticsAvailable, analyticsRange, refreshAnalytics, analyticsData]);
 
   // Calculate metrics
   const metrics = useMemo(() => {
@@ -75,7 +102,7 @@ export default function BookingsTabbed() {
   };
 
   const handleStatusUpdate = async (bookingId: string, newStatus: BookingStatus) => {
-    await updateBooking({ bookingId, updates: { status: newStatus } });
+    await updateBooking({ id: bookingId, updates: { status: newStatus } });
     toast.success(`Booking updated to ${newStatus}`);
   };
 
@@ -109,7 +136,7 @@ export default function BookingsTabbed() {
             Real-time
           </Badge>
           <Button onClick={() => setShowWizard(true)}>
-            <Plus className="h-4 h-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2" />
             New Booking
           </Button>
         </div>
@@ -266,7 +293,30 @@ export default function BookingsTabbed() {
 
         {/* All Bookings Tab */}
         <TabsContent value="bookings" className="space-y-4">
-          <AdvancedFilters filters={filters} onFiltersChange={setFilters} />
+          <AdvancedFilters 
+            filters={filters} 
+            onFiltersChange={setFilters}
+            totalBookings={bookings.length}
+            onExportCSV={() => {
+              try {
+                const rows: string[] = [];
+                rows.push('id,guest_name,guest_email,guest_phone,booking_time,party_size,status,special_requests');
+                bookings.forEach(b => {
+                  rows.push(`${b.id},"${b.guest_name}","${b.guest_email || ''}","${b.guest_phone || ''}","${b.booking_time}",${b.party_size},"${b.status}","${b.special_requests || ''}"`);
+                });
+                const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `bookings-${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                toast.success('Bookings exported successfully');
+              } catch (e) { 
+                console.error('CSV export failed', e);
+                toast.error('Failed to export bookings');
+              }
+            }}
+          />
           
           <OptimizedBookingsTable
             bookings={bookings}
@@ -294,98 +344,267 @@ export default function BookingsTabbed() {
           />
         </TabsContent>
 
-        {/* Analytics Tab */}
-        <TabsContent value="analytics">
+        {/* Analytics Tab - Widget Analytics */}
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h3 className="text-lg font-semibold">Booking Widget Analytics</h3>
+                {analyticsMeta?.time_range && (
+                  <Badge variant="secondary" className="text-xs">Range: {analyticsMeta.time_range}</Badge>
+                )}
+                {analyticsMeta?.version && (
+                  <Badge variant="outline" className="text-xs">v{analyticsMeta.version}</Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Performance metrics for your booking widget
+                {!analyticsAvailable && " – connect tenant to enable analytics."}
+                {(!analyticsLoading && analyticsData && analyticsData.totalViews === 0 && analyticsData.totalBookings === 0) && ' – no recorded activity yet.'}
+                {analyticsError && ' – analytics temporarily unavailable.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Select value={analyticsRange} onValueChange={(v: '1d' | '7d' | '30d') => setAnalyticsRange(v)}>
+                <SelectTrigger className="w-28 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1d">Last 24h</SelectItem>
+                  <SelectItem value="7d">7 Days</SelectItem>
+                  <SelectItem value="30d">30 Days</SelectItem>
+                </SelectContent>
+              </Select>
+              {analyticsError && (
+                <Badge variant="destructive" className="text-xs">Error</Badge>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refreshAnalytics(analyticsRange)}
+                disabled={analyticsLoading}
+              >
+                {analyticsLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                )}
+                Refresh
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  try {
+                    const rows: string[] = [];
+                    rows.push('source,count');
+                    (analyticsData?.topSources || []).forEach(s => rows.push(`${s.source},${s.count}`));
+                    rows.push('');
+                    rows.push('date,views,bookings,revenue');
+                    (analyticsData?.dailyStats || []).forEach(d => rows.push(`${d.date},${d.views},${d.bookings ?? ''},${d.revenue ?? ''}`));
+                    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${tenant?.slug || 'tenant'}-booking-analytics.csv`;
+                    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                  } catch (e) { console.error('CSV export failed', e); }
+                }}
+              >
+                Export CSV
+              </Button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Metrics cards */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Views</p>
+                    <p className="text-2xl font-bold">
+                      {formatAnalyticsValue(analyticsData?.totalViews, analyticsFormatters.count)}
+                    </p>
+                  </div>
+                  <Eye className="w-8 h-8 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Bookings</p>
+                    <p className="text-2xl font-bold">
+                      {formatAnalyticsValue(analyticsData?.totalBookings, analyticsFormatters.count)}
+                    </p>
+                  </div>
+                  <Calendar className="w-8 h-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Completion Rate</p>
+                    <p className="text-2xl font-bold">
+                      {formatAnalyticsValue(analyticsData?.completionRate, analyticsFormatters.percentage)}
+                    </p>
+                  </div>
+                  <BarChart3 className="w-8 h-8 text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Avg Party Size</p>
+                    <p className="text-2xl font-bold">
+                      {formatAnalyticsValue(analyticsData?.avgPartySize, analyticsFormatters.decimal)}
+                    </p>
+                  </div>
+                  <Users className="w-8 h-8 text-orange-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top sources */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Traffic Sources</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {analyticsData?.topSources?.map((source, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <span className="text-sm">{source.source}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-500 rounded-full"
+                            style={{ 
+                              width: analyticsData?.topSources?.[0] 
+                                ? `${(source.count / analyticsData.topSources[0].count) * 100}%` 
+                                : '0%' 
+                            }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium w-8 text-right">
+                          {formatAnalyticsValue(source.count, analyticsFormatters.count)}
+                        </span>
+                      </div>
+                    </div>
+                  )) || (
+                    <div className="text-center py-4 text-muted-foreground">
+                      {analyticsLoading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading analytics...
+                        </div>
+                      ) : (
+                        "No traffic source data available"
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Performance metrics */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Booking Performance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {analyticsData?.peakHours && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">Peak Booking Hours</p>
+                      <div className="flex flex-wrap gap-2">
+                        {analyticsData.peakHours.map((hour, index) => (
+                          <Badge key={index} variant="secondary">{hour}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Conversion Rate</span>
+                      <span className="font-medium text-green-600">
+                        {formatAnalyticsValue(analyticsData?.conversionRate, analyticsFormatters.percentage)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Avg Session Duration</span>
+                      <span className="font-medium">
+                        {formatAnalyticsValue(analyticsData?.avgSessionDuration, analyticsFormatters.duration)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Completion Rate</span>
+                      <span className="font-medium text-blue-600">
+                        {formatAnalyticsValue(analyticsData?.completionRate, analyticsFormatters.percentage)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Daily performance chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Booking Analytics</CardTitle>
-              <CardDescription>Performance metrics and insights</CardDescription>
+              <CardTitle>Daily Performance (Last 7 Days)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div>
-                  <h3 className="font-semibold mb-4">Status Distribution</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Pending</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-orange-500"
-                            style={{ width: `${(metrics.pending / metrics.total) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium w-12 text-right">{metrics.pending}</span>
-                      </div>
+              <div className="space-y-4">
+                {analyticsData?.dailyStats?.map((day, index) => (
+                  <div key={index} className="grid grid-cols-2 md:grid-cols-4 gap-4 p-3 border rounded-lg">
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Date</p>
+                      <p className="font-medium">{new Date(day.date).toLocaleDateString()}</p>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Confirmed</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-green-500"
-                            style={{ width: `${(metrics.confirmed / metrics.total) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium w-12 text-right">{metrics.confirmed}</span>
-                      </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Views</p>
+                      <p className="font-medium text-blue-600">
+                        {formatAnalyticsValue(day.views, analyticsFormatters.count)}
+                      </p>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Seated</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-blue-500"
-                            style={{ width: `${(metrics.seated / metrics.total) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium w-12 text-right">{metrics.seated}</span>
-                      </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Bookings</p>
+                      <p className="font-medium text-green-600">
+                        {formatAnalyticsValue(day.bookings, analyticsFormatters.count)}
+                      </p>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Completed</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-gray-500"
-                            style={{ width: `${(metrics.completed / metrics.total) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium w-12 text-right">{metrics.completed}</span>
-                      </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Revenue</p>
+                      <p className="font-medium text-purple-600">
+                        {day.revenue ? formatAnalyticsValue(day.revenue, analyticsFormatters.currency) : '—'}
+                      </p>
                     </div>
                   </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-4">Quick Stats</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Average Party Size:</span>
-                      <span className="font-medium">
-                        {bookings.length > 0 
-                          ? (bookings.reduce((sum, b) => sum + b.party_size, 0) / bookings.length).toFixed(1)
-                          : '0'
-                        } guests
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Confirmation Rate:</span>
-                      <span className="font-medium">
-                        {metrics.total > 0 
-                          ? ((metrics.confirmed / metrics.total) * 100).toFixed(1)
-                          : '0'
-                        }%
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">No-Shows:</span>
-                      <span className="font-medium">
-                        {bookings.filter(b => b.status === 'noshow').length}
-                      </span>
-                    </div>
+                )) || (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {analyticsLoading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Loading daily stats...
+                      </div>
+                    ) : (
+                      "No daily statistics available"
+                    )}
                   </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -421,10 +640,8 @@ export default function BookingsTabbed() {
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
         onStatusUpdate={handleStatusUpdate}
-        onUpdateBooking={(updates) => {
-          if (selectedBooking) {
-            updateBooking({ bookingId: selectedBooking.id, updates });
-          }
+        onUpdateBooking={(bookingId: string, updates: Partial<ExtendedBooking>) => {
+          updateBooking({ id: bookingId, updates });
         }}
       />
 

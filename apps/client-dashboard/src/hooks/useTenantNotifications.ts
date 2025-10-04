@@ -68,40 +68,8 @@ export function useTenantNotifications() {
   });
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const lastNotificationCount = useRef<number>(0);
-  const [serverSyncEnabled, setServerSyncEnabled] = useState<boolean>(true);
-
-  // Fetch read state from server
-  const fetchReadState = async () => {
-    if (!tenantId || !serverSyncEnabled) return;
-    try {
-      const { data, error } = await supabase
-        .from('notification_reads')
-        .select('notification_id')
-        .eq('tenant_id', tenantId);
-      
-      if (error) {
-        // If table doesn't exist yet, disable server sync
-        if (error.code === '42P01') {
-          console.log('[useTenantNotifications] notification_reads table not found, using localStorage only');
-          setServerSyncEnabled(false);
-          return;
-        }
-        throw error;
-      }
-      
-      const serverReadIds = new Set((data || []).map(r => r.notification_id));
-      
-      // Merge with localStorage (localStorage takes precedence for offline changes)
-      const localIds = readIds;
-      const merged = new Set([...serverReadIds, ...localIds]);
-      
-      setReadIds(merged);
-      persistReadIds(merged);
-    } catch (err) {
-      console.error('[useTenantNotifications] Failed to fetch read state:', err);
-      // Continue with localStorage-only mode
-    }
-  };
+  // Note: Server-side notification read tracking not yet implemented
+  // Using localStorage-only mode for now
 
   // Rehydrate read IDs whenever tenant changes
   useEffect(() => {
@@ -111,9 +79,6 @@ export function useTenantNotifications() {
     } catch {
       setReadIds(new Set());
     }
-    // Fetch server state after local rehydration
-    fetchReadState();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId]);
 
   const persistReadIds = (next: Set<string>) => {
@@ -225,19 +190,7 @@ export function useTenantNotifications() {
     next.add(id);
     setReadIds(next);
     persistReadIds(next);
-
-    // Sync to server
-    if (serverSyncEnabled && tenantId) {
-      try {
-        await supabase.rpc('mark_notification_read', {
-          p_notification_id: id,
-          p_tenant_id: tenantId
-        });
-      } catch (err) {
-        console.error('[useTenantNotifications] Failed to sync read state:', err);
-        // Continue with local state
-      }
-    }
+    // Note: Server sync not yet implemented - using localStorage only
   };
 
   const markAllRead = async () => {
@@ -245,20 +198,7 @@ export function useTenantNotifications() {
     notifications.forEach((n) => next.add(n.id));
     setReadIds(next);
     persistReadIds(next);
-
-    // Sync to server
-    if (serverSyncEnabled && tenantId) {
-      try {
-        const idsToMark = notifications.map(n => n.id);
-        await supabase.rpc('mark_notifications_read', {
-          p_notification_ids: idsToMark,
-          p_tenant_id: tenantId
-        });
-      } catch (err) {
-        console.error('[useTenantNotifications] Failed to sync mark all read:', err);
-        // Continue with local state
-      }
-    }
+    // Note: Server sync not yet implemented - using localStorage only
   };
 
   const markManyRead = async (ids: string[]) => {
@@ -266,19 +206,7 @@ export function useTenantNotifications() {
     ids.forEach(id => next.add(id));
     setReadIds(next);
     persistReadIds(next);
-
-    // Sync to server
-    if (serverSyncEnabled && tenantId) {
-      try {
-        await supabase.rpc('mark_notifications_read', {
-          p_notification_ids: ids,
-          p_tenant_id: tenantId
-        });
-      } catch (err) {
-        console.error('[useTenantNotifications] Failed to sync mark many read:', err);
-        // Continue with local state
-      }
-    }
+    // Note: Server sync not yet implemented - using localStorage only
   };
 
   const markUnread = async (id: string) => {
@@ -287,18 +215,7 @@ export function useTenantNotifications() {
     next.delete(id);
     setReadIds(next);
     persistReadIds(next);
-
-    // Sync to server
-    if (serverSyncEnabled && tenantId) {
-      try {
-        await supabase.rpc('mark_notification_unread', {
-          p_notification_id: id
-        });
-      } catch (err) {
-        console.error('[useTenantNotifications] Failed to sync unread state:', err);
-        // Continue with local state
-      }
-    }
+    // Note: Server sync not yet implemented - using localStorage only
   };
 
   const loadMore = () => {
