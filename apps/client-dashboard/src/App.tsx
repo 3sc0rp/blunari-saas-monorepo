@@ -32,7 +32,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 // Lazy load Bookings to avoid double import warning and reduce initial bundle
-const Bookings = lazy(() => import(/* webpackChunkName: "bookings" */ "./pages/Bookings"));
+const Bookings = lazy(() => import(/* webpackChunkName: "bookings" */ "./pages/BookingsTabbed"));
+const BookingTracking = lazy(() => import(/* webpackChunkName: "booking-tracking" */ "./pages/BookingTracking"));
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 // Removed unused BookingPage import
@@ -123,7 +124,12 @@ function App() {
                             <Route path="/" element={<Index />} />
                             <Route path="/auth/*" element={<Auth />} />
                             
-                            {/* Public catering order tracking */}
+                            {/* Public order/booking tracking */}
+                            <Route path="/booking/:bookingId" element={
+                              <Suspense fallback={<LazyLoadingFallback component="Booking Tracking" />}>
+                                <BookingTracking />
+                              </Suspense>
+                            } />
                             <Route path="/catering-order/:orderId" element={
                               <Suspense fallback={<LazyLoadingFallback component="Order Tracking" />}>
                                 <CateringOrderTracking />
