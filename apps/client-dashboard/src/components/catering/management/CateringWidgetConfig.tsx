@@ -80,21 +80,32 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
   const [widgetToken, setWidgetToken] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Generate widget token
+  // Generate widget token once on mount
   useEffect(() => {
+    let mounted = true;
+    
     const generateToken = async () => {
+      if (!tenantSlug) return;
+      
       try {
         const token = await createWidgetToken(tenantSlug, '2.0', 'catering');
-        setWidgetToken(token);
+        if (mounted) {
+          setWidgetToken(token);
+        }
       } catch (error) {
         console.error('Failed to generate widget token:', error);
+        if (mounted) {
+          setWidgetToken(''); // Set empty to avoid infinite retries
+        }
       }
     };
     
-    if (tenantSlug) {
-      generateToken();
-    }
-  }, [tenantSlug]);
+    generateToken();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []); // Empty deps - only run once on mount
 
   // Generate widget URL
   const widgetUrl = widgetToken 
@@ -116,11 +127,26 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
     setSaving(true);
     try {
       // Save configuration to database
-      const { error } = await (supabase as any)
-        .from('catering_widget_configs')
+      const { error } = await supabase
+        .from('catering_widget_configs' as any)
         .upsert({
           tenant_id: tenantId,
-          ...config,
+          primary_color: config.primaryColor,
+          secondary_color: config.secondaryColor,
+          background_color: config.backgroundColor,
+          text_color: config.textColor,
+          font_family: config.fontFamily,
+          border_radius: config.borderRadius,
+          compact_mode: config.compactMode,
+          show_images: config.showImages,
+          allow_guest_count_customization: config.allowGuestCountCustomization,
+          show_dietary_filters: config.showDietaryFilters,
+          require_phone: config.requirePhone,
+          require_venue: config.requireVenue,
+          welcome_message: config.welcomeMessage,
+          success_message: config.successMessage,
+          min_advance_notice_days: config.minAdvanceNoticeDays,
+          active: config.active,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'tenant_id',
@@ -129,9 +155,9 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
       if (error) throw error;
       
       toast.success('Widget configuration saved!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save error:', error);
-      toast.error('Failed to save configuration');
+      toast.error(error.message || 'Failed to save configuration');
     } finally {
       setSaving(false);
     }
