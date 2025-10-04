@@ -79,6 +79,7 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [widgetToken, setWidgetToken] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false); // Disable preview by default
 
   // Generate widget token once on mount
   useEffect(() => {
@@ -480,8 +481,26 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
                     maxWidth: '100%',
                   }}
                 >
-                  {widgetUrl ? (
+                  {!showPreview ? (
+                    <div className="bg-white rounded-lg p-8 text-center space-y-4">
+                      <Eye className="w-12 h-12 text-muted-foreground mx-auto" />
+                      <div>
+                        <h3 className="font-semibold mb-2">Preview Disabled</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Click below to enable live preview
+                        </p>
+                        <Button onClick={() => setShowPreview(true)} variant="outline">
+                          <Eye className="w-4 h-4 mr-2" />
+                          Enable Preview
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Preview is disabled by default to prevent auto-reload issues
+                      </p>
+                    </div>
+                  ) : widgetUrl ? (
                     <iframe
+                      key={widgetUrl} // Force remount when URL changes
                       src={widgetUrl}
                       className="w-full bg-white rounded-lg shadow-lg"
                       style={{
@@ -499,6 +518,18 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
                     </div>
                   )}
                 </div>
+                {showPreview && (
+                  <div className="mt-2 text-center">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowPreview(false)}
+                      className="text-xs"
+                    >
+                      Disable Preview
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
