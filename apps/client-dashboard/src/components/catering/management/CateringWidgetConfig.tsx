@@ -112,7 +112,7 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
     ? `${window.location.origin}/public-widget/catering/${tenantSlug}?token=${encodeURIComponent(widgetToken)}`
     : '';
 
-  // Generate embed code
+  // Generate embed code with security sandbox
   const embedCode = `<!-- Blunari Catering Widget -->
 <iframe
   src="${widgetUrl}"
@@ -121,6 +121,9 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
   frameborder="0"
   style="border: none; border-radius: 8px;"
   title="Catering Booking Widget"
+  sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+  loading="lazy"
+  referrerpolicy="strict-origin-when-cross-origin"
 ></iframe>`;
 
   const handleSave = async () => {
@@ -468,7 +471,7 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
                 </Button>
               </div>
 
-              {/* Preview iframe */}
+              {/* Preview iframe with sandbox */}
               <div className="border rounded-lg overflow-hidden bg-gray-100 p-4">
                 <div
                   className="mx-auto transition-all"
@@ -486,6 +489,9 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
                         border: 'none',
                       }}
                       title="Catering Widget Preview"
+                      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+                      loading="lazy"
+                      referrerPolicy="strict-origin-when-cross-origin"
                     />
                   ) : (
                     <div className="bg-white rounded-lg p-8 text-center text-muted-foreground">
