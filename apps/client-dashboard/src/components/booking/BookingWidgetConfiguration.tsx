@@ -2,7 +2,7 @@
  * Booking Widget Configuration Component
  * Comprehensive widget settings for booking management
  */
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,8 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   const [activeSection, setActiveSection] = useState<'appearance' | 'content' | 'features' | 'embed'>('appearance');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [copyBusy, setCopyBusy] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(true);
+  const iframeKeyRef = useRef(0);
 
   const {
     bookingConfig,
@@ -77,14 +79,14 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
     toast({ title: 'Reset', description: 'Configuration reset to defaults' });
   }, [resetToDefaults, toast]);
 
-  // Generate widget URL
+  // Generate widget URL - stable across renders
   const widgetUrl = useMemo(() => {
     if (!tenantSlug) return null;
     const baseUrl = window.location.origin;
     return `${baseUrl}/book/${tenantSlug}`;
   }, [tenantSlug]);
 
-  // Generate embed code
+  // Generate embed code with sandbox attributes
   const embedCode = useMemo(() => {
     if (!widgetUrl) return '';
     return `<iframe
@@ -92,10 +94,31 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   width="100%"
   height="600"
   frameborder="0"
+  sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
   style="border: none; border-radius: 8px;"
   title="Booking Widget"
+  loading="lazy"
 ></iframe>`;
   }, [widgetUrl]);
+
+  // Reload iframe only when explicitly needed (when switching back to embed tab after saving)
+  useEffect(() => {
+    if (activeSection === 'embed' && widgetUrl) {
+      // Only increment key if we just saved changes
+      if (hasUnsavedChanges === false) {
+        // Small delay to ensure save is complete
+        const timeout = setTimeout(() => {
+          iframeKeyRef.current += 1;
+          setIframeLoading(true);
+        }, 500);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [activeSection, hasUnsavedChanges, widgetUrl]);
+
+  const handleIframeLoad = useCallback(() => {
+    setIframeLoading(false);
+  }, []);
 
   const copyToClipboard = useCallback(async (text: string, label: string) => {
     try {
@@ -644,16 +667,28 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
               {widgetUrl ? (
                 <div className="flex justify-center p-4 bg-muted rounded-lg">
                   <div
-                    className="bg-white rounded-lg shadow-lg overflow-hidden"
+                    className="bg-white rounded-lg shadow-lg overflow-hidden relative"
                     style={{
                       width: previewDevice === 'desktop' ? '800px' : previewDevice === 'tablet' ? '600px' : '375px',
                       height: '600px',
                     }}
                   >
+                    {iframeLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+                        <div className="text-center">
+                          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
+                          <p className="text-sm text-muted-foreground">Loading preview...</p>
+                        </div>
+                      </div>
+                    )}
                     <iframe
+                      key={`widget-preview-${iframeKeyRef.current}`}
                       src={widgetUrl}
                       className="w-full h-full border-0"
                       title="Widget Preview"
+                      sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                      onLoad={handleIframeLoad}
+                      loading="lazy"
                     />
                   </div>
                 </div>
