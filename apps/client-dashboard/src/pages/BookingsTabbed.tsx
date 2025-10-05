@@ -11,6 +11,7 @@ import BookingsCalendar from "@/components/booking/BookingsCalendar";
 import ReservationDrawer from "@/components/booking/ReservationDrawer";
 import SmartBookingWizard from "@/components/booking/SmartBookingWizard";
 import AdvancedFilters from "@/components/booking/AdvancedFilters";
+import BookingWidgetConfiguration from "@/components/booking/BookingWidgetConfiguration";
 import { toast } from "sonner";
 import {
   Plus,
@@ -610,27 +611,12 @@ export default function BookingsTabbed() {
           </Card>
         </TabsContent>
 
-        {/* Widget Tab - Link to WidgetManagement */}
+        {/* Widget Tab - Full Configuration */}
         <TabsContent value="widget">
-          <Card>
-            <CardHeader>
-              <CardTitle>Booking Widget Configuration</CardTitle>
-              <CardDescription>
-                Configure and embed your booking widget
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <Settings className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Widget Configuration</h3>
-              <p className="text-muted-foreground mb-6">
-                Customize your booking widget colors, branding, and settings
-              </p>
-              <Button onClick={() => window.location.href = '/dashboard/widget-management'}>
-                <Settings className="w-4 h-4 mr-2" />
-                Open Widget Settings
-              </Button>
-            </CardContent>
-          </Card>
+          <BookingWidgetConfiguration 
+            tenantId={tenant?.id} 
+            tenantSlug={tenant?.slug} 
+          />
         </TabsContent>
       </Tabs>
 
