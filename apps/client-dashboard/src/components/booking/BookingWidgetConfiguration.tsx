@@ -86,7 +86,9 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
     return `${baseUrl}/book/${tenantSlug}`;
   }, [tenantSlug]);
 
-  // Generate embed code with sandbox attributes
+  // Generate embed code without conflicting sandbox attributes
+  // Note: We don't use sandbox because the widget needs both allow-scripts and allow-same-origin,
+  // which together would allow the iframe to escape sandboxing. Instead, we rely on CSP headers.
   const embedCode = useMemo(() => {
     if (!widgetUrl) return '';
     return `<iframe
@@ -94,10 +96,10 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   width="100%"
   height="600"
   frameborder="0"
-  sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
   style="border: none; border-radius: 8px;"
   title="Booking Widget"
   loading="lazy"
+  allow="payment; geolocation"
 ></iframe>`;
   }, [widgetUrl]);
 
@@ -686,9 +688,9 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
                       src={widgetUrl}
                       className="w-full h-full border-0"
                       title="Widget Preview"
-                      sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
                       onLoad={handleIframeLoad}
                       loading="lazy"
+                      allow="payment; geolocation"
                     />
                   </div>
                 </div>
