@@ -49,7 +49,6 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [copyBusy, setCopyBusy] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(true);
-  const iframeKeyRef = useRef(0);
 
   const {
     bookingConfig,
@@ -102,21 +101,6 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   allow="payment; geolocation"
 ></iframe>`;
   }, [widgetUrl]);
-
-  // Reload iframe only when explicitly needed (when switching back to embed tab after saving)
-  useEffect(() => {
-    if (activeSection === 'embed' && widgetUrl) {
-      // Only increment key if we just saved changes
-      if (hasUnsavedChanges === false) {
-        // Small delay to ensure save is complete
-        const timeout = setTimeout(() => {
-          iframeKeyRef.current += 1;
-          setIframeLoading(true);
-        }, 500);
-        return () => clearTimeout(timeout);
-      }
-    }
-  }, [activeSection, hasUnsavedChanges, widgetUrl]);
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoading(false);
@@ -684,7 +668,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
                       </div>
                     )}
                     <iframe
-                      key={`widget-preview-${iframeKeyRef.current}`}
+                      key="widget-preview-stable"
                       src={widgetUrl}
                       className="w-full h-full border-0"
                       title="Widget Preview"
