@@ -87,7 +87,8 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   }, [tenantSlug]);
 
   // Generate embed code with secure sandbox attributes
-  // Using a balanced approach: sandbox with specific permissions for widget functionality
+  // NOTE: We intentionally exclude 'allow-same-origin' to prevent sandbox escape
+  // The widget is designed to work in a cross-origin context for security
   const embedCode = useMemo(() => {
     if (!widgetUrl) return '';
     return `<iframe
@@ -675,7 +676,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
                       className="w-full h-full border-0"
                       title="Booking Widget Preview"
                       onLoad={handleIframeLoad}
-                      sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+                      sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
                       allow="payment; geolocation"
                       referrerPolicy="strict-origin-when-cross-origin"
                       style={{
