@@ -67,6 +67,8 @@ interface Tenant {
   status: string;
   currency: string;
   timezone: string;
+  email?: string;
+  owner_email?: string;
   created_at: string;
   updated_at: string;
   bookings_count?: number;
@@ -112,9 +114,11 @@ const TenantsPage = () => {
           status,
           currency,
           timezone,
+          email,
           created_at,
           updated_at,
-          domains:domains(count)
+          domains:domains(count),
+          auto_provisioning!inner(user_id)
         `,
         { count: "exact" },
       );
@@ -141,6 +145,15 @@ const TenantsPage = () => {
 
       if (error) throw error;
 
+      // Fetch owner emails from profiles for all tenants
+      const userIds = (data || []).map((row: any) => row.auto_provisioning?.user_id).filter(Boolean);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .in("id", userIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.id, p.email]) || []);
+
       const mapped = (data || []).map((row: any) => ({
         id: row.id,
         name: row.name,
@@ -148,6 +161,8 @@ const TenantsPage = () => {
         status: row.status,
         currency: row.currency,
         timezone: row.timezone,
+        email: row.email,
+        owner_email: profileMap.get(row.auto_provisioning?.user_id) || row.email || "N/A",
         created_at: row.created_at,
         updated_at: row.updated_at,
         domains_count: Array.isArray(row.domains) ? row.domains.length : 0,
@@ -452,6 +467,7 @@ const TenantsPage = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Restaurant</TableHead>
+                  <TableHead>Owner Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Timezone</TableHead>
                   <TableHead>Created</TableHead>
@@ -469,6 +485,9 @@ const TenantsPage = () => {
                           <div className="h-4 bg-muted rounded animate-pulse" />
                           <div className="h-3 bg-muted rounded animate-pulse w-2/3" />
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 bg-muted rounded animate-pulse w-40" />
                       </TableCell>
                       <TableCell>
                         <div className="h-6 bg-muted rounded animate-pulse w-16" />
@@ -489,7 +508,7 @@ const TenantsPage = () => {
                   ))
                 ) : tenants.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="p-0">
+                    <TableCell colSpan={7} className="p-0">
                       <EmptyState
                         icon={
                           <Building2 className="h-8 w-8 text-muted-foreground" />
@@ -528,6 +547,11 @@ const TenantsPage = () => {
                           <div className="text-sm text-muted-foreground">
                             /{tenant.slug}
                           </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-muted-foreground font-mono">
+                          {tenant.owner_email}
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(tenant.status)}</TableCell>

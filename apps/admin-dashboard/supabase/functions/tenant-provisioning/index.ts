@@ -204,6 +204,8 @@ serve(async (req: Request) => {
 
     // Call the provision_tenant database function using owner user if available
     // NOTE: There are multiple overloaded versions in the DB; pass full argument list to disambiguate
+    // IMPORTANT: Use owner email for tenant.email field, not business email
+    // This ensures tenant.email always points to the login credential
     const { data: tenantId, error: provisionError } = await supabase.rpc(
       "provision_tenant",
       {
@@ -214,7 +216,7 @@ serve(async (req: Request) => {
         p_currency: requestData.basics.currency,
         p_description: requestData.basics.description ?? null,
         p_phone: requestData.basics.phone ?? null,
-        p_email: requestData.basics.email ?? null,
+        p_email: ownerEmail ?? requestData.basics.email ?? null, // Use owner email as primary
         p_website: requestData.basics.website ?? null,
         p_address: requestData.basics.address
           ? JSON.stringify(requestData.basics.address)
