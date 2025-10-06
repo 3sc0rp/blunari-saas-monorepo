@@ -39,7 +39,19 @@ class ProductionErrorManager {
     /authentication.*error/i,
     /session.*error/i,
     /POST.*400.*bad request/i,
-    /POST.*403.*forbidden/i
+    /POST.*403.*forbidden/i,
+    // Supabase GoTrueClient errors
+    /SecurityError.*Failed to execute.*request.*on.*LockManager/i,
+    /Access to the Locks API is denied/i,
+    /locks\.js/i,
+    /GoTrueClient\.js/i,
+    /Uncaught \(in promise\).*SecurityError/i,
+    /Failed to execute.*request.*on.*LockManager/i,
+    /Locks API is denied in this context/i,
+    // Auth/session related
+    /Error checking session/i,
+    /session.*setup.*password.*tokens/i,
+    /\[UnhandledRejection\]/i,
   ];
 
   // Error patterns that should be converted to info logs
@@ -237,6 +249,27 @@ if (import.meta.env.PROD) {
     }
     originalError.apply(console, args);
   };
+
+  // Global unhandled rejection handler
+  window.addEventListener('unhandledrejection', (event) => {
+    const message = event.reason?.message || String(event.reason);
+    if (productionErrorManager.suppressWarning(message, 'unhandledRejection', { reason: event.reason })) {
+      event.preventDefault(); // Prevent console output
+      return;
+    }
+    // Let critical errors through
+    logger.error('Unhandled promise rejection', event.reason);
+  });
+
+  // Global error handler
+  window.addEventListener('error', (event) => {
+    const message = event.message || String(event.error);
+    if (productionErrorManager.suppressWarning(message, 'globalError', { error: event.error })) {
+      event.preventDefault(); // Prevent console output
+      return;
+    }
+    // Let critical errors through
+  });
 }
 
 export default productionErrorManager;
