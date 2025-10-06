@@ -36,6 +36,12 @@ class ProductionErrorManager {
     /Checking URL for password setup tokens/i,
     /Transient warning/i,
     /Unhandled promise rejection.*LockManager/i,
+    // Service Worker errors in sandboxed contexts
+    /SecurityError.*Failed to read the 'serviceWorker' property/i,
+    /Service worker is disabled because the context is sandboxed/i,
+    /serviceWorkerRegistration\.ts/i,
+    /Service worker registration failed.*SecurityError/i,
+    /lacks the 'allow-same-origin' flag/i,
   ];
 
   // Error patterns that should be suppressed in production

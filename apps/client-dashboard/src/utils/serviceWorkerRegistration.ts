@@ -3,6 +3,33 @@
  * Handles registration and lifecycle management of the service worker
  */
 
+/**
+ * Check if we're in a sandboxed context where service workers are not allowed
+ */
+function isServiceWorkerAllowed(): boolean {
+  try {
+    // Check if we're in a sandboxed iframe
+    if (window.self !== window.top) {
+      // In iframe - service workers may be blocked
+      return false;
+    }
+    
+    // Try to access the serviceWorker property
+    // In sandboxed contexts, this will throw a SecurityError
+    if ('serviceWorker' in navigator) {
+      // Access the property to trigger any security errors
+      const sw = navigator.serviceWorker;
+      return sw !== undefined;
+    }
+    
+    return false;
+  } catch (error) {
+    // SecurityError or other error means service workers are not allowed
+    console.info('[SW] Service worker not available in this context');
+    return false;
+  }
+}
+
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | undefined> {
   // Only register in production
   if (import.meta.env.DEV) {
@@ -10,7 +37,13 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     return undefined;
   }
 
-  // Check browser support
+  // Check if service worker is allowed in this context
+  if (!isServiceWorkerAllowed()) {
+    console.info('[SW] Service worker not available (sandboxed context or unsupported browser)');
+    return undefined;
+  }
+
+  // Check browser support (redundant but safe)
   if (!('serviceWorker' in navigator)) {
     console.warn('[SW] Service workers not supported in this browser');
     return undefined;
@@ -70,6 +103,10 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
  * Unregister service worker (for development or debugging)
  */
 export async function unregisterServiceWorker(): Promise<boolean> {
+  if (!isServiceWorkerAllowed()) {
+    return false;
+  }
+
   if (!('serviceWorker' in navigator)) {
     return false;
   }
@@ -190,6 +227,15 @@ export async function getServiceWorkerStatus(): Promise<{
   active: boolean;
   waiting: boolean;
 }> {
+  if (!isServiceWorkerAllowed()) {
+    return {
+      supported: false,
+      registered: false,
+      active: false,
+      waiting: false,
+    };
+  }
+
   if (!('serviceWorker' in navigator)) {
     return {
       supported: false,
@@ -199,12 +245,22 @@ export async function getServiceWorkerStatus(): Promise<{
     };
   }
 
-  const registration = await navigator.serviceWorker.getRegistration();
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
 
-  return {
-    supported: true,
-    registered: !!registration,
-    active: !!registration?.active,
-    waiting: !!registration?.waiting,
-  };
+    return {
+      supported: true,
+      registered: !!registration,
+      active: !!registration?.active,
+      waiting: !!registration?.waiting,
+    };
+  } catch (error) {
+    console.warn('[SW] Failed to get service worker status:', error);
+    return {
+      supported: false,
+      registered: false,
+      active: false,
+      waiting: false,
+    };
+  }
 }
