@@ -22,18 +22,20 @@ export interface WidgetConfig {
   spacing: number;
 }
 
-export interface AnalyticsData {
-  totalViews: number;
-  totalInteractions: number;
-  totalConversions: number;
-  conversionRate: number;
-  avgSessionDuration: number;
-  bounceRate: number;
-  topSources: Array<{ source: string; views: number; conversions: number }>;
-  deviceBreakdown: Array<{ device: string; percentage: number }>;
-  hourlyData: Array<{ hour: string; views: number; conversions: number }>;
-  weeklyData: Array<{ day: string; views: number; conversions: number }>;
-}
+// Analytics data type - nullable for safe empty state handling
+export type AnalyticsData = {
+  totalViews?: number | null;
+  totalInteractions?: number | null;
+  totalConversions?: number | null;
+  conversionRate?: number | null;
+  avgSessionDuration?: number | null;
+  bounceRate?: number | null;
+  topSources?: Array<{ source: string; views: number | null; conversions: number | null }>;
+  deviceBreakdown?: Array<{ device: string; percentage: number }>;
+  hourlyData?: Array<{ hour: string; views: number; conversions: number }>;
+  weeklyData?: Array<{ day: string; views: number; conversions: number }>;
+  dailyStats?: Array<{ date: string; views: number | null; conversions: number | null }>;
+};
 
 // Validation functions
 export const validateHexColor = (color: string): boolean => {
@@ -248,17 +250,6 @@ export const generateEmbedCode = (
 };
 
 // Safe analytics data generation – remove randomized values in production paths
-export type AnalyticsData = {
-  totalViews?: number | null;
-  totalInteractions?: number | null;
-  totalConversions?: number | null;
-  conversionRate?: number | null;
-  avgSessionDuration?: number | null;
-  bounceRate?: number | null;
-  topSources?: Array<{ source: string; views: number | null; conversions: number | null }>;
-  dailyStats?: Array<{ date: string; views: number | null; conversions: number | null }>;
-};
-
 export const generateSafeAnalyticsData = (_timeRange: string): AnalyticsData => {
   return {
     totalViews: null,
