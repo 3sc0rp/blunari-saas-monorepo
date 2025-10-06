@@ -217,7 +217,7 @@ export const generateEmbedCode = (
     iframe.style.height = '100%';
     iframe.style.border = 'none';
     iframe.setAttribute('allow', 'payment; geolocation');
-    iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-top-navigation');
+    iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-top-navigation allow-same-origin');
     iframe.setAttribute('loading', 'lazy');
     iframe.setAttribute('title', '${safeTenantName} ${type === 'booking' ? 'Booking' : 'Catering'} Widget');
     

@@ -97,8 +97,8 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   }, [tenantSlug]);
 
   // Generate embed code with secure sandbox attributes
-  // NOTE: We intentionally exclude 'allow-same-origin' to prevent sandbox escape
-  // The widget is designed to work in a cross-origin context for security
+  // NOTE: allow-same-origin is REQUIRED for Stripe integration (CORS requests to js.stripe.com)
+  // Without it, iframe runs in 'null' origin context and Stripe fails with CORS errors
   const embedCode = useMemo(() => {
     if (!widgetUrl) return '';
     
@@ -117,7 +117,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   style="border: none; border-radius: 8px;"
   title="Booking Widget"
   loading="lazy"
-  sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+  sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin"
   referrerpolicy="strict-origin-when-cross-origin"
   allow="payment; geolocation"
 ></iframe>`;
@@ -695,7 +695,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
                       src={widgetUrl || undefined}
                       className="w-full h-full border-0"
                       onLoad={handleIframeLoad}
-                      sandbox="allow-scripts allow-forms allow-popups"
+                      sandbox="allow-scripts allow-forms allow-popups allow-same-origin"
                       referrerPolicy="strict-origin-when-cross-origin"
                       allow="payment; geolocation"
                       style={{

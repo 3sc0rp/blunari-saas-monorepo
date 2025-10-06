@@ -528,10 +528,10 @@ const WidgetManagement: React.FC = () => {
   const referrerAttr = " referrerpolicy=\"strict-origin-when-cross-origin\"";
 
       if (embedType === 'iframe') {
-        return `<!-- Simple iframe embed (standalone bundle) -->\n<!-- Uses /public-widget entry for smaller isolated runtime -->\n<iframe\n  src="${url}&embed=1"\n  width="${config.width || 400}"\n  height="${config.height || 600}"\n  style="border:0;max-width:100%;border-radius:${config.borderRadius || 8}px;box-shadow:0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)"\n  title="${safeWelcome || 'Blunari widget'}"\n  loading="${iframeLazy ? 'lazy' : 'eager'}"${iframeSandbox ? '\n  sandbox="allow-scripts allow-forms allow-popups"' : ''}\n  referrerpolicy="strict-origin-when-cross-origin"\n  data-widget-type="${type}"\n></iframe>`;
+        return `<!-- Simple iframe embed (standalone bundle) -->\n<!-- Uses /public-widget entry for smaller isolated runtime -->\n<iframe\n  src="${url}&embed=1"\n  width="${config.width || 400}"\n  height="${config.height || 600}"\n  style="border:0;max-width:100%;border-radius:${config.borderRadius || 8}px;box-shadow:0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)"\n  title="${safeWelcome || 'Blunari widget'}"\n  loading="${iframeLazy ? 'lazy' : 'eager'}"${iframeSandbox ? '\n  sandbox="allow-scripts allow-forms allow-popups allow-same-origin"' : ''}\n  referrerpolicy="strict-origin-when-cross-origin"\n  data-widget-type="${type}"\n></iframe>`;
       }
       if (embedType === 'react') {
-        return `{/* React iframe embed (standalone /public-widget bundle) */}\n<iframe\n  src={"${url}&embed=1"}\n  width={${config.width || 400}}\n  height={${config.height || 600}}\n  style={{border:0, maxWidth:'100%', borderRadius:${config.borderRadius || 8}, boxShadow:'0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)'}}\n  title={'${safeWelcome || 'Blunari widget'}'}\n  loading="${iframeLazy ? 'lazy' : 'eager'}"${iframeSandbox ? '\n  sandbox="allow-scripts allow-forms allow-popups"' : ''}\n  referrerPolicy="strict-origin-when-cross-origin"\n  data-widget-type={'${type}'}\n/>`;
+        return `{/* React iframe embed (standalone /public-widget bundle) */}\n<iframe\n  src={"${url}&embed=1"}\n  width={${config.width || 400}}\n  height={${config.height || 600}}\n  style={{border:0, maxWidth:'100%', borderRadius:${config.borderRadius || 8}, boxShadow:'0 ${(config.shadowIntensity || 2) * 2}px ${(config.shadowIntensity || 2) * 4}px rgba(0,0,0,.1)'}}\n  title={'${safeWelcome || 'Blunari widget'}'}\n  loading="${iframeLazy ? 'lazy' : 'eager'}"${iframeSandbox ? '\n  sandbox="allow-scripts allow-forms allow-popups allow-same-origin"' : ''}\n  referrerPolicy="strict-origin-when-cross-origin"\n  data-widget-type={'${type}'}\n/>`;
       }
 
       // Script embed (advanced) – creates container, injects iframe, handles resize + token handshake
@@ -551,7 +551,7 @@ const WidgetManagement: React.FC = () => {
   iframe.title='${safeWelcome || 'Blunari widget'}';
   iframe.loading='${iframeLazy ? 'lazy' : 'eager'}';
   iframe.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
-  ${iframeSandbox ? "iframe.setAttribute('sandbox','allow-scripts allow-forms allow-popups');" : ''}
+  ${iframeSandbox ? "iframe.setAttribute('sandbox','allow-scripts allow-forms allow-popups allow-same-origin');" : ''}
   iframe.style.cssText='width:100%;height:100%;border:0;display:block;background:#fff';
   container.appendChild(iframe);
   var allowed='${allowedOrigin}';
@@ -1522,8 +1522,8 @@ const WidgetManagement: React.FC = () => {
                                 title={`${activeWidgetType} live widget preview`}
                                 src={liveWidgetUrl || undefined}
                                 style={{ width: currentConfig.width, height: currentConfig.height, border: '0', display: 'block', background: '#fff' }}
-                                // Security: Removed allow-same-origin to ensure sandbox cannot access parent origin
-                                sandbox="allow-scripts allow-forms allow-popups"
+                                // Security: allow-same-origin required for Stripe payment processing
+                                sandbox="allow-scripts allow-forms allow-popups allow-same-origin"
                                 referrerPolicy="strict-origin-when-cross-origin"
                                 onLoad={() => { if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') { console.log('[WidgetManagement] iframe loaded', { url: liveWidgetUrl }); } }}
                               />
