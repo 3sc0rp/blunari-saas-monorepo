@@ -21,7 +21,8 @@ export default defineConfig(({ mode }) => {
           '@integrations': path.resolve(__dirname, 'src/integrations'),
           '@lib': path.resolve(__dirname, 'src/lib')
         },
-        dedupe: ['react', 'react-dom', 'scheduler']
+        // Critical: dedupe React to prevent multiple instances
+        dedupe: ['react', 'react-dom', 'scheduler', 'react/jsx-runtime']
       },    // Development server configuration
     server: {
       host: "::",
@@ -101,30 +102,24 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             // Vendor chunks - rarely change, long cache
             if (id.includes('node_modules')) {
-              // React ecosystem
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              // React ecosystem - keep together to avoid context issues
+              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
                 return 'vendor-react';
               }
+              // React Router
+              if (id.includes('react-router')) {
+                return 'vendor-router';
+              }
               // UI libraries
-              if (id.includes('lucide-react') || id.includes('radix-ui')) {
+              if (id.includes('lucide-react') || id.includes('@radix-ui')) {
                 return 'vendor-ui';
               }
               // Supabase
-              if (id.includes('@supabase') || id.includes('supabase-js')) {
+              if (id.includes('@supabase')) {
                 return 'vendor-supabase';
               }
               // Other vendors
               return 'vendor';
-            }
-            // Component chunks - group by feature
-            if (id.includes('src/components/booking')) {
-              return 'components-booking';
-            }
-            if (id.includes('src/components/catering')) {
-              return 'components-catering';
-            }
-            if (id.includes('src/components/analytics')) {
-              return 'components-analytics';
             }
           },
           chunkFileNames: 'chunks/[name]-[hash].js',
