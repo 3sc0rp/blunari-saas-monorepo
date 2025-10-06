@@ -34,14 +34,9 @@ const CACHE_STRATEGIES = {
 
 // Install event - precache critical assets
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installing...', CACHE_VERSION);
-  
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('[Service Worker] Precaching assets');
-        return cache.addAll(PRECACHE_ASSETS);
-      })
+      .then((cache) => cache.addAll(PRECACHE_ASSETS))
       .then(() => self.skipWaiting())
       .catch((error) => {
         console.error('[Service Worker] Precache failed:', error);
@@ -51,15 +46,12 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activating...', CACHE_VERSION);
-  
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
-              console.log('[Service Worker] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
@@ -155,17 +147,14 @@ async function cacheFirst(request, cacheName, options = {}) {
       
       if (age > options.maxAge) {
         // Cache expired, fetch fresh
-        console.log('[Service Worker] Cache expired, fetching fresh:', request.url);
         const fresh = await fetchAndCache(request, cache);
         return fresh || cached; // Fallback to stale cache if fetch fails
       }
     }
     
-    console.log('[Service Worker] Cache hit:', request.url);
     return cached;
   }
   
-  console.log('[Service Worker] Cache miss, fetching:', request.url);
   return await fetchAndCache(request, cache);
 }
 
@@ -193,12 +182,9 @@ async function networkFirst(request, cacheName, options = {}) {
     return response;
     
   } catch (error) {
-    console.log('[Service Worker] Network failed, checking cache:', request.url);
-    
     // Fallback to cache
     const cached = await cache.match(request);
     if (cached) {
-      console.log('[Service Worker] Serving from cache:', request.url);
       return cached;
     }
     
