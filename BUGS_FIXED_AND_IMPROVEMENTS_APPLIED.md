@@ -125,6 +125,107 @@ sandbox="allow-scripts allow-forms allow-popups allow-same-origin"
 
 ---
 
+### ✅ Bug #4: Password Reset Flow Broken
+**Status**: FIXED (October 6, 2025)
+**Files Modified**:
+- `apps/client-dashboard/src/pages/Auth.tsx`
+- `apps/client-dashboard/supabase/functions/send-password-reset/index.ts`
+
+**Problem**:
+Password reset was failing silently after users entered the verification code and new password. The password would not update and users couldn't log in.
+
+**Root Causes**:
+1. **Missing Email in Form Submission**: Email field was displayed as disabled/readonly but not included in form data
+2. **Insufficient Validation**: No client-side validation before API call
+3. **Poor Error Messages**: Generic errors made debugging impossible
+4. **Missing Server Validation**: Edge function didn't validate inputs thoroughly
+
+**Errors Users Experienced**:
+```
+- Form submission with undefined email
+- "Failed to reset password" with no details
+- Password not updating despite success message
+- Unable to login with new password
+```
+
+**Solutions Applied**:
+
+**Client-Side (Auth.tsx):**
+```tsx
+// 1. Added hidden email field to ensure submission includes email
+<input
+  type="hidden"
+  {...registerCode("email")}
+  value={resetEmail || ""}
+/>
+
+// 2. Added password visibility toggles (UX improvement)
+<Button onClick={() => setShowPassword(!showPassword)}>
+  {showPassword ? <EyeOff /> : <Eye />}
+</Button>
+
+// 3. Added explicit validation before API call
+if (!data.email) throw new Error("Email is required");
+if (!data.code || data.code.length !== 6) throw new Error("Please enter a valid 6-digit code");
+if (!data.password || data.password.length < 6) throw new Error("Password must be at least 6 characters");
+if (data.password !== data.confirmPassword) throw new Error("Passwords don't match");
+
+// 4. Added detailed logging for debugging
+console.log("Password reset submission:", { 
+  email: data.email, 
+  codeLength: data.code?.length, 
+  passwordsMatch: data.password === data.confirmPassword 
+});
+```
+
+**Server-Side (Edge Function):**
+```typescript
+// 1. Added comprehensive input validation
+if (!email || !code || !newPassword) {
+  return new Response(JSON.stringify({
+    error: "Email, security code, and new password are required",
+    success: false
+  }), { status: 400 });
+}
+
+if (code.length !== 6) {
+  return new Response(JSON.stringify({
+    error: "Security code must be 6 digits",
+    success: false
+  }), { status: 400 });
+}
+
+if (newPassword.length < 6) {
+  return new Response(JSON.stringify({
+    error: "Password must be at least 6 characters",
+    success: false
+  }), { status: 400 });
+}
+
+// 2. Added detailed logging at each step
+console.log("Starting password reset for email:", email);
+console.log("Code length:", code?.length, "Password length:", newPassword?.length);
+console.log("Reset codes query result:", { found: resetCodes?.length });
+```
+
+**Impact**: 
+- ✅ Password reset now works reliably
+- ✅ Clear error messages guide users
+- ✅ Better debugging with detailed logs
+- ✅ Improved UX with password visibility toggle
+- ✅ Proper validation prevents invalid submissions
+
+**Testing**:
+1. Request reset code via "Forgot password?"
+2. Check Supabase logs for 6-digit code
+3. Enter code and new password
+4. Verify success message
+5. Login with new password ✅
+
+**Documentation**: See `PASSWORD_RESET_FIX.md` for complete details and debugging guide.
+
+---
+
 ## Code Quality Analysis
 
 ### ✅ Verified: Error Handling Infrastructure
@@ -403,12 +504,17 @@ Found 50+ instances of `as any` - Analysis shows:
 ### Stripe CORS Fix (Session 3 - October 5, 2025)
 4. ✅ `apps/client-dashboard/src/components/booking/BookingWidgetConfiguration.tsx` - Added allow-same-origin
 5. ✅ `apps/client-dashboard/src/pages/WidgetManagement.tsx` - Added allow-same-origin to all embed variants
-6. ✅ `apps/client-dashboard/src/utils/widgetUtils.ts` - Added allow-same-origin to script embed
+6. ✅ `apps/client-dashboard/src/utils/widgetUtils.ts` - Added allow-same-origin to script embed, fixed duplicate type
+
+### Password Reset Fix (Session 4 - October 6, 2025)
+7. ✅ `apps/client-dashboard/src/pages/Auth.tsx` - Fixed form submission, added validation and logging
+8. ✅ `apps/client-dashboard/supabase/functions/send-password-reset/index.ts` - Added server validation and logging
 
 ### Documentation Files
-7. ✅ `COMPREHENSIVE_BUG_FIXES_AND_IMPROVEMENTS.md` - Analysis document
-8. ✅ `BUGS_FIXED_AND_IMPROVEMENTS_APPLIED.md` - This summary
-9. ✅ `STRIPE_CORS_FIX.md` - Detailed Stripe fix documentation
+9. ✅ `COMPREHENSIVE_BUG_FIXES_AND_IMPROVEMENTS.md` - Analysis document
+10. ✅ `BUGS_FIXED_AND_IMPROVEMENTS_APPLIED.md` - This summary
+11. ✅ `STRIPE_CORS_FIX.md` - Detailed Stripe fix documentation
+12. ✅ `PASSWORD_RESET_FIX.md` - Detailed password reset fix documentation
 
 ---
 
