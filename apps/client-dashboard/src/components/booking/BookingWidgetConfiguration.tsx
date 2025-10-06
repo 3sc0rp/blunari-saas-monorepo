@@ -49,7 +49,9 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [copyBusy, setCopyBusy] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(true);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  
+  // Stable iframe key to prevent unnecessary remounts (matches WidgetManagement)
+  const iframeKeyRef = useRef<string>('');
 
   const {
     bookingConfig,
@@ -79,11 +81,19 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
     toast({ title: 'Reset', description: 'Configuration reset to defaults' });
   }, [resetToDefaults, toast]);
 
-  // Generate widget URL - stable across renders
+  // Generate widget URL with stable key tracking (matches WidgetManagement approach)
   const widgetUrl = useMemo(() => {
     if (!tenantSlug) return null;
     const baseUrl = window.location.origin;
-    return `${baseUrl}/book/${tenantSlug}`;
+    const url = `${baseUrl}/book/${tenantSlug}`;
+    
+    // Update stable key only when slug changes (prevents unnecessary iframe reloads)
+    const nextKey = `${tenantSlug}:booking`;
+    if (iframeKeyRef.current !== nextKey) {
+      iframeKeyRef.current = nextKey;
+    }
+    
+    return url;
   }, [tenantSlug]);
 
   // Generate embed code with secure sandbox attributes
@@ -671,17 +681,17 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
                       </div>
                     )}
                     <iframe
-                      ref={iframeRef}
-                      src={widgetUrl}
-                      className="w-full h-full border-0"
+                      key={iframeKeyRef.current}
                       title="Booking Widget Preview"
+                      src={widgetUrl || undefined}
+                      className="w-full h-full border-0"
                       onLoad={handleIframeLoad}
-                      sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-                      allow="payment; geolocation"
+                      sandbox="allow-scripts allow-forms allow-popups"
                       referrerPolicy="strict-origin-when-cross-origin"
+                      allow="payment; geolocation"
                       style={{
-                        colorScheme: 'normal',
-                        isolation: 'isolate',
+                        display: 'block',
+                        background: '#fff',
                       }}
                     />
                   </div>
