@@ -442,6 +442,27 @@ const Auth: React.FC = () => {
     setCodeLoading(true);
 
     try {
+      console.log("Password reset submission:", { 
+        email: data.email, 
+        codeLength: data.code?.length, 
+        hasPassword: !!data.password,
+        passwordsMatch: data.password === data.confirmPassword 
+      });
+
+      // Validate all required fields
+      if (!data.email) {
+        throw new Error("Email is required");
+      }
+      if (!data.code || data.code.length !== 6) {
+        throw new Error("Please enter a valid 6-digit security code");
+      }
+      if (!data.password || data.password.length < 6) {
+        throw new Error("Password must be at least 6 characters");
+      }
+      if (data.password !== data.confirmPassword) {
+        throw new Error("Passwords don't match");
+      }
+
       // Send both code and new password to reset password
       const response = await fetch(
         "https://kbfbbkcaxhzlnbqxwgoz.supabase.co/functions/v1/send-password-reset",
@@ -458,14 +479,18 @@ const Auth: React.FC = () => {
         },
       );
 
+      console.log("Reset password response status:", response.status);
+
       // Check if response is ok before parsing JSON
       if (!response.ok) {
         const errorText = await response.text();
+        console.error("Reset password error response:", errorText);
         let errorMessage = "Failed to reset password";
 
         try {
           const errorJson = JSON.parse(errorText);
           errorMessage = errorJson.error || errorMessage;
+          console.error("Parsed error:", errorJson);
         } catch {
           errorMessage = errorText || errorMessage;
         }
@@ -474,6 +499,7 @@ const Auth: React.FC = () => {
       }
 
       const result = await response.json();
+      console.log("Reset password success:", result);
 
       if (result.success) {
         toast({
@@ -481,9 +507,11 @@ const Auth: React.FC = () => {
           description: "Your password has been updated. You can now sign in.",
         });
 
+        // Reset form and return to signin
         setShowCodeForm(false);
         setShowPasswordForm(false);
         resetCodeForm();
+        setResetEmail("");
         setActiveTab("signin");
       } else {
         throw new Error(result.error || "Failed to reset password");
@@ -985,6 +1013,13 @@ const Auth: React.FC = () => {
                     onSubmit={handleCodeSubmit(onCodeSubmit)}
                     className="space-y-5"
                   >
+                    {/* Hidden email field to ensure it's included in form submission */}
+                    <input
+                      type="hidden"
+                      {...registerCode("email")}
+                      value={resetEmail || ""}
+                    />
+                    
                     <div className="space-y-2">
                       <Label htmlFor="code-email" className="text-text">
                         Email address
@@ -1030,17 +1065,33 @@ const Auth: React.FC = () => {
                       <Label htmlFor="new-password" className="text-text">
                         New Password
                       </Label>
-                      <Input
-                        id="new-password"
-                        type="password"
-                        placeholder="Enter new password"
-                        {...registerCode("password")}
-                        className={`h-11 bg-surface-2 border-surface-3 focus:border-brand focus:ring-brand ${codeErrors.password ? "border-destructive animate-shake" : ""}`}
-                        aria-invalid={codeErrors.password ? "true" : "false"}
-                        aria-describedby={
-                          codeErrors.password ? "password-new-error" : undefined
-                        }
-                      />
+                      <div className="relative">
+                        <Input
+                          id="new-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter new password (min 6 characters)"
+                          {...registerCode("password")}
+                          className={`h-11 bg-surface-2 border-surface-3 focus:border-brand focus:ring-brand pr-10 ${codeErrors.password ? "border-destructive animate-shake" : ""}`}
+                          aria-invalid={codeErrors.password ? "true" : "false"}
+                          aria-describedby={
+                            codeErrors.password ? "password-new-error" : undefined
+                          }
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-text-muted" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-text-muted" />
+                          )}
+                        </Button>
+                      </div>
                       {codeErrors.password && (
                         <p
                           id="password-new-error"
@@ -1056,21 +1107,37 @@ const Auth: React.FC = () => {
                       <Label htmlFor="confirm-password" className="text-text">
                         Confirm Password
                       </Label>
-                      <Input
-                        id="confirm-password"
-                        type="password"
-                        placeholder="Confirm new password"
-                        {...registerCode("confirmPassword")}
-                        className={`h-11 bg-surface-2 border-surface-3 focus:border-brand focus:ring-brand ${codeErrors.confirmPassword ? "border-destructive animate-shake" : ""}`}
-                        aria-invalid={
-                          codeErrors.confirmPassword ? "true" : "false"
-                        }
-                        aria-describedby={
-                          codeErrors.confirmPassword
-                            ? "confirm-password-error"
-                            : undefined
-                        }
-                      />
+                      <div className="relative">
+                        <Input
+                          id="confirm-password"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Confirm new password"
+                          {...registerCode("confirmPassword")}
+                          className={`h-11 bg-surface-2 border-surface-3 focus:border-brand focus:ring-brand pr-10 ${codeErrors.confirmPassword ? "border-destructive animate-shake" : ""}`}
+                          aria-invalid={
+                            codeErrors.confirmPassword ? "true" : "false"
+                          }
+                          aria-describedby={
+                            codeErrors.confirmPassword
+                              ? "confirm-password-error"
+                              : undefined
+                          }
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4 text-text-muted" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-text-muted" />
+                          )}
+                        </Button>
+                      </div>
                       {codeErrors.confirmPassword && (
                         <p
                           id="confirm-password-error"

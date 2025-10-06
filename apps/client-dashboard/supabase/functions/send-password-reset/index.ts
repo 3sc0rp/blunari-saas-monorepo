@@ -61,10 +61,17 @@ const handler = async (req: Request): Promise<Response> => {
     return await handleCodeRequest(supabase, email, clientIP, userAgent);
   } catch (error: any) {
     console.error("Error in password reset function:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    console.error("Error stack:", error.stack);
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || "An unexpected error occurred",
+        success: false 
+      }), 
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
   }
 };
 
@@ -219,11 +226,73 @@ async function handlePasswordReset(
   userAgent: string,
 ) {
   try {
+    console.log("Starting password reset for email:", email);
+    console.log("Code length:", code?.length, "Password length:", newPassword?.length);
+
+    // Validate inputs
+    if (!email || !code || !newPassword) {
+      console.error("Missing required fields:", { email: !!email, code: !!code, password: !!newPassword });
+      return new Response(
+        JSON.stringify({
+          error: "Email, security code, and new password are required",
+          success: false,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
+
+    if (code.length !== 6) {
+      console.error("Invalid code length:", code.length);
+      return new Response(
+        JSON.stringify({
+          error: "Security code must be 6 digits",
+          success: false,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
+
+    if (newPassword.length < 6) {
+      console.error("Password too short:", newPassword.length);
+      return new Response(
+        JSON.stringify({
+          error: "Password must be at least 6 characters",
+          success: false,
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
+
     // Hash the provided code to compare with stored hash
-    const { data: hashedProvidedCode } = await supabase.rpc("hash_reset_code", {
+    const { data: hashedProvidedCode, error: hashError } = await supabase.rpc("hash_reset_code", {
       p_code: code,
       p_email: email,
     });
+
+    if (hashError) {
+      console.error("Error hashing code:", hashError);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to verify security code",
+          success: false,
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
+
+    console.log("Code hashed successfully, looking for matching reset code");
 
     // Find valid reset code
     const { data: resetCodes, error: fetchError } = await supabase
@@ -235,6 +304,8 @@ async function handlePasswordReset(
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(1);
+
+    console.log("Reset codes query result:", { found: resetCodes?.length, error: fetchError });
 
     if (fetchError) {
       console.error("Error fetching reset codes:", fetchError);
