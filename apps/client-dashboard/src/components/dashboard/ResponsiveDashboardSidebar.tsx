@@ -62,7 +62,6 @@ const managementNavigation = [
     items: [
       { title: "Command Center", url: "/command-center", icon: Monitor },
       { title: "Tables", url: "/dashboard/tables", icon: TableProperties },
-      { title: "Kitchen Display", url: "/dashboard/kitchen-display", icon: UtensilsCrossed },
       { title: "Inventory", url: "/dashboard/inventory-management", icon: Package },
       { title: "Staff Management", url: "/dashboard/staff-management", icon: UserCircle },
       { title: "Settings", url: "/dashboard/settings", icon: Settings },
