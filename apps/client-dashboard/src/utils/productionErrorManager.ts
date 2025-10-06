@@ -19,6 +19,25 @@ class ProductionErrorManager {
   private lastErrorTime = new Map<string, number>();
   private patternCounts = new Map<string, number>();
 
+  // Immediate suppression patterns (no warnings shown)
+  private readonly IMMEDIATE_SUPPRESS_PATTERNS = [
+    /SecurityError.*Failed to execute.*request.*on.*LockManager/i,
+    /Access to the Locks API is denied/i,
+    /locks\.js/i,
+    /GoTrueClient\.js/i,
+    /SupabaseAuthClient\.js/i,
+    /SupabaseClient\.js/i,
+    /_acquireLock/i,
+    /Uncaught \(in promise\).*SecurityError/i,
+    /Failed to execute.*request.*on.*LockManager/i,
+    /Locks API is denied in this context/i,
+    /Session retrieval failed/i,
+    /Error checking session/i,
+    /Checking URL for password setup tokens/i,
+    /Transient warning/i,
+    /Unhandled promise rejection.*LockManager/i,
+  ];
+
   // Error patterns that should be suppressed in production
   private readonly SUPPRESSED_PATTERNS = [
     /subscription.*failed.*enabling polling mode/i,
@@ -40,7 +59,7 @@ class ProductionErrorManager {
     /session.*error/i,
     /POST.*400.*bad request/i,
     /POST.*403.*forbidden/i,
-    // Supabase GoTrueClient errors
+    // Supabase GoTrueClient errors (COMPLETELY SILENT)
     /SecurityError.*Failed to execute.*request.*on.*LockManager/i,
     /Access to the Locks API is denied/i,
     /locks\.js/i,
@@ -48,10 +67,18 @@ class ProductionErrorManager {
     /Uncaught \(in promise\).*SecurityError/i,
     /Failed to execute.*request.*on.*LockManager/i,
     /Locks API is denied in this context/i,
+    /SupabaseAuthClient\.js/i,
+    /SupabaseClient\.js/i,
+    /_acquireLock/i,
     // Auth/session related
     /Error checking session/i,
     /session.*setup.*password.*tokens/i,
+    /Session retrieval failed/i,
+    /attempting refresh/i,
+    /Checking URL for password setup tokens/i,
+    /Transient warning/i,
     /\[UnhandledRejection\]/i,
+    /Unhandled promise rejection/i,
   ];
 
   // Error patterns that should be converted to info logs
@@ -65,7 +92,17 @@ class ProductionErrorManager {
   suppressWarning(message: string, component: string, context?: Record<string, unknown>): boolean {
     const key = `${component}:${message}`;
     
-    // Check if this warning should be suppressed
+    // Check for immediate suppression (completely silent)
+    const immediateMatch = this.IMMEDIATE_SUPPRESS_PATTERNS.find(pattern => pattern.test(message));
+    if (immediateMatch) {
+      if (!this.suppressedWarnings.has(key)) {
+        this.suppressedWarnings.add(key);
+        // Silently suppress - no logs
+      }
+      return true; // Suppress immediately
+    }
+
+    // Check if this warning should be suppressed (with initial occurrences)
     const matchedPattern = this.SUPPRESSED_PATTERNS.find(pattern => pattern.test(message));
     if (matchedPattern) {
       const patternKey = matchedPattern.toString();
@@ -228,32 +265,51 @@ export const handleApiError = (
 if (import.meta.env.PROD) {
   const originalWarn = console.warn;
   const originalError = console.error;
+  const originalLog = console.log;
   
   console.warn = (...args: any[]) => {
-    const message = args[0];
-    if (typeof message === 'string') {
-      if (productionErrorManager.suppressWarning(message, 'console', { args })) {
-        return; // Suppress this warning
-      }
+    const message = typeof args[0] === 'string' ? args[0] : JSON.stringify(args[0]);
+    const fullMessage = args.map(arg => 
+      typeof arg === 'string' ? arg : JSON.stringify(arg)
+    ).join(' ');
+    
+    if (productionErrorManager.suppressWarning(fullMessage, 'console', { args })) {
+      return; // Suppress this warning
     }
     originalWarn.apply(console, args);
   };
   
   console.error = (...args: any[]) => {
-    const message = args[0];
-    if (typeof message === 'string') {
-      // Allow critical errors through but suppress noise
-      if (productionErrorManager.suppressWarning(message, 'console', { args })) {
-        return; // Suppress this error
-      }
+    const message = typeof args[0] === 'string' ? args[0] : JSON.stringify(args[0]);
+    const fullMessage = args.map(arg => 
+      typeof arg === 'string' ? arg : JSON.stringify(arg)
+    ).join(' ');
+    
+    if (productionErrorManager.suppressWarning(fullMessage, 'console', { args })) {
+      return; // Suppress this error
     }
     originalError.apply(console, args);
+  };
+
+  console.log = (...args: any[]) => {
+    const fullMessage = args.map(arg => 
+      typeof arg === 'string' ? arg : JSON.stringify(arg)
+    ).join(' ');
+    
+    // Suppress known info logs that clutter console
+    if (productionErrorManager.suppressWarning(fullMessage, 'console', { args })) {
+      return;
+    }
+    originalLog.apply(console, args);
   };
 
   // Global unhandled rejection handler
   window.addEventListener('unhandledrejection', (event) => {
     const message = event.reason?.message || String(event.reason);
-    if (productionErrorManager.suppressWarning(message, 'unhandledRejection', { reason: event.reason })) {
+    const stack = event.reason?.stack || '';
+    const fullMessage = `${message} ${stack}`;
+    
+    if (productionErrorManager.suppressWarning(fullMessage, 'unhandledRejection', { reason: event.reason })) {
       event.preventDefault(); // Prevent console output
       return;
     }
@@ -264,7 +320,10 @@ if (import.meta.env.PROD) {
   // Global error handler
   window.addEventListener('error', (event) => {
     const message = event.message || String(event.error);
-    if (productionErrorManager.suppressWarning(message, 'globalError', { error: event.error })) {
+    const stack = event.error?.stack || '';
+    const fullMessage = `${message} ${stack} ${event.filename || ''}`;
+    
+    if (productionErrorManager.suppressWarning(fullMessage, 'globalError', { error: event.error })) {
       event.preventDefault(); // Prevent console output
       return;
     }

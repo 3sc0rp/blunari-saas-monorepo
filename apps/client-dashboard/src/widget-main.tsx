@@ -1,5 +1,6 @@
+import './locksApiShim'; // must be absolutely first - disables Locks API in sandboxed contexts
 import './sandboxStorageShim';
-import './locksShim';
+import './locksShim'; // fallback shim for any remaining locks usage
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';

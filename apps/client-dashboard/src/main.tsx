@@ -1,3 +1,4 @@
+import './locksApiShim'; // must be absolutely first to disable Locks API in sandboxed contexts
 import './sandboxStorageShim'; // must be first to patch storage in sandbox
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
