@@ -564,7 +564,7 @@ Blunari Team`,
       console.log(`Email sent successfully to ${email} via Fastmail SMTP`);
       console.log(`SUCCESS: Email delivery confirmed for ${email}`);
       return Promise.resolve();
-    } catch (smtpError) {
+    } catch (smtpError: any) {
       console.error("Fastmail SMTP sending failed:", smtpError);
 
       // Log the detailed error for debugging
@@ -574,13 +574,13 @@ Blunari Team`,
       ============================================
       To: ${email}
       Security Code: ${securityCode}
-      Error: ${smtpError.message}
-      Stack: ${smtpError.stack}
+      Error: ${smtpError?.message || String(smtpError)}
+      Stack: ${smtpError?.stack || 'No stack trace available'}
       ============================================
       `);
 
       // Throw error so the function properly reports failure
-      throw new Error(`Failed to send email via SMTP: ${smtpError.message}`);
+      throw new Error(`Failed to send email via SMTP: ${smtpError?.message || String(smtpError)}`);
     }
   } catch (error: any) {
     console.error("Error in sendSecurityCodeEmail:", error);
