@@ -176,7 +176,7 @@ function useToast() {
         listeners.splice(index, 1);
       }
     };
-  }, [state]);
+  }, []); // Fixed: Empty deps - only run once to prevent memory leak
 
   return {
     ...state,
