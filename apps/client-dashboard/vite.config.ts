@@ -97,7 +97,36 @@ export default defineConfig(({ mode }) => {
           'public-widget': path.resolve(__dirname, 'public-widget.html')
         },
         output: {
-          // Let Vite/Rollup split vendors automatically for smaller initial chunks
+          // Optimize chunk splitting for better caching
+          manualChunks: (id) => {
+            // Vendor chunks - rarely change, long cache
+            if (id.includes('node_modules')) {
+              // React ecosystem
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                return 'vendor-react';
+              }
+              // UI libraries
+              if (id.includes('lucide-react') || id.includes('radix-ui')) {
+                return 'vendor-ui';
+              }
+              // Supabase
+              if (id.includes('@supabase') || id.includes('supabase-js')) {
+                return 'vendor-supabase';
+              }
+              // Other vendors
+              return 'vendor';
+            }
+            // Component chunks - group by feature
+            if (id.includes('src/components/booking')) {
+              return 'components-booking';
+            }
+            if (id.includes('src/components/catering')) {
+              return 'components-catering';
+            }
+            if (id.includes('src/components/analytics')) {
+              return 'components-analytics';
+            }
+          },
           chunkFileNames: 'chunks/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
@@ -125,7 +154,7 @@ export default defineConfig(({ mode }) => {
       cssCodeSplit: true,
       copyPublicDir: true,
       // Embed sources for better debugging
-      assetsInlineLimit: 0
+      assetsInlineLimit: 4096 // Inline assets < 4KB for better performance
     },
 
     css: {

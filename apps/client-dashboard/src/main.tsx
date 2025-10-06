@@ -5,6 +5,7 @@ import '@/monitoring/sentry';
 // Optional: configure custom error analytics endpoint (no-op if unset)
 ;(window as any).__ERROR_ANALYTICS_ENDPOINT__ = import.meta.env.VITE_ERROR_ANALYTICS_ENDPOINT || '';
 import './index.css';
+import { registerServiceWorker } from '@/utils/serviceWorkerRegistration';
 
 // Temporary runtime instrumentation for diagnosing generic errors
 if (typeof window !== 'undefined') {
@@ -58,3 +59,10 @@ root.render(
     </Suspense>
   </React.StrictMode>
 );
+
+// Register service worker for offline support and caching
+if (import.meta.env.PROD) {
+  registerServiceWorker().catch((error) => {
+    console.warn('Service worker registration failed:', error);
+  });
+}
