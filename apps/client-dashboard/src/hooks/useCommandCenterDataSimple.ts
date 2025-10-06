@@ -270,14 +270,23 @@ export function useCommandCenterDataSimple() {
         };
       }
     },
-    enabled: !!tenantId,
+    // Don't wait for tenantId - query will return empty data if not available
+    enabled: true,
+    // Reduce refetch interval for faster updates
     refetchInterval: 30000,
-    staleTime: 10000
+    // Short stale time so data feels fresh
+    staleTime: 5000,
+    // Retry failed requests
+    retry: 2,
+    retryDelay: 1000,
+    // Timeout for slow queries
+    networkMode: 'online',
   });
 
   return {
     ...query.data,
     isLoading: query.isLoading,
+    loading: query.isLoading,
     refetch: query.refetch
   };
 }

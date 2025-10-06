@@ -82,14 +82,14 @@ export function useTenant() {
     abortRef.current = controller;
     const { signal } = controller;
 
-    // Setup timeout fallback
+    // Setup timeout fallback - reduced to 2 seconds for faster initial load
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
     timeoutRef.current = window.setTimeout(() => {
       if (signal.aborted) return;
-      if (import.meta.env.MODE === 'development' && debugEnabled) logger.info('Tenant resolution timeout (5s), using fallback tenant', {
+      if (import.meta.env.MODE === 'development' && debugEnabled) logger.info('Tenant resolution timeout (2s), using fallback tenant', {
         component: 'useTenant',
         slug: params.slug,
         reason
@@ -102,7 +102,7 @@ export function useTenant() {
           currency: 'USD'
         };
       commitTenant(fallbackTenant, 'timeout-fallback');
-    }, 5000);
+    }, 2000); // Reduced from 5000ms to 2000ms
 
     try {
       setState(prev => ({ ...prev, loading: true, error: null, requestId: null }));

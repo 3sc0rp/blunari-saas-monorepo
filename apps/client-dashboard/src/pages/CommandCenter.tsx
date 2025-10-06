@@ -60,6 +60,18 @@ export default function CommandCenter() {
   const { tenantId, tenant } = useTenant();
   const tenantTimezone = (tenant as any)?.timezone || 'UTC';
   
+  // Add loading timeout to prevent infinite loading state
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  useEffect(() => {
+    // Set timeout for 3 seconds - if still loading, show error
+    const timeoutId = setTimeout(() => {
+      setLoadingTimeout(true);
+    }, 3000);
+    
+    return () => clearTimeout(timeoutId);
+  }, []);
+  
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     // Initialize with today in tenant's timezone
     try {
@@ -586,6 +598,29 @@ export default function CommandCenter() {
               </div>
             </div>
             <div className="text-red-300 text-sm bg-red-900/20 p-3 rounded-lg font-mono">{error}</div>
+          </div>
+        )}
+        
+        {/* Loading Timeout Warning */}
+        {loading && loadingTimeout && !error && (
+          <div className="bg-gradient-to-r from-yellow-900/30 to-yellow-800/20 border border-yellow-500/30 rounded-xl p-4 backdrop-blur-sm shadow-lg">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-yellow-400 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-yellow-400 font-bold text-sm">Still Loading...</div>
+                <div className="text-yellow-300/80 text-xs">This is taking longer than expected. Try refreshing the page.</div>
+              </div>
+            </div>
+            <Button
+              onClick={() => window.location.reload()}
+              className="mt-3 bg-yellow-600 hover:bg-yellow-700 text-white"
+            >
+              Refresh Page
+            </Button>
           </div>
         )}
 
