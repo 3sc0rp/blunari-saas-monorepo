@@ -49,6 +49,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [copyBusy, setCopyBusy] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(true);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const {
     bookingConfig,
@@ -85,9 +86,8 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
     return `${baseUrl}/book/${tenantSlug}`;
   }, [tenantSlug]);
 
-  // Generate embed code without conflicting sandbox attributes
-  // Note: We don't use sandbox because the widget needs both allow-scripts and allow-same-origin,
-  // which together would allow the iframe to escape sandboxing. Instead, we rely on CSP headers.
+  // Generate embed code with secure sandbox attributes
+  // Using a balanced approach: sandbox with specific permissions for widget functionality
   const embedCode = useMemo(() => {
     if (!widgetUrl) return '';
     return `<iframe
@@ -98,6 +98,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   style="border: none; border-radius: 8px;"
   title="Booking Widget"
   loading="lazy"
+  sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
   allow="payment; geolocation"
 ></iframe>`;
   }, [widgetUrl]);
@@ -657,6 +658,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
                     style={{
                       width: previewDevice === 'desktop' ? '800px' : previewDevice === 'tablet' ? '600px' : '375px',
                       height: '600px',
+                      maxWidth: '100%',
                     }}
                   >
                     {iframeLoading && (
@@ -668,13 +670,18 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
                       </div>
                     )}
                     <iframe
-                      key="widget-preview-stable"
+                      ref={iframeRef}
                       src={widgetUrl}
                       className="w-full h-full border-0"
-                      title="Widget Preview"
+                      title="Booking Widget Preview"
                       onLoad={handleIframeLoad}
-                      loading="lazy"
+                      sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin"
                       allow="payment; geolocation"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      style={{
+                        colorScheme: 'normal',
+                        isolation: 'isolate',
+                      }}
                     />
                   </div>
                 </div>
