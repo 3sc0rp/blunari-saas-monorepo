@@ -85,7 +85,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   const widgetUrl = useMemo(() => {
     if (!tenantSlug) return null;
     const baseUrl = window.location.origin;
-    const url = `${baseUrl}/book/${tenantSlug}`;
+    const url = `${baseUrl}/public-widget/book/${tenantSlug}`;
     
     // Update stable key only when slug changes (prevents unnecessary iframe reloads)
     const nextKey = `${tenantSlug}:booking`;
@@ -101,8 +101,16 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   // The widget is designed to work in a cross-origin context for security
   const embedCode = useMemo(() => {
     if (!widgetUrl) return '';
-    return `<iframe
-  src="${widgetUrl}"
+    
+    // Use production URL if available, otherwise use current origin
+    const productionUrl = import.meta.env.VITE_PRODUCTION_URL;
+    const embedUrl = productionUrl 
+      ? `${productionUrl}/public-widget/book/${tenantSlug}`
+      : widgetUrl;
+    
+    return `<!-- Blunari Booking Widget -->
+<iframe
+  src="${embedUrl}"
   width="100%"
   height="600"
   frameborder="0"
@@ -110,9 +118,10 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   title="Booking Widget"
   loading="lazy"
   sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+  referrerpolicy="strict-origin-when-cross-origin"
   allow="payment; geolocation"
 ></iframe>`;
-  }, [widgetUrl]);
+  }, [widgetUrl, tenantSlug]);
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoading(false);
