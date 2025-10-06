@@ -266,10 +266,10 @@ export async function getTenantBySlug(slug: string) {
     console.log('[getTenantBySlug] Using direct DB query (dashboard context)');
     const { supabase } = await import('@/integrations/supabase/client');
     
-    // Query tenants table directly
+    // Query tenants table directly (without business_hours column that doesn't exist)
     const { data: tenantRaw, error } = await supabase
       .from('tenants')
-      .select('id, slug, name, timezone, currency, business_hours')
+      .select('id, slug, name, timezone, currency')
       .eq('slug', slug)
       .maybeSingle();
     // Some generated types may represent errors as data; normalize
@@ -287,13 +287,29 @@ export async function getTenantBySlug(slug: string) {
     
   console.log('[getTenantBySlug] Tenant found via DB:', { id: (tenant as any).id, name: (tenant as any).name });
     
+    // Fetch business hours separately from the business_hours table
+    let businessHours: any[] = [];
+    try {
+      const { data: bhData } = await supabase
+        .from('business_hours')
+        .select('day_of_week, is_open, open_time, close_time')
+        .eq('tenant_id', tenant.id);
+      
+      if (bhData && Array.isArray(bhData)) {
+        businessHours = bhData;
+      }
+    } catch (bhError) {
+      console.warn('[getTenantBySlug] Failed to fetch business hours:', bhError);
+      // Continue without business hours - not critical
+    }
+    
     const transformedData = {
       tenant_id: (tenant as any).id,
       slug: (tenant as any).slug || slug,
       name: (tenant as any).name || slug,
       timezone: (tenant as any).timezone || 'UTC',
       currency: (tenant as any).currency || 'USD',
-      business_hours: Array.isArray((tenant as any).business_hours) ? (tenant as any).business_hours : [],
+      business_hours: businessHours,
       branding: {
         primary_color: '#3b82f6',
         secondary_color: '#1e40af',
