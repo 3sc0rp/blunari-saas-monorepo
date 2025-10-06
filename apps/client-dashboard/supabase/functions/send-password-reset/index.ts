@@ -517,44 +517,52 @@ async function sendSecurityCodeEmail(email: string, securityCode: string) {
       await client.send({
         from: smtpFrom,
         to: email,
-        subject: "Password Reset Security Code - Blunari",
-        content: `Your password reset security code is: ${securityCode}
+        subject: "Password Reset Code - Blunari",
+        content: `Your password reset code is: ${securityCode}
 
-This code will expire in 10 minutes.
+This code expires in 10 minutes.
 
-If you didn't request this password reset, please ignore this email.
+If you didn't request this, please ignore this email.
 
-Best regards,
-Blunari Team`,
+— Blunari Team`,
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
-            <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-              <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #1a365d; margin: 0; font-size: 24px;">Blunari</h1>
-                <p style="color: #666; margin: 5px 0 0 0;">Restaurant Management Platform</p>
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 580px; margin: 40px auto; padding: 0;">
+            <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 32px 40px; text-align: center;">
+                <img src="https://app.blunari.ai/logo.png" alt="Blunari" style="height: 48px; width: auto; margin: 0 auto 12px auto; display: block;" />
+                <p style="color: rgba(255, 255, 255, 0.9); margin: 0; font-size: 14px; font-weight: 400;">Restaurant Management Platform</p>
               </div>
               
-              <h2 style="color: #333; text-align: center; margin-bottom: 20px;">Password Reset Security Code</h2>
-              
-              <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 30px; text-align: center; margin: 20px 0;">
-                <div style="font-size: 36px; font-weight: bold; letter-spacing: 6px; color: #0066cc; font-family: 'Courier New', monospace;">
-                  ${securityCode}
+              <!-- Body -->
+              <div style="padding: 48px 40px;">
+                <p style="color: #374151; font-size: 16px; line-height: 24px; margin: 0 0 32px 0;">
+                  You requested a password reset. Use the code below to continue:
+                </p>
+                
+                <!-- Code Box -->
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 32px; text-align: center; margin: 0 0 32px 0;">
+                  <div style="font-size: 40px; font-weight: 700; letter-spacing: 8px; color: #1e40af; font-family: 'Courier New', Consolas, monospace; line-height: 1;">
+                    ${securityCode}
+                  </div>
+                  <p style="color: #6b7280; margin: 16px 0 0 0; font-size: 13px; font-weight: 500;">
+                    Expires in 10 minutes
+                  </p>
                 </div>
-                <p style="color: #666; margin: 15px 0 0 0; font-size: 14px;">This code will expire in 10 minutes</p>
-              </div>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <p style="color: #333; margin: 0;">Enter this code in your password reset form to continue.</p>
-              </div>
-              
-              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef; text-align: center;">
-                <p style="color: #666; font-size: 12px; margin: 0;">
-                  If you didn't request this password reset, please ignore this email.
-                </p>
-                <p style="color: #666; font-size: 12px; margin: 5px 0 0 0;">
-                  This is an automated message from Blunari.
+                
+                <p style="color: #6b7280; font-size: 14px; line-height: 20px; margin: 0;">
+                  If you didn't request this, you can safely ignore this email.
                 </p>
               </div>
+              
+              <!-- Footer -->
+              <div style="background: #f9fafb; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
+                <p style="color: #9ca3af; font-size: 12px; line-height: 18px; margin: 0; text-align: center;">
+                  This is an automated message from Blunari. Please do not reply to this email.
+                </p>
+              </div>
+              
             </div>
           </div>
         `,
