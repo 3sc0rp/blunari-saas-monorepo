@@ -36,6 +36,7 @@ import { TenantChurnSignalsPanel } from "@/components/tenant/TenantChurnSignalsP
 import { TenantUsageOverview } from "@/components/tenant/TenantUsageOverview";
 import { TenantSecurityExtended } from "@/components/tenant/TenantSecurityExtended";
 import { TenantAdoptionSnapshot } from "@/components/tenant/TenantAdoptionSnapshot";
+import { TenantUserManagement } from "@/components/tenant/TenantUserManagement";
 import { EditableTenantInfo } from "@/components/tenant/EditableTenantInfo";
 import { LoadingState, ErrorState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
@@ -531,6 +532,7 @@ export default function TenantDetailPage() {
   <Tabs defaultValue="features" className="space-y-6">
         <TabsList>
           <TabsTrigger value="features">Features</TabsTrigger>
+      <TabsTrigger value="users">Users</TabsTrigger>
       <TabsTrigger value="billing">Billing</TabsTrigger>
       <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="usage">Usage</TabsTrigger>
@@ -543,6 +545,10 @@ export default function TenantDetailPage() {
 
         <TabsContent value="features">
           <TenantFeaturesTab tenantSlug={tenant.slug} />
+        </TabsContent>
+
+        <TabsContent value="users">
+          <TenantUserManagement tenantId={tenantId!} />
         </TabsContent>
 
         <TabsContent value="billing">
