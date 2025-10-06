@@ -52,7 +52,6 @@ const Catering = lazy(() => import(/* webpackChunkName: "catering" */ "./pages/C
 const CateringManagement = lazy(() => import(/* webpackChunkName: "catering-management" */ "./pages/CateringManagement"));
 const CateringOrderTracking = lazy(() => import(/* webpackChunkName: "catering-tracking" */ "./pages/CateringOrderTracking"));
 const Messages = lazy(() => import(/* webpackChunkName: "messages" */ "./pages/Messages"));
-const KitchenDisplaySystem = lazy(() => import(/* webpackChunkName: "kitchen" */ "./pages/KitchenDisplaySystem"));
 const StaffManagement = lazy(() => import(/* webpackChunkName: "staff" */ "./pages/StaffManagement"));
 const InventoryManagement = lazy(() => import(/* webpackChunkName: "inventory" */ "./pages/InventoryManagement"));
 const AIBusinessInsights = lazy(() => import(/* webpackChunkName: "ai-insights" */ "./pages/AIBusinessInsights"));
@@ -203,12 +202,6 @@ function App() {
                               <Route path="messages" element={
                                 <Suspense fallback={<LazyLoadingFallback component="Messages" />}>
                                   <Messages />
-                                </Suspense>
-                              } />
-                              
-                              <Route path="kitchen-display" element={
-                                <Suspense fallback={<LazyLoadingFallback component="Kitchen Display" />}>
-                                  <KitchenDisplaySystem />
                                 </Suspense>
                               } />
                               
