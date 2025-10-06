@@ -72,9 +72,6 @@ export default defineConfig(({ mode }) => {
         // Don't exclude anything to prevent chunk reference issues
         exclude: [],
       
-      // Force pre-bundling of critical deps
-      force: true,
-      
       // Enable esbuild optimizations
       esbuildOptions: {
         target: 'es2020',
@@ -98,30 +95,7 @@ export default defineConfig(({ mode }) => {
           'public-widget': path.resolve(__dirname, 'public-widget.html')
         },
         output: {
-          // Optimize chunk splitting for better caching
-          manualChunks: (id) => {
-            // Vendor chunks - rarely change, long cache
-            if (id.includes('node_modules')) {
-              // React ecosystem - keep together to avoid context issues
-              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-                return 'vendor-react';
-              }
-              // React Router
-              if (id.includes('react-router')) {
-                return 'vendor-router';
-              }
-              // UI libraries
-              if (id.includes('lucide-react') || id.includes('@radix-ui')) {
-                return 'vendor-ui';
-              }
-              // Supabase
-              if (id.includes('@supabase')) {
-                return 'vendor-supabase';
-              }
-              // Other vendors
-              return 'vendor';
-            }
-          },
+          // Let Vite handle automatic chunking to avoid module resolution issues
           chunkFileNames: 'chunks/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
