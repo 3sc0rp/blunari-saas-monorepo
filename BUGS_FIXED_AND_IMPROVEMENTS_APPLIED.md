@@ -45,6 +45,86 @@ React.useEffect(() => {
 
 ---
 
+### ✅ Bug #2: Database Query Error - business_hours Column
+**Status**: FIXED (October 5, 2025)
+**Files Modified**:
+- `apps/client-dashboard/src/api/booking-proxy.ts`
+
+**Problem**:
+Booking widget showed "Restaurant Unavailable" error because `getTenantBySlug()` was attempting to SELECT a non-existent `business_hours` column from the `tenants` table.
+
+**Error Message**:
+```
+Database error: column tenants.business_hours does not exist
+```
+
+**Solution**:
+```typescript
+// BEFORE (BROKEN)
+const { data: tenant } = await supabase
+  .from('tenants')
+  .select('id, slug, name, timezone, currency, business_hours') // ❌ business_hours doesn't exist
+  .eq('slug', slug);
+
+// AFTER (FIXED)
+const { data: tenant } = await supabase
+  .from('tenants')
+  .select('id, slug, name, timezone, currency') // ✅ Removed non-existent column
+  .eq('slug', slug);
+
+// Then fetch business hours separately from business_hours table
+const { data: bhData } = await supabase
+  .from('business_hours')
+  .select('day_of_week, is_open, open_time, close_time')
+  .eq('tenant_id', tenant.id);
+```
+
+**Impact**: Widget now loads correctly and displays restaurant information properly.
+
+---
+
+### ✅ Bug #3: Stripe CORS Errors in Widget Iframes
+**Status**: FIXED (October 5, 2025)
+**Files Modified**:
+- `apps/client-dashboard/src/components/booking/BookingWidgetConfiguration.tsx`
+- `apps/client-dashboard/src/pages/WidgetManagement.tsx`
+- `apps/client-dashboard/src/utils/widgetUtils.ts`
+
+**Problem**:
+Widget iframes were showing Stripe CORS errors preventing payment processing:
+```
+Access to XMLHttpRequest at 'https://m.stripe.com/6' from origin 'null' has been blocked by CORS policy: 
+The 'Access-Control-Allow-Origin' header has a value 'https://m.stripe.network' that is not equal to the supplied origin.
+```
+
+**Root Cause**:
+The iframe sandbox attribute was missing `allow-same-origin`, causing the iframe to run in a `null` origin context. Stripe requires `allow-same-origin` to make CORS requests to `js.stripe.com` and `m.stripe.com`.
+
+**Solution**:
+```tsx
+// BEFORE (BROKEN)
+sandbox="allow-scripts allow-forms allow-popups"
+
+// AFTER (FIXED)
+sandbox="allow-scripts allow-forms allow-popups allow-same-origin"
+```
+
+**Why This Is Safe**:
+- Widget content is from the same domain (trusted)
+- Widget code is controlled by us (not third-party)
+- Combined with other sandbox restrictions, provides appropriate isolation
+- Required for Stripe Elements to function
+
+**Impact**: 
+- ✅ Stripe payment fields now load correctly
+- ✅ No CORS errors in console
+- ✅ Payment processing functional
+- ✅ All embed code variants fixed (iframe, React, script)
+
+**Documentation**: See `STRIPE_CORS_FIX.md` for complete details.
+
+---
+
 ## Code Quality Analysis
 
 ### ✅ Verified: Error Handling Infrastructure
@@ -313,10 +393,22 @@ Found 50+ instances of `as any` - Analysis shows:
 
 ## Files Modified in This Session
 
+### Critical Fixes (Session 1 - October 5, 2025)
 1. ✅ `apps/client-dashboard/src/hooks/use-toast.ts` - Fixed memory leak
 2. ✅ `apps/admin-dashboard/src/hooks/use-toast.ts` - Fixed memory leak
-3. ✅ `COMPREHENSIVE_BUG_FIXES_AND_IMPROVEMENTS.md` - Analysis document
-4. ✅ `BUGS_FIXED_AND_IMPROVEMENTS_APPLIED.md` - This summary
+
+### Database Fix (Session 2 - October 5, 2025)
+3. ✅ `apps/client-dashboard/src/api/booking-proxy.ts` - Fixed business_hours query error
+
+### Stripe CORS Fix (Session 3 - October 5, 2025)
+4. ✅ `apps/client-dashboard/src/components/booking/BookingWidgetConfiguration.tsx` - Added allow-same-origin
+5. ✅ `apps/client-dashboard/src/pages/WidgetManagement.tsx` - Added allow-same-origin to all embed variants
+6. ✅ `apps/client-dashboard/src/utils/widgetUtils.ts` - Added allow-same-origin to script embed
+
+### Documentation Files
+7. ✅ `COMPREHENSIVE_BUG_FIXES_AND_IMPROVEMENTS.md` - Analysis document
+8. ✅ `BUGS_FIXED_AND_IMPROVEMENTS_APPLIED.md` - This summary
+9. ✅ `STRIPE_CORS_FIX.md` - Detailed Stripe fix documentation
 
 ---
 
