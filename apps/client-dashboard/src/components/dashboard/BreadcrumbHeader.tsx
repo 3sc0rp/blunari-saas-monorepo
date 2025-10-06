@@ -112,7 +112,8 @@ const BreadcrumbHeader: React.FC = () => {
         // From any dashboard page to Command Center (operations)
         navigate('/command-center');
         await triggerModeTransition("management", "operations");
-        await setMode("operations");
+        // setMode only accepts "management", so we skip it for operations mode
+        // The mode is handled by the navigation to /command-center
       }
     } finally {
       setIsTransitioning(false);
