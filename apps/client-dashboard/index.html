@@ -6,50 +6,102 @@
     <title>Blunari - Restaurant Management Dashboard</title>
     <link rel="icon" href="/logo.png" type="image/png">
 
-    
-    <!-- Typography: Inter font with optimized loading -->
+    <!-- Critical Resource Hints for Performance -->
+    <link rel="preconnect" href="https://kbfbbkcaxhzlnbqxwgoz.supabase.co" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://kbfbbkcaxhzlnbqxwgoz.supabase.co">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="dns-prefetch" href="https://o4507902468177920.ingest.sentry.io">
+    
+    <!-- WebSocket prefetch for Supabase Realtime -->
+    <link rel="dns-prefetch" href="wss://kbfbbkcaxhzlnbqxwgoz.supabase.co">
+    
+    <!-- Typography: Inter font with optimized loading -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
-    
-  <!-- Performance: Preconnect to critical domains -->
-  <link rel="preconnect" href="https://kbfbbkcaxhzlnbqxwgoz.supabase.co" crossorigin>
-  <link rel="dns-prefetch" href="https://kbfbbkcaxhzlnbqxwgoz.supabase.co">
-  <link rel="dns-prefetch" href="https://o4507902468177920.ingest.sentry.io">
-  
-  <!-- WebSocket prefetch for Supabase Realtime -->
-  <link rel="dns-prefetch" href="wss://kbfbbkcaxhzlnbqxwgoz.supabase.co">
-  
-  <!-- Prefetch critical resources -->
-  <link rel="prefetch" href="/logo.png">
-  <link rel="prefetch" href="/favicon.ico">
     
     <meta name="description" content="Professional restaurant management dashboard for bookings, tables, and customer management." />
     
     <style>
-      /* Prevent flash of white content and optimize initial render */
+      /* Critical CSS for immediate render - prevents layout shift */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      
       body {
         margin: 0;
-        background: #0000;
+        background: #0f172a;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-display: swap;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        overflow-x: hidden;
       }
       
-      /* Initial loading state - minimal styling for immediate feedback */
+      /* Initial loading state - faster perceived performance */
       #root {
         min-height: 100vh;
         display: flex;
         flex-direction: column;
       }
+      
+      /* Preload spinner for instant feedback */
+      .app-loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        z-index: 9999;
+      }
+      
+      .app-loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
   </head>
 
   <body>
+    <!-- Instant loading feedback -->
+    <div class="app-loading">
+      <div class="app-loading-spinner"></div>
+    </div>
+    
     <div id="root"></div>
 
-  <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <script>
+      // Remove loading screen when React mounts
+      window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          const loader = document.querySelector('.app-loading');
+          if (loader) {
+            loader.style.opacity = '0';
+            loader.style.transition = 'opacity 0.3s';
+            setTimeout(() => loader.remove(), 300);
+          }
+        }, 100);
+      });
+    </script>
   </body>
 </html>
