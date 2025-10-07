@@ -548,7 +548,7 @@ export default function TenantDetailPage() {
         </TabsContent>
 
         <TabsContent value="users">
-          <TenantUserManagement tenantId={tenantId!} />
+          {tenantId && <TenantUserManagement key={tenantId} tenantId={tenantId} />}
         </TabsContent>
 
         <TabsContent value="billing">

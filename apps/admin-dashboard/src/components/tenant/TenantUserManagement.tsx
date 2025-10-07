@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -91,11 +91,7 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
     description: "",
   });
 
-  useEffect(() => {
-    fetchUserData();
-  }, [tenantId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -164,7 +160,11 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenantId, toast]);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
