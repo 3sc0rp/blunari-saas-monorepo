@@ -181,8 +181,8 @@ serve(async (req: Request) => {
       }
     }
 
-    // Check if owner user already exists, but don't create new users here
-    // User creation will be handled by the password setup email process to avoid automatic emails
+    // Check if owner user already exists, create if not
+    // We need to create the user so they can be linked to the tenant
     let ownerUserId: string | null = null;
     const ownerEmail: string | undefined = requestData.owner?.email;
     if (ownerEmail) {
@@ -193,23 +193,49 @@ serve(async (req: Request) => {
           ownerUserId = existingUser.user.id;
           console.log("Found existing user for tenant owner:", ownerUserId);
         } else {
-          console.log("Owner user will be created during password setup to avoid automatic emails");
-          // Don't create user here - this prevents automatic confirmation emails
-          // User will be created when password setup email is sent manually
+          console.log("Creating new owner user account for:", ownerEmail);
+          // Create the owner user account with email confirmation disabled
+          // This prevents automatic confirmation emails
+          const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
+            email: ownerEmail,
+            email_confirm: false, // Disable auto-confirmation email
+            user_metadata: {
+              role: 'owner',
+              full_name: requestData.basics.name + ' Owner',
+            },
+          });
+          
+          if (createUserError) {
+            console.error("Failed to create owner user:", createUserError);
+            throw new Error(`Failed to create owner user: ${createUserError.message}`);
+          }
+          
+          if (!newUser?.user) {
+            throw new Error("Failed to create owner user: No user returned");
+          }
+          
+          ownerUserId = newUser.user.id;
+          console.log("Created owner user successfully:", ownerUserId);
         }
       } catch (e) {
-        console.warn("Owner user lookup failed (continuing):", e);
+        console.error("Owner user creation failed:", e);
+        throw e;
       }
     }
+    
+    // Owner user is required - don't fall back to admin
+    if (!ownerUserId) {
+      throw new Error("Owner email is required to provision a tenant");
+    }
 
-    // Call the provision_tenant database function using owner user if available
+    // Call the provision_tenant database function using owner user
     // NOTE: There are multiple overloaded versions in the DB; pass full argument list to disambiguate
     // IMPORTANT: Use owner email for tenant.email field, not business email
     // This ensures tenant.email always points to the login credential
     const { data: tenantId, error: provisionError } = await supabase.rpc(
       "provision_tenant",
       {
-        p_user_id: ownerUserId ?? user.id,
+        p_user_id: ownerUserId, // Now guaranteed to be the owner's user ID
         p_restaurant_name: requestData.basics.name,
         p_restaurant_slug: requestData.basics.slug,
         p_timezone: requestData.basics.timezone,
