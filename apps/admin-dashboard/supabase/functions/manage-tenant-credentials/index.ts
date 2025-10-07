@@ -150,39 +150,87 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Could not determine tenant owner");
     }
 
+    console.log(`[CREDENTIALS] Tenant owner ID determined: ${tenantOwnerId}`);
+    
+    // Verify the user exists before attempting update
+    try {
+      const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(tenantOwnerId);
+      if (getUserError || !existingUser) {
+        console.error(`[CREDENTIALS] User not found:`, getUserError);
+        throw new Error(`User with ID ${tenantOwnerId} not found in auth system`);
+      }
+      console.log(`[CREDENTIALS] User verified: ${existingUser.user.email}`);
+    } catch (verifyError: any) {
+      console.error(`[CREDENTIALS] User verification failed:`, verifyError);
+      throw new Error(`Failed to verify user exists: ${verifyError.message}`);
+    }
+
     let result: any = {};
 
     switch (action) {
       case "update_email":
         if (!newEmail) throw new Error("New email required");
 
+        console.log(`[CREDENTIALS] Updating email from auth.users for user ${tenantOwnerId}`);
+        
         // Update user email in Supabase Auth
         const { error: emailError } =
           await supabaseAdmin.auth.admin.updateUserById(tenantOwnerId, {
             email: newEmail,
           });
 
-        if (emailError) throw emailError;
+        if (emailError) {
+          console.error(`[CREDENTIALS] Auth email update failed:`, emailError);
+          throw new Error(`Failed to update email in auth: ${emailError.message}`);
+        }
 
+        console.log(`[CREDENTIALS] Updating email in profiles table`);
+        
         // Update profiles table
-        await supabaseAdmin
+        const { error: profileError } = await supabaseAdmin
           .from("profiles")
           .update({ email: newEmail })
           .eq("id", tenantOwnerId);
 
+        if (profileError) {
+          console.error(`[CREDENTIALS] Profile email update failed:`, profileError);
+          // Don't fail - profile might not exist or update might not be critical
+          console.warn(`Warning: Could not update profile email: ${profileError.message}`);
+        }
+
+        console.log(`[CREDENTIALS] Updating email in tenants table`);
+        
+        // Update tenant email if this is the owner
+        const { error: tenantError } = await supabaseAdmin
+          .from("tenants")
+          .update({ email: newEmail })
+          .eq("id", tenantId);
+
+        if (tenantError) {
+          console.error(`[CREDENTIALS] Tenant email update failed:`, tenantError);
+          console.warn(`Warning: Could not update tenant email: ${tenantError.message}`);
+        }
+
+        console.log(`[CREDENTIALS] Email update completed successfully`);
         result = { message: "Email updated successfully", newEmail };
         break;
 
       case "update_password":
         if (!newPassword) throw new Error("New password required");
 
+        console.log(`[CREDENTIALS] Updating password for user ${tenantOwnerId}`);
+        
         const { error: passwordError } =
           await supabaseAdmin.auth.admin.updateUserById(tenantOwnerId, {
             password: newPassword,
           });
 
-        if (passwordError) throw passwordError;
+        if (passwordError) {
+          console.error(`[CREDENTIALS] Password update failed:`, passwordError);
+          throw new Error(`Failed to update password: ${passwordError.message}`);
+        }
 
+        console.log(`[CREDENTIALS] Password updated successfully`);
         result = { message: "Password updated successfully" };
         break;
 
@@ -255,10 +303,13 @@ const handler = async (req: Request): Promise<Response> => {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
-    console.error("Error in manage-tenant-credentials:", error);
+    console.error("[CREDENTIALS] Error in manage-tenant-credentials:", error);
+    console.error("[CREDENTIALS] Error stack:", error.stack);
     
     // Determine appropriate status code
     let status = 500;
+    let errorMessage = error.message || 'An error occurred';
+    
     if (error.message?.includes('Unauthorized') || error.message?.includes('authorization')) {
       status = 401;
     } else if (error.message?.includes('Insufficient privileges')) {
@@ -269,7 +320,13 @@ const handler = async (req: Request): Promise<Response> => {
       status = 400;
     }
     
-    return new Response(JSON.stringify({ error: error.message || 'An error occurred' }), {
+    console.error(`[CREDENTIALS] Returning ${status} error: ${errorMessage}`);
+    
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      details: error.details || null,
+      hint: error.hint || null
+    }), {
       status,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
