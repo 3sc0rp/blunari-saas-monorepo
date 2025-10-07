@@ -124,7 +124,7 @@ SELECT
   CASE 
     WHEN (SELECT COUNT(*) FROM profiles WHERE user_id IS NULL) > 0 THEN
       '❌ ISSUE FOUND: ' || (SELECT COUNT(*) FROM profiles WHERE user_id IS NULL)::text || ' profiles have NULL user_id. This causes 500 errors when updating credentials. See FIX SCRIPT below.'
-    WHEN (SELECT COUNT(*) FROM tenants t LEFT JOIN profiles p ON p.email = t.email WHERE p.id IS NULL AND t.email != ''admin@blunari.ai'') > 0 THEN
+    WHEN (SELECT COUNT(*) FROM tenants t LEFT JOIN profiles p ON p.email = t.email WHERE p.id IS NULL AND t.email != 'admin@blunari.ai') > 0 THEN
       '⚠️  ISSUE: Some tenants have no profiles. They need to be provisioned.'
     ELSE
       '✅ NO ISSUES FOUND: Database structure looks correct. Check edge function logs for other errors.'
