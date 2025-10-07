@@ -139,24 +139,28 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log(`[CREDENTIALS] Looking up user by email: ${tenant.email}`);
 
-      // Find user by email using admin API
-      const { data: authUserData, error: userLookupError } =
-        await supabaseAdmin.auth.admin.getUserByEmail(tenant.email);
+      // Find user ID from profiles table (faster than auth API)
+      const { data: profileData, error: profileLookupError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, user_id")
+        .eq("email", tenant.email)
+        .maybeSingle();
       
-      if (userLookupError) {
-        console.error(`[CREDENTIALS] User lookup by email failed:`, userLookupError);
-        throw new Error(`Failed to lookup user by email: ${userLookupError.message}`);
+      if (profileLookupError) {
+        console.error(`[CREDENTIALS] Profile lookup failed:`, profileLookupError);
+        throw new Error(`Failed to lookup user profile: ${profileLookupError.message}`);
       }
       
-      if (!authUserData || !authUserData.user) {
-        console.error(`[CREDENTIALS] No user found with email ${tenant.email}`);
+      if (!profileData) {
+        console.error(`[CREDENTIALS] No profile found with email ${tenant.email}`);
         throw new Error(`No user found with email ${tenant.email}`);
       }
 
-      tenantOwnerId = authUserData.user.id;
+      // Use user_id if available, otherwise use id
+      tenantOwnerId = profileData.user_id || profileData.id;
       ownerEmail = tenant.email;
       console.log(
-        `[CREDENTIALS] Found tenant owner via email lookup: ${ownerEmail} (ID: ${tenantOwnerId})`,
+        `[CREDENTIALS] Found tenant owner via profile lookup: ${ownerEmail} (ID: ${tenantOwnerId})`,
       );
     }
 
