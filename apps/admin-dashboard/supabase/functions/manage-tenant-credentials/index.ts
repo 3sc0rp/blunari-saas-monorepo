@@ -250,8 +250,21 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: any) {
     console.error("Error in manage-tenant-credentials:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
+    
+    // Determine appropriate status code
+    let status = 500;
+    if (error.message?.includes('Unauthorized') || error.message?.includes('authorization')) {
+      status = 401;
+    } else if (error.message?.includes('Insufficient privileges')) {
+      status = 403;
+    } else if (error.message?.includes('not found') || error.message?.includes('No tenant owner')) {
+      status = 404;
+    } else if (error.message?.includes('required') || error.message?.includes('Invalid')) {
+      status = 400;
+    }
+    
+    return new Response(JSON.stringify({ error: error.message || 'An error occurred' }), {
+      status,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }

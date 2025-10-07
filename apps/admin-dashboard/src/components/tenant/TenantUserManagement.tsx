@@ -93,7 +93,7 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
 
   useEffect(() => {
     fetchUserData();
-  }, [tenantId]);
+  }, [tenantId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchUserData = async () => {
     try {
@@ -198,7 +198,7 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
 
     setUpdatingEmail(true);
     try {
-      const { error } = await supabase.functions.invoke(
+      const { data, error } = await supabase.functions.invoke(
         "manage-tenant-credentials",
         {
           body: {
@@ -209,7 +209,15 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
         }
       );
 
-      if (error) throw error;
+      // Check for errors in response
+      if (error) {
+        throw new Error(error.message || 'Failed to update email');
+      }
+      
+      // Check if response data contains an error
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: "Success",
@@ -237,7 +245,7 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
 
     setUpdatingPassword(true);
     try {
-      const { error } = await supabase.functions.invoke(
+      const { data, error } = await supabase.functions.invoke(
         "manage-tenant-credentials",
         {
           body: {
@@ -248,7 +256,15 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
         }
       );
 
-      if (error) throw error;
+      // Check for errors in response
+      if (error) {
+        throw new Error(error.message || 'Failed to update password');
+      }
+      
+      // Check if response data contains an error
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: "Success",
