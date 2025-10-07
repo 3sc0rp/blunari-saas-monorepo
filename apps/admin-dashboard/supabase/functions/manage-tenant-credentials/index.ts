@@ -34,6 +34,10 @@ const generateSecurePassword = (): string => {
 };
 
 const handler = async (req: Request): Promise<Response> => {
+  const start = Date.now();
+  const correlationId = crypto.randomUUID();
+  // Ensure correlation id propagates via logs for multi-line tracing
+  console.log(`[CREDENTIALS][${correlationId}] Incoming request`);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -42,8 +46,8 @@ const handler = async (req: Request): Promise<Response> => {
     const { tenantId, action, newEmail, newPassword }: CredentialUpdateRequest =
       await req.json();
 
-    console.log(`[CREDENTIALS] Starting ${action} for tenant ${tenantId}`);
-    console.log(`[CREDENTIALS] Request body:`, { tenantId, action, hasNewEmail: !!newEmail, hasNewPassword: !!newPassword });
+  console.log(`[CREDENTIALS][${correlationId}] Starting ${action} for tenant ${tenantId}`);
+  console.log(`[CREDENTIALS][${correlationId}] Request body:`, { tenantId, action, hasNewEmail: !!newEmail, hasNewPassword: !!newPassword });
 
     // Verify admin access
     const authHeader = req.headers.get("Authorization");
@@ -61,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Unauthorized");
     }
 
-    console.log(`[CREDENTIALS] User ${user.email} attempting ${action}`);
+  console.log(`[CREDENTIALS][${correlationId}] User ${user.email} attempting ${action}`);
 
     // Check if user has admin privileges - check both employee role and profile role
     const { data: employee } = await supabaseAdmin
@@ -72,16 +76,20 @@ const handler = async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     // Also check profiles table for role
-    const { data: profile } = await supabaseAdmin
+    // IMPORTANT: profiles are linked to auth users via user_id (NOT id)
+    const { data: profile, error: profileRoleError } = await supabaseAdmin
       .from("profiles")
-      .select("role")
-      .eq("id", user.id)
+      .select("role, user_id")
+      .eq("user_id", user.id)
       .maybeSingle();
+
+    if (profileRoleError) {
+      console.warn(`[CREDENTIALS] Profile role lookup warning:`, profileRoleError);
+    }
 
     const userRole = employee?.role || profile?.role;
     const hasAdminAccess =
-      (employee &&
-        ["SUPER_ADMIN", "ADMIN", "SUPPORT"].includes(employee.role)) ||
+      (employee && ["SUPER_ADMIN", "ADMIN", "SUPPORT"].includes(employee.role)) ||
       (profile && ["owner", "admin"].includes(profile.role));
 
     if (!hasAdminAccess) {
@@ -95,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log(
-      `[CREDENTIALS] User has access. Employee role: ${employee?.role}, Profile role: ${profile?.role}`,
+      `[CREDENTIALS][${correlationId}] User has access. Employee role: ${employee?.role}, Profile role: ${profile?.role}`,
     );
 
     // Get tenant owner user ID - try auto_provisioning first, then fallback to tenant email
@@ -103,20 +111,26 @@ const handler = async (req: Request): Promise<Response> => {
     let ownerEmail: string | null = null;
 
     // First try to get from auto_provisioning
-    const { data: provisioning } = await supabaseAdmin
+    const { data: provisioning, error: provisioningError } = await supabaseAdmin
       .from("auto_provisioning")
-      .select("user_id")
+      .select("user_id, status")
       .eq("tenant_id", tenantId)
-      .eq("status", "completed")
+      // Status comparison made case-insensitive by fetching then checking (DB may store uppercase)
       .maybeSingle();
 
-    if (provisioning) {
+    if (provisioningError) {
+      console.warn(`[CREDENTIALS] Provisioning lookup warning:`, provisioningError);
+    }
+
+    if (provisioning && (provisioning.status?.toLowerCase?.() === 'completed')) {
       tenantOwnerId = provisioning.user_id;
       console.log(
-        `[CREDENTIALS] Found provisioning record for user ${tenantOwnerId}`,
+        `[CREDENTIALS][${correlationId}] Found provisioning record for user ${tenantOwnerId}`,
       );
+    } else if (provisioning) {
+      console.log(`[CREDENTIALS] Provisioning record found but status='${provisioning.status}' (expect completed) – falling back to email lookup.`);
     } else {
-      console.log(`[CREDENTIALS] No provisioning record found, looking up user by tenant email...`);
+  console.log(`[CREDENTIALS][${correlationId}] No provisioning record found, looking up user by tenant email...`);
       
       // Fallback: look for tenant email and find matching user
       const { data: tenant, error: tenantError } = await supabaseAdmin
@@ -126,7 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
         .single();
 
       if (tenantError) {
-        console.error(`[CREDENTIALS] Failed to fetch tenant:`, tenantError);
+        console.error(`[CREDENTIALS][${correlationId}] Failed to fetch tenant:`, tenantError);
         throw new Error(`Failed to fetch tenant: ${tenantError.message}`);
       }
 
@@ -137,7 +151,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      console.log(`[CREDENTIALS] Looking up user by email: ${tenant.email}`);
+  console.log(`[CREDENTIALS][${correlationId}] Looking up user by email: ${tenant.email}`);
 
       // Find user ID from profiles table (faster than auth API)
       const { data: profileData, error: profileLookupError } = await supabaseAdmin
@@ -147,35 +161,32 @@ const handler = async (req: Request): Promise<Response> => {
         .maybeSingle();
       
       if (profileLookupError) {
-        console.error(`[CREDENTIALS] Profile lookup failed:`, profileLookupError);
+        console.error(`[CREDENTIALS][${correlationId}] Profile lookup failed:`, profileLookupError);
         throw new Error(`Failed to lookup user profile: ${profileLookupError.message}`);
       }
       
       if (!profileData) {
-        console.error(`[CREDENTIALS] No profile found with email ${tenant.email}`);
+        console.error(`[CREDENTIALS][${correlationId}] No profile found with email ${tenant.email}`);
         throw new Error(`No user found with email ${tenant.email}. User may need to complete account setup first.`);
       }
 
-      console.log(`[CREDENTIALS] Profile found:`, { 
+      console.log(`[CREDENTIALS][${correlationId}] Profile found:`, { 
         id: profileData.id, 
         user_id: profileData.user_id, 
         email: profileData.email 
       });
 
-      // Use user_id (links to auth.users), fallback to id if user_id is null
-      if (profileData.user_id) {
-        tenantOwnerId = profileData.user_id;
-        console.log(`[CREDENTIALS] Using user_id: ${tenantOwnerId}`);
-      } else if (profileData.id) {
-        tenantOwnerId = profileData.id;
-        console.log(`[CREDENTIALS] Using id as fallback: ${tenantOwnerId}`);
-      } else {
-        throw new Error(`Profile exists but has no valid ID`);
+      // Must have user_id (auth.users FK) – if missing, treat as data integrity issue
+      if (!profileData.user_id) {
+        console.error(`[CREDENTIALS][${correlationId}] Profile has NULL user_id. Data integrity issue – requires manual fix.`);
+        throw new Error("Profile has NULL user_id. Link profile to auth user before credential changes.");
       }
+      tenantOwnerId = profileData.user_id;
+      console.log(`[CREDENTIALS][${correlationId}] Using user_id: ${tenantOwnerId}`);
       
       ownerEmail = tenant.email;
       console.log(
-        `[CREDENTIALS] Found tenant owner via profile lookup: ${ownerEmail} (ID: ${tenantOwnerId})`,
+        `[CREDENTIALS][${correlationId}] Found tenant owner via profile lookup: ${ownerEmail} (ID: ${tenantOwnerId})`,
       );
     }
 
@@ -183,20 +194,20 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Could not determine tenant owner");
     }
 
-    console.log(`[CREDENTIALS] Tenant owner ID determined: ${tenantOwnerId}`);
+  console.log(`[CREDENTIALS][${correlationId}] Tenant owner ID determined: ${tenantOwnerId}`);
     
     // Verify the user exists before attempting update (optional - don't fail if verification fails)
     try {
       const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(tenantOwnerId);
       if (getUserError) {
-        console.warn(`[CREDENTIALS] User lookup warning:`, getUserError);
+        console.warn(`[CREDENTIALS][${correlationId}] User lookup warning:`, getUserError);
       } else if (!existingUser || !existingUser.user) {
-        console.warn(`[CREDENTIALS] User not found in verification, will attempt update anyway`);
+        console.warn(`[CREDENTIALS][${correlationId}] User not found in verification, will attempt update anyway`);
       } else {
-        console.log(`[CREDENTIALS] User verified: ${existingUser.user.email}`);
+        console.log(`[CREDENTIALS][${correlationId}] User verified: ${existingUser.user.email}`);
       }
     } catch (verifyError: any) {
-      console.warn(`[CREDENTIALS] User verification failed (non-critical):`, verifyError);
+      console.warn(`[CREDENTIALS][${correlationId}] User verification failed (non-critical):`, verifyError);
       // Continue anyway - the actual update will fail if user doesn't exist
     }
 
@@ -206,7 +217,7 @@ const handler = async (req: Request): Promise<Response> => {
       case "update_email":
         if (!newEmail) throw new Error("New email required");
 
-        console.log(`[CREDENTIALS] Updating email from auth.users for user ${tenantOwnerId}`);
+  console.log(`[CREDENTIALS][${correlationId}] Updating email from auth.users for user ${tenantOwnerId}`);
         
         // Update user email in Supabase Auth
         const { error: emailError } =
@@ -215,11 +226,11 @@ const handler = async (req: Request): Promise<Response> => {
           });
 
         if (emailError) {
-          console.error(`[CREDENTIALS] Auth email update failed:`, emailError);
+          console.error(`[CREDENTIALS][${correlationId}] Auth email update failed:`, emailError);
           throw new Error(`Failed to update email in auth: ${emailError.message}`);
         }
 
-        console.log(`[CREDENTIALS] Updating email in profiles table`);
+        console.log(`[CREDENTIALS][${correlationId}] Updating email in profiles table`);
         
         // Update profiles table - use user_id since that's what tenantOwnerId is
         const { error: profileError } = await supabaseAdmin
@@ -228,14 +239,14 @@ const handler = async (req: Request): Promise<Response> => {
           .eq("user_id", tenantOwnerId);
 
         if (profileError) {
-          console.error(`[CREDENTIALS] Profile email update failed:`, profileError);
+          console.error(`[CREDENTIALS][${correlationId}] Profile email update failed:`, profileError);
           // Don't fail - profile might not exist or update might not be critical
-          console.warn(`Warning: Could not update profile email: ${profileError.message}`);
+          console.warn(`[CREDENTIALS][${correlationId}] Warning: Could not update profile email: ${profileError.message}`);
         } else {
-          console.log(`[CREDENTIALS] Profile email updated successfully`);
+          console.log(`[CREDENTIALS][${correlationId}] Profile email updated successfully`);
         }
 
-        console.log(`[CREDENTIALS] Updating email in tenants table`);
+        console.log(`[CREDENTIALS][${correlationId}] Updating email in tenants table`);
         
         // Update tenant email if this is the owner
         const { error: tenantError } = await supabaseAdmin
@@ -244,18 +255,18 @@ const handler = async (req: Request): Promise<Response> => {
           .eq("id", tenantId);
 
         if (tenantError) {
-          console.error(`[CREDENTIALS] Tenant email update failed:`, tenantError);
-          console.warn(`Warning: Could not update tenant email: ${tenantError.message}`);
+          console.error(`[CREDENTIALS][${correlationId}] Tenant email update failed:`, tenantError);
+          console.warn(`[CREDENTIALS][${correlationId}] Warning: Could not update tenant email: ${tenantError.message}`);
         }
 
-        console.log(`[CREDENTIALS] Email update completed successfully`);
+        console.log(`[CREDENTIALS][${correlationId}] Email update completed successfully`);
         result = { message: "Email updated successfully", newEmail };
         break;
 
       case "update_password":
         if (!newPassword) throw new Error("New password required");
 
-        console.log(`[CREDENTIALS] Updating password for user ${tenantOwnerId}`);
+  console.log(`[CREDENTIALS][${correlationId}] Updating password for user ${tenantOwnerId}`);
         
         const { error: passwordError } =
           await supabaseAdmin.auth.admin.updateUserById(tenantOwnerId, {
@@ -263,11 +274,11 @@ const handler = async (req: Request): Promise<Response> => {
           });
 
         if (passwordError) {
-          console.error(`[CREDENTIALS] Password update failed:`, passwordError);
+          console.error(`[CREDENTIALS][${correlationId}] Password update failed:`, passwordError);
           throw new Error(`Failed to update password: ${passwordError.message}`);
         }
 
-        console.log(`[CREDENTIALS] Password updated successfully`);
+        console.log(`[CREDENTIALS][${correlationId}] Password updated successfully`);
         result = { message: "Password updated successfully" };
         break;
 
@@ -289,11 +300,16 @@ const handler = async (req: Request): Promise<Response> => {
 
       case "reset_password":
         // Get user email first
-        const { data: userProfile } = await supabaseAdmin
+        const { data: userProfile, error: resetProfileError } = await supabaseAdmin
           .from("profiles")
-          .select("email")
-          .eq("id", tenantOwnerId)
-          .single();
+          .select("email, user_id")
+          .eq("user_id", tenantOwnerId)
+          .maybeSingle();
+
+        if (resetProfileError) {
+          console.error(`[CREDENTIALS][${correlationId}] Password reset profile lookup failed:`, resetProfileError);
+          throw new Error(`Failed to lookup user profile for reset: ${resetProfileError.message}`);
+        }
 
         if (!userProfile?.email) throw new Error("User email not found");
 
@@ -327,12 +343,12 @@ const handler = async (req: Request): Promise<Response> => {
         },
       });
     } catch (auditError) {
-      console.warn("Failed to log security event:", auditError);
+      console.warn(`[CREDENTIALS][${correlationId}] Failed to log security event:`, auditError);
       // Don't fail the request if audit logging fails
     }
 
     console.log(
-      `Credential action completed: ${action} for tenant ${tenantId} by ${user.email}`,
+      `[CREDENTIALS][${correlationId}] Credential action completed: ${action} for tenant ${tenantId} by ${user.email} in ${Date.now() - start}ms`,
     );
 
     return new Response(JSON.stringify(result), {
@@ -340,8 +356,8 @@ const handler = async (req: Request): Promise<Response> => {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
-    console.error("[CREDENTIALS] Error in manage-tenant-credentials:", error);
-    console.error("[CREDENTIALS] Error stack:", error.stack);
+  console.error(`[CREDENTIALS][${correlationId}] Error in manage-tenant-credentials:`, error);
+  console.error(`[CREDENTIALS][${correlationId}] Error stack:`, error.stack);
     
     // Determine appropriate status code
     let status = 500;
@@ -355,14 +371,17 @@ const handler = async (req: Request): Promise<Response> => {
       status = 404;
     } else if (error.message?.includes('required') || error.message?.includes('Invalid')) {
       status = 400;
+    } else if (error.message?.includes('duplicate key value') || error.message?.toLowerCase().includes('unique constraint')) {
+      status = 409; // Conflict for duplicate email
     }
     
-    console.error(`[CREDENTIALS] Returning ${status} error: ${errorMessage}`);
+  console.error(`[CREDENTIALS][${correlationId}] Returning ${status} error: ${errorMessage} (elapsed ${Date.now() - start}ms)`);
     
     return new Response(JSON.stringify({ 
       error: errorMessage,
       details: error.details || null,
-      hint: error.hint || null
+      hint: error.hint || null,
+      correlation_id: correlationId
     }), {
       status,
       headers: { "Content-Type": "application/json", ...corsHeaders },
