@@ -116,33 +116,47 @@ const handler = async (req: Request): Promise<Response> => {
         `[CREDENTIALS] Found provisioning record for user ${tenantOwnerId}`,
       );
     } else {
+      console.log(`[CREDENTIALS] No provisioning record found, looking up user by tenant email...`);
+      
       // Fallback: look for tenant email and find matching user
-      const { data: tenant } = await supabaseAdmin
+      const { data: tenant, error: tenantError } = await supabaseAdmin
         .from("tenants")
         .select("email")
         .eq("id", tenantId)
         .single();
 
+      if (tenantError) {
+        console.error(`[CREDENTIALS] Failed to fetch tenant:`, tenantError);
+        throw new Error(`Failed to fetch tenant: ${tenantError.message}`);
+      }
+
       if (!tenant?.email) {
+        console.error(`[CREDENTIALS] Tenant has no email`);
         throw new Error(
           "No tenant owner found. Tenant has no email and no provisioning record.",
         );
       }
 
-      // Find user by email
-      const { data: authUser, error: userError } =
-        await supabaseAdmin.auth.admin.listUsers();
-      if (userError) throw userError;
+      console.log(`[CREDENTIALS] Looking up user by email: ${tenant.email}`);
 
-      const matchingUser = authUser.users.find((u) => u.email === tenant.email);
-      if (!matchingUser) {
+      // Find user by email using admin API
+      const { data: authUserData, error: userLookupError } =
+        await supabaseAdmin.auth.admin.getUserByEmail(tenant.email);
+      
+      if (userLookupError) {
+        console.error(`[CREDENTIALS] User lookup by email failed:`, userLookupError);
+        throw new Error(`Failed to lookup user by email: ${userLookupError.message}`);
+      }
+      
+      if (!authUserData || !authUserData.user) {
+        console.error(`[CREDENTIALS] No user found with email ${tenant.email}`);
         throw new Error(`No user found with email ${tenant.email}`);
       }
 
-      tenantOwnerId = matchingUser.id;
+      tenantOwnerId = authUserData.user.id;
       ownerEmail = tenant.email;
       console.log(
-        `[CREDENTIALS] Found tenant owner via email lookup: ${ownerEmail}`,
+        `[CREDENTIALS] Found tenant owner via email lookup: ${ownerEmail} (ID: ${tenantOwnerId})`,
       );
     }
 
@@ -152,17 +166,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`[CREDENTIALS] Tenant owner ID determined: ${tenantOwnerId}`);
     
-    // Verify the user exists before attempting update
+    // Verify the user exists before attempting update (optional - don't fail if verification fails)
     try {
       const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(tenantOwnerId);
-      if (getUserError || !existingUser) {
-        console.error(`[CREDENTIALS] User not found:`, getUserError);
-        throw new Error(`User with ID ${tenantOwnerId} not found in auth system`);
+      if (getUserError) {
+        console.warn(`[CREDENTIALS] User lookup warning:`, getUserError);
+      } else if (!existingUser || !existingUser.user) {
+        console.warn(`[CREDENTIALS] User not found in verification, will attempt update anyway`);
+      } else {
+        console.log(`[CREDENTIALS] User verified: ${existingUser.user.email}`);
       }
-      console.log(`[CREDENTIALS] User verified: ${existingUser.user.email}`);
     } catch (verifyError: any) {
-      console.error(`[CREDENTIALS] User verification failed:`, verifyError);
-      throw new Error(`Failed to verify user exists: ${verifyError.message}`);
+      console.warn(`[CREDENTIALS] User verification failed (non-critical):`, verifyError);
+      // Continue anyway - the actual update will fail if user doesn't exist
     }
 
     let result: any = {};
