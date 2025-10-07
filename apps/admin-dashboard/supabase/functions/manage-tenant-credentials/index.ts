@@ -43,6 +43,7 @@ const handler = async (req: Request): Promise<Response> => {
       await req.json();
 
     console.log(`[CREDENTIALS] Starting ${action} for tenant ${tenantId}`);
+    console.log(`[CREDENTIALS] Request body:`, { tenantId, action, hasNewEmail: !!newEmail, hasNewPassword: !!newPassword });
 
     // Verify admin access
     const authHeader = req.headers.get("Authorization");
@@ -226,19 +227,24 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error("Invalid action");
     }
 
-    // Log the action for audit purposes
-    await supabaseAdmin.from("security_events").insert({
-      event_type: "credential_change",
-      severity: "high",
-      user_id: tenantOwnerId,
-      event_data: {
-        action,
-        tenant_id: tenantId,
-        changed_by: user.id,
-        changed_by_email: user.email,
-        timestamp: new Date().toISOString(),
-      },
-    });
+    // Log the action for audit purposes (non-blocking)
+    try {
+      await supabaseAdmin.from("security_events").insert({
+        event_type: "credential_change",
+        severity: "high",
+        user_id: tenantOwnerId,
+        event_data: {
+          action,
+          tenant_id: tenantId,
+          changed_by: user.id,
+          changed_by_email: user.email,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (auditError) {
+      console.warn("Failed to log security event:", auditError);
+      // Don't fail the request if audit logging fails
+    }
 
     console.log(
       `Credential action completed: ${action} for tenant ${tenantId} by ${user.email}`,
