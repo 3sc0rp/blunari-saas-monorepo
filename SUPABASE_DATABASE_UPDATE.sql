@@ -71,7 +71,7 @@ TO authenticated
 USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
-RAISE NOTICE 'Updated RLS policies for profiles table ✓';
+DO $$ BEGIN RAISE NOTICE 'Updated RLS policies for profiles table ✓'; END $$;
 
 -- ============================================================================
 -- PART 3: UPDATE TENANTS TABLE POLICIES
@@ -85,7 +85,7 @@ TO service_role
 USING (true) 
 WITH CHECK (true);
 
-RAISE NOTICE 'Updated RLS policies for tenants table ✓';
+DO $$ BEGIN RAISE NOTICE 'Updated RLS policies for tenants table ✓'; END $$;
 
 -- ============================================================================
 -- PART 4: UPDATE AUTO_PROVISIONING TABLE POLICIES
@@ -99,7 +99,7 @@ TO service_role
 USING (true) 
 WITH CHECK (true);
 
-RAISE NOTICE 'Updated RLS policies for auto_provisioning table ✓';
+DO $$ BEGIN RAISE NOTICE 'Updated RLS policies for auto_provisioning table ✓'; END $$;
 
 -- ============================================================================
 -- PART 5: DATA CONSISTENCY CHECK
