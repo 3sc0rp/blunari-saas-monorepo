@@ -142,7 +142,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Find user ID from profiles table (faster than auth API)
       const { data: profileData, error: profileLookupError } = await supabaseAdmin
         .from("profiles")
-        .select("id, user_id")
+        .select("id, user_id, email")
         .eq("email", tenant.email)
         .maybeSingle();
       
@@ -153,11 +153,26 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (!profileData) {
         console.error(`[CREDENTIALS] No profile found with email ${tenant.email}`);
-        throw new Error(`No user found with email ${tenant.email}`);
+        throw new Error(`No user found with email ${tenant.email}. User may need to complete account setup first.`);
       }
 
-      // Use user_id if available, otherwise use id
-      tenantOwnerId = profileData.user_id || profileData.id;
+      console.log(`[CREDENTIALS] Profile found:`, { 
+        id: profileData.id, 
+        user_id: profileData.user_id, 
+        email: profileData.email 
+      });
+
+      // Use user_id (links to auth.users), fallback to id if user_id is null
+      if (profileData.user_id) {
+        tenantOwnerId = profileData.user_id;
+        console.log(`[CREDENTIALS] Using user_id: ${tenantOwnerId}`);
+      } else if (profileData.id) {
+        tenantOwnerId = profileData.id;
+        console.log(`[CREDENTIALS] Using id as fallback: ${tenantOwnerId}`);
+      } else {
+        throw new Error(`Profile exists but has no valid ID`);
+      }
+      
       ownerEmail = tenant.email;
       console.log(
         `[CREDENTIALS] Found tenant owner via profile lookup: ${ownerEmail} (ID: ${tenantOwnerId})`,
@@ -206,16 +221,18 @@ const handler = async (req: Request): Promise<Response> => {
 
         console.log(`[CREDENTIALS] Updating email in profiles table`);
         
-        // Update profiles table
+        // Update profiles table - use user_id since that's what tenantOwnerId is
         const { error: profileError } = await supabaseAdmin
           .from("profiles")
           .update({ email: newEmail })
-          .eq("id", tenantOwnerId);
+          .eq("user_id", tenantOwnerId);
 
         if (profileError) {
           console.error(`[CREDENTIALS] Profile email update failed:`, profileError);
           // Don't fail - profile might not exist or update might not be critical
           console.warn(`Warning: Could not update profile email: ${profileError.message}`);
+        } else {
+          console.log(`[CREDENTIALS] Profile email updated successfully`);
         }
 
         console.log(`[CREDENTIALS] Updating email in tenants table`);
