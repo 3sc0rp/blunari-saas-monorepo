@@ -67,7 +67,7 @@ export function SecureProfileManager({
       const { error } = await supabase
         .from("profiles")
         .update(allowedUpdates)
-        .eq("id", user?.id);
+        .eq("user_id", user?.id);
 
       if (error) throw error;
 

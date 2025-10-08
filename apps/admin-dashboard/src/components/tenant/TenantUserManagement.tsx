@@ -137,12 +137,12 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", ownerUserId)
+          .eq("user_id", ownerUserId)
           .single();
 
         if (!profileError && profile) {
           setUserData({
-            id: profile.id,
+            id: profile.user_id,
             email: profile.email,
             created_at: profile.created_at,
             last_sign_in_at: profile.updated_at,

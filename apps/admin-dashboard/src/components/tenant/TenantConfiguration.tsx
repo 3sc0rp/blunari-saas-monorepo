@@ -131,7 +131,7 @@ export function TenantConfiguration({ tenantId }: TenantConfigurationProps) {
         const { data: profileData } = await supabase
           .from("profiles")
           .select("email")
-          .eq("id", provisioningData.user_id)
+          .eq("user_id", provisioningData.user_id)
           .single();
 
         if (profileData) {

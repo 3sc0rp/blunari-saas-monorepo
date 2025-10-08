@@ -150,10 +150,10 @@ const TenantsPage = () => {
       const userIds = (data || []).map((row: any) => row.auto_provisioning?.user_id).filter(Boolean);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, email")
-        .in("id", userIds);
+        .select("user_id, email")
+        .in("user_id", userIds);
 
-      const profileMap = new Map(profiles?.map(p => [p.id, p.email]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p.email]) || []);
 
       const mapped = (data || []).map((row: any) => ({
         id: row.id,
