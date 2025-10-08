@@ -1,10 +1,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { createCorsHeaders } from "../_shared/cors";
+
+// CORS configuration
+const createCorsHeaders = (origin: string | null = null) => {
+  const allowedOrigins = [
+    'https://admin.blunari.ai',
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ];
+  const corsOrigin = origin && allowedOrigins.includes(origin) ? origin : '*';
+  
+  return {
+    'Access-Control-Allow-Origin': corsOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+};
 
 interface RequestBody {
   tenantId: string;
-  action?: string; // deprecated (generate-temp) or new implicit recovery issuance
+  action?: string; // deprecated (generate-temp), issue-recovery, or revoke-recovery
+  requestId?: string; // Required for revoke-recovery action
 }
 
 interface ErrorPayload {
@@ -117,9 +134,52 @@ serve(async (req) => {
     }
 
     // Accept legacy action but move to recovery-only flow
-    if (body.action && body.action !== "generate-temp" && body.action !== "issue-recovery") {
+    if (body.action && body.action !== "generate-temp" && body.action !== "issue-recovery" && body.action !== "revoke-recovery") {
       return error("UNSUPPORTED_ACTION", "Unsupported action", 400, origin, requestId);
     }
+
+    // Handle revoke-recovery action
+    if (body.action === "revoke-recovery") {
+      if (!body.requestId) {
+        return error("VALIDATION_ERROR", "requestId required for revoke-recovery action", 400, origin, requestId);
+      }
+
+      // Fetch tenant to validate and get email
+      const { data: tenant, error: tenantErr } = await supabase
+        .from("tenants")
+        .select("id, email, name")
+        .eq("id", body.tenantId)
+        .single();
+
+      if (tenantErr || !tenant) {
+        return error("TENANT_NOT_FOUND", "Tenant not found", 404, origin, requestId);
+      }
+
+      // Call the revoke function
+      const { data: revokeResult, error: revokeErr } = await supabase.rpc('revoke_recovery_link', {
+        p_request_id: body.requestId,
+        p_tenant_id: body.tenantId,
+        p_owner_email: tenant.email || 'unknown',
+        p_revoked_by: user.id,
+        p_reason: 'Revoked by admin via UI'
+      });
+
+      if (revokeErr) {
+        console.error("Failed to revoke recovery link", revokeErr);
+        return error("REVOCATION_FAILED", `Failed to revoke recovery link: ${revokeErr.message}`, 500, origin, requestId);
+      }
+
+      return jsonResponse({
+        success: true,
+        requestId,
+        tenantId: body.tenantId,
+        revokedRequestId: body.requestId,
+        alreadyRevoked: revokeResult?.already_revoked || false,
+        message: revokeResult?.message || "Recovery link revoked successfully",
+      }, 200, origin);
+    }
+
+    // Continue with issue-recovery flow...
 
     // Fetch tenant to get the primary contact email
     const { data: tenant, error: tenantErr } = await supabase
