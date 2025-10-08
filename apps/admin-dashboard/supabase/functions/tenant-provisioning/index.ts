@@ -174,8 +174,8 @@ serve(async (req: Request) => {
       );
     }
 
-    const isAdmin = ["super_admin", "admin"].includes(employee.role);
-    const isActive = employee.status === "active";
+    const isAdmin = ["SUPER_ADMIN", "ADMIN"].includes(employee.role);
+    const isActive = employee.status === "ACTIVE";
 
     if (!isAdmin || !isActive) {
       console.warn("Insufficient permissions for provisioning:", { 
