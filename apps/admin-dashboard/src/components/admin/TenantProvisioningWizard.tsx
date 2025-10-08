@@ -285,16 +285,80 @@ export function TenantProvisioningWizard({
     } catch (error: unknown) {
       console.error("Provisioning error:", error);
 
-      const errorObj = error as Error & { errors?: Array<{ message: string }> };
-      const msg =
-        errorObj?.errors?.[0]?.message ||
-        errorObj?.message ||
-        "Provisioning failed";
+      // Enhanced error handling with specific codes and actionable messages
+      const errorObj = error as Error & { 
+        errors?: Array<{ message: string }>;
+        code?: string;
+      };
+
+      // Map error codes to user-friendly messages with actions
+      const errorMessages: Record<string, { title: string; description: string; action: string }> = {
+        'DUPLICATE_SLUG': {
+          title: 'Slug Already Taken',
+          description: 'This restaurant slug is already in use.',
+          action: 'Please choose a different name or modify the slug in Step 1.'
+        },
+        'INVALID_SLUG': {
+          title: 'Invalid Slug Format',
+          description: 'The slug contains invalid characters or format.',
+          action: 'Use only lowercase letters, numbers, and hyphens (3-50 characters).'
+        },
+        'FORBIDDEN': {
+          title: 'Permission Denied',
+          description: 'You do not have permission to provision tenants.',
+          action: 'Please contact a super admin for assistance.'
+        },
+        'USER_CREATION_FAILED': {
+          title: 'Owner Account Creation Failed',
+          description: 'Unable to create the owner user account.',
+          action: 'The email may already be in use. Try a different owner email.'
+        },
+        'OWNER_EMAIL_REQUIRED': {
+          title: 'Owner Email Missing',
+          description: 'An owner email address is required.',
+          action: 'Please provide a valid owner email in Step 3.'
+        },
+        'VALIDATION_ERROR': {
+          title: 'Invalid Input',
+          description: errorObj?.message || 'Some fields contain invalid data.',
+          action: 'Please review the form and correct any errors.'
+        },
+        'RATE_LIMIT': {
+          title: 'Too Many Requests',
+          description: 'You have exceeded the provisioning limit.',
+          action: 'Please wait an hour before trying again.'
+        },
+        'DB_ERROR': {
+          title: 'Database Error',
+          description: errorObj?.message || 'A database error occurred.',
+          action: 'This may be a duplicate slug. Try a different name.'
+        }
+      };
+
+      // Extract error code from error object or message
+      let errorCode = errorObj?.code || 'UNKNOWN';
+      
+      // Try to extract code from error message if not directly available
+      if (errorCode === 'UNKNOWN' && errorObj?.message) {
+        if (errorObj.message.includes('duplicate') || errorObj.message.includes('already exists')) {
+          errorCode = 'DUPLICATE_SLUG';
+        } else if (errorObj.message.includes('permission') || errorObj.message.includes('forbidden')) {
+          errorCode = 'FORBIDDEN';
+        } else if (errorObj.message.includes('validation')) {
+          errorCode = 'VALIDATION_ERROR';
+        }
+      }
+
+      const errorInfo = errorMessages[errorCode] || {
+        title: 'Provisioning Failed',
+        description: errorObj?.message || 'An unexpected error occurred.',
+        action: 'Please try again or contact support if the issue persists.'
+      };
 
       toast({
-        title: "Provisioning Failed",
-        description: msg,
-        variant: "destructive",
+        title: errorInfo.title,
+        description: `${errorInfo.description}\n\n${errorInfo.action}`,
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);

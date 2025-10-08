@@ -13,19 +13,32 @@ export const useSlugValidation = () => {
 
     setIsValidating(true);
     try {
-      // Check if slug already exists in auto_provisioning table
-      const { data, error } = await supabase
-        .from("auto_provisioning")
-        .select("restaurant_slug")
-        .eq("restaurant_slug", slug)
-        .limit(1);
+      // CRITICAL FIX: Check BOTH auto_provisioning AND tenants tables
+      const [autoprovCheck, tenantCheck] = await Promise.all([
+        supabase
+          .from("auto_provisioning")
+          .select("restaurant_slug")
+          .eq("restaurant_slug", slug)
+          .limit(1),
+        supabase
+          .from("tenants")
+          .select("slug")
+          .eq("slug", slug)
+          .limit(1),
+      ]);
 
-      if (error) {
-        console.error("Error validating slug:", error);
-        return false;
+      if (autoprovCheck.error) {
+        console.error("Error checking auto_provisioning:", autoprovCheck.error);
       }
 
-      const isAvailable = !data || data.length === 0;
+      if (tenantCheck.error) {
+        console.error("Error checking tenants:", tenantCheck.error);
+      }
+
+      // Slug is available only if it doesn't exist in EITHER table
+      const isAvailable =
+        (!autoprovCheck.data || autoprovCheck.data.length === 0) &&
+        (!tenantCheck.data || tenantCheck.data.length === 0);
 
       if (!isAvailable) {
         toast({
