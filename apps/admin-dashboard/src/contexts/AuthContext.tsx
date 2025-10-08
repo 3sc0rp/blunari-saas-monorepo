@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useCallback,
+  useRef,
 } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -153,7 +154,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       lastIsAdminRef.current = false;
     }
-  }, [profile, user]);
+  }, [adminRole]); // Only depend on adminRole for revocation logging
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
@@ -284,15 +285,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setAdminLoaded(true);
       }
 
-  // Heartbeat revalidation of admin role
-  useEffect(() => {
-    if (!user) return;
-    const id = setInterval(() => {
-      evaluateAdminStatus(user.id, user.email);
-    }, HEARTBEAT_MS);
-    return () => clearInterval(id);
-  }, [user, evaluateAdminStatus]);
-
       setLoading(false);
     });
 
@@ -301,6 +293,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
+
+  // Heartbeat revalidation of admin role - separate effect to avoid infinite loops
+  const evaluateAdminStatusRef = useRef(evaluateAdminStatus);
+  evaluateAdminStatusRef.current = evaluateAdminStatus;
+
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => {
+      evaluateAdminStatusRef.current(user.id, user.email);
+    }, HEARTBEAT_MS);
+    return () => clearInterval(id);
+  }, [user]); // Only depend on user, not the callback itself
 
   const signUp = useCallback(
     async (
