@@ -23,6 +23,10 @@ import {
   RefreshCw,
   Key,
   Shield,
+  Eye,
+  EyeOff,
+  Copy,
+  Trash2,
 } from "lucide-react";
 import { useAdminAPI } from "@/hooks/useAdminAPI";
 import { SendCredentialsDialog } from "@/components/tenant/SendCredentialsDialog";
@@ -86,6 +90,8 @@ export default function TenantDetailPage() {
   const [confirmRecoveryOpen, setConfirmRecoveryOpen] = useState(false);
   const [rateInfo, setRateInfo] = useState<null | { tenantCount: number; tenantLimit: number; adminCount: number; adminLimit: number; tenantWindowSec: number; adminWindowSec: number; tenantRemaining?: number; adminRemaining?: number }>(null);
   const recoveryDisplayTTLms = 5 * 60 * 1000; // 5 minutes
+  const [showRecoveryLink, setShowRecoveryLink] = useState(false);
+  const [revokingRecovery, setRevokingRecovery] = useState(false);
 
   const fetchTenant = useCallback(async () => {
     if (!tenantId) return;
@@ -93,6 +99,53 @@ export default function TenantDetailPage() {
     try {
       setLoadingPage(true);
       setError(null);
+      
+      // 1. Verify admin authorization
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user) {
+        throw new Error("Not authenticated");
+      }
+      
+      const { data: employee, error: employeeError } = await supabase
+        .from("employees")
+        .select("role, status")
+        .eq("user_id", session.session.user.id)
+        .single();
+      
+      if (employeeError || !employee) {
+        logger.warn("No employee record found", {
+          component: "TenantDetailPage",
+          userId: session.session.user.id,
+        });
+        setError("Unauthorized: Admin access required");
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to view tenant details.",
+          variant: "destructive",
+        });
+        navigate("/admin/tenants");
+        return;
+      }
+      
+      const isAdmin = ["SUPER_ADMIN", "ADMIN"].includes(employee.role);
+      if (!isAdmin || employee.status !== "ACTIVE") {
+        logger.warn("Unauthorized access attempt", {
+          component: "TenantDetailPage",
+          userId: session.session.user.id,
+          role: employee.role,
+          status: employee.status,
+        });
+        setError("Unauthorized: Admin access required");
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to view tenant details.",
+          variant: "destructive",
+        });
+        navigate("/admin/tenants");
+        return;
+      }
+      
+      // 2. Then fetch tenant data
       const tenantData = await getTenant(tenantId);
       setTenant(tenantData);
     } catch (error) {
@@ -107,7 +160,7 @@ export default function TenantDetailPage() {
     } finally {
       setLoadingPage(false);
     }
-  }, [tenantId, getTenant]);
+  }, [tenantId, getTenant, navigate, toast]);
 
   useEffect(() => {
     if (tenantId) {
@@ -267,6 +320,50 @@ export default function TenantDetailPage() {
     }
   };
 
+  const handleRevokeRecoveryLink = async () => {
+    if (!tenantId || !recoveryData) return;
+    
+    try {
+      setRevokingRecovery(true);
+      
+      const { data, error } = await supabase.functions.invoke(
+        "tenant-owner-credentials",
+        { 
+          body: { 
+            tenantId, 
+            action: "revoke-recovery", 
+            requestId: recoveryData.requestId 
+          } 
+        },
+      );
+      
+      if (error || data?.error) {
+        throw new Error(data?.error?.message || error?.message || "Failed to revoke");
+      }
+      
+      setRecoveryData(null);
+      setShowRecoveryLink(false);
+      
+      toast({
+        title: "Recovery Link Revoked",
+        description: "The recovery link is no longer valid.",
+      });
+    } catch (e) {
+      logger.error("Failed to revoke recovery link", {
+        component: "TenantDetailPage",
+        tenantId,
+        error: e,
+      });
+      toast({
+        title: "Revocation Failed",
+        description: e instanceof Error ? e.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setRevokingRecovery(false);
+    }
+  };
+
   // Auto-expire displayed recovery link after TTL
   useEffect(() => {
     if (!recoveryData) return;
@@ -274,12 +371,32 @@ export default function TenantDetailPage() {
     const remaining = recoveryDisplayTTLms - (Date.now() - recoveryData.issuedAt);
     if (remaining <= 0) {
       setRecoveryData(null);
+      setShowRecoveryLink(false);
       return;
     }
     
-    const timer = setTimeout(() => setRecoveryData(null), remaining);
+    const timer = setTimeout(() => {
+      setRecoveryData(null);
+      setShowRecoveryLink(false);
+    }, remaining);
     return () => clearTimeout(timer);
   }, [recoveryData, recoveryDisplayTTLms]);
+
+  // Auto-hide recovery link after 30 seconds when revealed
+  useEffect(() => {
+    if (!showRecoveryLink) return;
+    
+    const hideTimer = setTimeout(() => {
+      setShowRecoveryLink(false);
+      toast({
+        title: "Recovery Link Hidden",
+        description: "The link has been automatically hidden for security.",
+        variant: "default",
+      });
+    }, 30000); // 30 seconds
+    
+    return () => clearTimeout(hideTimer);
+  }, [showRecoveryLink, toast]);
 
   if (loadingPage) {
     return (
@@ -697,42 +814,105 @@ export default function TenantDetailPage() {
         </Card>
       )}
       {recoveryData && (
-        <Card className="border-warning/40">
+        <Card className="border-warning/40 bg-warning/5">
           <CardHeader>
-            <CardTitle>Owner Recovery Link</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-warning" />
+              Owner Recovery Link
+            </CardTitle>
             <CardDescription>
-              This link lets the owner set a new password. Treat it as sensitive.
+              Generated recovery link. Click to reveal (auto-hides after 30 seconds for security).
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-xs uppercase tracking-wide text-muted-foreground">Owner Email</label>
-              <p className="font-mono break-all text-sm">{recoveryData.ownerEmail}</p>
+              <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Owner Email</label>
+              <p className="font-mono break-all text-sm bg-muted/50 p-2 rounded">{recoveryData.ownerEmail}</p>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-wide text-muted-foreground">Recovery Link</label>
-              <a
-                href={recoveryData.recoveryLink}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary underline break-all text-sm"
+            
+            {showRecoveryLink ? (
+              <>
+                <div className="space-y-2 bg-destructive/5 border border-destructive/20 p-4 rounded-md">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs uppercase tracking-wide text-destructive font-semibold flex items-center gap-2">
+                      <Eye className="h-3 w-3" />
+                      Recovery Link (Sensitive)
+                    </label>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        navigator.clipboard.writeText(recoveryData.recoveryLink);
+                        toast({ 
+                          title: "Copied to Clipboard",
+                          description: "Recovery link copied. Handle with care.",
+                        });
+                      }}
+                      className="h-7"
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy
+                    </Button>
+                  </div>
+                  <code className="text-xs break-all block bg-background p-3 rounded border">
+                    {recoveryData.recoveryLink}
+                  </code>
+                  <div className="flex items-center gap-2 text-xs text-destructive mt-2">
+                    <EyeOff className="h-3 w-3" />
+                    <span>Link will auto-hide in 30 seconds</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRecoveryLink(true)}
+                className="w-full border-warning/40 hover:bg-warning/10"
               >
-                {recoveryData.recoveryLink}
-              </a>
-            </div>
-            <p className="text-xs text-muted-foreground">Visible for up to 5 minutes after issuance.</p>
-            <p className="text-xs text-muted-foreground">Request ID: {recoveryData.requestId}</p>
-            <p className="text-xs text-muted-foreground">{recoveryData.message}</p>
-            {recoveryData.deprecatedActionUsed && (
-              <p className="text-xs text-amber-600">Legacy action used; UI should be updated if this persists.</p>
+                <Eye className="h-4 w-4 mr-2" />
+                Reveal Recovery Link
+              </Button>
             )}
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setRecoveryData(null)}
-            >
-              Dismiss
-            </Button>
+            
+            <div className="space-y-1 pt-2 border-t">
+              <p className="text-xs text-muted-foreground">
+                <span className="font-semibold">Request ID:</span> {recoveryData.requestId}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                <span className="font-semibold">Expires:</span> Link valid for 5 minutes from issuance
+              </p>
+              <p className="text-xs text-muted-foreground">{recoveryData.message}</p>
+              {recoveryData.deprecatedActionUsed && (
+                <p className="text-xs text-amber-600 flex items-center gap-1 mt-2">
+                  <span className="font-semibold">⚠️ Warning:</span> Legacy action used; UI should be updated if this persists.
+                </p>
+              )}
+            </div>
+            
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setRecoveryData(null);
+                  setShowRecoveryLink(false);
+                }}
+                className="flex-1"
+              >
+                Dismiss
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleRevokeRecoveryLink}
+                disabled={revokingRecovery}
+                className="flex-1"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {revokingRecovery ? "Revoking..." : "Revoke Link"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
