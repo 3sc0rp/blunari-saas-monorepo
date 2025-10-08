@@ -95,6 +95,20 @@ test-*.html
 body.json
 *-fixed.*
 *-diagnostic.*
+diagnose-*.sql
+verify-*.sql
+test-*.mjs
+CLEANUP_REPORT_*.md
+
+# Debug and test scripts
+scripts/debug-*.mjs
+scripts/test-*.mjs
+scripts/check-*.mjs
+scripts/diagnose-*.mjs
+scripts/inspect-*.mjs
+scripts/fix-*.mjs
+scripts/fix-*.sql
+scripts/*-temp.*
 
 # Performance audit files
 performance-audit*.json

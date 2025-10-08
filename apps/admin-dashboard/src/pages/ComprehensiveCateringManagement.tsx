@@ -64,6 +64,7 @@ import {
   CateringPackage,
   CateringMenuItem,
 } from "@/types/catering";
+import { logger } from "@/lib/logger";
 
 // Helper functions
 const formatCurrency = (cents: number) => `$${(cents / 100).toFixed(2)}`;
@@ -631,13 +632,21 @@ const CateringManagement: React.FC = () => {
     try {
       await updateOrderStatus(orderId, status, notes);
     } catch (error) {
-      console.error("Failed to update order status:", error);
+      logger.error("Failed to update order status", {
+        component: "ComprehensiveCateringManagement",
+        orderId,
+        status,
+        error,
+      });
     }
   };
 
   const handleEditOrder = (order: CateringOrder) => {
     // TODO: Implement order editing
-    console.log("Edit order:", order);
+    logger.info("Edit order", {
+      component: "ComprehensiveCateringManagement",
+      orderId: order.id,
+    });
   };
 
   const handleViewOrderDetails = (order: CateringOrder) => {

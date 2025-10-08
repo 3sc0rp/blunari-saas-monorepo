@@ -46,6 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SupportTicketDetail } from "@/components/support/SupportTicketDetail";
 import { debounce } from "lodash";
 import { testSupportTicketConnection, createTestTicket } from "@/utils/testSupport";
+import { logger } from "@/lib/logger";
 
 interface SupportTicket {
   id: string;
@@ -95,7 +96,12 @@ export const SupportPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      console.log("Loading tickets with filters:", { statusFilter, priorityFilter, searchQuery });
+      logger.info("Loading tickets with filters", {
+        component: "SupportPage",
+        statusFilter,
+        priorityFilter,
+        searchQuery,
+      });
 
       // Try to use the admin RPC function first, fallback to direct query
       let tickets;
@@ -104,15 +110,21 @@ export const SupportPage: React.FC = () => {
           .rpc('get_all_support_tickets_admin' as any);
         
         if (rpcError) {
-          console.warn("Admin RPC failed, falling back to direct query:", rpcError);
+          logger.warn("Admin RPC failed, falling back to direct query", {
+            component: "SupportPage",
+            error: rpcError,
+          });
           throw rpcError;
         }
         
         tickets = rpcData || [];
-        console.log("Loaded tickets via admin RPC:", tickets.length);
+        logger.info("Loaded tickets via admin RPC", {
+          component: "SupportPage",
+          count: tickets.length,
+        });
       } catch {
         // Fallback to direct query
-        console.log("Using direct query fallback...");
+        logger.info("Using direct query fallback", { component: "SupportPage" });
         const query = supabase
           .from("support_tickets")
           .select(
@@ -127,12 +139,18 @@ export const SupportPage: React.FC = () => {
         const { data, error } = await query;
         
         if (error) {
-          console.error("Supabase query error:", error);
+          logger.error("Supabase query error", {
+            component: "SupportPage",
+            error,
+          });
           throw error;
         }
         
         tickets = data || [];
-        console.log("Loaded tickets via direct query:", tickets.length);
+        logger.info("Loaded tickets via direct query", {
+          component: "SupportPage",
+          count: tickets.length,
+        });
       }
 
       // Apply client-side filtering for admin RPC results
@@ -155,11 +173,18 @@ export const SupportPage: React.FC = () => {
         );
       }
 
-      console.log("Filtered tickets:", filteredTickets.length);
+      logger.info("Filtered tickets", {
+        component: "SupportPage",
+        count: filteredTickets.length,
+        totalCount: tickets.length,
+      });
       setTickets(filteredTickets);
       setError(null);
     } catch (err: any) {
-      console.error("Error loading tickets:", err);
+      logger.error("Error loading tickets", {
+        component: "SupportPage",
+        error: err,
+      });
       const errorMessage = err?.message || "Failed to load support tickets";
       setError(errorMessage);
       setTickets([]);

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ interface KPICardProps {
   accessibilityLabel?: string;
 }
 
-export const KPICard: React.FC<KPICardProps> = ({
+const KPICardComponent: React.FC<KPICardProps> = ({
   title,
   value,
   icon: Icon,
@@ -32,8 +32,8 @@ export const KPICard: React.FC<KPICardProps> = ({
   format = "number",
   accessibilityLabel,
 }) => {
-  const formatValue = (val: string | number) => {
-    if (typeof val === "string") return val;
+  const formatValue = useMemo(() => {
+    if (typeof value === "string") return value;
 
     switch (format) {
       case "currency":
@@ -42,13 +42,13 @@ export const KPICard: React.FC<KPICardProps> = ({
           currency: "USD",
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
-        }).format(val);
+        }).format(value);
       case "percentage":
-        return `${val}%`;
+        return `${value}%`;
       default:
-        return new Intl.NumberFormat("en-US").format(val);
+        return new Intl.NumberFormat("en-US").format(value);
     }
-  };
+  }, [value, format]);
 
   const getTrendIcon = () => {
     switch (trend?.direction) {
@@ -95,7 +95,7 @@ export const KPICard: React.FC<KPICardProps> = ({
     <Card
       className={cn("transition-all hover:shadow-md", className)}
       role="article"
-      aria-label={accessibilityLabel || `${title}: ${formatValue(value)}`}
+      aria-label={accessibilityLabel || `${title}: ${formatValue}`}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -106,7 +106,7 @@ export const KPICard: React.FC<KPICardProps> = ({
       <CardContent>
         <div className="space-y-2">
           <div className="text-2xl font-bold" aria-live="polite">
-            {formatValue(value)}
+            {formatValue}
           </div>
 
           <div className="flex items-center justify-between">
@@ -134,3 +134,16 @@ export const KPICard: React.FC<KPICardProps> = ({
     </Card>
   );
 };
+
+// Memoize component to prevent unnecessary re-renders
+export const KPICard = memo(KPICardComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.title === nextProps.title &&
+    prevProps.value === nextProps.value &&
+    prevProps.loading === nextProps.loading &&
+    prevProps.trend?.value === nextProps.trend?.value &&
+    prevProps.trend?.direction === nextProps.trend?.direction
+  );
+});
+
+KPICard.displayName = 'KPICard';

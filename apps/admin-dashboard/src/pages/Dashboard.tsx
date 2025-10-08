@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -219,13 +219,13 @@ const Dashboard = () => {
   const loading = realtimeLoading || chartsLoading;
   const error = realtimeError || chartsError;
 
-  const handleDateRangeChange = (range: { from: Date; to: Date } | null) => {
+  const handleDateRangeChange = useCallback((range: { from: Date; to: Date } | null) => {
     setDateRange(range);
     refreshData(range || undefined);
     refetchCharts();
-  };
+  }, [refreshData, refetchCharts]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     refreshData(dateRange || undefined);
     refetchCharts();
     toast({
@@ -233,7 +233,7 @@ const Dashboard = () => {
       description:
         "Dashboard data has been updated with the latest information.",
     });
-  };
+  }, [dateRange, refreshData, refetchCharts, toast]);
 
   // Error boundary for charts
   const ChartErrorBoundary: React.FC<{ children: React.ReactNode }> = ({

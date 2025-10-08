@@ -59,6 +59,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { EmptyState, LoadingState, ErrorState } from "@/components/ui/states";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 
 interface Tenant {
   id: string;
@@ -171,7 +172,10 @@ const TenantsPage = () => {
       setTenants(mapped);
       setTotalCount(count || 0);
     } catch (error) {
-      console.error("Error fetching tenants:", error);
+      logger.error("Error fetching tenants", {
+        component: "TenantsPage",
+        error,
+      });
       toast({
         title: "Error",
         description: "Failed to fetch tenants",
@@ -183,7 +187,11 @@ const TenantsPage = () => {
   };
 
   const handleDeleteTenant = async (tenant: Tenant) => {
-    console.log("Delete tenant called for:", tenant.name, tenant.id);
+    logger.info("Delete tenant called", {
+      component: "TenantsPage",
+      tenantName: tenant.name,
+      tenantId: tenant.id,
+    });
     setIsDeleting(true);
     try {
       // First, check if tenant has any active bookings
@@ -193,7 +201,11 @@ const TenantsPage = () => {
         .eq("tenant_id", tenant.id);
 
       if (bookingsError) {
-        console.error("Error checking bookings:", bookingsError);
+        logger.error("Error checking bookings", {
+          component: "TenantsPage",
+          tenantId: tenant.id,
+          error: bookingsError,
+        });
       }
 
       if (bookingsCount && bookingsCount > 0) {
@@ -207,7 +219,10 @@ const TenantsPage = () => {
         return;
       }
 
-      console.log("Starting tenant deletion using database function...");
+      logger.info("Starting tenant deletion using database function", {
+        component: "TenantsPage",
+        tenantId: tenant.id,
+      });
 
       // Use the secure database function to delete the tenant completely
       const { error } = await supabase.rpc("delete_tenant_complete", {
@@ -215,11 +230,18 @@ const TenantsPage = () => {
       });
 
       if (error) {
-        console.error("Database function error:", error);
+        logger.error("Database function error", {
+          component: "TenantsPage",
+          tenantId: tenant.id,
+          error,
+        });
         throw new Error(error.message);
       }
 
-      console.log("Tenant deletion completed successfully");
+      logger.info("Tenant deletion completed successfully", {
+        component: "TenantsPage",
+        tenantId: tenant.id,
+      });
 
       toast({
         title: "Tenant Deleted",
@@ -230,7 +252,11 @@ const TenantsPage = () => {
       fetchTenants();
       setTenantToDelete(null);
     } catch (error) {
-      console.error("Error deleting tenant:", error);
+      logger.error("Error deleting tenant", {
+        component: "TenantsPage",
+        tenantId: tenant.id,
+        error,
+      });
       toast({
         title: "Error",
         description: "Failed to delete tenant. Please try again.",
@@ -575,7 +601,11 @@ const TenantsPage = () => {
                             asChild
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <Button variant="ghost" size="sm">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              aria-label={`Actions for ${tenant.name}`}
+                            >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>

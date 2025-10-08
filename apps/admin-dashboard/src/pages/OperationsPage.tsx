@@ -23,6 +23,7 @@ import {
   Settings,
   Cpu,
 } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 // Mock system health data
 const mockSystemHealth = {
@@ -198,7 +199,11 @@ const OperationsPage: React.FC = () => {
           <TabsContent value="health">
             <SystemHealthCard
               health={mockSystemHealth}
-              onRefresh={() => console.log("Refreshing health data...")}
+              onRefresh={() => {
+                logger.info("Refreshing health data", {
+                  component: "OperationsPage",
+                });
+              }}
             />
           </TabsContent>
 

@@ -39,6 +39,7 @@ import { TenantAdoptionSnapshot } from "@/components/tenant/TenantAdoptionSnapsh
 import { TenantUserManagement } from "@/components/tenant/TenantUserManagement";
 import { EditableTenantInfo } from "@/components/tenant/EditableTenantInfo";
 import { LoadingState, ErrorState } from "@/components/ui/states";
+import { logger } from "@/lib/logger";
 import { useToast } from "@/hooks/use-toast";
 import type { TenantData } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,7 +96,11 @@ export default function TenantDetailPage() {
       const tenantData = await getTenant(tenantId);
       setTenant(tenantData);
     } catch (error) {
-      console.error("Error fetching tenant:", error);
+      logger.error("Error fetching tenant", {
+        component: "TenantDetailPage",
+        tenantId,
+        error,
+      });
       setError(
         error instanceof Error ? error.message : "Failed to load tenant",
       );
@@ -151,7 +156,11 @@ export default function TenantDetailPage() {
           : null,
       );
     } catch (e) {
-      console.warn("Failed to fetch email history", e);
+      logger.warn("Failed to fetch email history", {
+        component: "TenantDetailPage",
+        tenantId,
+        error: e,
+      });
       toast({
         title: "Email History Error",
         description: "Failed to load email history. Please try again.",
@@ -189,7 +198,11 @@ export default function TenantDetailPage() {
             : "Welcome email has been queued for delivery.");
       toast({ title, description: desc });
     } catch (error) {
-      console.error("Error resending welcome email:", error);
+      logger.error("Error resending welcome email", {
+        component: "TenantDetailPage",
+        tenantId: tenant.id,
+        error,
+      });
       toast({
         title: "Failed to Send Email",
         description: error instanceof Error ? error.message : "Unknown error",

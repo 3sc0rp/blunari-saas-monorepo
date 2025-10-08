@@ -196,7 +196,11 @@ export const NotificationsPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      aria-label={`Delete notification: ${notification.title}`}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Trash2, Bug, RefreshCw } from "lucide-react";
+import type { DebugData } from "@/types/api";
 
 export const JobsDebugger = () => {
   const [loading, setLoading] = useState(false);
-  const [debugData, setDebugData] = useState<any>(null);
+  const [debugData, setDebugData] = useState<DebugData | null>(null);
   const { toast } = useToast();
 
   const handleDebug = async () => {
@@ -114,14 +115,14 @@ export const JobsDebugger = () => {
             <div>
               <p className="text-sm font-medium mb-2">Recent Jobs</p>
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {debugData.jobs?.map((job: any, index: number) => (
+                {debugData.jobs?.map((job, index: number) => (
                   <div
                     key={job.id || index}
                     className="p-2 border rounded text-xs"
                   >
                     <div className="flex justify-between items-center">
                       <span className="font-mono">
-                        {job.job_type || "Unknown"}
+                        {job.name || "Unknown"}
                       </span>
                       <Badge
                         variant={

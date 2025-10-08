@@ -43,6 +43,7 @@ import { InviteEmployeeDialog } from "@/components/employees/InviteEmployeeDialo
 import { EmployeeDetailsDialog } from "@/components/employees/EmployeeDetailsDialog";
 import { BulkActionsDialog } from "@/components/employees/BulkActionsDialog";
 import { InvitationsList } from "@/components/employees/InvitationsList";
+import { logger } from "@/lib/logger";
 
 interface Employee {
   id: string;
@@ -125,7 +126,10 @@ export const EmployeesPage = () => {
 
       setEmployees(enrichedEmployees as Employee[]);
     } catch (error) {
-      console.error("Error fetching employees:", error);
+      logger.error("Error fetching employees", {
+        component: "EmployeesPage",
+        error,
+      });
       toast.error("Failed to load employees");
     } finally {
       setLoading(false);
@@ -142,7 +146,10 @@ export const EmployeesPage = () => {
       if (error) throw error;
       setDepartments(data || []);
     } catch (error) {
-      console.error("Error fetching departments:", error);
+      logger.error("Error fetching departments", {
+        component: "EmployeesPage",
+        error,
+      });
     }
   };
 

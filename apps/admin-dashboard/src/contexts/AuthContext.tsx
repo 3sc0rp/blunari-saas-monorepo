@@ -7,6 +7,7 @@ import {
 } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 interface UserProfile {
   id: string;
@@ -88,7 +89,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .maybeSingle();
 
       if (empErr) {
-        console.warn('[AuthContext] Error fetching employee record:', empErr);
+        logger.warn('Error fetching employee record', { 
+          component: 'AuthContext',
+          userId,
+          error: empErr.message 
+        });
       }
 
       // Determine role and active status
@@ -130,8 +135,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       lastIsAdminRef.current = finalIsAdmin;
     } catch (e) {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('evaluateAdminStatus failed', e);
+      if (import.meta.env.MODE === 'development') {
+        logger.warn('evaluateAdminStatus failed', { error: e });
       }
       setIsAdmin(false);
       setAdminRole(null);
@@ -159,8 +164,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .maybeSingle();
 
       if (profileError) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Error fetching profile:", profileError);
+        if (import.meta.env.MODE === "development") {
+          logger.error("Error fetching profile", { 
+            component: 'AuthContext',
+            userId,
+            error: profileError.message 
+          });
         }
         return;
       }
@@ -174,8 +183,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       );
 
       if (tenantError) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Error fetching tenant:", tenantError);
+        if (import.meta.env.MODE === "development") {
+          logger.error("Error fetching tenant", { 
+            component: 'AuthContext',
+            userId,
+            error: tenantError.message 
+          });
         }
         return;
       }
@@ -184,8 +197,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setTenant(tenantData[0]);
       }
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Error in fetchProfile:", error);
+      if (import.meta.env.MODE === "development") {
+        logger.error("Error in fetchProfile", { 
+          component: 'AuthContext',
+          error 
+        });
       }
     }
   }, []);
@@ -365,7 +381,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               },
             });
           } catch (logError) {
-            console.warn("Failed to log registration event:", logError);
+            logger.warn("Failed to log registration event", { error: logError });
           }
         }
 
@@ -415,7 +431,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           },
         });
       } catch (logError) {
-        console.warn("Failed to log authentication event:", logError);
+        logger.warn("Failed to log authentication event", { error: logError });
       }
 
       return { error };
@@ -430,8 +446,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setProfile(null);
       setTenant(null);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("Error signing out:", error);
+      if (import.meta.env.MODE === "development") {
+        logger.error("Error signing out", { 
+          component: 'AuthContext',
+          error 
+        });
       }
     }
   }, []);

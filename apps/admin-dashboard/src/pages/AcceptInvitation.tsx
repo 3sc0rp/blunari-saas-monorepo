@@ -15,6 +15,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, XCircle, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface InvitationData {
   email: string;
@@ -58,7 +59,10 @@ export default function AcceptInvitation() {
         .maybeSingle();
 
       if (queryError) {
-        console.error('[AcceptInvitation] Query error:', queryError);
+        logger.error("Query error validating invitation", {
+          component: "AcceptInvitation",
+          error: queryError,
+        });
         setError('Failed to validate invitation');
         return;
       }
@@ -81,7 +85,10 @@ export default function AcceptInvitation() {
       setInvitation(data as InvitationData);
       setShowPasswordForm(true);
     } catch (err) {
-      console.error('[AcceptInvitation] Error:', err);
+      logger.error("Error validating invitation", {
+        component: "AcceptInvitation",
+        error: err,
+      });
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
@@ -114,7 +121,10 @@ export default function AcceptInvitation() {
       );
 
       if (acceptError) {
-        console.error('[AcceptInvitation] Function error:', acceptError);
+        logger.error("Function error accepting invitation", {
+          component: "AcceptInvitation",
+          error: acceptError,
+        });
         throw new Error(acceptError.message || 'Failed to accept invitation');
       }
 
@@ -132,7 +142,10 @@ export default function AcceptInvitation() {
         });
 
         if (signInError) {
-          console.error('[AcceptInvitation] Sign in error:', signInError);
+          logger.error("Sign in error after accepting invitation", {
+            component: "AcceptInvitation",
+            error: signInError,
+          });
           // Still redirect to login - they can sign in manually
           toast.info('Please sign in with your new credentials');
           navigate('/auth?email=' + encodeURIComponent(invitation!.email));
@@ -145,7 +158,10 @@ export default function AcceptInvitation() {
         throw new Error('Unexpected response from server');
       }
     } catch (err: any) {
-      console.error('[AcceptInvitation] Accept error:', err);
+      logger.error("Accept error", {
+        component: "AcceptInvitation",
+        error: err,
+      });
       toast.error(err.message || 'Failed to accept invitation');
     } finally {
       setAccepting(false);
