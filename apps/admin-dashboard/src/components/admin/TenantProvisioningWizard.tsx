@@ -426,6 +426,91 @@ export function TenantProvisioningWizard({
 
             <Separator />
 
+            {/* Owner Credentials Section */}
+            {result.ownerCredentials && (
+              <>
+                <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-full bg-amber-500/10 p-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-amber-600"
+                      >
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                        <path d="m9 12 2 2 4-4" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <h3 className="font-semibold text-sm text-amber-900 dark:text-amber-100">
+                        Owner Login Credentials
+                      </h3>
+                      <p className="text-xs text-amber-800 dark:text-amber-200">
+                        {result.ownerCredentials.message}
+                      </p>
+
+                      <div className="space-y-2 mt-3">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Email</Label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <code className="flex-1 px-3 py-2 bg-background rounded border text-sm font-mono">
+                              {result.ownerCredentials.email}
+                            </code>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                navigator.clipboard.writeText(result.ownerCredentials!.email);
+                                toast({ title: "Email copied to clipboard" });
+                              }}
+                            >
+                              Copy
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs text-muted-foreground">
+                            Password (Temporary)
+                          </Label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <code className="flex-1 px-3 py-2 bg-background rounded border text-sm font-mono">
+                              {result.ownerCredentials.password}
+                            </code>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                navigator.clipboard.writeText(result.ownerCredentials!.password);
+                                toast({ title: "Password copied to clipboard" });
+                              }}
+                            >
+                              Copy
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 p-3 rounded-md bg-amber-100 dark:bg-amber-900/20">
+                        <p className="text-xs text-amber-900 dark:text-amber-100 font-medium">
+                          ⚠️ Important: Save these credentials immediately. The password will not be displayed again.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+              </>
+            )}
+
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => navigate(`/admin/tenants/${result.tenantId}`)}

@@ -120,6 +120,12 @@ export interface ProvisioningResponse {
   primaryUrl?: string;
   message?: string;
   error?: string;
+  ownerCredentials?: {
+    email: string;
+    password: string;
+    temporaryPassword: boolean;
+    message: string;
+  } | null;
 }
 
 // Email Operations

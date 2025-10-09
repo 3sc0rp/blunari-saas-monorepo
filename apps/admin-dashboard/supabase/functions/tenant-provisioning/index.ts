@@ -89,6 +89,34 @@ const validateSlug = (slug: string): { valid: boolean; error?: string } => {
   return { valid: true };
 };
 
+/**
+ * Generates a secure random password for new tenant owners
+ * Password requirements: 16 chars, mixed case, numbers, special chars
+ */
+const generateSecurePassword = (): string => {
+  const length = 16;
+  const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // Excluding I, O for clarity
+  const lowercase = 'abcdefghijkmnopqrstuvwxyz'; // Excluding l for clarity
+  const numbers = '23456789'; // Excluding 0, 1 for clarity
+  const special = '!@#$%^&*-_=+';
+  const allChars = uppercase + lowercase + numbers + special;
+  
+  // Ensure at least one of each type
+  let password = '';
+  password += uppercase[Math.floor(Math.random() * uppercase.length)];
+  password += lowercase[Math.floor(Math.random() * lowercase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += special[Math.floor(Math.random() * special.length)];
+  
+  // Fill the rest randomly
+  for (let i = password.length; i < length; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+  
+  // Shuffle the password to avoid predictable pattern
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+};
+
 serve(async (req: Request) => {
   // Preflight
   if (req.method === "OPTIONS") {
@@ -406,11 +434,15 @@ serve(async (req: Request) => {
     // Check if owner user already exists, create if not
     // We need to create the user so they can be linked to the tenant
     let ownerUserId: string | null = null;
+    let ownerPassword: string | null = null;
     const ownerEmail: string | undefined = requestData.owner?.email;
     
     if (ownerEmail) {
+      // Generate secure password for new owner
+      ownerPassword = generateSecurePassword();
+      
       // RACE CONDITION FIX: Retry logic with exponential backoff
-      const createUserWithRetry = async (email: string, maxRetries = 3): Promise<string> => {
+      const createUserWithRetry = async (email: string, password: string, maxRetries = 3): Promise<{ userId: string; isNewUser: boolean }> => {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
             // Check if user exists using REST Admin API
@@ -428,7 +460,7 @@ serve(async (req: Request) => {
               const checkData = await checkUserResponse.json();
               if (checkData.users && checkData.users.length > 0) {
                 console.log("Found existing user for tenant owner:", checkData.users[0].id);
-                return checkData.users[0].id;
+                return { userId: checkData.users[0].id, isNewUser: false };
               }
             }
 
@@ -445,7 +477,8 @@ serve(async (req: Request) => {
                 },
                 body: JSON.stringify({
                   email: email,
-                  email_confirm: false, // Disable auto-confirmation email
+                  password: password, // Set the generated password
+                  email_confirm: true, // Auto-confirm so they can log in immediately
                   user_metadata: {
                     role: 'owner',
                     full_name: requestData.basics.name + ' Owner',
@@ -482,7 +515,7 @@ serve(async (req: Request) => {
                   const retryData = await retryCheckResponse.json();
                   if (retryData.users && retryData.users.length > 0) {
                     console.log("Successfully recovered from race condition:", retryData.users[0].id);
-                    return retryData.users[0].id;
+                    return { userId: retryData.users[0].id, isNewUser: false };
                   }
                 }
               }
@@ -503,7 +536,7 @@ serve(async (req: Request) => {
             }
 
             console.log("Created owner user successfully:", newUser.id);
-            return newUser.id;
+            return { userId: newUser.id, isNewUser: true };
             
           } catch (error) {
             if (attempt === maxRetries) {
@@ -519,7 +552,13 @@ serve(async (req: Request) => {
       };
 
       try {
-        ownerUserId = await createUserWithRetry(ownerEmail);
+        const userResult = await createUserWithRetry(ownerEmail, ownerPassword);
+        ownerUserId = userResult.userId;
+        
+        // If user already existed, clear the password since we didn't set it
+        if (!userResult.isNewUser) {
+          ownerPassword = null;
+        }
       } catch (e) {
         console.error("Owner user creation failed after retries:", e);
         return new Response(
@@ -632,6 +671,13 @@ serve(async (req: Request) => {
         Deno.env.get("APP_BASE_URL") ??
         "https://app.blunari.ai",
       message: "Tenant provisioned successfully",
+      // Include owner credentials if a new user was created
+      ownerCredentials: ownerPassword ? {
+        email: ownerEmail,
+        password: ownerPassword,
+        temporaryPassword: true,
+        message: "Save these credentials securely. The password will not be shown again."
+      } : null,
     };
 
     return new Response(
