@@ -254,8 +254,8 @@ BEGIN
       (new_tenant_id, 'Table 4', 4, 'standard', true),
       (new_tenant_id, 'Table 5', 6, 'standard', true),
       (new_tenant_id, 'Table 6', 6, 'standard', true),
-      (new_tenant_id, 'Table 7', 8, 'large', true),
-      (new_tenant_id, 'Table 8', 8, 'large', true);
+      (new_tenant_id, 'Table 7', 8, 'standard', true),
+      (new_tenant_id, 'Table 8', 8, 'standard', true);
 
     -- Create default business hours (Monday-Friday 9-22, Saturday-Sunday 9-23)
     INSERT INTO public.business_hours (tenant_id, day_of_week, is_open, open_time, close_time)

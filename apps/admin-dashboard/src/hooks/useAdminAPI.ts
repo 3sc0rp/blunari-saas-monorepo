@@ -27,22 +27,48 @@ export const useAdminAPI = () => {
         });
 
         if (response.error) {
+          // Extract detailed error information from response
           const data: Record<string, unknown> = response.data as Record<
             string,
             unknown
           >;
           const errObj = data?.error || data;
+          
+          // Get error message with priority: error.message > error code > generic message
           const message =
             (errObj as { message?: string })?.message ||
             response.error.message ||
             "Edge function error";
-          const code = (errObj as { code?: string })?.code
-            ? ` (${(errObj as { code: string }).code})`
-            : "";
-          const details = (errObj as { details?: string })?.details
-            ? ` - ${(errObj as { details: string }).details}`
-            : "";
-          throw new Error(`${message}${code}${details}`);
+          
+          const code = (errObj as { code?: string })?.code || "";
+          const details = (errObj as { details?: unknown })?.details;
+          
+          // Build detailed error message
+          let errorMsg = message;
+          if (code) {
+            errorMsg += ` (${code})`;
+          }
+          if (details) {
+            if (Array.isArray(details)) {
+              // Zod validation errors
+              const detailMsgs = details.map((d: any) => 
+                `${d.path?.join('.') || 'field'}: ${d.message}`
+              ).join(', ');
+              errorMsg += ` - ${detailMsgs}`;
+            } else if (typeof details === 'string') {
+              errorMsg += ` - ${details}`;
+            }
+          }
+          
+          console.error('Edge function error details:', {
+            functionName,
+            code,
+            message,
+            details,
+            fullResponse: data
+          });
+          
+          throw new Error(errorMsg);
         }
 
         return response.data as APIResponse<T>;

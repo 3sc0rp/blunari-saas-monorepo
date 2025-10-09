@@ -29,43 +29,46 @@ export const ProtectedRoute = ({
   })();
 
   useEffect(() => {
-    if (loading || !adminLoaded) return; // wait until admin evaluation completes
+    // Wait for both auth and admin check to complete
+    if (loading || !adminLoaded) return;
+    
     if (!user && !testBypass) {
       navigate("/");
       return;
     }
-    if (user && adminLoaded && !isAdmin && !testBypass) {
-      navigate("/unauthorized", { replace: true });
+    
+    // Only redirect to unauthorized after we're certain user is not admin
+    if (user && !isAdmin && !testBypass) {
+      // Add small delay to prevent flash during state updates
+      const timer = setTimeout(() => {
+        navigate("/unauthorized", { replace: true });
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [user, loading, adminLoaded, navigate, testBypass, isAdmin]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Show loading spinner while checking authentication and admin status
   if (loading || !adminLoaded) {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground">Verifying admin access...</p>
+          <p className="text-muted-foreground">
+            {loading ? "Loading..." : "Verifying admin access..."}
+          </p>
         </div>
       </div>
     );
   }
 
-  if ((!user || (user && !isAdmin && !testBypass))) {
-    return null; // Will redirect to auth
+  // After checks complete, if not authorized, return null (useEffect will handle redirect)
+  if (!user || !isAdmin) {
+    if (testBypass) {
+      // Allow test bypass
+    } else {
+      return null;
+    }
   }
-
-  // For internal staff app - no tenant requirement needed
 
   return <>{children}</>;
 };

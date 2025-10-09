@@ -34,12 +34,7 @@ import { TenantFeaturesTab } from "@/components/admin/TenantFeaturesTab";
 import { TenantBillingTab } from "@/components/tenant/TenantBillingTab";
 import { TenantApiKeysPanel } from "@/components/tenant/TenantApiKeysPanel";
 import { TenantOperationsPanel } from "@/components/tenant/TenantOperationsPanel";
-import { TenantInternalNotesPanel } from "@/components/tenant/TenantInternalNotesPanel";
-import { TenantAuditLogPanel } from "@/components/tenant/TenantAuditLogPanel";
-import { TenantChurnSignalsPanel } from "@/components/tenant/TenantChurnSignalsPanel";
-import { TenantUsageOverview } from "@/components/tenant/TenantUsageOverview";
 import { TenantSecurityExtended } from "@/components/tenant/TenantSecurityExtended";
-import { TenantAdoptionSnapshot } from "@/components/tenant/TenantAdoptionSnapshot";
 import { TenantUserManagement } from "@/components/tenant/TenantUserManagement";
 import { EditableTenantInfo } from "@/components/tenant/EditableTenantInfo";
 import { LoadingState, ErrorState } from "@/components/ui/states";
@@ -665,12 +660,7 @@ export default function TenantDetailPage() {
       <TabsTrigger value="users">Users</TabsTrigger>
       <TabsTrigger value="billing">Billing</TabsTrigger>
       <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="usage">Usage</TabsTrigger>
       <TabsTrigger value="operations">Operations</TabsTrigger>
-      <TabsTrigger value="notes">Notes</TabsTrigger>
-      <TabsTrigger value="audit">Audit</TabsTrigger>
-      <TabsTrigger value="churn">Churn</TabsTrigger>
-      <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="features">
@@ -706,25 +696,6 @@ export default function TenantDetailPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="usage">
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="md:col-span-2 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Usage Overview</CardTitle>
-                  <CardDescription>Bookings, staff, features & trend window</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TenantUsageOverview tenantId={tenant.id} />
-                </CardContent>
-              </Card>
-            </div>
-            <div className="space-y-6">
-              <TenantAdoptionSnapshot tenantId={tenant.id} />
-            </div>
-          </div>
-        </TabsContent>
-
         <TabsContent value="operations">
           <Card>
             <CardHeader>
@@ -733,34 +704,6 @@ export default function TenantDetailPage() {
             </CardHeader>
             <CardContent>
               <TenantOperationsPanel tenantId={tenant.id} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="notes">
-          <TenantInternalNotesPanel tenantId={tenant.id} />
-        </TabsContent>
-
-        <TabsContent value="audit">
-          <TenantAuditLogPanel tenantId={tenant.id} />
-        </TabsContent>
-
-        <TabsContent value="churn">
-          <TenantChurnSignalsPanel tenantId={tenant.id} />
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          <Card>
-            <CardHeader>
-              <CardTitle>Analytics Overview</CardTitle>
-              <CardDescription>
-                Performance metrics and usage statistics
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Analytics dashboard coming soon...
-              </p>
             </CardContent>
           </Card>
         </TabsContent>

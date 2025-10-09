@@ -119,6 +119,12 @@ serve(async (req: Request) => {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
     );
 
     // Verify admin access
@@ -215,6 +221,28 @@ serve(async (req: Request) => {
       }
     }
     
+    // Clean up empty strings to undefined for optional fields
+    const cleanOptional = (value: unknown) => {
+      if (typeof value === 'string' && value.trim() === '') return undefined;
+      return value;
+    };
+    
+    if (requestData.basics) {
+      requestData.basics.description = cleanOptional(requestData.basics.description);
+      requestData.basics.email = cleanOptional(requestData.basics.email);
+      requestData.basics.phone = cleanOptional(requestData.basics.phone);
+      requestData.basics.website = cleanOptional(requestData.basics.website);
+      requestData.basics.cuisineTypeId = cleanOptional(requestData.basics.cuisineTypeId);
+      
+      if (requestData.basics.address) {
+        requestData.basics.address.street = cleanOptional(requestData.basics.address.street);
+        requestData.basics.address.city = cleanOptional(requestData.basics.address.city);
+        requestData.basics.address.state = cleanOptional(requestData.basics.address.state);
+        requestData.basics.address.zipCode = cleanOptional(requestData.basics.address.zipCode);
+        requestData.basics.address.country = cleanOptional(requestData.basics.address.country);
+      }
+    }
+    
     // Validate minimally to avoid shape mismatches
     const Schema = z.object({
       basics: z.object({
@@ -240,6 +268,29 @@ serve(async (req: Request) => {
       owner: z
         .object({
           email: z.string().email(),
+        })
+        .optional(),
+      access: z
+        .object({
+          mode: z.string(),
+        })
+        .optional(),
+      seed: z
+        .object({
+          seatingPreset: z.string(),
+          enablePacing: z.boolean(),
+          enableDepositPolicy: z.boolean(),
+        })
+        .optional(),
+      billing: z
+        .object({
+          createSubscription: z.boolean(),
+          plan: z.string(),
+        })
+        .optional(),
+      sms: z
+        .object({
+          startRegistration: z.boolean(),
         })
         .optional(),
       idempotencyKey: z.string().uuid().optional(),
@@ -362,26 +413,50 @@ serve(async (req: Request) => {
       const createUserWithRetry = async (email: string, maxRetries = 3): Promise<string> => {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
-            // Check if user exists
-            const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email);
-            if (existingUser?.user) {
-              console.log("Found existing user for tenant owner:", existingUser.user.id);
-              return existingUser.user.id;
+            // Check if user exists using REST Admin API
+            const checkUserResponse = await fetch(
+              `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
+              {
+                headers: {
+                  "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                  "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+                }
+              }
+            );
+            
+            if (checkUserResponse.ok) {
+              const checkData = await checkUserResponse.json();
+              if (checkData.users && checkData.users.length > 0) {
+                console.log("Found existing user for tenant owner:", checkData.users[0].id);
+                return checkData.users[0].id;
+              }
             }
 
-            // Try to create user
+            // Try to create user using REST Admin API
             console.log(`Creating new owner user account (attempt ${attempt}):`, email);
-            const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
-              email: email,
-              email_confirm: false, // Disable auto-confirmation email
-              user_metadata: {
-                role: 'owner',
-                full_name: requestData.basics.name + ' Owner',
-                provisioned_at: new Date().toISOString(),
-              },
-            });
+            const createUserResponse = await fetch(
+              `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/users`,
+              {
+                method: "POST",
+                headers: {
+                  "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                  "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  email: email,
+                  email_confirm: false, // Disable auto-confirmation email
+                  user_metadata: {
+                    role: 'owner',
+                    full_name: requestData.basics.name + ' Owner',
+                    provisioned_at: new Date().toISOString(),
+                  },
+                }),
+              }
+            );
 
-            if (createUserError) {
+            if (!createUserResponse.ok) {
+              const createUserError = await createUserResponse.json();
               // Check if error is due to duplicate (race condition)
               if (createUserError.message && 
                   (createUserError.message.includes('duplicate') || 
@@ -393,11 +468,22 @@ serve(async (req: Request) => {
                 // Wait a bit for the other request to complete
                 await new Promise(resolve => setTimeout(resolve, 100 * attempt));
                 
-                // Fetch the user that was just created by another request
-                const { data: raceUser } = await supabase.auth.admin.getUserByEmail(email);
-                if (raceUser?.user) {
-                  console.log("Successfully recovered from race condition:", raceUser.user.id);
-                  return raceUser.user.id;
+                // Fetch the user that was just created by another request via REST API
+                const retryCheckResponse = await fetch(
+                  `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
+                  {
+                    headers: {
+                      "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                      "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+                    }
+                  }
+                );
+                if (retryCheckResponse.ok) {
+                  const retryData = await retryCheckResponse.json();
+                  if (retryData.users && retryData.users.length > 0) {
+                    console.log("Successfully recovered from race condition:", retryData.users[0].id);
+                    return retryData.users[0].id;
+                  }
                 }
               }
               
@@ -408,15 +494,16 @@ serve(async (req: Request) => {
                 continue;
               }
               
-              throw new Error(`Failed to create owner user: ${createUserError.message}`);
+              throw new Error(`Failed to create owner user: ${createUserError.message || 'Unknown error'}`);
             }
 
-            if (!newUser?.user) {
+            const newUser = await createUserResponse.json();
+            if (!newUser?.id) {
               throw new Error("Failed to create owner user: No user returned");
             }
 
-            console.log("Created owner user successfully:", newUser.user.id);
-            return newUser.user.id;
+            console.log("Created owner user successfully:", newUser.id);
+            return newUser.id;
             
           } catch (error) {
             if (attempt === maxRetries) {
@@ -470,26 +557,26 @@ serve(async (req: Request) => {
       );
     }
 
-    // Call the provision_tenant database function using owner user
-    // NOTE: There are multiple overloaded versions in the DB; pass full argument list to disambiguate
-    // IMPORTANT: Use owner email for tenant.email field, not business email
-    // This ensures tenant.email always points to the login credential
-    const { data: tenantId, error: provisionError } = await supabase.rpc(
+    // Call the provision_tenant database function using the new signature
+    // New signature: provision_tenant(p_tenant_data jsonb, p_owner_email text, p_owner_user_id uuid)
+    const { data: provisionResult, error: provisionError } = await supabase.rpc(
       "provision_tenant",
       {
-        p_user_id: ownerUserId, // Now guaranteed to be the owner's user ID
-        p_restaurant_name: requestData.basics.name,
-        p_restaurant_slug: requestData.basics.slug,
-        p_timezone: requestData.basics.timezone,
-        p_currency: requestData.basics.currency,
-        p_description: requestData.basics.description ?? null,
-        p_phone: requestData.basics.phone ?? null,
-        p_email: ownerEmail ?? requestData.basics.email ?? null, // Use owner email as primary
-        p_website: requestData.basics.website ?? null,
-        p_address: requestData.basics.address
-          ? JSON.stringify(requestData.basics.address)
-          : null,
-        p_cuisine_type_id: requestData.basics.cuisineTypeId ?? null,
+        p_tenant_data: {
+          slug: requestData.basics.slug,
+          name: requestData.basics.name,
+          address: requestData.basics.address?.street ?? null,
+          city: requestData.basics.address?.city ?? null,
+          state: requestData.basics.address?.state ?? null,
+          country: requestData.basics.address?.country ?? null,
+          postal_code: requestData.basics.address?.postalCode ?? null,
+          plan_tier: 'premium',
+          plan_status: 'trialing',
+          billing_cycle: 'monthly',
+          owner_name: requestData.owner?.name ?? 'Owner',
+        },
+        p_owner_email: ownerEmail,
+        p_owner_user_id: ownerUserId,
       },
     );
 
@@ -503,6 +590,27 @@ serve(async (req: Request) => {
           error: {
             code: "DB_ERROR",
             message: `Provisioning failed: ${msg}`,
+            requestId,
+          },
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Extract tenant_id from the result
+    // The function returns: { success: true, tenant_id: uuid, tenant_slug: text, tenant_name: text, owner_employee_id: uuid }
+    const tenantId = provisionResult?.tenant_id;
+    
+    if (!tenantId) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            code: "DB_ERROR",
+            message: "Provisioning failed: No tenant ID returned",
             requestId,
           },
         }),
