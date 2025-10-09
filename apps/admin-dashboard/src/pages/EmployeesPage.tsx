@@ -95,36 +95,43 @@ export const EmployeesPage = () => {
 
   const fetchEmployees = async () => {
     try {
-      // Use the employees_with_profiles view for simplified querying
+      // Query employees with their profiles and departments
       const { data, error } = await supabase
-        .from("employees_with_profiles")
-        .select("*")
+        .from("employees")
+        .select(`
+          id,
+          employee_id,
+          role,
+          status,
+          hire_date,
+          last_login,
+          last_activity,
+          user_id,
+          department_id,
+          permissions,
+          created_at,
+          profiles:user_id (
+            first_name,
+            last_name,
+            email,
+            avatar_url
+          ),
+          departments:department_id (
+            name
+          )
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      // Transform to match Employee interface
-      const enrichedEmployees = (data || []).map((emp: any) => ({
-        id: emp.id,
-        employee_id: emp.employee_id,
-        role: emp.role,
-        status: emp.status,
-        hire_date: emp.hire_date,
-        last_login: emp.last_login,
-        last_activity: emp.last_activity,
-        user_id: emp.user_id,
-        department_id: emp.department_id,
-        permissions: emp.permissions,
-        profiles: {
-          first_name: emp.first_name,
-          last_name: emp.last_name,
-          email: emp.email,
-          avatar_url: emp.avatar_url,
-        },
-        departments: emp.department_name ? { name: emp.department_name } : null,
+      // Transform the data to match our Employee interface
+      const transformedData = (data || []).map((emp: any) => ({
+        ...emp,
+        profiles: Array.isArray(emp.profiles) ? emp.profiles[0] : emp.profiles,
+        departments: Array.isArray(emp.departments) ? emp.departments[0] : emp.departments,
       }));
 
-      setEmployees(enrichedEmployees as Employee[]);
+      setEmployees(transformedData as Employee[]);
     } catch (error) {
       logger.error("Error fetching employees", {
         component: "EmployeesPage",
