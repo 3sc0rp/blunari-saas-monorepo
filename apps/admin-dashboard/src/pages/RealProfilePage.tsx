@@ -145,12 +145,34 @@ export default function RealProfilePage() {
     }
   };
 
+  // Validate email format
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
   // Save profile changes
   const handleSave = async () => {
     if (!user?.id || !profile) return;
 
     try {
       setSaving(true);
+
+      // Validate required fields
+      if (!editedProfile.first_name?.trim()) {
+        throw new Error("First name is required");
+      }
+      if (!editedProfile.last_name?.trim()) {
+        throw new Error("Last name is required");
+      }
+      if (!editedProfile.email?.trim()) {
+        throw new Error("Email is required");
+      }
+
+      // Validate email format
+      if (!validateEmail(editedProfile.email)) {
+        throw new Error("Please enter a valid email address");
+      }
 
       // Upload avatar if changed
       let avatarUrl = editedProfile.avatar_url;
@@ -166,14 +188,19 @@ export default function RealProfilePage() {
 
       // If email changed, update auth.users first
       if (emailChanged && editedProfile.email) {
+        console.log(`Email change detected: ${profile.email} → ${editedProfile.email}`);
+        
         const { error: authError } = await supabase.auth.updateUser({
           email: editedProfile.email,
         });
 
         if (authError) {
+          console.error("Email update failed:", authError);
           throw new Error(`Failed to update email: ${authError.message}`);
         }
 
+        console.log("Email update request sent successfully. Verification emails sent.");
+        
         toast({
           title: "Email Verification Required",
           description: "Please check both your old and new email for verification links",
