@@ -30,7 +30,7 @@ const ObservabilityPage = lazy(() => import("@/pages/ObservabilityPage"));
 const SystemHealthPage = lazy(() => import("@/pages/SystemHealthPage"));
 const ImpersonationPage = lazy(() => import("@/pages/ImpersonationPage"));
 const AgencyKitPage = lazy(() => import("@/pages/AgencyKitPage"));
-const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
+const ProfilePage = lazy(() => import("@/pages/RealProfilePage"));
 const NotificationsPage = lazy(() => import("@/pages/NotificationsPage").then(m => ({ default: m.NotificationsPage })));
 const AnalyticsPage = lazy(() => import("@/pages/AnalyticsPage").then(m => ({ default: m.AnalyticsPage })));
 const SupportPage = lazy(() => import("@/pages/SupportPage").then(m => ({ default: m.SupportPage })));

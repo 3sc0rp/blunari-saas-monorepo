@@ -37,18 +37,24 @@ FROM auth.users au
 LEFT JOIN employees e ON au.id = e.user_id
 WHERE au.email = 'admin@blunari.ai';
 
--- Check if this user has a profile (shouldn't need one for admin)
+-- Check if this user has a profile (admin users CAN have profiles for display data)
 SELECT 
   '' as separator;
 
 SELECT 
-  '=== CHECKING PROFILE (should not exist for admin) ===' as info;
+  '=== CHECKING PROFILE (for display name/avatar) ===' as info;
 
 SELECT 
   p.user_id,
   p.email,
+  p.first_name,
+  p.last_name,
+  p.avatar_url,
   p.role,
-  '⚠️ Admin should not have profile' as note
+  CASE 
+    WHEN p.user_id IS NOT NULL THEN '✅ Has profile for display data'
+    ELSE '⚠️ No profile - will create one'
+  END as note
 FROM auth.users au
 LEFT JOIN profiles p ON au.id = p.user_id
 WHERE au.email = 'admin@blunari.ai';
@@ -85,6 +91,41 @@ DO UPDATE SET
 
 SELECT '✅ Employee record created for admin@blunari.ai!' as status;
 
+-- Create or update profile record for display data (names, avatar, etc.)
+SELECT 
+  '' as separator;
+
+SELECT 
+  '=== CREATING PROFILE FOR DISPLAY DATA ===' as info;
+
+INSERT INTO profiles (
+  user_id,
+  email,
+  first_name,
+  last_name,
+  role,
+  created_at,
+  updated_at
+)
+SELECT 
+  au.id,
+  au.email,
+  'Admin',  -- You can change this to your real first name via Profile Settings
+  'User',   -- You can change this to your real last name via Profile Settings
+  'owner',  -- Profile role (for display purposes)
+  NOW(),
+  NOW()
+FROM auth.users au
+WHERE au.email = 'admin@blunari.ai'
+ON CONFLICT (user_id) 
+DO UPDATE SET
+  email = EXCLUDED.email,
+  first_name = COALESCE(profiles.first_name, EXCLUDED.first_name),
+  last_name = COALESCE(profiles.last_name, EXCLUDED.last_name),
+  updated_at = NOW();
+
+SELECT '✅ Profile record created/updated for admin@blunari.ai!' as status;
+
 -- Also fix the auto_provisioning records to use YOUR admin user
 SELECT 
   '' as separator;
@@ -116,6 +157,22 @@ SELECT
   au.id as user_id
 FROM auth.users au
 INNER JOIN employees e ON au.id = e.user_id
+WHERE au.email = 'admin@blunari.ai';
+
+-- Show your profile data
+SELECT 
+  '' as separator;
+
+SELECT 
+  'Your Profile Data (for display/editing)' as section,
+  p.user_id,
+  p.email,
+  p.first_name,
+  p.last_name,
+  p.avatar_url,
+  '✅ You can edit this via Profile Settings' as note
+FROM auth.users au
+INNER JOIN profiles p ON au.id = p.user_id
 WHERE au.email = 'admin@blunari.ai';
 
 -- Show all auto_provisioning records
