@@ -95,40 +95,48 @@ export const EmployeesPage = () => {
 
   const fetchEmployees = async () => {
     try {
-      // Query employees with their profiles and departments
-      const { data, error } = await supabase
+      // Query employees first
+      const { data: employeesData, error: employeesError } = await supabase
         .from("employees")
-        .select(`
-          id,
-          employee_id,
-          role,
-          status,
-          hire_date,
-          last_login,
-          last_activity,
-          user_id,
-          department_id,
-          permissions,
-          created_at,
-          profiles:user_id (
-            first_name,
-            last_name,
-            email,
-            avatar_url
-          ),
-          departments:department_id (
-            name
-          )
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (employeesError) throw employeesError;
 
-      // Transform the data to match our Employee interface
-      const transformedData = (data || []).map((emp: any) => ({
+      if (!employeesData || employeesData.length === 0) {
+        setEmployees([]);
+        return;
+      }
+
+      // Get all unique user_ids and department_ids
+      const userIds = [...new Set(employeesData.map(e => e.user_id).filter(Boolean))];
+      const deptIds = [...new Set(employeesData.map(e => e.department_id).filter(Boolean))];
+
+      // Fetch profiles for all users
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, email, avatar_url")
+        .in("user_id", userIds);
+
+      // Fetch departments
+      const { data: deptsData } = await supabase
+        .from("departments")
+        .select("id, name")
+        .in("id", deptIds);
+
+      // Create lookup maps
+      const profilesMap = new Map(
+        (profilesData || []).map(p => [p.user_id, p])
+      );
+      const deptsMap = new Map(
+        (deptsData || []).map(d => [d.id, d])
+      );
+
+      // Combine the data
+      const transformedData = employeesData.map((emp: any) => ({
         ...emp,
-        profiles: Array.isArray(emp.profiles) ? emp.profiles[0] : emp.profiles,
-        departments: Array.isArray(emp.departments) ? emp.departments[0] : emp.departments,
+        profiles: emp.user_id ? profilesMap.get(emp.user_id) : null,
+        departments: emp.department_id ? deptsMap.get(emp.department_id) : null,
       }));
 
       setEmployees(transformedData as Employee[]);

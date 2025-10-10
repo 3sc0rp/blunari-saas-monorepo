@@ -1,0 +1,145 @@
+-- =============================================================================
+-- FIND AND FIX YOUR ACTUAL ADMIN USER
+-- =============================================================================
+-- You have admin@blunari.ai - let's find it and create proper records
+-- =============================================================================
+
+SELECT 
+  '=== FINDING YOUR ADMIN USER ===' as info;
+
+-- Find the admin@blunari.ai user
+SELECT 
+  id as user_id,
+  email,
+  created_at,
+  '✅ This is YOUR admin login' as note
+FROM auth.users
+WHERE email = 'admin@blunari.ai';
+
+-- Check if this user has an employee record
+SELECT 
+  '' as separator;
+
+SELECT 
+  '=== CHECKING EMPLOYEE RECORD ===' as info;
+
+SELECT 
+  e.employee_id,
+  e.user_id,
+  e.email,
+  e.role,
+  e.status,
+  CASE 
+    WHEN e.user_id IS NOT NULL THEN '✅ Has employee record'
+    ELSE '❌ Missing employee record'
+  END as status_note
+FROM auth.users au
+LEFT JOIN employees e ON au.id = e.user_id
+WHERE au.email = 'admin@blunari.ai';
+
+-- Check if this user has a profile (shouldn't need one for admin)
+SELECT 
+  '' as separator;
+
+SELECT 
+  '=== CHECKING PROFILE (should not exist for admin) ===' as info;
+
+SELECT 
+  p.user_id,
+  p.email,
+  p.role,
+  '⚠️ Admin should not have profile' as note
+FROM auth.users au
+LEFT JOIN profiles p ON au.id = p.user_id
+WHERE au.email = 'admin@blunari.ai';
+
+-- Create employee record for your admin user
+SELECT 
+  '' as separator;
+
+SELECT 
+  '=== CREATING EMPLOYEE RECORD FOR admin@blunari.ai ===' as info;
+
+INSERT INTO employees (
+  user_id,
+  employee_id,
+  role,
+  status,
+  email,
+  created_at
+)
+SELECT 
+  au.id,
+  'EMP-ADMIN-001',
+  'SUPER_ADMIN',
+  'ACTIVE',
+  au.email,
+  NOW()
+FROM auth.users au
+WHERE au.email = 'admin@blunari.ai'
+ON CONFLICT (user_id) 
+DO UPDATE SET
+  role = 'SUPER_ADMIN',
+  status = 'ACTIVE',
+  email = EXCLUDED.email;
+
+SELECT '✅ Employee record created for admin@blunari.ai!' as status;
+
+-- Also fix the auto_provisioning records to use YOUR admin user
+SELECT 
+  '' as separator;
+
+SELECT 
+  '=== UPDATING AUTO_PROVISIONING TO USE YOUR ADMIN ===' as info;
+
+UPDATE auto_provisioning
+SET user_id = (SELECT id FROM auth.users WHERE email = 'admin@blunari.ai')
+WHERE user_id != (SELECT id FROM auth.users WHERE email = 'admin@blunari.ai')
+OR user_id IS NULL;
+
+SELECT '✅ Auto_provisioning records updated to use admin@blunari.ai!' as status;
+
+-- Verification
+SELECT 
+  '' as separator;
+
+SELECT 
+  '=== FINAL VERIFICATION ===' as info;
+
+-- Show your admin employee record
+SELECT 
+  'Your Admin Employee Record' as section,
+  e.employee_id,
+  e.email,
+  e.role,
+  e.status,
+  au.id as user_id
+FROM auth.users au
+INNER JOIN employees e ON au.id = e.user_id
+WHERE au.email = 'admin@blunari.ai';
+
+-- Show all auto_provisioning records
+SELECT 
+  '' as separator;
+
+SELECT 
+  'Auto_Provisioning Records' as section,
+  ap.restaurant_name,
+  ap.restaurant_slug,
+  ap.user_id,
+  au.email as provisioner_email,
+  '✅ Provisioned by your admin' as note
+FROM auto_provisioning ap
+INNER JOIN auth.users au ON ap.user_id = au.id;
+
+SELECT 
+  '' as separator;
+
+SELECT 
+  '✅ Done! Everything is now linked to admin@blunari.ai' as final_message;
+
+SELECT 
+  '' as separator;
+
+SELECT 
+  '🎯 Now you can log in with admin@blunari.ai / admin123 and manage tenant credentials!' as next_step;
