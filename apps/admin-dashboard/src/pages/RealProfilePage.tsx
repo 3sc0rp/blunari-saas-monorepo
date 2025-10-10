@@ -161,10 +161,31 @@ export default function RealProfilePage() {
         }
       }
 
+      // Check if email changed
+      const emailChanged = editedProfile.email !== profile.email;
+
+      // If email changed, update auth.users first
+      if (emailChanged && editedProfile.email) {
+        const { error: authError } = await supabase.auth.updateUser({
+          email: editedProfile.email,
+        });
+
+        if (authError) {
+          throw new Error(`Failed to update email: ${authError.message}`);
+        }
+
+        toast({
+          title: "Email Verification Required",
+          description: "Please check both your old and new email for verification links",
+          variant: "default",
+        });
+      }
+
       // Update profile in database
       const { error } = await supabase
         .from("profiles")
         .update({
+          email: editedProfile.email,
           first_name: editedProfile.first_name,
           last_name: editedProfile.last_name,
           phone: editedProfile.phone,
@@ -174,6 +195,20 @@ export default function RealProfilePage() {
         .eq("user_id", user.id);
 
       if (error) throw error;
+
+      // If email changed, also update employees table
+      if (emailChanged && editedProfile.email && employee) {
+        const { error: empError } = await supabase
+          .from("employees")
+          .update({
+            email: editedProfile.email,
+          })
+          .eq("user_id", user.id);
+
+        if (empError) {
+          console.warn("Failed to update employee email:", empError);
+        }
+      }
 
       // Update local state
       setProfile({
@@ -187,7 +222,9 @@ export default function RealProfilePage() {
 
       toast({
         title: "Success",
-        description: "Profile updated successfully",
+        description: emailChanged 
+          ? "Profile updated! Check your email to verify the new address."
+          : "Profile updated successfully",
       });
 
       // Trigger a page reload to refresh header data
@@ -384,19 +421,23 @@ export default function RealProfilePage() {
                 />
               </div>
 
-              {/* Email (Read-only) */}
+              {/* Email (Editable with verification) */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-slate-200">
-                  Email
+                  Email Address
                 </Label>
                 <Input
                   id="email"
-                  value={profile.email}
-                  disabled
-                  className="bg-slate-900/50 border-slate-700 text-slate-400"
+                  type="email"
+                  value={editedProfile.email || ""}
+                  onChange={(e) =>
+                    setEditedProfile({ ...editedProfile, email: e.target.value })
+                  }
+                  placeholder="Enter your email"
+                  className="bg-slate-900/50 border-slate-700 text-slate-100"
                 />
                 <p className="text-xs text-slate-500">
-                  Email cannot be changed
+                  ⚠️ Changing your email requires verification. You'll receive emails at both old and new addresses.
                 </p>
               </div>
 
