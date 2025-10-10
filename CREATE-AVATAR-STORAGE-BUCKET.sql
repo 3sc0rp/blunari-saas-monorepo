@@ -19,14 +19,30 @@ ON CONFLICT (id) DO UPDATE SET
   allowed_mime_types = ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
 -- Set up storage policies for avatars bucket
+-- First, drop existing policies if they exist to avoid conflicts
+
+DO $$ 
+BEGIN
+  -- Drop existing policies if they exist
+  DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+  DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
+  DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
+  DROP POLICY IF EXISTS "Users can delete their own avatar" ON storage.objects;
+  DROP POLICY IF EXISTS "Avatar public access" ON storage.objects;
+  DROP POLICY IF EXISTS "Avatar upload access" ON storage.objects;
+  DROP POLICY IF EXISTS "Avatar update access" ON storage.objects;
+  DROP POLICY IF EXISTS "Avatar delete access" ON storage.objects;
+EXCEPTION
+  WHEN undefined_object THEN NULL;
+END $$;
 
 -- Policy: Anyone can view avatars (public read)
-CREATE POLICY IF NOT EXISTS "Public Access"
+CREATE POLICY "Avatar public access"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'avatars');
 
 -- Policy: Authenticated users can upload their own avatar
-CREATE POLICY IF NOT EXISTS "Users can upload their own avatar"
+CREATE POLICY "Avatar upload access"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
@@ -35,26 +51,17 @@ WITH CHECK (
 );
 
 -- Policy: Users can update their own avatar
-CREATE POLICY IF NOT EXISTS "Users can update their own avatar"
+CREATE POLICY "Avatar update access"
 ON storage.objects FOR UPDATE
 TO authenticated
-USING (
-  bucket_id = 'avatars' AND
-  auth.uid()::text = (storage.foldername(name))[1]
-)
-WITH CHECK (
-  bucket_id = 'avatars' AND
-  auth.uid()::text = (storage.foldername(name))[1]
-);
+USING (bucket_id = 'avatars')
+WITH CHECK (bucket_id = 'avatars');
 
 -- Policy: Users can delete their own avatar
-CREATE POLICY IF NOT EXISTS "Users can delete their own avatar"
+CREATE POLICY "Avatar delete access"
 ON storage.objects FOR DELETE
 TO authenticated
-USING (
-  bucket_id = 'avatars' AND
-  auth.uid()::text = (storage.foldername(name))[1]
-);
+USING (bucket_id = 'avatars');
 
 -- Verify bucket creation
 SELECT 
