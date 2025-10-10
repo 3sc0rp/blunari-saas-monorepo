@@ -79,9 +79,15 @@ export function AdminHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme } = useTheme();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, adminRole, isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [employeeData, setEmployeeData] = useState<{
+    firstName?: string;
+    lastName?: string;
+    role?: string;
+    avatarUrl?: string;
+  } | null>(null);
   const {
     notifications,
     getTimeAgo,
@@ -89,7 +95,51 @@ export function AdminHeader() {
     getNotificationColor,
   } = useNotifications();
 
-  // (removed system status; keep header lean)
+  // Fetch employee data for admin users
+  useEffect(() => {
+    if (user?.id && isAdmin) {
+      const fetchEmployeeData = async () => {
+        try {
+          const { supabase } = await import("@/integrations/supabase/client");
+          
+          // Fetch employee record with linked profile data
+          const { data: employee, error: empError } = await supabase
+            .from("employees")
+            .select("role, user_id")
+            .eq("user_id", user.id)
+            .eq("status", "ACTIVE")
+            .maybeSingle();
+
+          if (empError) {
+            console.warn("Employee fetch warning:", empError);
+            return;
+          }
+
+          // Get profile data for names and avatar
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("first_name, last_name, avatar_url")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (profileError) {
+            console.warn("Profile fetch warning:", profileError);
+          }
+
+          setEmployeeData({
+            firstName: profileData?.first_name,
+            lastName: profileData?.last_name,
+            role: employee?.role || adminRole || "ADMIN",
+            avatarUrl: profileData?.avatar_url,
+          });
+        } catch (err) {
+          console.error("Error fetching employee data:", err);
+        }
+      };
+
+      fetchEmployeeData();
+    }
+  }, [user?.id, isAdmin, adminRole]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -116,15 +166,42 @@ export function AdminHeader() {
     })
     .slice(0, 5); // Show only latest 5
 
-  const initials =
-    profile?.first_name && profile?.last_name
-      ? `${profile.first_name[0]}${profile.last_name[0]}`
-      : user?.email?.[0]?.toUpperCase() || "A";
+  // Use employee data if available, fallback to profile or email
+  const initials = employeeData?.firstName && employeeData?.lastName
+    ? `${employeeData.firstName[0]}${employeeData.lastName[0]}`
+    : profile?.first_name && profile?.last_name
+    ? `${profile.first_name[0]}${profile.last_name[0]}`
+    : user?.email?.[0]?.toUpperCase() || "A";
 
-  const displayName =
-    profile?.first_name && profile?.last_name
-      ? `${profile.first_name} ${profile.last_name}`
-      : user?.email?.split("@")[0] || "Admin";
+  const displayName = employeeData?.firstName && employeeData?.lastName
+    ? `${employeeData.firstName} ${employeeData.lastName}`
+    : profile?.first_name && profile?.last_name
+    ? `${profile.first_name} ${profile.last_name}`
+    : user?.email?.split("@")[0] || "Admin User";
+
+  const userRole = employeeData?.role || adminRole || "ADMIN";
+  
+  // Role display configuration
+  const roleConfig = {
+    SUPER_ADMIN: { 
+      label: "Super Admin", 
+      color: "from-red-500/10 to-orange-500/10 text-red-400 border-red-500/20",
+      icon: Shield 
+    },
+    ADMIN: { 
+      label: "Admin", 
+      color: "from-blue-500/10 to-purple-500/10 text-blue-400 border-blue-500/20",
+      icon: Shield 
+    },
+    SUPPORT: { 
+      label: "Support", 
+      color: "from-green-500/10 to-emerald-500/10 text-green-400 border-green-500/20",
+      icon: HelpCircle 
+    },
+  };
+
+  const currentRoleConfig = roleConfig[userRole as keyof typeof roleConfig] || roleConfig.ADMIN;
+  const RoleIcon = currentRoleConfig.icon;
 
   const handleSearchKeyPress = useCallback(
     (e: React.KeyboardEvent) => {
@@ -512,7 +589,7 @@ export function AdminHeader() {
                   className="h-9 w-9 rounded-full p-0 text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 ring-2 ring-transparent hover:ring-blue-500/20"
                 >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={profile?.avatar_url} />
+                    <AvatarImage src={employeeData?.avatarUrl || profile?.avatar_url} />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-medium">
                       {initials}
                     </AvatarFallback>
@@ -521,45 +598,50 @@ export function AdminHeader() {
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-64 bg-slate-800/95 backdrop-blur-sm border-slate-700 shadow-2xl"
+                className="w-72 bg-slate-800/95 backdrop-blur-sm border-slate-700 shadow-2xl"
                 sideOffset={8}
               >
                 <DropdownMenuLabel className="p-4 border-b border-slate-700">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={profile?.avatar_url} />
-                      <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="h-12 w-12 ring-2 ring-slate-700">
+                        <AvatarImage src={employeeData?.avatarUrl || profile?.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-base font-semibold">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div
+                        className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 ring-2 ring-slate-800 animate-pulse"
+                        title="Online"
+                      />
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-200 truncate">
+                      <p className="text-sm font-semibold text-slate-100 truncate">
                         {displayName}
                       </p>
-                      <p className="text-xs text-slate-400 truncate">
+                      <p className="text-xs text-slate-400 truncate mt-0.5">
                         {user?.email}
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1.5">
                         <Badge
                           variant="secondary"
-                          className="text-xs bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-400 border-blue-500/20"
+                          className={cn(
+                            "text-xs font-medium bg-gradient-to-r",
+                            currentRoleConfig.color
+                          )}
                         >
-                          <Shield className="h-3 w-3 mr-1" />
-                          Admin
+                          <RoleIcon className="h-3 w-3 mr-1" />
+                          {currentRoleConfig.label}
                         </Badge>
-                        <div
-                          className="h-2 w-2 rounded-full bg-green-400 animate-pulse"
-                          title="Online"
-                        />
                       </div>
                     </div>
                   </div>
                 </DropdownMenuLabel>
 
-                <DropdownMenuGroup>
+                <DropdownMenuGroup className="py-1">
                   <DropdownMenuItem
                     onClick={() => navigate("/admin/profile")}
-                    className="cursor-pointer hover:bg-slate-700/70 text-slate-200 focus:bg-slate-700/70 focus:text-white"
+                    className="cursor-pointer hover:bg-slate-700/70 text-slate-200 focus:bg-slate-700/70 focus:text-white px-3 py-2"
                   >
                     <User className="mr-3 h-4 w-4 text-blue-400" />
                     Profile Settings
@@ -569,12 +651,18 @@ export function AdminHeader() {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => navigate("/admin/settings")}
-                    className="cursor-pointer hover:bg-slate-700/70 text-slate-200 focus:bg-slate-700/70 focus:text-white"
+                    className="cursor-pointer hover:bg-slate-700/70 text-slate-200 focus:bg-slate-700/70 focus:text-white px-3 py-2"
                   >
                     <Settings className="mr-3 h-4 w-4 text-slate-400" />
                     Account Settings
+                    <DropdownMenuShortcut className="text-slate-500">
+                      ⌘,
+                    </DropdownMenuShortcut>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer hover:bg-slate-700/70 text-slate-200 focus:bg-slate-700/70 focus:text-white">
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/admin/billing")}
+                    className="cursor-pointer hover:bg-slate-700/70 text-slate-200 focus:bg-slate-700/70 focus:text-white px-3 py-2"
+                  >
                     <CreditCard className="mr-3 h-4 w-4 text-green-400" />
                     Billing
                   </DropdownMenuItem>
@@ -582,22 +670,43 @@ export function AdminHeader() {
 
                 <DropdownMenuSeparator className="bg-slate-700" />
 
-                <DropdownMenuGroup>
-                  <DropdownMenuItem className="cursor-pointer hover:bg-slate-700/70 text-slate-200 focus:bg-slate-700/70 focus:text-white">
+                <DropdownMenuGroup className="py-1">
+                  <DropdownMenuItem 
+                    onClick={() => navigate("/admin/notifications")}
+                    className="cursor-pointer hover:bg-slate-700/70 text-slate-200 focus:bg-slate-700/70 focus:text-white px-3 py-2"
+                  >
                     <Activity className="mr-3 h-4 w-4 text-purple-400" />
                     Activity Log
+                    {unreadNotifications.length > 0 && (
+                      <Badge 
+                        variant="secondary" 
+                        className="ml-auto h-5 w-5 flex items-center justify-center rounded-full bg-purple-500/20 text-purple-400 text-xs font-semibold p-0"
+                      >
+                        {unreadNotifications.length}
+                      </Badge>
+                    )}
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer hover:bg-slate-700/70 text-slate-200 focus:bg-slate-700/70 focus:text-white">
-                    <Zap className="mr-3 h-4 w-4 text-yellow-400" />
-                    System Status
-                  </DropdownMenuItem>
+                  
+                  {/* Only show System Status for SUPER_ADMIN */}
+                  {userRole === "SUPER_ADMIN" && (
+                    <DropdownMenuItem 
+                      onClick={() => navigate("/admin/system-status")}
+                      className="cursor-pointer hover:bg-slate-700/70 text-slate-200 focus:bg-slate-700/70 focus:text-white px-3 py-2"
+                    >
+                      <Zap className="mr-3 h-4 w-4 text-yellow-400" />
+                      System Status
+                      <DropdownMenuShortcut className="text-slate-500">
+                        ⌘S
+                      </DropdownMenuShortcut>
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuGroup>
 
                 <DropdownMenuSeparator className="bg-slate-700" />
 
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="cursor-pointer hover:bg-red-500/10 text-slate-200 hover:text-red-400 focus:bg-red-500/10 focus:text-red-400 transition-colors"
+                  className="cursor-pointer hover:bg-red-500/10 text-slate-200 hover:text-red-400 focus:bg-red-500/10 focus:text-red-400 transition-colors px-3 py-2 mx-1 mb-1 rounded-md"
                 >
                   <LogOut className="mr-3 h-4 w-4" />
                   Sign Out
