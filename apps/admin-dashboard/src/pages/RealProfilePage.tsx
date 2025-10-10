@@ -293,138 +293,174 @@ export default function RealProfilePage() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-6">
-          <div className="relative group">
-            <Avatar className="h-24 w-24 ring-4 ring-slate-700">
-              <AvatarImage 
-                src={avatarPreview || profile.avatar_url || undefined} 
-                alt={`${profile.first_name} ${profile.last_name}`}
-              />
-              <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <label 
-              htmlFor="avatar-upload"
-              className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            >
-              <Upload className="h-6 w-6 text-white" />
-            </label>
-            <input
-              id="avatar-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarChange}
-            />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-100">
-              {profile.first_name} {profile.last_name}
-            </h1>
-            <p className="text-slate-400 mt-1">{user?.email}</p>
-            <div className="flex items-center gap-2 mt-3">
-              <Badge className={`${roleInfo.color} text-white border-0`}>
-                <Shield className="h-3 w-3 mr-1" />
-                {roleInfo.label}
-              </Badge>
-              {employee && (
-                <Badge variant="outline" className="text-slate-300 border-slate-600">
-                  {employee.employee_id}
-                </Badge>
-              )}
-              <Badge className="bg-green-500/10 text-green-400 border-green-500/20">
-                Active
-              </Badge>
-            </div>
-          </div>
-        </div>
+    <div className="flex-1 space-y-6 p-4 md:p-8 max-w-7xl mx-auto">
+      {/* Header Section */}
+      <div className="relative">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5 rounded-2xl" />
+        
+        <Card className="relative bg-slate-800/80 backdrop-blur-sm border-slate-700 shadow-2xl">
+          <CardContent className="p-6 md:p-8">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+              {/* Avatar and Info */}
+              <div className="flex items-start gap-6">
+                {/* Avatar with Upload */}
+                <div className="relative group shrink-0">
+                  <Avatar className="h-28 w-28 ring-4 ring-slate-700/50 shadow-xl">
+                    <AvatarImage 
+                      src={avatarPreview || profile.avatar_url || undefined} 
+                      alt={`${profile.first_name} ${profile.last_name}`}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  {/* Upload Overlay */}
+                  <label 
+                    htmlFor="avatar-upload"
+                    className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer"
+                  >
+                    <Upload className="h-7 w-7 text-white mb-1" />
+                    <span className="text-xs text-white font-medium">Upload</span>
+                  </label>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                  
+                  {/* Online Status Indicator */}
+                  <div className="absolute bottom-1 right-1 h-5 w-5 bg-green-500 rounded-full border-4 border-slate-800 shadow-lg" 
+                       title="Online" />
+                </div>
 
-        {/* Save/Reset buttons */}
-        {hasChanges && (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleReset}
-              disabled={saving}
-            >
-              Reset
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Save Changes
-                </>
+                {/* User Info */}
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-100 mb-2">
+                    {profile.first_name || "Admin"} {profile.last_name || "User"}
+                  </h1>
+                  <p className="text-slate-400 text-base mb-4 flex items-center gap-2">
+                    <span className="truncate">{user?.email}</span>
+                  </p>
+                  
+                  {/* Badges */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className={`${roleInfo.color} text-white border-0 px-3 py-1 shadow-lg`}>
+                      <Shield className="h-3.5 w-3.5 mr-1.5" />
+                      {roleInfo.label}
+                    </Badge>
+                    {employee && (
+                      <Badge variant="outline" className="text-slate-300 border-slate-600 bg-slate-900/50 px-3 py-1">
+                        <User className="h-3 w-3 mr-1" />
+                        {employee.employee_id}
+                      </Badge>
+                    )}
+                    <Badge className="bg-green-500/10 text-green-400 border border-green-500/20 px-3 py-1">
+                      <div className="h-2 w-2 bg-green-400 rounded-full mr-2 animate-pulse" />
+                      Active
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              {hasChanges && (
+                <div className="flex gap-3 md:shrink-0">
+                  <Button
+                    variant="outline"
+                    onClick={handleReset}
+                    disabled={saving}
+                    className="border-slate-600 hover:bg-slate-700 text-slate-200"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/20"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
-            </Button>
-          </div>
-        )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Profile Form */}
       <Tabs defaultValue="personal" className="w-full">
-        <TabsList className="bg-slate-800/50 border border-slate-700">
-          <TabsTrigger value="personal" className="data-[state=active]:bg-slate-700">
+        <TabsList className="bg-slate-800/50 border border-slate-700 p-1">
+          <TabsTrigger 
+            value="personal" 
+            className="data-[state=active]:bg-slate-700 data-[state=active]:text-white px-6"
+          >
             <User className="h-4 w-4 mr-2" />
-            Personal Info
+            Personal Information
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="personal" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-slate-100">Personal Information</CardTitle>
+          <Card className="bg-slate-800/50 border-slate-700 shadow-xl">
+            <CardHeader className="border-b border-slate-700 pb-6">
+              <CardTitle className="text-2xl text-slate-100">Personal Information</CardTitle>
+              <p className="text-slate-400 text-sm mt-2">
+                Update your personal details and contact information
+              </p>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* First Name */}
-              <div className="space-y-2">
-                <Label htmlFor="first_name" className="text-slate-200">
-                  First Name
-                </Label>
-                <Input
-                  id="first_name"
-                  value={editedProfile.first_name || ""}
-                  onChange={(e) =>
-                    setEditedProfile({ ...editedProfile, first_name: e.target.value })
-                  }
-                  placeholder="Enter your first name"
-                  className="bg-slate-900/50 border-slate-700 text-slate-100"
-                />
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* First Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="first_name" className="text-slate-200 font-medium">
+                    First Name <span className="text-red-400">*</span>
+                  </Label>
+                  <Input
+                    id="first_name"
+                    value={editedProfile.first_name || ""}
+                    onChange={(e) =>
+                      setEditedProfile({ ...editedProfile, first_name: e.target.value })
+                    }
+                    placeholder="Enter your first name"
+                    className="bg-slate-900/50 border-slate-600 text-slate-100 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                  />
+                </div>
+
+                {/* Last Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="last_name" className="text-slate-200 font-medium">
+                    Last Name <span className="text-red-400">*</span>
+                  </Label>
+                  <Input
+                    id="last_name"
+                    value={editedProfile.last_name || ""}
+                    onChange={(e) =>
+                      setEditedProfile({ ...editedProfile, last_name: e.target.value })
+                    }
+                    placeholder="Enter your last name"
+                    className="bg-slate-900/50 border-slate-600 text-slate-100 focus:border-blue-500 focus:ring-blue-500/20 h-11"
+                  />
+                </div>
               </div>
 
-              {/* Last Name */}
+              {/* Email - Full Width */}
               <div className="space-y-2">
-                <Label htmlFor="last_name" className="text-slate-200">
-                  Last Name
-                </Label>
-                <Input
-                  id="last_name"
-                  value={editedProfile.last_name || ""}
-                  onChange={(e) =>
-                    setEditedProfile({ ...editedProfile, last_name: e.target.value })
-                  }
-                  placeholder="Enter your last name"
-                  className="bg-slate-900/50 border-slate-700 text-slate-100"
-                />
-              </div>
-
-              {/* Email (Editable with verification) */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-200">
-                  Email Address
+                <Label htmlFor="email" className="text-slate-200 font-medium">
+                  Email Address <span className="text-red-400">*</span>
                 </Label>
                 <Input
                   id="email"
@@ -434,38 +470,58 @@ export default function RealProfilePage() {
                     setEditedProfile({ ...editedProfile, email: e.target.value })
                   }
                   placeholder="Enter your email"
-                  className="bg-slate-900/50 border-slate-700 text-slate-100"
+                  className="bg-slate-900/50 border-slate-600 text-slate-100 focus:border-blue-500 focus:ring-blue-500/20 h-11"
                 />
-                <p className="text-xs text-slate-500">
-                  ⚠️ Changing your email requires verification. You'll receive emails at both old and new addresses.
-                </p>
+                <div className="flex items-start gap-2 mt-2">
+                  <span className="text-amber-400 text-lg">⚠️</span>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Changing your email requires verification. You'll receive confirmation emails at both your old and new addresses.
+                  </p>
+                </div>
               </div>
 
-              {/* Phone */}
+              {/* Phone Number - Full Width */}
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-slate-200">
-                  Phone Number
+                <Label htmlFor="phone" className="text-slate-200 font-medium">
+                  Phone Number <span className="text-slate-500">(Optional)</span>
                 </Label>
                 <Input
                   id="phone"
+                  type="tel"
                   value={editedProfile.phone || ""}
                   onChange={(e) =>
                     setEditedProfile({ ...editedProfile, phone: e.target.value })
                   }
                   placeholder="+1 (555) 123-4567"
-                  className="bg-slate-900/50 border-slate-700 text-slate-100"
+                  className="bg-slate-900/50 border-slate-600 text-slate-100 focus:border-blue-500 focus:ring-blue-500/20 h-11"
                 />
               </div>
 
-              {/* Avatar URL (for reference) */}
+              {/* Avatar URL Display (Read-only for reference) */}
               {profile.avatar_url && (
-                <div className="space-y-2">
-                  <Label className="text-slate-200">Current Avatar URL</Label>
-                  <Input
-                    value={profile.avatar_url}
-                    disabled
-                    className="bg-slate-900/50 border-slate-700 text-slate-400 text-xs"
-                  />
+                <div className="space-y-2 pt-4 border-t border-slate-700">
+                  <Label className="text-slate-200 font-medium">Current Avatar URL</Label>
+                  <div className="relative">
+                    <Input
+                      value={profile.avatar_url}
+                      readOnly
+                      className="bg-slate-900/30 border-slate-700 text-slate-400 text-xs pr-20 h-10"
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="absolute right-1 top-1 h-8 text-xs text-blue-400 hover:text-blue-300"
+                      onClick={() => {
+                        navigator.clipboard.writeText(profile.avatar_url!);
+                        toast({
+                          title: "Copied!",
+                          description: "Avatar URL copied to clipboard",
+                        });
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
