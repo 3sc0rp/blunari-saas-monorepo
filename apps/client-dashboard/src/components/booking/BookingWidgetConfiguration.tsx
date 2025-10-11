@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useWidgetConfig } from '@/widgets/management/useWidgetConfig';
-import { copyText } from '@/utils/clipboard';
+import { CopyButton } from '@/components/ui/CopyButton';
 import {
   Settings,
   Palette,
@@ -47,7 +47,6 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState<'appearance' | 'content' | 'features' | 'embed'>('appearance');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [copyBusy, setCopyBusy] = useState(false);
   const [iframeLoading, setIframeLoading] = useState(true);
   
   // Stable iframe key to prevent unnecessary remounts (matches WidgetManagement)
@@ -80,6 +79,34 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
     resetToDefaults();
     toast({ title: 'Reset', description: 'Configuration reset to defaults' });
   }, [resetToDefaults, toast]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (!saving && validationErrors.length === 0) {
+          handleSave();
+        }
+      }
+      // Ctrl/Cmd + R to reset
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        handleReset();
+      }
+      // Tab numbers to switch sections (1-4)
+      if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+        if (e.key === '1') setActiveSection('appearance');
+        else if (e.key === '2') setActiveSection('content');
+        else if (e.key === '3') setActiveSection('features');
+        else if (e.key === '4') setActiveSection('embed');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [saving, validationErrors, handleSave, handleReset]);
 
   // Generate widget URL with stable key tracking (matches WidgetManagement approach)
   const widgetUrl = useMemo(() => {
@@ -127,22 +154,6 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
     setIframeLoading(false);
   }, []);
 
-  const copyToClipboard = useCallback(async (text: string, label: string) => {
-    try {
-      setCopyBusy(true);
-      await copyText(text);
-      toast({ title: 'Copied!', description: `${label} copied to clipboard` });
-    } catch (error) {
-      toast({ 
-        title: 'Copy Failed', 
-        description: 'Failed to copy to clipboard', 
-        variant: 'destructive' 
-      });
-    } finally {
-      setCopyBusy(false);
-    }
-  }, [toast]);
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -155,6 +166,20 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
           <p className="text-sm text-muted-foreground mt-1">
             Customize your booking widget appearance and behavior
           </p>
+          <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 bg-muted rounded border">Ctrl+S</kbd>
+              Save
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 bg-muted rounded border">Ctrl+R</kbd>
+              Reset
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 bg-muted rounded border">1-4</kbd>
+              Switch tabs
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {hasUnsavedChanges && (
@@ -167,6 +192,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
             size="sm"
             onClick={handleReset}
             disabled={saving}
+            title="Reset to defaults (Ctrl+R)"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Reset
@@ -175,6 +201,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
             size="sm"
             onClick={handleSave}
             disabled={saving || validationErrors.length > 0}
+            title="Save changes (Ctrl+S)"
           >
             {saving ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -563,6 +590,39 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
 
         {/* Embed Section */}
         <TabsContent value="embed" className="space-y-6">
+          {/* Quick Integration Guide */}
+          {!widgetUrl && (
+            <Alert>
+              <Calendar className="h-4 w-4" />
+              <AlertDescription>
+                <div className="font-medium mb-2">Setup Required</div>
+                <p className="text-sm">
+                  Your tenant slug is required to generate the booking widget.
+                  Please ensure your tenant is properly configured before embedding the widget.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {widgetUrl && (
+            <Card className="border-blue-200 bg-blue-50/50">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Code className="w-5 h-5 text-blue-600" />
+                  Quick Integration Guide
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                  <li>Copy the embed code below</li>
+                  <li>Paste it into your website's HTML where you want the booking widget to appear</li>
+                  <li>The widget will automatically adapt to your configured appearance settings</li>
+                  <li>Test the widget on your site to ensure proper functionality</li>
+                </ol>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -572,18 +632,15 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
               <CardContent className="space-y-4">
                 {widgetUrl ? (
                   <>
-                    <div className="p-3 bg-muted rounded-md font-mono text-sm break-all">
+                    <div className="p-3 bg-muted rounded-md font-mono text-sm break-all group relative">
                       {widgetUrl}
                     </div>
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => copyToClipboard(widgetUrl, 'Widget URL')}
-                        disabled={copyBusy}
-                      >
-                        <Copy className="w-4 h-4 mr-2" />
-                        Copy URL
-                      </Button>
+                      <CopyButton
+                        value={widgetUrl}
+                        label="URL"
+                        showToast={true}
+                      />
                       <Button
                         variant="outline"
                         onClick={() => window.open(widgetUrl, '_blank')}
@@ -592,13 +649,17 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
                         Open Preview
                       </Button>
                     </div>
+                    <div className="text-xs text-muted-foreground pt-2 border-t">
+                      <p><strong>Use case:</strong> Share this URL directly with customers or use it for testing</p>
+                    </div>
                   </>
                 ) : (
-                  <Alert>
-                    <AlertDescription>
-                      Tenant slug required to generate widget URL
-                    </AlertDescription>
-                  </Alert>
+                  <div className="text-center py-8">
+                    <Code className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                    <p className="text-sm text-muted-foreground">
+                      Configure your tenant to generate widget URL
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -606,7 +667,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
             <Card>
               <CardHeader>
                 <CardTitle>Embed Code</CardTitle>
-                <CardDescription>Add this code to your website</CardDescription>
+                <CardDescription>Add this iframe to your website</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {embedCode ? (
@@ -614,24 +675,31 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
                     <Textarea
                       value={embedCode}
                       readOnly
-                      rows={8}
-                      className="font-mono text-sm"
+                      rows={10}
+                      className="font-mono text-xs"
                     />
-                    <Button
-                      variant="outline"
-                      onClick={() => copyToClipboard(embedCode, 'Embed code')}
-                      disabled={copyBusy}
-                    >
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy Embed Code
-                    </Button>
+                    <CopyButton
+                      value={embedCode}
+                      label="Embed Code"
+                      showToast={true}
+                    />
+                    <div className="text-xs text-muted-foreground pt-2 border-t space-y-1">
+                      <p><strong>Features included:</strong></p>
+                      <ul className="list-disc list-inside ml-2 space-y-1">
+                        <li>Responsive design (auto-adjusts to container width)</li>
+                        <li>Secure sandbox with Stripe payment support</li>
+                        <li>Lazy loading for better performance</li>
+                        <li>CORS protection with strict referrer policy</li>
+                      </ul>
+                    </div>
                   </>
                 ) : (
-                  <Alert>
-                    <AlertDescription>
-                      Tenant slug required to generate embed code
-                    </AlertDescription>
-                  </Alert>
+                  <div className="text-center py-8">
+                    <Code className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                    <p className="text-sm text-muted-foreground">
+                      Configure your tenant to generate embed code
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
