@@ -18,6 +18,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useWidgetConfig } from '@/widgets/management/useWidgetConfig';
 import { CopyButton } from '@/components/ui/CopyButton';
+import { createWidgetToken } from '@/widgets/management/tokenUtils';
 import {
   Settings,
   Palette,
@@ -48,6 +49,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   const [activeSection, setActiveSection] = useState<'appearance' | 'content' | 'features' | 'embed'>('appearance');
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [iframeLoading, setIframeLoading] = useState(true);
+  const [widgetToken, setWidgetToken] = useState<string | null>(null);
   
   // Stable iframe key to prevent unnecessary remounts (matches WidgetManagement)
   const iframeKeyRef = useRef<string>('');
@@ -108,11 +110,45 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [saving, validationErrors, handleSave, handleReset]);
 
+  // Generate widget token when tenantSlug changes
+  useEffect(() => {
+    let mounted = true;
+    
+    async function generateToken() {
+      if (!tenantSlug) {
+        setWidgetToken(null);
+        return;
+      }
+
+      try {
+        const token = await createWidgetToken(
+          tenantSlug,
+          '2.0',
+          'booking'
+        );
+        if (mounted) {
+          setWidgetToken(token);
+        }
+      } catch (error) {
+        console.error('[BookingWidgetConfiguration] Failed to generate widget token:', error);
+        if (mounted) {
+          setWidgetToken(null);
+        }
+      }
+    }
+
+    generateToken();
+
+    return () => {
+      mounted = false;
+    };
+  }, [tenantSlug]);
+
   // Generate widget URL with stable key tracking (matches WidgetManagement approach)
   const widgetUrl = useMemo(() => {
-    if (!tenantSlug) return null;
+    if (!tenantSlug || !widgetToken) return null;
     const baseUrl = window.location.origin;
-    const url = `${baseUrl}/public-widget/book/${tenantSlug}`;
+    const url = `${baseUrl}/public-widget/book/${tenantSlug}?token=${widgetToken}`;
     
     // Update stable key only when slug changes (prevents unnecessary iframe reloads)
     const nextKey = `${tenantSlug}:booking`;
@@ -121,18 +157,18 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
     }
     
     return url;
-  }, [tenantSlug]);
+  }, [tenantSlug, widgetToken]);
 
   // Generate embed code with secure sandbox attributes
   // NOTE: allow-same-origin is REQUIRED for Stripe integration (CORS requests to js.stripe.com)
   // Without it, iframe runs in 'null' origin context and Stripe fails with CORS errors
   const embedCode = useMemo(() => {
-    if (!widgetUrl) return '';
+    if (!widgetUrl || !widgetToken) return '';
     
     // Use production URL if available, otherwise use current origin
     const productionUrl = import.meta.env.VITE_PRODUCTION_URL;
     const embedUrl = productionUrl 
-      ? `${productionUrl}/public-widget/book/${tenantSlug}`
+      ? `${productionUrl}/public-widget/book/${tenantSlug}?token=${widgetToken}`
       : widgetUrl;
     
     return `<!-- Blunari Booking Widget -->
@@ -148,7 +184,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   referrerpolicy="strict-origin-when-cross-origin"
   allow="payment; geolocation"
 ></iframe>`;
-  }, [widgetUrl, tenantSlug]);
+  }, [widgetUrl, tenantSlug, widgetToken]);
 
   const handleIframeLoad = useCallback(() => {
     setIframeLoading(false);
@@ -595,10 +631,13 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
             <Alert>
               <Calendar className="h-4 w-4" />
               <AlertDescription>
-                <div className="font-medium mb-2">Setup Required</div>
+                <div className="font-medium mb-2">
+                  {tenantSlug ? 'Generating Widget Token...' : 'Setup Required'}
+                </div>
                 <p className="text-sm">
-                  Your tenant slug is required to generate the booking widget.
-                  Please ensure your tenant is properly configured before embedding the widget.
+                  {tenantSlug 
+                    ? 'Please wait while we generate a secure token for your widget...'
+                    : 'Your tenant slug is required to generate the booking widget. Please ensure your tenant is properly configured before embedding the widget.'}
                 </p>
               </AlertDescription>
             </Alert>
