@@ -281,13 +281,20 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       // Update tenant with owner_id
-      await supabaseAdmin
+      const { error: tenantUpdateError } = await supabaseAdmin
         .from("tenants")
         .update({ owner_id: tenantOwnerId })
         .eq("id", tenantId);
 
+      if (tenantUpdateError) {
+        console.error(`[CREDENTIALS][${correlationId}] Failed to update tenant owner_id:`, tenantUpdateError);
+        throw new Error(`Failed to update tenant owner_id: ${tenantUpdateError.message}`);
+      }
+
+      console.log(`[CREDENTIALS][${correlationId}] ✅ Tenant owner_id updated`);
+
       // Update auto_provisioning
-      await supabaseAdmin
+      const { error: autoprovError } = await supabaseAdmin
         .from("auto_provisioning")
         .upsert({
           user_id: tenantOwnerId,
@@ -299,6 +306,14 @@ const handler = async (req: Request): Promise<Response> => {
         }, {
           onConflict: "tenant_id",
         });
+
+      if (autoprovError) {
+        console.error(`[CREDENTIALS][${correlationId}] Failed to update auto_provisioning:`, autoprovError);
+        // Don't throw - this is non-critical, UI can fallback to tenant.owner_id
+        console.warn(`[CREDENTIALS][${correlationId}] Warning: auto_provisioning not updated, but owner_id is set`);
+      } else {
+        console.log(`[CREDENTIALS][${correlationId}] ✅ auto_provisioning updated`);
+      }
 
       console.log(`[CREDENTIALS][${correlationId}] ✅ Tenant owner setup complete`);
     }
