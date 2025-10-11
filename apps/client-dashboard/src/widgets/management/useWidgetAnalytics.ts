@@ -652,8 +652,9 @@ async function fetchRealWidgetAnalytics(
     // Build headers object - always include Authorization (use anon key if no user token)
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
-      'x-correlation-id': correlationId || '',
-      'x-widget-version': '2.0'
+      'x-correlation-id': correlationId || ''
+      // Note: x-widget-version removed to avoid CORS preflight issues
+      // Version is included in the request body instead
     };
     
     // Always provide Authorization header - use user token if available, otherwise anon key
@@ -722,8 +723,8 @@ async function fetchRealWidgetAnalytics(
           const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
           const retryHeaders: Record<string, string> = {
             'Content-Type': 'application/json',
-            'x-correlation-id': correlationId || '',
-            'x-widget-version': '2.0'
+            'x-correlation-id': correlationId || ''
+            // Note: x-widget-version removed to avoid CORS preflight issues
           };
           
           if (anonKey) {
