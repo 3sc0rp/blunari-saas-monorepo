@@ -4,12 +4,9 @@
 -- This script checks if email changes have affected multiple users/tenants
 -- =============================================================================
 
-\echo '🚨 EMERGENCY DATA CONTAMINATION CHECK 🚨'
-\echo ''
-
 -- Check auth.users emails
+SELECT '🚨 EMERGENCY DATA CONTAMINATION CHECK 🚨' as status;
 SELECT '=== AUTH.USERS EMAILS ===' as info;
-\echo ''
 
 SELECT 
   id,
@@ -22,9 +19,7 @@ FROM auth.users
 WHERE email IN ('admin@blunari.ai', 'drood.tech@gmail.com')
 ORDER BY created_at;
 
-\echo ''
 SELECT '=== ALL AUTH.USERS (Check for duplicates) ===' as info;
-\echo ''
 
 SELECT 
   email,
@@ -37,9 +32,7 @@ GROUP BY email
 HAVING COUNT(*) > 1
 ORDER BY count DESC;
 
-\echo ''
 SELECT '=== PROFILES TABLE ===' as info;
-\echo ''
 
 SELECT 
   p.user_id,
@@ -58,9 +51,7 @@ WHERE p.email IN ('admin@blunari.ai', 'drood.tech@gmail.com')
    OR au.email IN ('admin@blunari.ai', 'drood.tech@gmail.com')
 ORDER BY p.updated_at DESC;
 
-\echo ''
 SELECT '=== EMPLOYEES TABLE (Check for contamination) ===' as info;
-\echo ''
 
 -- Check if employees table has email column
 DO $$
@@ -85,8 +76,6 @@ BEGIN
     RAISE NOTICE '✅ Employees table does NOT have email column (correct for admin table)';
   END IF;
 END $$;
-
-\echo ''
 
 -- If employees has email, show details
 DO $$
@@ -115,9 +104,7 @@ BEGIN
   END IF;
 END $$;
 
-\echo ''
 SELECT '=== TENANTS TABLE ===' as info;
-\echo ''
 
 SELECT 
   id,
@@ -130,9 +117,7 @@ FROM tenants
 ORDER BY updated_at DESC
 LIMIT 10;
 
-\echo ''
 SELECT '=== CHECK FOR SAME EMAIL ACROSS MULTIPLE TENANTS ===' as info;
-\echo ''
 
 -- This is the CRITICAL check - are there multiple tenants with same owner_email?
 SELECT 
@@ -146,9 +131,7 @@ GROUP BY owner_email
 HAVING COUNT(*) > 1
 ORDER BY tenant_count DESC;
 
-\echo ''
 SELECT '=== RECENT EMAIL CHANGES (Last 24 hours) ===' as info;
-\echo ''
 
 -- Check auth.users updates
 SELECT 
@@ -159,8 +142,6 @@ SELECT
 FROM auth.users
 WHERE updated_at > NOW() - INTERVAL '24 hours'
 ORDER BY updated_at DESC;
-
-\echo ''
 
 -- Check profiles updates
 SELECT 
@@ -184,9 +165,7 @@ FROM tenants
 WHERE updated_at > NOW() - INTERVAL '24 hours'
 ORDER BY updated_at DESC;
 
-\echo ''
 SELECT '=== DIAGNOSTIC SUMMARY ===' as info;
-\echo ''
 
 DO $$
 DECLARE
@@ -256,11 +235,10 @@ BEGIN
   END IF;
 END $$;
 
-\echo ''
-\echo '✅ Diagnostic complete!'
-\echo ''
-\echo '📋 NEXT STEPS:'
-\echo '1. Review the output above for any ❌ or 🚨 indicators'
-\echo '2. Check if multiple tenants have the same owner_email'
-\echo '3. Check if auth.users and profiles emails match'
-\echo '4. Report findings for remediation'
+SELECT '✅ Diagnostic complete!' as status;
+
+SELECT '📋 NEXT STEPS:' as info;
+SELECT '1. Review the output above for any ❌ or 🚨 indicators' as step1;
+SELECT '2. Check if multiple tenants have the same owner_email' as step2;
+SELECT '3. Check if auth.users and profiles emails match' as step3;
+SELECT '4. Report findings for remediation' as step4;
