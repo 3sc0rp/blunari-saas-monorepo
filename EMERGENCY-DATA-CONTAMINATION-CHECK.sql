@@ -153,8 +153,6 @@ FROM profiles
 WHERE updated_at > NOW() - INTERVAL '24 hours'
 ORDER BY updated_at DESC;
 
-\echo ''
-
 -- Check tenants updates
 SELECT 
   'tenants' as table_name,
