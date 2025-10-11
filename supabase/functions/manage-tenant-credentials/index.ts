@@ -106,108 +106,236 @@ const handler = async (req: Request): Promise<Response> => {
       `[CREDENTIALS][${correlationId}] User has access. Employee role: ${employee?.role}, Profile role: ${profile?.role}`,
     );
 
-    // Get tenant owner user ID - try auto_provisioning first, then fallback to tenant email
+    // === CRITICAL: ADMIN/TENANT SEPARATION ===
+    // Admin users should NEVER have their credentials modified via tenant management!
+    // Each tenant needs its own dedicated auth user (tenant owner)
+    
     let tenantOwnerId: string | null = null;
     let ownerEmail: string | null = null;
+    let tenantOwnerCreated = false;
 
-    // First try to get from auto_provisioning
-    const { data: provisioning, error: provisioningError } = await supabaseAdmin
-      .from("auto_provisioning")
-      .select("user_id, status")
-      .eq("tenant_id", tenantId)
-      // Status comparison made case-insensitive by fetching then checking (DB may store uppercase)
-      .maybeSingle();
+    // Step 1: Get tenant information
+    console.log(`[CREDENTIALS][${correlationId}] Looking up tenant ${tenantId}`);
+    const { data: tenant, error: tenantError } = await supabaseAdmin
+      .from("tenants")
+      .select("email, name, owner_id")
+      .eq("id", tenantId)
+      .single();
 
-    if (provisioningError) {
-      console.warn(`[CREDENTIALS] Provisioning lookup warning:`, provisioningError);
+    if (tenantError) {
+      console.error(`[CREDENTIALS][${correlationId}] Failed to fetch tenant:`, tenantError);
+      throw new Error(`Failed to fetch tenant: ${tenantError.message}`);
     }
 
-    if (provisioning && (provisioning.status?.toLowerCase?.() === 'completed')) {
-      tenantOwnerId = provisioning.user_id;
-      console.log(
-        `[CREDENTIALS][${correlationId}] Found provisioning record for user ${tenantOwnerId}`,
-      );
-    } else if (provisioning) {
-      console.log(`[CREDENTIALS] Provisioning record found but status='${provisioning.status}' (expect completed) – falling back to email lookup.`);
-    } else {
-  console.log(`[CREDENTIALS][${correlationId}] No provisioning record found, looking up user by tenant email...`);
+    if (!tenant?.email) {
+      throw new Error("Tenant has no email configured");
+    }
+
+    console.log(`[CREDENTIALS][${correlationId}] Tenant: ${tenant.name}, Email: ${tenant.email}, Owner ID: ${tenant.owner_id || 'NOT SET'}`);
+
+    // Step 2: Check if tenant already has an owner_id
+    if (tenant.owner_id) {
+      console.log(`[CREDENTIALS][${correlationId}] Tenant has owner_id: ${tenant.owner_id}, verifying...`);
       
-      // Fallback: look for tenant email and find matching user
-      const { data: tenant, error: tenantError } = await supabaseAdmin
-        .from("tenants")
-        .select("email")
-        .eq("id", tenantId)
-        .single();
+      try {
+        const { data: ownerUser, error: ownerError } = await supabaseAdmin.auth.admin.getUserById(tenant.owner_id);
+        
+        if (ownerError || !ownerUser?.user) {
+          console.warn(`[CREDENTIALS][${correlationId}] owner_id points to non-existent user, will need new owner`);
+          tenantOwnerId = null;
+        } else {
+          // Verify this owner is NOT an admin
+          const { data: isOwnerAdmin } = await supabaseAdmin
+            .from("employees")
+            .select("id, role")
+            .eq("user_id", tenant.owner_id)
+            .eq("status", "ACTIVE")
+            .maybeSingle();
 
-      if (tenantError) {
-        console.error(`[CREDENTIALS][${correlationId}] Failed to fetch tenant:`, tenantError);
-        throw new Error(`Failed to fetch tenant: ${tenantError.message}`);
+          if (isOwnerAdmin) {
+            console.error(`[CREDENTIALS][${correlationId}] ⚠️  CRITICAL: Tenant owner is an ADMIN user!`);
+            throw new Error(
+              `Tenant is incorrectly linked to admin user ${ownerUser.user.email}. ` +
+              `Admin credentials cannot be modified via tenant management. ` +
+              `Please create a separate auth user for this tenant owner.`
+            );
+          }
+
+          tenantOwnerId = tenant.owner_id;
+          ownerEmail = ownerUser.user.email;
+          console.log(`[CREDENTIALS][${correlationId}] ✅ Valid tenant owner found: ${ownerEmail}`);
+        }
+      } catch (error: any) {
+        console.warn(`[CREDENTIALS][${correlationId}] Error verifying owner:`, error.message);
+        tenantOwnerId = null;
       }
+    }
 
-      if (!tenant?.email) {
-        console.error(`[CREDENTIALS] Tenant has no email`);
-        throw new Error(
-          "No tenant owner found. Tenant has no email and no provisioning record.",
-        );
+    // Step 3: If no valid owner, try auto_provisioning (but check it's not admin)
+    if (!tenantOwnerId) {
+      console.log(`[CREDENTIALS][${correlationId}] No owner_id, checking auto_provisioning...`);
+      
+      const { data: provisioning } = await supabaseAdmin
+        .from("auto_provisioning")
+        .select("user_id, status")
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+
+      if (provisioning?.user_id && provisioning.status?.toLowerCase() === 'completed') {
+        // Verify this user is NOT an admin
+        const { data: isProvisionedUserAdmin } = await supabaseAdmin
+          .from("employees")
+          .select("id, role")
+          .eq("user_id", provisioning.user_id)
+          .eq("status", "ACTIVE")
+          .maybeSingle();
+
+        if (isProvisionedUserAdmin) {
+          console.warn(`[CREDENTIALS][${correlationId}] ⚠️  Auto-provisioning points to admin user - will create separate owner`);
+        } else {
+          // Valid non-admin user
+          const { data: provisionedUser } = await supabaseAdmin.auth.admin.getUserById(provisioning.user_id);
+          if (provisionedUser?.user) {
+            tenantOwnerId = provisioning.user_id;
+            ownerEmail = provisionedUser.user.email;
+            console.log(`[CREDENTIALS][${correlationId}] ✅ Found owner via auto_provisioning: ${ownerEmail}`);
+            
+            // Update tenant.owner_id for future lookups
+            await supabaseAdmin
+              .from("tenants")
+              .update({ owner_id: tenantOwnerId })
+              .eq("id", tenantId);
+          }
+        }
       }
+    }
 
-      console.log(`[CREDENTIALS][${correlationId}] Looking up user by email: ${tenant.email}`);
-
-      // Find user ID from profiles table (faster than auth API)
-      // NOTE: user_id is the PRIMARY KEY (no separate id column exists)
-      const { data: profileData, error: profileLookupError } = await supabaseAdmin
+    // Step 4: If still no owner, create a new dedicated auth user for this tenant
+    if (!tenantOwnerId) {
+      console.log(`[CREDENTIALS][${correlationId}] 🔧 No valid owner found - creating new tenant owner user`);
+      
+      // Generate a unique email if tenant email doesn't exist or matches an admin
+      let newOwnerEmail = tenant.email;
+      
+      // Check if tenant email is already used by an admin
+      const { data: existingProfile } = await supabaseAdmin
         .from("profiles")
-        .select("user_id, email, role")
+        .select("user_id, email")
         .eq("email", tenant.email)
         .maybeSingle();
-      
-      if (profileLookupError) {
-        console.error(`[CREDENTIALS][${correlationId}] Profile lookup failed:`, profileLookupError);
-        throw new Error(`Failed to lookup user profile: ${profileLookupError.message}`);
-      }
-      
-      if (!profileData) {
-        console.error(`[CREDENTIALS][${correlationId}] No profile found with email ${tenant.email}`);
-        throw new Error(`No user found with email ${tenant.email}. User may need to complete account setup first.`);
+
+      if (existingProfile?.user_id) {
+        const { data: isExistingAdmin } = await supabaseAdmin
+          .from("employees")
+          .select("id")
+          .eq("user_id", existingProfile.user_id)
+          .eq("status", "ACTIVE")
+          .maybeSingle();
+
+        if (isExistingAdmin) {
+          // Tenant email matches admin - generate unique email
+          newOwnerEmail = `tenant-${tenantId}@blunari-system.local`;
+          console.log(`[CREDENTIALS][${correlationId}] Tenant email matches admin, using system email: ${newOwnerEmail}`);
+        }
       }
 
-      console.log(`[CREDENTIALS][${correlationId}] Profile found:`, { 
-        user_id: profileData.user_id, 
-        email: profileData.email,
-        role: profileData.role
-      });      // Must have user_id (auth.users FK) – if missing, treat as data integrity issue
-      if (!profileData.user_id) {
-        console.error(`[CREDENTIALS][${correlationId}] Profile has NULL user_id. Data integrity issue – requires manual fix.`);
-        throw new Error("Profile has NULL user_id. Link profile to auth user before credential changes.");
+      // Create new auth user for tenant owner
+      const newPassword = generateSecurePassword();
+      const { data: newOwner, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: newOwnerEmail,
+        password: newPassword,
+        email_confirm: true,
+        user_metadata: {
+          is_tenant_owner: true,
+          tenant_id: tenantId,
+          tenant_name: tenant.name,
+          created_by: user.email,
+          created_at: new Date().toISOString(),
+        },
+      });
+
+      if (createError || !newOwner?.user) {
+        console.error(`[CREDENTIALS][${correlationId}] Failed to create tenant owner:`, createError);
+        throw new Error(`Failed to create tenant owner: ${createError?.message || 'Unknown error'}`);
       }
-      tenantOwnerId = profileData.user_id;
-      console.log(`[CREDENTIALS][${correlationId}] Using user_id: ${tenantOwnerId}`);
-      
-      ownerEmail = tenant.email;
-      console.log(
-        `[CREDENTIALS][${correlationId}] Found tenant owner via profile lookup: ${ownerEmail} (ID: ${tenantOwnerId})`,
+
+      tenantOwnerId = newOwner.user.id;
+      ownerEmail = newOwner.user.email;
+      tenantOwnerCreated = true;
+
+      console.log(`[CREDENTIALS][${correlationId}] ✅ Created new tenant owner: ${ownerEmail} (ID: ${tenantOwnerId})`);
+
+      // Create profile for new owner
+      await supabaseAdmin.from("profiles").insert({
+        user_id: tenantOwnerId,
+        email: ownerEmail,
+        role: "tenant_owner",
+        display_name: `${tenant.name} Owner`,
+      });
+
+      // Update tenant with owner_id
+      await supabaseAdmin
+        .from("tenants")
+        .update({ owner_id: tenantOwnerId })
+        .eq("id", tenantId);
+
+      // Update auto_provisioning
+      await supabaseAdmin
+        .from("auto_provisioning")
+        .upsert({
+          user_id: tenantOwnerId,
+          tenant_id: tenantId,
+          restaurant_name: tenant.name,
+          restaurant_slug: tenant.name.toLowerCase().replace(/\s+/g, '-'),
+          status: "completed",
+          completed_at: new Date().toISOString(),
+        }, {
+          onConflict: "tenant_id",
+        });
+
+      console.log(`[CREDENTIALS][${correlationId}] ✅ Tenant owner setup complete`);
+    }
+
+    // Step 5: Final safety check - ensure we're NOT modifying an admin
+    if (tenantOwnerId === user.id) {
+      throw new Error(
+        "CRITICAL: Cannot modify your own admin account via tenant management! " +
+        "This indicates a configuration error."
       );
     }
 
-    if (!tenantOwnerId) {
-      throw new Error("Could not determine tenant owner");
+    const { data: finalAdminCheck } = await supabaseAdmin
+      .from("employees")
+      .select("id, role")
+      .eq("user_id", tenantOwnerId)
+      .eq("status", "ACTIVE")
+      .maybeSingle();
+
+    if (finalAdminCheck) {
+      throw new Error(
+        `CRITICAL: Cannot modify admin user (${ownerEmail}) via tenant management! ` +
+        `This tenant needs a separate owner account.`
+      );
     }
 
-  console.log(`[CREDENTIALS][${correlationId}] Tenant owner ID determined: ${tenantOwnerId}`);
-    
-    // Verify the user exists before attempting update (optional - don't fail if verification fails)
-    try {
-      const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(tenantOwnerId);
-      if (getUserError) {
-        console.warn(`[CREDENTIALS][${correlationId}] User lookup warning:`, getUserError);
-      } else if (!existingUser || !existingUser.user) {
-        console.warn(`[CREDENTIALS][${correlationId}] User not found in verification, will attempt update anyway`);
-      } else {
-        console.log(`[CREDENTIALS][${correlationId}] User verified: ${existingUser.user.email}`);
+    console.log(`[CREDENTIALS][${correlationId}] ✅ Safety checks passed - tenant owner ID: ${tenantOwnerId}`);
+
+    // If owner was just created, skip verification
+    if (!tenantOwnerCreated) {
+      // Verify the user exists before attempting update (optional - don't fail if verification fails)
+      try {
+        const { data: existingUser, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(tenantOwnerId);
+        if (getUserError) {
+          console.warn(`[CREDENTIALS][${correlationId}] User lookup warning:`, getUserError);
+        } else if (!existingUser || !existingUser.user) {
+          console.warn(`[CREDENTIALS][${correlationId}] User not found in verification, will attempt update anyway`);
+        } else {
+          console.log(`[CREDENTIALS][${correlationId}] User verified: ${existingUser.user.email}`);
+        }
+      } catch (verifyError: any) {
+        console.warn(`[CREDENTIALS][${correlationId}] User verification failed (non-critical):`, verifyError);
+        // Continue anyway - the actual update will fail if user doesn't exist
       }
-    } catch (verifyError: any) {
-      console.warn(`[CREDENTIALS][${correlationId}] User verification failed (non-critical):`, verifyError);
-      // Continue anyway - the actual update will fail if user doesn't exist
     }
 
     let result: any = {};
