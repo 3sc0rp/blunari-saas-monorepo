@@ -266,12 +266,19 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`[CREDENTIALS][${correlationId}] ✅ Created new tenant owner: ${ownerEmail} (ID: ${tenantOwnerId})`);
 
       // Create profile for new owner
-      await supabaseAdmin.from("profiles").insert({
+      const { error: profileInsertError } = await supabaseAdmin.from("profiles").insert({
         user_id: tenantOwnerId,
         email: ownerEmail,
         role: "tenant_owner",
-        display_name: `${tenant.name} Owner`,
       });
+
+      if (profileInsertError) {
+        console.error(`[CREDENTIALS][${correlationId}] Failed to create profile:`, profileInsertError);
+        // Don't throw - profile creation might fail but owner was created
+        console.warn(`[CREDENTIALS][${correlationId}] Warning: Profile creation failed but continuing with owner ID`);
+      } else {
+        console.log(`[CREDENTIALS][${correlationId}] ✅ Profile created for tenant owner`);
+      }
 
       // Update tenant with owner_id
       await supabaseAdmin
