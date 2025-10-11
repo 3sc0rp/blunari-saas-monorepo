@@ -151,12 +151,13 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-  console.log(`[CREDENTIALS][${correlationId}] Looking up user by email: ${tenant.email}`);
+      console.log(`[CREDENTIALS][${correlationId}] Looking up user by email: ${tenant.email}`);
 
       // Find user ID from profiles table (faster than auth API)
+      // NOTE: user_id is the PRIMARY KEY (no separate id column exists)
       const { data: profileData, error: profileLookupError } = await supabaseAdmin
         .from("profiles")
-        .select("id, user_id, email")
+        .select("user_id, email, role")
         .eq("email", tenant.email)
         .maybeSingle();
       
@@ -171,12 +172,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       console.log(`[CREDENTIALS][${correlationId}] Profile found:`, { 
-        id: profileData.id, 
         user_id: profileData.user_id, 
-        email: profileData.email 
-      });
-
-      // Must have user_id (auth.users FK) – if missing, treat as data integrity issue
+        email: profileData.email,
+        role: profileData.role
+      });      // Must have user_id (auth.users FK) – if missing, treat as data integrity issue
       if (!profileData.user_id) {
         console.error(`[CREDENTIALS][${correlationId}] Profile has NULL user_id. Data integrity issue – requires manual fix.`);
         throw new Error("Profile has NULL user_id. Link profile to auth user before credential changes.");
