@@ -164,8 +164,8 @@ SELECT '=== CHECK IF MULTIPLE TENANTS OWNED BY SAME USER ===' as info;
 SELECT 
   au.email,
   COUNT(DISTINCT ap.tenant_id) as tenant_count,
-  array_agg(DISTINCT t.name ORDER BY t.created_at) as tenant_names,
-  array_agg(DISTINCT ap.tenant_id::text ORDER BY ap.created_at) as tenant_ids
+  array_agg(DISTINCT t.name) as tenant_names,
+  array_agg(DISTINCT ap.tenant_id::text) as tenant_ids
 FROM auto_provisioning ap
 LEFT JOIN tenants t ON t.id = ap.tenant_id
 LEFT JOIN auth.users au ON au.id = ap.user_id
