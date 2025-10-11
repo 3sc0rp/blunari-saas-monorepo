@@ -79,28 +79,45 @@ END $$;
 
 -- If employees has email, show details
 DO $$
+DECLARE
+  has_tenant_id BOOLEAN;
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'employees' AND column_name = 'email'
   ) THEN
-    -- Use dynamic SQL to query if column exists
-    EXECUTE 'SELECT 
-      e.id,
-      e.email,
-      e.first_name,
-      e.last_name,
-      e.tenant_id,
-      t.name as tenant_name,
-      e.updated_at,
-      CASE 
-        WHEN e.tenant_id IS NULL THEN ''Admin Employee''
-        ELSE ''Tenant Employee''
-      END as employee_type
-    FROM employees e
-    LEFT JOIN tenants t ON t.id = e.tenant_id
-    WHERE e.email IN (''admin@blunari.ai'', ''drood.tech@gmail.com'')
-    ORDER BY e.updated_at DESC';
+    -- Check if tenant_id column exists
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_name = 'employees' AND column_name = 'tenant_id'
+    ) INTO has_tenant_id;
+    
+    IF has_tenant_id THEN
+      -- Query with tenant_id (client employees table)
+      EXECUTE 'SELECT 
+        e.id,
+        e.email,
+        e.first_name,
+        e.last_name,
+        e.tenant_id,
+        t.name as tenant_name,
+        e.updated_at
+      FROM employees e
+      LEFT JOIN tenants t ON t.id = e.tenant_id
+      WHERE e.email IN (''admin@blunari.ai'', ''drood.tech@gmail.com'')
+      ORDER BY e.updated_at DESC';
+    ELSE
+      -- Query without tenant_id (admin employees table)
+      EXECUTE 'SELECT 
+        e.id,
+        e.email,
+        e.first_name,
+        e.last_name,
+        e.updated_at
+      FROM employees e
+      WHERE e.email IN (''admin@blunari.ai'', ''drood.tech@gmail.com'')
+      ORDER BY e.updated_at DESC';
+    END IF;
   END IF;
 END $$;
 
