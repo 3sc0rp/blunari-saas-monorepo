@@ -223,19 +223,11 @@ export default function RealProfilePage() {
 
       if (error) throw error;
 
-      // If email changed, also update employees table
-      if (emailChanged && editedProfile.email && employee) {
-        const { error: empError } = await supabase
-          .from("employees")
-          .update({
-            email: editedProfile.email,
-          })
-          .eq("user_id", user.id);
-
-        if (empError) {
-          console.warn("Failed to update employee email:", empError);
-        }
-      }
+      // NOTE: We do NOT update the employees table here because:
+      // 1. Admin dashboard employees table may not have an email column
+      // 2. Email should be fetched from auth.users or profiles, not employees
+      // 3. Updating employees could accidentally affect tenant data if wrong table
+      // The email will be available via auth.users and profiles tables
 
       // Update local state
       setProfile({

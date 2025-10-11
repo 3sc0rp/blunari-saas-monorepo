@@ -87,6 +87,7 @@ export function AdminHeader() {
     lastName?: string;
     role?: string;
     avatarUrl?: string;
+    email?: string;
   } | null>(null);
   const {
     notifications,
@@ -115,10 +116,10 @@ export function AdminHeader() {
             return;
           }
 
-          // Get profile data for names and avatar
+          // Get profile data for names, avatar, and EMAIL (updated)
           const { data: profileData, error: profileError } = await supabase
             .from("profiles")
-            .select("first_name, last_name, avatar_url")
+            .select("first_name, last_name, avatar_url, email")
             .eq("user_id", user.id)
             .maybeSingle();
 
@@ -131,6 +132,7 @@ export function AdminHeader() {
             lastName: profileData?.last_name,
             role: employee?.role || adminRole || "ADMIN",
             avatarUrl: profileData?.avatar_url,
+            email: profileData?.email, // Fetch email from profiles table
           });
         } catch (err) {
           console.error("Error fetching employee data:", err);
@@ -620,7 +622,7 @@ export function AdminHeader() {
                         {displayName}
                       </p>
                       <p className="text-xs text-slate-400 truncate mt-0.5">
-                        {user?.email}
+                        {employeeData?.email || user?.email}
                       </p>
                       <div className="flex items-center gap-2 mt-1.5">
                         <Badge
