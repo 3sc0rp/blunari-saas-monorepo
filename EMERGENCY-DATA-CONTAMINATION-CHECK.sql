@@ -1,6 +1,37 @@
 -- =============================================================================
 -- EMERGENCY: Check for Data Contamination
--- =============================================================================
+-- ==============SELECT '=== CHECK FOR TENANT OWNERSHIP ===' as info;
+
+-- Check auto_provisioning table for tenant ownership
+SELECT 
+  ap.tenant_id,
+  t.name as tenant_name,
+  t.slug,
+  ap.user_id,
+  au.email,
+  ap.status,
+  ap.created_at
+FROM auto_provisioning ap
+LEFT JOIN tenants t ON t.id = ap.tenant_id
+LEFT JOIN auth.users au ON au.id = ap.user_id
+WHERE ap.status = 'completed'
+  AND au.email IN ('admin@blunari.ai', 'drood.tech@gmail.com')
+ORDER BY ap.created_at DESC;
+
+SELECT '=== CHECK IF MULTIPLE TENANTS OWNED BY SAME USER ===' as info;
+
+SELECT 
+  au.email,
+  COUNT(DISTINCT ap.tenant_id) as tenant_count,
+  array_agg(DISTINCT t.name ORDER BY t.created_at) as tenant_names,
+  array_agg(DISTINCT ap.tenant_id::text ORDER BY ap.created_at) as tenant_ids
+FROM auto_provisioning ap
+LEFT JOIN tenants t ON t.id = ap.tenant_id
+LEFT JOIN auth.users au ON au.id = ap.user_id
+WHERE ap.status = 'completed'
+GROUP BY au.email
+HAVING COUNT(DISTINCT ap.tenant_id) > 1
+ORDER BY tenant_count DESC;==================================================
 -- This script checks if email changes have affected multiple users/tenants
 -- =============================================================================
 
@@ -123,18 +154,25 @@ END $$;
 
 SELECT '=== TENANTS TABLE ===' as info;
 
+-- First check what columns exist in tenants table
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'tenants' AND table_schema = 'public'
+ORDER BY ordinal_position;
+
+-- Show recent tenants
 SELECT 
   id,
   slug,
   name,
-  owner_email,
+  status,
   created_at,
   updated_at
 FROM tenants
 ORDER BY updated_at DESC
 LIMIT 10;
 
-SELECT '=== CHECK FOR SAME EMAIL ACROSS MULTIPLE TENANTS ===' as info;
+SELECT '=== CHECK FOR TENANT OWNERSHIP ===' as info;
 
 -- This is the CRITICAL check - are there multiple tenants with same owner_email?
 SELECT 
@@ -174,7 +212,7 @@ ORDER BY updated_at DESC;
 SELECT 
   'tenants' as table_name,
   id as record_id,
-  owner_email as email,
+  name as tenant_name,
   updated_at
 FROM tenants
 WHERE updated_at > NOW() - INTERVAL '24 hours'
@@ -199,9 +237,12 @@ BEGIN
   FROM profiles
   WHERE email IN ('admin@blunari.ai', 'drood.tech@gmail.com');
   
-  SELECT COUNT(*) INTO tenant_count
-  FROM tenants
-  WHERE owner_email IN ('admin@blunari.ai', 'drood.tech@gmail.com');
+  -- Count tenants owned by admin via auto_provisioning
+  SELECT COUNT(DISTINCT ap.tenant_id) INTO tenant_count
+  FROM auto_provisioning ap
+  LEFT JOIN auth.users au ON au.id = ap.user_id
+  WHERE ap.status = 'completed'
+    AND au.email IN ('admin@blunari.ai', 'drood.tech@gmail.com');
   
   -- Check if employees has email column
   SELECT EXISTS (
