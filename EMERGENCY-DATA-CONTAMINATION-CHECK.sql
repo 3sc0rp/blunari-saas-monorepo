@@ -1,37 +1,6 @@
 -- =============================================================================
 -- EMERGENCY: Check for Data Contamination
--- ==============SELECT '=== CHECK FOR TENANT OWNERSHIP ===' as info;
-
--- Check auto_provisioning table for tenant ownership
-SELECT 
-  ap.tenant_id,
-  t.name as tenant_name,
-  t.slug,
-  ap.user_id,
-  au.email,
-  ap.status,
-  ap.created_at
-FROM auto_provisioning ap
-LEFT JOIN tenants t ON t.id = ap.tenant_id
-LEFT JOIN auth.users au ON au.id = ap.user_id
-WHERE ap.status = 'completed'
-  AND au.email IN ('admin@blunari.ai', 'drood.tech@gmail.com')
-ORDER BY ap.created_at DESC;
-
-SELECT '=== CHECK IF MULTIPLE TENANTS OWNED BY SAME USER ===' as info;
-
-SELECT 
-  au.email,
-  COUNT(DISTINCT ap.tenant_id) as tenant_count,
-  array_agg(DISTINCT t.name ORDER BY t.created_at) as tenant_names,
-  array_agg(DISTINCT ap.tenant_id::text ORDER BY ap.created_at) as tenant_ids
-FROM auto_provisioning ap
-LEFT JOIN tenants t ON t.id = ap.tenant_id
-LEFT JOIN auth.users au ON au.id = ap.user_id
-WHERE ap.status = 'completed'
-GROUP BY au.email
-HAVING COUNT(DISTINCT ap.tenant_id) > 1
-ORDER BY tenant_count DESC;==================================================
+-- =============================================================================
 -- This script checks if email changes have affected multiple users/tenants
 -- =============================================================================
 
@@ -174,16 +143,35 @@ LIMIT 10;
 
 SELECT '=== CHECK FOR TENANT OWNERSHIP ===' as info;
 
--- This is the CRITICAL check - are there multiple tenants with same owner_email?
+-- Check auto_provisioning table for tenant ownership
 SELECT 
-  owner_email,
-  COUNT(*) as tenant_count,
-  array_agg(name ORDER BY created_at) as tenant_names,
-  array_agg(id::text ORDER BY created_at) as tenant_ids
-FROM tenants
-WHERE owner_email IS NOT NULL
-GROUP BY owner_email
-HAVING COUNT(*) > 1
+  ap.tenant_id,
+  t.name as tenant_name,
+  t.slug,
+  ap.user_id,
+  au.email,
+  ap.status,
+  ap.created_at
+FROM auto_provisioning ap
+LEFT JOIN tenants t ON t.id = ap.tenant_id
+LEFT JOIN auth.users au ON au.id = ap.user_id
+WHERE ap.status = 'completed'
+  AND au.email IN ('admin@blunari.ai', 'drood.tech@gmail.com')
+ORDER BY ap.created_at DESC;
+
+SELECT '=== CHECK IF MULTIPLE TENANTS OWNED BY SAME USER ===' as info;
+
+SELECT 
+  au.email,
+  COUNT(DISTINCT ap.tenant_id) as tenant_count,
+  array_agg(DISTINCT t.name ORDER BY t.created_at) as tenant_names,
+  array_agg(DISTINCT ap.tenant_id::text ORDER BY ap.created_at) as tenant_ids
+FROM auto_provisioning ap
+LEFT JOIN tenants t ON t.id = ap.tenant_id
+LEFT JOIN auth.users au ON au.id = ap.user_id
+WHERE ap.status = 'completed'
+GROUP BY au.email
+HAVING COUNT(DISTINCT ap.tenant_id) > 1
 ORDER BY tenant_count DESC;
 
 SELECT '=== RECENT EMAIL CHANGES (Last 24 hours) ===' as info;
@@ -263,7 +251,7 @@ BEGIN
   RAISE NOTICE 'Admin email found in:';
   RAISE NOTICE '  auth.users: % records', auth_count;
   RAISE NOTICE '  profiles: % records', profile_count;
-  RAISE NOTICE '  tenants: % records (owner_email)', tenant_count;
+  RAISE NOTICE '  tenants: % records (via auto_provisioning)', tenant_count;
   IF has_email_col THEN
     RAISE NOTICE '  employees: % records', employee_count;
   ELSE
@@ -295,6 +283,6 @@ SELECT '✅ Diagnostic complete!' as status;
 
 SELECT '📋 NEXT STEPS:' as info;
 SELECT '1. Review the output above for any ❌ or 🚨 indicators' as step1;
-SELECT '2. Check if multiple tenants have the same owner_email' as step2;
+SELECT '2. Check if multiple tenants have the same owner' as step2;
 SELECT '3. Check if auth.users and profiles emails match' as step3;
 SELECT '4. Report findings for remediation' as step4;
