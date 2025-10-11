@@ -118,58 +118,96 @@ export function TenantConfiguration({ tenantId }: TenantConfigurationProps) {
       setFeatures(featuresData || []);
 
       // Fetch tenant credentials (owner info)
-      // First try to get from auto_provisioning
-      const { data: provisioningData } = await supabase
-        .from("auto_provisioning")
-        .select("user_id, tenant_id, created_at")
-        .eq("tenant_id", tenantId)
-        .eq("status", "completed")
-        .maybeSingle();
+      // PRIORITY 1: Check tenant.owner_id (new separation architecture)
+      // Note: owner_id field exists in database but types not yet regenerated
+      const tenantWithOwner = tenantData as typeof tenantData & { owner_id?: string | null };
+      let ownerUserId: string | null = null;
+      let ownerEmail: string | null = null;
+      let createdAt: string = tenantData.created_at;
 
-      if (provisioningData) {
-        // Fetch user profile separately
-        const { data: profileData } = await supabase
+      if (tenantWithOwner.owner_id) {
+        console.log(
+          "[CREDENTIALS] Found tenant.owner_id:",
+          tenantWithOwner.owner_id,
+        );
+        
+        // Fetch owner profile from auth
+        const { data: ownerProfile } = await supabase
           .from("profiles")
-          .select("email")
-          .eq("user_id", provisioningData.user_id)
-          .single();
+          .select("email, created_at")
+          .eq("user_id", tenantWithOwner.owner_id)
+          .maybeSingle();
 
-        if (profileData) {
-          setCredentials({
-            owner_email: profileData.email,
-            tenant_slug: tenantData.slug,
-            tenant_id: tenantId,
-            created_at: provisioningData.created_at,
-          });
-          // Don't set currentPassword - existing passwords can't be displayed
-        }
-      } else {
-        // Fallback: use tenant's email if auto_provisioning not found
-        if (tenantData.email) {
-          setCredentials({
-            owner_email: tenantData.email,
-            tenant_slug: tenantData.slug,
-            tenant_id: tenantId,
-            created_at: tenantData.created_at,
-          });
-          // Don't set currentPassword - existing passwords can't be displayed
+        if (ownerProfile?.email) {
+          ownerUserId = tenantWithOwner.owner_id;
+          ownerEmail = ownerProfile.email;
+          createdAt = ownerProfile.created_at || tenantData.created_at;
           console.log(
-            "[CREDENTIALS] Using tenant email as fallback:",
-            tenantData.email,
+            "[CREDENTIALS] ✅ Using owner from tenant.owner_id:",
+            ownerEmail,
           );
         } else {
           console.warn(
-            "[CREDENTIALS] No auto_provisioning record and no tenant email found",
+            "[CREDENTIALS] tenant.owner_id exists but no profile found",
           );
-          // Still set basic info even without email
-          setCredentials({
-            owner_email: "admin@unknown.com", // Placeholder
-            tenant_slug: tenantData.slug,
-            tenant_id: tenantId,
-            created_at: tenantData.created_at,
-          });
         }
       }
+
+      // PRIORITY 2: Fall back to auto_provisioning if owner_id not found
+      if (!ownerUserId) {
+        console.log("[CREDENTIALS] No owner_id, checking auto_provisioning...");
+        
+        const { data: provisioningData } = await supabase
+          .from("auto_provisioning")
+          .select("user_id, created_at")
+          .eq("tenant_id", tenantId)
+          .eq("status", "completed")
+          .maybeSingle();
+
+        if (provisioningData?.user_id) {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("email")
+            .eq("user_id", provisioningData.user_id)
+            .maybeSingle();
+
+          if (profileData?.email) {
+            ownerUserId = provisioningData.user_id;
+            ownerEmail = profileData.email;
+            createdAt = provisioningData.created_at || tenantData.created_at;
+            console.log(
+              "[CREDENTIALS] ✅ Using owner from auto_provisioning:",
+              ownerEmail,
+            );
+          }
+        }
+      }
+
+      // PRIORITY 3: Last resort - use tenant's email field
+      if (!ownerEmail) {
+        console.warn("[CREDENTIALS] No owner found, falling back to tenant.email");
+        
+        if (tenantData.email) {
+          ownerEmail = tenantData.email;
+          console.log(
+            "[CREDENTIALS] Using tenant.email as fallback:",
+            tenantData.email,
+          );
+        } else {
+          console.error(
+            "[CREDENTIALS] No owner_id, auto_provisioning, or tenant.email found!",
+          );
+          ownerEmail = "admin@unknown.com"; // Placeholder to prevent UI crash
+        }
+      }
+
+      // Set credentials state
+      setCredentials({
+        owner_email: ownerEmail,
+        tenant_slug: tenantData.slug,
+        tenant_id: tenantId,
+        created_at: createdAt,
+      });
     } catch (error) {
       console.error("Error fetching tenant configuration:", error);
       toast({
