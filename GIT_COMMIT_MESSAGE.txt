@@ -1,0 +1,29 @@
+# Git Commit Message
+
+```bash
+git add .
+git commit -m "fix: improve UI/UX with better feedback and keyboard shortcuts
+
+- Remove fake credential fallback (admin@unknown.com)
+- Add enhanced empty state with helpful instructions
+- Replace copy buttons with CopyButton component for visual feedback
+- Add keyboard shortcuts (Esc to go back, Ctrl+R to refresh)
+- Improve user experience with checkmark animations on copy
+
+Fixes 4 critical/high UI/UX issues identified in analysis.
+
+Modified files:
+- apps/admin-dashboard/src/components/tenant/TenantConfiguration.tsx
+- apps/admin-dashboard/src/pages/TenantDetailPage.tsx
+
+See UI_UX_FIXES_COMPLETE.md for details."
+git push
+```
+
+## Or shorter version:
+
+```bash
+git add .
+git commit -m "fix: remove fake credentials and improve copy button UX"
+git push
+```

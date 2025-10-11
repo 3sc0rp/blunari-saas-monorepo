@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { CopyButton } from "@/components/ui/CopyButton";
 
 interface TenantConfigurationProps {
   tenantId: string;
@@ -184,30 +185,26 @@ export function TenantConfiguration({ tenantId }: TenantConfigurationProps) {
       }
 
       // PRIORITY 3: Last resort - use tenant's email field
-      if (!ownerEmail) {
-        console.warn("[CREDENTIALS] No owner found, falling back to tenant.email");
-        
-        if (tenantData.email) {
-          ownerEmail = tenantData.email;
-          console.log(
-            "[CREDENTIALS] Using tenant.email as fallback:",
-            tenantData.email,
-          );
-        } else {
-          console.error(
-            "[CREDENTIALS] No owner_id, auto_provisioning, or tenant.email found!",
-          );
-          ownerEmail = "admin@unknown.com"; // Placeholder to prevent UI crash
-        }
+      if (!ownerEmail && tenantData.email) {
+        ownerEmail = tenantData.email;
+        console.log(
+          "[CREDENTIALS] Using tenant.email as fallback:",
+          tenantData.email,
+        );
       }
 
-      // Set credentials state
-      setCredentials({
-        owner_email: ownerEmail,
-        tenant_slug: tenantData.slug,
-        tenant_id: tenantId,
-        created_at: createdAt,
-      });
+      // Set credentials state only if we have a real email
+      if (ownerEmail) {
+        setCredentials({
+          owner_email: ownerEmail,
+          tenant_slug: tenantData.slug,
+          tenant_id: tenantId,
+          created_at: createdAt,
+        });
+      } else {
+        console.warn("[CREDENTIALS] No owner credentials found for this tenant");
+        setCredentials(null);
+      }
     } catch (error) {
       console.error("Error fetching tenant configuration:", error);
       toast({
@@ -794,24 +791,6 @@ export function TenantConfiguration({ tenantId }: TenantConfigurationProps) {
         <CardContent className="space-y-6">
           {credentials ? (
             <div className="space-y-6">
-              {credentials.owner_email === "admin@unknown.com" && (
-                <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-yellow-900 dark:text-yellow-100 mb-1">
-                        Email Not Found
-                      </h4>
-                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                        No owner email found for this tenant. You can set one
-                        using the email field above, then use the credential
-                        management functions.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
@@ -856,15 +835,11 @@ export function TenantConfiguration({ tenantId }: TenantConfigurationProps) {
                           readOnly
                           className="bg-muted flex-1"
                         />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            copyToClipboard(credentials.owner_email, "Email")
-                          }
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
+                        <CopyButton 
+                          value={credentials.owner_email} 
+                          label="Email" 
+                          size="sm" 
+                        />
                         <Button
                           variant="outline"
                           size="sm"
@@ -1040,15 +1015,11 @@ export function TenantConfiguration({ tenantId }: TenantConfigurationProps) {
                       readOnly
                       className="bg-muted font-mono text-xs flex-1"
                     />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        copyToClipboard(credentials.tenant_id, "Tenant ID")
-                      }
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+                    <CopyButton 
+                      value={credentials.tenant_id} 
+                      label="Tenant ID" 
+                      size="sm" 
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Unique tenant identifier
@@ -1063,18 +1034,11 @@ export function TenantConfiguration({ tenantId }: TenantConfigurationProps) {
                       readOnly
                       className="bg-muted flex-1"
                     />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        copyToClipboard(
-                          `https://app.blunari.com/${credentials.tenant_slug}`,
-                          "Access URL",
-                        )
-                      }
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+                    <CopyButton 
+                      value={`https://app.blunari.com/${credentials.tenant_slug}`} 
+                      label="Access URL" 
+                      size="sm" 
+                    />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Direct login URL for this tenant
@@ -1096,9 +1060,30 @@ export function TenantConfiguration({ tenantId }: TenantConfigurationProps) {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Key className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No login credentials found for this tenant</p>
+            <div className="text-center py-12 text-muted-foreground">
+              <Key className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold mb-2 text-foreground">
+                No Owner Credentials Found
+              </h3>
+              <p className="mb-4 max-w-md mx-auto">
+                This tenant doesn't have an owner account yet. You can generate
+                credentials using the Password Setup Email button in the tenant
+                detail page, or set up credentials manually.
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    toast({
+                      title: "How to Create Owner Account",
+                      description: "Go to Tenant Detail page and use 'Password Setup Email' button to create owner credentials.",
+                    });
+                  }}
+                >
+                  Learn How
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

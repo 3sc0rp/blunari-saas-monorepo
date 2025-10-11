@@ -52,6 +52,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useCommonShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 export default function TenantDetailPage() {
   const { tenantId } = useParams<{ tenantId: string }>();
@@ -156,6 +157,12 @@ export default function TenantDetailPage() {
       setLoadingPage(false);
     }
   }, [tenantId, getTenant, navigate, toast]);
+
+  // Add keyboard shortcuts
+  useCommonShortcuts({
+    onBack: () => navigate('/admin/tenants'),
+    onRefresh: fetchTenant,
+  });
 
   useEffect(() => {
     if (tenantId) {
