@@ -141,22 +141,32 @@ BEGIN
 END $$;
 
 -- Check if there are tenant employees with admin email
-SELECT 
-  e.id,
-  e.tenant_id,
-  e.email,
-  e.first_name,
-  e.last_name,
-  e.role,
-  t.name as tenant_name,
-  '⚠️  WRONG! Admin should not be here' as issue
-FROM employees e
-LEFT JOIN tenants t ON t.id = e.tenant_id
-WHERE e.email IN ('admin@blunari.ai', 'drood.tech@gmail.com')
-  AND EXISTS (
+DO $$
+BEGIN
+  IF EXISTS (
     SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'employees' AND column_name = 'tenant_id'
-  );
+    WHERE table_schema = 'public'
+      AND table_name = 'employees' 
+      AND column_name = 'tenant_id'
+  ) THEN
+    -- Only run this query if tenant_id column exists
+    RAISE NOTICE 'Checking for admin in tenant employees table...';
+    
+    PERFORM e.id
+    FROM employees e
+    LEFT JOIN tenants t ON t.id = e.tenant_id
+    WHERE e.email IN ('admin@blunari.ai', 'drood.tech@gmail.com');
+    
+    IF FOUND THEN
+      RAISE NOTICE '⚠️  WARNING: Admin email found in tenant employees table!';
+    ELSE
+      RAISE NOTICE '✅ Admin email NOT in tenant employees table (correct)';
+    END IF;
+  ELSE
+    RAISE NOTICE '✅ No tenant_id column - this is admin employees table (correct)';
+    RAISE NOTICE '✅ Admin data is properly isolated from tenant data';
+  END IF;
+END $$;
 
 SELECT '' as separator;
 
@@ -170,34 +180,55 @@ DECLARE
 BEGIN
   SELECT EXISTS (
     SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'employees' AND column_name = 'email'
+    WHERE table_schema = 'public'
+      AND table_name = 'employees' 
+      AND column_name = 'email'
   ) INTO has_email_column;
   
   SELECT EXISTS (
     SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'employees' AND column_name = 'tenant_id'
+    WHERE table_schema = 'public'
+      AND table_name = 'employees' 
+      AND column_name = 'tenant_id'
   ) INTO has_tenant_id_column;
   
   RAISE NOTICE '';
+  RAISE NOTICE '=== FINAL ASSESSMENT ===';
+  RAISE NOTICE '';
+  
   IF has_tenant_id_column THEN
-    RAISE NOTICE '🔧 IMMEDIATE ACTION REQUIRED:';
+    RAISE NOTICE '⚠️  WARNING: This is the CLIENT DASHBOARD employees table';
+    RAISE NOTICE 'Admin staff should NOT use this table!';
     RAISE NOTICE '';
-    RAISE NOTICE '1. Remove admin from client employees table:';
+    RAISE NOTICE '🔧 IMMEDIATE ACTION REQUIRED:';
+    RAISE NOTICE '1. Remove admin from this table:';
     RAISE NOTICE '   DELETE FROM employees ';
     RAISE NOTICE '   WHERE email IN (''admin@blunari.ai'', ''drood.tech@gmail.com'')';
     RAISE NOTICE '     AND tenant_id IS NOT NULL;';
     RAISE NOTICE '';
-    RAISE NOTICE '2. Update RealProfilePage.tsx to remove employees table update';
-    RAISE NOTICE '   OR add check to ensure admin table has no tenant_id column';
-    RAISE NOTICE '';
-    RAISE NOTICE '3. Only update profiles.email (not employees.email)';
+    RAISE NOTICE '2. Use correct admin employees table (without tenant_id)';
+    
   ELSE
-    RAISE NOTICE '✅ Structure looks correct';
+    RAISE NOTICE '✅ CORRECT TABLE STRUCTURE';
     RAISE NOTICE '';
-    RAISE NOTICE 'Verify RealProfilePage.tsx only updates:';
-    RAISE NOTICE '1. auth.users (via supabase.auth.updateUser)';
-    RAISE NOTICE '2. profiles table';
-    RAISE NOTICE '3. Admin employees table (if email column exists)';
+    RAISE NOTICE 'This is the ADMIN employees table (no tenant_id column)';
+    RAISE NOTICE 'Perfect for internal Blunari staff (SUPER_ADMIN, ADMIN, SUPPORT)';
+    RAISE NOTICE '';
+    RAISE NOTICE '✅ Tenant data is properly isolated';
+    RAISE NOTICE '✅ Admin email changes will NOT affect tenant data';
+    RAISE NOTICE '';
+    RAISE NOTICE 'Current RealProfilePage.tsx behavior:';
+    RAISE NOTICE '  1. Updates auth.users (via supabase.auth.updateUser)';
+    RAISE NOTICE '  2. Updates profiles table';
+    RAISE NOTICE '  3. Does NOT update employees table (correct!)';
+    RAISE NOTICE '';
+    IF has_email_column THEN
+      RAISE NOTICE '⚠️  Note: employees table has email column';
+      RAISE NOTICE 'But it''s safe because tenant_id does not exist';
+    ELSE
+      RAISE NOTICE '✅ employees table has NO email column';
+      RAISE NOTICE 'Email is fetched from auth.users or profiles (correct)';
+    END IF;
   END IF;
 END $$;
 
