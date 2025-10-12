@@ -815,6 +815,43 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
                       maxWidth: '100%',
                     }}
                   >
+                    {/* Safe-area overlay indicators */}
+                    {bookingConfig.safeArea && previewDevice === 'mobile' && (
+                      <>
+                        {/* Top safe area (notch/status bar) */}
+                        <div 
+                          className="absolute top-0 left-0 right-0 bg-red-500/10 border-b-2 border-red-500/30 z-20 pointer-events-none"
+                          style={{ height: '44px' }}
+                        >
+                          <div className="text-xs text-red-600 font-medium text-center py-1">
+                            Safe Area (Top)
+                          </div>
+                        </div>
+                        
+                        {/* Bottom safe area (home indicator) */}
+                        <div 
+                          className="absolute bottom-0 left-0 right-0 bg-red-500/10 border-t-2 border-red-500/30 z-20 pointer-events-none"
+                          style={{ height: '34px' }}
+                        >
+                          <div className="text-xs text-red-600 font-medium text-center py-1">
+                            Safe Area (Bottom)
+                          </div>
+                        </div>
+                        
+                        {/* Left safe area (rounded corners) */}
+                        <div 
+                          className="absolute top-0 bottom-0 left-0 bg-red-500/10 border-r-2 border-red-500/30 z-20 pointer-events-none"
+                          style={{ width: '16px' }}
+                        />
+                        
+                        {/* Right safe area (rounded corners) */}
+                        <div 
+                          className="absolute top-0 bottom-0 right-0 bg-red-500/10 border-l-2 border-red-500/30 z-20 pointer-events-none"
+                          style={{ width: '16px' }}
+                        />
+                      </>
+                    )}
+
                     {iframeLoading && (
                       <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
                         <div className="text-center">

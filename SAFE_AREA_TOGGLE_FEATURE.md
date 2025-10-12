@@ -118,6 +118,39 @@ Created new "Embed Options" card in the embed tab:
 )}
 ```
 
+### 5. Added Preview Visualization
+
+When Safe-area is enabled and mobile device is selected in preview:
+
+```tsx
+{bookingConfig.safeArea && previewDevice === 'mobile' && (
+  <>
+    {/* Top safe area - 44px for notch/status bar */}
+    <div className="absolute top-0 left-0 right-0 bg-red-500/10 border-b-2 border-red-500/30">
+      <div className="text-xs text-red-600 font-medium text-center">
+        Safe Area (Top)
+      </div>
+    </div>
+    
+    {/* Bottom safe area - 34px for home indicator */}
+    <div className="absolute bottom-0 left-0 right-0 bg-red-500/10 border-t-2 border-red-500/30">
+      <div className="text-xs text-red-600 font-medium text-center">
+        Safe Area (Bottom)
+      </div>
+    </div>
+    
+    {/* Left/Right zones - 16px for rounded corners */}
+  </>
+)}
+```
+
+**Features:**
+- Red semi-transparent overlay zones
+- Labeled "Safe Area (Top/Bottom)"
+- Only visible on mobile preview
+- Updates immediately when toggle changes
+- Non-interactive (pointer-events-none)
+
 ---
 
 ## UI Location
@@ -156,8 +189,20 @@ The Safe-area toggle appears in:
 1. Navigate to **Bookings → Widget tab → Embed section**
 2. Find the **"Embed Options"** card
 3. Toggle **Safe-area** ON or OFF
-4. Click **Save Changes** (Ctrl+S)
-5. Copy updated widget URL or embed code
+4. **Preview updates immediately** - see safe-area zones highlighted in red on mobile preview
+5. Click **Save Changes** (Ctrl+S)
+6. Copy updated widget URL or embed code
+
+### Visual Preview Indicators
+
+When Safe-area is **enabled** and **mobile device** is selected:
+- **Red overlay zones** show safe-area padding
+- **Top zone (44px)**: Status bar and notch area
+- **Bottom zone (34px)**: Home indicator area  
+- **Left/Right zones (16px each)**: Rounded corner protection
+- Labels indicate "Safe Area (Top/Bottom)"
+
+**Toggle OFF**: Overlays disappear, showing full-screen widget
 
 ### When to Enable Safe-area
 
@@ -238,6 +283,11 @@ When `safeArea: true`, the widget applies CSS environment variables:
 - [x] Toggle switch animates smoothly
 - [x] Help text is clear and readable
 - [x] Card styling matches other cards
+- [x] **Safe-area overlays appear on mobile preview when enabled**
+- [x] **Overlays disappear when toggle is OFF**
+- [x] **Overlays only show on mobile device preview, not desktop/tablet**
+- [x] **Red zones clearly indicate safe-area padding**
+- [x] **Labels show "Safe Area (Top/Bottom)"**
 
 ### Functional Testing
 - [x] Toggle updates config state
