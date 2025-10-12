@@ -626,6 +626,17 @@ async function fetchRealWidgetAnalytics(
   correlationId?: string
 ): Promise<AnalyticsResponse> {
   
+  // Validate tenantId before making the request
+  if (!tenantId || tenantId === 'null' || tenantId.trim() === '') {
+    throw new Error('Invalid tenantId: tenantId is required and cannot be null or empty');
+  }
+
+  // Validate tenantId is a UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(tenantId)) {
+    throw new Error(`Invalid tenantId format: "${tenantId}" is not a valid UUID`);
+  }
+  
   console.log('Calling real analytics Edge Function...');
   console.log('Request details:', { tenantId, widgetType, timeRange });
   console.log('Access token info:', {
