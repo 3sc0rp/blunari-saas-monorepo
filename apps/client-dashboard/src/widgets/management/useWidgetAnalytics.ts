@@ -112,7 +112,7 @@ class AnalyticsCache {
   /**
    * Set cached data with TTL
    */
-  set(key: string, data: WidgetAnalyticsData, ttlMs: number = 5 * 60 * 1000): void { // 5 minutes default
+  set(key: string, data: WidgetAnalyticsData, ttlMs: number = 30 * 1000): void { // 30 seconds default for real-time feel
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -213,7 +213,7 @@ export function useWidgetAnalytics({
   tenantId,
   tenantSlug,
   widgetType,
-  refreshInterval = 300000, // 5 minutes default
+  refreshInterval = 30000, // 30 seconds for real-time feel (changed from 5 minutes)
   forceEdge = false,
 }: UseWidgetAnalyticsOptions): AnalyticsState & {
   refresh: (timeRange?: AnalyticsTimeRange) => Promise<void>;
@@ -628,9 +628,44 @@ export function useWidgetAnalytics({
       }
     }, refreshInterval);
 
+    // Set up real-time subscription to widget events
+    console.log('📡 Setting up real-time subscription for widget events...');
+    const eventsChannel = supabase
+      .channel(`widget-events-${tenantId}-${widgetType}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'widget_events',
+          filter: `tenant_id=eq.${tenantId}`
+        },
+        (payload) => {
+          console.log('🔔 Real-time widget event received:', payload);
+          // Refresh analytics when new event comes in
+          if (!state.loading) {
+            fetchAnalytics().catch(console.error);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Real-time subscription status:', status);
+      });
+
+    // Refresh when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !state.loading) {
+        console.log('👁️ Tab visible - refreshing analytics...');
+        fetchAnalytics().catch(console.error);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
-  debug('🧹 Cleaning up analytics interval');
+  debug('🧹 Cleaning up analytics interval and subscriptions');
       clearInterval(interval);
+      eventsChannel.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchAnalytics, refreshInterval, isAvailable, tenantId, tenantSlug, widgetType]);
 
