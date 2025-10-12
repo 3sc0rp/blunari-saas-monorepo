@@ -221,6 +221,21 @@ export function useWidgetAnalytics({
   rateLimitRemaining: number;
   rateLimitResetTime: number;
 } {
+  // Log hook initialization with tenant info
+  console.log('🔧 useWidgetAnalytics initialized:', {
+    tenantId,
+    tenantIdType: typeof tenantId,
+    tenantIdValue: tenantId,
+    tenantSlug,
+    tenantSlugType: typeof tenantSlug,
+    tenantSlugValue: tenantSlug,
+    widgetType,
+    refreshInterval,
+    forceEdge,
+    hasValidTenantId: Boolean(tenantId && tenantId.match(/^[0-9a-f-]{36}$/i)),
+    timestamp: new Date().toISOString()
+  });
+
   const [state, setState] = useState<AnalyticsState>({
     data: null,
     loading: false,
@@ -331,9 +346,15 @@ export function useWidgetAnalytics({
 
     // Second guard: missing tenant info
     if (!tenantId || !tenantSlug) {
-  debugWarn('⚠️ Analytics fetch skipped - missing tenant information:', {
-        tenantId: !!tenantId,
-        tenantSlug: !!tenantSlug
+      console.error('❌ Analytics fetch skipped - missing tenant information:', {
+        tenantId,
+        tenantIdPresent: !!tenantId,
+        tenantIdValue: tenantId,
+        tenantSlug,
+        tenantSlugPresent: !!tenantSlug,
+        tenantSlugValue: tenantSlug,
+        widgetType,
+        timeRange
       });
       setState(prev => ({
         ...prev,
