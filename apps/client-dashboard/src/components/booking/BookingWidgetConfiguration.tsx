@@ -662,6 +662,33 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
             </Card>
           )}
 
+          {/* Embed Options */}
+          {widgetUrl && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Embed Options</CardTitle>
+                <CardDescription>Configure how the widget behaves when embedded</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="safeArea" className="text-sm font-medium">
+                      Safe-area
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Apply safe area padding for mobile devices with notches and status bars
+                    </p>
+                  </div>
+                  <Switch
+                    id="safeArea"
+                    checked={bookingConfig.safeArea}
+                    onCheckedChange={(checked) => updateConfig({ safeArea: checked })}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>

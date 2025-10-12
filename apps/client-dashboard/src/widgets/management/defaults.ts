@@ -46,4 +46,5 @@ export const getDefaultConfig = (type: WidgetType): WidgetConfig => ({
   autoFocus: true,
   closeOnOutsideClick: true,
   showCloseButton: true,
+  safeArea: true, // Enable safe area padding by default for mobile compatibility
 });

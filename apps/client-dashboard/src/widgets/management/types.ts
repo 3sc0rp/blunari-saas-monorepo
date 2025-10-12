@@ -69,6 +69,9 @@ export interface WidgetConfig {
   autoFocus: boolean;
   closeOnOutsideClick: boolean;
   showCloseButton: boolean;
+
+  // Embedding
+  safeArea: boolean; // Apply safe area padding for mobile devices with notches/status bars
 }
 
 export interface WidgetAnalytics {

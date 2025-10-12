@@ -232,7 +232,10 @@ export function sanitizeConfig(config: Partial<WidgetConfig>): WidgetConfig {
     // Behavior
     autoFocus: Boolean(config.autoFocus),
     closeOnOutsideClick: Boolean(config.closeOnOutsideClick),
-    showCloseButton: Boolean(config.showCloseButton)
+    showCloseButton: Boolean(config.showCloseButton),
+
+    // Embedding
+    safeArea: Boolean(config.safeArea ?? true) // Default to true if not specified
   };
 }
 
