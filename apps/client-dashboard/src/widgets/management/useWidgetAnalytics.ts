@@ -668,6 +668,19 @@ async function fetchRealWidgetAnalytics(
       }
     }
 
+    console.log('📡 Full request details:', {
+      tenantId,
+      tenantIdType: typeof tenantId,
+      tenantIdLength: tenantId?.length,
+      tenantIdValue: tenantId,
+      widgetType,
+      widgetTypeType: typeof widgetType,
+      timeRange,
+      timeRangeType: typeof timeRange,
+      hasAuthHeader: Boolean(requestHeaders['Authorization']),
+      authHeaderLength: requestHeaders['Authorization']?.length
+    });
+
     console.log('🚀 About to call Edge Function with:', {
       tenantId,
       widgetType,
@@ -698,17 +711,33 @@ async function fetchRealWidgetAnalytics(
     });
 
     if (response.error) {
+      const errorStatus = (response.error as any)?.context?.response?.status || (response.error as any)?.status;
       console.error('Edge Function error details:', {
         name: response.error.name,
         message: response.error.message,
-        status: (response.error as any)?.context?.response?.status || (response.error as any)?.status,
+        status: errorStatus,
         context: (response.error as any)?.context
       });
+      
+      // Try to get the actual error body from the Edge Function
+      let errorBody = null;
       try {
         const res: any = (response.error as any)?.context?.response;
         if (res && typeof res.text === 'function') {
           const bodyText = await (res.clone ? res.clone() : res).text();
-          console.error('Edge Function error body:', bodyText?.slice(0, 2000));
+          console.error('Edge Function error body (raw):', bodyText?.slice(0, 2000));
+          try {
+            errorBody = JSON.parse(bodyText);
+            console.error('Edge Function error body (parsed):', errorBody);
+            console.error('❌ Edge Function Error:', {
+              code: errorBody.code,
+              error: errorBody.error,
+              details: errorBody.details,
+              correlationId: errorBody.correlationId
+            });
+          } catch (parseErr) {
+            console.warn('Could not parse error body as JSON');
+          }
         }
       } catch (e) {
         console.warn('Failed to read Edge Function error body', e);
