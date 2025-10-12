@@ -722,9 +722,13 @@ async function fetchRealWidgetAnalytics(
     console.log('📦 Request body:', JSON.stringify(requestBody));
     console.log('📋 Request headers:', JSON.stringify(Object.keys(requestHeaders)));
 
+    // IMPORTANT: Stringify the body explicitly for the Supabase SDK
     const response = await supabase.functions.invoke('widget-analytics', {
-      body: requestBody,
-      headers: requestHeaders
+      body: JSON.stringify(requestBody),
+      headers: {
+        ...requestHeaders,
+        'Content-Type': 'application/json'
+      }
     });
 
     console.log('Edge Function response:', {
@@ -794,12 +798,12 @@ async function fetchRealWidgetAnalytics(
           }
           
           const retryResponse = await supabase.functions.invoke('widget-analytics', {
-            body: {
+            body: JSON.stringify({
               tenantId,
               widgetType,
               timeRange,
               version: '2.0'
-            },
+            }),
             headers: retryHeaders
           });
           
