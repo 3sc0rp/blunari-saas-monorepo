@@ -743,14 +743,26 @@ async function fetchRealWidgetAnalytics(
     console.log('📦 Request body:', JSON.stringify(requestBody));
     console.log('📋 Request headers:', JSON.stringify(Object.keys(requestHeaders)));
 
-    // IMPORTANT: Stringify the body explicitly for the Supabase SDK
-    const response = await supabase.functions.invoke('widget-analytics', {
-      body: JSON.stringify(requestBody),
+    // BYPASS SUPABASE SDK - Use direct fetch to avoid SDK body serialization issues
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const fetchUrl = `${supabaseUrl}/functions/v1/widget-analytics`;
+    
+    console.log('🌐 Direct fetch to:', fetchUrl);
+    
+    const fetchResponse = await fetch(fetchUrl, {
+      method: 'POST',
       headers: {
         ...requestHeaders,
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify(requestBody)
     });
+
+    const responseData = await fetchResponse.json();
+    const response = {
+      data: fetchResponse.ok ? responseData : null,
+      error: fetchResponse.ok ? null : new Error(responseData.error || responseData.message || 'Request failed')
+    };
 
     console.log('Edge Function response:', {
       error: response.error,
@@ -818,15 +830,23 @@ async function fetchRealWidgetAnalytics(
             retryHeaders['Authorization'] = `Bearer ${anonKey}`;
           }
           
-          const retryResponse = await supabase.functions.invoke('widget-analytics', {
+          // BYPASS SUPABASE SDK - Use direct fetch for retry too
+          const retryFetchResponse = await fetch(fetchUrl, {
+            method: 'POST',
+            headers: retryHeaders,
             body: JSON.stringify({
               tenantId,
               widgetType,
               timeRange,
               version: '2.0'
-            }),
-            headers: retryHeaders
+            })
           });
+
+          const retryResponseData = await retryFetchResponse.json();
+          const retryResponse = {
+            data: retryFetchResponse.ok ? retryResponseData : null,
+            error: retryFetchResponse.ok ? null : new Error(retryResponseData.error || 'Retry failed')
+          };
           
           if (!retryResponse.error && retryResponse.data?.success) {
             console.log('✅ Retry without auth succeeded!');
