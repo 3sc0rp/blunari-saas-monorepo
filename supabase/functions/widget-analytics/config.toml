@@ -1,0 +1,4 @@
+# Widget Analytics Edge Function Configuration
+# This function allows anonymous access for embedded widgets
+
+verify_jwt = false
