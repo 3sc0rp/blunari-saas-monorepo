@@ -241,6 +241,12 @@ export function useTenant() {
 
         // 2) User-based resolution
         if (session?.user?.id) {
+          console.log('🔍 [useTenant] Resolving tenant for user:', {
+            userId: session.user.id,
+            email: session.user.email,
+            timestamp: new Date().toISOString()
+          });
+
           let resolvedTenantId: string | null = null;
 
           // QUERY ORDER CHANGE: Prefer auto_provisioning (present in your DB) and
@@ -251,18 +257,52 @@ export function useTenant() {
             .eq('user_id', session.user.id)
             .eq('status', 'completed')
             .maybeSingle();
+          
+          console.log('📊 [useTenant] Auto-provisioning query result:', {
+            hasData: !!autoProv,
+            hasTenantId: !!(autoProv as any)?.tenant_id,
+            tenantId: (autoProv as any)?.tenant_id,
+            error: autoErr?.message,
+            errorCode: (autoErr as any)?.code,
+            userId: session.user.id
+          });
+
           if (!autoErr && autoProv?.tenant_id) {
             resolvedTenantId = (autoProv as any).tenant_id as string;
+            console.log('✅ [useTenant] Resolved tenant ID from auto_provisioning:', resolvedTenantId);
+          } else {
+            console.warn('⚠️ [useTenant] Failed to resolve tenant from auto_provisioning:', {
+              error: autoErr?.message,
+              hasData: !!autoProv,
+              autoProvData: autoProv
+            });
           }
 
           if (resolvedTenantId) {
+            console.log('🔎 [useTenant] Fetching tenant details for ID:', resolvedTenantId);
+            
             const { data: tenantById, error: idError } = await supabase
               .from('tenants')
               .select('id, slug, name, timezone, currency')
               .eq('id', resolvedTenantId)
               .maybeSingle();
 
+            console.log('📋 [useTenant] Tenant fetch result:', {
+              hasData: !!tenantById,
+              tenantId: tenantById?.id,
+              tenantSlug: tenantById?.slug,
+              tenantName: tenantById?.name,
+              error: idError?.message,
+              errorCode: (idError as any)?.code
+            });
+
             if (!idError && tenantById) {
+              console.log('✅ [useTenant] Successfully resolved real tenant:', {
+                id: tenantById.id,
+                slug: tenantById.slug,
+                name: tenantById.name
+              });
+              
               if (!signal.aborted) {
                 commitTenant(tenantById as any, 'db-user');
               }
@@ -271,15 +311,30 @@ export function useTenant() {
                 timeoutRef.current = null;
               }
               return;
+            } else {
+              console.error('❌ [useTenant] Failed to fetch tenant details:', {
+                tenantId: resolvedTenantId,
+                error: idError?.message
+              });
             }
+          } else {
+            console.error('❌ [useTenant] No tenant ID resolved from auto_provisioning');
           }
         }
       } catch (dbResolveError) {
+        console.error('❌ [useTenant] Database resolution exception:', {
+          error: dbResolveError instanceof Error ? dbResolveError.message : 'Unknown error',
+          userId: session?.user?.id,
+          stack: dbResolveError instanceof Error ? dbResolveError.stack : undefined
+        });
+        
         logger.warn('Direct tenant resolution failed', {
           component: 'useTenant',
           error: dbResolveError instanceof Error ? dbResolveError.message : 'Unknown error'
         });
       }
+
+      console.warn('⚠️ [useTenant] Database resolution completed but tenant not found, falling through to fallback logic');
 
       // Disable tenant edge function to avoid noisy 400/401s; fallback will be used
       const responseData: any = null;
