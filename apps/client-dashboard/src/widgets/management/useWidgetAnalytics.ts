@@ -426,6 +426,14 @@ export function useWidgetAnalytics({
           const realData = await inflight;
           analytics = realData;
           
+          console.log('💾 Setting analytics data in state:', {
+            hasData: !!realData,
+            totalViews: realData?.totalViews,
+            totalBookings: realData?.totalBookings,
+            allKeys: realData ? Object.keys(realData) : [],
+            fullData: realData
+          });
+          
           // Cache successful results
           analyticsCache.set(cacheKey, realData);
           
@@ -724,6 +732,15 @@ async function fetchRealWidgetAnalytics(
       data: response.data ? 'received' : 'null',
       success: response.data?.success,
       authMethod: response.data?.meta?.authMethod
+    });
+    
+    console.log('📊 Analytics data received:', {
+      hasData: !!response.data,
+      success: response.data?.success,
+      dataKeys: response.data?.data ? Object.keys(response.data.data) : [],
+      totalViews: response.data?.data?.totalViews,
+      totalBookings: response.data?.data?.totalBookings,
+      fullData: response.data?.data
     });
 
     if (response.error) {
