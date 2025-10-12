@@ -692,6 +692,13 @@ async function fetchRealWidgetAnalytics(
       authHeaderLength: requestHeaders['Authorization']?.length
     });
 
+    const requestBody = {
+      tenantId,
+      widgetType,
+      timeRange,
+      version: '2.0'
+    };
+
     console.log('🚀 About to call Edge Function with:', {
       tenantId,
       widgetType,
@@ -703,14 +710,12 @@ async function fetchRealWidgetAnalytics(
       tenantIdContainsDash: tenantId?.includes('-'),
       tenantIdContainsUnderscore: tenantId?.includes('_')
     });
+    
+    console.log('📦 Request body:', JSON.stringify(requestBody));
+    console.log('📋 Request headers:', JSON.stringify(Object.keys(requestHeaders)));
 
     const response = await supabase.functions.invoke('widget-analytics', {
-      body: {
-        tenantId,
-        widgetType,
-        timeRange,
-        version: '2.0'
-      },
+      body: requestBody,
       headers: requestHeaders
     });
 
