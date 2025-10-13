@@ -1,4 +1,8 @@
+/// <reference path="./types.d.ts" />
+
+// @ts-ignore - Deno ESM imports are not recognized by standard TypeScript
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+// @ts-ignore - .ts extension required for Deno
 import { corsHeaders } from '../_shared/cors.ts';
 
 const FUNCTION_VERSION = '2025-09-13.4';
@@ -34,7 +38,8 @@ interface SuccessResponse {
   };
 }
 
-Deno.serve(async (req) => {
+// @ts-ignore - Deno.serve is available in Deno runtime
+Deno.serve(async (req: Request) => {
   const startTime = Date.now();
   const correlationId = req.headers.get('x-correlation-id') || crypto.randomUUID();
   const origin = req.headers.get('origin') || '';
@@ -110,11 +115,12 @@ Deno.serve(async (req) => {
     try {
       requestData = JSON.parse(body);
     } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
       const errorResponse: ErrorResponse = {
         success: false,
         code: 'JSON_PARSE_ERROR',
         error: 'Invalid JSON in request body',
-        details: { message: e.message },
+        details: { message: errorMessage },
         correlationId
       };
       return new Response(JSON.stringify(errorResponse), {
@@ -304,11 +310,12 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     const errorResponse: ErrorResponse = {
       success: false,
       code: 'INTERNAL_ERROR',
       error: 'An unexpected error occurred',
-      details: { message: error.message },
+      details: { message: errorMessage },
       correlationId
     };
 
