@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd apps/client-dashboard && npm run build",
+  "buildCommand": "cd apps/client-dashboard && bash build.sh",
   "outputDirectory": "apps/client-dashboard/dist",
   "installCommand": "cd apps/client-dashboard && npm install",
   "framework": null
