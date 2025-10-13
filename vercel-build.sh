@@ -7,28 +7,51 @@ set -e  # Exit on error
 echo "=========================================="
 echo "VERCEL STANDALONE BUILD"
 echo "=========================================="
-echo "Working directory: $(pwd)"
+echo "Initial working directory: $(pwd)"
 echo "Node version: $(node --version)"
 echo "NPM version: $(npm --version)"
+echo ""
+echo "📋 Directory contents:"
+ls -la | head -20
 echo ""
 
 # Navigate to client-dashboard
 echo "📂 Changing to apps/client-dashboard..."
 cd apps/client-dashboard
 
-echo "📦 Installing dependencies..."
-npm install --legacy-peer-deps
+echo "📂 Now in: $(pwd)"
+echo "📋 Contents:"
+ls -la | head -15
+echo ""
 
-echo "🔍 Verifying vite installation..."
-if [ -f "node_modules/.bin/vite" ]; then
-  echo "✅ Vite found: $(node_modules/.bin/vite --version)"
-else
-  echo "❌ ERROR: Vite not found after npm install!"
-  exit 1
+echo "📦 Installing dependencies (including devDependencies)..."
+npm ci --include=dev || npm install --include=dev
+
+echo "🔍 Checking installed packages..."
+echo "Package.json location: $(pwd)/package.json"
+echo "Node modules exists: $([ -d "node_modules" ] && echo "YES" || echo "NO")"
+
+if [ -d "node_modules" ]; then
+  echo "Node modules size: $(du -sh node_modules 2>/dev/null || echo 'unknown')"
+  echo "Vite package exists: $([ -d "node_modules/vite" ] && echo "YES" || echo "NO")"
+  
+  if [ -f "node_modules/.bin/vite" ]; then
+    echo "✅ Vite binary found: $(node_modules/.bin/vite --version)"
+  else
+    echo "⚠️  Vite binary not in .bin, checking package..."
+    if [ -d "node_modules/vite" ]; then
+      echo "✅ Vite package installed, will use npx"
+    else
+      echo "❌ ERROR: Vite not installed!"
+      echo "Checking devDependencies in package.json..."
+      node -p "JSON.stringify(require('./package.json').devDependencies.vite)" || echo "Vite not in devDeps"
+      exit 1
+    fi
+  fi
 fi
 
-echo "🏗️  Building application..."
-NODE_ENV=production npx vite build
+echo "🏗️  Building application with npx..."
+NODE_ENV=production npx --yes vite build
 
 echo "✅ Build complete!"
 echo "📦 Build output:"
