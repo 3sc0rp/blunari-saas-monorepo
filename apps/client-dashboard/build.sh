@@ -2,6 +2,12 @@
 # Custom build script for Vercel deployment
 # Ensures vite is in PATH by using npx
 
+# Run diagnostics first
+if [ -f "debug-env.sh" ]; then
+  bash debug-env.sh
+fi
+
+echo ""
 echo "🔧 Starting build process..."
 echo "📦 Node version: $(node --version)"
 echo "📦 NPM version: $(npm --version)"
