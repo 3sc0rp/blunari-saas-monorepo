@@ -89,7 +89,7 @@ function RouterInstrumentation() {
 
 function App() {
   if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-    console.log('🎯 App component rendering with full providers...');
+    if (import.meta.env.DEV) console.log('🎯 App component rendering with full providers...');
   }
   // Remove direct calls to router-dependent hooks here (now inside RouterInstrumentation)
   useEffect(() => {
@@ -229,11 +229,14 @@ function App() {
                                 </Suspense>
                               } />
                               
-                              <Route path="test-widget" element={
-                                <Suspense fallback={<LazyLoadingFallback component="Test Widget" />}>
-                                  <TestWidget />
-                                </Suspense>
-                              } />
+                              {/* Debug route - only available in development */}
+                              {import.meta.env.DEV && (
+                                <Route path="test-widget" element={
+                                  <Suspense fallback={<LazyLoadingFallback component="Test Widget" />}>
+                                    <TestWidget />
+                                  </Suspense>
+                                } />
+                              )}
                               </Route>
                               
                               {/* Legacy routes for backwards compatibility */}
@@ -292,3 +295,4 @@ function App() {
 }
 
 export default App;
+

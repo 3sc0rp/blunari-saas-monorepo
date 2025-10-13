@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     
     // Development mode bypass
     if (import.meta.env.MODE === 'development' && import.meta.env.VITE_BYPASS_AUTH === 'true') {
-      console.log("Development mode: bypassing authentication");
+      if (import.meta.env.DEV) console.log("Development mode: bypassing authentication");
       if (isMounted) {
         setLoading(false);
       }
@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(session?.user ?? null);
         setLoading(false);
         if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
-          console.log('🔐 Auth state changed:', event, session?.user?.id ? 'user logged in' : 'no user');
+          if (import.meta.env.DEV) console.log('🔐 Auth state changed:', event, session?.user?.id ? 'user logged in' : 'no user');
         }
       }
     });
@@ -66,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setUser(session?.user ?? null);
           setLoading(false);
           if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
-            console.log('🔐 Initial session check:', session?.user?.id ? 'user found' : 'no user');
+            if (import.meta.env.DEV) console.log('🔐 Initial session check:', session?.user?.id ? 'user found' : 'no user');
           }
         }
       } catch (error) {
@@ -151,3 +151,4 @@ export const useAuth = () => {
   }
   return context;
 };
+
