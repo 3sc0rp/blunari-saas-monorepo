@@ -7,6 +7,9 @@ import {
   BulkOperation,
 } from "@/types/booking";
 import { useToast } from "@/hooks/use-toast";
+import { createSafeLogger, sanitizeBookingsForLog } from "@/utils/productionLogger";
+
+const logger = createSafeLogger('useAdvancedBookings');
 
 export const useAdvancedBookings = (tenantId?: string) => {
   const queryClient = useQueryClient();
@@ -29,23 +32,23 @@ export const useAdvancedBookings = (tenantId?: string) => {
     queryFn: async () => {
       const devLogs = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
       if (devLogs) {
-        console.log('[useAdvancedBookings] === QUERY START ===');
-        console.log('[useAdvancedBookings] Input tenantId:', tenantId);
-        console.log('[useAdvancedBookings] Input filters:', filters);
+        logger.log('=== QUERY START ===');
+        logger.log('Input tenantId:', tenantId);
+        logger.log('Input filters:', filters);
       }
       
       if (!tenantId) {
-        if (devLogs) console.log('[useAdvancedBookings] No tenantId - returning empty array');
+        if (devLogs) logger.log('No tenantId - returning empty array');
         return [];
       }
 
-      if (devLogs) console.log('[useAdvancedBookings] Building query...');
+      if (devLogs) logger.log('Building query...');
       let query = supabase
         .from("bookings")
         .select("*")
         .eq("tenant_id", tenantId);
 
-      if (devLogs) console.log('[useAdvancedBookings] Base query built, applying filters...');
+      if (devLogs) logger.log('Base query built, applying filters...');
 
       // Apply status filter (support legacy no_show in DB)
       if (filters.status.length > 0) {

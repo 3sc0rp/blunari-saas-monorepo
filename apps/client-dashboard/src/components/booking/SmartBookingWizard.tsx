@@ -28,10 +28,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSmartBookingCreation } from "@/hooks/useSmartBookingCreation";
 import { useTenant } from "@/hooks/useTenant";
+import { useRateLimit } from "@/hooks/useRateLimit";
+import { bookingFormSchema, sanitizeText } from "@/utils/bookingValidation";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import {
   CalendarIcon,
   Clock,
@@ -45,6 +49,7 @@ import {
   ArrowRight,
   Target,
   TrendingUp,
+  AlertCircle,
 } from "lucide-react";
 
 interface SmartBookingWizardProps {
@@ -73,6 +78,14 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
 
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTable, setSelectedTable] = useState<string>("");
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  
+  // Rate limiting: 3 bookings per minute
+  const { checkLimit, remaining, resetTime, isLimited } = useRateLimit('booking-creation', {
+    maxRequests: 3,
+    windowMs: 60000
+  });
+
   const stripePromise = React.useMemo(() => {
     const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
     return pk ? loadStripe(pk) : null;
@@ -130,16 +143,71 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
     }
   };
 
+  const validateForm = (): boolean => {
+    try {
+      // Clear previous errors
+      setValidationErrors({});
+      
+      // Sanitize text inputs
+      const sanitizedData = {
+        ...formData,
+        customerName: sanitizeText(formData.customerName),
+        specialRequests: formData.specialRequests ? sanitizeText(formData.specialRequests) : undefined,
+      };
+      
+      // Validate with Zod schema
+      bookingFormSchema.parse(sanitizedData);
+      return true;
+    } catch (error: any) {
+      if (error.errors) {
+        const errors: Record<string, string> = {};
+        error.errors.forEach((err: any) => {
+          const field = err.path[0];
+          errors[field] = err.message;
+        });
+        setValidationErrors(errors);
+        
+        // Show first error in toast
+        const firstError = error.errors[0];
+        toast.error(`Validation Error: ${firstError.message}`);
+      }
+      return false;
+    }
+  };
+
   const handleSubmit = async () => {
+    // Check rate limit
+    if (isLimited) {
+      toast.error(`Rate limit exceeded. Please wait ${resetTime} seconds before creating another booking.`);
+      return;
+    }
+    
+    if (!checkLimit()) {
+      toast.error(`Too many bookings. Please wait ${resetTime} seconds. (${remaining} remaining)`);
+      return;
+    }
+    
+    // Validate form data
+    if (!validateForm()) {
+      return;
+    }
+    
     // Enforce deposit: if depositRequired flag is set in the wizard, the booking
     // flow should have already processed payment in prior UI. Disable submit if missing.
     if (formData.depositRequired && !(formData as any).depositPaid) {
+      toast.error('Deposit payment is required before completing this booking.');
       return;
     }
-    createBooking({
+    
+    // Sanitize data before submission
+    const sanitizedData = {
       ...formData,
+      customerName: sanitizeText(formData.customerName),
+      specialRequests: formData.specialRequests ? sanitizeText(formData.specialRequests) : undefined,
       tableId: selectedTable,
-    } as any);
+    };
+    
+    createBooking(sanitizedData as any);
   };
 
   const steps = [
