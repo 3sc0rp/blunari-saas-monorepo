@@ -537,12 +537,14 @@ export default function BookingsTabbed() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {analyticsData?.peakHours && (
+                  {analyticsData?.peakHours && analyticsData.peakHours.length > 0 && (
                     <div>
                       <p className="text-sm font-medium mb-2">Peak Booking Hours</p>
                       <div className="flex flex-wrap gap-2">
-                        {analyticsData.peakHours.map((hour, index) => (
-                          <Badge key={index} variant="secondary">{hour}</Badge>
+                        {analyticsData.peakHours.map((peakHour, index) => (
+                          <Badge key={index} variant="secondary">
+                            {peakHour.hour}:00 ({peakHour.bookings} bookings)
+                          </Badge>
                         ))}
                       </div>
                     </div>

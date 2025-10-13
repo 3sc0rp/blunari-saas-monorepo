@@ -83,7 +83,7 @@ export interface WidgetAnalytics {
   completionRate?: number;
   avgPartySize?: number;
   avgOrderValue?: number; // For catering widgets
-  peakHours?: string[];
+  peakHours?: Array<{ hour: number; bookings: number }> | null;
   topSources: Array<{ source: string; count: number }>;
   dailyStats: Array<{
     date: string;

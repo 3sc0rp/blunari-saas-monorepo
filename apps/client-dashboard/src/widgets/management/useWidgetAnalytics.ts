@@ -256,32 +256,37 @@ export function useWidgetAnalytics({
 
   const isAvailable = Boolean(tenantId && tenantSlug);
 
-  const fetchAnalytics = useCallback(async (timeRange: AnalyticsTimeRange = '7d'): Promise<void> => {
+  const fetchAnalytics = useCallback(async (timeRange: AnalyticsTimeRange = '7d', bypassCache: boolean = false): Promise<void> => {
   debug('🔍 Analytics hook parameters:', {
       tenantId,
       tenantSlug,
       widgetType,
       timeRange,
-      isAvailable
+      isAvailable,
+      bypassCache
     });
 
-    // Check cache first
+    // Check cache first (unless bypassing for manual refresh)
     const cacheKey = `${tenantId}-${widgetType}-${timeRange}`;
-    const cachedData = analyticsCache.get(cacheKey);
-    if (cachedData) {
-  debug('✅ Using cached analytics data');
-      setState(prev => ({
-        ...prev,
-        data: cachedData,
-        loading: false,
-        error: null,
-        lastUpdated: new Date(),
-        mode: 'cached',
-        correlationId: 'cached-' + Date.now(),
-        lastErrorCode: null,
-        meta: { estimation: false, time_range: timeRange }
-      }));
-      return;
+    if (!bypassCache) {
+      const cachedData = analyticsCache.get(cacheKey);
+      if (cachedData) {
+        debug('✅ Using cached analytics data');
+        setState(prev => ({
+          ...prev,
+          data: cachedData,
+          loading: false,
+          error: null,
+          lastUpdated: new Date(),
+          mode: 'cached',
+          correlationId: 'cached-' + Date.now(),
+          lastErrorCode: null,
+          meta: { estimation: false, time_range: timeRange }
+        }));
+        return;
+      }
+    } else {
+      debug('🔄 Bypassing cache for manual refresh');
     }
 
     // Join any in-flight request for the same key across components
@@ -669,9 +674,14 @@ export function useWidgetAnalytics({
     };
   }, [fetchAnalytics, refreshInterval, isAvailable, tenantId, tenantSlug, widgetType]);
 
+  // Wrapper for manual refresh that bypasses cache
+  const manualRefresh = useCallback(async (timeRange?: AnalyticsTimeRange) => {
+    await fetchAnalytics(timeRange || '7d', true);
+  }, [fetchAnalytics]);
+
   return {
     ...state,
-    refresh: fetchAnalytics,
+    refresh: manualRefresh,
     isAvailable,
     rateLimitRemaining: analyticsRateLimiter.getRemainingRequests(),
     rateLimitResetTime: analyticsRateLimiter.getTimeUntilNextAllowed(),
