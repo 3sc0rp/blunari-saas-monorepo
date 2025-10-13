@@ -170,6 +170,17 @@ git push origin master
 }
 ```
 
+**IMPORTANT**: The `apps/client-dashboard/vercel.json` should have:
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
+}
+```
+- App-level config takes precedence over root config
+- DO NOT include `npm install` in buildCommand (runs automatically via installCommand)
+- App-level config only needs relative paths since Vercel is already in that directory
+
 **Key Points**:
 - `installCommand` must `cd` into app directory (not `npm install --prefix`)
 - Build dependencies (`vite`, `typescript`) are in `devDependencies` and get installed
@@ -268,9 +279,15 @@ All apps use strict TypeScript. When editing:
 
 ### Vercel Deployment Failures
 - **Issue**: "vite: command not found" or "Error: Command failed with 127"
-  - **Cause**: Build dependencies not installed properly in monorepo context
-  - **Fix**: Ensure `installCommand` in `vercel.json` does `cd apps/client-dashboard && npm install` (not `npm install --prefix`)
-  - **Why**: The `--prefix` flag doesn't create proper PATH context for build tools like Vite
+  - **Cause**: Build dependencies not installed properly or `npm install` duplicated in buildCommand
+  - **Fix**: Ensure app-level `vercel.json` has only `"buildCommand": "npm run build"` (no `npm install`)
+  - **Fix**: Ensure root `vercel.json` installCommand does `cd apps/client-dashboard && npm install`
+  - **Why**: Vercel runs installCommand first, then buildCommand. Running `npm install` twice causes PATH issues
+
+- **Issue**: App-level vercel.json conflicts with root vercel.json
+  - **Cause**: App-level config takes precedence and may have incompatible settings
+  - **Fix**: Keep app-level config minimal (buildCommand, outputDirectory, rewrites/headers only)
+  - **Verify**: Check both `vercel.json` (root) and `apps/client-dashboard/vercel.json`
 
 - **Issue**: Monorepo root directory confusion
   - **Fix**: Ensure `vercel.json` or project settings specify correct `apps/client-dashboard` or `apps/admin-dashboard` paths
