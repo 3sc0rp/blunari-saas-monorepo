@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd apps/client-dashboard && bash build.sh",
+  "buildCommand": "cd apps/client-dashboard && npm install && npx vite build",
   "outputDirectory": "apps/client-dashboard/dist",
-  "installCommand": "cd apps/client-dashboard && npm install",
+  "installCommand": "echo 'Skip - installing in buildCommand'",
   "framework": null
 }
