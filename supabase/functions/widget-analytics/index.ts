@@ -5,7 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 // @ts-ignore - .ts extension required for Deno
 import { corsHeaders } from '../_shared/cors.ts';
 
-const FUNCTION_VERSION = '2025-09-13.4';
+const FUNCTION_VERSION = '2025-10-13.1'; // Updated for real-time data fetching
 
 interface WidgetAnalyticsRequest {
   tenantId: string;
@@ -340,113 +340,109 @@ async function generateAnalytics(
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
-  const estimation: Record<string, boolean> = {};
+  // Fetch real-time bookings data
+  const tableName = widgetType === 'booking' ? 'bookings' : 'catering_orders';
+  const { data: bookings, error: bookingsError } = await supabase
+    .from(tableName)
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .gte('created_at', startDate.toISOString())
+    .order('created_at', { ascending: false });
 
-  // Query widget events
-  const { data: events, error: eventsError } = await supabase
+  if (bookingsError) {
+    console.error(`Error fetching ${tableName}:`, bookingsError);
+    throw new Error(`Failed to fetch bookings: ${bookingsError.message}`);
+  }
+
+  // Fetch widget_events for views and interactions
+  const { data: widgetEvents, error: eventsError } = await supabase
     .from('widget_events')
     .select('*')
     .eq('tenant_id', tenantId)
     .eq('widget_type', widgetType)
-    .gte('created_at', startDate.toISOString());
+    .gte('created_at', startDate.toISOString())
+    .order('created_at', { ascending: false });
 
   if (eventsError) {
     console.error('Error fetching widget events:', eventsError);
   }
 
-  // Calculate metrics
-  const totalViews = events?.filter((e: any) => e.event_type === 'view').length || 0;
-  const totalClicks = events?.filter((e: any) => e.event_type === 'click').length || 0;
+  // Calculate real-time metrics from actual data
+  const totalBookings = bookings?.length || 0;
+  const totalViews = widgetEvents?.filter((e: any) => e.event_type === 'view' || e.event_type === 'load').length || 0;
+  const totalClicks = widgetEvents?.filter((e: any) => e.event_type === 'click' || e.event_type === 'interaction').length || 0;
+  
+  // Real completion rate from actual bookings
+  const completedBookings = bookings?.filter((b: any) => 
+    b.status === 'completed' || b.status === 'confirmed'
+  ).length || 0;
+  const completionRate = totalBookings > 0 ? (completedBookings / totalBookings) * 100 : 0;
 
-  // If no events, use estimation
-  if (totalViews === 0) {
-    estimation.viewsEstimated = true;
-  }
-  if (totalClicks === 0) {
-    estimation.clicksEstimated = true;
-  }
+  // Real conversion rate (bookings / views)
+  const conversionRate = totalViews > 0 ? (totalBookings / totalViews) * 100 : 0;
 
-  // Query orders/bookings
-  const tableName = widgetType === 'booking' ? 'bookings' : 'catering_orders';
-  const { data: orders, error: ordersError } = await supabase
-    .from(tableName)
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .gte('created_at', startDate.toISOString());
-
-  if (ordersError) {
-    console.error(`Error fetching ${tableName}:`, ordersError);
-  }
-
-  const totalBookings = orders?.length || 0;
-  const completedOrders = orders?.filter((o: any) => o.status === 'completed').length || 0;
-  const conversionRate = totalViews > 0 ? (completedOrders / totalViews) * 100 : 0;
-  const completionRate = totalBookings > 0 ? (completedOrders / totalBookings) * 100 : 0;
-
-  // Calculate widget-specific metrics
+  // Calculate real average party size from bookings
   let avgPartySize = null;
-  let avgOrderValue = null;
-
-  if (widgetType === 'booking' && orders && orders.length > 0) {
-    const partySizes = orders.map((o: any) => o.party_size || 0).filter((s: number) => s > 0);
+  if (widgetType === 'booking' && bookings && bookings.length > 0) {
+    const partySizes = bookings
+      .map((b: any) => b.party_size || b.guest_count || 0)
+      .filter((s: number) => s > 0);
+    
     if (partySizes.length > 0) {
       avgPartySize = partySizes.reduce((a: number, b: number) => a + b, 0) / partySizes.length;
-    } else {
-      avgPartySize = 2.5; // Default
-      estimation.avgPartySizeEstimated = true;
     }
   }
 
-  if (widgetType === 'catering' && orders && orders.length > 0) {
-    const orderValues = orders.map((o: any) => o.total_amount || 0).filter((v: number) => v > 0);
+  // Calculate real average order value from catering orders
+  let avgOrderValue = null;
+  if (widgetType === 'catering' && bookings && bookings.length > 0) {
+    const orderValues = bookings
+      .map((b: any) => parseFloat(b.total_amount) || parseFloat(b.amount) || 0)
+      .filter((v: number) => v > 0);
+    
     if (orderValues.length > 0) {
       avgOrderValue = orderValues.reduce((a: number, b: number) => a + b, 0) / orderValues.length;
-    } else {
-      avgOrderValue = 150; // Default
-      estimation.avgOrderValueEstimated = true;
     }
   }
 
-  // Calculate session duration
-  const sessionEvents = events?.filter((e: any) => e.session_duration) || [];
-  let avgSessionDuration = 180; // Default 3 minutes
+  // Calculate real session duration from widget events
+  let avgSessionDuration = 0;
+  const sessionEvents = widgetEvents?.filter((e: any) => e.session_duration && e.session_duration > 0) || [];
   if (sessionEvents.length > 0) {
     const totalDuration = sessionEvents.reduce((sum: number, e: any) => sum + (e.session_duration || 0), 0);
-    avgSessionDuration = totalDuration / sessionEvents.length;
-  } else {
-    estimation.sessionDurationEstimated = true;
+    avgSessionDuration = Math.round(totalDuration / sessionEvents.length);
   }
 
-  // Generate daily stats
+  // Generate daily stats from real data
   const dailyStats = [];
   for (let i = 0; i < days; i++) {
     const date = new Date();
     date.setDate(date.getDate() - (days - 1 - i));
     const dateStr = date.toISOString().split('T')[0];
 
-    const dayViews = events?.filter((e: any) => 
-      e.event_type === 'view' && e.created_at.startsWith(dateStr)
+    const dayViews = widgetEvents?.filter((e: any) => 
+      (e.event_type === 'view' || e.event_type === 'load') && e.created_at.startsWith(dateStr)
     ).length || 0;
 
-    const dayClicks = events?.filter((e: any) => 
-      e.event_type === 'click' && e.created_at.startsWith(dateStr)
+    const dayClicks = widgetEvents?.filter((e: any) => 
+      (e.event_type === 'click' || e.event_type === 'interaction') && e.created_at.startsWith(dateStr)
     ).length || 0;
 
-    const dayOrders = orders?.filter((o: any) => 
-      o.created_at.startsWith(dateStr)
+    const dayBookings = bookings?.filter((b: any) => 
+      b.created_at.startsWith(dateStr)
     ).length || 0;
 
     dailyStats.push({
       date: dateStr,
       views: dayViews,
       clicks: dayClicks,
-      bookings: dayOrders,
-      conversionRate: dayViews > 0 ? (dayOrders / dayViews) * 100 : 0
+      bookings: dayBookings,
+      conversionRate: dayViews > 0 ? (dayBookings / dayViews) * 100 : 0
     });
   }
 
-  // Top sources
-  const sources = events?.map((e: any) => e.source || 'direct') || [];
+  // Top traffic sources from real widget events
+  const sources = widgetEvents?.map((e: any) => e.source || e.referrer || 'direct') || [];
   const sourceCounts: Record<string, number> = {};
   sources.forEach((s: string) => {
     sourceCounts[s] = (sourceCounts[s] || 0) + 1;
@@ -456,13 +452,14 @@ async function generateAnalytics(
     .slice(0, 5)
     .map(([source, count]) => ({ source, count }));
 
-  // Peak hours (booking only)
+  // Peak booking hours from real booking data
   let peakHours = null;
-  if (widgetType === 'booking' && orders && orders.length > 0) {
+  if (widgetType === 'booking' && bookings && bookings.length > 0) {
     const hourCounts: Record<number, number> = {};
-    orders.forEach((o: any) => {
-      if (o.booking_time) {
-        const hour = new Date(o.booking_time).getHours();
+    bookings.forEach((b: any) => {
+      const bookingTime = b.booking_time || b.reservation_time || b.created_at;
+      if (bookingTime) {
+        const hour = new Date(bookingTime).getHours();
         hourCounts[hour] = (hourCounts[hour] || 0) + 1;
       }
     });
@@ -474,18 +471,18 @@ async function generateAnalytics(
 
   return {
     data: {
-      totalViews: totalViews || Math.floor(Math.random() * 50) + 10, // Estimated if no data
-      totalClicks: totalClicks || Math.floor(Math.random() * 20) + 5,
+      totalViews,
+      totalClicks,
       conversionRate: parseFloat(conversionRate.toFixed(2)),
-      avgSessionDuration: Math.round(avgSessionDuration),
+      avgSessionDuration,
       totalBookings,
       completionRate: parseFloat(completionRate.toFixed(2)),
       avgPartySize: avgPartySize ? parseFloat(avgPartySize.toFixed(1)) : null,
       avgOrderValue: avgOrderValue ? parseFloat(avgOrderValue.toFixed(2)) : null,
       peakHours,
-      topSources: topSources.length > 0 ? topSources : [{ source: 'direct', count: totalViews || 10 }],
+      topSources: topSources.length > 0 ? topSources : [],
       dailyStats
     },
-    estimation: Object.keys(estimation).length > 0 ? estimation : undefined
+    estimation: undefined // No estimations - all real-time data
   };
 }
