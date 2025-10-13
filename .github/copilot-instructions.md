@@ -1,5 +1,39 @@
 # Blunari SAAS - AI Agent Instructions
 
+## Quick Reference: Common Workflows
+
+### Deploy to Production
+```powershell
+# Test locally first
+npm run dev:client  # or npm run dev:admin
+
+# Commit and push (triggers Vercel auto-deploy)
+git add .
+git commit -m "feat: your changes"
+git push origin master
+
+# Monitor: https://vercel.com/deewav3s-projects/client-dashboard/deployments
+```
+
+### Supabase Edge Function Deployment
+```powershell
+cd supabase/functions/<function-name>
+supabase functions deploy <function-name>
+```
+
+### Database Migration
+```powershell
+supabase db push
+```
+
+### Generate TypeScript Types from DB
+```powershell
+cd apps/client-dashboard
+npx supabase gen types typescript --project-id <project-ref> > src/integrations/supabase/types.ts
+```
+
+---
+
 ## Project Overview
 
 **Blunari** is a multi-tenant restaurant booking platform built as a Turborepo monorepo with three main applications: `admin-dashboard`, `client-dashboard`, and `background-ops`. The platform uses Supabase (PostgreSQL + Edge Functions) for backend services and enforces strict tenant isolation via Row-Level Security (RLS) policies.
@@ -105,8 +139,29 @@ supabase db push
 
 ### Deployment
 
-#### Client Dashboard (Vercel)
-**IMPORTANT**: `vercel.json` specifies custom build/output paths for monorepo:
+#### Client Dashboard (Vercel) - **ALWAYS USE GIT PUSH**
+**CRITICAL WORKFLOW**: This project uses **automatic deployment via GitHub integration**. Never use `vercel` CLI directly.
+
+**Standard Deployment Process**:
+```powershell
+# 1. Make your changes to client-dashboard code
+# 2. Test locally
+npm run dev:client
+
+# 3. Commit and push to GitHub (triggers automatic deployment)
+git add .
+git commit -m "feat: your feature description"
+git push origin master
+
+# 4. Vercel will automatically:
+#    - Detect the push to master branch
+#    - Pull the latest code
+#    - Run install command
+#    - Run build command
+#    - Deploy to production (app.blunari.ai)
+```
+
+**Vercel Configuration** (`vercel.json`):
 ```json
 {
   "buildCommand": "cd apps/client-dashboard && npm run build",
@@ -116,22 +171,28 @@ supabase db push
 ```
 
 **Key Points**:
-- `installCommand` runs first and must `cd` into the app directory to install dependencies correctly
-- `buildCommand` runs after install and executes the Vite build
-- Build dependencies (like `vite`, `typescript`) are in `devDependencies` and MUST be installed
+- `installCommand` must `cd` into app directory (not `npm install --prefix`)
+- Build dependencies (`vite`, `typescript`) are in `devDependencies` and get installed
+- Automatic deployment typically takes 2-4 minutes
+- Check deployment status at: https://vercel.com/deewav3s-projects/client-dashboard/deployments
 
-Deploy via:
-```powershell
-# Auto-deploy on git push to master (if Vercel GitHub integration configured)
-git push origin master
-
-# Manual deploy from root
-cd apps/client-dashboard
-vercel --prod
-```
+**Why Git Push Over CLI?**:
+- Maintains deployment history tied to commits
+- Enables automatic rollbacks if needed
+- Prevents environment variable mismatches
+- Team members can track what was deployed when
 
 #### Admin Dashboard (Vercel)
-Similar pattern - check project-specific `vercel.json` or Vercel dashboard settings.
+**Same automatic deployment pattern** as client-dashboard. Push to GitHub master branch to deploy.
+
+```powershell
+# Deploy admin dashboard changes
+git add .
+git commit -m "fix: your admin dashboard changes"
+git push origin master
+```
+
+Check admin dashboard Vercel project for deployment status.
 
 #### Background-Ops (Fly.io)
 ```powershell
