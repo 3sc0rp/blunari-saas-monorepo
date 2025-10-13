@@ -279,23 +279,20 @@ All apps use strict TypeScript. When editing:
 
 ### Vercel Deployment Failures
 - **Issue**: "vite: command not found" or "Error: Command failed with 127"
-  - **Cause**: Build dependencies not installed properly or `npm install` duplicated in buildCommand
-  - **Fix**: Ensure app-level `vercel.json` has only `"buildCommand": "npm run build"` (no `npm install`)
-  - **Fix**: Ensure root `vercel.json` installCommand does `cd apps/client-dashboard && npm install`
-  - **Why**: Vercel runs installCommand first, then buildCommand. Running `npm install` twice causes PATH issues
+  - **Cause**: Vercel auto-detecting Turborepo and running `turbo run build` with wrong module resolution
+  - **Immediate Fix**: Use `vercel-build.sh` script (current setup) - bypasses Turbo detection
+  - **Proper Fix**: Set **Root Directory** to `apps/client-dashboard` in Vercel Dashboard → Settings → General
+  - **Why Root Directory Works**: Vercel starts in app directory, doesn't see monorepo `turbo.json`, builds cleanly
+
+- **Issue**: "Cannot find package 'vite'" during build
+  - **Cause**: npm install not including devDependencies or running in wrong directory
+  - **Fix**: Script now uses `npm ci --include=dev` and `npx --yes vite build`
+  - **Verify**: Check build logs for "Vite binary found" confirmation
 
 - **Issue**: App-level vercel.json conflicts with root vercel.json
-  - **Cause**: App-level config takes precedence and may have incompatible settings
-  - **Fix**: Keep app-level config minimal (buildCommand, outputDirectory, rewrites/headers only)
+  - **Current Setup**: Root `vercel.json` uses `bash vercel-build.sh` as buildCommand
+  - **Best Practice**: Set Root Directory in Vercel, then use only app-level config
   - **Verify**: Check both `vercel.json` (root) and `apps/client-dashboard/vercel.json`
-
-- **Issue**: Monorepo root directory confusion
-  - **Fix**: Ensure `vercel.json` or project settings specify correct `apps/client-dashboard` or `apps/admin-dashboard` paths
-  - **Verify**: Check Vercel build logs for "Error: Cannot find module" or path resolution errors
-
-- **Issue**: Build succeeds locally but fails on Vercel
-  - **Check**: Verify Node.js version in Vercel project settings matches `engines` in package.json (>=18.0.0)
-  - **Check**: Ensure all environment variables are set in Vercel dashboard (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, etc.)
 
 ## Testing
 
