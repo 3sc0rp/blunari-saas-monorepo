@@ -56,15 +56,16 @@ export function useMemoryCleanup() {
 
       if (previousPath !== currentPath) {
         // Force garbage collection on heavy pages
-        const heavyPages = ['/dashboard/tables', '/dashboard/analytics', '/dashboard/ai-business-insights'];
+      const heavyPages = ['/dashboard/tables', '/dashboard/analytics', '/dashboard/ai-business-insights'];
 
         if (heavyPages.some(page => previousPath.includes(page))) {
           // Clear any lingering timers
-          const timerId = setTimeout(() => {}, 0);
+      const timerId = setTimeout(() => {}, 0);
           clearTimeout(timerId);
 
-          // Request garbage collection if available (Chrome DevTools)
-          if (typeof window !== 'undefined' && typeof (window as any).gc === 'function') {
+          // Request garbage collection
+      if (available (Chrome DevTools)
+      if (typeof window !== 'undefined' && typeof (window as any).gc === 'function') {
             setTimeout(() => (window as any).gc(), 1000);
           }
         }
@@ -85,7 +86,7 @@ export function usePerformanceMonitoring(componentName: string) {
 
   useEffect(() => {
     try {
-      // Check if performance API is available
+      // Check
       if (typeof performance === 'undefined' || typeof performance.now !== 'function') {
         return;
       }
@@ -149,7 +150,7 @@ export function usePrefetch() {
 
   const prefetchRoute = useCallback((path: string) => {
     // Create a link element for prefetching
-    const link = document.createElement('link');
+      const link = document.createElement('link');
     link.rel = 'prefetch';
     link.href = path;
     document.head.appendChild(link);
@@ -179,7 +180,7 @@ export function useBundleMonitoring() {
     try {
       if (process.env.NODE_ENV === 'development' && typeof console !== 'undefined') {
         // Monitor bundle loading
-        const originalLog = console.log;
+      const originalLog = console.log;
         console.log = (...args) => {
           if (args[0]?.includes?.('chunk')) {
             originalLog('[Bundle Loading]', ...args);
@@ -198,4 +199,7 @@ export function useBundleMonitoring() {
     }
   }, []);
 }
+
+
+
 

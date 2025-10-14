@@ -80,7 +80,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 }));
 
 // Simple test utilities
-const TestUtils = {
+      const TestUtils = {
   initialize: () => {
     // Test environment initialization
   },
@@ -123,7 +123,7 @@ beforeAll(() => {
   }));
 
   // Mock performance.mark and performance.measure
-  if (!window.performance.mark) {
+      if (!window.performance.mark) {
     window.performance.mark = vi.fn();
   }
   if (!window.performance.measure) {
@@ -134,7 +134,7 @@ beforeAll(() => {
   }
 
   // Mock localStorage
-  const localStorageMock = {
+      const localStorageMock = {
     getItem: vi.fn(),
     setItem: vi.fn(),
     removeItem: vi.fn(),
@@ -145,7 +145,7 @@ beforeAll(() => {
   });
 
   // Mock sessionStorage
-  const sessionStorageMock = {
+      const sessionStorageMock = {
     getItem: vi.fn(),
     setItem: vi.fn(),
     removeItem: vi.fn(),

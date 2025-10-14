@@ -42,7 +42,7 @@ export const useWebGLContextManager = (config: WebGLContextManagerConfig = {}) =
         retryCountRef.current++;
         
         // Attempt to restore context
-        const loseContext = contextRef.current?.getExtension('WEBGL_lose_context');
+      const loseContext = contextRef.current?.getExtension('WEBGL_lose_context');
         if (loseContext) {          loseContext.restoreContext();
         }
         
@@ -89,4 +89,5 @@ export const useWebGLContextManager = (config: WebGLContextManagerConfig = {}) =
     maxRetries
   };
 };
+
 

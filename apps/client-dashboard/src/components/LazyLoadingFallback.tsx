@@ -10,7 +10,7 @@ interface LazyLoadingFallbackProps {
 }
 
 // Memoized loading component to prevent unnecessary re-renders
-const LazyLoadingFallback: React.FC<LazyLoadingFallbackProps> = memo(({ 
+      const LazyLoadingFallback: React.FC<LazyLoadingFallbackProps> = memo(({ 
   component = 'Page', 
   height = '400px' 
 }) => {
@@ -62,3 +62,4 @@ export const DashboardLoadingFallback = memo(() => (
 ));
 
 export default LazyLoadingFallback;
+

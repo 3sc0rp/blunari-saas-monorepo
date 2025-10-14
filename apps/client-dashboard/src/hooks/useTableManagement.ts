@@ -22,7 +22,7 @@ export const useTableManagement = (tenantId?: string) => {
   const { toast } = useToast();
 
   // Fetch tables with current bookings
-  const {
+      const {
     data: tables = [],
     isLoading,
     error,
@@ -95,7 +95,7 @@ export const useTableManagement = (tenantId?: string) => {
   });
 
   // Update table status / fields
-  const updateTableMutation = useMutation({
+      const updateTableMutation = useMutation({
     mutationFn: async ({
       tableId,
       updates,
@@ -104,7 +104,8 @@ export const useTableManagement = (tenantId?: string) => {
       updates: Partial<Table>;
     }) => {
       const payload: any = { ...updates };
-      // Map UI position back to position_x/position_y if present
+      // Map UI position back to position_x/position_y
+      if (present
       if (updates.position) {
         payload.position_x = updates.position.x;
         payload.position_y = updates.position.y;
@@ -186,4 +187,6 @@ function calculateTimeRemaining(
   const remainingMs = bookingEnd.getTime() - now.getTime();
   return Math.max(0, Math.floor(remainingMs / 60000)); // Convert to minutes
 }
+
+
 

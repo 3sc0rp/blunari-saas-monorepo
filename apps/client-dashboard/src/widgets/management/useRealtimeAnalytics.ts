@@ -184,7 +184,7 @@ export const useRealtimeAnalytics = (widgetId?: string) => {
     const supabase = initializeSupabase()
     
     // Subscribe to real-time updates for this widget
-    const channel = supabase
+      const channel = supabase
       .channel(`widget_${widgetId}`)
       .on('broadcast', { event: 'widget_event' }, (payload: any) => {
         // Refresh metrics when new events come in
@@ -208,15 +208,14 @@ export const useRealtimeAnalytics = (widgetId?: string) => {
     fetchLiveSessions()
 
     // Set up real-time subscription
-    const unsubscribe = subscribeToRealtimeUpdates()
+      const unsubscribe = subscribeToRealtimeUpdates()
 
     // Set up polling as fallback
     intervalRef.current = setInterval(() => {
       fetchMetrics()
       fetchLiveSessions()
     }, 30000) // Poll every 30 seconds
-
-    return () => {
+      return () => {
       if (unsubscribe) unsubscribe()
       if (intervalRef.current) {
         clearInterval(intervalRef.current)

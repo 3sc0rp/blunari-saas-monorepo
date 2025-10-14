@@ -17,7 +17,8 @@ const DataAuditor: React.FC = () => {
     };
 
     try {
-      // Test 1: Raw bookings count      const { data: bookings, error: bookingsError, count: bookingsCount } = await supabase
+      // Test 1: Raw bookings count
+      const { data: bookings, error: bookingsError, count: bookingsCount } = await supabase
         .from('bookings')
         .select('*', { count: 'exact' })
         .eq('tenant_id', tenantId);
@@ -30,7 +31,8 @@ const DataAuditor: React.FC = () => {
         sample: bookings?.[0]
       };
 
-      // Test 2: Restaurant tables      const { data: tables, error: tablesError, count: tablesCount } = await supabase
+      // Test 2: Restaurant tables     
+      const { data: tables, error: tablesError, count: tablesCount } = await supabase
         .from('restaurant_tables')
         .select('*', { count: 'exact' })
         .eq('tenant_id', tenantId);
@@ -43,7 +45,8 @@ const DataAuditor: React.FC = () => {
         sample: tables?.[0]
       };
 
-      // Test 3: Business hours      const { data: hours, error: hoursError } = await supabase
+      // Test 3: Business hours     
+      const { data: hours, error: hoursError } = await supabase
         .from('business_hours')
         .select('*')
         .eq('tenant_id', tenantId);
@@ -55,7 +58,8 @@ const DataAuditor: React.FC = () => {
         sample: hours?.[0]
       };
 
-      // Test 4: Tenant settings      const { data: settings, error: settingsError } = await supabase
+      // Test 4: Tenant settings     
+      const { data: settings, error: settingsError } = await supabase
         .from('tenant_settings')
         .select('*')
         .eq('tenant_id', tenantId);
@@ -67,7 +71,8 @@ const DataAuditor: React.FC = () => {
         sample: settings?.[0]
       };
 
-      // Test 5: Holidays      const { data: holidays, error: holidaysError } = await supabase
+      // Test 5: Holidays     
+      const { data: holidays, error: holidaysError } = await supabase
         .from('holidays')
         .select('*')
         .eq('tenant_id', tenantId);
@@ -79,7 +84,8 @@ const DataAuditor: React.FC = () => {
         sample: holidays?.[0]
       };
 
-      // Test 6: Auth session      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      // Test 6: Auth session     
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
       results.tests.session = {
         success: !sessionError,
@@ -184,4 +190,5 @@ const DataAuditor: React.FC = () => {
 };
 
 export default DataAuditor;
+
 

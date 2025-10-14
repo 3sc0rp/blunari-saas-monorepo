@@ -48,8 +48,7 @@ import { useTenantBranding } from "@/contexts/TenantBrandingContext";
 import { useUIMode } from "@/lib/ui-mode";
 
 // Consolidated navigation under Management
-
-const managementNavigation = [
+      const managementNavigation = [
   {
     section: "Overview",
     items: [
@@ -104,7 +103,7 @@ export function ResponsiveDashboardSidebar() {
   const currentPath = location.pathname;
 
   // Build navigation without 3D feature
-  const navigationItems = managementNavigation;
+      const navigationItems = managementNavigation;
 
   const isActive = (path: string) => {
     if (path === "/command-center") {
@@ -238,3 +237,4 @@ export function ResponsiveDashboardSidebar() {
     </Sidebar>
   );
 }
+

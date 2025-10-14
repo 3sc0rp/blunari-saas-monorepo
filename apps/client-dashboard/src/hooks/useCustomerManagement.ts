@@ -33,7 +33,7 @@ export const useCustomerManagement = (tenantId?: string) => {
   const { toast } = useToast();
 
   // Fetch customers with their booking history
-  const {
+      const {
     data: customers = [],
     isLoading,
     error,
@@ -89,12 +89,12 @@ export const useCustomerManagement = (tenantId?: string) => {
         customer.party_sizes.push(booking.party_size);
 
         // Calculate estimated spend from actual booking data
-        if (booking.status === "completed") {
+      if (booking.status === "completed") {
           customer.total_spent += booking.party_size * 45; // Estimated $45 per person
         }
 
         // Update last visit to most recent
-        if (new Date(booking.booking_time) > new Date(customer.lastVisit)) {
+      if (new Date(booking.booking_time) > new Date(customer.lastVisit)) {
           customer.lastVisit = booking.booking_time;
         }
       });
@@ -151,7 +151,7 @@ export const useCustomerManagement = (tenantId?: string) => {
   });
 
   // Add new customer
-  const addCustomerMutation = useMutation({
+      const addCustomerMutation = useMutation({
     mutationFn: async (customerData: Partial<Customer>) => {
       // This would create a customer profile
       // For now, customers are created through bookings
@@ -176,3 +176,4 @@ export const useCustomerManagement = (tenantId?: string) => {
     isAdding: addCustomerMutation.isPending,
   };
 };
+

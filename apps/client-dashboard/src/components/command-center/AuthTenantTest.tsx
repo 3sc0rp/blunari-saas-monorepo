@@ -13,7 +13,7 @@ const AuthTenantTest: React.FC = () => {
   useEffect(() => {
     async function testAuth() {
       try {        // Get current session
-        const { data: session, error: sessionError } = await supabase.auth.getSession();
+      const { data: session, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
           console.error("Session error:", sessionError);
@@ -33,7 +33,8 @@ const AuthTenantTest: React.FC = () => {
           tenantTest = { data: tenantData, error: tenantError };
         }
 
-        // Test RLS function if available
+        // Test RLS function
+      if (available
         let rlsTest = null;
         try {
           const { data: rlsData, error: rlsError } = await supabase.rpc('get_current_user_tenant_id');
@@ -138,4 +139,6 @@ const AuthTenantTest: React.FC = () => {
 };
 
 export default AuthTenantTest;
+
+
 

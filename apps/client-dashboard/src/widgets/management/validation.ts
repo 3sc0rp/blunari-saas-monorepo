@@ -31,7 +31,7 @@ export class InputSanitizer {
     if (typeof input !== 'string') return '';
 
     // Allow only basic formatting tags
-    const allowedTags = ['b', 'i', 'u', 'strong', 'em', 'br', 'p'];
+      const allowedTags = ['b', 'i', 'u', 'strong', 'em', 'br', 'p'];
     const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g;
 
     return input
@@ -59,13 +59,14 @@ export class InputSanitizer {
 
     const clean = input.trim().toLowerCase();
 
-    // If it's already a valid hex color, return it
-    if (colorRegex.test(clean)) {
+    // If it's already a valid hex color,
+      return it
+      if (colorRegex.test(clean)) {
       return clean;
     }
 
     // Try to convert named colors to hex (basic mapping)
-    const namedColors: Record<string, string> = {
+      const namedColors: Record<string, string> = {
       'red': '#FF0000',
       'blue': '#0000FF',
       'green': '#00FF00',
@@ -80,7 +81,7 @@ export class InputSanitizer {
     }
 
     // Default fallback
-    return '#000000';
+      return '#000000';
   }
 
   /**
@@ -92,12 +93,12 @@ export class InputSanitizer {
     const clean = input.trim();
 
     // Basic URL validation and sanitization
-    if (urlRegex.test(clean)) {
+      if (urlRegex.test(clean)) {
       return clean;
     }
 
     // If it doesn't start with http, try to make it a valid URL
-    if (clean && !clean.startsWith('http')) {
+      if (clean && !clean.startsWith('http')) {
       const testUrl = `https://${clean}`;
       if (urlRegex.test(testUrl)) {
         return testUrl;
@@ -146,10 +147,10 @@ export class InputSanitizer {
     const clean = input.trim();
 
     // Allow only alphanumeric, spaces, hyphens, and quotes
-    const sanitized = clean.replace(/[^a-zA-Z0-9\s\-'"]/g, '');
+      const sanitized = clean.replace(/[^a-zA-Z0-9\s\-'"]/g, '');
 
     // Common safe font families
-    const safeFonts = [
+      const safeFonts = [
       'system-ui', 'Arial', 'Helvetica', 'sans-serif',
       'Times New Roman', 'serif', 'Courier New', 'monospace',
       'Georgia', 'Verdana', 'Tahoma', 'Trebuchet MS'
@@ -160,7 +161,7 @@ export class InputSanitizer {
     }
 
     // If custom font, ensure it's safe
-    if (sanitized.length > 0 && sanitized.length <= 50) {
+      if (sanitized.length > 0 && sanitized.length <= 50) {
       return sanitized;
     }
 
@@ -235,7 +236,8 @@ export function sanitizeConfig(config: Partial<WidgetConfig>): WidgetConfig {
     showCloseButton: Boolean(config.showCloseButton),
 
     // Embedding
-    safeArea: Boolean(config.safeArea ?? true) // Default to true if not specified
+    safeArea: Boolean(config.safeArea ?? true) // Default to true
+      if (not specified
   };
 }
 
@@ -243,7 +245,7 @@ export function validateConfig(config: WidgetConfig): ValidationError[] {
   const errors: ValidationError[] = [];
 
   // Required text fields
-  if (!config.welcomeMessage?.trim()) {
+      if (!config.welcomeMessage?.trim()) {
     errors.push({ field: 'welcomeMessage', message: 'Welcome message is required' });
   }
   if (!config.buttonText?.trim()) {
@@ -251,7 +253,7 @@ export function validateConfig(config: WidgetConfig): ValidationError[] {
   }
 
   // Length validations
-  if (config.welcomeMessage && config.welcomeMessage.length > 500) {
+      if (config.welcomeMessage && config.welcomeMessage.length > 500) {
     errors.push({ field: 'welcomeMessage', message: 'Welcome message must be less than 500 characters' });
   }
   if (config.buttonText && config.buttonText.length > 100) {
@@ -259,7 +261,7 @@ export function validateConfig(config: WidgetConfig): ValidationError[] {
   }
 
   // Numeric validations
-  if (!config.width || config.width < 300 || config.width > 800) {
+      if (!config.width || config.width < 300 || config.width > 800) {
     errors.push({ field: 'width', message: 'Width must be between 300 and 800 pixels' });
   }
   if (!config.height || config.height < 400 || config.height > 1000) {
@@ -270,7 +272,7 @@ export function validateConfig(config: WidgetConfig): ValidationError[] {
   }
 
   // Color validations
-  if (!colorRegex.test(config.primaryColor)) {
+      if (!colorRegex.test(config.primaryColor)) {
     errors.push({ field: 'primaryColor', message: 'Primary color must be a valid hex color' });
   }
   if (!colorRegex.test(config.secondaryColor)) {
@@ -290,7 +292,7 @@ export function validateConfig(config: WidgetConfig): ValidationError[] {
   // Phone validation (none currently in WidgetConfig)
 
   // Booking-specific validations
-  if (!config.maxPartySize || config.maxPartySize < 1 || config.maxPartySize > 100) {
+      if (!config.maxPartySize || config.maxPartySize < 1 || config.maxPartySize > 100) {
     errors.push({ field: 'maxPartySize', message: 'Max party size must be between 1 and 100' });
   }
   if (config.minAdvanceBooking < 0 || config.minAdvanceBooking > 48) {
@@ -305,7 +307,7 @@ export function validateConfig(config: WidgetConfig): ValidationError[] {
   }
 
   // Custom code validations (basic XSS prevention)
-  if (config.customCss && /<script|<iframe|<object|<embed/i.test(config.customCss)) {
+      if (config.customCss && /<script|<iframe|<object|<embed/i.test(config.customCss)) {
     errors.push({ field: 'customCss', message: 'Custom CSS cannot contain script or embed tags' });
   }
   if (config.customJs && /<script|<iframe|<object|<embed/i.test(config.customJs)) {
@@ -314,3 +316,5 @@ export function validateConfig(config: WidgetConfig): ValidationError[] {
 
   return errors;
 }
+
+

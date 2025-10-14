@@ -199,7 +199,7 @@ export interface SmartAlert {
 // Real-data-only baselines (all empty). These will be populated once AI insight
 // generation, prediction, alerting & model management APIs are implemented.
 // TODO(ai-insights-api): fetch insights, predictions, alerts & models from backend services.
-const initialAIInsights: AIInsight[] = [];
+      const initialAIInsights: AIInsight[] = [];
 const initialBusinessPredictions: BusinessPrediction[] = [];
 const initialSmartAlerts: SmartAlert[] = [];
 const initialAIModels: AIModel[] = [];
@@ -1089,3 +1089,4 @@ const AIBusinessInsights: React.FC = () => {
 };
 
 export default AIBusinessInsights;
+

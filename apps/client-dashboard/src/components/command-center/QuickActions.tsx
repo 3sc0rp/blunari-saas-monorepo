@@ -31,7 +31,7 @@ const QuickActions: React.FC = () => {
   const [activeAction, setActiveAction] = useState<string | null>(null);
 
   // Quick actions configuration
-  const quickActions: QuickAction[] = [
+      const quickActions: QuickAction[] = [
     {
       id: 'new-booking',
       label: 'New Booking',
@@ -92,7 +92,7 @@ const QuickActions: React.FC = () => {
     setTimeout(() => setActiveAction(null), 1000);  }
 
   // Command palette handler
-  const handleCommandPalette = useCallback(() => {
+      const handleCommandPalette = useCallback(() => {
     setIsCommandPaletteOpen(true);
     // TODO: Implement command palette  }, []);
 
@@ -267,4 +267,5 @@ const QuickActions: React.FC = () => {
 };
 
 export default QuickActions;
+
 

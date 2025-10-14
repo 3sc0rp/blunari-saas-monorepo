@@ -18,7 +18,7 @@ interface TablePosition {
 }
 
 // Static table positions matching the reference image layout
-const TABLE_POSITIONS: readonly TablePosition[] = [
+      const TABLE_POSITIONS: readonly TablePosition[] = [
   // Patio Section (top)
   { id: 'table-1', x: 20, y: 20, size: 'small', section: 'Patio' },
   { id: 'table-2', x: 60, y: 20, size: 'medium', section: 'Patio' },
@@ -56,7 +56,7 @@ export function MiniFloorplan({
   focusTableId 
 }: MiniFloorplanProps) {
   // Create mapping from hardcoded positions to real table data
-  const tablePositionsWithRealData = useMemo(() => {
+      const tablePositionsWithRealData = useMemo(() => {
     const positions: Array<{
       id: string;
       x: number;
@@ -68,13 +68,13 @@ export function MiniFloorplan({
     }> = [];
 
     // Map real tables to hardcoded positions
-    if (Array.isArray(tables) && tables.length > 0) {
+      if (Array.isArray(tables) && tables.length > 0) {
       // For each hardcoded position, try to find a matching real table
       TABLE_POSITIONS.forEach((hardcodedPos, index) => {
         let matchingTable: TableRow | undefined;
         
         // Try to find table by matching table number in name (e.g., "Table 1" matches "table-1")
-        const tableNumber = hardcodedPos.id.replace('table-', '').replace('booth-', '');
+      const tableNumber = hardcodedPos.id.replace('table-', '').replace('booth-', '');
         matchingTable = tables.find(table => 
           table.name.toLowerCase().includes(tableNumber) ||
           table.name.toLowerCase().includes(`table ${tableNumber}`) ||
@@ -82,7 +82,7 @@ export function MiniFloorplan({
         );
 
         // If no match by name, use table by index (fallback)
-        if (!matchingTable && index < tables.length) {
+      if (!matchingTable && index < tables.length) {
           matchingTable = tables[index];
         }
 
@@ -114,7 +114,7 @@ export function MiniFloorplan({
   }, [tables]);
 
   // Memoized computation of table statuses for performance
-  const tableStatuses = useMemo<Record<string, { status: string; occupancy: number | null; isReserved: boolean }>>(() => {
+      const tableStatuses = useMemo<Record<string, { status: string; occupancy: number | null; isReserved: boolean }>>(() => {
     try {
       if (!Array.isArray(tables) || !Array.isArray(reservations)) {
         return {};
@@ -175,7 +175,7 @@ export function MiniFloorplan({
   }, [handleTableInteraction]);
 
   // Error boundary fallback
-  if (!Array.isArray(tables)) {
+      if (!Array.isArray(tables)) {
     return (
       <div 
         className="h-64 relative bg-slate-800/20 rounded-lg flex items-center justify-center"
@@ -344,3 +344,4 @@ export function MiniFloorplan({
 }
 
 export default MiniFloorplan;
+

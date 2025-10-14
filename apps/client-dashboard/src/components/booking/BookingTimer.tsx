@@ -23,8 +23,7 @@ const BookingTimer: React.FC<BookingTimerProps> = ({
       setElapsed(currentElapsed);
       setIsInChallenge(currentElapsed <= challengeThreshold);
     }, 100); // Update every 100ms for smooth counting
-
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
   }, [startTime, challengeThreshold]);
 
   const seconds = Math.floor(elapsed / 1000);
@@ -84,3 +83,4 @@ const BookingTimer: React.FC<BookingTimerProps> = ({
 };
 
 export default BookingTimer;
+

@@ -95,7 +95,7 @@ export default function StaffInvitation() {
 
       setInvitation(combinedData);
 
-      // Pre-fill form if we have employee data
+      // Pre-fill form
       if (employee?.first_name || employee?.last_name) {
         setFormData((prev) => ({
           ...prev,
@@ -351,3 +351,5 @@ export default function StaffInvitation() {
     </div>
   );
 }
+
+

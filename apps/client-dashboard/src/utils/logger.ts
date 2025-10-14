@@ -36,7 +36,7 @@ class Logger {
     if (this.isDevelopment) return true;
     
     // In production, only log warnings and errors
-    return level === 'error' || level === 'warn';
+      return level === 'error' || level === 'warn';
   }
 
   error(message: string, error?: Error, context?: Record<string, unknown>): void {
@@ -55,7 +55,7 @@ class Logger {
     }
 
     // In production, you could send to error reporting service here
-    if (!this.isDevelopment && error) {
+      if (!this.isDevelopment && error) {
       // Example: Sentry.captureException(error);
     }
   }
@@ -140,4 +140,5 @@ export const devLog = (message: string, data?: unknown) => {
 };
 
 export default logger;
+
 

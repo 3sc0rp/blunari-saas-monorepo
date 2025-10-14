@@ -64,7 +64,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     const errorId = this.state.errorId || 'unknown';
 
     // Log to enterprise logging system with error boundary utility
-    const logContext = {
+      const logContext = {
       component,
       operation: 'error_boundary',
       metadata: {
@@ -75,7 +75,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     (logger as any).error('🚨 React Error Boundary caught error', logContext, error);
     
     // Additional detailed logging
-    const detailedLogContext = {
+      const detailedLogContext = {
       component,
       operation: 'error_boundary_catch',
       correlationId: errorId,
@@ -95,7 +95,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     (logger as any).error('🚨 Component Error Boundary Triggered', detailedLogContext, error);
 
     // Auto-retry for transient errors
-    if (error.message?.includes('ChunkLoadError') || 
+      if (error.message?.includes('ChunkLoadError') || 
         error.message?.includes('Loading chunk') ||
         error.message?.includes('Failed to fetch')) {
       setTimeout(() => {
@@ -106,7 +106,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     // Update state with error info
     this.setState({ errorInfo });
 
-    // Call custom error handler if provided
+    // Call custom error handler
+      if (provided
       if (onError) {
         try {
           onError(error, errorInfo);
@@ -123,7 +124,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   private sendToMonitoring = (error: Error, errorInfo: ErrorInfo, errorId: string): void => {
     try {
-      // Send to Sentry if available
+      // Send to Sentry
+      if (available
       if (typeof window !== 'undefined' && (window as any).Sentry) {
         (window as any).Sentry.captureException(error, {
           tags: {
@@ -142,8 +144,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         });
       }
 
-      // Send to custom analytics endpoint if configured
-      const endpoint = (window as any).__ERROR_ANALYTICS_ENDPOINT__ || '';
+      // Send to custom analytics endpoint
       if (endpoint && navigator.sendBeacon) {
         try {
           const payload = JSON.stringify({
@@ -200,7 +201,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     }));
 
     // Auto-retry with exponential backoff
-    if (this.retryTimeout) {
+      if (this.retryTimeout) {
       clearTimeout(this.retryTimeout);
     }
     
@@ -232,7 +233,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     (logger as any).info('🐛 User reporting bug from error boundary', bugReportLogContext);
 
     // Open bug report with pre-filled data
-    const reportData = {
+      const reportData = {
       errorId,
       component: this.props.component,
       level: this.props.level,
@@ -248,7 +249,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     };
 
     // You can integrate with your bug reporting system here
-    const bugReportUrl = `/support/bug-report?data=${encodeURIComponent(JSON.stringify(reportData))}`;
+      const bugReportUrl = `/support/bug-report?data=${encodeURIComponent(JSON.stringify(reportData))}`;
     window.open(bugReportUrl, '_blank');
   };
 
@@ -263,7 +264,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     const { children, fallback, enableRecovery = true, level = 'component' } = this.props;
 
     if (hasError) {
-      // Use custom fallback if provided
+      // Use custom fallback
+      if (provided
       if (fallback) {
         return fallback;
       }
@@ -383,7 +385,7 @@ export const withErrorBoundary = <P extends object>(
 export const useErrorHandler = () => {
   const handleError = React.useCallback((error: Error, errorInfo?: { componentStack?: string }) => {
     // This would work with a context provider that manages error state
-    const hookLogContext = {
+      const hookLogContext = {
       component: 'error-handler-hook',
       operation: 'manual_error_report',
       metadata: errorInfo
@@ -398,3 +400,6 @@ export const useErrorHandler = () => {
 };
 
 export default ErrorBoundary;
+
+
+

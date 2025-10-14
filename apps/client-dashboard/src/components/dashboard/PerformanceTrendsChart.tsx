@@ -52,7 +52,7 @@ const PerformanceTrendsChart: React.FC<PerformanceTrendsChartProps> = ({
       data.slice(0, 3).reduce((sum, d) => sum + d.revenue, 0) / 3;
 
     // Handle division by zero
-    if (previous === 0) return recent > 0 ? 100 : 0;
+      if (previous === 0) return recent > 0 ? 100 : 0;
 
     const trendValue = ((recent - previous) / previous) * 100;
     return isFinite(trendValue) ? trendValue : 0;
@@ -232,3 +232,4 @@ const PerformanceTrendsChart: React.FC<PerformanceTrendsChartProps> = ({
 };
 
 export default PerformanceTrendsChart;
+

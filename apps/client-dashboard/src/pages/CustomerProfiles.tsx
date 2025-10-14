@@ -49,7 +49,7 @@ const CustomerProfiles: React.FC = () => {
   const { toast } = useToast();
   
   // Use real customer data from the hook
-  const { 
+      const { 
     customers, 
     isLoading: customerLoading, 
     error: customerError,
@@ -64,7 +64,7 @@ const CustomerProfiles: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   
   // Form state adapted for real Customer type
-  const [customerForm, setCustomerForm] = useState<Partial<Customer>>({
+      const [customerForm, setCustomerForm] = useState<Partial<Customer>>({
     name: "",
     email: "",
     phone: "",
@@ -73,7 +73,7 @@ const CustomerProfiles: React.FC = () => {
   });
 
   // Filter customers based on search and segment
-  const filteredCustomers = useMemo(() => {
+      const filteredCustomers = useMemo(() => {
     return customers.filter(customer => {
       const matchesSearch = 
         customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -100,7 +100,7 @@ const CustomerProfiles: React.FC = () => {
   }, [customers, searchTerm, selectedSegment]);
 
   // Calculate analytics
-  const analytics = useMemo(() => {
+      const analytics = useMemo(() => {
     const totalCustomers = customers.length;
     const vipCustomers = customers.filter(c => c.customer_type === "vip").length;
     const avgVisits = customers.length > 0 ? 
@@ -568,3 +568,4 @@ const CustomerProfiles: React.FC = () => {
 };
 
 export default CustomerProfiles;
+

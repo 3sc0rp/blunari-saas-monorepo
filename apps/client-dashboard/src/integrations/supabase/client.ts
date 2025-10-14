@@ -9,7 +9,7 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.error("Missing Supabase environment variables. Please check .env file.");
   
   // In development, provide fallback values to prevent app crash
-  if (import.meta.env.MODE === 'development') {
+      if (import.meta.env.MODE === 'development') {
     console.warn("Using fallback Supabase configuration for development");
   } else {
     throw new Error("Missing Supabase environment variables. Please check .env file.");
@@ -51,4 +51,5 @@ export const supabase = createClient<Database>(
     },
   },
 );
+
 

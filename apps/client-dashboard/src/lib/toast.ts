@@ -1,7 +1,7 @@
 import { toast as sonnerToast } from "sonner";
 
 // Debounce mechanism to prevent duplicate toasts
-const recentToasts = new Set<string>();
+      const recentToasts = new Set<string>();
 const DEBOUNCE_TIME = 3000; // 3 seconds
 
 function getToastKey(message: string, type: string): string {
@@ -146,3 +146,4 @@ export const toast = {
 
 // Export the original toast from sonner for advanced use cases
 export { toast as sonnerToast } from "sonner";
+

@@ -67,7 +67,7 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
   const handleRecipientSearch = (query: string) => {
     setFormData((prev) => ({ ...prev, to: query }));
     // Search customers - integrate with real customer API
-    if (query.length > 2) {
+      if (query.length > 2) {
       setSearchResults([
         {
           id: "1",
@@ -258,3 +258,4 @@ export const NewConversationDialog: React.FC<NewConversationDialogProps> = ({
     </Dialog>
   );
 };
+

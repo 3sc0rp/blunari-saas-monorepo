@@ -86,7 +86,7 @@ export async function getTenantBySlug(slug: string) {
         
         if (publicResult.data) {
           // Transform public view data to match tenant structure
-          const transformedData = {
+      const transformedData = {
             id: publicResult.data.id,
             name: publicResult.data.name,
             slug: publicResult.data.slug,
@@ -129,7 +129,7 @@ export async function getUserTenant(userId: string) {
         const tenantInfo = result.data[0];
         
         // Get full tenant details
-        const tenantResult = await supabase
+      const tenantResult = await supabase
           .from('tenants')
           .select('*')
           .eq('id', tenantInfo.tenant_id)
@@ -140,7 +140,7 @@ export async function getUserTenant(userId: string) {
         }
         
         // Return in the expected format for the hook
-        return {
+      return {
           data: {
             tenant_id: tenantInfo.tenant_id,
             tenants: tenantResult.data
@@ -199,3 +199,4 @@ export async function checkApiHealth() {
   
   return results;
 }
+

@@ -68,7 +68,7 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
   const TrendIcon = trendInfo.icon;
 
   // Generate tooltip text based on metric type
-  const getDefaultTooltip = () => {
+      const getDefaultTooltip = () => {
     switch (format) {
       case "currency":
         return `Revenue generated ${subtitle?.includes("month") ? "this month" : "today"}. Trend shows change compared to previous period.`;
@@ -160,3 +160,4 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
 };
 
 export default MetricsCard;
+

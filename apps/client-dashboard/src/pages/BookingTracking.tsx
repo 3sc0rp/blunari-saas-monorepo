@@ -37,7 +37,7 @@ export default function BookingTracking() {
   const [verifiedEmail, setVerifiedEmail] = useState(email || '');
 
   // Fetch booking details
-  const { data: booking, isLoading, error } = useQuery({
+      const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking-tracking', bookingId, verifiedEmail],
     queryFn: async () => {
       if (!bookingId || !verifiedEmail) return null;
@@ -71,7 +71,7 @@ export default function BookingTracking() {
   const currentStep = booking ? getStatusStep(booking.status) : 0;
 
   // Email verification screen
-  if (!verifiedEmail) {
+      if (!verifiedEmail) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -112,7 +112,7 @@ export default function BookingTracking() {
   }
 
   // Loading state
-  if (isLoading) {
+      if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
         <Card className="w-full max-w-2xl">
@@ -128,7 +128,7 @@ export default function BookingTracking() {
   }
 
   // Error or not found
-  if (error || !booking) {
+      if (error || !booking) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -169,7 +169,7 @@ export default function BookingTracking() {
   };
 
   // Booking tracking display
-  return (
+      return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
@@ -374,4 +374,5 @@ export default function BookingTracking() {
     </div>
   );
 }
+
 

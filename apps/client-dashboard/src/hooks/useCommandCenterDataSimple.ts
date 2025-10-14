@@ -31,7 +31,7 @@ export function useCommandCenterDataSimple() {
 
       try {
         // Try calling the service-role backed function first for better RLS handling
-        const { data: functionData, error: functionError } = await (supabase as any).functions.invoke('command-center-bookings', {
+      const { data: functionData, error: functionError } = await (supabase as any).functions.invoke('command-center-bookings', {
           body: { tenant_id: tenantId, date: new Date().toISOString().slice(0,10) }
         });
 
@@ -44,16 +44,17 @@ export function useCommandCenterDataSimple() {
             status: table.status || 'AVAILABLE'
           }));
 
-          // Auto-assignment helper: deterministically assign a table if booking has no table_id
-          const autoAssignTableId = (b: any) => {
+          // Auto-assignment helper: deterministically assign a table
+      if (booking has no table_id
+      const autoAssignTableId = (b: any) => {
             if (!tables.length) return undefined;
             // Try exact / minimum capacity fit first
-            const capacityFit = [...tables]
+      const capacityFit = [...tables]
               .filter(t => t.seats >= (b.party_size || 1))
               .sort((a, b2) => a.seats - b2.seats)[0];
             if (capacityFit) return capacityFit.id;
             // Fallback: hash booking id to stable index
-            const hash = (b.id || '').split('').reduce((acc: number, ch: string) => acc + ch.charCodeAt(0), 0);
+      const hash = (b.id || '').split('').reduce((acc: number, ch: string) => acc + ch.charCodeAt(0), 0);
             return tables[hash % tables.length].id;
           };
 
@@ -124,8 +125,9 @@ export function useCommandCenterDataSimple() {
           };
         }
 
-        if (devLogs)        // Fallback to direct queries if function fails
-        const [tablesResult, bookingsResult] = await Promise.all([
+        if (devLogs)        // Fallback to direct queries
+      if (function fails
+      const [tablesResult, bookingsResult] = await Promise.all([
           supabase
             .from('restaurant_tables')
             .select('*')
@@ -145,7 +147,7 @@ export function useCommandCenterDataSimple() {
         }));
 
         // Reuse auto-assignment in fallback path
-        const autoAssignFallback = (b: any) => {
+      const autoAssignFallback = (b: any) => {
           if (!tables.length) return undefined;
           const capacityFit = [...tables]
             .filter(t => t.seats >= (b.party_size || 1))
@@ -239,7 +241,9 @@ export function useCommandCenterDataSimple() {
         };
       }
     },
-    // Don't wait for tenantId - query will return empty data if not available
+    // Don't wait for tenantId - query will
+      return empty data
+      if not available
     enabled: true,
     // Reduce refetch interval for faster updates
     refetchInterval: 30000,
@@ -259,4 +263,6 @@ export function useCommandCenterDataSimple() {
     refetch: query.refetch
   };
 }
+
+
 

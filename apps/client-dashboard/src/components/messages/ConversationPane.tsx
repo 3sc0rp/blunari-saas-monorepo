@@ -122,7 +122,7 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
   };
 
   // Group messages by date
-  const groupedMessages = messages.reduce(
+      const groupedMessages = messages.reduce(
     (groups, message) => {
       const date = format(new Date(message.created_at), "yyyy-MM-dd");
       if (!groups[date]) {
@@ -206,3 +206,4 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
     </Card>
   );
 };
+

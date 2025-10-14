@@ -153,7 +153,7 @@ export interface AutomationRule {
 
 // Real-data-only baselines (empty) replacing prior mock performance datasets.
 // TODO(performance-api): fetch metrics, recommendations, alerts, benchmarks, automation rules.
-const initialPerformanceMetrics: PerformanceMetric[] = [];
+      const initialPerformanceMetrics: PerformanceMetric[] = [];
 const initialRecommendations: OptimizationRecommendation[] = [];
 const initialAlerts: PerformanceAlert[] = [];
 const initialBenchmarkData: BenchmarkData[] = [];
@@ -942,3 +942,4 @@ const PerformanceOptimization: React.FC = () => {
 };
 
 export default PerformanceOptimization;
+

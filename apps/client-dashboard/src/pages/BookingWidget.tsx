@@ -46,7 +46,7 @@ const BookingWidgetPage: React.FC = () => {
   const [tokenError, setTokenError] = useState<string>("");
 
   // Generate widget URLs with proper authentication tokens
-  const generateWidgetUrls = async () => {
+      const generateWidgetUrls = async () => {
     if (!tenant?.slug) return { bookingUrl: "", cateringUrl: "", currentUrl: "", fullCurrentUrl: "" };
 
     try {
@@ -96,7 +96,7 @@ const BookingWidgetPage: React.FC = () => {
   };
 
   // State for widget URLs
-  const [urls, setUrls] = useState({
+      const [urls, setUrls] = useState({
     bookingUrl: "",
     cateringUrl: "",
     currentUrl: "",
@@ -495,3 +495,4 @@ const BookingWidgetPage: React.FC = () => {
 };
 
 export default BookingWidgetPage;
+

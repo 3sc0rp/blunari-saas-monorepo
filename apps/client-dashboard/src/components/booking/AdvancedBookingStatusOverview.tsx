@@ -83,13 +83,13 @@ const AdvancedBookingStatusOverview: React.FC<
   const [refreshing, setRefreshing] = useState(false);
 
   // Handle refresh functionality
-  const handleRefresh = useCallback(async () => {
+      const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
   // Status configuration with colors and icons - memoized to prevent re-renders
-  const statusConfig = useMemo(() => ({
+      const statusConfig = useMemo(() => ({
     all: {
       label: "All Bookings",
       color: "hsl(var(--muted))",
@@ -135,7 +135,7 @@ const AdvancedBookingStatusOverview: React.FC<
   }), []);
 
   // Advanced analytics calculations
-  const analytics = useMemo(() => {
+      const analytics = useMemo(() => {
     const now = new Date();
     const startOfDay = new Date(
       now.getFullYear(),
@@ -182,7 +182,7 @@ const AdvancedBookingStatusOverview: React.FC<
       filteredBookings.length > 0 ? totalGuests / filteredBookings.length : 0;
 
     // Conversion rates
-    const confirmationRate =
+      const confirmationRate =
       statusCounts.all > 0
         ? ((statusCounts.confirmed +
             statusCounts.seated +
@@ -204,7 +204,7 @@ const AdvancedBookingStatusOverview: React.FC<
       statusCounts.all > 0 ? (statusCounts.noshow / statusCounts.all) * 100 : 0;
 
     // Trend calculations (compare with previous period)
-    const previousPeriod = new Date(startOfDay);
+      const previousPeriod = new Date(startOfDay);
     if (timeRange === "today")
       previousPeriod.setDate(previousPeriod.getDate() - 1);
     else if (timeRange === "week")
@@ -264,11 +264,11 @@ const AdvancedBookingStatusOverview: React.FC<
   }, [bookings, timeRange, statusConfig]);
 
   // Advanced insights calculations
-  const insights = useMemo(() => {
+      const insights = useMemo(() => {
     const { filteredBookings } = analytics;
 
     // Peak hours analysis
-    const hourlyDistribution = Array.from({ length: 24 }, (_, hour) => {
+      const hourlyDistribution = Array.from({ length: 24 }, (_, hour) => {
       const count = filteredBookings.filter(
         (b) => new Date(b.booking_time).getHours() === hour,
       ).length;
@@ -280,16 +280,15 @@ const AdvancedBookingStatusOverview: React.FC<
     );
 
     // Revenue potential (assuming avg price per person)
-    const avgPricePerPerson = 45;
+      const avgPricePerPerson = 45;
     const potentialRevenue = analytics.totalGuests * avgPricePerPerson;
 
     // Efficiency metrics
-    const capacityUtilization = Math.min(analytics.totalGuests / 100, 1) * 100;
+      const capacityUtilization = Math.min(analytics.totalGuests / 100, 1) * 100;
 
     // Response time analysis
-    const avgResponseTime = analytics.totalGuests ? 12 : 0; // From real analytics when available
-
-    return {
+      const avgResponseTime = analytics.totalGuests ? 12 : 0; // From real analytics when available
+      return {
       peakHour: peakHour.hour,
       potentialRevenue,
       capacityUtilization,
@@ -299,7 +298,7 @@ const AdvancedBookingStatusOverview: React.FC<
   }, [analytics]);
 
   // Timeline data generation
-  const getTimelineData = () => {
+      const getTimelineData = () => {
     const now = new Date();
     const periods = [];
 
@@ -374,7 +373,7 @@ const AdvancedBookingStatusOverview: React.FC<
   };
 
   // Pie chart data
-  const pieData = Object.entries(analytics.statusCounts)
+      const pieData = Object.entries(analytics.statusCounts)
     .filter(
       ([status]) => status !== "all" && analytics.statusCounts[status] > 0,
     )
@@ -889,3 +888,4 @@ const AdvancedBookingStatusOverview: React.FC<
 };
 
 export default AdvancedBookingStatusOverview;
+

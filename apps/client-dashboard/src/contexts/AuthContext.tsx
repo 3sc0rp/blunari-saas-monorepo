@@ -30,15 +30,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     let authInitialized = false;
     
     // Development mode bypass
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_BYPASS_AUTH === 'true') {
-      if (import.meta.env.DEV)      if (isMounted) {
+      if (import.meta.env.MODE === 'development' && import.meta.env.VITE_BYPASS_AUTH === 'true') {
+      if (isMounted) {
         setLoading(false);
       }
       return;
     }
 
     // Set up auth state listener
-    const {
+      const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (isMounted) {
@@ -46,13 +46,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
-          
       }
     });
 
     // Check for existing session
-    const sessionCheck = async () => {
+      const sessionCheck = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
@@ -63,8 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
-          if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
-            
         }
       } catch (error) {
         console.error("Error checking session:", error);
@@ -78,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     sessionCheck();
 
     // Reduced timeout to prevent long waits, but still provide a safety net
-    const timeout = setTimeout(() => {
+      const timeout = setTimeout(() => {
       if (isMounted && !authInitialized) {
         if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
           console.warn("Auth initialization timeout (3s), proceeding without auth");
@@ -87,8 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
       }
     }, 3000); // Increased to 3 seconds for better stability // Reduced from 3000ms to 1500ms
-
-    return () => {
+      return () => {
       isMounted = false;
       subscription.unsubscribe();
       clearTimeout(timeout);
@@ -148,6 +143,7 @@ export const useAuth = () => {
   }
   return context;
 };
+
 
 
 

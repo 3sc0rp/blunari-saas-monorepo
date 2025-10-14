@@ -24,7 +24,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({
   // Load preference from localStorage
   useEffect(() => {
     // Ensure we're on the client side before accessing localStorage
-    if (typeof window === 'undefined') return;
+      if (typeof window === 'undefined') return;
     
     const saved = localStorage.getItem("navigation-preference");
     if (saved && ["sidebar", "bottom", "auto"].includes(saved)) {
@@ -37,7 +37,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // Save preference to localStorage
-  const setPreference = (newPreference: NavigationPreference) => {
+      const setPreference = (newPreference: NavigationPreference) => {
     setPreferenceState(newPreference);
     if (typeof window !== 'undefined') {
       localStorage.setItem("navigation-preference", newPreference);
@@ -48,8 +48,6 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const updateActualLayout = () => {
       // Ensure we're on the client side before accessing window
-      if (typeof window === 'undefined') return;
-      
       if (preference === "sidebar") {
         setActualLayout("sidebar");
       } else if (preference === "bottom") {
@@ -64,7 +62,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({
     updateActualLayout();
 
     // Always listen for resize events in auto mode, and also when preference changes
-    const handleResize = () => {
+      const handleResize = () => {
       if (preference === "auto") {
         updateActualLayout();
       }
@@ -96,3 +94,5 @@ export const useNavigation = () => {
   }
   return context;
 };
+
+

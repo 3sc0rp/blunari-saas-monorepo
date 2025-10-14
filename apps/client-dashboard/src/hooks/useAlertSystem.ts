@@ -15,7 +15,7 @@ export const useAlertSystem = (tenantId?: string) => {
     const now = new Date();
 
     // Check for overbookings
-    const currentHour = now.getHours();
+      const currentHour = now.getHours();
     const currentBookings = bookings.filter((b) => {
       const bookingTime = new Date(b.booking_time);
       return (
@@ -37,7 +37,7 @@ export const useAlertSystem = (tenantId?: string) => {
           handler: () =>    }
 
     // Check for long table occupancy
-    const longOccupiedTables = bookings.filter((b) => {
+      const longOccupiedTables = bookings.filter((b) => {
       if (b.status !== "seated") return false;
       const seatTime = new Date(b.booking_time);
       const hoursDiff = (now.getTime() - seatTime.getTime()) / (1000 * 60 * 60);
@@ -56,7 +56,7 @@ export const useAlertSystem = (tenantId?: string) => {
           handler: () =>    });
 
     // Check for upcoming peak times
-    const upcomingBookings = bookings.filter((b) => {
+      const upcomingBookings = bookings.filter((b) => {
       const bookingTime = new Date(b.booking_time);
       const timeDiff = bookingTime.getTime() - now.getTime();
       return (
@@ -78,7 +78,7 @@ export const useAlertSystem = (tenantId?: string) => {
           handler: () =>    }
 
     // Success alerts for good performance
-    const completedToday = bookings.filter(
+      const completedToday = bookings.filter(
       (b) => b.status === "completed",
     ).length;
     if (completedToday > 0 && completedToday % 10 === 0) {
@@ -111,4 +111,5 @@ export const useAlertSystem = (tenantId?: string) => {
     criticalAlertsCount: alerts.filter((a) => a.type === "critical").length,
   };
 };
+
 

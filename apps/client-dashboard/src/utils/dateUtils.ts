@@ -26,7 +26,7 @@ export function formatDateInTimezone(
 
   try {
     // Use Intl.DateTimeFormat for timezone-aware formatting
-    const formatter = new Intl.DateTimeFormat('en-CA', {
+      const formatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: timezone,
       year: 'numeric',
       month: '2-digit',
@@ -34,11 +34,11 @@ export function formatDateInTimezone(
     });
 
     // en-CA locale gives us YYYY-MM-DD format
-    return formatter.format(dateObj);
+      return formatter.format(dateObj);
   } catch (error) {
     console.error('[dateUtils] Timezone formatting error:', error);
     // Fallback to UTC
-    return dateObj.toISOString().split('T')[0];
+      return dateObj.toISOString().split('T')[0];
   }
 }
 
@@ -52,13 +52,13 @@ export function getStartOfDayInTimezone(
 ): string {
   try {
     // Parse the date string as-is (YYYY-MM-DD)
-    const [year, month, day] = dateString.split('-').map(Number);
+      const [year, month, day] = dateString.split('-').map(Number);
     
     // Create a date string that represents midnight in the target timezone
-    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00`;
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00`;
     
     // Parse as local time in the target timezone
-    const formatter = new Intl.DateTimeFormat('en-US', {
+      const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       year: 'numeric',
       month: '2-digit',
@@ -70,16 +70,16 @@ export function getStartOfDayInTimezone(
     });
 
     // Get the UTC timestamp for midnight in the target timezone
-    const parts = formatter.formatToParts(new Date(dateStr));
+      const parts = formatter.formatToParts(new Date(dateStr));
     const tzYear = parts.find(p => p.type === 'year')?.value || year;
     const tzMonth = parts.find(p => p.type === 'month')?.value || month;
     const tzDay = parts.find(p => p.type === 'day')?.value || day;
     
     // Create date in UTC then adjust
-    const utcDate = new Date(Date.UTC(+tzYear, +tzMonth - 1, +tzDay, 0, 0, 0));
+      const utcDate = new Date(Date.UTC(+tzYear, +tzMonth - 1, +tzDay, 0, 0, 0));
     
     // Get the offset and adjust
-    const localDate = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00`);
+      const localDate = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00`);
     const offsetMinutes = getTimezoneOffset(timezone, localDate);
     
     const adjusted = new Date(utcDate.getTime() - offsetMinutes * 60 * 1000);
@@ -87,7 +87,7 @@ export function getStartOfDayInTimezone(
   } catch (error) {
     console.error('[dateUtils] Error getting start of day:', error);
     // Fallback: assume UTC
-    return `${dateString}T00:00:00.000Z`;
+      return `${dateString}T00:00:00.000Z`;
   }
 }
 
@@ -120,11 +120,11 @@ export function getEndOfDayInTimezone(
 function getTimezoneOffset(timezone: string, date: Date): number {
   try {
     // Format the date in both UTC and target timezone
-    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+      const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
     const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
     
     // Difference in minutes
-    return (tzDate.getTime() - utcDate.getTime()) / (60 * 1000);
+      return (tzDate.getTime() - utcDate.getTime()) / (60 * 1000);
   } catch {
     return 0; // Fallback to UTC (no offset)
   }
@@ -266,4 +266,5 @@ export function createDateFilter(
  *   .gte('booking_time', filter.gte)
  *   .lt('booking_time', filter.lt);
  */
+
 

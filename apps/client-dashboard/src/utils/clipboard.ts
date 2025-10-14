@@ -8,7 +8,7 @@ export async function copyText(text: string): Promise<void> {
     }
   }
   // Fallback using a hidden textarea
-  return new Promise<void>((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
     try {
       const textarea = document.createElement('textarea');
       textarea.value = text;
@@ -26,3 +26,4 @@ export async function copyText(text: string): Promise<void> {
     }
   });
 }
+

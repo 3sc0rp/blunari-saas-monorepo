@@ -177,8 +177,7 @@ function useToast() {
       }
     };
   }, []); // Fixed: Empty deps - only run once to prevent memory leak
-
-  return {
+      return {
     ...state,
     toast,
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
@@ -186,3 +185,4 @@ function useToast() {
 }
 
 export { useToast, toast };
+

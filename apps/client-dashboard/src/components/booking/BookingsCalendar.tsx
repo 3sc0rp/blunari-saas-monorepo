@@ -9,7 +9,7 @@ interface Props {
 }
 
 // Lightweight day agenda calendar for today
-const BookingsCalendar: React.FC<Props> = ({ bookings, onSelectBooking }) => {
+      const BookingsCalendar: React.FC<Props> = ({ bookings, onSelectBooking }) => {
   const slots = useMemo(() => {
     const dayStart = startOfDay(new Date());
     const list: { time: Date; items: ExtendedBooking[] }[] = [];
@@ -49,4 +49,5 @@ const BookingsCalendar: React.FC<Props> = ({ bookings, onSelectBooking }) => {
 };
 
 export default BookingsCalendar;
+
 

@@ -36,8 +36,7 @@ export function StatusLegend({ counts, className }: StatusLegendProps) {
   React.useEffect(() => {  }, [counts, finalCounts]);
 
   // Use final counts (real data)
-
-  const statusItems: StatusItem[] = [
+      const statusItems: StatusItem[] = [
     {
       status: "available",
       label: "Available Tables",
@@ -149,4 +148,5 @@ export function StatusLegend({ counts, className }: StatusLegendProps) {
     </div>
   );
 }
+
 

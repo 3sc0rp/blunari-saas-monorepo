@@ -109,12 +109,12 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
   }, []); // Empty deps - only run once on mount
 
   // Generate widget URL
-  const widgetUrl = widgetToken 
+      const widgetUrl = widgetToken 
     ? `${window.location.origin}/public-widget/catering/${tenantSlug}?token=${encodeURIComponent(widgetToken)}`
     : '';
 
   // Generate embed code with security sandbox
-  const embedCode = `<!-- Blunari Catering Widget -->
+      const embedCode = `<!-- Blunari Catering Widget -->
 <iframe
   src="${widgetUrl}"
   width="100%"
@@ -606,4 +606,5 @@ export function CateringWidgetConfig({ tenantId, tenantSlug }: CateringWidgetCon
     </div>
   );
 }
+
 

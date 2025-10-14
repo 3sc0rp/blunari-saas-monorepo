@@ -53,7 +53,7 @@ class CacheManager {
     this.cleanupInterval = setInterval(() => this.cleanup(), 60000); // Every minute
     
     // Memory monitoring
-    if (this.config.enableMetrics) {
+      if (this.config.enableMetrics) {
       this.metricsInterval = setInterval(() => this.updateMemoryMetrics(), 30000); // Every 30 seconds
     }
 
@@ -414,7 +414,7 @@ class CacheManager {
 
   private getTTL(key: string): number {
     // This could be extended to support per-key TTL configuration
-    return this.config.defaultTTL;
+      return this.config.defaultTTL;
   }
 
   private estimateSize(data: any): number {
@@ -512,3 +512,4 @@ export function cached(
 }
 
 export type { CacheConfig, CacheEntry };
+

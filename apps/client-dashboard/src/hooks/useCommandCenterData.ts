@@ -66,7 +66,7 @@ export interface UseCommandCenterDataParams {
 }
 
 // Constants
-const DEFAULT_DURATION_MINUTES = 90;
+      const DEFAULT_DURATION_MINUTES = 90;
 const TABLE_COUNT = 20;
 const TABLES_PER_SECTION = 7;
 const NO_SHOW_RISK_MULTIPLIER = 0.15;
@@ -75,7 +75,7 @@ const SEAT_OPTIONS = [2, 4, 6, 8] as const;
 const TABLE_SECTIONS: Array<'Patio' | 'Bar' | 'Main'> = ['Patio', 'Bar', 'Main'];
 
 // Utility functions
-const generateTableId = (index: number): string => `table-${index + 1}`;
+      const generateTableId = (index: number): string => `table-${index + 1}`;
 
 const getTableSection = (index: number): 'Patio' | 'Bar' | 'Main' => {
   return TABLE_SECTIONS[Math.floor(index / TABLES_PER_SECTION)] || 'Main';
@@ -87,7 +87,7 @@ const getRandomCapacity = (): number => {
 
 const transformBookingToReservation = (booking: DatabaseBooking): Reservation => {
   // CRITICAL FIX: Validate booking data before transformation
-  if (!booking || !booking.id) {
+      if (!booking || !booking.id) {
     throw new Error('Invalid booking data: missing required fields');
   }
 
@@ -95,20 +95,19 @@ const transformBookingToReservation = (booking: DatabaseBooking): Reservation =>
   const startTime = new Date(booking.booking_time);
   
   // FIX: Validate date before using it
-  if (isNaN(startTime.getTime())) {
+      if (isNaN(startTime.getTime())) {
     throw new Error(`Invalid booking time: ${booking.booking_time}`);
   }
   
   const duration = booking.duration_minutes || DEFAULT_DURATION_MINUTES;
   
   // FIX: Validate duration is positive
-  if (duration <= 0) {
+      if (duration <= 0) {
     console.warn(`Invalid duration for booking ${booking.id}, using default`);
   }
   
   const endTime = new Date(startTime.getTime() + (Math.max(duration, 30) * 60 * 1000)); // Min 30 minutes
-
-  return {
+      return {
     id: booking.id,
     tableId: generateTableId(Math.floor(Math.random() * TABLE_COUNT)), // TODO: Replace with actual table assignment
     guestName,
@@ -149,34 +148,33 @@ const applyFilters = (
 ): Reservation[] => {
   return reservations.filter(reservation => {
     // Filter by status
-    if (filters.status && filters.status.length > 0) {
+      if (filters.status && filters.status.length > 0) {
       if (!filters.status.includes(reservation.status)) {
         return false;
       }
     }
 
     // Filter by channel
-    if (filters.channel && filters.channel.length > 0) {
+      if (filters.channel && filters.channel.length > 0) {
       if (!filters.channel.includes(reservation.channel)) {
         return false;
       }
     }
 
     // TODO: Add section filtering when table assignments are real
-    
-    return true;
+      return true;
   });
 };
 
 const calculateKPIs = (tables: TableRow[], reservations: Reservation[]): KpiItem[] => {
   // Basic table statistics
-  const occupiedTables = tables.filter(table => table.status === 'occupied');
+      const occupiedTables = tables.filter(table => table.status === 'occupied');
   const occupancy = tables.length > 0 
     ? Math.round((occupiedTables.length / tables.length) * 100) 
     : 0;
 
   // Reservation statistics
-  const activeReservations = reservations.filter(reservation => 
+      const activeReservations = reservations.filter(reservation => 
     reservation.status !== 'cancelled'
   );
   const covers = activeReservations.reduce((sum, reservation) => 
@@ -184,7 +182,7 @@ const calculateKPIs = (tables: TableRow[], reservations: Reservation[]): KpiItem
   );
 
   // No-show risk calculation
-  const confirmedReservations = activeReservations.filter(reservation => 
+      const confirmedReservations = activeReservations.filter(reservation => 
     reservation.status === 'confirmed'
   );
   const noShowRisk = confirmedReservations.length > 0 
@@ -192,12 +190,12 @@ const calculateKPIs = (tables: TableRow[], reservations: Reservation[]): KpiItem
     : 0;
 
   // Average party size
-  const avgPartySize = activeReservations.length > 0 
+      const avgPartySize = activeReservations.length > 0 
     ? Math.round((covers / activeReservations.length) * 10) / 10
     : 0;
 
   // Kitchen pacing based on current hour load
-  const currentHour = new Date().getHours();
+      const currentHour = new Date().getHours();
   const currentHourReservations = reservations.filter(reservation => {
     const reservationHour = new Date(reservation.start).getHours();
     return reservationHour === currentHour && reservation.status === 'seated';
@@ -256,7 +254,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataPara
     loadData();
     
     // Set up real-time subscriptions
-    const tableSubscription = supabase
+      const tableSubscription = supabase
       .channel('command-center-tables')
       .on(
         'postgres_changes', 
@@ -316,7 +314,8 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataPara
         (booking: DatabaseBooking) => transformBookingToReservation(booking)
       );
 
-      // Apply filters if provided
+      // Apply filters
+      if (provided
       const filteredReservations = applyFilters(reservations, filters);
 
       // Generate table data (TODO: Replace with actual restaurant_tables query)
@@ -359,3 +358,5 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataPara
 
   return data;
 }
+
+

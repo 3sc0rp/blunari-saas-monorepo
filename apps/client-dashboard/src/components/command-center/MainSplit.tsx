@@ -163,7 +163,7 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
   const { moveReservationAction } = useReservationActions();
 
   // Memoized event handlers to prevent unnecessary re-renders
-  const handleReservationClick = useCallback((reservation: Reservation) => {
+      const handleReservationClick = useCallback((reservation: Reservation) => {
     try {
       onSelectReservation(reservation.id);
     } catch (err) {
@@ -206,7 +206,7 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
   }, [moveReservationAction]);
 
   // Memoized computation for table status counts (calculated from bookings)
-  const tableStatusCounts = useMemo(() => {
+      const tableStatusCounts = useMemo(() => {
     try {
       // Initialize counts with default values
       const counts = {
@@ -224,24 +224,24 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
       // Calculate table status based on active bookings
       tables.forEach(table => {
         let tableStatus = 'available'; // Default status
-        
-        if (Array.isArray(reservations)) {
+      if (Array.isArray(reservations)) {
           // Find active booking for this table
-          const activeBooking = reservations.find(reservation => {
+      const activeBooking = reservations.find(reservation => {
             if (reservation.tableId !== table.id) return false;
             
             const bookingStart = new Date(reservation.start);
             const bookingEnd = new Date(reservation.end);
             
-            // Check if booking is currently active
-            if (reservation.status === 'seated' && bookingStart <= currentTime && currentTime <= bookingEnd) {
+            // Check
+      if (reservation.status === 'seated' && bookingStart <= currentTime && currentTime <= bookingEnd) {
               return true;
             }
             
-            // Check if booking is confirmed and upcoming (within 30 minutes)
-            if (reservation.status === 'confirmed' && bookingStart > currentTime) {
+            // Check
+      if (reservation.status === 'confirmed' && bookingStart > currentTime) {
               const minutesUntil = (bookingStart.getTime() - currentTime.getTime()) / (1000 * 60);
-              return minutesUntil <= 30; // Consider reserved if booking is within 30 minutes
+              return minutesUntil <= 30; // Consider reserved
+      if (booking is within 30 minutes
             }
             
             return false;
@@ -297,7 +297,7 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
   }, [tables, reservations]);
 
   // Memoized computation for kitchen load calculation
-  const calculatedKitchenLoad = useMemo(() => {
+      const calculatedKitchenLoad = useMemo(() => {
     try {
       if (!Array.isArray(reservations)) return kitchenLoad;
       
@@ -310,7 +310,7 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
           const endTime = new Date(r.end);
           
           // Additional validation for date objects
-          if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+      if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
             console.warn(`Invalid reservation dates for reservation ${r.id}:`, { start: r.start, end: r.end });
             return false;
           }
@@ -337,13 +337,15 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
     }
   }, [reservations, kitchenLoad, tables.length]);
 
-  // Early return for loading state
-  if (loading) {
+  // Early
+      return for loading state
+      if (loading) {
     return <LoadingSkeleton />;
   }
 
-  // Early return for error state
-  if (error) {
+  // Early
+      return for error state
+      if (error) {
     return (
       <div className="glass rounded-[10px] p-8">
         <ErrorState error={error} />
@@ -352,7 +354,7 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
   }
 
   // Input validation
-  if (!Array.isArray(tables) || !Array.isArray(reservations)) {
+      if (!Array.isArray(tables) || !Array.isArray(reservations)) {
     return (
       <div className="glass rounded-[10px] p-8">
         <ErrorState error={{ message: "Invalid data format provided to command center" }} />
@@ -434,4 +436,7 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
 });
 
 export default MainSplit;
+
+
+
 

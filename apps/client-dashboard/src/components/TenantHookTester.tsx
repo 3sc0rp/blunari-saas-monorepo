@@ -7,7 +7,7 @@ export const TenantHookTester: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   
   // Use the actual hook
-  const hookResult = useTenant();
+      const hookResult = useTenant();
 
   const runDirectApiTest = async (slug: string) => {    try {
       const result = await getTenantBySlug(slug);
@@ -144,4 +144,5 @@ export const TenantHookTester: React.FC = () => {
     </div>
   );
 };
+
 

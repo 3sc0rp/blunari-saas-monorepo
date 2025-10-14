@@ -62,13 +62,13 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
         setTenantError(null);
 
         // Enhanced debug logging for widget token        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');        // Check if we have required environment variables
-        if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      const token = urlParams.get('token');        // Check
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
           throw new Error('Missing Supabase configuration in environment variables');
         }
 
-        // Check if we have a valid token for widget access
-        if (!token) {
+        // Check
+      if (!token) {
           console.warn('[BookingWidget] No widget token found in URL - this may cause API calls to fail');
         }
         
@@ -91,7 +91,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
   }, [slug, onError]);
 
   // Track step completion times for gamification
-  const recordStepTime = useCallback(() => {
+      const recordStepTime = useCallback(() => {
     const stepTime =
       Date.now() -
       (state.step_times.reduce((a, b) => a + b, 0) + state.start_time);
@@ -175,7 +175,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
         let errorMessage = error.message;
 
         // Provide more user-friendly error messages
-        if (errorMessage.includes("Invalid UUID")) {
+      if (errorMessage.includes("Invalid UUID")) {
           errorMessage =
             "There was a technical issue with your booking. Please try again.";
         } else if (errorMessage.includes("network")) {
@@ -263,8 +263,8 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
         return;
       }
       if (e.key === 'Enter') {
-        // Attempt to advance to next step if not loading and prerequisites met
-        if (stepLoading) return;
+        // Attempt to advance to next step
+      if (stepLoading) return;
         if (state.step === 1 && state.party_size) {
           // noop: moving to step 2 is controlled by PartySize step completion
         } else if (state.step === 2 && state.selected_slot) {
@@ -277,7 +277,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
       if (["1","2","3","4"].includes(e.key)) {
         const desired = parseInt(e.key, 10) as 1|2|3|4;
         // Only allow navigation to steps whose prerequisites are satisfied
-        const canGo = (
+      const canGo = (
           desired === 1 ||
           (desired === 2 && state.party_size) ||
           (desired === 3 && state.party_size && state.selected_slot) ||
@@ -304,7 +304,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
   };
 
   // Enhanced loading state
-  if (tenantLoading) {
+      if (tenantLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-lg">
@@ -326,7 +326,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
   }
 
   // Enhanced error state
-  if (tenantError || !tenant) {
+      if (tenantError || !tenant) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-lg border-destructive/20">
@@ -631,4 +631,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
 };
 
 export default BookingWidget;
+
+
+
 

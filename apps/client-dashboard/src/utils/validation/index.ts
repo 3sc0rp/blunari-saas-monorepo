@@ -43,7 +43,7 @@ class SchemaValidator {
     const { schemaName = 'unknown', context, enableCache = true } = options;
     
     // Generate cache key for reusable validations
-    const cacheKey = enableCache ? JSON.stringify({ schema: schemaName, data }) : null;
+      const cacheKey = enableCache ? JSON.stringify({ schema: schemaName, data }) : null;
     
     if (cacheKey && this.cache.has(cacheKey)) {
       this.cacheHits++;
@@ -72,7 +72,7 @@ class SchemaValidator {
         this.cache.set(cacheKey, result);
         
         // Limit cache size
-        if (this.cache.size > 1000) {
+      if (this.cache.size > 1000) {
           const firstKey = this.cache.keys().next().value;
           this.cache.delete(firstKey);
         }
@@ -422,7 +422,8 @@ export function createValidatedApiClient(baseUrl: string) {
       bodySchema?: z.ZodSchema<T>,
       options: RequestInit = {}
     ): Promise<U> {
-      // Validate request body if schema provided
+      // Validate request body
+      if (schema provided
       const validatedBody = bodySchema 
         ? schemaValidator.validate(bodySchema, body, {
             schemaName: `POST ${endpoint} Request`,
@@ -452,3 +453,4 @@ export function createValidatedApiClient(baseUrl: string) {
     }
   };
 }
+

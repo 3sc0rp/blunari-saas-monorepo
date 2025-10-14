@@ -65,7 +65,7 @@ export function CateringMenuBuilder({ tenantId }: CateringMenuBuilderProps) {
   });
 
   // Fetch categories
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+      const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['catering-categories', tenantId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -81,7 +81,7 @@ export function CateringMenuBuilder({ tenantId }: CateringMenuBuilderProps) {
   });
 
   // Fetch menu items
-  const { data: menuItems = [], isLoading: itemsLoading } = useQuery({
+      const { data: menuItems = [], isLoading: itemsLoading } = useQuery({
     queryKey: ['catering-menu-items', tenantId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -98,7 +98,7 @@ export function CateringMenuBuilder({ tenantId }: CateringMenuBuilderProps) {
   });
 
   // Create category mutation
-  const createCategoryMutation = useMutation({
+      const createCategoryMutation = useMutation({
     mutationFn: async (categoryData: any) => {
       const { data, error } = await supabase
         .from('catering_menu_categories' as any)
@@ -119,7 +119,7 @@ export function CateringMenuBuilder({ tenantId }: CateringMenuBuilderProps) {
   });
 
   // Create menu item mutation
-  const createItemMutation = useMutation({
+      const createItemMutation = useMutation({
     mutationFn: async (itemData: any) => {
       const { data, error } = await supabase
         .from('catering_menu_items' as any)
@@ -496,4 +496,5 @@ export function CateringMenuBuilder({ tenantId }: CateringMenuBuilderProps) {
     </div>
   );
 }
+
 

@@ -96,9 +96,9 @@ import { copyText } from '@/utils/clipboard';
 // Types now imported from widgets/management/types
 
 // --- Small utility component: contrast calculation & warnings ---
-const ColorContrastDiagnostics: React.FC<{primary: string; background: string; text: string;}> = ({ primary, background, text }) => {
+      const ColorContrastDiagnostics: React.FC<{primary: string; background: string; text: string;}> = ({ primary, background, text }) => {
   // Utility functions for contrast (WCAG)
-  const parseHex = (h: string) => {
+      const parseHex = (h: string) => {
     const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(h.trim());
     if (!m) return null;
     let hex = m[1];
@@ -185,11 +185,11 @@ const WidgetManagement: React.FC = () => {
   });
   // Live data preview toggle (renders real widget iframe instead of static mock)
   // Live preview only mode – always true
-  const livePreview = true;
+      const livePreview = true;
   const [isLoading, setIsLoading] = useState(false); // generic spinner (saving etc.)
-  const [copyBusy, setCopyBusy] = useState(false); // copy-to-clipboard only
+      const [copyBusy, setCopyBusy] = useState(false); // copy-to-clipboard only
   // Deploy tab state
-  const [embedType, setEmbedType] = useState<'script' | 'iframe' | 'react'>(() => {
+      const [embedType, setEmbedType] = useState<'script' | 'iframe' | 'react'>(() => {
     try { return (safeStorage.get(`wm.deploy.format.${tenantSlug || tenant?.slug || 'default'}`) as 'script'|'iframe'|'react') || 'script'; } catch { return 'script'; }
   });
   const [allowedOriginInput, setAllowedOriginInput] = useState<string>(() => {
@@ -203,7 +203,7 @@ const WidgetManagement: React.FC = () => {
   });
   const [analyticsRange, setAnalyticsRange] = useState<'1d' | '7d' | '30d'>('7d');
   // Server-signed widget token used for embed URLs (generated asynchronously)
-  const [widgetToken, setWidgetToken] = useState<string | null>(null);
+      const [widgetToken, setWidgetToken] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     const slug = tenantSlug || tenant?.slug || null;
@@ -281,7 +281,7 @@ const WidgetManagement: React.FC = () => {
       const node = document.querySelector('[data-widget-preview]') as HTMLElement | null;
       if (!node) return;
   // Dynamic import to keep bundle lean; requires html2canvas in app deps
-  const mod: any = await import('html2canvas');
+      const mod: any = await import('html2canvas');
       const html2canvas = (mod.default || mod) as (el: HTMLElement, opts?: any) => Promise<HTMLCanvasElement>;
       const canvas = await html2canvas(node, { scale: window.devicePixelRatio * deviceScale, backgroundColor: null });
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve));
@@ -301,16 +301,16 @@ const WidgetManagement: React.FC = () => {
   }, [activeWidgetType, deviceScale, tenantSlug, tenant?.slug]);
 
   // Tenant slug resolution - no demo fallbacks
-  const resolvedTenantSlug = useMemo(() => {
+      const resolvedTenantSlug = useMemo(() => {
     // Priority order for slug resolution:
     // 1. URL slug parameter (from useTenant)
     // 2. Tenant object slug
     // No fallbacks - require real tenant data
-    return tenantSlug || tenant?.slug;
+      return tenantSlug || tenant?.slug;
   }, [tenantSlug, tenant?.slug]);
 
   // Use centralized widget config hook for robustness
-  const {
+      const {
     bookingConfig,
     cateringConfig,
     currentConfig,
@@ -332,7 +332,7 @@ const WidgetManagement: React.FC = () => {
   } = useWidgetConfig('booking', tenant?.id ?? null, resolvedTenantSlug ?? null, tenantLoading);
 
   // Floating status ribbon for autosave/draft state
-  const StatusRibbon = () => {
+      const StatusRibbon = () => {
     if (!hasUnsavedChanges && !saving) return null;
     const label = saving
       ? 'Saving…'
@@ -346,8 +346,9 @@ const WidgetManagement: React.FC = () => {
     );
   };
 
-  // Ephemeral session banner (only if storage is not persistent – sandboxed preview context)
-  const EphemeralBanner = () => {
+  // Ephemeral session banner (only
+      if (storage is not persistent – sandboxed preview context)
+      const EphemeralBanner = () => {
     if (safeStorage.persistent) return null;
     return (
       <div className="mb-4 rounded-md border border-amber-400 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2" role="note" aria-live="polite">
@@ -380,7 +381,7 @@ const WidgetManagement: React.FC = () => {
   }, [activeWidgetType, setTypeFromHook]);
 
   // Local saving spinner state wrapping hook save
-  const [isSaving, setIsSaving] = useState(false);
+      const [isSaving, setIsSaving] = useState(false);
   const resetToDefaults = useCallback(() => {
     resetDefaultsFromHook();
   }, [resetDefaultsFromHook]);
@@ -394,7 +395,7 @@ const WidgetManagement: React.FC = () => {
   }, [saveConfiguration]);
 
   // Debounced autosave (toggleable flag inside configuration)
-  const [autosaveEnabled, setAutosaveEnabled] = useState<boolean>(true);
+      const [autosaveEnabled, setAutosaveEnabled] = useState<boolean>(true);
   const autosaveRef = useRef<number | null>(null);
   useEffect(() => {
     if (!autosaveEnabled) return;
@@ -412,9 +413,9 @@ const WidgetManagement: React.FC = () => {
   // Defaults now centralized in widgets/management/defaults
 
   // Additional component state
-  const realWidgetId = `${resolvedTenantSlug || 'tenant'}_${activeWidgetType}_${tenantIdentifier?.slice(-8) || 'widget'}`;
+      const realWidgetId = `${resolvedTenantSlug || 'tenant'}_${activeWidgetType}_${tenantIdentifier?.slice(-8) || 'widget'}`;
   // Diagnostic render counter (dev / debug only)
-  const renderCountRef = useRef(0);
+      const renderCountRef = useRef(0);
   renderCountRef.current++;
   if (import.meta.env.VITE_ANALYTICS_DEBUG === '1' && renderCountRef.current % 25 === 0) {
     // eslint-disable-next-line no-console  }
@@ -422,7 +423,7 @@ const WidgetManagement: React.FC = () => {
   // Configuration management now handled by useWidgetConfig
 
   // Generate embed code based on current config and real tenant data
-  const embedCode = `<iframe src="https://yourdomain.com/widget/${realWidgetId}" width="${currentConfig.width}" height="${currentConfig.height}" frameborder="0"></iframe>`;
+      const embedCode = `<iframe src="https://yourdomain.com/widget/${realWidgetId}" width="${currentConfig.width}" height="${currentConfig.height}" frameborder="0"></iframe>`;
 
   // Validation now centralized in widgets/management/validation
 
@@ -436,7 +437,7 @@ const WidgetManagement: React.FC = () => {
   // loading/saving now handled by hook on mount and when identifiers change
 
   // Widget URL and embed code generation with enhanced error handling
-  const generateWidgetUrl = useCallback((type: 'booking' | 'catering'): string => {
+      const generateWidgetUrl = useCallback((type: 'booking' | 'catering'): string => {
     // Gracefully handle loading states instead of throwing noisy errors
       const effectiveSlug = resolvedTenantSlug;
       if (!effectiveSlug) {
@@ -448,7 +449,7 @@ const WidgetManagement: React.FC = () => {
 
   const baseUrl = window.location.origin;
   // New standalone public widget bundle path (served by public-widget.html)
-  const widgetPath = type === 'booking' ? '/public-widget/book' : '/public-widget/catering';
+      const widgetPath = type === 'booking' ? '/public-widget/book' : '/public-widget/catering';
       // Require a server-signed widget token to proceed
       if (!widgetToken) {
         return '';
@@ -574,7 +575,7 @@ const WidgetManagement: React.FC = () => {
 
   // Compute live widget URL only when live preview enabled to avoid throwing during slug resolution
   // Track a stable iframe key to avoid React remounting it unless slug/type change
-  const iframeKeyRef = useRef<string>('');
+      const iframeKeyRef = useRef<string>('');
   const lastConfigSignatureRef = useRef<string>('');
   const liveWidgetBaseUrl = useMemo(() => {
     if (!livePreview) return null;
@@ -589,7 +590,7 @@ const WidgetManagement: React.FC = () => {
   }, [livePreview, activeWidgetType, generateWidgetUrl, resolvedTenantSlug]);
 
   // Compute a lightweight signature of config values that materially affect widget rendering.
-  const currentConfigSignature = useMemo(() => {
+      const currentConfigSignature = useMemo(() => {
     const c = currentConfig;
     if (!c) return 'none';
     return [
@@ -600,11 +601,11 @@ const WidgetManagement: React.FC = () => {
   }, [currentConfig]);
 
   // Device-specific URL with conditional cache-busting only when config signature changes.
-  const liveWidgetUrl = useMemo(() => {
+      const liveWidgetUrl = useMemo(() => {
     if (!liveWidgetBaseUrl) return null;
     const deviceParam = `&device=${previewDevice}`;
-    // Only append a cache-buster if config signature changed (prevents constant reload loops)
-    if (lastConfigSignatureRef.current !== currentConfigSignature) {
+    // Only append a cache-buster
+      if (lastConfigSignatureRef.current !== currentConfigSignature) {
       lastConfigSignatureRef.current = currentConfigSignature;
       return `${liveWidgetBaseUrl}${deviceParam}&cfg=${encodeURIComponent(currentConfigSignature)}`;
     }
@@ -624,7 +625,7 @@ const WidgetManagement: React.FC = () => {
   }, [toast]);
 
   // Use real analytics hook instead of mock data
-  const { 
+      const { 
     data: analyticsData, 
     loading: analyticsLoading, 
     error: analyticsError,
@@ -731,7 +732,7 @@ const WidgetManagement: React.FC = () => {
   }, [hasUnsavedChanges]);
 
   // Allowed origin validation state
-  const originState = useMemo(() => {
+      const originState = useMemo(() => {
     try {
       const raw = allowedOriginInput || '';
       const u = new URL(raw);
@@ -1591,7 +1592,7 @@ const WidgetManagement: React.FC = () => {
                     aria-label="Refresh the preview"
                     onClick={() => {
                       // Trigger a re-render animation on the widget preview
-                      const widget = document.querySelector('[data-widget-preview]');
+      const widget = document.querySelector('[data-widget-preview]');
                       if (widget && widget instanceof HTMLElement) {
                         widget.style.transform = 'scale(0.98)';
                         widget.style.opacity = '0.8';
@@ -2126,5 +2127,8 @@ const WidgetManagement: React.FC = () => {
 };
 
 export default WidgetManagement;
+
+
+
 
 

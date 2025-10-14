@@ -244,7 +244,7 @@ export interface AnalyticsReport {
 }
 
 // Analytics period options (kept – UI control only)
-const analyticsPeriods: AnalyticsPeriod[] = [
+      const analyticsPeriods: AnalyticsPeriod[] = [
   { label: "Today", value: "today", days: 1 },
   { label: "Yesterday", value: "yesterday", days: 1 },
   { label: "Last 7 Days", value: "7d", days: 7 },
@@ -259,7 +259,7 @@ const analyticsPeriods: AnalyticsPeriod[] = [
 
 // Real-data-only baselines (empty). To be hydrated via backend analytics service.
 // TODO(advanced-analytics-api): wire up queries for KPI, revenue, customer & financial metrics.
-const initialKPIMetrics: KPIMetric[] = [];
+      const initialKPIMetrics: KPIMetric[] = [];
 const initialRevenueAnalytics: RevenueAnalytics = {
   total_revenue: 0,
   revenue_growth: 0,
@@ -303,7 +303,7 @@ const AdvancedAnalyticsDashboard: React.FC = () => {
   const { toast } = useToast();
   
   const [selectedPeriod, setSelectedPeriod] = useState<AnalyticsPeriod>(analyticsPeriods[2]); // Last 7 Days
-  const [kpiMetrics] = useState<KPIMetric[]>(initialKPIMetrics);
+      const [kpiMetrics] = useState<KPIMetric[]>(initialKPIMetrics);
   const [revenueAnalytics] = useState<RevenueAnalytics>(initialRevenueAnalytics);
   const [customerAnalytics] = useState<CustomerAnalytics>(initialCustomerAnalytics);
   const [financialMetrics] = useState<FinancialMetrics>(initialFinancialMetrics);
@@ -312,7 +312,7 @@ const AdvancedAnalyticsDashboard: React.FC = () => {
   const [showExportDialog, setShowExportDialog] = useState(false);
   
   // Filter and categorize KPIs
-  const kpisByCategory = useMemo(() => {
+      const kpisByCategory = useMemo(() => {
     const categories = {
       revenue: kpiMetrics.filter(kpi => kpi.category === "revenue"),
       operations: kpiMetrics.filter(kpi => kpi.category === "operations"),
@@ -955,3 +955,4 @@ const AdvancedAnalyticsDashboard: React.FC = () => {
 };
 
 export default AdvancedAnalyticsDashboard;
+

@@ -42,13 +42,13 @@ export function useTenant() {
   const params = useParams<{ slug?: string }>();
   const navigate = useNavigate();
   // Track in-flight resolution to cancel on unmount/changes
-  const abortRef = useRef<AbortController | null>(null);
+      const abortRef = useRef<AbortController | null>(null);
   const timeoutRef = useRef<number | null>(null);
   // Resolution debounce + identity tracking
-  const lastResolveAtRef = useRef<number>(0);
+      const lastResolveAtRef = useRef<number>(0);
   const lastTenantKeyRef = useRef<string | null>(null);
   const RESOLVE_DEBOUNCE_MS = 4000; // suppress identical resolves within 4s window
-  const debugEnabled = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
+      const debugEnabled = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
   const debug = (...args: any[]) => { if (debugEnabled) { /* eslint-disable no-console */ console.log('[useTenant]', ...args); } };
   const shallowTenantEqual = (a: TenantInfo | null, b: TenantInfo | null) => {
     if (a === b) return true; if (!a || !b) return false; return a.id===b.id && a.slug===b.slug && a.name===b.name && a.timezone===b.timezone && a.currency===b.currency; };
@@ -83,7 +83,7 @@ export function useTenant() {
     const { signal } = controller;
 
     // Setup timeout fallback - reduced to 2 seconds for faster initial load
-    if (timeoutRef.current) {
+      if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
@@ -157,7 +157,7 @@ export function useTenant() {
         });
         
         // Instead of redirecting immediately, try to create a demo tenant for development
-        if (import.meta.env.MODE === 'development') {
+      if (import.meta.env.MODE === 'development') {
           const fallbackTenant: TenantInfo = {
             id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // Demo tenant ID - CONSISTENT
             slug: 'demo',
@@ -178,8 +178,9 @@ export function useTenant() {
         
         if (!signal.aborted) {
           commitTenant(null, 'no-session');
-          // Only navigate if we're not already on the auth page
-          if (window.location.pathname !== '/auth') {
+          // Only navigate
+      if (we're not already on the auth page
+      if (window.location.pathname !== '/auth') {
             navigate('/auth');
           }
         }
@@ -212,7 +213,7 @@ export function useTenant() {
       // First, try DIRECT database resolution (no edge functions)
       try {
         // 1) Slug-based resolution
-        if (params.slug) {
+      if (params.slug) {
           const { data: tenantBySlug, error: slugError } = await supabase
             .from('tenants')
             .select('id, slug, name, timezone, currency')
@@ -232,11 +233,11 @@ export function useTenant() {
         }
 
         // 2) User-based resolution
-        if (session?.user?.id) {          let resolvedTenantId: string | null = null;
+      if (session?.user?.id) {          let resolvedTenantId: string | null = null;
 
           // QUERY ORDER CHANGE: Prefer auto_provisioning (present in your DB) and
           // avoid user_tenant_access which may not exist in some environments.
-          const { data: autoProv, error: autoErr } = await supabase
+      const { data: autoProv, error: autoErr } = await supabase
             .from('auto_provisioning')
             .select('tenant_id')
             .eq('user_id', session.user.id)
@@ -291,7 +292,7 @@ export function useTenant() {
       const responseData: any = null;
       const functionError: any = null;
 
-      // FIX: Check if component is still mounted before updating state
+      // FIX: Check
       if (signal.aborted) return;
 
       if (functionError) {
@@ -304,7 +305,7 @@ export function useTenant() {
         });
         
         // Handle specific error cases
-        if (functionError.requiresAuth || functionError.status === 401) {
+      if (functionError.requiresAuth || functionError.status === 401) {
           logger.info('Authentication required, redirecting to auth', {
             component: 'useTenant',
             errorType: 'auth_required'
@@ -312,8 +313,9 @@ export function useTenant() {
           
           if (!signal.aborted) {
             commitTenant(null, 'requires-auth');
-            // Only navigate if we're not already on the auth page
-            if (window.location.pathname !== '/auth') {
+            // Only navigate
+      if (we're not already on the auth page
+      if (window.location.pathname !== '/auth') {
               navigate('/auth');
             }
           }
@@ -331,7 +333,7 @@ export function useTenant() {
           });
           
           // Use fallback tenant instead of redirecting to auth
-          const fallbackTenant: TenantInfo = {
+      const fallbackTenant: TenantInfo = {
             id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
             slug: 'demo',
             name: 'Demo Restaurant',
@@ -356,7 +358,7 @@ export function useTenant() {
           });
           
           // Use fallback tenant for development, redirect for production
-          if (import.meta.env.MODE === 'development') {
+      if (import.meta.env.MODE === 'development') {
             const fallbackTenant: TenantInfo = {
               id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
               slug: 'demo',
@@ -375,7 +377,7 @@ export function useTenant() {
             return;
           } else {
             // In production, redirect to auth for 401 errors
-            if (!signal.aborted) {
+      if (!signal.aborted) {
               commitTenant(null, '401-prod-redirect');
               navigate('/auth');
             }
@@ -422,7 +424,7 @@ export function useTenant() {
         });
         
         // Always use fallback tenant instead of showing errors to user
-        const fallbackTenant: TenantInfo = {
+      const fallbackTenant: TenantInfo = {
           id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', // CONSISTENT DEMO TENANT ID
           slug: params.slug || 'demo',
           name: params.slug ? `${params.slug} Restaurant` : 'Demo Restaurant',
@@ -445,7 +447,7 @@ export function useTenant() {
         const tenant = TenantInfoZ.parse(responseData.data);
         
         // Cache the result (only for user-based resolution)
-        if (!params.slug) {
+      if (!params.slug) {
           cachedTenant = tenant;
           cacheExpiry = Date.now() + CACHE_DURATION;
         }
@@ -507,7 +509,8 @@ export function useTenant() {
         commitTenant(fallbackTenant, 'catch-fallback');
       }
     } finally {
-      // no-op; timeout cleared in all return paths and catch
+      // no-op; timeout cleared in all
+      return paths and catch
     }
   }, [params.slug, navigate]);
 
@@ -596,4 +599,7 @@ export function useRequiredTenant() {
 
   return { tenant: tenant!, tenantId };
 }
+
+
+
 

@@ -23,12 +23,13 @@ const TenantBrandingContext = createContext<
 >(undefined);
 
 // Helper function to convert hex to HSL
-const hexToHsl = (hex: string): string => {
-  // Remove the hash if present
+      const hexToHsl = (hex: string): string => {
+  // Remove the hash
+      if (present
   hex = hex.replace("#", "");
 
   // Convert to RGB
-  const r = parseInt(hex.substr(0, 2), 16) / 255;
+      const r = parseInt(hex.substr(0, 2), 16) / 255;
   const g = parseInt(hex.substr(2, 2), 16) / 255;
   const b = parseInt(hex.substr(4, 2), 16) / 255;
 
@@ -70,7 +71,7 @@ export const TenantBrandingProvider: React.FC<{
   });
 
   // Handle loading and error states
-  const handleRetry = () => {
+      const handleRetry = () => {
     // Invalidate the user tenant query to force a refetch
     queryClient.invalidateQueries({ queryKey: ["user-tenant"] });
   };
@@ -94,7 +95,7 @@ export const TenantBrandingProvider: React.FC<{
   }, [tenant]);
 
   // Show loading state while fetching user's tenant
-  if (isLoading) {
+      if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
@@ -102,8 +103,9 @@ export const TenantBrandingProvider: React.FC<{
     );
   }
   
-  // Show fallback if there's an error loading the user's tenant
-  if (!tenant && error) {
+  // Show fallback
+      if (there's an error loading the user's tenant
+      if (!tenant && error) {
     return (
       <TenantLoadingFallback
         tenantSlug="unknown"
@@ -115,18 +117,19 @@ export const TenantBrandingProvider: React.FC<{
   }
 
   // Apply branding to CSS variables
-  const applyBrandingToCSS = (brandingData: TenantBranding) => {
+      const applyBrandingToCSS = (brandingData: TenantBranding) => {
     const root = document.documentElement;
 
-    // Apply primary color if provided
-    if (brandingData.primaryColor) {
+    // Apply primary color
+      if (provided
+      if (brandingData.primaryColor) {
       try {
         const hslColor = hexToHsl(brandingData.primaryColor);
         root.style.setProperty("--brand", hslColor);
         root.style.setProperty("--ring", hslColor);
 
         // Contrast-aware foreground for brand backgrounds
-        const [h, s, l] = hslColor.split(" ");
+      const [h, s, l] = hslColor.split(" ");
         const lightness = parseInt(l.replace("%", ""));
         const brandFg = lightness < 50 ? "0 0% 98%" : "0 0% 10%"; // white on dark, near-black on light
         root.style.setProperty("--brand-foreground", brandFg);
@@ -138,14 +141,15 @@ export const TenantBrandingProvider: React.FC<{
       }
     }
 
-    // Apply accent color if provided
-    if (brandingData.accentColor) {
+    // Apply accent color
+      if (provided
+      if (brandingData.accentColor) {
       try {
         const hslColor = hexToHsl(brandingData.accentColor);
         root.style.setProperty("--accent", hslColor);
 
         // Contrast-aware foreground for accent backgrounds
-        const [h, s, l] = hslColor.split(" ");
+      const [h, s, l] = hslColor.split(" ");
         const lightness = parseInt(l.replace("%", ""));
         const accentFg = lightness < 50 ? "0 0% 98%" : "0 0% 10%";
         root.style.setProperty("--accent-foreground", accentFg);
@@ -154,13 +158,15 @@ export const TenantBrandingProvider: React.FC<{
       }
     }
 
-    // Apply border radius if provided
-    if (brandingData.borderRadius) {
+    // Apply border radius
+      if (provided
+      if (brandingData.borderRadius) {
       root.style.setProperty("--radius", brandingData.borderRadius);
     }
 
-    // Apply font family if provided
-    if (brandingData.fontFamily) {
+    // Apply font family
+      if (provided
+      if (brandingData.fontFamily) {
       root.style.setProperty("font-family", brandingData.fontFamily);
     }
   };
@@ -193,3 +199,5 @@ export const useTenantBranding = () => {
   }
   return context;
 };
+
+

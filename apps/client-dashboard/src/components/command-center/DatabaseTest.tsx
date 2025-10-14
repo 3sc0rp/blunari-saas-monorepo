@@ -17,7 +17,7 @@ const DatabaseTest: React.FC = () => {
       }
 
       try {        // Test bookings
-        const { data: bookings, error: bookingsError } = await supabase
+      const { data: bookings, error: bookingsError } = await supabase
           .from('bookings')
           .select('*')
           .eq('tenant_id', tenant.id)
@@ -28,7 +28,7 @@ const DatabaseTest: React.FC = () => {
         } else {        }
 
         // Test restaurant_tables
-        const { data: tables, error: tablesError } = await supabase
+      const { data: tables, error: tablesError } = await supabase
           .from('restaurant_tables')
           .select('*')
           .eq('tenant_id', tenant.id)
@@ -105,4 +105,5 @@ const DatabaseTest: React.FC = () => {
 };
 
 export default DatabaseTest;
+
 

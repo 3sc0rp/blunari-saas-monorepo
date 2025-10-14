@@ -18,20 +18,21 @@ const LandingMiddleware: React.FC<{ children: React.ReactNode }> = ({ children }
   const { mode, ready } = useUIMode();
   const location = useLocation();
 
-  // Check if we're on the dashboard home route  
-  const isDashboardHome = location.pathname === "/dashboard/home";
+  // Check
+      if (we're on the dashboard home route  
+      const isDashboardHome = location.pathname === "/dashboard/home";
 
   useEffect(() => {
     // If mode context is not ready, wait
-    if (!ready || !user || !tenant) return;
+      if (!ready || !user || !tenant) return;
 
     // This middleware now primarily handles the /dashboard/home route
     // The main /dashboard route redirects directly to Command Center
-    if (isDashboardHome) {    }
+      if (isDashboardHome) {    }
   }, [mode, ready, user, tenant, isDashboardHome]);
 
   // Show loading state while mode context initializes
-  if (!ready && user && tenant) {
+      if (!ready && user && tenant) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="space-y-4 text-center">
@@ -46,4 +47,6 @@ const LandingMiddleware: React.FC<{ children: React.ReactNode }> = ({ children }
 };
 
 export default LandingMiddleware;
+
+
 

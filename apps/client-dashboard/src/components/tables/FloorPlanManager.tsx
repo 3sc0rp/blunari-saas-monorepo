@@ -144,12 +144,13 @@ export default function FloorPlanManager() {
         let y = table.position?.y || 0;
 
         // Validate and adjust AI coordinates (0-10 range)
-        if (x < 0 || x > 10 || y < 0 || y > 10) {
+      if (x < 0 || x > 10 || y < 0 || y > 10) {
           console.warn(
             `Invalid AI coordinates for table ${index + 1}: (${x}, ${y}), using fallback`,
           );
-          // Fallback to grid positioning if AI coordinates are invalid
-          const gridSize = Math.ceil(Math.sqrt(analysisResult.tableCount));
+          // Fallback to grid positioning
+      if (AI coordinates are invalid
+      const gridSize = Math.ceil(Math.sqrt(analysisResult.tableCount));
           const spacing = 8 / Math.max(gridSize, 1);
           const margin = (10 - 8) / 2;
 
@@ -158,15 +159,15 @@ export default function FloorPlanManager() {
         }
 
         // Smart distribution for multiple tables to avoid clustering
-        if (analysisResult.tableCount > 1) {
+      if (analysisResult.tableCount > 1) {
           // Add slight randomization to prevent perfect grid alignment
-          const jitter = 0.3;
+      const jitter = 0.3;
           x += (Math.random() - 0.5) * jitter;
           y += (Math.random() - 0.5) * jitter;
         }
 
         // Enhanced table sizing based on AI analysis and capacity
-        const capacity = Math.max(
+      const capacity = Math.max(
           2,
           Math.min(12, table.estimatedCapacity || 4),
         );
@@ -195,7 +196,7 @@ export default function FloorPlanManager() {
           radius = Math.max(0.3, Math.min(1.2, 0.4 + capacity * 0.08));
         } else {
           // Rectangular table sizing
-          if (tableType === "booth") {
+      if (tableType === "booth") {
             // Booths are typically longer and narrower
             width = Math.max(1.2, Math.min(3.0, capacity * 0.25 + 0.8));
             height = Math.max(0.6, Math.min(1.2, capacity * 0.1 + 0.5));
@@ -246,8 +247,9 @@ export default function FloorPlanManager() {
             `🎯 Analysis complete! Detected ${analysisResult.tableCount} tables (${totalCapacity} seats) with intelligent positioning`,
           );
         } else {
-          // Show specific error if it's a rate limit issue
-          const isRateLimit = analysisResult.recommendations?.some(
+          // Show specific error
+      if (it's a rate limit issue
+      const isRateLimit = analysisResult.recommendations?.some(
             (r) => r.includes("rate limit") || r.includes("429"),
           );
           if (isRateLimit) {
@@ -540,4 +542,6 @@ export default function FloorPlanManager() {
     </div>
   );
 }
+
+
 

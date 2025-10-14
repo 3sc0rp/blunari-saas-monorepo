@@ -27,18 +27,17 @@ const Index = () => {
       console.warn("Auth timeout reached, redirecting to auth page");
       navigate("/auth");
     }, 5000); // 5 second timeout
-
-    return () => clearTimeout(timeout);
+      return () => clearTimeout(timeout);
   }, [navigate]);
 
   // If timeout reached, redirect immediately
-  if (timeoutReached) {
+      if (timeoutReached) {
     navigate("/auth");
     return null;
   }
 
   // Show elegant loading screen while redirecting
-  return (
+      return (
     <div className="min-h-screen bg-gradient-primary flex items-center justify-center">
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
@@ -80,3 +79,4 @@ const Index = () => {
 };
 
 export default Index;
+

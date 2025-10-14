@@ -42,7 +42,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
   });
 
   // Fetch available tables for optimization
-  const { data: availableTables = [] } = useQuery({
+      const { data: availableTables = [] } = useQuery({
     queryKey: ["available-tables", tenantId, formData.date, formData.time],
     queryFn: async () => {
       if (!tenantId || !formData.date || !formData.time) return [];
@@ -99,16 +99,16 @@ export const useSmartBookingCreation = (tenantId?: string) => {
   });
 
   // Calculate ETA prediction
-  const calculateETA = (bookingTime: string, partySize: number) => {
+      const calculateETA = (bookingTime: string, partySize: number) => {
     const baseTime = new Date(bookingTime);
     // Simple ETA calculation - in real app this would be more sophisticated
-    const preparation = partySize * 2; // 2 minutes per person prep
-    const buffer = Math.random() * 10; // Random buffer for realism
-    return Math.round(preparation + buffer);
+      const preparation = partySize * 2; // 2 minutes per person prep
+      const buffer = Math.random() * 10; // Random buffer for realism
+      return Math.round(preparation + buffer);
   };
 
   // Calculate recommendation score for table optimization
-  const calculateRecommendationScore = (
+      const calculateRecommendationScore = (
     table: { capacity: number; [key: string]: unknown },
     partySize: number,
   ) => {
@@ -117,13 +117,12 @@ export const useSmartBookingCreation = (tenantId?: string) => {
     // Perfect utilization is around 75-85%
     let score = 100;
     if (utilization < 50) score -= (50 - utilization) * 2; // Penalty for under-utilization
-    if (utilization > 90) score -= (utilization - 90) * 3; // Penalty for over-crowding
-
-    return Math.max(0, score);
+      if (utilization > 90) score -= (utilization - 90) * 3; // Penalty for over-crowding
+      return Math.max(0, score);
   };
 
   // Create booking mutation (server-side via Edge Function for RLS-safe inserts)
-  const createBookingMutation = useMutation({
+      const createBookingMutation = useMutation({
     mutationFn: async (data: BookingFormData & { tableId?: string }) => {
       // Guard: tenantId must be present in normal runtime. Fallback only allowed in explicit dev flag.
       const allowDemo = import.meta.env.MODE === 'development' && import.meta.env.VITE_ALLOW_DEMO_TENANT === 'true';
@@ -188,7 +187,8 @@ export const useSmartBookingCreation = (tenantId?: string) => {
           : `Reservation ${reservation.reservation_id || 'created'} has been confirmed.`,
       });
 
-      // Post-create verification: ensure row exists in DB; if not, warn user
+      // Post-create verification: ensure row exists in DB;
+      if (not, warn user
       if (tenantId) {
         try {
           const conf = reservation.reservation_id;
@@ -199,8 +199,9 @@ export const useSmartBookingCreation = (tenantId?: string) => {
           let found = false;
           let verificationAttempts = [];
           
-          // Attempt 1: Search by reservation ID if available
-          if (conf) {
+          // Attempt 1: Search by reservation ID
+      if (available
+      if (conf) {
             try {
               const { data: confCheck, error: confError } = await supabase
                 .from('bookings')
@@ -217,8 +218,8 @@ export const useSmartBookingCreation = (tenantId?: string) => {
             }
           }
           
-          // Attempt 2: Search by email and time window if not found yet
-          if (!found) {
+          // Attempt 2: Search by email and time window
+      if (!found) {
             try {
               const { data: emailCheck, error: emailError } = await supabase
                 .from('bookings')
@@ -248,7 +249,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
           }
           
           // Attempt 3: Broader recent bookings check
-          if (!found) {
+      if (!found) {
             try {
               const { data: recentCheck, error: recentError } = await supabase
                 .from('bookings')
@@ -268,14 +269,15 @@ export const useSmartBookingCreation = (tenantId?: string) => {
           }
           
           // Log verification details for debugging
-          if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {          }
+      if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {          }
           
           if (!found) {
             console.error('[SmartBookingCreation] Verification failed after all attempts');
             console.error('Verification attempts:', verificationAttempts);
             
-            // Only show error if we have permission issues or other serious problems
-            const hasPermissionError = verificationAttempts.some(a => 
+            // Only show error
+      if (we have permission issues or other serious problems
+      const hasPermissionError = verificationAttempts.some(a => 
               a.error && (
                 a.error.toString().includes('permission') || 
                 a.error.toString().includes('RLS') ||
@@ -355,4 +357,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
     isAuthenticated: !!authState.session,
   };
 };
+
+
+
 

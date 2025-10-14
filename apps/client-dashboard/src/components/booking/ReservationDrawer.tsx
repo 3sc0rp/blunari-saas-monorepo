@@ -76,7 +76,7 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
     {},
   );
   // Hooks must not be conditional. Declare before any early return.
-  const [messageOpen, setMessageOpen] = useState(false);
+      const [messageOpen, setMessageOpen] = useState(false);
   const { settings } = useSettings();
 
   if (!booking) return null;
@@ -516,4 +516,5 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
 };
 
 export default ReservationDrawer;
+
 

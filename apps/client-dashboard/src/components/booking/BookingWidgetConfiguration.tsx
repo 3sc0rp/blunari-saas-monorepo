@@ -52,7 +52,7 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   const [widgetToken, setWidgetToken] = useState<string | null>(null);
   
   // Stable iframe key to prevent unnecessary remounts (matches WidgetManagement)
-  const iframeKeyRef = useRef<string>('');
+      const iframeKeyRef = useRef<string>('');
 
   const {
     bookingConfig,
@@ -145,13 +145,13 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   }, [tenantSlug]);
 
   // Generate widget URL with stable key tracking (matches WidgetManagement approach)
-  const widgetUrl = useMemo(() => {
+      const widgetUrl = useMemo(() => {
     if (!tenantSlug || !widgetToken) return null;
     const baseUrl = window.location.origin;
     const url = `${baseUrl}/public-widget/book/${tenantSlug}?token=${widgetToken}`;
     
     // Update stable key only when slug changes (prevents unnecessary iframe reloads)
-    const nextKey = `${tenantSlug}:booking`;
+      const nextKey = `${tenantSlug}:booking`;
     if (iframeKeyRef.current !== nextKey) {
       iframeKeyRef.current = nextKey;
     }
@@ -162,11 +162,12 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
   // Generate embed code with secure sandbox attributes
   // NOTE: allow-same-origin is REQUIRED for Stripe integration (CORS requests to js.stripe.com)
   // Without it, iframe runs in 'null' origin context and Stripe fails with CORS errors
-  const embedCode = useMemo(() => {
+      const embedCode = useMemo(() => {
     if (!widgetUrl || !widgetToken) return '';
     
-    // Use production URL if available, otherwise use current origin
-    const productionUrl = import.meta.env.VITE_PRODUCTION_URL;
+    // Use production URL
+      if (available, otherwise use current origin
+      const productionUrl = import.meta.env.VITE_PRODUCTION_URL;
     const embedUrl = productionUrl 
       ? `${productionUrl}/public-widget/book/${tenantSlug}?token=${widgetToken}`
       : widgetUrl;
@@ -889,3 +890,5 @@ export default function BookingWidgetConfiguration({ tenantId, tenantSlug }: Boo
     </div>
   );
 }
+
+

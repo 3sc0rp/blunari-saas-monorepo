@@ -12,14 +12,15 @@ export const useCateringAnalytics = (
   tenantId?: string,
   dateRange?: { start: Date; end: Date },
 ) => {
-  // Default to current month if no date range provided
-  const defaultStart = startOfMonth(new Date());
+  // Default to current month
+      if (no date range provided
+      const defaultStart = startOfMonth(new Date());
   const defaultEnd = endOfMonth(new Date());
   const start = dateRange?.start || defaultStart;
   const end = dateRange?.end || defaultEnd;
 
   // Fetch catering analytics data
-  const {
+      const {
     data: analytics,
     isLoading,
     error,
@@ -69,7 +70,7 @@ export const useCateringAnalytics = (
 
       try {
         // Fetch orders within date range
-        const { data: ordersData, error: ordersError } = await supabase
+      const { data: ordersData, error: ordersError } = await supabase
           .from("catering_orders" as any)
           .select(
             `
@@ -91,8 +92,9 @@ export const useCateringAnalytics = (
           .order("created_at", { ascending: true });
 
         if (ordersError) {
-          // If table doesn't exist yet, return empty analytics
-          if (
+          // If table doesn't exist yet,
+      return empty analytics
+      if (
             ordersError.code === "42P01" ||
             ordersError.message?.includes("relation") ||
             ordersError.message?.includes("does not exist")
@@ -133,10 +135,10 @@ export const useCateringAnalytics = (
         }
 
         // Type assertion for the orders data
-        const orders = (ordersData || []) as any[];
+      const orders = (ordersData || []) as any[];
 
         // Calculate order metrics
-        const orderMetrics: CateringOrderMetrics = {
+      const orderMetrics: CateringOrderMetrics = {
           total: orders.length,
           confirmed: orders.filter((o) => o.status === "confirmed").length,
           completed: orders.filter((o) => o.status === "completed").length,
@@ -150,14 +152,14 @@ export const useCateringAnalytics = (
         };
 
         // Calculate conversion rate (confirmed + completed / total inquiries)
-        const convertedOrders = orderMetrics.confirmed + orderMetrics.completed;
+      const convertedOrders = orderMetrics.confirmed + orderMetrics.completed;
         const totalInquiries =
           orderMetrics.inquiry + orderMetrics.quoted + convertedOrders;
         orderMetrics.conversion_rate =
           totalInquiries > 0 ? (convertedOrders / totalInquiries) * 100 : 0;
 
         // Calculate average lead time (days between order creation and event date)
-        const ordersWithDates = orders.filter(
+      const ordersWithDates = orders.filter(
           (o) => o.created_at && o.event_date,
         );
         if (ordersWithDates.length > 0) {
@@ -185,7 +187,7 @@ export const useCateringAnalytics = (
             : 0;
 
         // Calculate revenue metrics
-        const revenueMetrics: CateringRevenueMetrics = {
+      const revenueMetrics: CateringRevenueMetrics = {
           total: orders.reduce(
             (sum, order) => sum + (order.total_amount || 0),
             0,
@@ -214,14 +216,14 @@ export const useCateringAnalytics = (
         };
 
         // Calculate average order value
-        const revenueOrders = orders.filter((o) => (o.total_amount || 0) > 0);
+      const revenueOrders = orders.filter((o) => (o.total_amount || 0) > 0);
         revenueMetrics.average_order_value =
           revenueOrders.length > 0
             ? revenueMetrics.total / revenueOrders.length
             : 0;
 
         // Calculate revenue by service type
-        const serviceTypes = [
+      const serviceTypes = [
           "pickup",
           "delivery",
           "drop_off",
@@ -239,7 +241,7 @@ export const useCateringAnalytics = (
         });
 
         // Calculate performance metrics
-        const performanceMetrics: CateringPerformanceMetrics = {
+      const performanceMetrics: CateringPerformanceMetrics = {
           popular_packages: [],
           busiest_days: [],
           service_type_distribution: {} as any,
@@ -249,7 +251,7 @@ export const useCateringAnalytics = (
         };
 
         // Popular packages
-        const packageCounts = new Map<
+      const packageCounts = new Map<
           string,
           { name: string; count: number; revenue: number }
         >();
@@ -276,7 +278,7 @@ export const useCateringAnalytics = (
           .slice(0, 5);
 
         // Busiest days (day of week analysis)
-        const dayNames = [
+      const dayNames = [
           "Sunday",
           "Monday",
           "Tuesday",
@@ -308,7 +310,7 @@ export const useCateringAnalytics = (
         });
 
         // Monthly trend (last 6 months including current period)
-        const monthlyData = new Map<
+      const monthlyData = new Map<
           string,
           { orders: number; revenue: number }
         >();
@@ -337,7 +339,7 @@ export const useCateringAnalytics = (
         ).map(([month, data]) => ({ month, ...data }));
 
         // Customer satisfaction from feedback
-        const feedbackWithRatings = orders
+      const feedbackWithRatings = orders
           .flatMap((order) => order.catering_feedback || [])
           .filter((feedback) => (feedback as any).overall_rating > 0);
 
@@ -351,7 +353,7 @@ export const useCateringAnalytics = (
         }
 
         // Repeat customer rate
-        const customerEmails = new Set(
+      const customerEmails = new Set(
           orders.map((order) => order.contact_email),
         );
         const emailCounts = new Map<string, number>();
@@ -414,7 +416,7 @@ export const useCateringAnalytics = (
   });
 
   // Helper functions for common analytics queries
-  const getMetricChange = (current: number, previous: number) => {
+      const getMetricChange = (current: number, previous: number) => {
     if (previous === 0) return current > 0 ? 100 : 0;
     return ((current - previous) / previous) * 100;
   };
@@ -442,4 +444,6 @@ export const useCateringAnalytics = (
     formatPercentage,
   };
 };
+
+
 

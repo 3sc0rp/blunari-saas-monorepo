@@ -35,12 +35,13 @@ class ErrorBoundary extends Component<Props, State> {
     console.error('ErrorBoundary caught an error:', error, errorInfo)
 
     // Call optional error handler
-    if (this.props.onError) {
+      if (this.props.onError) {
       this.props.onError(error, errorInfo)
     }
 
-    // Report to error reporting service if available
-    if (window.gtag) {
+    // Report to error reporting service
+      if (available
+      if (window.gtag) {
       window.gtag('event', 'exception', {
         description: error.toString(),
         fatal: false
@@ -87,3 +88,4 @@ class ErrorBoundary extends Component<Props, State> {
 }
 
 export default ErrorBoundary
+

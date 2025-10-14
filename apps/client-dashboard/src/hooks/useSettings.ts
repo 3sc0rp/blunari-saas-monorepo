@@ -15,7 +15,7 @@ export const useSettings = () => {
   const queryClient = useQueryClient();
 
   // Fetch tenant settings from database
-  const {
+      const {
     data: settings,
     isLoading,
     error,
@@ -28,7 +28,7 @@ export const useSettings = () => {
 
       try {
         // Fetch all settings for this tenant
-        const { data, error } = await supabase
+      const { data, error } = await supabase
           .from("tenant_settings")
           .select("setting_key, setting_value")
           .eq("tenant_id", tenant.id);
@@ -36,7 +36,7 @@ export const useSettings = () => {
         if (error) {
           console.warn("Settings query error:", error);
           // Return default settings on error
-          const defaultSettings = getDefaultSettings(tenant);
+      const defaultSettings = getDefaultSettings(tenant);
           return {
             ...defaultSettings,
             lastUpdated: new Date().toISOString(),
@@ -44,7 +44,7 @@ export const useSettings = () => {
         }
 
         // Convert array to settings object
-        const settingsMap =
+      const settingsMap =
           data?.reduce(
             (acc, item) => {
               acc[item.setting_key] = item.setting_value;
@@ -54,7 +54,7 @@ export const useSettings = () => {
           ) || {};
 
         // Return settings with defaults for missing values
-        const defaultSettings = getDefaultSettings(tenant);
+      const defaultSettings = getDefaultSettings(tenant);
 
         return {
           branding: {
@@ -78,7 +78,7 @@ export const useSettings = () => {
       } catch (err) {
         console.warn("Settings fetch error:", err);
         // Return default settings as fallback
-        const defaultSettings = getDefaultSettings(tenant);
+      const defaultSettings = getDefaultSettings(tenant);
         return {
           ...defaultSettings,
           lastUpdated: new Date().toISOString(),
@@ -92,7 +92,7 @@ export const useSettings = () => {
   });
 
   // Helper function to upsert settings
-  const upsertSetting = async (key: string, value: any) => {
+      const upsertSetting = async (key: string, value: any) => {
     if (!tenant?.id) throw new Error("No tenant found");
 
     const { error } = await supabase.from("tenant_settings").upsert(
@@ -113,7 +113,7 @@ export const useSettings = () => {
   };
 
   // Update branding settings with database persistence
-  const updateBrandingMutation = useMutation({
+      const updateBrandingMutation = useMutation({
     mutationFn: async (branding: Partial<BrandingSettings>) => {
       const currentBranding = (settings?.branding || {}) as BrandingSettings;
       const updatedBranding = { ...currentBranding, ...branding };
@@ -160,7 +160,7 @@ export const useSettings = () => {
   });
 
   // Update operational settings
-  const updateOperationalMutation = useMutation({
+      const updateOperationalMutation = useMutation({
     mutationFn: async (operational: Partial<OperationalSettings>) => {
       const currentOperational = settings?.operational || {};
       const updatedOperational = { ...currentOperational, ...operational };
@@ -219,7 +219,7 @@ export const useSettings = () => {
   });
 
   // Update integration settings
-  const updateIntegrationMutation = useMutation({
+      const updateIntegrationMutation = useMutation({
     mutationFn: async (integrations: Partial<IntegrationSettings>) => {
       const currentIntegrations = settings?.integrations || {};
       const updatedIntegrations = { ...currentIntegrations, ...integrations };
@@ -248,7 +248,7 @@ export const useSettings = () => {
   });
 
   // Update notification settings
-  const updateNotificationMutation = useMutation({
+      const updateNotificationMutation = useMutation({
     mutationFn: async (notifications: Partial<NotificationSettings>) => {
       const currentNotifications = settings?.notifications || {};
       const updatedNotifications = {
@@ -296,7 +296,7 @@ export const useSettings = () => {
 };
 
 // Helper function to get default settings
-const getDefaultSettings = (tenant: any): TenantSettings => ({
+      const getDefaultSettings = (tenant: any): TenantSettings => ({
   branding: {
     restaurantName: tenant?.name || "",
     tagline: "",
@@ -369,3 +369,4 @@ const getDefaultSettings = (tenant: any): TenantSettings => ({
 });
 
 export { getDefaultSettings };
+

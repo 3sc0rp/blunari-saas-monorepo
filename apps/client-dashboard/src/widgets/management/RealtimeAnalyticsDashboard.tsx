@@ -32,7 +32,7 @@ const RealtimeAnalyticsDashboard: React.FC<RealtimeAnalyticsDashboardProps> = Re
   const { metrics, liveSessions, isConnected, error, refresh } = useRealtimeAnalytics(widgetId)
 
   // Memoize event icon and color functions
-  const getEventIcon = useCallback((eventType: string) => {
+      const getEventIcon = useCallback((eventType: string) => {
     switch (eventType) {
       case 'view': return <Eye className="w-4 h-4" />
       case 'interaction': return <MousePointer className="w-4 h-4" />
@@ -55,7 +55,7 @@ const RealtimeAnalyticsDashboard: React.FC<RealtimeAnalyticsDashboardProps> = Re
   }, [])
 
   // Memoize session duration formatter
-  const formatSessionDuration = useCallback((minutes: number) => {
+      const formatSessionDuration = useCallback((minutes: number) => {
     if (minutes < 1) return '< 1min'
     if (minutes < 60) return `${Math.round(minutes)}min`
     const hours = Math.floor(minutes / 60)
@@ -64,7 +64,7 @@ const RealtimeAnalyticsDashboard: React.FC<RealtimeAnalyticsDashboardProps> = Re
   }, [])
 
   // Memoize expensive computations
-  const memoizedMetrics = useMemo(() => {
+      const memoizedMetrics = useMemo(() => {
     if (!metrics) return null
 
     return {

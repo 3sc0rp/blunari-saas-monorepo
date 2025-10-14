@@ -71,7 +71,7 @@ export function TopBar({
   const [notifFilter, setNotifFilter] = useState<{search: string; type: string | null;}>({ search: '', type: null });
 
   // Derived + memoized filtered notifications
-  const filteredNotifications = React.useMemo(() => {
+      const filteredNotifications = React.useMemo(() => {
     let list = notifications;
     if (notifTab === 'unread') {
       list = list.filter(n => !isRead(n.id));
@@ -90,7 +90,7 @@ export function TopBar({
 
   const grouped = React.useMemo(() => {
     // Group by day (Today, Yesterday, Older)
-    const now = new Date();
+      const now = new Date();
     const todayKey = now.toDateString();
     const y = new Date(now.getTime() - 86400000).toDateString();
     const buckets: Record<string, typeof filteredNotifications> = {};
@@ -137,7 +137,8 @@ export function TopBar({
       navigate('/dashboard');
     } catch (error) {
       console.error("Error switching to management mode:", error);
-      // Fallback navigation even if mode switching fails
+      // Fallback navigation even
+      if (mode switching fails
       navigate('/dashboard');
     }
   };
@@ -431,3 +432,5 @@ export function TopBar({
     </div>
   );
 }
+
+

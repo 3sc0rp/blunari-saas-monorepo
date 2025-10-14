@@ -282,7 +282,7 @@ export interface BudgetPlan {
 
 // Real-data-only baselines. All values zero / empty until fetched from backend.
 // TODO(financial-api): implement data fetching for revenue, expenses, profitability, cash flow, tax docs & budget.
-const initialRevenueBreakdown: RevenueBreakdown = {
+      const initialRevenueBreakdown: RevenueBreakdown = {
   total_revenue: 0,
   revenue_by_category: [],
   revenue_by_channel: [],
@@ -361,7 +361,7 @@ const FinancialReporting: React.FC = () => {
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
 
   // Form states
-  const [reportForm, setReportForm] = useState({
+      const [reportForm, setReportForm] = useState({
     report_type: "profit_loss",
     period_start: "",
     period_end: "",
@@ -1094,3 +1094,4 @@ const FinancialReporting: React.FC = () => {
 };
 
 export default FinancialReporting;
+

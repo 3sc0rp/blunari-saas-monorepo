@@ -12,10 +12,11 @@
     nav.locks.request = function(requestName: any, optionsOrCallback?: any, maybeCallback?: any) {
       try {
         if (original) {
-          // Attempt the real call; if the UA denies, it will throw/reject
-          const p = original(requestName as any, optionsOrCallback as any, maybeCallback as any);
+          // Attempt the real call;
+      if (the UA denies, it will throw/reject
+      const p = original(requestName as any, optionsOrCallback as any, maybeCallback as any);
           // Guard rejections to avoid unhandled promise rejection noise
-          return Promise.resolve(p).catch(() => {
+      return Promise.resolve(p).catch(() => {
             const cb = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
             if (typeof cb === 'function') {
               return cb({ name: typeof requestName === 'string' ? requestName : 'shim', mode: 'exclusive', released: false, release: () => {} });
@@ -37,5 +38,7 @@
     // ignore
   }
 })();
+
+
 
 

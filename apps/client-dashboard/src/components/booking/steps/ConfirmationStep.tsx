@@ -53,7 +53,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
   useEffect(() => {
     // Load policies when component mounts
-    if (tenant && !state.policies) {
+      if (tenant && !state.policies) {
       getTenantPolicies(tenant.tenant_id)
         .then((policies) => {
           // Update state with policies - this would need to be passed back up
@@ -85,7 +85,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   };
 
   const handleConfirmBooking = async () => {    // Check URL token
-    const urlToken = new URLSearchParams(window.location.search).get('token');    if (!tenant || !party_size || !selected_slot || !guest_details) {
+      const urlToken = new URLSearchParams(window.location.search).get('token');    if (!tenant || !party_size || !selected_slot || !guest_details) {
       const missingItems = [];
       if (!tenant) missingItems.push('tenant');
       if (!party_size) missingItems.push('party_size');
@@ -101,7 +101,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
     try {
       // Step 1: Create hold      const hold = await measureStep("Creating hold", async () => {
-        const holdResult = await createHold({
+      const holdResult = await createHold({
           tenant_id: tenant.tenant_id,
           party_size,
           slot: selected_slot,
@@ -128,7 +128,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         },
       );
 
-      // Additional verification step      // Wait a moment and verify the booking was actually created (only if we have a reservation_id)
+      // Additional verification step      // Wait a moment and verify the booking was actually created (only
       if (confirmedReservation?.reservation_id) {
         setTimeout(async () => {
           try {            const { supabase } = await import('@/integrations/supabase/client');
@@ -211,7 +211,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           : "PENDING";
     
     // Debug logging to see what status we actually got
-    if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {    }
+      if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {    }
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -499,4 +499,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 };
 
 export default ConfirmationStep;
+
+
+
 

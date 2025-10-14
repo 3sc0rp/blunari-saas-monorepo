@@ -14,7 +14,7 @@ export function RecentBookingsProbe({ tenantId }: { tenantId?: string }) {
     if (!tenantId) return;
     setLoading(true); setError(undefined);
     // Some environments may have either booking_time or booking_date (legacy). We select * and then project.
-    const { data, error: qErr } = await (supabase
+      const { data, error: qErr } = await (supabase
       .from('bookings')
       .select('*')
       .eq('tenant_id', tenantId)
@@ -62,3 +62,4 @@ export function RecentBookingsProbe({ tenantId }: { tenantId?: string }) {
     </Card>
   );
 }
+

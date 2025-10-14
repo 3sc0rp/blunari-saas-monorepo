@@ -100,11 +100,11 @@ const ModularWidgetManagement = memo<ModularWidgetManagementProps>(({
   className = ''
 }) => {
   // Performance monitoring
-  const performanceMetrics = usePerformanceMonitor('ModularWidgetManagement');
+      const performanceMetrics = usePerformanceMonitor('ModularWidgetManagement');
   // 3D entitlement removed
 
   // State management
-  const [moduleState, setModuleState] = useState<ModuleState>({
+      const [moduleState, setModuleState] = useState<ModuleState>({
     activeTab: initialTab,
     previewDevice: 'desktop',
     validationErrors: [],
@@ -112,7 +112,7 @@ const ModularWidgetManagement = memo<ModularWidgetManagementProps>(({
   });
 
   // Hooks for widget functionality
-  const {
+      const {
     activeWidgetType,
     setActiveWidgetType,
     bookingConfig,
@@ -131,7 +131,7 @@ const ModularWidgetManagement = memo<ModularWidgetManagementProps>(({
   });
 
   // Get current config based on widget type
-  const currentConfig = widgetType === 'booking' ? bookingConfig : cateringConfig;
+      const currentConfig = widgetType === 'booking' ? bookingConfig : cateringConfig;
 
   // Component lifecycle
   useEffect(() => {
@@ -157,7 +157,7 @@ const ModularWidgetManagement = memo<ModularWidgetManagementProps>(({
   }, [validationErrors, hasUnsavedChanges]);
 
   // Event handlers
-  const handleTabChange = useCallback((tab: string) => {
+      const handleTabChange = useCallback((tab: string) => {
     logger.debug('Widget management tab changed', { from: moduleState.activeTab, to: tab });
     setModuleState(prev => ({ ...prev, activeTab: tab }));
   }, [moduleState.activeTab]);
@@ -211,7 +211,7 @@ const ModularWidgetManagement = memo<ModularWidgetManagementProps>(({
   }, []);
 
   // Common props for all modules
-  const commonModuleProps: WidgetModuleProps = {
+      const commonModuleProps: WidgetModuleProps = {
     widgetId,
     widgetType,
     config: currentConfig,

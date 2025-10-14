@@ -12,7 +12,7 @@ import {
 import { Plus, RefreshCw, Download, Users, Search } from "lucide-react";
 
 // Demo page showing all the new patterns
-const DemoPage: React.FC = () => {
+      const DemoPage: React.FC = () => {
   const [state, setState] = useState<"loading" | "empty" | "error" | "data">(
     "loading",
   );
@@ -45,7 +45,7 @@ const DemoPage: React.FC = () => {
   const handleExport = () => {  };
 
   // Loading state
-  if (state === "loading") {
+      if (state === "loading") {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -63,7 +63,7 @@ const DemoPage: React.FC = () => {
   }
 
   // Error state
-  if (state === "error") {
+      if (state === "error") {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -95,7 +95,7 @@ const DemoPage: React.FC = () => {
             onClick: () =>  }
 
   // Empty state
-  if (state === "empty") {
+      if (state === "empty") {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -132,7 +132,7 @@ const DemoPage: React.FC = () => {
             onClick: () =>  }
 
   // Data state
-  return (
+      return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -197,4 +197,5 @@ const DemoPage: React.FC = () => {
 };
 
 export default DemoPage;
+
 

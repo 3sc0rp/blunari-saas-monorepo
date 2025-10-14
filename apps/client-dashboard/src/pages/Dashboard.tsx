@@ -31,7 +31,7 @@ const Dashboard: React.FC = () => {
   const { alerts, dismissAlert, clearAllAlerts } = useAlertSystem(tenant?.id);
 
   // Check for reduced motion preference
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   return (
     <div className="space-y-6 w-full min-h-screen">
@@ -278,3 +278,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+

@@ -38,7 +38,7 @@ export default function CateringOrderTracking() {
   const [verifiedEmail, setVerifiedEmail] = useState(email || '');
 
   // Fetch order details
-  const { data: order, isLoading, error } = useQuery({
+      const { data: order, isLoading, error } = useQuery({
     queryKey: ['catering-order-tracking', orderId, verifiedEmail],
     queryFn: async () => {
       if (!orderId || !verifiedEmail) return null;
@@ -72,7 +72,7 @@ export default function CateringOrderTracking() {
   const currentStep = order ? getStatusStep(order.status) : 0;
 
   // Email verification screen
-  if (!verifiedEmail) {
+      if (!verifiedEmail) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -113,7 +113,7 @@ export default function CateringOrderTracking() {
   }
 
   // Loading state
-  if (isLoading) {
+      if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center">
         <Card className="w-full max-w-2xl">
@@ -129,7 +129,7 @@ export default function CateringOrderTracking() {
   }
 
   // Error or not found
-  if (error || !order) {
+      if (error || !order) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -154,7 +154,7 @@ export default function CateringOrderTracking() {
   }
 
   // Order tracking display
-  return (
+      return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
@@ -358,4 +358,5 @@ export default function CateringOrderTracking() {
     </div>
   );
 }
+
 

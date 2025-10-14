@@ -38,7 +38,7 @@ const DashboardHome: React.FC = () => {
   const { alerts, dismissAlert, clearAllAlerts } = useAlertSystem(tenant?.id);
 
   // Define KPI metrics data with tooltips
-  const kpiMetrics = [
+      const kpiMetrics = [
     {
       title: "Monthly Revenue",
       value: metrics?.todayBookings?.revenue * 30 || 0, // Estimate monthly from daily
@@ -301,3 +301,4 @@ const DashboardHome: React.FC = () => {
 };
 
 export default DashboardHome;
+

@@ -41,7 +41,8 @@ async function getUserAccessToken(supabaseUrl?: string): Promise<string | undefi
       if (token) return token;
     }
   } catch {}
-  // Fallback to querying supabase client if available (dashboard runtime only)
+  // Fallback to querying supabase client
+      if (available (dashboard runtime only)
   try {
     const mod = await import('@/integrations/supabase/client');
     const client = (mod as any)?.supabase;
@@ -50,8 +51,9 @@ async function getUserAccessToken(supabaseUrl?: string): Promise<string | undefi
       return data?.session?.access_token || undefined;
     }
   } catch {}
-  // For development/demo, return a demo user token if available
-  if (import.meta.env.MODE === 'development') {
+  // For development/demo,
+      return a demo user token if available
+      if (import.meta.env.MODE === 'development') {
     try {
       const mod = await import('@/integrations/supabase/client');
       const client = (mod as any)?.supabase;
@@ -70,12 +72,12 @@ async function callEdgeFunction(
 ): Promise<unknown> {
   try {
     // Pull token from URL (public widget runtime)
-    const token = (() => {
+      const token = (() => {
       try { return new URLSearchParams(window.location.search).get('token') || undefined; } catch { return undefined; }
     })();
 
     // Derive slug from body (tenant lookups) or URL path as fallback when token absent
-    const slugFromBody = (body as any)?.slug || (body as any)?.tenant_slug;
+      const slugFromBody = (body as any)?.slug || (body as any)?.tenant_slug;
     const slugFromUrl = (() => { try { return new URL(window.location.href).searchParams.get('slug'); } catch { return undefined; } })();
     const slug = slugFromBody || slugFromUrl || undefined;
 
@@ -96,7 +98,8 @@ async function callEdgeFunction(
 
     const userJwt = await getUserAccessToken(supabaseUrl);
     
-    // Enhanced debug logging    const requestId = crypto.randomUUID();    const response = await fetch(
+    // Enhanced debug logging    const requestId = crypto.randomUUID();   
+      const response = await fetch(
       `${supabaseUrl}/functions/v1/${functionName}`,
       {
         method: "POST",
@@ -133,7 +136,7 @@ async function callEdgeFunction(
     }
 
     // Get response text first for debugging
-    const responseText = await response.text();    // Try to parse JSON
+      const responseText = await response.text();    // Try to parse JSON
     let data;
     try {
       data = JSON.parse(responseText);
@@ -169,15 +172,16 @@ async function callEdgeFunction(
 }
 
 export async function getTenantBySlug(slug: string) {
-  try {    // Check if we're in a widget context (has token in URL)
-    const urlToken = (() => {
+  try {    // Check
+      if (we're in a widget context (has token in URL)
+      const urlToken = (() => {
       try { 
         return typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null; 
       } catch { 
         return null; 
       }
     })();    // If widget token present, use edge function to resolve tenant
-    if (urlToken) {      const data = await callEdgeFunction('widget-booking-live', {
+      if (urlToken) {      const data = await callEdgeFunction('widget-booking-live', {
         action: 'tenant',
         slug,
       });
@@ -202,16 +206,17 @@ export async function getTenantBySlug(slug: string) {
       };      return TenantInfoSchema.parse(transformedData);
     }
     
-    // Dashboard context: use direct database query    const { supabase } = await import('@/integrations/supabase/client');
+    // Dashboard context: use direct database query   
+      const { supabase } = await import('@/integrations/supabase/client');
     
     // Query tenants table directly (without business_hours column that doesn't exist)
-    const { data: tenantRaw, error } = await supabase
+      const { data: tenantRaw, error } = await supabase
       .from('tenants')
       .select('id, slug, name, timezone, currency')
       .eq('slug', slug)
       .maybeSingle();
     // Some generated types may represent errors as data; normalize
-    const tenant: any = tenantRaw && (tenantRaw as any).id ? tenantRaw : (error ? null : tenantRaw);
+      const tenant: any = tenantRaw && (tenantRaw as any).id ? tenantRaw : (error ? null : tenantRaw);
 
     if (error) {
       console.error('[getTenantBySlug] Database error:', error);
@@ -322,10 +327,10 @@ export async function confirmReservation(
       deposit: (request as any).deposit,
       source: (request as any).source,
     });    // CRITICAL CHECK: Is the response wrapped in a 'data' property?
-    if (rawData && (rawData as any).data && typeof (rawData as any).data === 'object') {      rawData = (rawData as any).data;    }
+      if (rawData && (rawData as any).data && typeof (rawData as any).data === 'object') {      rawData = (rawData as any).data;    }
 
     // CRITICAL CHECK: Is there an error in the response?
-    if (rawData && (rawData as any).error) {
+      if (rawData && (rawData as any).error) {
       console.error('[confirmReservation] ❌ Edge function returned an error:', (rawData as any).error);
       throw new BookingAPIError(
         'EDGE_FUNCTION_ERROR',
@@ -335,7 +340,7 @@ export async function confirmReservation(
     }
 
     // CRITICAL CHECK: Is this an empty object?
-    if (rawData && typeof rawData === 'object' && Object.keys(rawData as any).length === 0) {
+      if (rawData && typeof rawData === 'object' && Object.keys(rawData as any).length === 0) {
       console.error('[confirmReservation] ❌ Edge function returned an empty object!');
       console.error('[confirmReservation] This usually means the edge function failed silently.');
       console.error('[confirmReservation] Request was:', { request, idempotencyKey });
@@ -347,7 +352,7 @@ export async function confirmReservation(
     }
 
     // Normalize any upstream variations into our stable schema
-    const normalized = normalizeReservationResponse(rawData);    // Try to parse and catch detailed Zod errors
+      const normalized = normalizeReservationResponse(rawData);    // Try to parse and catch detailed Zod errors
     let validated;
     try {
       validated = ReservationResponseSchema.parse(normalized);
@@ -365,8 +370,8 @@ export async function confirmReservation(
         'Response from server does not match expected format',
         { zodError, normalized }
       );
-    }    // Critical check: If reservation_id is null, the booking creation failed
-    if (!validated.reservation_id) {
+    }    // Critical check:
+      if (!validated.reservation_id) {
       console.error('[confirmReservation] ❌ CRITICAL: Booking creation failed - no reservation_id returned');
       console.error('[confirmReservation] This means the edge function failed to create the booking');
       throw new BookingAPIError(
@@ -394,7 +399,7 @@ function normalizeReservationResponse(input: any): any {
     const d = input || {};
 
     // Debug logging in development    // Extract reservation_id - check all possible field names
-    const reservationId = d.reservation_id || d.reservationId || d.id || d.booking_id;    let confirmationNumber = d.confirmation_number || d.confirmationNumber || d.reference || d.code;
+      const reservationId = d.reservation_id || d.reservationId || d.id || d.booking_id;    let confirmationNumber = d.confirmation_number || d.confirmationNumber || d.reference || d.code;
     let status: string = (d.status || d.state || d.reservation_status || 'pending').toString().toLowerCase();    if (!reservationId) {
       console.error('[normalizeReservationResponse] ❌ CRITICAL: No reservation_id found in response!');
       console.error('[normalizeReservationResponse] Available fields to check:', {
@@ -406,7 +411,8 @@ function normalizeReservationResponse(input: any): any {
         allFields: Object.keys(d)
       });
       console.error('[normalizeReservationResponse] Cannot proceed without reservation_id - throwing error');
-      // Don't return a partial object - throw an error instead
+      // Don't
+      return a partial object - throw an error instead
       throw new BookingAPIError(
         'MISSING_RESERVATION_ID',
         'Server did not return a reservation ID. The booking may not have been created.',
@@ -465,8 +471,9 @@ function normalizeReservationResponse(input: any): any {
 
 export async function getTenantPolicies(tenantId: string) {
   try {
-    // For now, return default policies - can be enhanced with database queries
-    const data = {
+    // For now,
+      return default policies - can be enhanced with database queries
+      const data = {
       deposit: {
         enabled: false,
       },
@@ -524,7 +531,8 @@ export async function sendAnalyticsEvent(
     const url = import.meta.env.VITE_BACKGROUND_OPS_URL;
     const apiKey = import.meta.env.VITE_BACKGROUND_OPS_API_KEY;
     if (!url || !apiKey) {
-      // Fallback to console if not configured      return;
+      // Fallback to console
+      if (not configured      return;
     }
     const body = {
       type: `widget.${event}`,
@@ -545,4 +553,7 @@ export async function sendAnalyticsEvent(
     // Swallow analytics errors; do not disrupt UX
   }
 }
+
+
+
 

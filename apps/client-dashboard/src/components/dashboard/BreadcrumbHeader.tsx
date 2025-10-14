@@ -29,7 +29,7 @@ import { useUIMode } from "@/lib/ui-mode";
 import { useModeTransition } from "@/contexts/ModeTransitionContext";
 
 // Route mapping for breadcrumbs
-const routeMap: Record<string, { title: string; icon?: React.ComponentType<{ className?: string }> }> =
+      const routeMap: Record<string, { title: string; icon?: React.ComponentType<{ className?: string }> }> =
   {
     "/dashboard": { title: "Dashboard", icon: Home },
     "/command-center": { title: "Command Center" },
@@ -349,3 +349,4 @@ const BreadcrumbHeader: React.FC = () => {
 };
 
 export default BreadcrumbHeader;
+

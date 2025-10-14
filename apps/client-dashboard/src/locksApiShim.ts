@@ -13,7 +13,7 @@ const isLocksAPIUnavailable = (() => {
       return true;
     }
     
-    // Test if Locks API is available and accessible
+    // Test if Locks API is available
     if (typeof navigator === 'undefined' || !navigator.locks) {
       return true;
     }
@@ -34,7 +34,11 @@ if (isLocksAPIUnavailable) {
       configurable: true,
       enumerable: false
     });
-  }}
+  }
+}
 
 export {};
+
+
+
 

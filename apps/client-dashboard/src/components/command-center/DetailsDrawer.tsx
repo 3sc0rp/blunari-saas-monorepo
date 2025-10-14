@@ -35,7 +35,7 @@ interface DetailsDrawerProps {
 }
 
 // Global state for drawer - in real app this would be handled by state management
-const drawerState = {
+      const drawerState = {
   isOpen: false,
   type: 'booking' as 'booking' | 'table' | 'waitlist',
   data: null as BookingData | TableData | WaitlistData | null
@@ -61,7 +61,7 @@ const DetailsDrawer: React.FC<DetailsDrawerProps> = ({
   };
 
   // If no data provided, try to get from real data
-  const selectedData = data || (() => {
+      const selectedData = data || (() => {
     if (type === 'booking') {
       // For booking, we'll need to pass actual booking data from parent
       return null;
@@ -521,3 +521,4 @@ const DetailsDrawer: React.FC<DetailsDrawerProps> = ({
 };
 
 export default DetailsDrawer;
+

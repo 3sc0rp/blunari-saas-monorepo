@@ -26,10 +26,10 @@ const PerformanceMonitor: React.FC = () => {
 
   useEffect(() => {
     // Only show in development mode
-    if (process.env.NODE_ENV !== 'development') return;
+      if (process.env.NODE_ENV !== 'development') return;
 
     // Show/hide with Ctrl+Shift+P
-    const handleKeyPress = (e: KeyboardEvent) => {
+      const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'P') {
         setIsVisible(prev => !prev);
       }
@@ -38,7 +38,7 @@ const PerformanceMonitor: React.FC = () => {
     window.addEventListener('keydown', handleKeyPress);
 
     // Update metrics every 2 seconds
-    const interval = setInterval(() => {
+      const interval = setInterval(() => {
       const memory = (performance as any).memory;
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
       
@@ -111,3 +111,4 @@ const PerformanceMonitor: React.FC = () => {
 };
 
 export default PerformanceMonitor;
+

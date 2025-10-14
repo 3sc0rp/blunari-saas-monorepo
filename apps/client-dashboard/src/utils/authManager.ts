@@ -95,7 +95,7 @@ class EnterpriseAuthManager {
     this.initializeSessionCheck();
     
     // Load existing session only when storage is persistent; sandboxed iframe sessions are ephemeral.
-    if (safeStorage.persistent) {
+      if (safeStorage.persistent) {
       this.loadSessionFromStorage();
     } else if (inSandboxedIframe) {
       logger.info('Auth running in sandboxed iframe (ephemeral session only)', {
@@ -155,7 +155,8 @@ class EnterpriseAuthManager {
       // Fetch user profile and permissions
       const userProfile = await this.fetchUserProfile(authData.user.id);
       
-      // Check MFA if required
+      // Check MFA
+      if (required
       if (this.config.requireMFA && userProfile.mfaEnabled && !credentials.mfaCode) {
         // In a real implementation, you would trigger MFA challenge here
         throw new Error('MFA code required');
@@ -404,7 +405,7 @@ class EnterpriseAuthManager {
     });
     
     // Simulate MFA validation
-    return code.length === 6 && /^\d+$/.test(code);
+      return code.length === 6 && /^\d+$/.test(code);
   }
 
   private validatePasswordPolicy(password: string): boolean {
@@ -423,8 +424,8 @@ class EnterpriseAuthManager {
     const now = Date.now();
     const attempts = this.failedAttempts.get(email) || { count: 0, lastAttempt: 0 };
     
-    // Reset count if last attempt was more than lockout duration ago
-    if (now - attempts.lastAttempt > this.config.lockoutDuration * 60 * 1000) {
+    // Reset count
+      if (now - attempts.lastAttempt > this.config.lockoutDuration * 60 * 1000) {
       attempts.count = 0;
     }
     
@@ -469,11 +470,11 @@ class EnterpriseAuthManager {
 
   private startSessionManagement(): void {
     // Skip automatic refresh when Locks API is unavailable (e.g., sandboxed iframes)
-    if (!this.locksAvailable) {
+      if (!this.locksAvailable) {
       return;
     }
     // Set up automatic refresh 5 minutes before expiration
-    const refreshTime = this.currentSession!.expiresAt - Date.now() - (5 * 60 * 1000);
+      const refreshTime = this.currentSession!.expiresAt - Date.now() - (5 * 60 * 1000);
     
     if (refreshTime > 0) {
       this.refreshTimer = setTimeout(() => {
@@ -515,7 +516,7 @@ class EnterpriseAuthManager {
         const session = JSON.parse(stored) as AuthSession;
         
         // Validate stored session
-        if (this.isStoredSessionValid(session)) {
+      if (this.isStoredSessionValid(session)) {
           this.currentSession = session;
           this.startSessionManagement();
           
@@ -564,3 +565,6 @@ export const authManager = new EnterpriseAuthManager({
 
 export type { AuthUser, AuthSession, LoginCredentials, AuthConfig };
 export default authManager;
+
+
+

@@ -19,7 +19,7 @@ const PartySizeStep: React.FC<PartySizeStepProps> = ({
   const [selectedSize, setSelectedSize] = useState<number | null>(null);
 
   // Keyboard navigation
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (loading) return;
     const idx = selectedSize ? selectedSize - 1 : -1;
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
@@ -37,7 +37,7 @@ const PartySizeStep: React.FC<PartySizeStepProps> = ({
   };
 
   // Generate party size options (1-12)
-  const partySizeOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+      const partySizeOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 
   const handleSizeSelect = (size: number) => {
     setSelectedSize(size);
@@ -210,3 +210,4 @@ const PartySizeStep: React.FC<PartySizeStepProps> = ({
 };
 
 export default PartySizeStep;
+

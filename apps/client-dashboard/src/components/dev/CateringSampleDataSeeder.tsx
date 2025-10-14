@@ -12,7 +12,8 @@ export const CateringSampleDataSeeder: React.FC = () => {
     setStatus("Checking database configuration...");
 
     try {
-      // Check if catering tables exist by trying to query them
+      // Check
+      if (catering tables exist by trying to query them
       const { data: tables, error } = await supabase
         .from("catering_packages" as any)
         .select("id")
@@ -202,4 +203,6 @@ export const CateringSampleDataSeeder: React.FC = () => {
     </div>
   );
 };
+
+
 

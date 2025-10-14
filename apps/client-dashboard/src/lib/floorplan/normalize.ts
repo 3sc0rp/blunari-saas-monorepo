@@ -7,7 +7,7 @@ export const WORLD_H = 10;
 export function img01ToWorld10([cx, cy]: [number, number]): [number, number] {
   const x = clamp(cx * WORLD_W, 0, WORLD_W);
   const y = clamp((1 - cy) * WORLD_H, 0, WORLD_H); // flip Y
-  return [x, y];
+      return [x, y];
 }
 
 export function clamp(v: number, lo = 0, hi = 10) {
@@ -39,3 +39,4 @@ export function inferSeats(e: DetectedEntity): number {
   }
   return 2;
 }
+

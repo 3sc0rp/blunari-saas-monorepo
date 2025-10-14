@@ -35,12 +35,12 @@ const CustomerManagement: React.FC = () => {
     useState<string>("all");
 
   // Fetch real customer data from database
-  const { customers, isLoading, addCustomer } = useCustomerManagement(
+      const { customers, isLoading, addCustomer } = useCustomerManagement(
     tenant?.id,
   );
 
   // Filter customers based on search and type
-  const filteredCustomers = customers.filter((customer) => {
+      const filteredCustomers = customers.filter((customer) => {
     const matchesSearch =
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -54,7 +54,7 @@ const CustomerManagement: React.FC = () => {
   });
 
   // Customer statistics
-  const customerStats = {
+      const customerStats = {
     total: customers.length,
     new: customers.filter((c) => c.customer_type === "new").length,
     regular: customers.filter((c) => c.customer_type === "regular").length,
@@ -89,7 +89,7 @@ const CustomerManagement: React.FC = () => {
   };
 
   // Loading state
-  if (isLoading && customers.length === 0) {
+      if (isLoading && customers.length === 0) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -112,7 +112,7 @@ const CustomerManagement: React.FC = () => {
   }
 
   // Empty state
-  if (!isLoading && customers.length === 0) {
+      if (!isLoading && customers.length === 0) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -449,7 +449,7 @@ const CustomerManagement: React.FC = () => {
 };
 
 // Customer Card Component
-const CustomerCard: React.FC<{
+      const CustomerCard: React.FC<{
   customer: Customer;
   getCustomerTypeColor: (type: Customer["customer_type"]) => string;
 }> = ({ customer, getCustomerTypeColor }) => {
@@ -585,3 +585,4 @@ const CustomerCard: React.FC<{
 };
 
 export default CustomerManagement;
+

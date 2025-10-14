@@ -100,12 +100,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Enhanced error handling with user feedback
-  const displayError = tenantError || cateringError || submitError;
+      const displayError = tenantError || cateringError || submitError;
   const isInDemoMode =
     !tablesExist && diagnosticInfo?.cateringTablesAvailable === false;
 
   // Loading states with better UX
-  if (tenantLoading || packagesLoading) {
+      if (tenantLoading || packagesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/20">
         <Card className="w-full max-w-md">
@@ -135,7 +135,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   }
 
   // Enhanced error states with better messaging
-  if (displayError) {
+      if (displayError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/20">
         <Card className="w-full max-w-md">
@@ -201,7 +201,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
     if (!selectedPackage || !tenant) return;
 
     // Client-side validation
-    if (!orderForm.event_name.trim()) {
+      if (!orderForm.event_name.trim()) {
       setSubmitError("Event name is required");
       return;
     }
@@ -222,14 +222,14 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
     }
 
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(orderForm.contact_email)) {
       setSubmitError("Please enter a valid email address");
       return;
     }
 
     // Date validation
-    const eventDate = new Date(orderForm.event_date);
+      const eventDate = new Date(orderForm.event_date);
     const minDate = addDays(new Date(), 3);
     if (eventDate < minDate) {
       setSubmitError("Event date must be at least 3 days in advance");
@@ -933,3 +933,4 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 };
 
 export default CateringWidget;
+

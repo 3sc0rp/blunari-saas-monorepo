@@ -4,7 +4,7 @@
  */
 
 // PII patterns to redact
-const PII_PATTERNS = {
+      const PII_PATTERNS = {
   email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
   phone: /(\+?1[-.]?)?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}/g,
   ssn: /\d{3}-\d{2}-\d{4}/g,
@@ -13,7 +13,7 @@ const PII_PATTERNS = {
 };
 
 // Fields that commonly contain PII
-const PII_FIELDS = [
+      const PII_FIELDS = [
   'email',
   'guest_email',
   'phone',
@@ -66,16 +66,16 @@ export function redactPII(text: string): string {
  */
 export function redactObject<T extends Record<string, any>>(obj: T): T {
   if (!isProduction) return obj; // Don't redact in development
-  
-  if (!obj || typeof obj !== 'object') return obj;
+      if (!obj || typeof obj !== 'object') return obj;
   
   const redacted: any = Array.isArray(obj) ? [] : {};
   
   for (const key in obj) {
     const value = obj[key];
     
-    // Check if field name suggests PII
-    const isPIIField = PII_FIELDS.some(field => 
+    // Check
+      if (field name suggests PII
+      const isPIIField = PII_FIELDS.some(field => 
       key.toLowerCase().includes(field.toLowerCase())
     );
     
@@ -140,7 +140,7 @@ export const safeLog = {
   
   debug(...args: any[]) {
     // Only log debug in development
-    if (isDevelopment) {
+      if (isDevelopment) {
       console.debug(...args);
     }
   }
@@ -214,4 +214,6 @@ export function disableConsoleInProduction() {
  * const logger = createSafeLogger('BookingWizard');
  * logger.log('User submitted form', sanitizeBookingForLog(booking));
  */
+
+
 

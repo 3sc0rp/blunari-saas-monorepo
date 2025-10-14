@@ -13,5 +13,6 @@ export function shouldUseMockData() {
 
 export async function getTenantWithFallback(slug: string, apiCall: () => Promise<any>) {
   // Only use real API calls - no fallback to mock data
-  return await apiCall();
+      return await apiCall();
 }
+

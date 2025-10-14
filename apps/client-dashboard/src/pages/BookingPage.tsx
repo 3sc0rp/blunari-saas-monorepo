@@ -8,10 +8,10 @@ const BookingPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
 
-  // Determine if this is a catering or booking widget based on the path
-  const isCateringWidget = /(^|\/)catering\//.test(location.pathname);
-
-  if (!slug) {
+  // Determine
+      if (this is a catering or booking widget based on the path
+      const isCateringWidget = /(^|\/)catering\//.test(location.pathname);
+      if (!slug) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/20">
         <Card>
@@ -49,3 +49,5 @@ const BookingPage: React.FC = () => {
 };
 
 export default BookingPage;
+
+

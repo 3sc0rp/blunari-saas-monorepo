@@ -34,7 +34,7 @@ class AnalyticsErrorReporter {
     this.errorLog.push(errorEntry);
     
     // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development') {
       console.error('Analytics Error:', {
         name: error.name,
         message: error.message,

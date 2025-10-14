@@ -15,7 +15,6 @@ export function BookingDebugger() {
     try {
       const now = new Date();
       const bookingTime = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours from now
-      
       const testBooking = {
         tenant_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
         guest_name: 'Debug Test User',
@@ -128,3 +127,4 @@ export function BookingDebugger() {
     </Card>
   );
 }
+

@@ -70,7 +70,7 @@ class AnalyticsRateLimiter {
 }
 
 // Global rate limiter instance
-const analyticsRateLimiter = new AnalyticsRateLimiter();
+      const analyticsRateLimiter = new AnalyticsRateLimiter();
 
 /**
  * Debug logging gate – only emit verbose analytics logs when explicitly enabled.
@@ -80,7 +80,7 @@ const analyticsRateLimiter = new AnalyticsRateLimiter();
 // Prefer Vite import.meta env but also fall back to process.env for test/runtime flexibility
 // NOTE: We intentionally do not tree-shake by inlining conditionals so toggling flag at runtime (test) works.
 // Access env flags defensively across build targets (Node in tests, browser in app)
-const RAW_DEBUG_FLAG = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_ANALYTICS_DEBUG) ||
+      const RAW_DEBUG_FLAG = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_ANALYTICS_DEBUG) ||
   (typeof process !== 'undefined' && typeof process.env !== 'undefined' ? (process.env as any).VITE_ANALYTICS_DEBUG : undefined);
 const ANALYTICS_DEBUG = String(RAW_DEBUG_FLAG).toLowerCase() === 'true';
 
@@ -149,7 +149,7 @@ class AnalyticsCache {
 }
 
 // Global cache instance
-const analyticsCache = new AnalyticsCache();
+      const analyticsCache = new AnalyticsCache();
 
 export interface UseWidgetAnalyticsOptions {
   /** The tenant ID for analytics data isolation */
@@ -221,7 +221,8 @@ export function useWidgetAnalytics({
   rateLimitRemaining: number;
   rateLimitResetTime: number;
 } {
-  // Log hook initialization with tenant info  const [state, setState] = useState<AnalyticsState>({
+  // Log hook initialization with tenant info 
+      const [state, setState] = useState<AnalyticsState>({
     data: null,
     loading: false,
     error: null,
@@ -252,7 +253,7 @@ export function useWidgetAnalytics({
     });
 
     // Check cache first (unless bypassing for manual refresh)
-    const cacheKey = `${tenantId}-${widgetType}-${timeRange}`;
+      const cacheKey = `${tenantId}-${widgetType}-${timeRange}`;
     if (!bypassCache) {
       const cachedData = analyticsCache.get(cacheKey);
       if (cachedData) {
@@ -301,7 +302,7 @@ export function useWidgetAnalytics({
     }
 
     // Check rate limit before proceeding (after cache/in-flight dedupe)
-    if (!analyticsRateLimiter.isAllowed()) {
+      if (!analyticsRateLimiter.isAllowed()) {
       const timeUntilNext = analyticsRateLimiter.getTimeUntilNextAllowed();
       const waitTimeSeconds = Math.ceil(timeUntilNext / 1000);
 
@@ -317,13 +318,13 @@ export function useWidgetAnalytics({
     }
 
     // Prevent concurrent fetches
-    if (isLoadingRef.current) {
+      if (isLoadingRef.current) {
   debug('Fetch already in progress, skipping');
       return;
     }
 
     // First guard: not available case
-    if (!isAvailable) {
+      if (!isAvailable) {
   debug('Analytics not available, skipping fetch');
       setState(prev => ({
         ...prev,
@@ -335,7 +336,7 @@ export function useWidgetAnalytics({
     }
 
     // Second guard: missing tenant info
-    if (!tenantId || !tenantSlug) {
+      if (!tenantId || !tenantSlug) {
       console.error('❌ Analytics fetch skipped - missing tenant information:', {
         tenantId,
         tenantIdPresent: !!tenantId,
@@ -361,7 +362,7 @@ export function useWidgetAnalytics({
     try {
   debug(`Fetching REAL analytics for tenant ${tenantId}, widget ${widgetType}`);
       
-      // For development/demo purposes, use direct database fallback if tenant looks like demo/test or tenantId not UUID
+      // For development/demo purposes, use direct database fallback
       if (!forceEdge && (
         tenantId.includes('demo') ||
         tenantId.includes('test') ||
@@ -393,13 +394,13 @@ export function useWidgetAnalytics({
       }
       
       // Get current session for authentication
-  const { data: { session }, error: authError } = await supabase.auth.getSession();
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
   sessionCheckedRef.current = true;
       
       if (authError || !session) {
   debugWarn('⚠️ No authentication available, using database fallback');
         // Don't throw error, just use fallback
-        const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
+      const fallbackData = await fetchAnalyticsDirectly(tenantId, widgetType, timeRange);
         setState({
           data: fallbackData,
           loading: false,
@@ -470,7 +471,7 @@ export function useWidgetAnalytics({
   debug('Switching to direct-db fallback after edge retries');
         
         // Report the edge function error since we're falling back to database
-        const analyticsError = lastErr instanceof AnalyticsError ? lastErr : new AnalyticsError(
+      const analyticsError = lastErr instanceof AnalyticsError ? lastErr : new AnalyticsError(
           'Failed to fetch analytics from edge function',
           AnalyticsErrorCode.EDGE_FUNCTION_ERROR,
           {
@@ -562,7 +563,7 @@ export function useWidgetAnalytics({
     });
 
     // Guard against recursive fetch attempts
-    if (state.loading) {
+      if (state.loading) {
   debug('Already fetching analytics, skipping');
       return;
     }
@@ -578,8 +579,8 @@ export function useWidgetAnalytics({
       return;
     }
 
-    // Only fetch if we have valid tenant data
-    if (!tenantId || !tenantSlug || !widgetType) {
+    // Only fetch
+      if (!tenantId || !tenantSlug || !widgetType) {
   debug('🚫 Analytics fetch skipped - missing required data:', {
         tenantId: !!tenantId,
         tenantSlug: !!tenantSlug,
@@ -601,14 +602,15 @@ export function useWidgetAnalytics({
     });
 
     // Set up refresh interval for real-time updates
-    const interval = setInterval(() => {
-      // Only trigger refresh if not currently loading
+      const interval = setInterval(() => {
+      // Only trigger refresh
       if (!state.loading) {
         fetchAnalytics().catch(console.error);
       }
     }, refreshInterval);
 
-    // Set up real-time subscription to widget events    const eventsChannel = supabase
+    // Set up real-time subscription to widget events   
+      const eventsChannel = supabase
       .channel(`widget-events-${tenantId}-${widgetType}`)
       .on(
         'postgres_changes',
@@ -619,7 +621,7 @@ export function useWidgetAnalytics({
           filter: `tenant_id=eq.${tenantId}`
         },
         (payload) => {          // Refresh analytics when new event comes in
-          if (!state.loading) {
+      if (!state.loading) {
             fetchAnalytics().catch(console.error);
           }
         }
@@ -627,7 +629,7 @@ export function useWidgetAnalytics({
       .subscribe((status) => {      });
 
     // Refresh when tab becomes visible
-    const handleVisibilityChange = () => {
+      const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && !state.loading) {        fetchAnalytics().catch(console.error);
       }
     };
@@ -642,7 +644,7 @@ export function useWidgetAnalytics({
   }, [fetchAnalytics, refreshInterval, isAvailable, tenantId, tenantSlug, widgetType]);
 
   // Wrapper for manual refresh that bypasses cache
-  const manualRefresh = useCallback(async (timeRange?: AnalyticsTimeRange) => {
+      const manualRefresh = useCallback(async (timeRange?: AnalyticsTimeRange) => {
     await fetchAnalytics(timeRange || '7d', true);
   }, [fetchAnalytics]);
 
@@ -668,24 +670,26 @@ async function fetchRealWidgetAnalytics(
 ): Promise<AnalyticsResponse> {
   
   // Validate tenantId before making the request
-  if (!tenantId || tenantId === 'null' || tenantId.trim() === '') {
+      if (!tenantId || tenantId === 'null' || tenantId.trim() === '') {
     throw new Error('Invalid tenantId: tenantId is required and cannot be null or empty');
   }
 
   // Validate tenantId is a UUID
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(tenantId)) {
     throw new Error(`Invalid tenantId format: "${tenantId}" is not a valid UUID`);
-  }  try {    // Call the widget-analytics Edge Function with real data queries    // Build headers object - always include Authorization (use anon key if no user token)
-    const requestHeaders: Record<string, string> = {
+  }  try {    // Call the widget-analytics Edge Function with real data queries    // Build headers object - always include Authorization (use anon key
+      if (no user token)
+      const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'x-correlation-id': correlationId || ''
       // Note: x-widget-version removed to avoid CORS preflight issues
       // Version is included in the request body instead
     };
     
-    // Always provide Authorization header - use user token if available, otherwise anon key
-    if (accessToken) {
+    // Always provide Authorization header - use user token
+      if (available, otherwise anon key
+      if (accessToken) {
       requestHeaders['Authorization'] = `Bearer ${accessToken}`;
     } else {
       // Fallback to anon key when no user session
@@ -699,7 +703,7 @@ async function fetchRealWidgetAnalytics(
       timeRange,
       version: '2.0'
     };    // BYPASS SUPABASE SDK - Use direct fetch to avoid SDK body serialization issues
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const fetchUrl = `${supabaseUrl}/functions/v1/widget-analytics`;    const fetchResponse = await fetch(fetchUrl, {
       method: 'POST',
       headers: {
@@ -761,7 +765,7 @@ async function fetchRealWidgetAnalytics(
           }
           
           // BYPASS SUPABASE SDK - Use direct fetch for retry too
-          const retryFetchResponse = await fetch(fetchUrl, {
+      const retryFetchResponse = await fetch(fetchUrl, {
             method: 'POST',
             headers: retryHeaders,
             body: JSON.stringify({
@@ -802,7 +806,7 @@ async function fetchRealWidgetAnalytics(
       
       analyticsErrorReporter.reportError(edgeError);
       
-      // Check if we should attempt database fallback
+      // Check
       if (response.error.message?.includes('400')) {        return { 
           data: {
             totalViews: 0,
@@ -825,8 +829,8 @@ async function fetchRealWidgetAnalytics(
       // For other errors, try database fallback      throw Object.assign(new Error('Edge function error'), { code: response.error.name || 'EDGE_ERROR' });
     }
 
-    // Check if Edge Function returned success
-    if (!response.data?.success || !response.data?.data) {
+    // Check
+      if (!response.data?.success || !response.data?.data) {
       console.warn('Edge Function returned unsuccessful response');
       return { 
         data: response.data?.data || {
@@ -861,13 +865,13 @@ async function fetchAnalyticsDirectly(
   widgetType: WidgetType,
   timeRange: AnalyticsTimeRange = '7d'
 ): Promise<WidgetAnalyticsData> {  // Calculate date range
-  const now = new Date();
+      const now = new Date();
   const daysBack = timeRange === '30d' ? 30 : timeRange === '7d' ? 7 : 1;
   const startDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
   
   try {
     // Fetch booking/order data based on widget type
-    const tableName = widgetType === 'booking' ? 'bookings' : 'catering_orders';
+      const tableName = widgetType === 'booking' ? 'bookings' : 'catering_orders';
     
     const { data: ordersData, error: ordersError } = await supabase
       .from(tableName as any)
@@ -887,7 +891,7 @@ async function fetchAnalyticsDirectly(
     ).length;
 
     // Only compute metrics we can derive directly; leave others as 0/undefined
-  const analytics: WidgetAnalyticsData = {
+      const analytics: WidgetAnalyticsData = {
       totalViews: 0, // Unknown without dedicated events table
       totalClicks: 0, // Unknown without click tracking
       conversionRate: 0, // Cannot compute without views baseline
@@ -905,7 +909,8 @@ async function fetchAnalyticsDirectly(
       if (partySizes.length) {
         analytics.avgPartySize = partySizes.reduce((a: number, b: number) => a + b, 0) / partySizes.length;
       }
-      // Peak hours require event timestamps aggregated by hour; skip if insufficient data
+      // Peak hours require event timestamps aggregated by hour; skip
+      if (insufficient data
     } else {
       const orderValues = orders
         .map((order: any) => order.total_amount)
@@ -936,7 +941,7 @@ async function fetchAnalyticsDirectly(
     console.error('Direct database query failed:', error);
     
     // Report database error
-    const dbError = new DatabaseError(
+      const dbError = new DatabaseError(
       'Database analytics query failed',
       AnalyticsErrorCode.DATABASE_ERROR,
       {
@@ -990,3 +995,6 @@ export const analyticsFormatters = {
   count: (value: number) => value.toLocaleString(),
   decimal: (value: number) => value.toFixed(1),
 } as const;
+
+
+

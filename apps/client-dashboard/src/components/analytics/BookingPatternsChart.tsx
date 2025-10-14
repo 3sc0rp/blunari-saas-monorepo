@@ -38,7 +38,7 @@ const BookingPatternsChart: React.FC<BookingPatternsChartProps> = ({
   };
 
   // Design system colors for charts
-  const CHART_COLORS = {
+      const CHART_COLORS = {
     primary: "hsl(var(--brand))",
     secondary: "hsl(var(--accent))",
     tertiary: "hsl(var(--secondary))",
@@ -394,3 +394,4 @@ const BookingPatternsChart: React.FC<BookingPatternsChartProps> = ({
 };
 
 export default BookingPatternsChart;
+

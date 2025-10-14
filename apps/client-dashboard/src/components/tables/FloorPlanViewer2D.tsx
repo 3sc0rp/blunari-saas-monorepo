@@ -26,7 +26,7 @@ export default function FloorPlanViewer2D() {
     const pixelRatio = window.devicePixelRatio || 1;
 
     // Set canvas size for high DPI displays (throttled)
-    const actualW = W * pixelRatio;
+      const actualW = W * pixelRatio;
     const actualH = H * pixelRatio;
 
     if (canvas.width !== actualW || canvas.height !== actualH) {
@@ -40,8 +40,9 @@ export default function FloorPlanViewer2D() {
     // Clear canvas
     ctx.clearRect(0, 0, W, H);
 
-    // Draw background image if available (with caching)
-    if (uploadedImage) {
+    // Draw background image
+      if (available (with caching)
+      if (uploadedImage) {
       const img = new Image();
       img.onload = () => {
         ctx.save();
@@ -122,7 +123,7 @@ export default function FloorPlanViewer2D() {
         const y = (e.y / WORLD_H) * H;
 
         // Table color based on confidence
-        const confidence = e.confidence || 0.5;
+      const confidence = e.confidence || 0.5;
         const alpha = Math.max(0.7, confidence);
 
         if (confidence > 0.7) {
@@ -179,7 +180,7 @@ export default function FloorPlanViewer2D() {
         }
 
         // Draw table info
-        if (showLabels && e.label) {
+      if (showLabels && e.label) {
           ctx.fillStyle = "#1f2937";
           ctx.font = "bold 11px Inter, sans-serif";
           ctx.textAlign = "center";
@@ -196,8 +197,9 @@ export default function FloorPlanViewer2D() {
           H - y + (showLabels && e.label ? 16 : 4),
         );
 
-        // Draw confidence if enabled
-        if (showConfidence && e.confidence) {
+        // Draw confidence
+      if (enabled
+      if (showConfidence && e.confidence) {
           ctx.fillStyle = confidence > 0.7 ? "#059669" : "#d97706";
           ctx.font = "8px Inter, sans-serif";
           ctx.fillText(`${Math.round(confidence * 100)}%`, x, H - y - 8);
@@ -306,4 +308,6 @@ export default function FloorPlanViewer2D() {
     </Card>
   );
 }
+
+
 

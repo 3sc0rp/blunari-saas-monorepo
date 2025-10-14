@@ -32,7 +32,7 @@ export const PerformanceDashboard: React.FC = () => {
   const [refreshInterval, setRefreshInterval] = useState(5000);
 
   // Collect performance data
-  const collectMetrics = useCallback(() => {
+      const collectMetrics = useCallback(() => {
     const performanceData = PerformanceCollector.getMetrics();
     const metricsArray: PerformanceMetric[] = [];
 
@@ -53,7 +53,7 @@ export const PerformanceDashboard: React.FC = () => {
   }, []);
 
   // Calculate performance statistics
-  const performanceStats = useMemo((): PerformanceStats => {
+      const performanceStats = useMemo((): PerformanceStats => {
     if (metrics.length === 0) {
       return {
         averageRenderTime: 0,
@@ -73,18 +73,18 @@ export const PerformanceDashboard: React.FC = () => {
     );
 
     // Calculate performance score (0-100)
-    const baseScore = 100;
+      const baseScore = 100;
     const renderPenalty = Math.max(0, (averageRenderTime - 16) * 2); // Penalty for >16ms renders
-    const slowOpPenalty = Math.max(0, (slowestOperation.duration - 50) * 0.5); // Penalty for >50ms ops
-    const performanceScore = Math.max(0, baseScore - renderPenalty - slowOpPenalty);
+      const slowOpPenalty = Math.max(0, (slowestOperation.duration - 50) * 0.5); // Penalty for >50ms ops
+      const performanceScore = Math.max(0, baseScore - renderPenalty - slowOpPenalty);
 
     // Memory usage simulation (in a real app, this would come from performance.memory)
-    const memoryUsage = typeof window !== 'undefined' && 'memory' in performance 
+      const memoryUsage = typeof window !== 'undefined' && 'memory' in performance 
       ? (performance as any).memory?.usedJSHeapSize || 0
       : Math.random() * 50000000; // Mock value
 
     // Generate recommendations
-    const recommendations: string[] = [];
+      const recommendations: string[] = [];
     if (averageRenderTime > 16) {
       recommendations.push('Consider implementing React.memo for frequently re-rendering components');
     }
@@ -117,14 +117,14 @@ export const PerformanceDashboard: React.FC = () => {
   }, [isMonitoring, refreshInterval, collectMetrics]);
 
   // Format duration for display
-  const formatDuration = useCallback((duration: number): string => {
+      const formatDuration = useCallback((duration: number): string => {
     if (duration < 1) return `${(duration * 1000).toFixed(2)}μs`;
     if (duration < 1000) return `${duration.toFixed(2)}ms`;
     return `${(duration / 1000).toFixed(2)}s`;
   }, []);
 
   // Format bytes for display
-  const formatBytes = useCallback((bytes: number): string => {
+      const formatBytes = useCallback((bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -133,21 +133,21 @@ export const PerformanceDashboard: React.FC = () => {
   }, []);
 
   // Get performance score color
-  const getScoreColor = useCallback((score: number): string => {
+      const getScoreColor = useCallback((score: number): string => {
     if (score >= 90) return 'text-green-600';
     if (score >= 70) return 'text-yellow-600';
     return 'text-red-600';
   }, []);
 
   // Clear metrics
-  const clearMetrics = useCallback(() => {
+      const clearMetrics = useCallback(() => {
     setMetrics([]);
     PerformanceCollector.clearMetrics();
     logger.info('Performance metrics cleared');
   }, []);
 
   // Export performance report
-  const exportReport = useCallback(() => {
+      const exportReport = useCallback(() => {
     const report = PerformanceCollector.generateReport();
     const blob = new Blob([report], { type: 'application/json' });
     const url = URL.createObjectURL(blob);

@@ -82,7 +82,7 @@ interface RealtimeConnectionState {
 }
 
 // UUID validation helper
-const isValidUUID = (str: string): boolean => {
+      const isValidUUID = (str: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(str);
 };
@@ -94,7 +94,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
   const queryClient = useQueryClient();
   
   // Enhanced connection status with proper typing
-  const [connectionStatus, setConnectionStatus] = useState<RealtimeConnectionState>({
+      const [connectionStatus, setConnectionStatus] = useState<RealtimeConnectionState>({
     bookings: 'disconnected',
     tables: 'disconnected',
     waitlist: 'disconnected',
@@ -104,7 +104,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   // Helper to update connection status
-  const updateConnectionStatus = useCallback((
+      const updateConnectionStatus = useCallback((
     service: keyof Omit<RealtimeConnectionState, 'overall'>, 
     status: ConnectionStatus
   ) => {
@@ -130,11 +130,11 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
   }, []);
 
   // Get date range for selected date (timezone-aware with safe fallback)
-  const dateRange = useMemo(() => {
+      const dateRange = useMemo(() => {
     const targetDateString = selectedDate || new Date().toISOString().split('T')[0];
     
     // Simple UTC-based date range (safe default)
-    const targetDate = new Date(targetDateString + 'T00:00:00.000Z');
+      const targetDate = new Date(targetDateString + 'T00:00:00.000Z');
     const startOfDay = new Date(targetDate);
     startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(targetDate);
@@ -148,7 +148,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
   }, [selectedDate]);
 
   // Enhanced bookings query with proper error handling
-  const {
+      const {
     data: bookings = [],
     isLoading: bookingsLoading,
     error: bookingsError,
@@ -159,7 +159,8 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
         throw new Error("Tenant ID is required for fetching bookings");
       }
 
-      // Validate UUID format before making database call      if (!isValidUUID(tenantId)) {
+      // Validate UUID format before making database call     
+      if (!isValidUUID(tenantId)) {
         console.warn("Invalid tenant ID format, skipping bookings query:", tenantId);
         return [];
       }
@@ -193,7 +194,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
   });
 
   // Enhanced tables query
-  const {
+      const {
     data: tables = [],
     isLoading: tablesLoading,
     error: tablesError,
@@ -248,7 +249,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
   });
 
   // Enhanced waitlist query with graceful error handling for missing table
-  const {
+      const {
     data: waitlist = [],
     isLoading: waitlistLoading,
     error: waitlistError,
@@ -264,8 +265,9 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
       }
 
       try {
-        // First check if the table exists by attempting a minimal query
-        const { data, error } = await supabase
+        // First check
+      if (the table exists by attempting a minimal query
+      const { data, error } = await supabase
           .from("bookings") // Use existing bookings table as waitlist proxy for now
           .select("id, guest_name, party_size, booking_time, created_at, status")
           .eq("tenant_id", tenantId)
@@ -279,7 +281,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
         }
 
         // Transform booking data to waitlist format as fallback
-        return (data || []).map((booking: any): WaitlistEntry => {
+      return (data || []).map((booking: any): WaitlistEntry => {
           const now = new Date();
           const bookingTime = new Date(booking.booking_time);
           const diffInMinutes = Math.max(0, Math.floor((bookingTime.getTime() - now.getTime()) / (1000 * 60)));
@@ -310,19 +312,21 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
   });
 
   // Calculate real-time metrics based on actual data
-  const metrics = useMemo((): CommandCenterMetrics => {
+      const metrics = useMemo((): CommandCenterMetrics => {
     const activeBookings = bookings.filter(
       (b) => ["confirmed", "seated"].includes(b.status)
     ).length;
 
     // Calculate real table occupancy based on actual bookings and table status
-    const occupiedTables = tables.filter(table => {
-      // Check if table has an active booking
+      const occupiedTables = tables.filter(table => {
+      // Check
+      if (table has an active booking
       const hasActiveBooking = bookings.some(booking => 
         booking.table_id === table.id && 
         ["confirmed", "seated"].includes(booking.status)
       );
-      // Or check if table status indicates it's occupied
+      // Or check
+      if (table status indicates it's occupied
       return hasActiveBooking || table.status === "occupied";
     }).length;
     
@@ -342,7 +346,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
 
     const completedBookings = bookings.filter(b => b.status === "completed");
     // Better revenue calculation based on party size
-    const totalRevenue = completedBookings.reduce((sum, booking) => {
+      const totalRevenue = completedBookings.reduce((sum, booking) => {
       return sum + (booking.party_size * 35); // $35 average per person
     }, 0);
 
@@ -370,7 +374,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
     if (!tenantId) return;
 
     // Skip real-time subscriptions for fallback tenant to prevent errors
-    if (tenantId === '99e1607d-da99-4f72-9182-a417072eb629') {
+      if (tenantId === '99e1607d-da99-4f72-9182-a417072eb629') {
       handleFallbackUsage('useRealtimeCommandCenter', 'polling mode', { tenantId });
       setConnectionStatus({
         bookings: 'disconnected',
@@ -381,8 +385,8 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
       return;
     }
 
-    // Skip subscriptions if tenant ID is not a valid UUID
-    if (!isValidUUID(tenantId)) {
+    // Skip subscriptions
+      if (!isValidUUID(tenantId)) {
       handleFallbackUsage('useRealtimeCommandCenter', 'polling mode (invalid UUID)', { 
         tenantId: tenantId?.substring(0, 8) + '...' 
       });
@@ -395,8 +399,8 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
       return;
     }
 
-    // Skip real-time subscriptions in development mode if flag is set
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_DISABLE_REALTIME === 'true') {
+    // Skip real-time subscriptions in development mode
+      if (import.meta.env.MODE === 'development' && import.meta.env.VITE_DISABLE_REALTIME === 'true') {
       logger.info("Real-time subscriptions disabled in development mode", {
         component: 'useRealtimeCommandCenter'
       });
@@ -452,7 +456,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
     const setupSubscriptions = async () => {
       try {
         // Check authentication status first
-        const { data: { session }, error: authError } = await supabase.auth.getSession();
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
         
         if (authError) {
           console.warn("🔐 Auth check failed:", authError.message);
@@ -471,7 +475,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
         }
 
         // Bookings subscription with enhanced configuration
-        const bookingHandlers = createSubscriptionHandler('bookings', ["command-center", "bookings", tenantId, dateRange.start]);
+      const bookingHandlers = createSubscriptionHandler('bookings', ["command-center", "bookings", tenantId, dateRange.start]);
         bookingsChannel = supabase
           .channel(`command-center-bookings-${tenantId}`, {
             config: {
@@ -503,7 +507,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
           });
 
         // Tables subscription with enhanced configuration
-        const tableHandlers = createSubscriptionHandler('tables', ["command-center", "tables", tenantId]);
+      const tableHandlers = createSubscriptionHandler('tables', ["command-center", "tables", tenantId]);
         tablesChannel = supabase
           .channel(`command-center-tables-${tenantId}`, {
             config: {
@@ -535,7 +539,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
           });
 
         // Waitlist subscription (using bookings as fallback)
-        const waitlistHandlers = createSubscriptionHandler('waitlist', ["command-center", "waitlist", tenantId]);
+      const waitlistHandlers = createSubscriptionHandler('waitlist', ["command-center", "waitlist", tenantId]);
         waitlistChannel = supabase
           .channel(`command-center-waitlist-${tenantId}`, {
             config: {
@@ -581,7 +585,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
     setupSubscriptions();
 
     // Enhanced cleanup function with better error handling
-    return () => {
+      return () => {
       logger.info("Cleaning up Command Center subscriptions");
       
       const cleanupChannel = (channel: RealtimeChannel | undefined, name: string) => {
@@ -615,11 +619,10 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
 
     let intervalId: NodeJS.Timeout;
     let isComponentMounted = true; // FIX: Track component mount state
-
-    const setupPolling = () => {
+      const setupPolling = () => {
       intervalId = setInterval(() => {
-        // FIX: Check if component is still mounted before executing
-        if (!isComponentMounted) return;
+        // FIX: Check
+      if (!isComponentMounted) return;
         
         const { overall } = connectionStatus;
         
@@ -657,13 +660,13 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
   }, [tenantId, queryClient, connectionStatus.overall]);
 
   // Memoized refresh function to prevent unnecessary re-renders
-  const refreshData = useCallback(() => {
+      const refreshData = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["command-center"] });
     setLastUpdate(new Date());
   }, [queryClient]);
 
   // Memoized filtered data to prevent unnecessary recalculations
-  const todaysBookings = useMemo(() => bookings, [bookings]);
+      const todaysBookings = useMemo(() => bookings, [bookings]);
   
   const activeBookings = useMemo(() => 
     bookings.filter(b => ["confirmed", "seated"].includes(b.status))
@@ -682,14 +685,13 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
   }, [bookings]);
 
   // Computed loading and error states
-  const isLoading = bookingsLoading || tablesLoading || waitlistLoading;
+      const isLoading = bookingsLoading || tablesLoading || waitlistLoading;
   const error = bookingsError || tablesError || waitlistError;
   const isConnected = connectionStatus.overall === 'connected';
   const allConnected = [connectionStatus.bookings, connectionStatus.tables].every(status => 
     status === 'connected'
   ); // Don't require waitlist to be connected as it may not exist
-
-  return {
+      return {
     // Data
     bookings,
     tables,
@@ -723,4 +725,7 @@ export type {
   ConnectionStatus,
   RealtimeConnectionState
 };
+
+
+
 

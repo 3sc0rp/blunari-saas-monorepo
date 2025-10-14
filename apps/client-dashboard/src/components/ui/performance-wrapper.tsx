@@ -38,7 +38,7 @@ class ErrorBoundary extends Component<
 }
 
 // Error fallback component
-const ErrorFallback: React.FC<{
+      const ErrorFallback: React.FC<{
   error: Error;
   resetErrorBoundary: () => void;
 }> = ({ error, resetErrorBoundary }) => (
@@ -163,3 +163,4 @@ export const MemoizedCard = memo<{
 }>(({ children, className }) => <div className={className}>{children}</div>);
 
 MemoizedCard.displayName = "MemoizedCard";
+
