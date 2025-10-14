@@ -149,16 +149,12 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
   useEffect(() => {
     if (!autoSave || !hasUnsavedChanges) return;
 
-    const timeout = setTimeout(() => {
-      console.log('[Mock] Auto-saving widget configuration...');
-      setIsSaving(true);
+    const timeout = setTimeout(() => {      setIsSaving(true);
       
       setTimeout(() => {
         setIsSaving(false);
         setLastSaved(new Date());
-        setHasUnsavedChanges(false);
-        console.log('[Mock] Auto-save completed');
-      }, 1000);
+        setHasUnsavedChanges(false);      }, 1000);
     }, autoSaveInterval);
 
     return () => clearTimeout(timeout);
@@ -178,10 +174,7 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
     type: 'booking' | 'catering',
     config: any,
     options: { skipAutoSave?: boolean } = {}
-  ) => {
-    console.log(`[Mock] Saving ${type} widget config:`, config);
-    
-    if (simulateErrors && Math.random() < 0.1) {
+  ) => {    if (simulateErrors && Math.random() < 0.1) {
       setError('Mock error: Network timeout');
       return { success: false, error: 'Network timeout' };
     }
@@ -216,10 +209,7 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
             metadata: { action: 'config_updated' }
           }]);
         }
-      }
-
-      console.log(`[Mock] Successfully saved ${type} widget config`);
-      return { success: true, data: { id: `mock-${type}-widget-1`, config } };
+      }      return { success: true, data: { id: `mock-${type}-widget-1`, config } };
       
     } catch (error) {
       const errorMessage = 'Mock save failed';
@@ -230,15 +220,10 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
     }
   }, [simulateErrors, simulateNetworkDelay, enableAnalytics, getWidgetByType]);
 
-  const markConfigChanged = useCallback((type: 'booking' | 'catering', config: any) => {
-    console.log(`[Mock] Configuration changed for ${type} widget`);
-    setHasUnsavedChanges(true);
+  const markConfigChanged = useCallback((type: 'booking' | 'catering', config: any) => {    setHasUnsavedChanges(true);
   }, []);
 
-  const toggleWidgetActive = useCallback(async (type: 'booking' | 'catering') => {
-    console.log(`[Mock] Toggling ${type} widget active state`);
-    
-    await simulateDelay();
+  const toggleWidgetActive = useCallback(async (type: 'booking' | 'catering') => {    await simulateDelay();
     
     setWidgets(prev => prev.map(w => 
       w.widget_type === type 
@@ -262,9 +247,7 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
     };
   }, [analytics]);
 
-  const refetchWidgets = useCallback(async () => {
-    console.log('[Mock] Refetching widgets...');
-    setLoading(true);
+  const refetchWidgets = useCallback(async () => {    setLoading(true);
     await simulateDelay();
     setLoading(false);
   }, []);
@@ -344,3 +327,4 @@ export function useWidgetManagementComparison(enableMockMode: boolean = false) {
   // return realHook;
   return mockHook; // For now, always return mock until database is ready
 }
+

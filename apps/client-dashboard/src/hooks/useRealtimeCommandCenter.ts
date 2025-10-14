@@ -159,9 +159,7 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
         throw new Error("Tenant ID is required for fetching bookings");
       }
 
-      // Validate UUID format before making database call
-      console.log('[useRealtimeCommandCenter] Bookings query - Tenant ID:', tenantId);
-      if (!isValidUUID(tenantId)) {
+      // Validate UUID format before making database call      if (!isValidUUID(tenantId)) {
         console.warn("Invalid tenant ID format, skipping bookings query:", tenantId);
         return [];
       }
@@ -421,15 +419,10 @@ export const useRealtimeCommandCenter = (options: UseRealtimeCommandCenterOption
       service: keyof Omit<RealtimeConnectionState, 'overall'>,
       queryKey: string[]
     ) => ({
-      onUpdate: (payload: any) => {
-        console.log(`� ${service} update received:`, payload.eventType);
-        queryClient.invalidateQueries({ queryKey });
+      onUpdate: (payload: any) => {        queryClient.invalidateQueries({ queryKey });
         setLastUpdate(new Date());
       },
-      onStatus: (status: string) => {
-        console.log(`� ${service} subscription status:`, status);
-        
-        let connectionState: ConnectionStatus = 'disconnected';
+      onStatus: (status: string) => {        let connectionState: ConnectionStatus = 'disconnected';
         switch (status) {
           case 'SUBSCRIBED':
             connectionState = 'connected';
@@ -730,3 +723,4 @@ export type {
   ConnectionStatus,
   RealtimeConnectionState
 };
+

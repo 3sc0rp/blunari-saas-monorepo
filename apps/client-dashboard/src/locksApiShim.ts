@@ -34,9 +34,7 @@ if (isLocksAPIUnavailable) {
       configurable: true,
       enumerable: false
     });
-  }
-  
-  console.info('[Blunari] Locks API disabled - running in restricted context');
-}
+  }}
 
 export {};
+

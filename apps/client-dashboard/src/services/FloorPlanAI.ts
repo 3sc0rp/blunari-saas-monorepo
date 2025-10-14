@@ -26,9 +26,7 @@ export class FloorPlanAI {
   static async initialize() {
     if (this.isInitialized) return;
 
-    try {
-      console.log("AI Floor Plan Analysis initialized");
-      this.isInitialized = true;
+    try {      this.isInitialized = true;
       this.detector = null;
     } catch (error) {
       console.warn("Failed to initialize AI model:", error);
@@ -42,10 +40,7 @@ export class FloorPlanAI {
   ): Promise<FloorPlanAnalysis> {
     const startTime = Date.now();
 
-    try {
-      console.log("Starting floor plan analysis");
-
-      if (!imageElement.complete || imageElement.naturalHeight === 0) {
+    try {      if (!imageElement.complete || imageElement.naturalHeight === 0) {
         throw new Error("Image not loaded properly");
       }
 
@@ -81,17 +76,12 @@ export class FloorPlanAI {
   static async enhanceWithGPTVision(
     imageElement: HTMLImageElement,
     basicAnalysis: FloorPlanAnalysis
-  ): Promise<FloorPlanAnalysis> {
-    console.log("GPT Vision enhancement disabled");
-    return basicAnalysis;
+  ): Promise<FloorPlanAnalysis> {    return basicAnalysis;
   }
 
   static async saveAnalysis(analysis: FloorPlanAnalysis, tenantId: string) {
     try {
-      // TODO: Add floor_plan_analyses table to database schema
-      console.log("Would save floor plan analysis:", { analysis, tenantId });
-      
-      // Mock successful save
+      // TODO: Add floor_plan_analyses table to database schema      // Mock successful save
       return { success: true, id: `analysis_${Date.now()}` };
     } catch (error) {
       console.error("Failed to save floor plan analysis:", error);
@@ -99,3 +89,4 @@ export class FloorPlanAI {
     }
   }
 }
+

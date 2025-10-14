@@ -180,9 +180,7 @@ class EnterpriseLogger {
       'color: #6B7280; font-size: 0.8em;'
     );
     
-    if (Object.keys(entry.context).length > 0) {
-      console.log('📋 Context:', entry.context);
-    }
+    if (Object.keys(entry.context).length > 0) {    }
     
     if (entry.error) {
       if (!this.inErrorPrint) {
@@ -198,19 +196,11 @@ class EnterpriseLogger {
           this.inErrorPrint = false;
         }
       } else {
-        // Fallback minimal output to prevent infinite recursion
-        console.log('Error (suppressed recursive logging):', entry.error.message);
-      }
+        // Fallback minimal output to prevent infinite recursion      }
     }
     
     if (entry.context.performance) {
-      const perf = entry.context.performance;
-      console.log(
-        `⚡ Performance: ${perf.duration?.toFixed(2)}ms, Memory: ${
-          perf.memoryUsage ? `${(perf.memoryUsage / 1024 / 1024).toFixed(2)}MB` : 'N/A'
-        }`
-      );
-    }
+      const perf = entry.context.performance;    }
     
     console.groupEnd();
   }

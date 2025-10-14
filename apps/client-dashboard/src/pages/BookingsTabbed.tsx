@@ -40,16 +40,7 @@ export default function BookingsTabbed() {
   const { tenant, isLoading: tenantLoading } = useTenant();
   
   // Log tenant information for debugging analytics
-  if (import.meta.env.DEV) {
-    console.log('📍 BookingsTabbed - Tenant Info:', {
-      tenantId: tenant?.id,
-      tenantSlug: tenant?.slug,
-      tenantName: tenant?.name,
-      tenantLoading,
-      hasTenant: !!tenant,
-      timestamp: new Date().toISOString()
-    });
-  }
+  if (import.meta.env.DEV) {  }
 
   const {
     bookings,
@@ -651,4 +642,5 @@ export default function BookingsTabbed() {
     </div>
   );
 }
+
 

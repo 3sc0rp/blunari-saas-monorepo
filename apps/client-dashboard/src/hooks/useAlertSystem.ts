@@ -34,11 +34,7 @@ export const useAlertSystem = (tenantId?: string) => {
         time: "Now",
         action: {
           label: "View Schedule",
-          handler: () => console.log("Navigate to schedule"),
-        },
-        dismissible: true,
-      });
-    }
+          handler: () =>    }
 
     // Check for long table occupancy
     const longOccupiedTables = bookings.filter((b) => {
@@ -57,11 +53,7 @@ export const useAlertSystem = (tenantId?: string) => {
         time: "15 minutes ago",
         action: {
           label: "Check Table",
-          handler: () => console.log(`Check table ${booking.table_id}`),
-        },
-        dismissible: true,
-      });
-    });
+          handler: () =>    });
 
     // Check for upcoming peak times
     const upcomingBookings = bookings.filter((b) => {
@@ -83,11 +75,7 @@ export const useAlertSystem = (tenantId?: string) => {
         time: "Now",
         action: {
           label: "Staff Alert",
-          handler: () => console.log("Send staff notification"),
-        },
-        dismissible: true,
-      });
-    }
+          handler: () =>    }
 
     // Success alerts for good performance
     const completedToday = bookings.filter(
@@ -123,3 +111,4 @@ export const useAlertSystem = (tenantId?: string) => {
     criticalAlertsCount: alerts.filter((a) => a.type === "critical").length,
   };
 };
+

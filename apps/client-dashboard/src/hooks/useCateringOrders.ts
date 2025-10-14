@@ -85,11 +85,7 @@ export const useCateringOrders = (tenantId?: string) => {
             error.code === "42P01" ||
             error.message?.includes("relation") ||
             error.message?.includes("does not exist")
-          ) {
-            console.info(
-              "Catering orders table not found. Please run the database migration.",
-            );
-            return [];
+          ) {            return [];
           }
           throw error;
         }
@@ -238,9 +234,7 @@ export const useCateringOrders = (tenantId?: string) => {
           table: "catering_orders",
           filter: `tenant_id=eq.${tenantId}`,
         },
-        (payload) => {
-          console.log("Catering order change:", payload);
-          queryClient.invalidateQueries({
+        (payload) => {          queryClient.invalidateQueries({
             queryKey: ["catering-orders", tenantId],
           });
         },
@@ -298,3 +292,4 @@ export const useCateringOrders = (tenantId?: string) => {
     getUpcomingOrders,
   };
 };
+

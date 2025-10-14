@@ -27,9 +27,7 @@ const LandingMiddleware: React.FC<{ children: React.ReactNode }> = ({ children }
 
     // This middleware now primarily handles the /dashboard/home route
     // The main /dashboard route redirects directly to Command Center
-    if (isDashboardHome) {
-      console.log("📍 User accessing traditional dashboard home");
-    }
+    if (isDashboardHome) {    }
   }, [mode, ready, user, tenant, isDashboardHome]);
 
   // Show loading state while mode context initializes
@@ -48,3 +46,4 @@ const LandingMiddleware: React.FC<{ children: React.ReactNode }> = ({ children }
 };
 
 export default LandingMiddleware;
+

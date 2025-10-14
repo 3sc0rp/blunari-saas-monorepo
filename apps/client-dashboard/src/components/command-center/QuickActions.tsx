@@ -74,37 +74,27 @@ const QuickActions: React.FC = () => {
   function handleNewBooking() {
     setActiveAction('new-booking');
     // TODO: Open new booking modal/drawer
-    setTimeout(() => setActiveAction(null), 1000);
-    console.log('Opening new booking form...');
-  }
+    setTimeout(() => setActiveAction(null), 1000);  }
 
   function handleNewWalkIn() {
     setActiveAction('new-walkin');
     // TODO: Open walk-in guest form
-    setTimeout(() => setActiveAction(null), 1000);
-    console.log('Opening walk-in form...');
-  }
+    setTimeout(() => setActiveAction(null), 1000);  }
 
   function handleBlockTable() {
     setActiveAction('block-table');
     // TODO: Open table blocking interface
-    setTimeout(() => setActiveAction(null), 1000);
-    console.log('Opening table blocking interface...');
-  }
+    setTimeout(() => setActiveAction(null), 1000);  }
 
   function handleExportData() {
     setActiveAction('export-data');
     // TODO: Trigger data export
-    setTimeout(() => setActiveAction(null), 1000);
-    console.log('Exporting data...');
-  }
+    setTimeout(() => setActiveAction(null), 1000);  }
 
   // Command palette handler
   const handleCommandPalette = useCallback(() => {
     setIsCommandPaletteOpen(true);
-    // TODO: Implement command palette
-    console.log('Opening command palette...');
-  }, []);
+    // TODO: Implement command palette  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -277,3 +267,4 @@ const QuickActions: React.FC = () => {
 };
 
 export default QuickActions;
+

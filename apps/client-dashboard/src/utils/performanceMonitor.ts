@@ -210,11 +210,7 @@ class PerformanceMonitor {
       
       // Only log if there are significant insights
       if (insights.recommendations.length > 0) {
-        console.group('📊 Performance Insights');
-        console.log('Web Vitals:', insights.webVitals);
-        console.log('API Performance:', insights.apiPerformance);
-        console.log('Recommendations:', insights.recommendations);
-        console.groupEnd();
+        console.group('📊 Performance Insights');        console.groupEnd();
       }
     }, 5 * 60 * 1000); // Report every 5 minutes
   }
@@ -256,3 +252,4 @@ export const trackUserAction = (action: string, metadata?: Record<string, unknow
 };
 
 export default performanceMonitor;
+

@@ -171,17 +171,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
       return reservation;
     },
     onSuccess: async (reservation) => {
-      if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-        console.log('[SmartBookingCreation] Reservation created raw response:', reservation);
-        console.log('[SmartBookingCreation] Active tenantId:', tenantId);
-        console.log('[SmartBookingCreation] Form data used:', {
-          email: formData.email,
-          date: formData.date,
-          time: formData.time,
-          partySize: formData.partySize,
-          customerName: formData.customerName
-        });
-      }
+      if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {      }
       setCreatedReservation(reservation);
       setCurrentStep(5);
       // Force-refresh key booking views for the real tenant only
@@ -221,9 +211,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
               
               verificationAttempts.push({ method: 'id_lookup', error: confError, count: confCheck?.length || 0 });
               if (confCheck && confCheck.length > 0) {
-                found = true;
-                console.log('[SmartBookingCreation] Verification successful via reservation ID:', confCheck[0]);
-              }
+                found = true;              }
             } catch (e) {
               verificationAttempts.push({ method: 'id_lookup', error: e, count: 0 });
             }
@@ -252,9 +240,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
                 });
                 
                 if (matchedBooking) {
-                  found = true;
-                  console.log('[SmartBookingCreation] Verification successful via email/time match:', matchedBooking);
-                }
+                  found = true;                }
               }
             } catch (e) {
               verificationAttempts.push({ method: 'email_time', error: e, count: 0 });
@@ -275,25 +261,14 @@ export const useSmartBookingCreation = (tenantId?: string) => {
               verificationAttempts.push({ method: 'recent', error: recentError, count: recentCheck?.length || 0 });
               
               if (recentCheck && recentCheck.length > 0) {
-                found = true; // If any booking was created recently, consider it successful
-                console.log('[SmartBookingCreation] Verification successful via recent bookings:', recentCheck[0]);
-              }
+                found = true; // If any booking was created recently, consider it successful              }
             } catch (e) {
               verificationAttempts.push({ method: 'recent', error: e, count: 0 });
             }
           }
           
           // Log verification details for debugging
-          if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-            console.log('[SmartBookingCreation] Verification attempts:', verificationAttempts);
-            console.log('[SmartBookingCreation] Expected booking details:', {
-              email: formData.email,
-              date: formData.date,
-              time: formData.time,
-              expectedDateTime: `${formData.date}T${formData.time}`,
-              reservationId: reservation.reservation_id || conf
-            });
-          }
+          if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {          }
           
           if (!found) {
             console.error('[SmartBookingCreation] Verification failed after all attempts');
@@ -380,3 +355,4 @@ export const useSmartBookingCreation = (tenantId?: string) => {
     isAuthenticated: !!authState.session,
   };
 };
+

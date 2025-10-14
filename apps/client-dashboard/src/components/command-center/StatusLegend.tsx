@@ -33,10 +33,7 @@ export function StatusLegend({ counts, className }: StatusLegendProps) {
   const finalCounts = { ...defaultCounts, ...counts };
 
   // Debug logging to help with troubleshooting
-  React.useEffect(() => {
-    console.log('StatusLegend: Received counts:', counts);
-    console.log('StatusLegend: Final counts:', finalCounts);
-  }, [counts, finalCounts]);
+  React.useEffect(() => {  }, [counts, finalCounts]);
 
   // Use final counts (real data)
 
@@ -152,3 +149,4 @@ export function StatusLegend({ counts, className }: StatusLegendProps) {
     </div>
   );
 }
+

@@ -101,19 +101,13 @@ const Waitlist: React.FC = () => {
   };
 
   const handleSeatGuest = (entryId: string) => {
-    // TODO: Implement seat guest functionality
-    console.log('Seat guest:', entryId);
-  };
+    // TODO: Implement seat guest functionality  };
 
   const handleCallGuest = (entryId: string) => {
-    // TODO: Implement call guest functionality  
-    console.log('Call guest:', entryId);
-  };
+    // TODO: Implement call guest functionality  };
 
   const handleCancelWait = (entryId: string) => {
-    // TODO: Implement cancel wait functionality
-    console.log('Cancel wait:', entryId);
-  };
+    // TODO: Implement cancel wait functionality  };
 
   if (error) {
     return (
@@ -360,3 +354,4 @@ const Waitlist: React.FC = () => {
 };
 
 export default Waitlist;
+

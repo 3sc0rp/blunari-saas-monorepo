@@ -48,9 +48,7 @@ const playNotificationSound = (type: 'new_reservation' | 'general' = 'general') 
       oscillator.stop(audioContext.currentTime + index * 0.3 + 0.25);
     });
   } catch (error) {
-    // Fallback to system notification sound or silent fail
-    console.log('Notification sound unavailable:', error);
-  }
+    // Fallback to system notification sound or silent fail  }
 };
 
 export function useTenantNotifications() {
@@ -251,5 +249,6 @@ export function useTenantNotifications() {
     playNotificationSound, // Expose for manual testing
   };
 }
+
 
 

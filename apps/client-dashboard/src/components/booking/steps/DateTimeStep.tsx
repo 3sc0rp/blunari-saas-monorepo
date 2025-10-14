@@ -107,10 +107,7 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
         ...result,
         slots: clampClient(result.slots),
         alternatives: clampClient(result.alternatives as any),
-      } as AvailabilityResponse;
-
-      console.log("Availability (clamped):", clamped);
-      setAvailability(clamped);
+      } as AvailabilityResponse;      setAvailability(clamped);
 
       // Store deposit policy from API response for later use
       if ((result as any)?.deposit_policy) {
@@ -398,3 +395,4 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
 };
 
 export default DateTimeStep;
+

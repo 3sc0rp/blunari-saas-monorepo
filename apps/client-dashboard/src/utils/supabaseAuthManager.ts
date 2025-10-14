@@ -112,9 +112,7 @@ class SupabaseAuthManager {
     
     // Skip noisy edge function calls that aren't critical for data display
     if (import.meta.env.MODE === 'development' && 
-        ['tenant', 'get-kpis', 'list-tables', 'list-reservations'].includes(functionName)) {
-      console.log(`[SupabaseAuthManager] Skipping ${functionName} in dev mode`);
-      return {
+        ['tenant', 'get-kpis', 'list-tables', 'list-reservations'].includes(functionName)) {      return {
         data: null,
         error: { message: `${functionName} disabled in dev`, code: 'DEV_SKIP', status: 401 }
       };
@@ -353,3 +351,4 @@ export async function callEdgeFunction(functionName: string, body?: any, options
 }
 
 export default authManager;
+

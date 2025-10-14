@@ -251,9 +251,7 @@ const FloorMap: React.FC = () => {
           }
           case 'Enter':
             if (selectedTable) {
-              // TODO: Open details drawer
-              console.log('Open details for table:', selectedTable);
-            }
+              // TODO: Open details drawer            }
             break;
           case 'Escape':
             setSelectedTable(null);
@@ -541,3 +539,4 @@ const FloorMap: React.FC = () => {
 };
 
 export default FloorMap;
+

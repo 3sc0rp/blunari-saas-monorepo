@@ -221,22 +221,7 @@ export function useWidgetAnalytics({
   rateLimitRemaining: number;
   rateLimitResetTime: number;
 } {
-  // Log hook initialization with tenant info
-  console.log('🔧 useWidgetAnalytics initialized:', {
-    tenantId,
-    tenantIdType: typeof tenantId,
-    tenantIdValue: tenantId,
-    tenantSlug,
-    tenantSlugType: typeof tenantSlug,
-    tenantSlugValue: tenantSlug,
-    widgetType,
-    refreshInterval,
-    forceEdge,
-    hasValidTenantId: Boolean(tenantId && tenantId.match(/^[0-9a-f-]{36}$/i)),
-    timestamp: new Date().toISOString()
-  });
-
-  const [state, setState] = useState<AnalyticsState>({
+  // Log hook initialization with tenant info  const [state, setState] = useState<AnalyticsState>({
     data: null,
     loading: false,
     error: null,
@@ -450,17 +435,7 @@ export function useWidgetAnalytics({
             debug('⏳ Joining in-flight Edge analytics fetch for key:', cacheKey);
           }
           const realData = await inflight;
-          analytics = realData;
-          
-          console.log('💾 Setting analytics data in state:', {
-            hasData: !!realData,
-            totalViews: realData?.totalViews,
-            totalBookings: realData?.totalBookings,
-            allKeys: realData ? Object.keys(realData) : [],
-            fullData: realData
-          });
-          
-          // Cache successful results
+          analytics = realData;          // Cache successful results
           analyticsCache.set(cacheKey, realData);
           
           setState({
@@ -633,9 +608,7 @@ export function useWidgetAnalytics({
       }
     }, refreshInterval);
 
-    // Set up real-time subscription to widget events
-    console.log('📡 Setting up real-time subscription for widget events...');
-    const eventsChannel = supabase
+    // Set up real-time subscription to widget events    const eventsChannel = supabase
       .channel(`widget-events-${tenantId}-${widgetType}`)
       .on(
         'postgres_changes',
@@ -645,23 +618,17 @@ export function useWidgetAnalytics({
           table: 'widget_events',
           filter: `tenant_id=eq.${tenantId}`
         },
-        (payload) => {
-          console.log('🔔 Real-time widget event received:', payload);
-          // Refresh analytics when new event comes in
+        (payload) => {          // Refresh analytics when new event comes in
           if (!state.loading) {
             fetchAnalytics().catch(console.error);
           }
         }
       )
-      .subscribe((status) => {
-        console.log('📡 Real-time subscription status:', status);
-      });
+      .subscribe((status) => {      });
 
     // Refresh when tab becomes visible
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && !state.loading) {
-        console.log('👁️ Tab visible - refreshing analytics...');
-        fetchAnalytics().catch(console.error);
+      if (document.visibilityState === 'visible' && !state.loading) {        fetchAnalytics().catch(console.error);
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -709,32 +676,7 @@ async function fetchRealWidgetAnalytics(
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(tenantId)) {
     throw new Error(`Invalid tenantId format: "${tenantId}" is not a valid UUID`);
-  }
-  
-  console.log('Calling real analytics Edge Function...');
-  console.log('Request details:', { tenantId, widgetType, timeRange });
-  console.log('Access token info:', {
-    present: !!accessToken,
-    length: accessToken?.length || 0,
-    startsWithEyJ: accessToken?.startsWith('eyJ') || false
-  });
-  
-  try {
-    console.log('Calling real analytics Edge Function...');
-    console.log('Request details:', { 
-      tenantId: tenantId?.substring(0, 8) + '...', 
-      widgetType, 
-      timeRange 
-    });
-    console.log('Access token info:', {
-      present: !!accessToken,
-      length: accessToken?.length || 0,
-      startsWithEyJ: accessToken?.startsWith('eyJ') || false
-    });
-    
-    // Call the widget-analytics Edge Function with real data queries
-    console.log('📡 Invoking Edge Function with body:', { tenantId, widgetType, timeRange });
-    // Build headers object - always include Authorization (use anon key if no user token)
+  }  try {    // Call the widget-analytics Edge Function with real data queries    // Build headers object - always include Authorization (use anon key if no user token)
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'x-correlation-id': correlationId || ''
@@ -751,50 +693,14 @@ async function fetchRealWidgetAnalytics(
       if (anonKey) {
         requestHeaders['Authorization'] = `Bearer ${anonKey}`;
       }
-    }
-
-    console.log('📡 Full request details:', {
-      tenantId,
-      tenantIdType: typeof tenantId,
-      tenantIdLength: tenantId?.length,
-      tenantIdValue: tenantId,
-      widgetType,
-      widgetTypeType: typeof widgetType,
-      timeRange,
-      timeRangeType: typeof timeRange,
-      hasAuthHeader: Boolean(requestHeaders['Authorization']),
-      authHeaderLength: requestHeaders['Authorization']?.length
-    });
-
-    const requestBody = {
+    }    const requestBody = {
       tenantId,
       widgetType,
       timeRange,
       version: '2.0'
-    };
-
-    console.log('🚀 About to call Edge Function with:', {
-      tenantId,
-      widgetType,
-      timeRange,
-      headers: Object.keys(requestHeaders),
-      hasAuthHeader: Boolean(requestHeaders['Authorization']),
-      correlationId,
-      tenantIdLength: tenantId?.length,
-      tenantIdContainsDash: tenantId?.includes('-'),
-      tenantIdContainsUnderscore: tenantId?.includes('_')
-    });
-    
-    console.log('📦 Request body:', JSON.stringify(requestBody));
-    console.log('📋 Request headers:', JSON.stringify(Object.keys(requestHeaders)));
-
-    // BYPASS SUPABASE SDK - Use direct fetch to avoid SDK body serialization issues
+    };    // BYPASS SUPABASE SDK - Use direct fetch to avoid SDK body serialization issues
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const fetchUrl = `${supabaseUrl}/functions/v1/widget-analytics`;
-    
-    console.log('🌐 Direct fetch to:', fetchUrl);
-    
-    const fetchResponse = await fetch(fetchUrl, {
+    const fetchUrl = `${supabaseUrl}/functions/v1/widget-analytics`;    const fetchResponse = await fetch(fetchUrl, {
       method: 'POST',
       headers: {
         ...requestHeaders,
@@ -807,25 +713,7 @@ async function fetchRealWidgetAnalytics(
     const response = {
       data: fetchResponse.ok ? responseData : null,
       error: fetchResponse.ok ? null : new Error(responseData.error || responseData.message || 'Request failed')
-    };
-
-    console.log('Edge Function response:', {
-      error: response.error,
-      data: response.data ? 'received' : 'null',
-      success: response.data?.success,
-      authMethod: response.data?.meta?.authMethod
-    });
-    
-    console.log('📊 Analytics data received:', {
-      hasData: !!response.data,
-      success: response.data?.success,
-      dataKeys: response.data?.data ? Object.keys(response.data.data) : [],
-      totalViews: response.data?.data?.totalViews,
-      totalBookings: response.data?.data?.totalBookings,
-      fullData: response.data?.data
-    });
-
-    if (response.error) {
+    };    if (response.error) {
       const errorStatus = (response.error as any)?.context?.response?.status || (response.error as any)?.status;
       console.error('Edge Function error details:', {
         name: response.error.name,
@@ -860,10 +748,7 @@ async function fetchRealWidgetAnalytics(
       console.error('Real analytics function error:', response.error, 'cid:', correlationId);
       
       // If it's a 400 error, try with anon key authentication
-      if (response.error.message?.includes('400') || response.error.message?.includes('Bad Request')) {
-        console.log('Retrying Edge Function with anon key authentication...');
-        
-        try {
+      if (response.error.message?.includes('400') || response.error.message?.includes('Bad Request')) {        try {
           const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
           const retryHeaders: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -893,9 +778,7 @@ async function fetchRealWidgetAnalytics(
             error: retryFetchResponse.ok ? null : new Error(retryResponseData.error || 'Retry failed')
           };
           
-          if (!retryResponse.error && retryResponse.data?.success) {
-            console.log('✅ Retry without auth succeeded!');
-            return { data: retryResponse.data.data, meta: retryResponse.data.meta };
+          if (!retryResponse.error && retryResponse.data?.success) {            return { data: retryResponse.data.data, meta: retryResponse.data.meta };
           }
         } catch (retryError) {
           console.warn('Retry without auth also failed:', retryError);
@@ -920,9 +803,7 @@ async function fetchRealWidgetAnalytics(
       analyticsErrorReporter.reportError(edgeError);
       
       // Check if we should attempt database fallback
-      if (response.error.message?.includes('400')) {
-        console.log('Bad request - switching to empty data');
-        return { 
+      if (response.error.message?.includes('400')) {        return { 
           data: {
             totalViews: 0,
             totalClicks: 0,
@@ -941,9 +822,7 @@ async function fetchRealWidgetAnalytics(
         };
       }
       
-      // For other errors, try database fallback
-      console.log('Attempting direct database fallback due to Edge Function error...');
-      throw Object.assign(new Error('Edge function error'), { code: response.error.name || 'EDGE_ERROR' });
+      // For other errors, try database fallback      throw Object.assign(new Error('Edge function error'), { code: response.error.name || 'EDGE_ERROR' });
     }
 
     // Check if Edge Function returned success
@@ -966,11 +845,7 @@ async function fetchRealWidgetAnalytics(
           time_range: timeRange
         }
       };
-    }
-
-    console.log('Real analytics data received successfully from Edge Function');
-    console.log('Auth method used:', response.data.meta?.authMethod || 'unknown');
-  return { data: response.data.data, meta: response.data.meta };
+    }  return { data: response.data.data, meta: response.data.meta };
     
   } catch (err) {
     console.error('Edge Function request failed:', err, 'cid:', correlationId);
@@ -985,11 +860,7 @@ async function fetchAnalyticsDirectly(
   tenantId: string,
   widgetType: WidgetType,
   timeRange: AnalyticsTimeRange = '7d'
-): Promise<WidgetAnalyticsData> {
-  
-  console.log('Fetching analytics directly from database...');
-  
-  // Calculate date range
+): Promise<WidgetAnalyticsData> {  // Calculate date range
   const now = new Date();
   const daysBack = timeRange === '30d' ? 30 : timeRange === '7d' ? 7 : 1;
   const startDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
@@ -1059,10 +930,7 @@ async function fetchAnalyticsDirectly(
         bookings: dayOrders.length,
         revenue: dayRevenue || undefined
       });
-    }
-    
-    console.log('Direct database analytics generated:', analytics);
-    return analytics;
+    }    return analytics;
     
   } catch (error) {
     console.error('Direct database query failed:', error);

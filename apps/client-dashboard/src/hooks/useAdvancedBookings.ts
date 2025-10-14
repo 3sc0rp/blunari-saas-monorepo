@@ -58,12 +58,10 @@ export const useAdvancedBookings = (tenantId?: string) => {
 
       // Apply date range filter
       if (filters.dateRange.start) {
-        if (devLogs) console.log('[useAdvancedBookings] Applying date filter start:', filters.dateRange.start);
-        query = query.gte("booking_time", filters.dateRange.start);
+        if (devLogs)        query = query.gte("booking_time", filters.dateRange.start);
       }
       if (filters.dateRange.end) {
-        if (devLogs) console.log('[useAdvancedBookings] Applying date filter end:', filters.dateRange.end);
-        query = query.lte("booking_time", filters.dateRange.end);
+        if (devLogs)        query = query.lte("booking_time", filters.dateRange.end);
       }
 
       // Apply party size filter
@@ -86,32 +84,20 @@ export const useAdvancedBookings = (tenantId?: string) => {
         query = query.or(`guest_name.ilike.%${term}%,guest_email.ilike.%${term}%,guest_phone.ilike.%${term}%,special_requests.ilike.%${term}%`);
       }
 
-      if (devLogs) console.log('[useAdvancedBookings] Executing query...');
-      
-      const [bookingsRes, tablesRes] = await Promise.all([
+      if (devLogs)      const [bookingsRes, tablesRes] = await Promise.all([
         query.order("booking_time", { ascending: true }),
         supabase.from("restaurant_tables").select("id,name").eq("tenant_id", tenantId)
       ]);
       
-      if (devLogs) console.log('[useAdvancedBookings] Raw query executed, got response');
-      if (devLogs) console.log('[useAdvancedBookings] Bookings response:', { 
-        dataLength: bookingsRes.data?.length, 
-        error: bookingsRes.error,
-        status: bookingsRes.status,
-        statusText: bookingsRes.statusText
-      });
-      const data = bookingsRes.data;
+      if (devLogs)      if (devLogs)      const data = bookingsRes.data;
       const error = bookingsRes.error;
 
-      if (devLogs) console.log('[useAdvancedBookings] Query result:', { data: data?.length, error });
-      
-      if (error) {
+      if (devLogs)      if (error) {
         console.error('[useAdvancedBookings] Direct query failed:', error);
         console.error('[useAdvancedBookings] Error details:', { code: error.code, message: error.message, details: error.details });
         
         // Fallback: try the edge function that uses service role
-        if (devLogs) console.log('[useAdvancedBookings] Attempting fallback via edge function...');
-        try {
+        if (devLogs)        try {
           const apiUrl = import.meta.env.VITE_SUPABASE_URL;
           const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
           
@@ -126,9 +112,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
           
           if (fallbackRes.ok) {
             const fallbackData = await fallbackRes.json();
-            if (devLogs) console.log('[useAdvancedBookings] Fallback successful, got', fallbackData.bookings?.length, 'bookings');
-            
-            // Return the bookings with basic processing (skip advanced filtering for now)
+            if (devLogs)            // Return the bookings with basic processing (skip advanced filtering for now)
             return (fallbackData.bookings || []).map((b: any) => ({
               ...b,
               status: (b.status === 'no_show') ? 'noshow' : b.status,
@@ -136,8 +120,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
             } as ExtendedBooking));
           } else {
             const errorText = await fallbackRes.text();
-            if (devLogs) console.log('[useAdvancedBookings] Fallback failed:', fallbackRes.status, errorText);
-          }
+            if (devLogs)          }
         } catch (fallbackError) {
           if (devLogs) console.error('[useAdvancedBookings] Fallback error:', fallbackError);
         }
@@ -161,8 +144,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
         } as ExtendedBooking;
       });
       
-      if (devLogs) console.log('[useAdvancedBookings] Processed result:', result.length, 'bookings');
-      return result;
+      if (devLogs)      return result;
     },
     enabled: !!tenantId,
   });
@@ -361,3 +343,4 @@ export const useAdvancedBookings = (tenantId?: string) => {
     isUpdating: updateBookingMutation.isPending,
   };
 };
+

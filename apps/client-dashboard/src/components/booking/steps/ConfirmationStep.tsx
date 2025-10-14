@@ -84,24 +84,8 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     }
   };
 
-  const handleConfirmBooking = async () => {
-    console.log('[ConfirmationStep] === STARTING BOOKING CONFIRMATION ===');
-    console.log('[ConfirmationStep] Current state:', {
-      hasTenant: !!tenant,
-      tenantId: tenant?.tenant_id,
-      partySize: party_size,
-      selectedSlot: selected_slot,
-      hasGuestDetails: !!guest_details,
-      guestEmail: guest_details?.email,
-      idemKey
-    });
-    
-    // Check URL token
-    const urlToken = new URLSearchParams(window.location.search).get('token');
-    console.log('[ConfirmationStep] URL token present:', !!urlToken);
-    console.log('[ConfirmationStep] URL token preview:', urlToken?.substring(0, 20) + '...');
-    
-    if (!tenant || !party_size || !selected_slot || !guest_details) {
+  const handleConfirmBooking = async () => {    // Check URL token
+    const urlToken = new URLSearchParams(window.location.search).get('token');    if (!tenant || !party_size || !selected_slot || !guest_details) {
       const missingItems = [];
       if (!tenant) missingItems.push('tenant');
       if (!party_size) missingItems.push('party_size');
@@ -116,30 +100,16 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     setProcessing(true);
 
     try {
-      // Step 1: Create hold
-      console.log('[ConfirmationStep] Step 1: Creating hold with data:', {
-        tenant_id: tenant.tenant_id,
-        party_size,
-        slot: selected_slot,
-        idemKey
-      });
-      
-      const hold = await measureStep("Creating hold", async () => {
+      // Step 1: Create hold      const hold = await measureStep("Creating hold", async () => {
         const holdResult = await createHold({
           tenant_id: tenant.tenant_id,
           party_size,
           slot: selected_slot,
-        }, idemKey);
-        console.log('[ConfirmationStep] Hold creation result:', holdResult);
-        return holdResult;
+        }, idemKey);        return holdResult;
       });
 
       // Step 2: Confirm reservation with idempotency
-      const idempotencyKey = idemKey;
-      console.log('[ConfirmationStep] Step 2: Confirming reservation with hold_id:', hold.hold_id);
-      console.log('[ConfirmationStep] Using idempotency key:', idempotencyKey);
-
-      const confirmedReservation = await measureStep(
+      const idempotencyKey = idemKey;      const confirmedReservation = await measureStep(
         "Confirming reservation",
         async () => {
           const confirmationData: any = {
@@ -154,29 +124,14 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
               amount_cents: Math.round(((window as any).__widget_deposit_policy?.amount || 0) * 100),
               paid: true,
               payment_intent_id: (guest_details as any).payment_intent_id
-            };
-            console.log('[ConfirmationStep] Including deposit data:', confirmationData.deposit);
-          }
-
-          console.log('[ConfirmationStep] Final confirmation data:', confirmationData);
-          
-          const result = await confirmReservation(confirmationData, idempotencyKey);
-          console.log('[ConfirmationStep] Raw confirmation result:', JSON.stringify(result, null, 2));
-          console.log('[ConfirmationStep] Reservation ID from result:', result?.reservation_id);
-          console.log('[ConfirmationStep] Result keys:', Object.keys(result || {}));
-          return result;
+            };          }          const result = await confirmReservation(confirmationData, idempotencyKey);          return result;
         },
       );
 
-      // Additional verification step
-      console.log('[ConfirmationStep] Reservation created:', confirmedReservation);
-      
-      // Wait a moment and verify the booking was actually created (only if we have a reservation_id)
+      // Additional verification step      // Wait a moment and verify the booking was actually created (only if we have a reservation_id)
       if (confirmedReservation?.reservation_id) {
         setTimeout(async () => {
-          try {
-            console.log('[ConfirmationStep] Starting verification for reservation_id:', confirmedReservation.reservation_id);
-            const { supabase } = await import('@/integrations/supabase/client');
+          try {            const { supabase } = await import('@/integrations/supabase/client');
             const { data: verifyBooking } = await supabase
               .from('bookings')
               .select('id, status, guest_name, booking_time')
@@ -187,17 +142,13 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
               console.error('[ConfirmationStep] Verification failed - booking not found in database');
               // Don't show error toast since booking creation succeeded
               console.warn('[ConfirmationStep] Booking may be in pending status or different table');
-            } else {
-              console.log('[ConfirmationStep] Booking verified successfully:', verifyBooking);
-            }
+            } else {            }
           } catch (verifyError) {
             console.warn('[ConfirmationStep] Verification check failed:', verifyError);
           }
         }, 2000);
       } else {
-        console.error('[ConfirmationStep] Cannot verify booking - reservation_id is missing from response');
-        console.log('[ConfirmationStep] This indicates an issue with the API response format');
-      }
+        console.error('[ConfirmationStep] Cannot verify booking - reservation_id is missing from response');      }
 
       setReservation(confirmedReservation);
       setCurrentStatus("completed");
@@ -260,11 +211,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           : "PENDING";
     
     // Debug logging to see what status we actually got
-    if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log('[ConfirmationStep] Reservation object:', reservation);
-      console.log('[ConfirmationStep] Status:', reservation.status);
-      console.log('[ConfirmationStep] Is pending?:', reservation.status === 'pending');
-    }
+    if (import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {    }
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -552,3 +499,4 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 };
 
 export default ConfirmationStep;
+

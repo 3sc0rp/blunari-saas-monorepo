@@ -38,11 +38,7 @@ export const useCateringPackages = (tenantId?: string) => {
             error.code === "42P01" ||
             error.message?.includes("relation") ||
             error.message?.includes("does not exist")
-          ) {
-            console.info(
-              "Catering packages table not found. Please run the database migration.",
-            );
-            return [];
+          ) {            return [];
           }
           throw error;
         }
@@ -278,3 +274,4 @@ export const useCateringPackages = (tenantId?: string) => {
     getPackageMetrics,
   };
 };
+

@@ -33,10 +33,7 @@ export const createTestReservationNotification = async (tenantId?: string) => {
     if (error) {
       console.error('Failed to create test notification:', error);
       throw error;
-    }
-
-    console.log('Test reservation notification created successfully');
-    return testNotification;
+    }    return testNotification;
   } catch (error) {
     console.error('Error creating test notification:', error);
     throw error;

@@ -103,9 +103,7 @@ export function useWhyDidYouUpdate(name: string, props: Record<string, any>) {
         }
       });
 
-      if (Object.keys(changedProps).length) {
-        console.log('[why-did-you-update]', name, changedProps);
-      }
+      if (Object.keys(changedProps).length) {      }
     }
 
     previousProps.current = props;
@@ -213,3 +211,4 @@ export function useRafState<T>(initialState: T): [T, (value: T) => void] {
 
   return [state, setRafState];
 }
+

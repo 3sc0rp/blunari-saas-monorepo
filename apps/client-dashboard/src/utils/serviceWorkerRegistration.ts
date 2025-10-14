@@ -24,23 +24,17 @@ function isServiceWorkerAllowed(): boolean {
     
     return false;
   } catch (error) {
-    // SecurityError or other error means service workers are not allowed
-    console.info('[SW] Service worker not available in this context');
-    return false;
+    // SecurityError or other error means service workers are not allowed    return false;
   }
 }
 
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | undefined> {
   // Only register in production
-  if (import.meta.env.DEV) {
-    console.log('[SW] Service worker disabled in development mode');
-    return undefined;
+  if (import.meta.env.DEV) {    return undefined;
   }
 
   // Check if service worker is allowed in this context
-  if (!isServiceWorkerAllowed()) {
-    console.info('[SW] Service worker not available (sandboxed context or unsupported browser)');
-    return undefined;
+  if (!isServiceWorkerAllowed()) {    return undefined;
   }
 
   // Check browser support (redundant but safe)
@@ -53,26 +47,12 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     // Register service worker
     const registration = await navigator.serviceWorker.register('/service-worker.js', {
       scope: '/',
-    });
-
-    console.log('[SW] Service worker registered successfully', {
-      scope: registration.scope,
-      active: !!registration.active,
-    });
-
-    // Handle updates
+    });    // Handle updates
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing;
-      if (!newWorker) return;
-
-      console.log('[SW] New service worker found, installing...');
-
-      newWorker.addEventListener('statechange', () => {
+      if (!newWorker) return;      newWorker.addEventListener('statechange', () => {
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          // New service worker installed and ready
-          console.log('[SW] New service worker installed, update available');
-          
-          // Notify user about update
+          // New service worker installed and ready          // Notify user about update
           notifyUpdate(registration);
         }
       });
@@ -86,9 +66,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     }, 60 * 60 * 1000);
 
     // Listen for controller change
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      console.log('[SW] Controller changed, reloading page...');
-      window.location.reload();
+    navigator.serviceWorker.addEventListener('controllerchange', () => {      window.location.reload();
     });
 
     return registration;
@@ -114,9 +92,7 @@ export async function unregisterServiceWorker(): Promise<boolean> {
   try {
     const registration = await navigator.serviceWorker.getRegistration();
     if (registration) {
-      const success = await registration.unregister();
-      console.log('[SW] Service worker unregistered:', success);
-      return success;
+      const success = await registration.unregister();      return success;
     }
     return false;
   } catch (error) {
@@ -135,9 +111,7 @@ export async function clearAllCaches(): Promise<void> {
 
   try {
     const cacheNames = await caches.keys();
-    await Promise.all(cacheNames.map((name) => caches.delete(name)));
-    console.log('[SW] All caches cleared');
-  } catch (error) {
+    await Promise.all(cacheNames.map((name) => caches.delete(name)));  } catch (error) {
     console.error('[SW] Failed to clear caches:', error);
   }
 }
@@ -264,3 +238,4 @@ export async function getServiceWorkerStatus(): Promise<{
     };
   }
 }
+

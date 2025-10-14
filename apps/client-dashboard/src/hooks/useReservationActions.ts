@@ -86,10 +86,7 @@ export function useReservationActions() {
         throw new Error('Tenant not found');
       }
 
-      // Log the request for debugging
-      console.log('Move reservation request:', request);
-
-      // Check if reservation ID format is valid
+      // Log the request for debugging      // Check if reservation ID format is valid
       if (!isValidUUID(request.reservationId)) {
         const errorMsg = `Invalid reservation ID format: ${request.reservationId}. Expected UUID format.`;
         console.error(errorMsg);
@@ -98,9 +95,7 @@ export function useReservationActions() {
 
       // Validate request
       try {
-        const validatedRequest = validateMoveReservationRequest(request);
-        console.log('Validated request:', validatedRequest);
-      } catch (validationError) {
+        const validatedRequest = validateMoveReservationRequest(request);      } catch (validationError) {
         console.error('Validation error:', validationError);
         throw new Error(`Invalid reservation data: ${validationError instanceof Error ? validationError.message : 'Unknown validation error'}`);
       }
@@ -260,3 +255,4 @@ export function useReservationActions() {
     isAnyLoading: createReservation.isPending || moveReservation.isPending || cancelReservation.isPending
   };
 }
+

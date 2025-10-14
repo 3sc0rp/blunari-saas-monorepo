@@ -34,10 +34,7 @@ interface BookingWidgetProps {
   onError?: (error: Error) => void;
 }
 
-const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
-  console.log('[BookingWidget] Component mounted with slug:', slug);
-  
-  const [tenantLoading, setTenantLoading] = useState(true);
+const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  const [tenantLoading, setTenantLoading] = useState(true);
   const [tenantError, setTenantError] = useState<string | null>(null);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
 
@@ -64,29 +61,8 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
         setTenantLoading(true);
         setTenantError(null);
 
-        // Enhanced debug logging for widget token
-        console.log('[BookingWidget] === WIDGET INITIALIZATION ===');
-        console.log('[BookingWidget] Loading tenant for slug:', slug);
-        console.log('[BookingWidget] Full URL:', window.location.href);
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
-        console.log('[BookingWidget] Token details:', {
-          present: !!token,
-          length: token?.length,
-          preview: token?.substring(0, 20) + '...',
-          allParams: Object.fromEntries(urlParams.entries())
-        });
-        
-        console.log('[BookingWidget] Environment check:', {
-          hasSupabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
-          hasSupabaseKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
-          supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
-          enableDevLogs: import.meta.env.VITE_ENABLE_DEV_LOGS,
-          mode: import.meta.env.MODE
-        });
-        
-        // Check if we have required environment variables
+        // Enhanced debug logging for widget token        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');        // Check if we have required environment variables
         if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
           throw new Error('Missing Supabase configuration in environment variables');
         }
@@ -96,9 +72,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
           console.warn('[BookingWidget] No widget token found in URL - this may cause API calls to fail');
         }
         
-        const tenantInfo = await getTenantBySlug(slug);
-        console.log('[BookingWidget] Tenant loaded successfully:', tenantInfo.name);
-        setTenant(tenantInfo);
+        const tenantInfo = await getTenantBySlug(slug);        setTenant(tenantInfo);
         setState((prev) => ({ ...prev, tenant: tenantInfo }));
       } catch (err) {
         console.error('[BookingWidget] Tenant loading failed:', err);
@@ -657,3 +631,4 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
 };
 
 export default BookingWidget;
+

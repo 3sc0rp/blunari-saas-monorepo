@@ -148,14 +148,10 @@ export const CateringSampleDataSeeder: React.FC = () => {
             .single();
 
           if (error) {
-            if (error.code === "23505") {
-              console.log(`Package "${pkg.name}" already exists`);
-            } else {
+            if (error.code === "23505") {            } else {
               console.error("Error adding package:", pkg.name, error);
             }
-          } else {
-            console.log("✅ Added package:", pkg.name);
-          }
+          } else {          }
         } catch (err) {
           console.error("Exception adding package:", pkg.name, err);
         }
@@ -206,3 +202,4 @@ export const CateringSampleDataSeeder: React.FC = () => {
     </div>
   );
 };
+

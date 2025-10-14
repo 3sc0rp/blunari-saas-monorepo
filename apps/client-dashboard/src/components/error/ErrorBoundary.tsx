@@ -116,12 +116,7 @@ class EnterpriseErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundar
   private reportToErrorService = (error: Error, errorInfo: ErrorInfo) => {
     // Integration point for services like Sentry, LogRocket, etc.
     try {
-      // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
-      console.info('Error reported to monitoring service', {
-        errorId: this.state.errorId,
-        message: error.message
-      });
-    } catch (reportingError) {
+      // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });    } catch (reportingError) {
       logger.error('Failed to report error to external service', reportingError);
     }
   };
@@ -267,3 +262,4 @@ export const PageErrorBoundary: React.FC<{ children: ReactNode }> = ({ children 
 );
 
 export default EnterpriseErrorBoundary;
+

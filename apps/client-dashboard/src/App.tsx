@@ -89,8 +89,7 @@ function RouterInstrumentation() {
 
 function App() {
   if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-    if (import.meta.env.DEV) console.log('🎯 App component rendering with full providers...');
-  }
+    if (import.meta.env.DEV)  }
   // Remove direct calls to router-dependent hooks here (now inside RouterInstrumentation)
   useEffect(() => {
     connectionManager.ensureConnection();
@@ -295,4 +294,5 @@ function App() {
 }
 
 export default App;
+
 

@@ -41,9 +41,7 @@ export function useTenantSecure() {
   const resolvedRef = useRef<boolean>(false);
 
   const debug = (...args: any[]) => {
-    if (enableDevLogs) {
-      console.log('[useTenantSecure]', ...args);
-    }
+    if (enableDevLogs) {    }
   };
 
   const setError = useCallback((error: string) => {
@@ -229,3 +227,4 @@ export function useTenantSecure() {
  * Use useTenantSecure for new code
  */
 export const useTenant = useTenantSecure;
+

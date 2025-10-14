@@ -30,11 +30,8 @@ export const useTableManagement = (tenantId?: string) => {
     queryKey: ["tables", tenantId],
     queryFn: async () => {
       const devLogs = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
-      if (devLogs) console.log('[useTableManagement] Fetching tables for tenant:', tenantId);
-      
-      if (!tenantId) {
-        if (devLogs) console.log('[useTableManagement] No tenantId - returning empty');
-        return [];
+      if (devLogs)      if (!tenantId) {
+        if (devLogs)        return [];
       }
 
       // Get tables
@@ -45,9 +42,7 @@ export const useTableManagement = (tenantId?: string) => {
         .eq("active", true)
         .order("name");
 
-      if (devLogs) console.log('[useTableManagement] Tables query result:', { count: tablesData?.length, error: tablesError });
-
-      if (tablesError) throw tablesError;
+      if (devLogs)      if (tablesError) throw tablesError;
 
       // Get current bookings for tables
       const { data: bookingsData, error: bookingsError } = await supabase
@@ -191,3 +186,4 @@ function calculateTimeRemaining(
   const remainingMs = bookingEnd.getTime() - now.getTime();
   return Math.max(0, Math.floor(remainingMs / 60000)); // Convert to minutes
 }
+

@@ -81,13 +81,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         };
       }
 
-      // PRODUCTION FIX: Attempt real data fetch with graceful fallback
-      console.log('[useCommandCenterDataNew] === STARTING DATA FETCH ===');
-      console.log('[useCommandCenterDataNew] Tenant ID:', tenantId);
-      console.log('[useCommandCenterDataNew] Date:', date);
-      console.log('[useCommandCenterDataNew] Filters:', filters);
-      
-      logger.info('Fetching real Command Center data for production', {
+      // PRODUCTION FIX: Attempt real data fetch with graceful fallback      logger.info('Fetching real Command Center data for production', {
         component: 'useCommandCenterDataNew',
         tenantId,
         date,
@@ -112,17 +106,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         }
 
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        
-        console.log('🔐 Auth check:', {
-          hasSession: !!session,
-          hasAccessToken: !!session?.access_token,
-          tokenLength: session?.access_token?.length,
-          userId: session?.user?.id,
-          supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'missing'
-        });
-        
-        // Standardized fetch for all edge functions to ensure consistent behavior
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;        // Standardized fetch for all edge functions to ensure consistent behavior
         const fetchEdgeFunction = async (functionName: string, method: string = 'POST', body?: any) => {
           logger.debug(`Calling edge function: ${functionName} (${method})`, body ? { bodyKeys: Object.keys(body) } : { body: 'none' });
           
@@ -160,10 +144,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           return { data, error: null, requestId } as const;
         };
         
-        // Use direct Supabase queries instead of edge functions for reliability
-        console.log('[useCommandCenterDataNew] Using direct DB queries instead of edge functions');
-        
-        const [tablesResult, bookingsResult] = await Promise.all([
+        // Use direct Supabase queries instead of edge functions for reliability        const [tablesResult, bookingsResult] = await Promise.all([
           supabase
             .from('restaurant_tables')
             .select('*')
@@ -178,14 +159,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
             .eq('tenant_id', tenantId)
             .then(res => ({ data: res.data, error: res.error }))
             .catch(error => ({ data: null, error }))
-        ]);
-
-        console.log('[useCommandCenterDataNew] Direct query results:', {
-          tables: { count: tablesResult.data?.length, error: tablesResult.error },
-          bookings: { count: bookingsResult.data?.length, error: bookingsResult.error }
-        });
-
-        // Handle direct query errors gracefully
+        ]);        // Handle direct query errors gracefully
         if (tablesResult.error) {
           console.error('Tables fetch error details:', tablesResult.error);
         }
@@ -231,15 +205,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           specialRequests: booking.special_requests,
           depositRequired: booking.deposit_required,
           depositAmount: booking.deposit_amount
-        }));
-
-        console.log('[useCommandCenterDataNew] Processing results:', {
-          tablesCount: tablesData.length,
-          kpisCount: kpisData.length,
-          reservationsCount: reservationsData.length
-        });
-
-        // Use the transformed reservations data
+        }));        // Use the transformed reservations data
         const reservations: Reservation[] = reservationsData.map((r: any) => {
           try { 
             return {
@@ -430,5 +396,6 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   }, [value, delayMs]);
   return debounced;
 }
+
 
 

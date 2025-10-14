@@ -41,9 +41,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
   const debug = (...args: any[]) => {
     if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') {
       // Prefix to identify hook logs
-      // eslint-disable-next-line no-console
-      console.log('[WidgetConfig]', ...args);
-    }
+      // eslint-disable-next-line no-console    }
   };
 
   const updateConfig = useCallback((updates: Partial<WidgetConfig>) => {
@@ -228,9 +226,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
               debug('Saved config identical, skip state set');
             }
             setLastSavedTimestamp(parsed.lastSaved || null);
-            setLastSavedConfigSnapshot(merged);
-            console.log(`[Widget Config] Loaded ${activeWidgetType} config for tenant: ${tenantIdentifier}`);
-          } else {
+            setLastSavedConfigSnapshot(merged);          } else {
             console.warn(`[Widget Config] Invalid saved config for ${activeWidgetType}, using defaults`);
             setCurrentConfig(getDefaultConfig(activeWidgetType));
             setLastSavedTimestamp(null);
@@ -248,18 +244,14 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
         }
       } else {
         // No saved config – prefer draft if present
-        if (draft) {
-          console.log(`[Widget Config] Using draft for ${activeWidgetType} - ${tenantIdentifier}`);
-          const draftMerged = { ...getDefaultConfig(activeWidgetType), ...draft };
+        if (draft) {          const draftMerged = { ...getDefaultConfig(activeWidgetType), ...draft };
           if (!shallowEqual(draftMerged, currentConfig)) {
             debug('Applying draft config');
             setCurrentConfig(draftMerged);
           }
           setLastSavedTimestamp(null);
           setHasUnsavedChanges(true);
-        } else {
-          console.log(`[Widget Config] No saved or draft config for ${activeWidgetType} - ${tenantIdentifier}, using defaults`);
-          const defaults = getDefaultConfig(activeWidgetType);
+        } else {          const defaults = getDefaultConfig(activeWidgetType);
           if (!shallowEqual(defaults, currentConfig)) {
             debug('Applying defaults');
             setCurrentConfig(defaults);
@@ -379,3 +371,4 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
     isDraft: hasUnsavedChanges && !!lastSavedConfigSnapshot,
   } as const;
 }
+

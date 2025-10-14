@@ -98,16 +98,12 @@ export function redactObject<T extends Record<string, any>>(obj: T): T {
  */
 export const safeLog = {
   log(...args: any[]) {
-    if (isDevelopment) {
-      console.log(...args);
-    } else {
+    if (isDevelopment) {    } else {
       // In production, redact PII from objects
       const redacted = args.map(arg => 
         typeof arg === 'object' ? redactObject(arg) : 
         typeof arg === 'string' ? redactPII(arg) : arg
-      );
-      console.log(...redacted);
-    }
+      );    }
   },
   
   error(...args: any[]) {
@@ -135,15 +131,11 @@ export const safeLog = {
   },
   
   info(...args: any[]) {
-    if (isDevelopment) {
-      console.info(...args);
-    } else {
+    if (isDevelopment) {    } else {
       const redacted = args.map(arg => 
         typeof arg === 'object' ? redactObject(arg) : 
         typeof arg === 'string' ? redactPII(arg) : arg
-      );
-      console.info(...redacted);
-    }
+      );    }
   },
   
   debug(...args: any[]) {
@@ -214,8 +206,7 @@ export function disableConsoleInProduction() {
  * Example usage:
  * 
  * // Instead of:
- * console.log('Booking created:', booking);
- * 
+ * * 
  * // Use:
  * safeLog.log('Booking created:', sanitizeBookingForLog(booking));
  * 
@@ -223,3 +214,4 @@ export function disableConsoleInProduction() {
  * const logger = createSafeLogger('BookingWizard');
  * logger.log('User submitted form', sanitizeBookingForLog(booking));
  */
+

@@ -155,9 +155,7 @@ const WidgetManagement: React.FC = () => {
   const [activeWidgetType, setActiveWidgetType] = useState<'booking' | 'catering'>('booking');
   const debugWM = (...args: any[]) => {
     if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') {
-      // eslint-disable-next-line no-console
-      console.log('[WidgetManagement]', ...args);
-    }
+      // eslint-disable-next-line no-console    }
   };
 
   const [selectedTab, setSelectedTab] = useState(() => {
@@ -419,9 +417,7 @@ const WidgetManagement: React.FC = () => {
   const renderCountRef = useRef(0);
   renderCountRef.current++;
   if (import.meta.env.VITE_ANALYTICS_DEBUG === '1' && renderCountRef.current % 25 === 0) {
-    // eslint-disable-next-line no-console
-    console.log('[WidgetManagement] Render count', renderCountRef.current);
-  }
+    // eslint-disable-next-line no-console  }
 
   // Configuration management now handled by useWidgetConfig
 
@@ -2130,4 +2126,5 @@ const WidgetManagement: React.FC = () => {
 };
 
 export default WidgetManagement;
+
 

@@ -85,9 +85,7 @@ class Logger {
 
     this.addToBuffer(entry);
 
-    if (this.shouldLog('info')) {
-      console.info(this.formatMessage(entry));
-    }
+    if (this.shouldLog('info')) {    }
   }
 
   debug(message: string, context?: Record<string, unknown>): void {
@@ -138,9 +136,8 @@ export const logDebug = (message: string, context?: Record<string, unknown>) =>
 
 // Development-only logging
 export const devLog = (message: string, data?: unknown) => {
-  if (import.meta.env.DEV) {
-    console.log(`🔧 ${message}`, data);
-  }
+  if (import.meta.env.DEV) {  }
 };
 
 export default logger;
+

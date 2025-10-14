@@ -25,11 +25,7 @@ export function BookingDebugger() {
         booking_time: bookingTime.toISOString(),
         status: 'confirmed',
         special_requests: 'Created from dashboard debug tool'
-      };
-      
-      console.log('Creating test booking:', testBooking);
-      
-      const { data, error } = await supabase
+      };      const { data, error } = await supabase
         .from('bookings')
         .insert(testBooking)
         .select();
@@ -41,9 +37,7 @@ export function BookingDebugger() {
           description: `Error: ${error.message}`,
           variant: 'destructive'
         });
-      } else {
-        console.log('Booking created successfully:', data);
-        toast({
+      } else {        toast({
           title: 'Test booking created!',
           description: `Booking ID: ${data[0].id}`
         });
@@ -64,11 +58,7 @@ export function BookingDebugger() {
   const queryBookings = async () => {
     setIsQuerying(true);
     try {
-      const tenantId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
-      
-      console.log('Querying bookings for tenant:', tenantId);
-      
-      const { data, error } = await supabase
+      const tenantId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';      const { data, error } = await supabase
         .from('bookings')
         .select('*')
         .eq('tenant_id', tenantId)
@@ -82,9 +72,7 @@ export function BookingDebugger() {
           description: `Error: ${error.message}`,
           variant: 'destructive'
         });
-      } else {
-        console.log('Bookings query successful:', data);
-        toast({
+      } else {        toast({
           title: 'Query successful!',
           description: `Found ${data?.length || 0} bookings`
         });

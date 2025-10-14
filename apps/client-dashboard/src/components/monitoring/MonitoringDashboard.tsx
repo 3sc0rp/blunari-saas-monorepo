@@ -276,9 +276,7 @@ const MonitoringDashboard: React.FC = () => {
             className="w-full bg-green-600 hover:bg-green-700 p-2 rounded text-sm"
             onClick={() => {
               const insights = performanceMonitor.getInsights();
-              console.group('📊 Performance Report');
-              console.log(insights);
-              console.groupEnd();
+              console.group('📊 Performance Report');              console.groupEnd();
             }}
           >
             Export Performance Report
@@ -342,3 +340,4 @@ const MonitoringDashboard: React.FC = () => {
 };
 
 export default MonitoringDashboard;
+

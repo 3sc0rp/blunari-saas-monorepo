@@ -150,10 +150,7 @@ export function measurePerformance() {
           domInteractive: Math.round(navigation.domInteractive - navigation.fetchStart),
           domComplete: Math.round(navigation.domComplete - navigation.fetchStart),
           loadComplete: Math.round(navigation.loadEventEnd - navigation.fetchStart),
-        };
-
-        console.log('⚡ Performance Metrics:', metrics);
-      }
+        };      }
 
       // Core Web Vitals (if available)
       if ('PerformanceObserver' in window) {
@@ -161,16 +158,12 @@ export function measurePerformance() {
           // Largest Contentful Paint (LCP)
           new PerformanceObserver((list) => {
             const entries = list.getEntries();
-            const lastEntry = entries[entries.length - 1];
-            console.log('📊 LCP:', Math.round(lastEntry.startTime), 'ms');
-          }).observe({ entryTypes: ['largest-contentful-paint'] });
+            const lastEntry = entries[entries.length - 1];          }).observe({ entryTypes: ['largest-contentful-paint'] });
 
           // First Input Delay (FID)
           new PerformanceObserver((list) => {
             const entries = list.getEntries();
-            entries.forEach(entry => {
-              console.log('⌨️ FID:', Math.round((entry as any).processingStart - entry.startTime), 'ms');
-            });
+            entries.forEach(entry => {            });
           }).observe({ entryTypes: ['first-input'] });
 
           // Cumulative Layout Shift (CLS)
@@ -180,9 +173,7 @@ export function measurePerformance() {
               if (!(entry as any).hadRecentInput) {
                 clsScore += (entry as any).value;
               }
-            }
-            console.log('📐 CLS:', clsScore.toFixed(3));
-          }).observe({ entryTypes: ['layout-shift'] });
+            }          }).observe({ entryTypes: ['layout-shift'] });
         } catch (e) {
           // PerformanceObserver not supported
         }
@@ -241,3 +232,4 @@ export function initializePerformanceOptimizations() {
     });
   });
 }
+

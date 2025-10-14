@@ -15,16 +15,12 @@ export class SupabaseConnectionManager {
   };
   
   private onlineHandler = () => {
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log('🌐 Network online, attempting to reconnect Supabase');
-    }
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {    }
     this.handleNetworkReconnect();
   };
   
   private offlineHandler = () => {
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log('📴 Network offline');
-    }
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {    }
   };
 
   private constructor() {
@@ -47,9 +43,7 @@ export class SupabaseConnectionManager {
       }
       
       if (event === 'SIGNED_OUT') {
-        if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-          console.log('🔓 Supabase auth signed out');
-        }
+        if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {        }
         this.disconnectRealtime();
       }
     });
@@ -87,9 +81,7 @@ export class SupabaseConnectionManager {
         }
         await this.attemptReconnect();
       } else {
-        if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-          console.log('✅ Supabase connection healthy');
-        }
+        if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {        }
         this.reconnectAttempts = 0;
       }
     } catch (error) {
@@ -109,9 +101,7 @@ export class SupabaseConnectionManager {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
     
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log(`🔄 Attempting Supabase reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
-    }
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {    }
     
     await new Promise(resolve => setTimeout(resolve, delay));
     
@@ -134,9 +124,7 @@ export class SupabaseConnectionManager {
     try {
       // Remove all subscriptions
       supabase.removeAllChannels();
-      if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-        console.log('🔌 Disconnected Supabase realtime');
-      }
+      if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {      }
     } catch (error) {
       if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
         console.error('❌ Error disconnecting realtime:', error);
@@ -149,14 +137,10 @@ export class SupabaseConnectionManager {
       return supabase
         .channel(channelName)
         .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
-          if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-            console.log('📡 Realtime update:', payload);
-          }
+          if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {          }
         })
         .subscribe((status) => {
-          if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-            console.log(`📡 Channel ${channelName} status:`, status);
-          }
+          if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {          }
           
           if (status === 'CHANNEL_ERROR') {
             if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
@@ -189,11 +173,10 @@ export class SupabaseConnectionManager {
     // Reset singleton instance
     SupabaseConnectionManager.instance = null as any;
     
-    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
-      console.log('🧹 Supabase connection manager destroyed');
-    }
+    if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {    }
   }
 }
 
 // Export singleton instance
 export const connectionManager = SupabaseConnectionManager.getInstance();
+

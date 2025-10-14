@@ -42,9 +42,7 @@ const DemoPage: React.FC = () => {
     setTimeout(() => setState("data"), 1000);
   };
 
-  const handleExport = () => {
-    console.log("Exporting data...");
-  };
+  const handleExport = () => {  };
 
   // Loading state
   if (state === "loading") {
@@ -94,12 +92,7 @@ const DemoPage: React.FC = () => {
           }}
           secondaryAction={{
             label: "Contact Support",
-            onClick: () => console.log("Contacting support..."),
-          }}
-        />
-      </motion.div>
-    );
-  }
+            onClick: () =>  }
 
   // Empty state
   if (state === "empty") {
@@ -136,12 +129,7 @@ const DemoPage: React.FC = () => {
           }}
           secondaryAction={{
             label: "Learn More",
-            onClick: () => console.log("Learning more..."),
-          }}
-        />
-      </motion.div>
-    );
-  }
+            onClick: () =>  }
 
   // Data state
   return (
@@ -209,3 +197,4 @@ const DemoPage: React.FC = () => {
 };
 
 export default DemoPage;
+

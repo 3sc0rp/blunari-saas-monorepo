@@ -175,9 +175,7 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
     try {
       if (onCreateReservationAt) {
         onCreateReservationAt(tableId, time);
-      } else {
-        console.log('Create reservation for table', tableId, 'at', time);
-      }
+      } else {      }
     } catch (err) {
       console.error('Error handling time slot click:', err);
     }
@@ -197,15 +195,11 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
   }, [onMove]);
 
   const handleReservationChange = useCallback(async (u: { id: string; start: string; end: string }) => {
-    try {
-      console.log('Moving reservation:', { reservationId: u.id, start: u.start, end: u.end });
-      const result = await moveReservationAction({ reservationId: u.id, start: u.start, end: u.end });
+    try {      const result = await moveReservationAction({ reservationId: u.id, start: u.start, end: u.end });
       
       if (!result.ok) {
         console.error('Move reservation failed:', result.error, 'Request ID:', result.requestId);
-      } else {
-        console.log('Reservation moved successfully:', result.data);
-      }
+      } else {      }
     } catch (err) {
       console.error('Error updating reservation time:', err);
     }
@@ -224,14 +218,8 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
         maintenance: 0
       };
 
-      if (!Array.isArray(tables) || tables.length === 0) {
-        console.log('StatusLegend: No tables data available');
-        return counts;
-      }
-
-      console.log('StatusLegend: Processing tables:', tables.length, 'tables');
-
-      const currentTime = new Date();
+      if (!Array.isArray(tables) || tables.length === 0) {        return counts;
+      }      const currentTime = new Date();
       
       // Calculate table status based on active bookings
       tables.forEach(table => {
@@ -284,25 +272,17 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
             break;
           default:
             counts.available++;
-        }
-        
-        console.log(`Table ${table.name}: calculated status = ${tableStatus}`);
-      });
+        }      });
 
       // Count phone holds and walk-ins from reservations
-      if (Array.isArray(reservations) && reservations.length > 0) {
-        console.log('StatusLegend: Processing reservations for phone/walk-in counts');
-        reservations.forEach(reservation => {
+      if (Array.isArray(reservations) && reservations.length > 0) {        reservations.forEach(reservation => {
           if (reservation.channel === 'phone' && (reservation.status === 'confirmed' || reservation.status === 'seated')) {
             counts.phone++;
           } else if (reservation.channel === 'walkin' && (reservation.status === 'confirmed' || reservation.status === 'seated')) {
             counts.walkIn++;
           }
         });
-      }
-
-      console.log('StatusLegend: Final calculated counts:', counts);
-      return counts;
+      }      return counts;
     } catch (err) {
       console.error('Error calculating table status counts:', err);
       return {
@@ -454,3 +434,4 @@ export const MainSplit = React.memo<MainSplitProps>(function MainSplit({
 });
 
 export default MainSplit;
+

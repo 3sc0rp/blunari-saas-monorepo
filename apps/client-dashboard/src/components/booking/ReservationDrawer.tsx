@@ -482,9 +482,7 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
             onOpenChange={setMessageOpen}
             defaultChannel={booking.guest_phone ? 'sms' : 'email'}
             onSend={async ({ channel, to, subject, body }) => {
-              // Placeholder: wire to background-ops or email/SMS provider
-              console.log('Send', { channel, to, subject, body });
-            }}
+              // Placeholder: wire to background-ops or email/SMS provider            }}
           />
 
           {/* Activity Log */}
@@ -518,3 +516,4 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
 };
 
 export default ReservationDrawer;
+

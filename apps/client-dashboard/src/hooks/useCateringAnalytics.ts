@@ -96,11 +96,7 @@ export const useCateringAnalytics = (
             ordersError.code === "42P01" ||
             ordersError.message?.includes("relation") ||
             ordersError.message?.includes("does not exist")
-          ) {
-            console.info(
-              "Catering orders table not found. Please run the database migration.",
-            );
-            return {
+          ) {            return {
               orders: {
                 total: 0,
                 confirmed: 0,
@@ -446,3 +442,4 @@ export const useCateringAnalytics = (
     formatPercentage,
   };
 };
+

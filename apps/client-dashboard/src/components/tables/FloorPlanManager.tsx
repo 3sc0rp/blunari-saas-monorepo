@@ -105,10 +105,7 @@ export default function FloorPlanManager() {
     if (!file || !uploadedImage) {
       toast.error("Please upload an image first");
       return;
-    }
-
-    console.log("[FloorPlanManager] Starting enhanced analysis...");
-    setAnalyzing(true);
+    }    setAnalyzing(true);
     setAnalysisProgress(0);
 
     let progressInterval: NodeJS.Timeout | null = null;
@@ -142,10 +139,7 @@ export default function FloorPlanManager() {
         Math.random().toString(36).substring(2) + Date.now().toString(36);
 
       // Enhanced table positioning and sizing algorithm with better AI integration
-      const entities = analysisResult.detectedTables.map((table, index) => {
-        console.log(`Processing table ${index + 1}:`, table);
-
-        // Use AI positioning with smart fallbacks
+      const entities = analysisResult.detectedTables.map((table, index) => {        // Use AI positioning with smart fallbacks
         let x = table.position?.x || 0;
         let y = table.position?.y || 0;
 
@@ -234,10 +228,7 @@ export default function FloorPlanManager() {
               (table as { description?: string }).description ||
               "AI detected table",
           },
-        };
-
-        console.log(`Created entity for table ${index + 1}:`, entity);
-        return entity;
+        };        return entity;
       });
 
       const preview = {
@@ -247,9 +238,7 @@ export default function FloorPlanManager() {
         worldHeight: WORLD_H,
       };
 
-      setTimeout(() => {
-        console.log("Setting floor plan run with entities:", entities);
-        setRun(runId, entities, preview);
+      setTimeout(() => {        setRun(runId, entities, preview);
 
         if (analysisResult.tableCount > 0) {
           const totalCapacity = entities.reduce((sum, e) => sum + e.seats, 0);
@@ -551,3 +540,4 @@ export default function FloorPlanManager() {
     </div>
   );
 }
+

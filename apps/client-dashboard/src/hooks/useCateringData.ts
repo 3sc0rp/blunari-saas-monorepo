@@ -185,11 +185,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
           status: "inquiry" as const,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        };
-
-        console.log("Demo mode: Order would be created:", mockOrder);
-
-        // Simulate network delay
+        };        // Simulate network delay
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         return mockOrder;
@@ -316,12 +312,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       }
 
       if (!tablesExist) {
-        // Simulate status update for demo mode
-        console.log(
-          `Demo mode: Order ${orderId} status would be updated to ${status}`,
-          { notes },
-        );
-        return;
+        // Simulate status update for demo mode        return;
       }
 
       try {
@@ -468,3 +459,4 @@ export function useCateringAnalytics(tenantId?: string) {
     refetch: fetchAnalytics,
   };
 }
+

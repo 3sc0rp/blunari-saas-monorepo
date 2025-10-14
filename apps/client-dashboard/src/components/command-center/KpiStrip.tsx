@@ -164,9 +164,7 @@ export function KpiStrip({ items, loading = false }: KpiStripProps) {
     );
   }
 
-  const handleInfoClick = (cardId: string) => {
-    console.log(`Info clicked for KPI: ${cardId}`);
-    // TODO: Show tooltip or modal with more details
+  const handleInfoClick = (cardId: string) => {    // TODO: Show tooltip or modal with more details
   };
 
   return (
@@ -191,3 +189,4 @@ export function KpiStrip({ items, loading = false }: KpiStripProps) {
     </div>
   );
 }
+

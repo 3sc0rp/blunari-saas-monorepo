@@ -12,10 +12,7 @@ const AuthTenantTest: React.FC = () => {
 
   useEffect(() => {
     async function testAuth() {
-      try {
-        console.log("Testing auth and tenant access...");
-        
-        // Get current session
+      try {        // Get current session
         const { data: session, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -41,9 +38,7 @@ const AuthTenantTest: React.FC = () => {
         try {
           const { data: rlsData, error: rlsError } = await supabase.rpc('get_current_user_tenant_id');
           rlsTest = { data: rlsData, error: rlsError };
-        } catch (err) {
-          console.log("RLS function not available:", err);
-          rlsTest = { error: "Function not available" };
+        } catch (err) {          rlsTest = { error: "Function not available" };
         }
 
         setAuthData({
@@ -143,3 +138,4 @@ const AuthTenantTest: React.FC = () => {
 };
 
 export default AuthTenantTest;
+

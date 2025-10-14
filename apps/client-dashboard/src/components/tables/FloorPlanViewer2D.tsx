@@ -109,18 +109,13 @@ export default function FloorPlanViewer2D() {
       // Draw tables with enhanced styling (optimized)
       const tables = entities.filter((e) => e && e.type === "TABLE" && typeof e.x === "number" && typeof e.y === "number");
       
-      if (tables.length === 0) {
-        console.log(`[FloorPlan2D] No valid table entities found. Total entities: ${entities.length}, Entity types: ${[...new Set(entities.map(e => e?.type).filter(Boolean))]}`);
-        
-        // Draw helpful message instead of empty canvas
+      if (tables.length === 0) {        // Draw helpful message instead of empty canvas
         ctx.fillStyle = "rgba(107, 114, 128, 0.8)";
         ctx.font = "14px Inter, system-ui, sans-serif";
         ctx.textAlign = "center";
         ctx.fillText("Floor plan loaded but no tables detected", W / 2, H / 2);
         ctx.fillText(`Found ${entities.length} entities: ${[...new Set(entities.map(e => e?.type).filter(Boolean))].join(", ") || "none"}`, W / 2, H / 2 + 20);
-      } else {
-        console.log(`[FloorPlan2D] Rendering ${tables.length} tables successfully`);
-      }
+      } else {      }
 
       tables.forEach((e, index) => {
         const x = (e.x / WORLD_W) * W;
@@ -311,3 +306,4 @@ export default function FloorPlanViewer2D() {
     </Card>
   );
 }
+

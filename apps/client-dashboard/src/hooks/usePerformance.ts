@@ -98,17 +98,7 @@ export function usePerformanceMonitoring(componentName: string) {
       if (renderTime < 0 || renderTime > 30000) return;
 
       // Log performance metrics for debugging
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Performance] ${componentName}:`, {
-          renderTime: `${renderTime.toFixed(2)}ms`,
-          path: location.pathname,
-          memory: (performance as any).memory ? {
-            used: `${((performance as any).memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
-            total: `${((performance as any).memory.totalJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
-            limit: `${((performance as any).memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`
-          } : 'Not available'
-        });
-      }
+      if (process.env.NODE_ENV === 'development') {      }
 
       // Reset timer for next render
       startTime.current = performance.now();
@@ -208,3 +198,4 @@ export function useBundleMonitoring() {
     }
   }, []);
 }
+

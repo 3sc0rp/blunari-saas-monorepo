@@ -9,14 +9,10 @@ export function useCommandCenterDataSimple() {
     queryKey: ['command-center-simple', tenantId],
     queryFn: async () => {
       const devLogs = true; // Always enable debug logs temporarily
-      if (devLogs) {
-        console.log('[useCommandCenterDataSimple] === DIRECT DB QUERIES ONLY ===');
-        console.log('[useCommandCenterDataSimple] Tenant ID:', tenantId);
-      }
+      if (devLogs) {      }
       
       if (!tenantId) {
-        if (devLogs) console.log('[useCommandCenterDataSimple] No tenant ID - returning empty data');
-        return {
+        if (devLogs)        return {
           kpis: [],
           tables: [],
           reservations: [],
@@ -40,12 +36,7 @@ export function useCommandCenterDataSimple() {
         });
 
         if (!functionError && functionData?.success) {
-          if (devLogs) console.log('[useCommandCenterDataSimple] Function call succeeded', {
-            tables: functionData.tables?.length,
-            bookings: functionData.bookings?.length
-          });
-
-          const tables = (functionData.tables || []).map((table: any) => ({
+          if (devLogs)          const tables = (functionData.tables || []).map((table: any) => ({
             id: table.id,
             name: table.name,
             seats: table.capacity,
@@ -113,13 +104,7 @@ export function useCommandCenterDataSimple() {
             }
           ];
 
-          if (devLogs) console.log('[useCommandCenterDataSimple] Returning function data:', {
-            kpis: kpis.length,
-            tables: tables.length,
-            reservations: reservations.length
-          });
-
-          return {
+          if (devLogs)          return {
             kpis,
             tables,
             reservations,
@@ -139,9 +124,7 @@ export function useCommandCenterDataSimple() {
           };
         }
 
-        if (devLogs) console.log('[useCommandCenterDataSimple] Function call failed, falling back to direct queries', { error: functionError });
-
-        // Fallback to direct queries if function fails
+        if (devLogs)        // Fallback to direct queries if function fails
         const [tablesResult, bookingsResult] = await Promise.all([
           supabase
             .from('restaurant_tables')
@@ -153,15 +136,7 @@ export function useCommandCenterDataSimple() {
             .from('bookings')
             .select('*')
             .eq('tenant_id', tenantId)
-        ]);
-
-        console.log('[useCommandCenterDataSimple] Query results:', {
-          tenantId,
-          tables: { count: tablesResult.data?.length, error: tablesResult.error },
-          bookings: { count: bookingsResult.data?.length, error: bookingsResult.error }
-        });
-
-        const tables = (tablesResult.data || []).map((table: any) => ({
+        ]);        const tables = (tablesResult.data || []).map((table: any) => ({
           id: table.id,
           name: table.name,
           seats: table.capacity,
@@ -226,13 +201,7 @@ export function useCommandCenterDataSimple() {
           }
         ];
 
-        if (devLogs) console.log('[useCommandCenterDataSimple] Returning data:', {
-          kpis: kpis.length,
-          tables: tables.length,
-          reservations: reservations.length
-        });
-
-        return {
+        if (devLogs)        return {
           kpis,
           tables,
           reservations,
@@ -290,3 +259,4 @@ export function useCommandCenterDataSimple() {
     refetch: query.refetch
   };
 }
+

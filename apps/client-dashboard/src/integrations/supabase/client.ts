@@ -39,19 +39,16 @@ export const supabase = createClient<Database>(
     global: {
       fetch: (url, options = {}) => {
         const enableVerbose = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_SUPABASE_DEBUG === 'true';
-        if (enableVerbose) {
-          console.log('[Supabase] Request:', { url, method: (options as any).method || 'GET' });
-        }
+        if (enableVerbose) {        }
         return fetch(url, {
           ...(options as any),
           keepalive: false,
         }).then(res => {
-          if (enableVerbose) {
-            console.log('[Supabase] Response:', { url, status: res.status, ok: res.ok });
-          }
+          if (enableVerbose) {          }
           return res;
         });
       },
     },
   },
 );
+
