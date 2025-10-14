@@ -24,9 +24,6 @@ import { supabase } from "@/integrations/supabase/client";
 // Function to validate single-use password setup links
 const validatePasswordSetupLink = async (linkToken: string) => {
   try {
-    if (import.meta.env.DEV) {
-      if (import.meta.env.DEV)    }
-    
     const { data, error } = await supabase.functions.invoke('validate-password-setup-link', {
       body: {
         linkToken,
@@ -39,8 +36,6 @@ const validatePasswordSetupLink = async (linkToken: string) => {
       throw error;
     }
 
-    if (import.meta.env.DEV) {
-      if (import.meta.env.DEV)    }
     return data;
   } catch (error) {
     console.error("Link validation failed:", error);
@@ -51,9 +46,6 @@ const validatePasswordSetupLink = async (linkToken: string) => {
 // Function to consume (mark as used) a password setup link
 const consumePasswordSetupLink = async (linkToken: string) => {
   try {
-    if (import.meta.env.DEV) {
-      if (import.meta.env.DEV)    }
-    
     const { data, error } = await supabase.functions.invoke('validate-password-setup-link', {
       body: {
         linkToken,
@@ -66,8 +58,6 @@ const consumePasswordSetupLink = async (linkToken: string) => {
       throw error;
     }
 
-    if (import.meta.env.DEV) {
-      if (import.meta.env.DEV)    }
     return data;
   } catch (error) {
     console.error("Link consumption failed:", error);
@@ -532,7 +522,7 @@ const Auth: React.FC = () => {
           if (!consumeResult.valid) {
             throw new Error(consumeResult.message || "Link token could not be consumed");
           }
-          if (import.meta.env.DEV)        } catch (consumeError) {
+           catch (consumeError) {
           console.error("Failed to consume link token:", consumeError);
           toast({
             title: "Security Error",
@@ -1259,5 +1249,6 @@ const Auth: React.FC = () => {
 };
 
 export default Auth;
+
 
 

@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(session?.user ?? null);
         setLoading(false);
         if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
-          if (import.meta.env.DEV)        }
+          
       }
     });
 
@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setUser(session?.user ?? null);
           setLoading(false);
           if (import.meta.env.VITE_ENABLE_DEV_MODE === 'true') {
-            if (import.meta.env.DEV)          }
+            
         }
       } catch (error) {
         console.error("Error checking session:", error);
@@ -148,5 +148,6 @@ export const useAuth = () => {
   }
   return context;
 };
+
 
 
