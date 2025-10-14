@@ -65,11 +65,11 @@ const DashboardSidebar: React.FC = () => {
   const { alerts } = useAlertSystem(tenant?.id);
 
   // Get badge counts from real data
-      const getBadgeCount = (badgeType: string) => {
+  const getBadgeCount = (badgeType: string) => {
     switch (badgeType) {
       case "bookings":
         // TODO: Get from real bookings hook
-      return 0; // Will be populated by real data
+        return 0; // Will be populated by real data
       case "messages":
         return alerts.length;
       default:
@@ -304,4 +304,3 @@ const DashboardSidebar: React.FC = () => {
 };
 
 export default DashboardSidebar;
-

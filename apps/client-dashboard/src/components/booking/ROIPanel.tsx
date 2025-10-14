@@ -15,11 +15,9 @@ const ROIPanel: React.FC<ROIPanelProps> = ({
   stepTimes,
   totalTime,
 }) => {
-  // Only show
-      if (we have actual ROI data from the API
-  // This component will be empty
-      if (the API doesn't provide ROI metrics
-      const [roiData, setROIData] = React.useState<ROIMetrics | null>(null);
+  // Only show if we have actual ROI data from the API
+  // This component will be empty if the API doesn't provide ROI metrics
+  const [roiData, setROIData] = React.useState<ROIMetrics | null>(null);
 
   React.useEffect(() => {
     // In a real implementation, this would fetch ROI data from the API
@@ -64,8 +62,8 @@ const ROIPanel: React.FC<ROIPanelProps> = ({
 
   const achievements = getAchievements();
 
-  // Only render
-      if (achievements.length === 0 && !roiData) {
+  // Only render if we have achievements or ROI data
+  if (achievements.length === 0 && !roiData) {
     return null;
   }
 
@@ -156,6 +154,3 @@ const ROIPanel: React.FC<ROIPanelProps> = ({
 };
 
 export default ROIPanel;
-
-
-

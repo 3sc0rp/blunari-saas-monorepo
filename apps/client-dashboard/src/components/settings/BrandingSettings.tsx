@@ -36,7 +36,7 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
   });
 
   // Do NOT live-apply changes globally; only apply on Save
-      const watchedValues = form.watch();
+  const watchedValues = form.watch();
 
   // Update form values when settings prop changes
   useEffect(() => {
@@ -46,7 +46,8 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
   }, [settings, form]);
 
   // Removed: live preview side-effect. Changes apply only after Save.
-      const onSubmit = (data: BrandingSettingsType) => {
+
+  const onSubmit = (data: BrandingSettingsType) => {
     // First persist via hook
     onUpdate(data);
     // Then apply to runtime branding context
@@ -278,4 +279,3 @@ const BrandingSettings: React.FC<BrandingSettingsProps> = ({
 };
 
 export default BrandingSettings;
-

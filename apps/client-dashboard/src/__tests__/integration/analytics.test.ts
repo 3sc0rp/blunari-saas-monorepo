@@ -31,6 +31,7 @@ describe('Widget Analytics Integration', () => {
 
       // Mock analytics endpoint
       const mockAnalyticsEndpoint = 'https://api.example.com/analytics';
+      
       const result = await IntegrationUtils.testApiIntegration(
         mockAnalyticsEndpoint,
         'POST',
@@ -137,7 +138,7 @@ describe('Widget Analytics Integration', () => {
 
       invalidPayloads.forEach(payload => {
         // In a real implementation, this would use schema validation
-      if (payload.widget_id === null) {
+        if (payload.widget_id === null) {
           expect(payload.widget_id).toBeNull();
         }
         if (payload.event === '') {
@@ -173,7 +174,7 @@ describe('Widget Analytics Integration', () => {
     it('should benchmark analytics processing speed', () => {
       const analyticsProcessor = () => {
         // Simulate analytics data processing
-      const data = {
+        const data = {
           events: Array.from({ length: 100 }, (_, i) => ({
             id: `event-${i}`,
             timestamp: Date.now(),

@@ -23,7 +23,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
 
   // Fetch bookings with advanced filtering
-      const {
+  const {
     data: bookings = [],
     isLoading,
     error,
@@ -58,10 +58,12 @@ export const useAdvancedBookings = (tenantId?: string) => {
 
       // Apply date range filter
       if (filters.dateRange.start) {
-        if (devLogs)        query = query.gte("booking_time", filters.dateRange.start);
+        if (devLogs) console.log('[useAdvancedBookings] Applying date filter start:', filters.dateRange.start);
+        query = query.gte("booking_time", filters.dateRange.start);
       }
       if (filters.dateRange.end) {
-        if (devLogs)        query = query.lte("booking_time", filters.dateRange.end);
+        if (devLogs) console.log('[useAdvancedBookings] Applying date filter end:', filters.dateRange.end);
+        query = query.lte("booking_time", filters.dateRange.end);
       }
 
       // Apply party size filter
@@ -84,20 +86,32 @@ export const useAdvancedBookings = (tenantId?: string) => {
         query = query.or(`guest_name.ilike.%${term}%,guest_email.ilike.%${term}%,guest_phone.ilike.%${term}%,special_requests.ilike.%${term}%`);
       }
 
-      if (devLogs)      const [bookingsRes, tablesRes] = await Promise.all([
+      if (devLogs) console.log('[useAdvancedBookings] Executing query...');
+      
+      const [bookingsRes, tablesRes] = await Promise.all([
         query.order("booking_time", { ascending: true }),
         supabase.from("restaurant_tables").select("id,name").eq("tenant_id", tenantId)
       ]);
       
-      if (devLogs)      if (devLogs)      const data = bookingsRes.data;
+      if (devLogs) console.log('[useAdvancedBookings] Raw query executed, got response');
+      if (devLogs) console.log('[useAdvancedBookings] Bookings response:', { 
+        dataLength: bookingsRes.data?.length, 
+        error: bookingsRes.error,
+        status: bookingsRes.status,
+        statusText: bookingsRes.statusText
+      });
+      const data = bookingsRes.data;
       const error = bookingsRes.error;
 
-      if (devLogs)      if (error) {
+      if (devLogs) console.log('[useAdvancedBookings] Query result:', { data: data?.length, error });
+      
+      if (error) {
         console.error('[useAdvancedBookings] Direct query failed:', error);
         console.error('[useAdvancedBookings] Error details:', { code: error.code, message: error.message, details: error.details });
         
         // Fallback: try the edge function that uses service role
-      if (devLogs)        try {
+        if (devLogs) console.log('[useAdvancedBookings] Attempting fallback via edge function...');
+        try {
           const apiUrl = import.meta.env.VITE_SUPABASE_URL;
           const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
           
@@ -112,15 +126,18 @@ export const useAdvancedBookings = (tenantId?: string) => {
           
           if (fallbackRes.ok) {
             const fallbackData = await fallbackRes.json();
-            if (devLogs)            // Return the bookings with basic processing (skip advanced filtering for now)
-      return (fallbackData.bookings || []).map((b: any) => ({
+            if (devLogs) console.log('[useAdvancedBookings] Fallback successful, got', fallbackData.bookings?.length, 'bookings');
+            
+            // Return the bookings with basic processing (skip advanced filtering for now)
+            return (fallbackData.bookings || []).map((b: any) => ({
               ...b,
               status: (b.status === 'no_show') ? 'noshow' : b.status,
               table_name: null, // Skip table name lookup for fallback
             } as ExtendedBooking));
           } else {
             const errorText = await fallbackRes.text();
-            if (devLogs)          }
+            if (devLogs) console.log('[useAdvancedBookings] Fallback failed:', fallbackRes.status, errorText);
+          }
         } catch (fallbackError) {
           if (devLogs) console.error('[useAdvancedBookings] Fallback error:', fallbackError);
         }
@@ -144,7 +161,8 @@ export const useAdvancedBookings = (tenantId?: string) => {
         } as ExtendedBooking;
       });
       
-      if (devLogs)      return result;
+      if (devLogs) console.log('[useAdvancedBookings] Processed result:', result.length, 'bookings');
+      return result;
     },
     enabled: !!tenantId,
   });
@@ -169,7 +187,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
   }, [tenantId, queryClient]);
 
   // Filter bookings by search term
-      const filteredBookings = useMemo(() => {
+  const filteredBookings = useMemo(() => {
     if (!filters.search) return bookings;
 
     const searchTerm = filters.search.toLowerCase();
@@ -183,7 +201,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
   }, [bookings, filters.search]);
 
   // Bulk operations mutation
-      const bulkOperationMutation = useMutation({
+  const bulkOperationMutation = useMutation({
     mutationFn: async (operation: BulkOperation) => {
       switch (operation.type) {
         case "status_update": {
@@ -197,7 +215,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
 
         case "send_notification": {
           // Call notification edge function
-      const { error: notificationError } = await supabase.functions.invoke(
+          const { error: notificationError } = await supabase.functions.invoke(
             "send-bulk-notifications",
             {
               body: { bookingIds: operation.bookingIds, ...operation.data },
@@ -209,7 +227,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
 
         case "export": {
           // Generate CSV export
-      const bookingsToExport = bookings.filter((b) =>
+          const bookingsToExport = bookings.filter((b) =>
             operation.bookingIds.includes(b.id),
           );
           const csv = generateCSV(bookingsToExport);
@@ -248,7 +266,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
   });
 
   // Update booking status
-      const updateBookingMutation = useMutation({
+  const updateBookingMutation = useMutation({
     mutationFn: async ({
       id,
       updates,
@@ -262,6 +280,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
         payload.status = payload.status === 'noshow' ? 'no_show' : payload.status;
       }
       delete payload.table_name; // never update derived field
+
       const { error } = await supabase
         .from("bookings")
         .update(payload)
@@ -342,5 +361,3 @@ export const useAdvancedBookings = (tenantId?: string) => {
     isUpdating: updateBookingMutation.isPending,
   };
 };
-
-

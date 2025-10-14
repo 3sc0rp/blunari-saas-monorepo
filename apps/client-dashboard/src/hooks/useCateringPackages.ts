@@ -12,7 +12,7 @@ export const useCateringPackages = (tenantId?: string) => {
   const { toast } = useToast();
 
   // Fetch catering packages
-      const {
+  const {
     data: packages = [],
     isLoading,
     error,
@@ -24,7 +24,7 @@ export const useCateringPackages = (tenantId?: string) => {
 
       try {
         // Cast to any to bypass TypeScript checking for tables that may not be in schema yet
-      const { data: packagesData, error } = await supabase
+        const { data: packagesData, error } = await supabase
           .from("catering_packages" as any)
           .select("*")
           .eq("tenant_id", tenantId)
@@ -33,13 +33,16 @@ export const useCateringPackages = (tenantId?: string) => {
           .order("created_at", { ascending: false });
 
         if (error) {
-          // If table doesn't exist yet,
-      return empty array
-      if (
+          // If table doesn't exist yet, return empty array
+          if (
             error.code === "42P01" ||
             error.message?.includes("relation") ||
             error.message?.includes("does not exist")
-          ) {            return [];
+          ) {
+            console.info(
+              "Catering packages table not found. Please run the database migration.",
+            );
+            return [];
           }
           throw error;
         }
@@ -54,7 +57,7 @@ export const useCateringPackages = (tenantId?: string) => {
   });
 
   // Create catering package
-      const createPackageMutation = useMutation({
+  const createPackageMutation = useMutation({
     mutationFn: async (packageData: CreateCateringPackageRequest) => {
       const { data, error } = await supabase
         .from("catering_packages" as any)
@@ -92,7 +95,7 @@ export const useCateringPackages = (tenantId?: string) => {
   });
 
   // Update catering package
-      const updatePackageMutation = useMutation({
+  const updatePackageMutation = useMutation({
     mutationFn: async ({
       packageId,
       updates,
@@ -135,7 +138,7 @@ export const useCateringPackages = (tenantId?: string) => {
   });
 
   // Delete/deactivate catering package
-      const deletePackageMutation = useMutation({
+  const deletePackageMutation = useMutation({
     mutationFn: async (packageId: string) => {
       // Soft delete by setting active to false
       const { data, error } = await supabase
@@ -173,7 +176,7 @@ export const useCateringPackages = (tenantId?: string) => {
   });
 
   // Toggle package popularity
-      const togglePopularMutation = useMutation({
+  const togglePopularMutation = useMutation({
     mutationFn: async (packageId: string) => {
       const pkg = packages.find((p) => p.id === packageId);
       if (!pkg) throw new Error("Package not found");
@@ -215,12 +218,12 @@ export const useCateringPackages = (tenantId?: string) => {
   });
 
   // Get popular packages
-      const getPopularPackages = () => {
+  const getPopularPackages = () => {
     return packages.filter((pkg) => pkg.popular);
   };
 
   // Get packages by price range
-      const getPackagesByPriceRange = (minPrice: number, maxPrice: number) => {
+  const getPackagesByPriceRange = (minPrice: number, maxPrice: number) => {
     return packages.filter(
       (pkg) =>
         pkg.price_per_person >= minPrice && pkg.price_per_person <= maxPrice,
@@ -228,7 +231,7 @@ export const useCateringPackages = (tenantId?: string) => {
   };
 
   // Get packages by guest count
-      const getPackagesByGuestCount = (guestCount: number) => {
+  const getPackagesByGuestCount = (guestCount: number) => {
     return packages.filter(
       (pkg) =>
         guestCount >= pkg.min_guests &&
@@ -237,12 +240,12 @@ export const useCateringPackages = (tenantId?: string) => {
   };
 
   // Calculate package performance metrics
-      const getPackageMetrics = (packageId: string) => {
+  const getPackageMetrics = (packageId: string) => {
     const pkg = packages.find((p) => p.id === packageId);
     if (!pkg) return null;
 
     // For now return empty metrics since we don't have orders relationship loaded
-      return {
+    return {
       total_orders: 0,
       confirmed_orders: 0,
       conversion_rate: 0,
@@ -275,5 +278,3 @@ export const useCateringPackages = (tenantId?: string) => {
     getPackageMetrics,
   };
 };
-
-

@@ -13,33 +13,33 @@ export function KitchenLoadGauge({
   className 
 }: KitchenLoadGaugeProps) {
   // Clamp percentage between 0 and 100
-      const safePercentage = Math.max(0, Math.min(100, percentage));
+  const safePercentage = Math.max(0, Math.min(100, percentage));
   
   // Convert percentage to angle (180 degrees = semicircle)
-      const angle = (safePercentage / 100) * 180;
+  const angle = (safePercentage / 100) * 180;
   
   // Calculate color based on load
-      const getLoadColor = (pct: number) => {
+  const getLoadColor = (pct: number) => {
     if (pct < 40) return "#3B82F6"; // Blue - light load
-      if (pct < 70) return "#F59E0B"; // Amber - moderate load
-      return "#EF4444"; // Red - heavy load
+    if (pct < 70) return "#F59E0B"; // Amber - moderate load
+    return "#EF4444"; // Red - heavy load
   };
 
   const loadColor = getLoadColor(safePercentage);
 
   // Create arc path
-      const centerX = 60;
+  const centerX = 60;
   const centerY = 55;
   const radius = 35;
   const startAngle = 180; // Start from left (180 degrees)
-      const endAngle = 180 - angle; // End angle based on percentage
+  const endAngle = 180 - angle; // End angle based on percentage
 
   // Convert degrees to radians
-      const startAngleRad = (startAngle * Math.PI) / 180;
+  const startAngleRad = (startAngle * Math.PI) / 180;
   const endAngleRad = (endAngle * Math.PI) / 180;
 
   // Calculate arc coordinates
-      const x1 = centerX + radius * Math.cos(startAngleRad);
+  const x1 = centerX + radius * Math.cos(startAngleRad);
   const y1 = centerY + radius * Math.sin(startAngleRad);
   const x2 = centerX + radius * Math.cos(endAngleRad);
   const y2 = centerY + radius * Math.sin(endAngleRad);
@@ -52,13 +52,13 @@ export function KitchenLoadGauge({
   `;
 
   // Background arc (full semicircle)
-      const backgroundPath = `
+  const backgroundPath = `
     M ${centerX - radius} ${centerY}
     A ${radius} ${radius} 0 0 0 ${centerX + radius} ${centerY}
   `;
 
   // Get load status text and color
-      const getLoadStatus = (pct: number) => {
+  const getLoadStatus = (pct: number) => {
     if (pct < 40) return { text: "Light", color: "text-blue-400" };
     if (pct < 70) return { text: "Moderate", color: "text-amber-400" };
     return { text: "Heavy", color: "text-red-400" };
@@ -137,4 +137,3 @@ export function KitchenLoadGauge({
 }
 
 export default KitchenLoadGauge;
-

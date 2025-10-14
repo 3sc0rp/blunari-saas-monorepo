@@ -44,11 +44,12 @@ export function Timeline({
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000); // Update every minute
-      return () => clearInterval(timer);
+
+    return () => clearInterval(timer);
   }, []);
 
   // Generate time slots (every 15 minutes from 5 PM to 11 PM)
-      const generateTimeSlots = useCallback((): TimeSlot[] => {
+  const generateTimeSlots = useCallback((): TimeSlot[] => {
     const slots: TimeSlot[] = [];
     const today = new Date();
     const startTime = new Date(today);
@@ -71,12 +72,12 @@ export function Timeline({
   const timeSlots = useMemo(() => generateTimeSlots(), [generateTimeSlots]);
 
   // Calculate table utilization for duration bar
-      const getTableUtilization = (tableId: string): number => {
+  const getTableUtilization = (tableId: string): number => {
     const tableReservations = reservations.filter(r => r.tableId === tableId);
     if (tableReservations.length === 0) return 0;
     
     // Calculate total booked minutes vs total available minutes (6 hours = 360 minutes)
-      const totalMinutes = tableReservations.reduce((acc, reservation) => {
+    const totalMinutes = tableReservations.reduce((acc, reservation) => {
       try {
         const start = new Date(reservation.start);
         const end = new Date(reservation.end);
@@ -90,7 +91,7 @@ export function Timeline({
   };
 
   // Compute non-overlapping lanes for a set of reservations (per table)
-      const computeLanes = (items: Reservation[]) => {
+  const computeLanes = (items: Reservation[]) => {
     const sorted = [...items].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
     const lanes: Reservation[][] = [];
     const laneIndexById: Record<string, number> = {};
@@ -119,7 +120,7 @@ export function Timeline({
   };
 
   // Calculate left/width percentages for a reservation spanning the entire row timeline
-      const getReservationPosition = (reservation: Reservation) => {
+  const getReservationPosition = (reservation: Reservation) => {
     try {
       const startTime = timeSlots[0]?.time;
       const endTime = addHours(timeSlots[0]?.time || new Date(), 6); // 6-hour window
@@ -143,7 +144,7 @@ export function Timeline({
   };
 
   // Get enhanced status color with gradients for reservation card
-      const getReservationColor = (reservation: Reservation) => {
+  const getReservationColor = (reservation: Reservation) => {
     const baseClasses = 'shadow-lg border-2 backdrop-blur-md';
     
     switch (reservation.status) {
@@ -163,7 +164,7 @@ export function Timeline({
   };
 
   // Get status icon for reservation
-      const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'confirmed':
         return <Calendar className="w-3 h-3 text-blue-200" />;
@@ -181,7 +182,7 @@ export function Timeline({
   };
 
   // Calculate reservation card width based on duration
-      const getReservationWidth = (reservation: Reservation) => {
+  const getReservationWidth = (reservation: Reservation) => {
     try {
       const start = new Date(reservation.start);
       const end = new Date(reservation.end);
@@ -236,7 +237,7 @@ export function Timeline({
               {timeSlots.map((slot, index) => {
                 const isHourStart = slot.time.getMinutes() === 0;
                 const hourIndex = Math.floor(index / 4); // Every 4 slots = 1 hour
-      const isEvenHour = hourIndex % 2 === 0;
+                const isEvenHour = hourIndex % 2 === 0;
                 
                 return (
                   <div
@@ -423,7 +424,7 @@ export function Timeline({
                 <div className="flex min-w-max relative">
                   {timeSlots.map((slot, slotIndex) => {
                     const hourIndex = Math.floor(slotIndex / 4); // Every 4 slots = 1 hour
-      const isEvenHour = hourIndex % 2 === 0;
+                    const isEvenHour = hourIndex % 2 === 0;
                     const isHourStart = slot.time.getMinutes() === 0;
                     return (
                       <div
@@ -460,7 +461,7 @@ export function Timeline({
                         const onMove = (ev: MouseEvent) => {
                           const dx = ev.clientX - startX;
                           const minutesPerPx = (15 / (slotWidth)); // 15 min per slotWidth px
-      const moveMin = Math.round(dx * minutesPerPx);
+                          const moveMin = Math.round(dx * minutesPerPx);
                           const newStart = new Date(origStart.getTime() + moveMin * 60000);
                           const duration = new Date(reservation.end).getTime() - origStart.getTime();
                           const newEnd = new Date(newStart.getTime() + duration);
@@ -741,4 +742,3 @@ export function Timeline({
     </div>
   );
 }
-

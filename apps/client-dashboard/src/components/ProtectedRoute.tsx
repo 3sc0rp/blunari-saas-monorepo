@@ -21,7 +21,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
 
   // Show loading while checking authentication and tenant
-      if (authLoading || tenantLoading) {
+  if (authLoading || tenantLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -34,14 +34,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // SECURITY FIX: All access now requires authentication
   // No more unrestricted domain access
-      if (!user) {
+  if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   // Handle different access scenarios (only for authenticated users)
-      if (accessType === "domain") {
+  if (accessType === "domain") {
     // Domain-based access (authenticated restaurant staff only)
-      if (!tenant) {
+    if (!tenant) {
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <Card className="max-w-md w-full">
@@ -72,11 +72,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
     // Verify user has access to this tenant
     // This will be validated by the new RLS policies on the backend
-      return <>{children}</>;
+    return <>{children}</>;
   }
 
   // User-based access (admin or staff access)
-      if (!tenant) {
+
+  if (!tenant) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -101,4 +102,3 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 };
 
 export default ProtectedRoute;
-

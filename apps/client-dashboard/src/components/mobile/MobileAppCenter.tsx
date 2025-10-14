@@ -227,7 +227,7 @@ const FEATURE_TEMPLATES: AppFeatureTemplate[] = [
 
 // Real-data-only baseline: start with no apps until backend provides configurations.
 // TODO(mobile-apps-api): fetch tenant mobile app configs & analytics from backend service.
-      const INITIAL_APPS: MobileAppConfig[] = [];
+const INITIAL_APPS: MobileAppConfig[] = [];
 
 export default function MobileAppCenter() {
   const { tenant } = useTenant();
@@ -244,13 +244,12 @@ export default function MobileAppCenter() {
 
   // Check PWA support and install prompt
   useEffect(() => {
-    // Check
-      if (PWA features are supported
-      const isPwaSupported = 'serviceWorker' in navigator && 'PushManager' in window;
+    // Check if PWA features are supported
+    const isPwaSupported = 'serviceWorker' in navigator && 'PushManager' in window;
     setPwaSupported(isPwaSupported);
 
     // Listen for PWA install prompt
-      const handleBeforeInstallPrompt = (e: any) => {
+    const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setInstallPrompt(e);
     };
@@ -260,7 +259,7 @@ export default function MobileAppCenter() {
   }, []);
 
   // Real PWA installation
-      const handleInstallPWA = async () => {
+  const handleInstallPWA = async () => {
     if (!installPrompt) {
       toast({
         title: 'Installation Not Available',
@@ -290,7 +289,7 @@ export default function MobileAppCenter() {
   };
 
   // Generate PWA manifest
-      const generatePWAManifest = (app: MobileAppConfig) => {
+  const generatePWAManifest = (app: MobileAppConfig) => {
     const manifest = {
       ...app.pwa_manifest,
       scope: '/',
@@ -319,7 +318,7 @@ export default function MobileAppCenter() {
   };
 
   // Create new app configuration
-      const handleCreateApp = async (appData: Partial<MobileAppConfig>) => {
+  const handleCreateApp = async (appData: Partial<MobileAppConfig>) => {
     try {
       setLoading(true);
 
@@ -412,7 +411,7 @@ export default function MobileAppCenter() {
   };
 
   // Update app configuration
-      const handleUpdateApp = async (appId: string, updates: Partial<MobileAppConfig>) => {
+  const handleUpdateApp = async (appId: string, updates: Partial<MobileAppConfig>) => {
     try {
       setLoading(true);
 
@@ -440,7 +439,7 @@ export default function MobileAppCenter() {
   };
 
   // Build and deploy app
-      const handleBuildApp = async (app: MobileAppConfig) => {
+  const handleBuildApp = async (app: MobileAppConfig) => {
     try {
       setLoading(true);
 
@@ -1069,5 +1068,3 @@ export default function MobileAppCenter() {
     </div>
   );
 }
-
-

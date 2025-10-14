@@ -12,7 +12,7 @@ export async function requireEntitlement(req: VercelRequest, key: 'three_d_floor
   // Resolve tenant from auth or query. Prefer authenticated user metadata.
   // For dashboard APIs: expect Authorization header with user, and tenant_id in user metadata.
   // For public requests: allow `tenant` query param (UUID) or `slug`.
-      const authHeader = req.headers.authorization || '';
+  const authHeader = req.headers.authorization || '';
   const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
 
   let tenantId: string | null = null;
@@ -25,7 +25,7 @@ export async function requireEntitlement(req: VercelRequest, key: 'three_d_floor
   } catch {}
 
   const urlObj = new URL(req.url || '', 'http://localhost');
-      const searchParams = urlObj.searchParams;
+  const searchParams = urlObj.searchParams;
   const slug = searchParams.get('slug');
   if (!tenantId && slug) {
     const { data: t } = await supabase.from('tenants').select('id').eq('slug', slug).maybeSingle();
@@ -69,6 +69,5 @@ export async function requireEntitlement(req: VercelRequest, key: 'three_d_floor
 
   return { tenantId };
 }
-
 
 

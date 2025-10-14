@@ -30,7 +30,7 @@ const TableManagement: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
 
   // Fetch real table data from database
-      const { tables, isLoading, updateTable } = useTableManagement(tenant?.id);
+  const { tables, isLoading, updateTable } = useTableManagement(tenant?.id);
 
   const getStatusColor = (status: Table["status"]) => {
     switch (status) {
@@ -266,7 +266,7 @@ const TableManagement: React.FC = () => {
 };
 
 // Floor Plan View Component
-      const FloorPlanView: React.FC<{
+const FloorPlanView: React.FC<{
   tables: Table[];
   selectedTable: string | null;
   onSelectTable: (id: string | null) => void;
@@ -357,7 +357,7 @@ const TableManagement: React.FC = () => {
 };
 
 // Grid View Component
-      const GridView: React.FC<{
+const GridView: React.FC<{
   tables: Table[];
   selectedTable: string | null;
   onSelectTable: (id: string | null) => void;
@@ -431,7 +431,7 @@ const TableManagement: React.FC = () => {
 };
 
 // Selected Table Info Component
-      const SelectedTableInfo: React.FC<{
+const SelectedTableInfo: React.FC<{
   table: Table;
   onClose: () => void;
 }> = ({ table, onClose }) => {
@@ -513,4 +513,3 @@ const TableManagement: React.FC = () => {
 };
 
 export default TableManagement;
-

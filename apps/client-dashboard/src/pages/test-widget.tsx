@@ -19,7 +19,10 @@ const TestWidget: React.FC = () => {
     setWidgetUrl(null);
     setTokenInfo(null);
 
-    try {      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    try {
+      console.log('[TestWidget] Generating token for slug:', slug);
+      
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       
       if (!supabaseUrl || !anonKey) {
@@ -40,20 +43,33 @@ const TestWidget: React.FC = () => {
           config_version: '2.0',
           ttl_seconds: 3600
         })
-      });      if (!response.ok) {
+      });
+
+      console.log('[TestWidget] Token creation response:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      if (!response.ok) {
         const errorText = await response.text();
         console.error('[TestWidget] Token creation failed:', errorText);
         throw new Error(`Token creation failed: ${response.status} ${errorText}`);
       }
 
-      const data = await response.json();      setTokenInfo(data);
+      const data = await response.json();
+      console.log('[TestWidget] Token created:', data);
+      
+      setTokenInfo(data);
 
       // Step 2: Generate widget URL
       const baseUrl = window.location.origin;
       const widgetPath = `/public-widget/book/${slug}`;
       const fullUrl = `${baseUrl}${widgetPath}?token=${encodeURIComponent(data.token)}`;
       
-      setWidgetUrl(fullUrl);    } catch (err) {
+      setWidgetUrl(fullUrl);
+      console.log('[TestWidget] Widget URL generated:', fullUrl);
+
+    } catch (err) {
       console.error('[TestWidget] Error:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {

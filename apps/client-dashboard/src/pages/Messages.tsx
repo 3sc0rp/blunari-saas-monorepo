@@ -26,7 +26,7 @@ const Messages: React.FC = () => {
   const [showNewConversation, setShowNewConversation] = useState(false);
 
   // Real data - to be replaced with actual API calls
-      const conversations: Conversation[] = [];
+  const conversations: Conversation[] = [];
   const [messages] = useState<Message[]>([]);
 
   const handleSelectConversation = useCallback((id: string) => {
@@ -62,12 +62,12 @@ const Messages: React.FC = () => {
   );
 
   // Loading state
-      if (isLoading) {
+  if (isLoading) {
     return <SkeletonMessagesDashboard />;
   }
 
   // Error state
-      if (error) {
+  if (error) {
     return (
       <div className="p-6">
         <ErrorState
@@ -194,4 +194,3 @@ const Messages: React.FC = () => {
 };
 
 export default Messages;
-

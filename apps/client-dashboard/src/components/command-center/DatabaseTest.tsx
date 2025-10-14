@@ -16,8 +16,11 @@ const DatabaseTest: React.FC = () => {
         return;
       }
 
-      try {        // Test bookings
-      const { data: bookings, error: bookingsError } = await supabase
+      try {
+        console.log("Testing database with tenant:", tenant);
+
+        // Test bookings
+        const { data: bookings, error: bookingsError } = await supabase
           .from('bookings')
           .select('*')
           .eq('tenant_id', tenant.id)
@@ -25,10 +28,12 @@ const DatabaseTest: React.FC = () => {
 
         if (bookingsError) {
           console.error("Bookings error:", bookingsError);
-        } else {        }
+        } else {
+          console.log("Bookings data:", bookings);
+        }
 
         // Test restaurant_tables
-      const { data: tables, error: tablesError } = await supabase
+        const { data: tables, error: tablesError } = await supabase
           .from('restaurant_tables')
           .select('*')
           .eq('tenant_id', tenant.id)
@@ -36,7 +41,9 @@ const DatabaseTest: React.FC = () => {
 
         if (tablesError) {
           console.error("Tables error:", tablesError);
-        } else {        }
+        } else {
+          console.log("Tables data:", tables);
+        }
 
         setData({
           bookings: bookings || [],
@@ -105,5 +112,3 @@ const DatabaseTest: React.FC = () => {
 };
 
 export default DatabaseTest;
-
-

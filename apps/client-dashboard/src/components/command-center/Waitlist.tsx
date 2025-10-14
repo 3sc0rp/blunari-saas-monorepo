@@ -36,7 +36,7 @@ const Waitlist: React.FC = () => {
   const [selectedEntry, setSelectedEntry] = useState<string | null>(null);
 
   // Transform waitlist data
-      const waitlistEntries = useMemo((): WaitlistEntry[] => {
+  const waitlistEntries = useMemo((): WaitlistEntry[] => {
     if (!data?.waitlistEntries) return [];
 
     return data.waitlistEntries.map(entry => {
@@ -101,12 +101,21 @@ const Waitlist: React.FC = () => {
   };
 
   const handleSeatGuest = (entryId: string) => {
-    // TODO: Implement seat guest functionality  };
-      const handleCallGuest = (entryId: string) => {
-    // TODO: Implement call guest functionality  };
-      const handleCancelWait = (entryId: string) => {
-    // TODO: Implement cancel wait functionality  };
-      if (error) {
+    // TODO: Implement seat guest functionality
+    console.log('Seat guest:', entryId);
+  };
+
+  const handleCallGuest = (entryId: string) => {
+    // TODO: Implement call guest functionality  
+    console.log('Call guest:', entryId);
+  };
+
+  const handleCancelWait = (entryId: string) => {
+    // TODO: Implement cancel wait functionality
+    console.log('Cancel wait:', entryId);
+  };
+
+  if (error) {
     return (
       <div className="h-full flex items-center justify-center p-4">
         <div className="text-center space-y-3">
@@ -351,5 +360,3 @@ const Waitlist: React.FC = () => {
 };
 
 export default Waitlist;
-
-

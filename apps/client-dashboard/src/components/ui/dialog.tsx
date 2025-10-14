@@ -33,16 +33,15 @@ const DialogContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const generatedDescriptionId = React.useId();
 
-  // Detect if any child is a Dialog Description;
-      if (not, attach an sr-only fallback
-      const hasDescription = React.useMemo(() => {
+  // Detect if any child is a Dialog Description; if not, attach an sr-only fallback
+  const hasDescription = React.useMemo(() => {
     let found = false;
     const visit = (nodes: React.ReactNode) => {
       React.Children.forEach(nodes, (child) => {
         if (!child || found) return;
         if (!React.isValidElement(child)) return;
         // Radix sets displayName on Description; also check our wrapper
-      const type: any = child.type as any;
+        const type: any = child.type as any;
         const name = type?.displayName || type?.name || "";
         if (type === DialogPrimitive.Description || name.includes("Description")) {
           found = true;
@@ -157,5 +156,3 @@ export {
   DialogTitle,
   DialogDescription,
 };
-
-

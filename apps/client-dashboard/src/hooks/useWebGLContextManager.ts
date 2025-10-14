@@ -42,8 +42,10 @@ export const useWebGLContextManager = (config: WebGLContextManagerConfig = {}) =
         retryCountRef.current++;
         
         // Attempt to restore context
-      const loseContext = contextRef.current?.getExtension('WEBGL_lose_context');
-        if (loseContext) {          loseContext.restoreContext();
+        const loseContext = contextRef.current?.getExtension('WEBGL_lose_context');
+        if (loseContext) {
+          console.log(`🔄 Attempting WebGL context restoration (${delay}ms delay)`);
+          loseContext.restoreContext();
         }
         
         isRestoringRef.current = false;
@@ -54,7 +56,9 @@ export const useWebGLContextManager = (config: WebGLContextManagerConfig = {}) =
     }
   }, [maxRetries, retryDelay, onContextLost, onMaxRetriesReached]);
 
-  const handleContextRestored = useCallback(() => {    retryCountRef.current = 0;
+  const handleContextRestored = useCallback(() => {
+    console.log("✅ WebGL context restored successfully");
+    retryCountRef.current = 0;
     isRestoringRef.current = false;
     onContextRestored?.();
   }, [onContextRestored]);
@@ -68,7 +72,10 @@ export const useWebGLContextManager = (config: WebGLContextManagerConfig = {}) =
     
     // Add new listeners
     gl.canvas.addEventListener('webglcontextlost', handleContextLost, false);
-    gl.canvas.addEventListener('webglcontextrestored', handleContextRestored, false);  }, [handleContextLost, handleContextRestored]);
+    gl.canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
+    
+    console.log("🔧 WebGL context manager registered");
+  }, [handleContextLost, handleContextRestored]);
 
   const cleanup = useCallback(() => {
     if (contextRef.current) {
@@ -89,5 +96,3 @@ export const useWebGLContextManager = (config: WebGLContextManagerConfig = {}) =
     maxRetries
   };
 };
-
-

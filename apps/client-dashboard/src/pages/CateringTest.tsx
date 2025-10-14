@@ -3,7 +3,7 @@ import CateringWidget from "@/components/catering/CateringWidget";
 
 const CateringTestPage: React.FC = () => {
   // Use real tenant slug from URL or props
-      const testSlug = "demo";
+  const testSlug = "demo";
 
   return (
     <div className="min-h-screen">
@@ -13,4 +13,3 @@ const CateringTestPage: React.FC = () => {
 };
 
 export default CateringTestPage;
-

@@ -62,7 +62,7 @@ const Analytics: React.FC = () => {
   });
 
   // Comparison data when enabled
-      const comparisonData = comparisonEnabled
+  const comparisonData = comparisonEnabled
     ? {
         ...analyticsData,
         revenue: {
@@ -73,13 +73,13 @@ const Analytics: React.FC = () => {
     : undefined;
 
   // Generate insights based on analytics data
-      const generateInsights = (): InsightData[] => {
+  const generateInsights = (): InsightData[] => {
     if (!analyticsData) return [];
 
     const insights: InsightData[] = [];
 
     // Peak booking window insight
-      const peakHour = analyticsData.patterns.peakHours.reduce(
+    const peakHour = analyticsData.patterns.peakHours.reduce(
       (max, current) => (current.bookings > max.bookings ? current : max),
       analyticsData.patterns.peakHours[0] || { hour: 0, bookings: 0 },
     );
@@ -111,7 +111,7 @@ const Analytics: React.FC = () => {
     });
 
     // Performance insight
-      if (analyticsData.operational.serviceTimes.efficiencyScore > 80) {
+    if (analyticsData.operational.serviceTimes.efficiencyScore > 80) {
       insights.push({
         type: "performance",
         title: "High efficiency detected",
@@ -167,19 +167,19 @@ const Analytics: React.FC = () => {
   };
 
   // Add error state for failed data fetch
-      const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSetupAnalytics = () => {
     // Set up analytics functionality
   };
 
   // Show skeleton loading state
-      if (isLoading) {
+  if (isLoading) {
     return <AnalyticsPageSkeleton />;
   }
 
   // Error state
-      if (error) {
+  if (error) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -208,7 +208,7 @@ const Analytics: React.FC = () => {
   }
 
   // Helper function to show contextual messages for zero values
-      const getContextualMessage = () => {
+  const getContextualMessage = () => {
     if (!analyticsData?.revenue.totalRevenue) {
       return "No bookings found for the selected date range. Try selecting a different period or check if your booking data is properly configured.";
     }
@@ -224,7 +224,7 @@ const Analytics: React.FC = () => {
   const contextualMessage = getContextualMessage();
 
   // Empty state - no data available
-      if (!analyticsData || !analyticsData.revenue.totalRevenue) {
+  if (!analyticsData || !analyticsData.revenue.totalRevenue) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -509,4 +509,3 @@ const Analytics: React.FC = () => {
 };
 
 export default memo(Analytics);
-

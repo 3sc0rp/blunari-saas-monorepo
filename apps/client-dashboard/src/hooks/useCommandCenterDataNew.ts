@@ -18,7 +18,7 @@ import { logger } from '@/utils/logger';
 import { handleFallbackUsage } from '@/utils/productionErrorManager';
 
 // UUID validation helper
-      const isValidUUID = (str: string): boolean => {
+const isValidUUID = (str: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(str);
 };
@@ -49,10 +49,10 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
   const lastRequestIdRef = useRef<string | null>(null);
 
   // Debounce filters to reduce thrash
-      const debouncedFilters = useDebouncedValue(filters, 300);
+  const debouncedFilters = useDebouncedValue(filters, 300);
 
   // Query key with all dependencies
-      const queryKey = ['command-center', tenantId, date, debouncedFilters];
+  const queryKey = ['command-center', tenantId, date, debouncedFilters];
 
   const query = useQuery({
     queryKey,
@@ -81,7 +81,13 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         };
       }
 
-      // PRODUCTION FIX: Attempt real data fetch with graceful fallback      logger.info('Fetching real Command Center data for production', {
+      // PRODUCTION FIX: Attempt real data fetch with graceful fallback
+      console.log('[useCommandCenterDataNew] === STARTING DATA FETCH ===');
+      console.log('[useCommandCenterDataNew] Tenant ID:', tenantId);
+      console.log('[useCommandCenterDataNew] Date:', date);
+      console.log('[useCommandCenterDataNew] Filters:', filters);
+      
+      logger.info('Fetching real Command Center data for production', {
         component: 'useCommandCenterDataNew',
         tenantId,
         date,
@@ -90,7 +96,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
 
       try {
         // Get auth token
-      const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) {
           throw new Error('Authentication required');
         }
@@ -101,13 +107,23 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         };
 
         // Validate session and authentication
-      if (!session?.access_token) {
+        if (!session?.access_token) {
           throw new Error('No valid session or access token available');
         }
 
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;        // Standardized fetch for all edge functions to ensure consistent behavior
-      const fetchEdgeFunction = async (functionName: string, method: string = 'POST', body?: any) => {
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        
+        console.log('🔐 Auth check:', {
+          hasSession: !!session,
+          hasAccessToken: !!session?.access_token,
+          tokenLength: session?.access_token?.length,
+          userId: session?.user?.id,
+          supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'missing'
+        });
+        
+        // Standardized fetch for all edge functions to ensure consistent behavior
+        const fetchEdgeFunction = async (functionName: string, method: string = 'POST', body?: any) => {
           logger.debug(`Calling edge function: ${functionName} (${method})`, body ? { bodyKeys: Object.keys(body) } : { body: 'none' });
           
           const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
@@ -144,8 +160,10 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           return { data, error: null, requestId } as const;
         };
         
-        // Use direct Supabase queries instead of edge functions for reliability       
-      const [tablesResult, bookingsResult] = await Promise.all([
+        // Use direct Supabase queries instead of edge functions for reliability
+        console.log('[useCommandCenterDataNew] Using direct DB queries instead of edge functions');
+        
+        const [tablesResult, bookingsResult] = await Promise.all([
           supabase
             .from('restaurant_tables')
             .select('*')
@@ -160,8 +178,15 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
             .eq('tenant_id', tenantId)
             .then(res => ({ data: res.data, error: res.error }))
             .catch(error => ({ data: null, error }))
-        ]);        // Handle direct query errors gracefully
-      if (tablesResult.error) {
+        ]);
+
+        console.log('[useCommandCenterDataNew] Direct query results:', {
+          tables: { count: tablesResult.data?.length, error: tablesResult.error },
+          bookings: { count: bookingsResult.data?.length, error: bookingsResult.error }
+        });
+
+        // Handle direct query errors gracefully
+        if (tablesResult.error) {
           console.error('Tables fetch error details:', tablesResult.error);
         }
         if (bookingsResult.error) {
@@ -169,11 +194,11 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         }
 
         // Extract data from direct queries
-      const tablesData = tablesResult.data || [];
+        const tablesData = tablesResult.data || [];
         const bookingsData = bookingsResult.data || [];
         
         // Generate KPIs from real data
-      const kpisData = [
+        const kpisData = [
           {
             id: 'bookings-today',
             label: 'Bookings Today',
@@ -193,7 +218,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         ];
 
         // Transform bookings to reservations format
-      const reservationsData = bookingsData.map((booking: any) => ({
+        const reservationsData = bookingsData.map((booking: any) => ({
           id: booking.id,
           guestName: booking.guest_name,
           email: booking.guest_email,
@@ -206,8 +231,16 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           specialRequests: booking.special_requests,
           depositRequired: booking.deposit_required,
           depositAmount: booking.deposit_amount
-        }));        // Use the transformed reservations data
-      const reservations: Reservation[] = reservationsData.map((r: any) => {
+        }));
+
+        console.log('[useCommandCenterDataNew] Processing results:', {
+          tablesCount: tablesData.length,
+          kpisCount: kpisData.length,
+          reservationsCount: reservationsData.length
+        });
+
+        // Use the transformed reservations data
+        const reservations: Reservation[] = reservationsData.map((r: any) => {
           try { 
             return {
               id: r.id,
@@ -260,13 +293,11 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
           totalKpisReceived: kpisData?.data?.length || 0
         });
 
-        // TEMPORARY:
-      if (validation is failing,
-      return raw data for debugging
-      if (tables.length === 0 && tablesData?.data?.length > 0) {
+        // TEMPORARY: If validation is failing, return raw data for debugging
+        if (tables.length === 0 && tablesData?.data?.length > 0) {
           console.warn('⚠️ Table validation failed, using raw data structure');
           // Convert raw data to match expected structure
-      const rawTables = tablesData.data.map((t: any) => ({
+          const rawTables = tablesData.data.map((t: any) => ({
             id: t.id,
             name: t.name,
             section: t.section,
@@ -280,7 +311,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         if (kpis.length === 0 && kpisData?.data?.length > 0) {
           console.warn('⚠️ KPI validation failed, using raw data structure');
           // Convert raw data to match expected structure  
-      const rawKpis = kpisData.data.map((k: any) => ({
+          const rawKpis = kpisData.data.map((k: any) => ({
             id: k.id,
             label: k.label,
             value: k.value,
@@ -293,7 +324,7 @@ export function useCommandCenterData({ date, filters }: UseCommandCenterDataProp
         }
 
         // Default policies (could be fetched from database policies table)
-      const policies: Policy = {
+        const policies: Policy = {
           tenantId,
           depositsEnabled: false,
           depositAmount: 25,
@@ -399,8 +430,5 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
   }, [value, delayMs]);
   return debounced;
 }
-
-
-
 
 

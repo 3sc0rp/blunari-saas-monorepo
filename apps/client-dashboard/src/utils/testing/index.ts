@@ -81,7 +81,7 @@ class TestUtilsClass {
    */
   static initialize(): void {
     // Setup performance monitoring
-      if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
+    if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
       this.performanceObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           this.logger.debug('Performance entry recorded', {
@@ -98,12 +98,12 @@ class TestUtilsClass {
     }
 
     // Setup global error handling
-      const originalError = console.error;
+    const originalError = console.error;
     let inPatchedConsoleError = false;
     console.error = (...args: any[]) => {
       if (inPatchedConsoleError) {
         // Already handling an error from logger output; avoid recursion
-      return originalError.apply(console, args);
+        return originalError.apply(console, args);
       }
       inPatchedConsoleError = true;
       try {
@@ -186,7 +186,7 @@ class TestUtilsClass {
     }
 
     // Collect memory usage
-      if (typeof window !== 'undefined' && 'memory' in performance) {
+    if (typeof window !== 'undefined' && 'memory' in performance) {
       metrics.performance.memoryUsage = (performance as any).memory.usedJSHeapSize;
     }
 
@@ -526,8 +526,7 @@ class VisualUtilsClass {
   ): Promise<string> {
     try {
       // In a real implementation, this would use puppeteer or playwright
-      // For now,
-      return a mock base64 string
+      // For now, return a mock base64 string
       const mockScreenshot = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
       
       this.logger.debug('Screenshot captured', { name, element: element.tagName });

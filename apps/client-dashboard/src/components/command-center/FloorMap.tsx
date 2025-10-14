@@ -54,11 +54,11 @@ interface BookingData {
 }
 
 // Real floor plan generation from database tables
-      const generateFloorPlanFromTables = (tables: RealtimeTable[]): TablePosition[] => {
+const generateFloorPlanFromTables = (tables: RealtimeTable[]): TablePosition[] => {
   if (!tables.length) return [];
   
   // Generate positions for tables in a grid layout
-      const gridCols = Math.ceil(Math.sqrt(tables.length));
+  const gridCols = Math.ceil(Math.sqrt(tables.length));
   const gridRows = Math.ceil(tables.length / gridCols);
   const cellWidth = 150;
   const cellHeight = 120;
@@ -69,7 +69,7 @@ interface BookingData {
     const row = Math.floor(index / gridCols);
     
     // Determine shape and size based on capacity
-      const isLarge = table.capacity > 6;
+    const isLarge = table.capacity > 6;
     const isSmall = table.capacity <= 2;
     
     const width = isLarge ? 120 : isSmall ? 60 : 80;
@@ -100,11 +100,11 @@ const FloorMap: React.FC = () => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   
   // Generate floor plan from real table data
-      const floorPlan = useMemo(() => generateFloorPlanFromTables(tables), [tables]);
+  const floorPlan = useMemo(() => generateFloorPlanFromTables(tables), [tables]);
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Calculate table statuses based on current bookings
-      const tableStatuses = useMemo((): Record<string, TableStatus> => {
+  const tableStatuses = useMemo((): Record<string, TableStatus> => {
     if (!data?.bookings || !data?.tables) return {};
 
     const statuses: Record<string, TableStatus> = {};
@@ -126,10 +126,10 @@ const FloorMap: React.FC = () => {
       const bookingTime = new Date(booking.booking_time);
       const bookingEndTime = new Date(bookingTime.getTime() + (booking.duration_minutes || 120) * 60000);
 
-      // Check
-      if (booking is currently active
+      // Check if booking is currently active
       const isActive = now >= bookingTime && now <= bookingEndTime;
       const isUpcoming = bookingTime > now && (bookingTime.getTime() - now.getTime()) < 3600000; // Within 1 hour
+
       if (isActive) {
         statuses[tableId] = {
           id: tableId,
@@ -192,12 +192,12 @@ const FloorMap: React.FC = () => {
   };
 
   // Handle table selection
-      const handleTableClick = useCallback((tableId: string) => {
+  const handleTableClick = useCallback((tableId: string) => {
     setSelectedTable(prev => prev === tableId ? null : tableId);
   }, []);
 
   // Pan and zoom handlers
-      const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     if (e.target === svgRef.current) {
       setIsDragging(true);
       setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
@@ -251,7 +251,9 @@ const FloorMap: React.FC = () => {
           }
           case 'Enter':
             if (selectedTable) {
-              // TODO: Open details drawer            }
+              // TODO: Open details drawer
+              console.log('Open details for table:', selectedTable);
+            }
             break;
           case 'Escape':
             setSelectedTable(null);
@@ -539,6 +541,3 @@ const FloorMap: React.FC = () => {
 };
 
 export default FloorMap;
-
-
-

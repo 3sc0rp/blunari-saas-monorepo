@@ -24,7 +24,7 @@ interface WidgetAnalytics {
 }
 
 // Mock widget configuration data
-      const MOCK_WIDGET_CONFIGS: WidgetConfig[] = [
+const MOCK_WIDGET_CONFIGS: WidgetConfig[] = [
   {
     id: 'mock-booking-widget-1',
     tenant_id: 'mock-tenant-id',
@@ -70,7 +70,7 @@ interface WidgetAnalytics {
 ];
 
 // Mock analytics data
-      const MOCK_ANALYTICS: WidgetAnalytics[] = [
+const MOCK_ANALYTICS: WidgetAnalytics[] = [
   {
     id: 'analytics-1',
     widget_id: 'mock-booking-widget-1',
@@ -123,7 +123,7 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
   } = options;
 
   // State management
-      const [widgets, setWidgets] = useState<WidgetConfig[]>(MOCK_WIDGET_CONFIGS);
+  const [widgets, setWidgets] = useState<WidgetConfig[]>(MOCK_WIDGET_CONFIGS);
   const [analytics, setAnalytics] = useState<WidgetAnalytics[]>(MOCK_ANALYTICS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,24 +149,28 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
   useEffect(() => {
     if (!autoSave || !hasUnsavedChanges) return;
 
-    const timeout = setTimeout(() => {      setIsSaving(true);
+    const timeout = setTimeout(() => {
+      console.log('[Mock] Auto-saving widget configuration...');
+      setIsSaving(true);
       
       setTimeout(() => {
         setIsSaving(false);
         setLastSaved(new Date());
-        setHasUnsavedChanges(false);      }, 1000);
+        setHasUnsavedChanges(false);
+        console.log('[Mock] Auto-save completed');
+      }, 1000);
     }, autoSaveInterval);
 
     return () => clearTimeout(timeout);
   }, [hasUnsavedChanges, autoSave, autoSaveInterval]);
 
   // Simulate network delay
-      const simulateDelay = () => new Promise(resolve => 
+  const simulateDelay = () => new Promise(resolve => 
     setTimeout(resolve, simulateNetworkDelay ? 500 + Math.random() * 1000 : 0)
   );
 
   // Mock functions
-      const getWidgetByType = useCallback((type: 'booking' | 'catering') => {
+  const getWidgetByType = useCallback((type: 'booking' | 'catering') => {
     return widgets.find(w => w.widget_type === type);
   }, [widgets]);
 
@@ -174,7 +178,10 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
     type: 'booking' | 'catering',
     config: any,
     options: { skipAutoSave?: boolean } = {}
-  ) => {    if (simulateErrors && Math.random() < 0.1) {
+  ) => {
+    console.log(`[Mock] Saving ${type} widget config:`, config);
+    
+    if (simulateErrors && Math.random() < 0.1) {
       setError('Mock error: Network timeout');
       return { success: false, error: 'Network timeout' };
     }
@@ -209,7 +216,10 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
             metadata: { action: 'config_updated' }
           }]);
         }
-      }      return { success: true, data: { id: `mock-${type}-widget-1`, config } };
+      }
+
+      console.log(`[Mock] Successfully saved ${type} widget config`);
+      return { success: true, data: { id: `mock-${type}-widget-1`, config } };
       
     } catch (error) {
       const errorMessage = 'Mock save failed';
@@ -220,10 +230,15 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
     }
   }, [simulateErrors, simulateNetworkDelay, enableAnalytics, getWidgetByType]);
 
-  const markConfigChanged = useCallback((type: 'booking' | 'catering', config: any) => {    setHasUnsavedChanges(true);
+  const markConfigChanged = useCallback((type: 'booking' | 'catering', config: any) => {
+    console.log(`[Mock] Configuration changed for ${type} widget`);
+    setHasUnsavedChanges(true);
   }, []);
 
-  const toggleWidgetActive = useCallback(async (type: 'booking' | 'catering') => {    await simulateDelay();
+  const toggleWidgetActive = useCallback(async (type: 'booking' | 'catering') => {
+    console.log(`[Mock] Toggling ${type} widget active state`);
+    
+    await simulateDelay();
     
     setWidgets(prev => prev.map(w => 
       w.widget_type === type 
@@ -247,7 +262,9 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
     };
   }, [analytics]);
 
-  const refetchWidgets = useCallback(async () => {    setLoading(true);
+  const refetchWidgets = useCallback(async () => {
+    console.log('[Mock] Refetching widgets...');
+    setLoading(true);
     await simulateDelay();
     setLoading(false);
   }, []);
@@ -258,7 +275,7 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
 
     const interval = setInterval(() => {
       if (Math.random() < 0.3) { // 30% chance of new analytics event
-      const randomWidget = widgets[Math.floor(Math.random() * widgets.length)];
+        const randomWidget = widgets[Math.floor(Math.random() * widgets.length)];
         const eventTypes = ['view', 'interaction', 'conversion'] as const;
         const randomEventType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
         
@@ -272,7 +289,8 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
         setAnalytics(prev => [...prev, newAnalytic]);
       }
     }, 10000); // Every 10 seconds
-      return () => clearInterval(interval);
+
+    return () => clearInterval(interval);
   }, [enableAnalytics, widgets]);
 
   return {
@@ -316,7 +334,7 @@ export function useMockWidgetManagement(options: MockWidgetManagementOptions = {
 export function useWidgetManagementComparison(enableMockMode: boolean = false) {
   // This would import the real hook when available
   // const realHook = useWidgetManagement();
-      const mockHook = useMockWidgetManagement();
+  const mockHook = useMockWidgetManagement();
   
   if (enableMockMode) {
     return mockHook;
@@ -324,8 +342,5 @@ export function useWidgetManagementComparison(enableMockMode: boolean = false) {
   
   // Return real hook when database is ready
   // return realHook;
-      return mockHook; // For now, always
-      return mock until database is ready
+  return mockHook; // For now, always return mock until database is ready
 }
-
-

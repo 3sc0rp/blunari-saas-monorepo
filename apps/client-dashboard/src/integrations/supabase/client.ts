@@ -9,7 +9,7 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.error("Missing Supabase environment variables. Please check .env file.");
   
   // In development, provide fallback values to prevent app crash
-      if (import.meta.env.MODE === 'development') {
+  if (import.meta.env.MODE === 'development') {
     console.warn("Using fallback Supabase configuration for development");
   } else {
     throw new Error("Missing Supabase environment variables. Please check .env file.");
@@ -39,17 +39,19 @@ export const supabase = createClient<Database>(
     global: {
       fetch: (url, options = {}) => {
         const enableVerbose = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_SUPABASE_DEBUG === 'true';
-        if (enableVerbose) {        }
+        if (enableVerbose) {
+          console.log('[Supabase] Request:', { url, method: (options as any).method || 'GET' });
+        }
         return fetch(url, {
           ...(options as any),
           keepalive: false,
         }).then(res => {
-          if (enableVerbose) {          }
+          if (enableVerbose) {
+            console.log('[Supabase] Response:', { url, status: res.status, ok: res.ok });
+          }
           return res;
         });
       },
     },
   },
 );
-
-

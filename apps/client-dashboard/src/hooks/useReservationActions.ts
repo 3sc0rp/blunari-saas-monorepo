@@ -20,7 +20,7 @@ interface ReservationActionResult {
 }
 
 // Helper function to validate UUID format
-      const isValidUUID = (str: string): boolean => {
+const isValidUUID = (str: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(str);
 };
@@ -30,7 +30,7 @@ export function useReservationActions() {
   const queryClient = useQueryClient();
 
   // Create reservation mutation
-      const createReservation = useMutation({
+  const createReservation = useMutation({
     mutationFn: async (request: CreateReservationRequest): Promise<Reservation> => {
       if (!tenantId) {
         throw new Error('Tenant not found');
@@ -80,13 +80,16 @@ export function useReservationActions() {
   });
 
   // Move reservation mutation
-      const moveReservation = useMutation({
+  const moveReservation = useMutation({
     mutationFn: async (request: MoveReservationRequest): Promise<Reservation> => {
       if (!tenantId) {
         throw new Error('Tenant not found');
       }
 
-      // Log the request for debugging      // Check
+      // Log the request for debugging
+      console.log('Move reservation request:', request);
+
+      // Check if reservation ID format is valid
       if (!isValidUUID(request.reservationId)) {
         const errorMsg = `Invalid reservation ID format: ${request.reservationId}. Expected UUID format.`;
         console.error(errorMsg);
@@ -95,7 +98,9 @@ export function useReservationActions() {
 
       // Validate request
       try {
-        const validatedRequest = validateMoveReservationRequest(request);      } catch (validationError) {
+        const validatedRequest = validateMoveReservationRequest(request);
+        console.log('Validated request:', validatedRequest);
+      } catch (validationError) {
         console.error('Validation error:', validationError);
         throw new Error(`Invalid reservation data: ${validationError instanceof Error ? validationError.message : 'Unknown validation error'}`);
       }
@@ -147,7 +152,7 @@ export function useReservationActions() {
   });
 
   // Cancel reservation mutation
-      const cancelReservation = useMutation({
+  const cancelReservation = useMutation({
     mutationFn: async (request: CancelReservationRequest): Promise<void> => {
       if (!tenantId) {
         throw new Error('Tenant not found');
@@ -194,9 +199,8 @@ export function useReservationActions() {
     }
   });
 
-  // Helper functions that
-      return action results
-      const createReservationAction = async (request: CreateReservationRequest): Promise<ReservationActionResult> => {
+  // Helper functions that return action results
+  const createReservationAction = async (request: CreateReservationRequest): Promise<ReservationActionResult> => {
     try {
       const data = await createReservation.mutateAsync(request);
       return { ok: true, data };
@@ -256,7 +260,3 @@ export function useReservationActions() {
     isAnyLoading: createReservation.isPending || moveReservation.isPending || cancelReservation.isPending
   };
 }
-
-
-
-

@@ -197,7 +197,7 @@ function realtimeReducer<T>(state: RealtimeState<T>, action: RealtimeAction<T>):
 }
 
 // Default configurations
-      const DEFAULT_RETRY_CONFIG: RetryConfig = {
+const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxAttempts: 5,
   baseDelay: 1000,
   maxDelay: 30000,
@@ -294,7 +294,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   } = options;
 
   // Merge configurations with defaults
-      const finalRetryConfig = useMemo(() => ({ 
+  const finalRetryConfig = useMemo(() => ({ 
     ...DEFAULT_RETRY_CONFIG, 
     ...retryConfig 
   }), [retryConfig]);
@@ -305,7 +305,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   }), [performanceConfig]);
 
   // Initialize state with reducer for complex state management
-      const [state, dispatch] = useReducer(realtimeReducer<TOutput>, {
+  const [state, dispatch] = useReducer(realtimeReducer<TOutput>, {
     data: [],
     loading: true,
     error: null,
@@ -317,7 +317,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   });
 
   // Refs for persistent data across renders
-      const channelRef = useRef<RealtimeChannel | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const isSubscribedRef = useRef(false);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const metricsStartTimeRef = useRef(Date.now());
@@ -325,13 +325,13 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   const batchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Generate unique channel name with additional entropy
-      const channelName = useMemo(() => 
+  const channelName = useMemo(() => 
     `${table}-${schema}-${event}-${filter || 'all'}-${Date.now()}`,
     [table, schema, event, filter]
   );
 
   // Data transformation utilities
-      const transformData = useCallback((inputData: TInput): TOutput | null => {
+  const transformData = useCallback((inputData: TInput): TOutput | null => {
     try {
       // Apply validation first
       if (dataTransform.validator && !dataTransform.validator(inputData)) {
@@ -343,8 +343,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
         return null;
       }
 
-      // Apply mapper or
-      return as-is
+      // Apply mapper or return as-is
       const transformed = dataTransform.mapper 
         ? dataTransform.mapper(inputData) 
         : (inputData as unknown as TOutput);
@@ -361,7 +360,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   }, [dataTransform, table]);
 
   // Advanced metrics tracking
-      const updateMetrics = useCallback((updates: Partial<RealtimeMetrics>) => {
+  const updateMetrics = useCallback((updates: Partial<RealtimeMetrics>) => {
     if (!enableMetrics) return;
     
     dispatch({ 
@@ -374,14 +373,14 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   }, [enableMetrics]);
 
   // Batch processing for performance
-      const processBatch = useCallback(() => {
+  const processBatch = useCallback(() => {
     if (batchBufferRef.current.length === 0) return;
 
     const batch = [...batchBufferRef.current];
     batchBufferRef.current = [];
 
     // Process batch updates
-      const transformedBatch = batch
+    const transformedBatch = batch
       .map(payload => {
         const transformed = transformData(payload.new as TInput);
         return transformed ? { payload, transformed } : null;
@@ -389,7 +388,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
       .filter(Boolean) as { payload: RealtimePostgresChangesPayload<TInput>; transformed: TOutput }[];
 
     // Apply batch updates to state
-      if (transformedBatch.length > 0) {
+    if (transformedBatch.length > 0) {
       const newData = transformedBatch.map(item => item.transformed);
       dispatch({ type: 'BATCH_UPDATE', payload: newData });
       
@@ -404,13 +403,13 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   }, [transformData, onBatchUpdate, updateMetrics, state.metrics.messageCount]);
 
   // Debounced batch processor
-      const debouncedProcessBatch = useMemo(
+  const debouncedProcessBatch = useMemo(
     () => debounce(processBatch, finalPerformanceConfig.debounceMs),
     [processBatch, finalPerformanceConfig.debounceMs]
   );
 
   // Advanced realtime update handler with batching and transformation
-      const handleRealtimeUpdate = useCallback((payload: RealtimePostgresChangesPayload<TInput>) => {
+  const handleRealtimeUpdate = useCallback((payload: RealtimePostgresChangesPayload<TInput>) => {
     const startTime = Date.now();
 
     logger.debug('Realtime update received', {
@@ -421,7 +420,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
     });
 
     // Handle batching
-      if (finalPerformanceConfig.enableBatching) {
+    if (finalPerformanceConfig.enableBatching) {
       batchBufferRef.current.push(payload);
       
       if (batchBufferRef.current.length >= finalPerformanceConfig.maxBatchSize) {
@@ -433,7 +432,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
     }
 
     // Handle individual updates with transformation
-      const transformed = payload.new ? transformData(payload.new as TInput) : null;
+    const transformed = payload.new ? transformData(payload.new as TInput) : null;
     
     if (transformed || payload.eventType === 'DELETE') {
       switch (payload.eventType) {
@@ -466,7 +465,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
     }
 
     // Update performance metrics
-      const latency = Date.now() - startTime;
+    const latency = Date.now() - startTime;
     updateMetrics({
       messageCount: state.metrics.messageCount + 1,
       averageLatency: (state.metrics.averageLatency + latency) / 2,
@@ -487,7 +486,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   ]);
 
   // Advanced connection status handler
-      const handleConnectionStatusChange = useCallback((status: string) => {
+  const handleConnectionStatusChange = useCallback((status: string) => {
     const connectionStatus: ConnectionStatus = (() => {
       switch (status) {
         case 'SUBSCRIBED': return 'CONNECTED';
@@ -539,7 +538,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
           });
           
           // Inline reconnection logic to avoid circular dependency
-      if (channelRef.current) {
+          if (channelRef.current) {
             supabase.removeChannel(channelRef.current);
             channelRef.current = null;
             isSubscribedRef.current = false;
@@ -602,7 +601,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   ]);
 
   // Enhanced subscribe function with advanced error handling
-      const subscribe = useCallback(() => {
+  const subscribe = useCallback(() => {
     if (!enabled || isSubscribedRef.current || channelRef.current) {
       return;
     }
@@ -676,7 +675,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   ]);
 
   // Enhanced unsubscribe with cleanup
-      const unsubscribe = useCallback(() => {
+  const unsubscribe = useCallback(() => {
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
@@ -708,7 +707,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   }, [table, processBatch]);
 
   // Enhanced refetch with optimistic updates support
-      const refetch = useCallback(async () => {
+  const refetch = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
@@ -724,8 +723,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
         .map(item => transformData(item as unknown as TInput))
         .filter(Boolean) as TOutput[];
 
-      // Apply sorting
-      if (specified
+      // Apply sorting if specified
       if (dataTransform.sorter) {
         transformedData.sort(dataTransform.sorter);
       }
@@ -771,7 +769,7 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   ]);
 
   // Reset function for clearing state
-      const reset = useCallback(() => {
+  const reset = useCallback(() => {
     dispatch({ type: 'SET_DATA', payload: [] });
     dispatch({ type: 'SET_ERROR', payload: null });
     dispatch({ type: 'RESET_RETRY' });
@@ -780,17 +778,18 @@ export function useRealtimeSubscription<TInput = Record<string, unknown>, TOutpu
   }, []);
 
   // Get current metrics
-      const getMetrics = useCallback(() => ({
+  const getMetrics = useCallback(() => ({
     ...state.metrics,
     uptime: Date.now() - metricsStartTimeRef.current
   }), [state.metrics]);
 
   // Health check
-      const isHealthy = useCallback(() => {
+  const isHealthy = useCallback(() => {
     const now = Date.now();
     const timeSinceLastMessage = now - state.metrics.lastMessageTime;
     const isRecentlyActive = timeSinceLastMessage < 60000; // 1 minute
-      return state.connected && 
+    
+    return state.connected && 
            state.error === null && 
            state.retryCount < finalRetryConfig.maxAttempts &&
            (state.metrics.messageCount === 0 || isRecentlyActive);
@@ -926,7 +925,7 @@ export function useRestaurantMenuItemsRealtime(tenantId?: string, options?: Part
     dataTransform: {
       sorter: (a, b) => {
         // Sort by category, then by name
-      const aItem = a as { category?: string; name?: string };
+        const aItem = a as { category?: string; name?: string };
         const bItem = b as { category?: string; name?: string };
         
         const categoryCompare = (aItem.category || '').localeCompare(bItem.category || '');
@@ -936,7 +935,7 @@ export function useRestaurantMenuItemsRealtime(tenantId?: string, options?: Part
       },
       validator: (data) => {
         // Validate menu item has required fields
-      const item = data as { name?: string; base_price?: number };
+        const item = data as { name?: string; base_price?: number };
         return !!(item.name && typeof item.base_price === 'number' && item.base_price > 0);
       }
     },
@@ -957,7 +956,7 @@ export function useWidgetEventsRealtime(tenantId?: string, options?: Partial<Use
     dataTransform: {
       sorter: (a, b) => {
         // Sort by created date
-      const aEvent = a as { created_at?: string };
+        const aEvent = a as { created_at?: string };
         const bEvent = b as { created_at?: string };
         
         const aTime = new Date(aEvent.created_at || 0).getTime();
@@ -1033,7 +1032,7 @@ export function useMultiTableRealtime(
   tenantId?: string
 ) {
   // Create individual subscriptions as a stable array
-      const subscriptionConfigs = useMemo(() => 
+  const subscriptionConfigs = useMemo(() => 
     subscriptions.map(sub => ({
       ...sub,
       filter: sub.filter || (tenantId ? `tenant_id=eq.${tenantId}` : undefined),
@@ -1041,7 +1040,7 @@ export function useMultiTableRealtime(
     })), [subscriptions, tenantId]);
 
   // Use a consistent way to create subscriptions
-      const results = subscriptionConfigs.map((config, index) => 
+  const results = subscriptionConfigs.map((config, index) => 
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useRealtimeSubscription({
       ...config,
@@ -1084,5 +1083,3 @@ export function useMultiTableRealtime(
 
   return combinedState;
 }
-
-

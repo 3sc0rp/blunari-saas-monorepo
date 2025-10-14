@@ -71,7 +71,7 @@ import {
 
 // Real-data-only policy: start with empty arrays and load from API when implemented.
 // TODO: Implement fetching logic (e.g., Supabase queries or REST endpoints) to populate inventory and purchase orders.
-      const initialInventoryItems: InventoryItem[] = [];
+const initialInventoryItems: InventoryItem[] = [];
 const initialPurchaseOrders: PurchaseOrder[] = [];
 
 const categoryOptions: InventoryCategory[] = [
@@ -113,12 +113,12 @@ const InventoryManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // Modal states
-      const [showItemDialog, setShowItemDialog] = useState(false);
+  const [showItemDialog, setShowItemDialog] = useState(false);
   const [showPODialog, setShowPODialog] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   
   // Form states
-      const [itemForm, setItemForm] = useState<Partial<CreateInventoryItemRequest>>({
+  const [itemForm, setItemForm] = useState<Partial<CreateInventoryItemRequest>>({
     name: "",
     category: "protein",
     sku: "",
@@ -138,7 +138,7 @@ const InventoryManagement: React.FC = () => {
   });
 
   // Filter inventory items
-      const filteredItems = useMemo(() => {
+  const filteredItems = useMemo(() => {
     return inventoryItems.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -151,7 +151,7 @@ const InventoryManagement: React.FC = () => {
   }, [inventoryItems, searchTerm, selectedCategory]);
 
   // Calculate analytics
-      const analytics = useMemo(() => {
+  const analytics = useMemo(() => {
     const totalItems = inventoryItems.length;
     const lowStockItems = inventoryItems.filter(item => 
       item.current_quantity <= item.reorder_point
@@ -182,7 +182,7 @@ const InventoryManagement: React.FC = () => {
   }, [inventoryItems, purchaseOrders]);
 
   // Get inventory alerts
-      const inventoryAlerts = useMemo(() => {
+  const inventoryAlerts = useMemo(() => {
     const alerts: InventoryAlert[] = [];
     
     inventoryItems.forEach(item => {
@@ -1037,4 +1037,3 @@ const InventoryManagement: React.FC = () => {
 };
 
 export default InventoryManagement;
-

@@ -104,13 +104,18 @@ export function AuthDebugger() {
                 if (!session) {
                   console.error('No session for function test');
                   return;
-                }                const result = await supabase.functions.invoke('tenant', {
+                }
+
+                console.log('Testing tenant function...');
+                const result = await supabase.functions.invoke('tenant', {
                   headers: {
                     'Authorization': `Bearer ${session.access_token}`,
                     'Content-Type': 'application/json'
                   }
                   // Remove empty body to avoid JSON parsing issues
-                });              } catch (error) {
+                });
+                console.log('Tenant function result:', result);
+              } catch (error) {
                 console.error('Function test error:', error);
               }
             }}
@@ -122,4 +127,3 @@ export function AuthDebugger() {
     </div>
   );
 }
-

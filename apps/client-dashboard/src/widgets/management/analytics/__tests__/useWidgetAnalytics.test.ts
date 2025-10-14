@@ -64,10 +64,10 @@ describe('useWidgetAnalytics', () => {
 
   it('should handle successful edge function response (forceEdge)', async () => {
     // Use a real UUID to avoid demo path
-      const realTenantId = '550e8400-e29b-41d4-a716-446655440000';
+    const realTenantId = '550e8400-e29b-41d4-a716-446655440000';
 
     // Mock successful edge function response
-      const mockData = {
+    const mockData = {
       totalViews: 100,
       totalClicks: 50,
       conversionRate: 10,
@@ -108,17 +108,16 @@ describe('useWidgetAnalytics', () => {
 
   it('should handle edge function error and fall back to database', async () => {
     // Use a real UUID to avoid demo path
-      const realTenantId = '550e8400-e29b-41d4-a716-446655440001';
+    const realTenantId = '550e8400-e29b-41d4-a716-446655440001';
 
-    // Mock edge function error -
-      return error in response instead of throwing
+    // Mock edge function error - return error in response instead of throwing
     (supabase.functions.invoke as any).mockResolvedValueOnce({
       data: null,
       error: { message: 'Edge function failed', name: 'FunctionsHttpError' }
     });
 
     // Mock successful database query with proper created_at fields
-      const mockOrders = [
+    const mockOrders = [
       { status: 'completed', total_amount: 100, created_at: '2025-09-10T10:00:00Z', party_size: 2 },
       { status: 'confirmed', total_amount: 150, created_at: '2025-09-11T11:00:00Z', party_size: 3 }
     ];
@@ -148,13 +147,13 @@ describe('useWidgetAnalytics', () => {
     expect(result.current.mode).toBe('direct-db');
     
     // Verify error was reported
-      const errorStats = analyticsErrorReporter.getErrorStats();
+    const errorStats = analyticsErrorReporter.getErrorStats();
     expect(errorStats.byCode[AnalyticsErrorCode.EDGE_FUNCTION_ERROR]).toBe(1);
   });
 
   it('should prevent concurrent fetches (dedup in-flight)', async () => {
     // Use a real UUID to avoid demo path
-      const realTenantId = '550e8400-e29b-41d4-a716-446655440002';
+    const realTenantId = '550e8400-e29b-41d4-a716-446655440002';
 
     (supabase.functions.invoke as any).mockResolvedValue({
       data: { success: true, data: { totalViews: 100, totalClicks: 20 } },
@@ -187,7 +186,7 @@ describe('useWidgetAnalytics', () => {
 
   it('should surface error with no data when all fallbacks fail (no synthetic)', async () => {
     // Use a real UUID to avoid demo path
-      const realTenantId = '550e8400-e29b-41d4-a716-446655440003';
+    const realTenantId = '550e8400-e29b-41d4-a716-446655440003';
 
     // Mock both edge function and database failures
     (supabase.functions.invoke as any).mockRejectedValueOnce(

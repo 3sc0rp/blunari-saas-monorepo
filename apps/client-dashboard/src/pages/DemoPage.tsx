@@ -12,7 +12,7 @@ import {
 import { Plus, RefreshCw, Download, Users, Search } from "lucide-react";
 
 // Demo page showing all the new patterns
-      const DemoPage: React.FC = () => {
+const DemoPage: React.FC = () => {
   const [state, setState] = useState<"loading" | "empty" | "error" | "data">(
     "loading",
   );
@@ -42,10 +42,12 @@ import { Plus, RefreshCw, Download, Users, Search } from "lucide-react";
     setTimeout(() => setState("data"), 1000);
   };
 
-  const handleExport = () => {  };
+  const handleExport = () => {
+    console.log("Exporting data...");
+  };
 
   // Loading state
-      if (state === "loading") {
+  if (state === "loading") {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -63,7 +65,7 @@ import { Plus, RefreshCw, Download, Users, Search } from "lucide-react";
   }
 
   // Error state
-      if (state === "error") {
+  if (state === "error") {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -92,10 +94,15 @@ import { Plus, RefreshCw, Download, Users, Search } from "lucide-react";
           }}
           secondaryAction={{
             label: "Contact Support",
-            onClick: () =>  }
+            onClick: () => console.log("Contacting support..."),
+          }}
+        />
+      </motion.div>
+    );
+  }
 
   // Empty state
-      if (state === "empty") {
+  if (state === "empty") {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -129,10 +136,15 @@ import { Plus, RefreshCw, Download, Users, Search } from "lucide-react";
           }}
           secondaryAction={{
             label: "Learn More",
-            onClick: () =>  }
+            onClick: () => console.log("Learning more..."),
+          }}
+        />
+      </motion.div>
+    );
+  }
 
   // Data state
-      return (
+  return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -197,5 +209,3 @@ import { Plus, RefreshCw, Download, Users, Search } from "lucide-react";
 };
 
 export default DemoPage;
-
-

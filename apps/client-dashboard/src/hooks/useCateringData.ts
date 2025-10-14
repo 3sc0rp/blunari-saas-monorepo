@@ -49,9 +49,8 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
     cateringTablesAvailable: false,
   });
 
-  // Diagnostic function to check
-      if (catering tables exist
-      const checkTableExistence = useCallback(async (): Promise<boolean> => {
+  // Diagnostic function to check if catering tables exist
+  const checkTableExistence = useCallback(async (): Promise<boolean> => {
     try {
       // Use a simple existence check by trying to count rows with limit 0
       const { error } = await (supabase as any)
@@ -74,7 +73,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
           return false;
         }
         // Other errors might be permission issues, so assume tables exist
-      return true;
+        return true;
       }
 
       setDiagnosticInfo((prev) => ({
@@ -103,8 +102,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       setLoading(true);
       setError(null);
 
-      // First check
-      if (tables exist
+      // First check if tables exist
       const exist = await checkTableExistence();
       setTablesExist(exist);
 
@@ -115,8 +113,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
         return;
       }
 
-      // Real database query (only
-      if (tables exist)
+      // Real database query (only if tables exist)
       const { data: packagesData, error: packagesError } = await (
         supabase as any
       )
@@ -178,17 +175,21 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
         throw new Error("Tenant ID is required");
       }
 
-      // Check
+      // Check if tables exist first
       if (!tablesExist) {
         // Simulate order creation for demo mode
-      const mockOrder = {
+        const mockOrder = {
           id: `mock-order-${Date.now()}`,
           ...orderData,
           tenant_id: tenantId,
           status: "inquiry" as const,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        };        // Simulate network delay
+        };
+
+        console.log("Demo mode: Order would be created:", mockOrder);
+
+        // Simulate network delay
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         return mockOrder;
@@ -238,9 +239,8 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       } catch (err: any) {
         console.error("Error creating catering order:", err);
 
-        // Check
-      if (it's a table not found error
-      if (
+        // Check if it's a table not found error
+        if (
           err.code === "PGRST106" ||
           err.message?.includes("relation") ||
           err.message?.includes("does not exist")
@@ -264,7 +264,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
 
       if (!tablesExist) {
         // Return empty array for demo mode
-      return [];
+        return [];
       }
 
       try {
@@ -316,12 +316,17 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       }
 
       if (!tablesExist) {
-        // Simulate status update for demo mode        return;
+        // Simulate status update for demo mode
+        console.log(
+          `Demo mode: Order ${orderId} status would be updated to ${status}`,
+          { notes },
+        );
+        return;
       }
 
       try {
         // Update the order status
-      const { error: updateError } = await (supabase as any)
+        const { error: updateError } = await (supabase as any)
           .from("catering_orders")
           .update({
             status,
@@ -400,8 +405,7 @@ export function useCateringAnalytics(tenantId?: string) {
     try {
       setLoading(true);
 
-      // Check
-      if (analytics tables/views exist
+      // Check if analytics tables/views exist
       const { error: checkError } = await (supabase as any)
         .from("catering_order_metrics")
         .select("tenant_id", { count: "exact", head: true })
@@ -464,7 +468,3 @@ export function useCateringAnalytics(tenantId?: string) {
     refetch: fetchAnalytics,
   };
 }
-
-
-
-

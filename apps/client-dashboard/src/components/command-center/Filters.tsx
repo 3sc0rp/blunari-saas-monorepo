@@ -133,7 +133,7 @@ export function Filters({ value, onChange, disabled = false, filterCounts }: Fil
   const [partySizeOpen, setPartySizeOpen] = useState(false);
 
   // Create dynamic channel and status arrays based on actual data
-      const CHANNELS = [
+  const CHANNELS = [
     { id: 'WEB' as const, label: 'Web', count: filterCounts?.channels?.WEB || 0 },
     { id: 'PHONE' as const, label: 'Phone', count: filterCounts?.channels?.PHONE || 0 },
     { id: 'WALKIN' as const, label: 'Walk-in', count: filterCounts?.channels?.WALKIN || 0 }
@@ -291,4 +291,3 @@ export function Filters({ value, onChange, disabled = false, filterCounts }: Fil
     </div>
   );
 }
-

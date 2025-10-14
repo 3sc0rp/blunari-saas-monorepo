@@ -3,7 +3,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
 
 // Lazy load the main component
-      const WidgetVersionManagementComponent = React.lazy(() => import('./WidgetVersionManagement'))
+const WidgetVersionManagementComponent = React.lazy(() => import('./WidgetVersionManagement'))
 
 interface WidgetVersionManagementLazyProps {
   widgetId: string

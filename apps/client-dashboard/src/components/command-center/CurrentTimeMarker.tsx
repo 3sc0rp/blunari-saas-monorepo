@@ -24,7 +24,7 @@ export const CurrentTimeMarker: React.FC<CurrentTimeMarkerProps> = ({
 
   useEffect(() => {
     // Update every minute
-      const interval = setInterval(() => {
+    const interval = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);
 
@@ -32,24 +32,24 @@ export const CurrentTimeMarker: React.FC<CurrentTimeMarkerProps> = ({
   }, []);
 
   // Calculate position based on current time
-      const getCurrentPosition = (): { left: number; visible: boolean } => {
+  const getCurrentPosition = (): { left: number; visible: boolean } => {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinutes = now.getMinutes();
 
-    // Check
-      if (currentHour < startHour || currentHour >= endHour) {
+    // Check if current time is within the visible range
+    if (currentHour < startHour || currentHour >= endHour) {
       return { left: 0, visible: false };
     }
 
     // Calculate total minutes from start hour
-      const totalMinutes = (currentHour - startHour) * 60 + currentMinutes;
+    const totalMinutes = (currentHour - startHour) * 60 + currentMinutes;
     
     // Each slot represents 15 minutes
-      const slotsFromStart = totalMinutes / 15;
+    const slotsFromStart = totalMinutes / 15;
     
     // Calculate pixel position
-      const left = slotsFromStart * slotWidth;
+    const left = slotsFromStart * slotWidth;
 
     return { left, visible: true };
   };
@@ -103,6 +103,3 @@ export const CurrentTimeMarker: React.FC<CurrentTimeMarkerProps> = ({
 };
 
 export default CurrentTimeMarker;
-
-
-

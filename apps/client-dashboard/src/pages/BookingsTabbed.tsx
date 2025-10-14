@@ -40,7 +40,16 @@ export default function BookingsTabbed() {
   const { tenant, isLoading: tenantLoading } = useTenant();
   
   // Log tenant information for debugging analytics
-      if (import.meta.env.DEV) {  }
+  if (import.meta.env.DEV) {
+    console.log('📍 BookingsTabbed - Tenant Info:', {
+      tenantId: tenant?.id,
+      tenantSlug: tenant?.slug,
+      tenantName: tenant?.name,
+      tenantLoading,
+      hasTenant: !!tenant,
+      timestamp: new Date().toISOString()
+    });
+  }
 
   const {
     bookings,
@@ -61,7 +70,7 @@ export default function BookingsTabbed() {
   const [analyticsRange, setAnalyticsRange] = useState<'1d' | '7d' | '30d'>('7d');
 
   // Use real analytics hook for booking widget
-      const { 
+  const { 
     data: analyticsData, 
     loading: analyticsLoading, 
     error: analyticsError,
@@ -82,7 +91,7 @@ export default function BookingsTabbed() {
   }, [analyticsAvailable, analyticsRange, refreshAnalytics, analyticsData]);
 
   // Calculate metrics
-      const metrics = useMemo(() => {
+  const metrics = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     const todaysBookings = bookings.filter(b => 
       b.booking_time.split('T')[0] === today
@@ -642,6 +651,4 @@ export default function BookingsTabbed() {
     </div>
   );
 }
-
-
 

@@ -20,7 +20,7 @@ interface TenantState {
 }
 
 // Production environment check
-      const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
+const isProduction = import.meta.env.PROD || import.meta.env.MODE === 'production';
 const isDevelopment = import.meta.env.MODE === 'development';
 const enableDevLogs = isDevelopment && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
 
@@ -41,7 +41,9 @@ export function useTenantSecure() {
   const resolvedRef = useRef<boolean>(false);
 
   const debug = (...args: any[]) => {
-    if (enableDevLogs) {    }
+    if (enableDevLogs) {
+      console.log('[useTenantSecure]', ...args);
+    }
   };
 
   const setError = useCallback((error: string) => {
@@ -51,7 +53,7 @@ export function useTenantSecure() {
 
   const resolveTenant = useCallback(async () => {
     // Prevent multiple simultaneous resolutions
-      if (resolvedRef.current) {
+    if (resolvedRef.current) {
       debug('Resolution already in progress, skipping');
       return;
     }
@@ -84,8 +86,8 @@ export function useTenantSecure() {
         
         setState({ tenant: null, loading: false, error: 'Authentication required' });
         
-        // Only navigate
-      if (window.location.pathname !== '/auth' && window.location.pathname !== '/login') {
+        // Only navigate if not already on auth page
+        if (window.location.pathname !== '/auth' && window.location.pathname !== '/login') {
           navigate('/auth');
         }
         return;
@@ -197,7 +199,7 @@ export function useTenantSecure() {
     resolveTenant();
 
     // Listen for auth changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       debug('Auth state changed:', event);
       
       if (event === 'SIGNED_IN') {
@@ -227,7 +229,3 @@ export function useTenantSecure() {
  * Use useTenantSecure for new code
  */
 export const useTenant = useTenantSecure;
-
-
-
-

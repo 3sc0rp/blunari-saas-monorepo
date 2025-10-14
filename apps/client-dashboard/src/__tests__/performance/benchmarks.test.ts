@@ -9,7 +9,7 @@ import { PerformanceUtils, TestUtils } from '@/utils/testing';
 describe('Performance Benchmarks', () => {
   beforeEach(() => {
     // Clear performance marks before each test
-      if (performance.clearMarks) {
+    if (performance.clearMarks) {
       performance.clearMarks();
     }
     if (performance.clearMeasures) {
@@ -21,7 +21,7 @@ describe('Performance Benchmarks', () => {
     it('should meet enterprise rendering benchmarks', () => {
       const renderBenchmark = PerformanceUtils.benchmark(() => {
         // Simulate component rendering
-      const element = document.createElement('div');
+        const element = document.createElement('div');
         element.innerHTML = '<span>Test Component</span>';
         document.body.appendChild(element);
         document.body.removeChild(element);
@@ -36,14 +36,14 @@ describe('Performance Benchmarks', () => {
     it('should optimize JavaScript execution performance', () => {
       const jsExecutionBenchmark = PerformanceUtils.benchmark(() => {
         // Simulate JavaScript computation
-      const data = Array.from({ length: 1000 }, (_, i) => ({
+        const data = Array.from({ length: 1000 }, (_, i) => ({
           id: i,
           value: Math.random() * 100,
           timestamp: Date.now()
         }));
 
         // Filter and sort operations
-      const filtered = data
+        const filtered = data
           .filter(item => item.value > 50)
           .sort((a, b) => b.value - a.value)
           .slice(0, 10);
@@ -58,7 +58,7 @@ describe('Performance Benchmarks', () => {
     it('should handle large dataset operations efficiently', () => {
       const largeBenchmark = PerformanceUtils.benchmark(() => {
         // Simulate large widget dataset processing
-      const widgets = Array.from({ length: 10000 }, (_, i) => ({
+        const widgets = Array.from({ length: 10000 }, (_, i) => ({
           id: `widget-${i}`,
           name: `Widget ${i}`,
           config: {
@@ -72,7 +72,7 @@ describe('Performance Benchmarks', () => {
         }));
 
         // Complex filtering and aggregation
-      const summary = widgets
+        const summary = widgets
           .filter(w => w.analytics.views > 500)
           .reduce((acc, widget) => {
             const type = widget.config.type;
@@ -97,7 +97,7 @@ describe('Performance Benchmarks', () => {
     it('should maintain efficient memory usage', () => {
       const memoryTest = PerformanceUtils.profileMemory(() => {
         // Create and destroy large objects
-      const largeArrays = [];
+        const largeArrays = [];
         for (let i = 0; i < 100; i++) {
           largeArrays.push(new Array(1000).fill(Math.random()));
         }
@@ -141,14 +141,14 @@ describe('Performance Benchmarks', () => {
     it('should optimize API request batching', async () => {
       const batchingBenchmark = PerformanceUtils.benchmark(() => {
         // Simulate API request batching
-      const requests = Array.from({ length: 50 }, (_, i) => ({
+        const requests = Array.from({ length: 50 }, (_, i) => ({
           id: i,
           endpoint: `/api/widget/${i}`,
           data: { action: 'update' }
         }));
 
         // Batch into groups of 10
-      const batches = [];
+        const batches = [];
         for (let i = 0; i < requests.length; i += 10) {
           batches.push(requests.slice(i, i + 10));
         }
@@ -162,14 +162,14 @@ describe('Performance Benchmarks', () => {
     it('should handle concurrent request optimization', () => {
       const concurrencyBenchmark = PerformanceUtils.benchmark(() => {
         // Simulate concurrent request management
-      const requestQueue = Array.from({ length: 20 }, (_, i) => ({
+        const requestQueue = Array.from({ length: 20 }, (_, i) => ({
           id: i,
           priority: i % 3, // 0 = high, 1 = medium, 2 = low
           timestamp: Date.now() + i
         }));
 
         // Sort by priority and timestamp
-      const optimized = requestQueue.sort((a, b) => {
+        const optimized = requestQueue.sort((a, b) => {
           if (a.priority !== b.priority) {
             return a.priority - b.priority;
           }
@@ -187,7 +187,7 @@ describe('Performance Benchmarks', () => {
     it('should optimize database query simulation', () => {
       const dbBenchmark = PerformanceUtils.benchmark(() => {
         // Simulate complex database operations
-      const data = Array.from({ length: 5000 }, (_, i) => ({
+        const data = Array.from({ length: 5000 }, (_, i) => ({
           id: i,
           tenant_id: `tenant-${i % 10}`,
           widget_id: `widget-${i % 100}`,
@@ -197,7 +197,7 @@ describe('Performance Benchmarks', () => {
         }));
 
         // Simulate complex aggregation query
-      const aggregated = data.reduce((acc, record) => {
+        const aggregated = data.reduce((acc, record) => {
           const key = `${record.tenant_id}-${record.widget_id}`;
           if (!acc[key]) {
             acc[key] = { views: 0, clicks: 0, converts: 0 };
@@ -216,7 +216,7 @@ describe('Performance Benchmarks', () => {
     it('should optimize widget configuration queries', () => {
       const configBenchmark = PerformanceUtils.benchmark(() => {
         // Simulate widget configuration processing
-      const configs = Array.from({ length: 1000 }, (_, i) => ({
+        const configs = Array.from({ length: 1000 }, (_, i) => ({
           id: i,
           type: ['button', 'form', 'banner'][i % 3],
           settings: {
@@ -232,7 +232,7 @@ describe('Performance Benchmarks', () => {
         }));
 
         // Apply configuration transformations
-      const processed = configs.map(config => ({
+        const processed = configs.map(config => ({
           ...config,
           compiled: true,
           hash: `${config.id}-${config.type}-${Date.now()}`,
@@ -250,7 +250,7 @@ describe('Performance Benchmarks', () => {
     it('should handle real-time update processing', () => {
       const realtimeBenchmark = PerformanceUtils.benchmark(() => {
         // Simulate real-time analytics updates
-      const updates = Array.from({ length: 100 }, (_, i) => ({
+        const updates = Array.from({ length: 100 }, (_, i) => ({
           widget_id: `widget-${i % 20}`,
           event: ['view', 'click', 'hover'][i % 3],
           timestamp: Date.now(),
@@ -258,7 +258,7 @@ describe('Performance Benchmarks', () => {
         }));
 
         // Process updates and maintain state
-      const state = new Map();
+        const state = new Map();
         updates.forEach(update => {
           const key = update.widget_id;
           const current = state.get(key) || { views: 0, clicks: 0, hovers: 0 };
@@ -275,7 +275,7 @@ describe('Performance Benchmarks', () => {
     it('should optimize WebSocket message processing', () => {
       const websocketBenchmark = PerformanceUtils.benchmark(() => {
         // Simulate WebSocket message queue processing
-      const messages = Array.from({ length: 200 }, (_, i) => ({
+        const messages = Array.from({ length: 200 }, (_, i) => ({
           id: i,
           type: ['analytics', 'config', 'status'][i % 3],
           payload: { data: `message-${i}`, priority: i % 5 },
@@ -283,7 +283,7 @@ describe('Performance Benchmarks', () => {
         }));
 
         // Sort by priority and type
-      const processed = messages
+        const processed = messages
           .sort((a, b) => {
             if (a.payload.priority !== b.payload.priority) {
               return a.payload.priority - b.payload.priority;
@@ -291,7 +291,8 @@ describe('Performance Benchmarks', () => {
             return a.timestamp - b.timestamp;
           })
           .slice(0, 50); // Process top 50 messages
-      return processed;
+
+        return processed;
       }, 300);
 
       expect(websocketBenchmark.average).toBeLessThan(2);
@@ -361,6 +362,7 @@ describe('Performance Benchmarks', () => {
       };
 
       const regressionThreshold = 0.1; // 10%
+
       const renderRegression = (currentMetrics.renderTime - baselineMetrics.renderTime) / baselineMetrics.renderTime;
       const bundleRegression = (currentMetrics.bundleSize - baselineMetrics.bundleSize) / baselineMetrics.bundleSize;
       const memoryRegression = (currentMetrics.memoryUsage - baselineMetrics.memoryUsage) / baselineMetrics.memoryUsage;

@@ -105,7 +105,10 @@ export default function FloorPlanManager() {
     if (!file || !uploadedImage) {
       toast.error("Please upload an image first");
       return;
-    }    setAnalyzing(true);
+    }
+
+    console.log("[FloorPlanManager] Starting enhanced analysis...");
+    setAnalyzing(true);
     setAnalysisProgress(0);
 
     let progressInterval: NodeJS.Timeout | null = null;
@@ -139,18 +142,20 @@ export default function FloorPlanManager() {
         Math.random().toString(36).substring(2) + Date.now().toString(36);
 
       // Enhanced table positioning and sizing algorithm with better AI integration
-      const entities = analysisResult.detectedTables.map((table, index) => {        // Use AI positioning with smart fallbacks
+      const entities = analysisResult.detectedTables.map((table, index) => {
+        console.log(`Processing table ${index + 1}:`, table);
+
+        // Use AI positioning with smart fallbacks
         let x = table.position?.x || 0;
         let y = table.position?.y || 0;
 
         // Validate and adjust AI coordinates (0-10 range)
-      if (x < 0 || x > 10 || y < 0 || y > 10) {
+        if (x < 0 || x > 10 || y < 0 || y > 10) {
           console.warn(
             `Invalid AI coordinates for table ${index + 1}: (${x}, ${y}), using fallback`,
           );
-          // Fallback to grid positioning
-      if (AI coordinates are invalid
-      const gridSize = Math.ceil(Math.sqrt(analysisResult.tableCount));
+          // Fallback to grid positioning if AI coordinates are invalid
+          const gridSize = Math.ceil(Math.sqrt(analysisResult.tableCount));
           const spacing = 8 / Math.max(gridSize, 1);
           const margin = (10 - 8) / 2;
 
@@ -159,15 +164,15 @@ export default function FloorPlanManager() {
         }
 
         // Smart distribution for multiple tables to avoid clustering
-      if (analysisResult.tableCount > 1) {
+        if (analysisResult.tableCount > 1) {
           // Add slight randomization to prevent perfect grid alignment
-      const jitter = 0.3;
+          const jitter = 0.3;
           x += (Math.random() - 0.5) * jitter;
           y += (Math.random() - 0.5) * jitter;
         }
 
         // Enhanced table sizing based on AI analysis and capacity
-      const capacity = Math.max(
+        const capacity = Math.max(
           2,
           Math.min(12, table.estimatedCapacity || 4),
         );
@@ -196,7 +201,7 @@ export default function FloorPlanManager() {
           radius = Math.max(0.3, Math.min(1.2, 0.4 + capacity * 0.08));
         } else {
           // Rectangular table sizing
-      if (tableType === "booth") {
+          if (tableType === "booth") {
             // Booths are typically longer and narrower
             width = Math.max(1.2, Math.min(3.0, capacity * 0.25 + 0.8));
             height = Math.max(0.6, Math.min(1.2, capacity * 0.1 + 0.5));
@@ -229,7 +234,10 @@ export default function FloorPlanManager() {
               (table as { description?: string }).description ||
               "AI detected table",
           },
-        };        return entity;
+        };
+
+        console.log(`Created entity for table ${index + 1}:`, entity);
+        return entity;
       });
 
       const preview = {
@@ -239,7 +247,9 @@ export default function FloorPlanManager() {
         worldHeight: WORLD_H,
       };
 
-      setTimeout(() => {        setRun(runId, entities, preview);
+      setTimeout(() => {
+        console.log("Setting floor plan run with entities:", entities);
+        setRun(runId, entities, preview);
 
         if (analysisResult.tableCount > 0) {
           const totalCapacity = entities.reduce((sum, e) => sum + e.seats, 0);
@@ -247,9 +257,8 @@ export default function FloorPlanManager() {
             `🎯 Analysis complete! Detected ${analysisResult.tableCount} tables (${totalCapacity} seats) with intelligent positioning`,
           );
         } else {
-          // Show specific error
-      if (it's a rate limit issue
-      const isRateLimit = analysisResult.recommendations?.some(
+          // Show specific error if it's a rate limit issue
+          const isRateLimit = analysisResult.recommendations?.some(
             (r) => r.includes("rate limit") || r.includes("429"),
           );
           if (isRateLimit) {
@@ -542,6 +551,3 @@ export default function FloorPlanManager() {
     </div>
   );
 }
-
-
-

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 // Primary navigation items - Most frequently used
-      const primaryNavigation = [
+const primaryNavigation = [
   { 
     name: "Dashboard", 
     href: "/dashboard", 
@@ -54,7 +54,7 @@ import {
 ];
 
 // Secondary navigation - Quick access tools
-      const quickActions = [
+const quickActions = [
   { 
     name: "Catering", 
     href: "/dashboard/catering", 
@@ -84,7 +84,7 @@ import {
 ];
 
 // Utility tools - Less frequently used
-      const utilityNavigation = [
+const utilityNavigation = [
   { name: "Waitlist", href: "/dashboard/waitlist", icon: Clock },
   { name: "Staff", href: "/dashboard/staff", icon: Users },
   { name: "Widget", href: "/dashboard/widget-preview", icon: Code },
@@ -407,4 +407,3 @@ const BottomNavigation: React.FC = () => {
 };
 
 export default BottomNavigation;
-

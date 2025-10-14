@@ -61,7 +61,7 @@ const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState("branding");
 
   // Error handling
-      if (error) {
+  if (error) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -607,4 +607,3 @@ const Settings: React.FC = () => {
 };
 
 export default Settings;
-

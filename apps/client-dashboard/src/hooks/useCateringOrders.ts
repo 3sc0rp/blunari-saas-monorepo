@@ -23,7 +23,7 @@ export const useCateringOrders = (tenantId?: string) => {
   });
 
   // Fetch catering orders
-      const {
+  const {
     data: orders = [],
     isLoading,
     error,
@@ -53,17 +53,17 @@ export const useCateringOrders = (tenantId?: string) => {
           .order("created_at", { ascending: false });
 
         // Apply status filter
-      if (filters.status.length > 0) {
+        if (filters.status.length > 0) {
           query = query.in("status", filters.status);
         }
 
         // Apply service type filter
-      if (filters.service_type.length > 0) {
+        if (filters.service_type.length > 0) {
           query = query.in("service_type", filters.service_type);
         }
 
         // Apply date range filter
-      if (filters.date_range.start) {
+        if (filters.date_range.start) {
           query = query.gte("event_date", filters.date_range.start);
         }
         if (filters.date_range.end) {
@@ -71,7 +71,7 @@ export const useCateringOrders = (tenantId?: string) => {
         }
 
         // Apply search filter
-      if (filters.search) {
+        if (filters.search) {
           query = query.or(
             `event_name.ilike.%${filters.search}%,contact_name.ilike.%${filters.search}%,contact_email.ilike.%${filters.search}%`,
           );
@@ -80,13 +80,16 @@ export const useCateringOrders = (tenantId?: string) => {
         const { data: ordersData, error } = await query;
 
         if (error) {
-          // If table doesn't exist yet,
-      return empty array
-      if (
+          // If table doesn't exist yet, return empty array
+          if (
             error.code === "42P01" ||
             error.message?.includes("relation") ||
             error.message?.includes("does not exist")
-          ) {            return [];
+          ) {
+            console.info(
+              "Catering orders table not found. Please run the database migration.",
+            );
+            return [];
           }
           throw error;
         }
@@ -102,7 +105,7 @@ export const useCateringOrders = (tenantId?: string) => {
   });
 
   // Create catering order
-      const createOrderMutation = useMutation({
+  const createOrderMutation = useMutation({
     mutationFn: async (orderData: CreateCateringOrderRequest) => {
       const { data, error } = await supabase
         .from("catering_orders" as any)
@@ -142,7 +145,7 @@ export const useCateringOrders = (tenantId?: string) => {
   });
 
   // Update catering order
-      const updateOrderMutation = useMutation({
+  const updateOrderMutation = useMutation({
     mutationFn: async ({
       orderId,
       updates,
@@ -185,7 +188,7 @@ export const useCateringOrders = (tenantId?: string) => {
   });
 
   // Cancel catering order
-      const cancelOrderMutation = useMutation({
+  const cancelOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
       const { data, error } = await supabase
         .from("catering_orders" as any)
@@ -235,7 +238,9 @@ export const useCateringOrders = (tenantId?: string) => {
           table: "catering_orders",
           filter: `tenant_id=eq.${tenantId}`,
         },
-        (payload) => {          queryClient.invalidateQueries({
+        (payload) => {
+          console.log("Catering order change:", payload);
+          queryClient.invalidateQueries({
             queryKey: ["catering-orders", tenantId],
           });
         },
@@ -248,17 +253,17 @@ export const useCateringOrders = (tenantId?: string) => {
   }, [tenantId, queryClient]);
 
   // Helper function to get orders by status
-      const getOrdersByStatus = (status: CateringOrderStatus) => {
+  const getOrdersByStatus = (status: CateringOrderStatus) => {
     return orders.filter((order) => order.status === status);
   };
 
   // Helper function to get orders by service type
-      const getOrdersByServiceType = (serviceType: CateringServiceType) => {
+  const getOrdersByServiceType = (serviceType: CateringServiceType) => {
     return orders.filter((order) => order.service_type === serviceType);
   };
 
   // Helper function to get upcoming orders (next 30 days)
-      const getUpcomingOrders = () => {
+  const getUpcomingOrders = () => {
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
@@ -293,5 +298,3 @@ export const useCateringOrders = (tenantId?: string) => {
     getUpcomingOrders,
   };
 };
-
-

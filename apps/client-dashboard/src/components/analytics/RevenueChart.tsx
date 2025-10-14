@@ -111,7 +111,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({
   const comparisonGrowth = getComparisonGrowth();
 
   // Combine current and comparison data for chart
-      const combinedData = chartData.map((item, index) => ({
+  const combinedData = chartData.map((item, index) => ({
     ...item,
     comparisonRevenue: comparisonChartData[index]?.revenue || 0,
     comparisonCovers: comparisonChartData[index]?.covers || 0,
@@ -319,4 +319,3 @@ const RevenueChart: React.FC<RevenueChartProps> = ({
 };
 
 export default RevenueChart;
-

@@ -25,7 +25,7 @@ interface GuestDetailsStepProps {
 }
 
 // Payment form component that uses Stripe Elements
-      const PaymentForm: React.FC<{ 
+const PaymentForm: React.FC<{ 
   onPaymentSuccess: (paymentIntentId: string) => void; 
   onPaymentError: (error: string) => void;
   amount: number;
@@ -118,9 +118,8 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
 
-  // Check
-      if (deposit is required based on policy stored from availability search
-      const depositPolicy = (window as any).__widget_deposit_policy;
+  // Check if deposit is required based on policy stored from availability search
+  const depositPolicy = (window as any).__widget_deposit_policy;
   const depositRequired = depositPolicy?.required;
   const depositAmount = depositPolicy?.amount;
 
@@ -133,7 +132,7 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
 
   const onSubmit = (data: GuestDetails) => {
     // If deposit required but not paid, don't proceed
-      if (depositRequired && !paymentCompleted) {
+    if (depositRequired && !paymentCompleted) {
       return; // Payment form handles this
     }
 
@@ -335,5 +334,3 @@ const GuestDetailsStep: React.FC<GuestDetailsStepProps> = ({
 };
 
 export default GuestDetailsStep;
-
-

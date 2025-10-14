@@ -21,7 +21,7 @@ export async function fetchPublicBranding(slug: string): Promise<PublicBranding>
   try {
     // Placeholder endpoint: /api/public/branding/:slug
     // Replace with real endpoint when available.
-      const res = await fetch(`/api/public/branding/${encodeURIComponent(slug)}`, {
+    const res = await fetch(`/api/public/branding/${encodeURIComponent(slug)}`, {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
       credentials: 'omit'
@@ -38,9 +38,8 @@ export async function fetchPublicBranding(slug: string): Promise<PublicBranding>
     return data;
   } catch (e) {
     // Graceful fallback
-      const fallback: PublicBranding = { name: slug };
+    const fallback: PublicBranding = { name: slug };
     cache.set(key, { data: fallback, expiry: now + TTL });
     return fallback;
   }
 }
-

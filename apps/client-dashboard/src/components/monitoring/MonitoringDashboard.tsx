@@ -37,11 +37,11 @@ const MonitoringDashboard: React.FC = () => {
         const logs = logger.getRecentLogs(20);
         
         // Calculate system health
-      const issues: string[] = [];
+        const issues: string[] = [];
         let status: 'healthy' | 'warning' | 'critical' = 'healthy';
 
         // Check performance issues
-      if (performance.webVitals.lcp > 2500) {
+        if (performance.webVitals.lcp > 2500) {
           issues.push('Poor LCP performance');
           status = 'warning';
         }
@@ -51,13 +51,13 @@ const MonitoringDashboard: React.FC = () => {
         }
 
         // Check cache issues
-      if (cache.hitRate < 50) {
+        if (cache.hitRate < 50) {
           issues.push('Low cache hit rate');
           status = status === 'critical' ? 'critical' : 'warning';
         }
 
         // Check recent errors
-      const recentErrors = logs.filter(log => log.level === 'error' && 
+        const recentErrors = logs.filter(log => log.level === 'error' && 
           Date.now() - log.timestamp.getTime() < 5 * 60 * 1000);
         if (recentErrors.length > 5) {
           issues.push('High error frequency');
@@ -276,7 +276,9 @@ const MonitoringDashboard: React.FC = () => {
             className="w-full bg-green-600 hover:bg-green-700 p-2 rounded text-sm"
             onClick={() => {
               const insights = performanceMonitor.getInsights();
-              console.group('📊 Performance Report');              console.groupEnd();
+              console.group('📊 Performance Report');
+              console.log(insights);
+              console.groupEnd();
             }}
           >
             Export Performance Report
@@ -340,5 +342,3 @@ const MonitoringDashboard: React.FC = () => {
 };
 
 export default MonitoringDashboard;
-
-

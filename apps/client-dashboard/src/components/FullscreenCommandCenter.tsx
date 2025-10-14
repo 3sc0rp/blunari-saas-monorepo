@@ -10,7 +10,7 @@ const FullscreenCommandCenter: React.FC = () => {
     setIsFullscreen(true);
     
     // Cleanup on unmount
-      return () => {
+    return () => {
       setIsFullscreen(false);
     };
   }, [setIsFullscreen]);
@@ -23,4 +23,3 @@ const FullscreenCommandCenter: React.FC = () => {
 };
 
 export default FullscreenCommandCenter;
-

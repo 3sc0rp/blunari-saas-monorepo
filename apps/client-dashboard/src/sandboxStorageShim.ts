@@ -8,14 +8,14 @@
   if (typeof window === 'undefined') return;
   try {
     // Probe: some browsers throw synchronously when reading localStorage in sandbox.
-      const testKey = '__blunari_probe__';
+    const testKey = '__blunari_probe__';
     window.localStorage.setItem(testKey, '1');
     window.localStorage.removeItem(testKey);
     // Accessible: nothing to do.
     return;
   } catch (e) {
     // Only patch once
-      if ((window as any).__BLUNARI_STORAGE_SHIM__) return;
+    if ((window as any).__BLUNARI_STORAGE_SHIM__) return;
     (window as any).__BLUNARI_STORAGE_SHIM__ = true;
     const mem = new Map<string,string>();
     const memoryStorage: Storage = {
@@ -49,4 +49,3 @@
     }
   }
 })();
-

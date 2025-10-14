@@ -47,7 +47,7 @@ export const validateWidgetConfig = (config: Partial<WidgetConfig>): { isValid: 
   const errors: string[] = [];
 
   // Validate required string fields
-      if (!config.welcomeMessage?.trim()) {
+  if (!config.welcomeMessage?.trim()) {
     errors.push('Welcome message is required and cannot be empty');
   }
 
@@ -56,7 +56,7 @@ export const validateWidgetConfig = (config: Partial<WidgetConfig>): { isValid: 
   }
 
   // Validate colors
-      if (config.primaryColor && !validateHexColor(config.primaryColor)) {
+  if (config.primaryColor && !validateHexColor(config.primaryColor)) {
     errors.push('Primary color must be a valid hex color (e.g., #3b82f6)');
   }
 
@@ -69,7 +69,7 @@ export const validateWidgetConfig = (config: Partial<WidgetConfig>): { isValid: 
   }
 
   // Validate numeric ranges
-      if (config.borderRadius !== undefined) {
+  if (config.borderRadius !== undefined) {
     if (typeof config.borderRadius !== 'number' || config.borderRadius < 0 || config.borderRadius > 50) {
       errors.push('Border radius must be a number between 0 and 50');
     }
@@ -94,7 +94,7 @@ export const validateWidgetConfig = (config: Partial<WidgetConfig>): { isValid: 
   }
 
   // Validate enums
-      if (config.theme && !['light', 'dark', 'auto'].includes(config.theme)) {
+  if (config.theme && !['light', 'dark', 'auto'].includes(config.theme)) {
     errors.push('Theme must be one of: light, dark, auto');
   }
 
@@ -103,7 +103,7 @@ export const validateWidgetConfig = (config: Partial<WidgetConfig>): { isValid: 
   }
 
   // Validate custom CSS (basic check)
-      if (config.customCss && typeof config.customCss === 'string' && config.customCss.length > 5000) {
+  if (config.customCss && typeof config.customCss === 'string' && config.customCss.length > 5000) {
     errors.push('Custom CSS cannot exceed 5000 characters');
   }
 
@@ -174,7 +174,7 @@ export const generateWidgetUrl = (
     const url = `${baseUrl}?${params.toString()}`;
     
     // Validate URL length (some browsers have limits)
-      if (url.length > 2048) {
+    if (url.length > 2048) {
       return { url: '', isValid: false, error: 'Generated URL is too long. Please reduce custom parameters.' };
     }
 
@@ -302,8 +302,7 @@ export const safeCopyToClipboard = async (text: string): Promise<{ success: bool
 };
 
 // Deprecated local safeLocalStorage shim replaced by central safeStorage util.
-// Keeping exported shape for backward compatibility
-      if (imported elsewhere.
+// Keeping exported shape for backward compatibility if imported elsewhere.
 import { safeStorage } from '@/utils/safeStorage';
 export const safeLocalStorage = {
   getItem: (key: string) => (typeof key === 'string' ? safeStorage.get(key) : null),
@@ -324,5 +323,3 @@ export default {
   safeCopyToClipboard,
   safeLocalStorage
 };
-
-

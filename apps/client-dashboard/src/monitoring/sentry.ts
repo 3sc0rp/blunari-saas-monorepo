@@ -1,6 +1,5 @@
 // Sentry initialization for client app
-// Initializes only
-      if (VITE_SENTRY_DSN is provided
+// Initializes only if VITE_SENTRY_DSN is provided
 import * as Sentry from '@sentry/react';
 
 const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
@@ -25,8 +24,7 @@ if (dsn) {
     // tracesSampleRate: 0.1,
     // replaysSessionSampleRate: 0.0,
     // replaysOnErrorSampleRate: 0.0,
-    // Optionally include PII
-      if (desired: sendDefaultPii: false,
+    // Optionally include PII if desired: sendDefaultPii: false,
     beforeSend(event) {
       // Example: redact large contexts
       if (event.request && event.request.headers) {
@@ -38,5 +36,3 @@ if (dsn) {
 }
 
 export { Sentry };
-
-

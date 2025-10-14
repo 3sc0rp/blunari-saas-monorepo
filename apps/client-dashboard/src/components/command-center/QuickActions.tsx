@@ -31,7 +31,7 @@ const QuickActions: React.FC = () => {
   const [activeAction, setActiveAction] = useState<string | null>(null);
 
   // Quick actions configuration
-      const quickActions: QuickAction[] = [
+  const quickActions: QuickAction[] = [
     {
       id: 'new-booking',
       label: 'New Booking',
@@ -74,27 +74,37 @@ const QuickActions: React.FC = () => {
   function handleNewBooking() {
     setActiveAction('new-booking');
     // TODO: Open new booking modal/drawer
-    setTimeout(() => setActiveAction(null), 1000);  }
+    setTimeout(() => setActiveAction(null), 1000);
+    console.log('Opening new booking form...');
+  }
 
   function handleNewWalkIn() {
     setActiveAction('new-walkin');
     // TODO: Open walk-in guest form
-    setTimeout(() => setActiveAction(null), 1000);  }
+    setTimeout(() => setActiveAction(null), 1000);
+    console.log('Opening walk-in form...');
+  }
 
   function handleBlockTable() {
     setActiveAction('block-table');
     // TODO: Open table blocking interface
-    setTimeout(() => setActiveAction(null), 1000);  }
+    setTimeout(() => setActiveAction(null), 1000);
+    console.log('Opening table blocking interface...');
+  }
 
   function handleExportData() {
     setActiveAction('export-data');
     // TODO: Trigger data export
-    setTimeout(() => setActiveAction(null), 1000);  }
+    setTimeout(() => setActiveAction(null), 1000);
+    console.log('Exporting data...');
+  }
 
   // Command palette handler
-      const handleCommandPalette = useCallback(() => {
+  const handleCommandPalette = useCallback(() => {
     setIsCommandPaletteOpen(true);
-    // TODO: Implement command palette  }, []);
+    // TODO: Implement command palette
+    console.log('Opening command palette...');
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -267,5 +277,3 @@ const QuickActions: React.FC = () => {
 };
 
 export default QuickActions;
-
-

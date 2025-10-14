@@ -50,9 +50,9 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
   const getBusinessHoursForDate = useCallback((date: Date) => {
     // Determine day-of-week in the tenant's timezone
     // ISO "i" gives 1-7 where 7 = Sunday; convert to 0-6 (Sun-Sat)
-      const isoDow = parseInt(formatInTimeZone(date, timezone, "i"), 10) || 7;
+    const isoDow = parseInt(formatInTimeZone(date, timezone, "i"), 10) || 7;
     const day = isoDow === 7 ? 0 : isoDow; // 0..6
-      const bh = (tenant as any).business_hours as Array<{ day_of_week: number; is_open: boolean; open_time: string | null; close_time: string | null }> | undefined;
+    const bh = (tenant as any).business_hours as Array<{ day_of_week: number; is_open: boolean; open_time: string | null; close_time: string | null }> | undefined;
     if (!Array.isArray(bh)) return null;
     const rec = bh.find((r) => r.day_of_week === day);
     return rec || null;
@@ -87,7 +87,7 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
       const clampClient = (arr: TimeSlot[] | undefined): TimeSlot[] => {
         if (!arr) return [];
         // If business hours are unknown client-side, don't over-filter.
-      if (!bh) return arr;
+        if (!bh) return arr;
         if (bh.is_open === false) return [];
         const [openH, openM] = (bh.open_time || "00:00:00").split(":").map(v => parseInt(v, 10));
         const [closeH, closeM] = (bh.close_time || "23:59:59").split(":").map(v => parseInt(v, 10));
@@ -107,7 +107,10 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
         ...result,
         slots: clampClient(result.slots),
         alternatives: clampClient(result.alternatives as any),
-      } as AvailabilityResponse;      setAvailability(clamped);
+      } as AvailabilityResponse;
+
+      console.log("Availability (clamped):", clamped);
+      setAvailability(clamped);
 
       // Store deposit policy from API response for later use
       if ((result as any)?.deposit_policy) {
@@ -166,18 +169,19 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
 
   const isDateDisabled = (date: Date) => {
     // Disable past dates
-      const today = new Date();
+    const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (date < today) return true;
     // Disable closed days according to tenant business hours (if present)
-      const bh = getBusinessHoursForDate(date);
+    const bh = getBusinessHoursForDate(date);
     if (bh && bh.is_open === false) return true;
     return false;
   };
 
   // Server already clamps to business hours; keep client logic minimal.
   // We only need business-hours for disabling closed days in the calendar.
-      return (
+
+  return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -394,5 +398,3 @@ const DateTimeStep: React.FC<DateTimeStepProps> = ({
 };
 
 export default DateTimeStep;
-
-

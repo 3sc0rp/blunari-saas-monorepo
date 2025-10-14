@@ -39,7 +39,7 @@ export function usePerformanceMonitor(componentName: string) {
     });
 
     // Warn about excessive re-renders
-      if (renderCount.current > 50) {
+    if (renderCount.current > 50) {
       logger.warn('Excessive re-renders detected', {
         componentName,
         renderCount: renderCount.current
@@ -255,7 +255,7 @@ export function useResourcePreloader(resources: string[]) {
       try {
         if (resource.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
           // Preload image
-      const img = new Image();
+          const img = new Image();
           img.src = resource;
           await new Promise((resolve, reject) => {
             img.onload = resolve;
@@ -263,7 +263,7 @@ export function useResourcePreloader(resources: string[]) {
           });
         } else if (resource.match(/\.(js|css)$/i)) {
           // Preload script/style
-      const link = document.createElement('link');
+          const link = document.createElement('link');
           link.rel = resource.endsWith('.css') ? 'stylesheet' : 'preload';
           link.href = resource;
           if (!resource.endsWith('.css')) {
@@ -313,7 +313,7 @@ export function useLargeDataset<T>(
     const pageData = data.slice(startIndex, endIndex);
 
     // Cache with size limit
-      if (cache.size > 10) {
+    if (cache.size > 10) {
       const firstKey = cache.keys().next().value;
       cache.delete(firstKey);
     }
@@ -378,7 +378,7 @@ export function withPerformanceOptimization<T extends Record<string, any>>(
   OptimizedComponent.displayName = `withPerformanceOptimization(${displayName})`;
 
   // Cast to ComponentType<T> to satisfy generic expectations; runtime shape is preserved.
-      return (memoize ? (memo(OptimizedComponent) as unknown as ComponentType<T>) : OptimizedComponent) as ComponentType<T>;
+  return (memoize ? (memo(OptimizedComponent) as unknown as ComponentType<T>) : OptimizedComponent) as ComponentType<T>;
 }
 
 /**

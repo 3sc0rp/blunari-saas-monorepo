@@ -117,8 +117,7 @@ const OnboardingTour: React.FC = () => {
     }, 20000);
   }, [handleComplete]);
 
-  // Show tour
-      if (not seen and user is in operations mode
+  // Show tour if not seen and user is in operations mode
   useEffect(() => {
     const shouldShowTour = !seenTour && !isActive;
     if (shouldShowTour) {
@@ -247,7 +246,7 @@ const OnboardingTour: React.FC = () => {
   }, [isActive, currentStep, handleNext, handlePrev, handleSkip]);
 
   // Reduce motion for accessibility
-      const prefersReducedMotion = typeof window !== 'undefined' 
+  const prefersReducedMotion = typeof window !== 'undefined' 
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
     : false;
 
@@ -431,5 +430,3 @@ const OnboardingTour: React.FC = () => {
 };
 
 export default OnboardingTour;
-
-

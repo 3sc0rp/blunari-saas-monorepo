@@ -49,7 +49,7 @@ export function useWidgetManagement(options: UseWidgetManagementOptions = {}) {
   const previousConfigRef = useRef<any>(null);
 
   // Real-time widget configurations
-      const {
+  const {
     data: widgets,
     loading: widgetsLoading,
     error: widgetsError,
@@ -66,7 +66,7 @@ export function useWidgetManagement(options: UseWidgetManagementOptions = {}) {
         type: payload.new.widget_type
       });
       
-      // Reset unsaved changes
+      // Reset unsaved changes if this was our update
       if (payload.new.updated_at && lastSaved) {
         const updateTime = new Date(payload.new.updated_at);
         if (updateTime >= lastSaved) {
@@ -84,7 +84,7 @@ export function useWidgetManagement(options: UseWidgetManagementOptions = {}) {
   });
 
   // Real-time analytics (if enabled)
-      const {
+  const {
     data: analytics,
     loading: analyticsLoading,
     connected: analyticsConnected
@@ -104,12 +104,12 @@ export function useWidgetManagement(options: UseWidgetManagementOptions = {}) {
   });
 
   // Get widget by type
-      const getWidgetByType = useCallback((type: 'booking' | 'catering') => {
+  const getWidgetByType = useCallback((type: 'booking' | 'catering') => {
     return widgets?.find(w => w.widget_type === type);
   }, [widgets]);
 
   // Save widget configuration
-      const saveWidgetConfig = useCallback(async (
+  const saveWidgetConfig = useCallback(async (
     type: 'booking' | 'catering',
     config: any,
     options: { skipAutoSave?: boolean } = {}
@@ -188,7 +188,7 @@ export function useWidgetManagement(options: UseWidgetManagementOptions = {}) {
     if (!autoSave || !hasUnsavedChanges) return;
 
     // Clear existing timeout
-      if (autoSaveTimeoutRef.current) {
+    if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
@@ -208,13 +208,13 @@ export function useWidgetManagement(options: UseWidgetManagementOptions = {}) {
   }, [hasUnsavedChanges, autoSave, autoSaveInterval, saveWidgetConfig]);
 
   // Mark configuration as changed
-      const markConfigChanged = useCallback((type: 'booking' | 'catering', config: any) => {
+  const markConfigChanged = useCallback((type: 'booking' | 'catering', config: any) => {
     previousConfigRef.current = { type, config };
     setHasUnsavedChanges(true);
   }, []);
 
   // Toggle widget active state
-      const toggleWidgetActive = useCallback(async (type: 'booking' | 'catering') => {
+  const toggleWidgetActive = useCallback(async (type: 'booking' | 'catering') => {
     const widget = getWidgetByType(type);
     if (!widget) return { success: false, error: 'Widget not found' };
 
@@ -237,7 +237,7 @@ export function useWidgetManagement(options: UseWidgetManagementOptions = {}) {
   }, [getWidgetByType]);
 
   // Get widget analytics summary
-      const getAnalyticsSummary = useCallback((widgetId: string) => {
+  const getAnalyticsSummary = useCallback((widgetId: string) => {
     if (!analytics) return null;
 
     const widgetAnalytics = analytics.filter(a => a.widget_id === widgetId);
@@ -292,6 +292,3 @@ export function useWidgetManagement(options: UseWidgetManagementOptions = {}) {
     isOnline: widgetsConnected && (!enableAnalytics || analyticsConnected)
   };
 }
-
-
-

@@ -5,8 +5,7 @@ import { ErrorEnvelope, ErrorEnvelopeZ } from './contracts';
  * Parse API error response into ErrorEnvelope format
  */
 export function parseError(error: unknown): ErrorEnvelope {
-  // If it's already an ErrorEnvelope,
-      return it
+  // If it's already an ErrorEnvelope, return it
   try {
     return ErrorEnvelopeZ.parse(error);
   } catch {
@@ -14,7 +13,7 @@ export function parseError(error: unknown): ErrorEnvelope {
   }
 
   // Parse common error formats
-      if (error instanceof Error) {
+  if (error instanceof Error) {
     return {
       code: 'CLIENT_ERROR',
       message: error.message,
@@ -23,11 +22,11 @@ export function parseError(error: unknown): ErrorEnvelope {
   }
 
   // Parse fetch/API errors
-      if (typeof error === 'object' && error !== null) {
+  if (typeof error === 'object' && error !== null) {
     const errorObj = error as any;
     
     // Supabase error format
-      if (errorObj.message && errorObj.code) {
+    if (errorObj.message && errorObj.code) {
       return {
         code: errorObj.code,
         message: errorObj.message,
@@ -36,7 +35,7 @@ export function parseError(error: unknown): ErrorEnvelope {
     }
 
     // Standard HTTP error
-      if (errorObj.status && errorObj.statusText) {
+    if (errorObj.status && errorObj.statusText) {
       return {
         code: `HTTP_${errorObj.status}`,
         message: errorObj.statusText,
@@ -45,7 +44,7 @@ export function parseError(error: unknown): ErrorEnvelope {
     }
 
     // Generic object with message
-      if (errorObj.message) {
+    if (errorObj.message) {
       return {
         code: 'UNKNOWN_ERROR',
         message: errorObj.message,
@@ -55,7 +54,7 @@ export function parseError(error: unknown): ErrorEnvelope {
   }
 
   // Fallback for unknown error types
-      return {
+  return {
     code: 'UNKNOWN_ERROR',
     message: 'An unexpected error occurred',
     requestId: generateRequestId()
@@ -205,22 +204,18 @@ export function validateApiResponse<T>(response: any, expectedSchema?: any): { d
     };
   }
 
-  // Check
-      if (response.error) {
+  // Check if response has error field
+  if (response.error) {
     return {
       error: parseError(response.error)
     };
   }
 
-  // If no error and has data,
-      return data
-      if (response.data !== undefined) {
+  // If no error and has data, return data
+  if (response.data !== undefined) {
     return { data: response.data };
   }
 
   // If response is the data itself (no wrapper)
-      return { data: response };
+  return { data: response };
 }
-
-
-

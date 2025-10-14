@@ -17,28 +17,41 @@ export const useAnalytics = (
   const { bookings } = useTodaysBookings(tenantId);
 
   // Fetch historical booking data
-      const { data: historicalBookings, isLoading } = useQuery({
+  const { data: historicalBookings, isLoading } = useQuery({
     queryKey: ["analytics-bookings", tenantId, dateRange],
-    queryFn: async () => {      if (!tenantId) {        return [];
+    queryFn: async () => {
+      console.log('[useAnalytics] Fetching historical bookings for tenant:', tenantId);
+      
+      if (!tenantId) {
+        console.log('[useAnalytics] No tenantId - returning empty');
+        return [];
       }
 
       const startDate =
         dateRange?.start ||
         new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const endDate = dateRange?.end || new Date().toISOString();      const { data, error } = await supabase
+      const endDate = dateRange?.end || new Date().toISOString();
+
+      console.log('[useAnalytics] Date range:', { start: startDate, end: endDate });
+
+      const { data, error } = await supabase
         .from("bookings")
         .select("*")
         .eq("tenant_id", tenantId)
         .gte("booking_time", startDate)
         .lte("booking_time", endDate)
-        .order("booking_time", { ascending: true });      if (error) throw error;
+        .order("booking_time", { ascending: true });
+
+      console.log('[useAnalytics] Historical bookings result:', { count: data?.length, error });
+
+      if (error) throw error;
       return data || [];
     },
     enabled: !!tenantId,
   });
 
   // Calculate ROI metrics
-      const roiMetrics: ROIMetrics = useMemo(() => {
+  const roiMetrics: ROIMetrics = useMemo(() => {
     if (!historicalBookings) return getDefaultROIMetrics();
 
     const completedBookings = historicalBookings.filter(
@@ -48,7 +61,8 @@ export const useAnalytics = (
       (b) => b.status === "no_show",
     );
     const totalRevenue = completedBookings.length * 85; // Average revenue estimate
-      return {
+
+    return {
       feesAvoided: {
         amount: noshowBookings.length * 25 + completedBookings.length * 3.5, // Saved fees
         noshowFeesAvoided: noshowBookings.length * 25,
@@ -77,7 +91,7 @@ export const useAnalytics = (
   }, [historicalBookings]);
 
   // Calculate revenue analytics
-      const revenueAnalytics: RevenueAnalytics = useMemo(() => {
+  const revenueAnalytics: RevenueAnalytics = useMemo(() => {
     if (!historicalBookings) return getDefaultRevenueAnalytics();
 
     const completedBookings = historicalBookings.filter(
@@ -90,7 +104,7 @@ export const useAnalytics = (
     );
 
     // Group by day for daily analytics
-      const dailyData = groupBookingsByDay(completedBookings);
+    const dailyData = groupBookingsByDay(completedBookings);
     const weeklyData = groupBookingsByWeek(completedBookings);
     const monthlyData = groupBookingsByMonth(completedBookings);
 
@@ -106,7 +120,7 @@ export const useAnalytics = (
   }, [historicalBookings]);
 
   // Calculate booking patterns
-      const bookingPatterns: BookingPatterns = useMemo(() => {
+  const bookingPatterns: BookingPatterns = useMemo(() => {
     if (!historicalBookings) return getDefaultBookingPatterns();
 
     const peakHours = calculatePeakHours(historicalBookings);
@@ -122,7 +136,7 @@ export const useAnalytics = (
   }, [historicalBookings]);
 
   // Calculate operational metrics
-      const operationalMetrics: OperationalMetrics = useMemo(() => {
+  const operationalMetrics: OperationalMetrics = useMemo(() => {
     if (!historicalBookings) return getDefaultOperationalMetrics();
 
     const completedBookings = historicalBookings.filter(
@@ -250,7 +264,7 @@ function calculateRevenueGrowth(bookings: BookingData[]): number {
   });
 
   const currentRevenue = currentMonthBookings.length * 85; // Estimated revenue
-      const lastRevenue = lastMonthBookings.length * 85;
+  const lastRevenue = lastMonthBookings.length * 85;
 
   return lastRevenue > 0
     ? ((currentRevenue - lastRevenue) / lastRevenue) * 100
@@ -390,7 +404,7 @@ function calculateSourcePerformance(bookings: BookingData[]) {
 
   bookings.forEach((booking) => {
     const source = "website"; // Default since we don't have source data
-      if (!sourceData[source]) sourceData[source] = { bookings: 0, revenue: 0 };
+    if (!sourceData[source]) sourceData[source] = { bookings: 0, revenue: 0 };
     sourceData[source].bookings += 1;
     sourceData[source].revenue += booking.status === "completed" ? 85 : 0;
   });
@@ -430,5 +444,3 @@ function getWeekNumber(date: Date): number {
   const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
   return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
 }
-
-

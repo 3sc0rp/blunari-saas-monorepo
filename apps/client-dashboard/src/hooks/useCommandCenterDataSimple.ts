@@ -9,10 +9,14 @@ export function useCommandCenterDataSimple() {
     queryKey: ['command-center-simple', tenantId],
     queryFn: async () => {
       const devLogs = true; // Always enable debug logs temporarily
-      if (devLogs) {      }
+      if (devLogs) {
+        console.log('[useCommandCenterDataSimple] === DIRECT DB QUERIES ONLY ===');
+        console.log('[useCommandCenterDataSimple] Tenant ID:', tenantId);
+      }
       
       if (!tenantId) {
-        if (devLogs)        return {
+        if (devLogs) console.log('[useCommandCenterDataSimple] No tenant ID - returning empty data');
+        return {
           kpis: [],
           tables: [],
           reservations: [],
@@ -31,12 +35,17 @@ export function useCommandCenterDataSimple() {
 
       try {
         // Try calling the service-role backed function first for better RLS handling
-      const { data: functionData, error: functionError } = await (supabase as any).functions.invoke('command-center-bookings', {
+        const { data: functionData, error: functionError } = await (supabase as any).functions.invoke('command-center-bookings', {
           body: { tenant_id: tenantId, date: new Date().toISOString().slice(0,10) }
         });
 
         if (!functionError && functionData?.success) {
-          if (devLogs)          const tables = (functionData.tables || []).map((table: any) => ({
+          if (devLogs) console.log('[useCommandCenterDataSimple] Function call succeeded', {
+            tables: functionData.tables?.length,
+            bookings: functionData.bookings?.length
+          });
+
+          const tables = (functionData.tables || []).map((table: any) => ({
             id: table.id,
             name: table.name,
             seats: table.capacity,
@@ -44,17 +53,16 @@ export function useCommandCenterDataSimple() {
             status: table.status || 'AVAILABLE'
           }));
 
-          // Auto-assignment helper: deterministically assign a table
-      if (booking has no table_id
-      const autoAssignTableId = (b: any) => {
+          // Auto-assignment helper: deterministically assign a table if booking has no table_id
+          const autoAssignTableId = (b: any) => {
             if (!tables.length) return undefined;
             // Try exact / minimum capacity fit first
-      const capacityFit = [...tables]
+            const capacityFit = [...tables]
               .filter(t => t.seats >= (b.party_size || 1))
               .sort((a, b2) => a.seats - b2.seats)[0];
             if (capacityFit) return capacityFit.id;
             // Fallback: hash booking id to stable index
-      const hash = (b.id || '').split('').reduce((acc: number, ch: string) => acc + ch.charCodeAt(0), 0);
+            const hash = (b.id || '').split('').reduce((acc: number, ch: string) => acc + ch.charCodeAt(0), 0);
             return tables[hash % tables.length].id;
           };
 
@@ -105,7 +113,13 @@ export function useCommandCenterDataSimple() {
             }
           ];
 
-          if (devLogs)          return {
+          if (devLogs) console.log('[useCommandCenterDataSimple] Returning function data:', {
+            kpis: kpis.length,
+            tables: tables.length,
+            reservations: reservations.length
+          });
+
+          return {
             kpis,
             tables,
             reservations,
@@ -125,9 +139,10 @@ export function useCommandCenterDataSimple() {
           };
         }
 
-        if (devLogs)        // Fallback to direct queries
-      if (function fails
-      const [tablesResult, bookingsResult] = await Promise.all([
+        if (devLogs) console.log('[useCommandCenterDataSimple] Function call failed, falling back to direct queries', { error: functionError });
+
+        // Fallback to direct queries if function fails
+        const [tablesResult, bookingsResult] = await Promise.all([
           supabase
             .from('restaurant_tables')
             .select('*')
@@ -138,7 +153,15 @@ export function useCommandCenterDataSimple() {
             .from('bookings')
             .select('*')
             .eq('tenant_id', tenantId)
-        ]);        const tables = (tablesResult.data || []).map((table: any) => ({
+        ]);
+
+        console.log('[useCommandCenterDataSimple] Query results:', {
+          tenantId,
+          tables: { count: tablesResult.data?.length, error: tablesResult.error },
+          bookings: { count: bookingsResult.data?.length, error: bookingsResult.error }
+        });
+
+        const tables = (tablesResult.data || []).map((table: any) => ({
           id: table.id,
           name: table.name,
           seats: table.capacity,
@@ -147,7 +170,7 @@ export function useCommandCenterDataSimple() {
         }));
 
         // Reuse auto-assignment in fallback path
-      const autoAssignFallback = (b: any) => {
+        const autoAssignFallback = (b: any) => {
           if (!tables.length) return undefined;
           const capacityFit = [...tables]
             .filter(t => t.seats >= (b.party_size || 1))
@@ -203,7 +226,13 @@ export function useCommandCenterDataSimple() {
           }
         ];
 
-        if (devLogs)        return {
+        if (devLogs) console.log('[useCommandCenterDataSimple] Returning data:', {
+          kpis: kpis.length,
+          tables: tables.length,
+          reservations: reservations.length
+        });
+
+        return {
           kpis,
           tables,
           reservations,
@@ -241,9 +270,7 @@ export function useCommandCenterDataSimple() {
         };
       }
     },
-    // Don't wait for tenantId - query will
-      return empty data
-      if not available
+    // Don't wait for tenantId - query will return empty data if not available
     enabled: true,
     // Reduce refetch interval for faster updates
     refetchInterval: 30000,
@@ -263,6 +290,3 @@ export function useCommandCenterDataSimple() {
     refetch: query.refetch
   };
 }
-
-
-

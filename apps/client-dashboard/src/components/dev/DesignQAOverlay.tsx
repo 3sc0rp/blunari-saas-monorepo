@@ -24,14 +24,14 @@ interface DesignQAOverlayProps {
 }
 
 // Color contrast checker
-      const getContrastRatio = (color1: string, color2: string): number => {
+const getContrastRatio = (color1: string, color2: string): number => {
   // Simplified contrast calculation for demo
   // In production, use a proper color contrast library
-      return 4.5; // Mock ratio
+  return 4.5; // Mock ratio
 };
 
 // Get computed styles helper
-      const getComputedStyleValue = (element: Element, property: string): string => {
+const getComputedStyleValue = (element: Element, property: string): string => {
   return window.getComputedStyle(element).getPropertyValue(property);
 };
 
@@ -56,12 +56,12 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({
   });
 
   // Toggle tools
-      const toggleTool = useCallback((tool: keyof typeof activeTools) => {
+  const toggleTool = useCallback((tool: keyof typeof activeTools) => {
     setActiveTools((prev) => ({ ...prev, [tool]: !prev[tool] }));
   }, []);
 
   // Run QA checks
-      const runQAChecks = useCallback(() => {
+  const runQAChecks = useCallback(() => {
     const issues = {
       contrastIssues: 0,
       spacingInconsistencies: 0,
@@ -95,7 +95,7 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({
   }, []);
 
   // Grid overlay component
-      const GridOverlay = () => (
+  const GridOverlay = () => (
     <div
       className="fixed inset-0 pointer-events-none z-[9998]"
       style={{
@@ -109,7 +109,7 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({
   );
 
   // Baseline overlay component
-      const BaselineOverlay = () => (
+  const BaselineOverlay = () => (
     <div
       className="fixed inset-0 pointer-events-none z-[9998]"
       style={{
@@ -121,7 +121,7 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({
   );
 
   // Spacing highlighter
-      const SpacingHighlighter = () => {
+  const SpacingHighlighter = () => {
     useEffect(() => {
       const elements = document.querySelectorAll("*");
       elements.forEach((el) => {
@@ -150,7 +150,7 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({
   };
 
   // Typography checker
-      const TypographyChecker = () => {
+  const TypographyChecker = () => {
     useEffect(() => {
       const textElements = document.querySelectorAll(
         "h1, h2, h3, h4, h5, h6, p, span, div",
@@ -161,7 +161,7 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({
         const lineHeight = parseInt(styles.lineHeight);
 
         // Check for proper line height ratios
-      if (lineHeight / fontSize < 1.2 || lineHeight / fontSize > 1.6) {
+        if (lineHeight / fontSize < 1.2 || lineHeight / fontSize > 1.6) {
           (el as HTMLElement).style.outline =
             "2px dashed rgba(239, 68, 68, 0.5)";
           el.setAttribute("data-qa-issue", "line-height");
@@ -180,7 +180,7 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({
   };
 
   // Contrast highlighter
-      const ContrastHighlighter = () => {
+  const ContrastHighlighter = () => {
     useEffect(() => {
       const textElements = document.querySelectorAll("*");
       textElements.forEach((el) => {
@@ -212,7 +212,7 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({
   };
 
   // Focus highlighter
-      const FocusHighlighter = () => {
+  const FocusHighlighter = () => {
     useEffect(() => {
       const focusableElements = document.querySelectorAll(
         "button, a, input, textarea, select, [tabindex]",
@@ -447,4 +447,3 @@ export const DesignQAOverlay: React.FC<DesignQAOverlayProps> = ({
     </>
   );
 };
-

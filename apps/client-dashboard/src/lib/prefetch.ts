@@ -11,7 +11,7 @@ export function prefetchRoute(path: string): void {
   if (!loader) return;
   try {
     // Schedule lightly to avoid blocking user input
-      if (typeof (window as any).requestIdleCallback === 'function') {
+    if (typeof (window as any).requestIdleCallback === 'function') {
       (window as any).requestIdleCallback(() => loader().catch(() => {}), { timeout: 1500 });
     } else {
       setTimeout(() => loader().catch(() => {}), 200);
@@ -22,6 +22,5 @@ export function prefetchRoute(path: string): void {
 export function prefetchAll(paths: string[]): void {
   paths.forEach(prefetchRoute);
 }
-
 
 

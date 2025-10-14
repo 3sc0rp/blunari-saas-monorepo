@@ -13,7 +13,7 @@ export const OrdersDashboard: React.FC = () => {
   const { tenant } = useTenant();
   
   // Use hooks for component-specific subscriptions
-      const { 
+  const { 
     data: orders, 
     loading: ordersLoading, 
     error: ordersError,
@@ -127,4 +127,3 @@ function getOrderStatusVariant(status: string) {
       return 'secondary';
   }
 }
-

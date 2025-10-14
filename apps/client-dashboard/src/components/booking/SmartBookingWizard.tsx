@@ -81,7 +81,7 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   
   // Rate limiting: 3 bookings per minute
-      const { checkLimit, remaining, resetTime, isLimited } = useRateLimit('booking-creation', {
+  const { checkLimit, remaining, resetTime, isLimited } = useRateLimit('booking-creation', {
     maxRequests: 3,
     windowMs: 60000
   });
@@ -168,7 +168,7 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
         setValidationErrors(errors);
         
         // Show first error in toast
-      const firstError = error.errors[0];
+        const firstError = error.errors[0];
         toast.error(`Validation Error: ${firstError.message}`);
       }
       return false;
@@ -177,7 +177,7 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
 
   const handleSubmit = async () => {
     // Check rate limit
-      if (isLimited) {
+    if (isLimited) {
       toast.error(`Rate limit exceeded. Please wait ${resetTime} seconds before creating another booking.`);
       return;
     }
@@ -188,21 +188,19 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
     }
     
     // Validate form data
-      if (!validateForm()) {
+    if (!validateForm()) {
       return;
     }
     
-    // Enforce deposit:
-      if (depositRequired flag is set in the wizard, the booking
-    // flow should have already processed payment in prior UI. Disable submit
-      if (missing.
-      if (formData.depositRequired && !(formData as any).depositPaid) {
+    // Enforce deposit: if depositRequired flag is set in the wizard, the booking
+    // flow should have already processed payment in prior UI. Disable submit if missing.
+    if (formData.depositRequired && !(formData as any).depositPaid) {
       toast.error('Deposit payment is required before completing this booking.');
       return;
     }
     
     // Sanitize data before submission
-      const sanitizedData = {
+    const sanitizedData = {
       ...formData,
       customerName: sanitizeText(formData.customerName),
       specialRequests: formData.specialRequests ? sanitizeText(formData.specialRequests) : undefined,
@@ -808,9 +806,8 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
   );
 };
 
-// Lightweight component verifying the pending booking actually exists in DB; warns
-      if (not found quickly
-      const PendingVerificationIndicator: React.FC<{ reservation: any; tenantId?: string; formData: any }> = ({ reservation, tenantId, formData }) => {
+// Lightweight component verifying the pending booking actually exists in DB; warns if not found quickly
+const PendingVerificationIndicator: React.FC<{ reservation: any; tenantId?: string; formData: any }> = ({ reservation, tenantId, formData }) => {
   const [state, setState] = React.useState<'checking' | 'found' | 'not_found'>('checking');
   React.useEffect(() => {
     let cancelled = false;
@@ -844,5 +841,3 @@ const SmartBookingWizard: React.FC<SmartBookingWizardProps> = ({
 };
 
 export default SmartBookingWizard;
-
-

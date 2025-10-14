@@ -12,8 +12,7 @@ export const CateringSampleDataSeeder: React.FC = () => {
     setStatus("Checking database configuration...");
 
     try {
-      // Check
-      if (catering tables exist by trying to query them
+      // Check if catering tables exist by trying to query them
       const { data: tables, error } = await supabase
         .from("catering_packages" as any)
         .select("id")
@@ -149,10 +148,14 @@ export const CateringSampleDataSeeder: React.FC = () => {
             .single();
 
           if (error) {
-            if (error.code === "23505") {            } else {
+            if (error.code === "23505") {
+              console.log(`Package "${pkg.name}" already exists`);
+            } else {
               console.error("Error adding package:", pkg.name, error);
             }
-          } else {          }
+          } else {
+            console.log("✅ Added package:", pkg.name);
+          }
         } catch (err) {
           console.error("Exception adding package:", pkg.name, err);
         }
@@ -203,6 +206,3 @@ export const CateringSampleDataSeeder: React.FC = () => {
     </div>
   );
 };
-
-
-

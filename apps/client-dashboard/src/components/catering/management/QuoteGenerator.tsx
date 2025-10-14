@@ -16,12 +16,12 @@ interface QuoteGeneratorProps {
 export function QuoteGenerator({ order, onClose }: QuoteGeneratorProps) {
   const [subtotal, setSubtotal] = useState(order.subtotal || 0);
   const [taxRate, setTaxRate] = useState(0.08); // 8% default
-      const [serviceFeePercent, setServiceFeePercent] = useState(0.15); // 15% default
-      const [deliveryFee, setDeliveryFee] = useState(order.delivery_fee || 0);
+  const [serviceFeePercent, setServiceFeePercent] = useState(0.15); // 15% default
+  const [deliveryFee, setDeliveryFee] = useState(order.delivery_fee || 0);
   const [depositPercent, setDepositPercent] = useState(0.30); // 30% default
 
   // Calculate totals
-      const taxAmount = Math.round(subtotal * taxRate);
+  const taxAmount = Math.round(subtotal * taxRate);
   const serviceFee = Math.round(subtotal * serviceFeePercent);
   const totalAmount = subtotal + taxAmount + serviceFee + deliveryFee;
   const depositAmount = Math.round(totalAmount * depositPercent);
@@ -164,4 +164,3 @@ export function QuoteGenerator({ order, onClose }: QuoteGeneratorProps) {
             <div className="flex justify-between font-semibold text-base">
               <span>Total Amount:</span>
               <span className="text-primary">${(totalAmount / 100).toFixed(2)}</span>
-

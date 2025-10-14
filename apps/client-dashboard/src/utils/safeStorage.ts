@@ -26,13 +26,12 @@ function createInMemory(): SafeStorageLike {
 
 export const safeStorage: SafeStorageLike = (() => {
   if (cached) return cached;
-  // Heuristic:
-      if (inside sandboxed iframe (cross-origin), localStorage may throw
+  // Heuristic: if inside sandboxed iframe (cross-origin), localStorage may throw
   let isSandboxed = false;
   try {
     // Accessing top may throw in sandbox; treat that as sandboxed indicator
     // eslint-disable-next-line no-self-compare
-      if (window.top !== window.self) {
+    if (window.top !== window.self) {
       // Try simple read test
       const testKey = '__ss_test__';
       window.localStorage.setItem(testKey, '1');
@@ -78,7 +77,5 @@ export const inSandboxedIframe = (() => {
     if (window.top === window.self) return false;
   } catch { return true; }
   // Additional hint: preview or embed query parameter
-      return /[?&](preview|embed)=1/.test(window.location.search);
+  return /[?&](preview|embed)=1/.test(window.location.search);
 })();
-
-

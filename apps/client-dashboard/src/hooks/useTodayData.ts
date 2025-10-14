@@ -96,7 +96,7 @@ export const useTodayData = () => {
 
       try {
         // Use a wider date range for demo purposes to show existing data
-      const today = new Date();
+        const today = new Date();
         const startOfDay = new Date('2025-09-01'); // Start from Sept 1st to include existing bookings
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date();
@@ -104,8 +104,11 @@ export const useTodayData = () => {
         endOfDay.setHours(23, 59, 59, 999);
 
         // Fetch today's bookings with improved error handling
-      const devLogs = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
-        if (devLogs) {        }
+        const devLogs = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
+        if (devLogs) {
+          console.log('[useTodayData] Fetching bookings for tenant:', tenant.id);
+          console.log('[useTodayData] Date range:', { start: startOfDay.toISOString(), end: endOfDay.toISOString() });
+        }
         
         const { data: bookings, error: bookingsError } = await supabase
           .from('bookings')
@@ -115,14 +118,15 @@ export const useTodayData = () => {
           .lte('booking_time', endOfDay.toISOString())
           .order('booking_time', { ascending: true });
 
-        if (devLogs)        if (bookingsError) {
+        if (devLogs) console.log('[useTodayData] Bookings result:', { count: bookings?.length, error: bookingsError });
+
+        if (bookingsError) {
           console.error("Error fetching bookings:", bookingsError);
           throw new Error(`Failed to fetch bookings: ${bookingsError.message}`);
         }
 
-        // Build waitlist entries from real data
-      if (present: bookings with status 'waiting'
-      const waitlistEntries: WaitlistEntryWithProfiles[] = (bookings || [])
+        // Build waitlist entries from real data if present: bookings with status 'waiting'
+        const waitlistEntries: WaitlistEntryWithProfiles[] = (bookings || [])
           .filter(b => (b as any).status === 'waiting')
           .map(b => ({
             id: (b as any).id,
@@ -144,19 +148,20 @@ export const useTodayData = () => {
           }));
 
         // Fetch restaurant tables with proper column names
-      const { data: tables, error: tablesError } = await supabase
+        const { data: tables, error: tablesError } = await supabase
           .from('restaurant_tables')
           .select('*')
           .eq('tenant_id', tenant.id)
           .eq('active', true) // Changed from 'status' to 'active'
           .order('name', { ascending: true }); // Changed from 'table_number' to 'name'
-      if (tablesError) {
+
+        if (tablesError) {
           console.error("Error fetching tables:", tablesError);
           throw new Error(`Failed to fetch tables: ${tablesError.message}`);
         }
 
         // Calculate metrics with proper data handling
-      const bookingsList: BookingWithProfiles[] = (bookings || []).map(booking => ({
+        const bookingsList: BookingWithProfiles[] = (bookings || []).map(booking => ({
           ...booking,
           // Add compatibility fields for existing components
           customer_name: (booking as any).guest_name,
@@ -178,11 +183,11 @@ export const useTodayData = () => {
         const totalCovers = bookingsList.reduce((sum, b) => sum + (b.party_size || 0), 0);
         
         // Reservations based on real statuses; walk-ins not tracked without explicit column
-      const reservations = bookingsList.filter(b => ['confirmed','seated','completed'].includes((b as any).status)).length;
+        const reservations = bookingsList.filter(b => ['confirmed','seated','completed'].includes((b as any).status)).length;
         const walkIns = 0;
 
         // Calculate average wait time safely
-      const averageWaitTime = waitlistList.length > 0 ? 
+        const averageWaitTime = waitlistList.length > 0 ? 
           Math.round(waitlistList.reduce((sum, w) => {
             try {
               const waitTime = (new Date().getTime() - new Date(w.created_at).getTime()) / (1000 * 60);
@@ -193,14 +198,12 @@ export const useTodayData = () => {
             }
           }, 0) / waitlistList.length) : 0;
 
-        // Estimated revenue based on covers and a configurable average (set to 0
-      if (not desired)
-      const avgSpendPerCover = 0; // Use only real revenue
-      if (available; keep 0 to avoid synthetic numbers
-      const estimatedRevenue = totalCovers * avgSpendPerCover;
+        // Estimated revenue based on covers and a configurable average (set to 0 if not desired)
+        const avgSpendPerCover = 0; // Use only real revenue if available; keep 0 to avoid synthetic numbers
+        const estimatedRevenue = totalCovers * avgSpendPerCover;
 
         // Satisfaction score derived from real booking outcomes (lower with cancellations/no-shows)
-      const issueRate = (cancelledBookings + noShowBookings) / Math.max(1, bookingsList.length);
+        const issueRate = (cancelledBookings + noShowBookings) / Math.max(1, bookingsList.length);
         const satisfactionScore = Math.max(0, Math.round(100 - issueRate * 100));
 
         return {
@@ -258,6 +261,3 @@ export const useTodayData = () => {
 
   return query;
 };
-
-
-

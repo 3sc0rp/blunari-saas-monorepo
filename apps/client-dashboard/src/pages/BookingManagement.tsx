@@ -81,7 +81,7 @@ const BookingManagement: React.FC = () => {
   };
 
   // Group bookings by status
-      const bookingsByStatus = useMemo(() => {
+  const bookingsByStatus = useMemo(() => {
     const groups = {
       confirmed: bookings.filter((b) => b.status === "confirmed"),
       pending: bookings.filter((b) => b.status === "pending"),
@@ -106,7 +106,7 @@ const BookingManagement: React.FC = () => {
   };
 
   // Calculate key metrics
-      const todaysBookings = bookings.filter((b) => {
+  const todaysBookings = bookings.filter((b) => {
     const bookingDate = new Date(b.booking_time).toDateString();
     const today = new Date().toDateString();
     return bookingDate === today;
@@ -506,7 +506,7 @@ const BookingManagement: React.FC = () => {
 };
 
 // Enhanced Bookings List Component
-      const BookingsList: React.FC<{
+const BookingsList: React.FC<{
   bookings: any[];
   isLoading: boolean;
   selectedBookings: string[];
@@ -594,4 +594,3 @@ const BookingManagement: React.FC = () => {
 };
 
 export default BookingManagement;
-

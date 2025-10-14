@@ -76,7 +76,7 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
     {},
   );
   // Hooks must not be conditional. Declare before any early return.
-      const [messageOpen, setMessageOpen] = useState(false);
+  const [messageOpen, setMessageOpen] = useState(false);
   const { settings } = useSettings();
 
   if (!booking) return null;
@@ -482,7 +482,9 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
             onOpenChange={setMessageOpen}
             defaultChannel={booking.guest_phone ? 'sms' : 'email'}
             onSend={async ({ channel, to, subject, body }) => {
-              // Placeholder: wire to background-ops or email/SMS provider            }}
+              // Placeholder: wire to background-ops or email/SMS provider
+              console.log('Send', { channel, to, subject, body });
+            }}
           />
 
           {/* Activity Log */}
@@ -516,5 +518,3 @@ const ReservationDrawer: React.FC<ReservationDrawerProps> = ({
 };
 
 export default ReservationDrawer;
-
-

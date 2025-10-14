@@ -117,7 +117,7 @@ const WidgetVersionManagement: React.FC<WidgetVersionManagementProps> = ({
   const [error, setError] = useState<string | null>(null)
 
   // New version form state
-      const [newVersion, setNewVersion] = useState({
+  const [newVersion, setNewVersion] = useState({
     version_number: '',
     changelog: '',
     deployment_strategy: 'immediate' as 'immediate' | 'gradual' | 'scheduled' | 'canary',

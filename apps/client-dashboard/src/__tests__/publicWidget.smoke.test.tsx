@@ -9,8 +9,7 @@ describe('Public BookingWidget (unauth)', () => {
   it('renders loading state initially', () => {
     render(<BookingWidget slug="demo" />);
     // Loading state contains "Loading Restaurant" heading
-      const heading = screen.getByText(/Loading Restaurant/i);
+    const heading = screen.getByText(/Loading Restaurant/i);
     expect(heading).toBeInTheDocument();
   });
 });
-

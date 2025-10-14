@@ -7,7 +7,8 @@ import { useTableManagement } from "@/hooks/useTableManagement";
 import { useTenant } from "@/hooks/useTenant";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logger } from "@/utils/logger"; // CRITICAL FIX: Use proper logging
-      const TableStatus = () => {
+
+const TableStatus = () => {
   const { tenant } = useTenant();
   const { tables, isLoading, updateTable, error } = useTableManagement(tenant?.id);
 
@@ -32,7 +33,7 @@ import { logger } from "@/utils/logger"; // CRITICAL FIX: Use proper logging
   }, [tenant?.id, tables?.length, error]);
 
   // CRITICAL FIX: Add null safety checks
-      const safeTables = React.useMemo(() => {
+  const safeTables = React.useMemo(() => {
     if (!Array.isArray(tables)) {
       logger.warn('Tables data is not an array', { tables });
       return [];
@@ -41,7 +42,7 @@ import { logger } from "@/utils/logger"; // CRITICAL FIX: Use proper logging
   }, [tables]);
 
   // Handle loading state with better UX
-      if (isLoading) {
+  if (isLoading) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
@@ -61,7 +62,7 @@ import { logger } from "@/utils/logger"; // CRITICAL FIX: Use proper logging
   }
 
   // Handle error state
-      if (error) {
+  if (error) {
     return (
       <div className="p-6">
         <h3 className="text-lg font-semibold mb-4">Table Status</h3>
@@ -82,7 +83,7 @@ import { logger } from "@/utils/logger"; // CRITICAL FIX: Use proper logging
   }
 
   // Handle no tenant case
-      if (!tenant?.id) {
+  if (!tenant?.id) {
     return (
       <div className="p-6">
         <h3 className="text-lg font-semibold mb-4">Table Status</h3>
@@ -95,7 +96,7 @@ import { logger } from "@/utils/logger"; // CRITICAL FIX: Use proper logging
   }
 
   // CRITICAL FIX: Handle no tables case with proper safety checks
-      if (!safeTables || safeTables.length === 0) {
+  if (!safeTables || safeTables.length === 0) {
     return (
       <div className="p-6">
         <h3 className="text-lg font-semibold mb-4">Table Status</h3>
@@ -239,4 +240,3 @@ import { logger } from "@/utils/logger"; // CRITICAL FIX: Use proper logging
 };
 
 export default TableStatus;
-

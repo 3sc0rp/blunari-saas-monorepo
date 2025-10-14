@@ -9,7 +9,7 @@ export const DesignQAProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     // Only enable in development
-      if (process.env.NODE_ENV !== "development") return;
+    if (process.env.NODE_ENV !== "development") return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       // Toggle with Ctrl+Shift+Q (or Cmd+Shift+Q on Mac)
@@ -52,7 +52,7 @@ export const DesignQAProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [isQAOpen]);
 
   // Show floating indicator in dev mode
-      const QAIndicator = () => {
+  const QAIndicator = () => {
     if (process.env.NODE_ENV !== "development" || isQAOpen) return null;
 
     return (
@@ -90,4 +90,3 @@ export const DesignQAProvider: React.FC<{ children: React.ReactNode }> = ({
     </>
   );
 };
-

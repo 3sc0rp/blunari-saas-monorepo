@@ -11,7 +11,7 @@ interface DevOnlyProps {
 
 export const DevOnly: React.FC<DevOnlyProps> = ({ children }) => {
   // Only render children in development mode
-      if (import.meta.env.PROD) {
+  if (import.meta.env.PROD) {
     return null;
   }
 
@@ -19,4 +19,3 @@ export const DevOnly: React.FC<DevOnlyProps> = ({ children }) => {
 };
 
 export default DevOnly;
-

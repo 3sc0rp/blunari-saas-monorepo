@@ -56,16 +56,15 @@ export function useMemoryCleanup() {
 
       if (previousPath !== currentPath) {
         // Force garbage collection on heavy pages
-      const heavyPages = ['/dashboard/tables', '/dashboard/analytics', '/dashboard/ai-business-insights'];
+        const heavyPages = ['/dashboard/tables', '/dashboard/analytics', '/dashboard/ai-business-insights'];
 
         if (heavyPages.some(page => previousPath.includes(page))) {
           // Clear any lingering timers
-      const timerId = setTimeout(() => {}, 0);
+          const timerId = setTimeout(() => {}, 0);
           clearTimeout(timerId);
 
-          // Request garbage collection
-      if (available (Chrome DevTools)
-      if (typeof window !== 'undefined' && typeof (window as any).gc === 'function') {
+          // Request garbage collection if available (Chrome DevTools)
+          if (typeof window !== 'undefined' && typeof (window as any).gc === 'function') {
             setTimeout(() => (window as any).gc(), 1000);
           }
         }
@@ -86,7 +85,7 @@ export function usePerformanceMonitoring(componentName: string) {
 
   useEffect(() => {
     try {
-      // Check
+      // Check if performance API is available
       if (typeof performance === 'undefined' || typeof performance.now !== 'function') {
         return;
       }
@@ -99,7 +98,17 @@ export function usePerformanceMonitoring(componentName: string) {
       if (renderTime < 0 || renderTime > 30000) return;
 
       // Log performance metrics for debugging
-      if (process.env.NODE_ENV === 'development') {      }
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Performance] ${componentName}:`, {
+          renderTime: `${renderTime.toFixed(2)}ms`,
+          path: location.pathname,
+          memory: (performance as any).memory ? {
+            used: `${((performance as any).memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
+            total: `${((performance as any).memory.totalJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
+            limit: `${((performance as any).memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`
+          } : 'Not available'
+        });
+      }
 
       // Reset timer for next render
       startTime.current = performance.now();
@@ -150,7 +159,7 @@ export function usePrefetch() {
 
   const prefetchRoute = useCallback((path: string) => {
     // Create a link element for prefetching
-      const link = document.createElement('link');
+    const link = document.createElement('link');
     link.rel = 'prefetch';
     link.href = path;
     document.head.appendChild(link);
@@ -180,7 +189,7 @@ export function useBundleMonitoring() {
     try {
       if (process.env.NODE_ENV === 'development' && typeof console !== 'undefined') {
         // Monitor bundle loading
-      const originalLog = console.log;
+        const originalLog = console.log;
         console.log = (...args) => {
           if (args[0]?.includes?.('chunk')) {
             originalLog('[Bundle Loading]', ...args);
@@ -199,7 +208,3 @@ export function useBundleMonitoring() {
     }
   }, []);
 }
-
-
-
-

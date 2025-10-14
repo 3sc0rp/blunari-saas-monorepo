@@ -21,7 +21,15 @@ vi.mock('@/hooks/useAuth', () => ({
 const WidgetManagementTestHarness = () => (
   <div data-testid="widget-management">
     <h1>Widget Management</h1>
-    <button data-testid="create-widget-btn" onClick={() =>describe('Widget Management Component', () => {
+    <button data-testid="create-widget-btn" onClick={() => console.log('Create widget')}>Create Widget</button>
+    <div data-testid="widget-list">
+      <div className="widget-item">Test Widget 1</div>
+      <div className="widget-item">Test Widget 2</div>
+    </div>
+  </div>
+);
+
+describe('Widget Management Component', () => {
   let testEnvironment: TestEnvironment;
   let user: ReturnType<typeof userEvent.setup>;
 

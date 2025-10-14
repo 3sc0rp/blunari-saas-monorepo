@@ -17,7 +17,8 @@ import PerformanceMonitor from '@/components/PerformanceMonitor';
 // Minimal, auth-free widget runtime. Only public booking/catering widgets.
 // Routes: /public-widget/book/:slug and /public-widget/catering/:slug
 // This entry excludes AuthProvider, TenantBrandingProvider, NavigationProvider to avoid login UI or tenant resolution overhead.
-      const queryClient = new QueryClient({
+
+const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 5 * 60 * 1000, gcTime: 10 * 60 * 1000, retry: 1, refetchOnWindowFocus: false }
   }
@@ -152,5 +153,3 @@ ReactDOM.createRoot(rootEl).render(
     <WidgetApp />
   </React.StrictMode>
 );
-
-

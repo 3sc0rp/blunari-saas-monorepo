@@ -113,8 +113,12 @@ const Bookings: React.FC = () => {
   }, [filters]);
 
   // Calculate key metrics - use all bookings for demo since data is from Sept
-      const todaysBookings = bookings; // Show all bookings in metrics for demo
-      if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {  }
+  const todaysBookings = bookings; // Show all bookings in metrics for demo
+  
+  if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+    console.log('[Bookings] Total bookings:', bookings.length);
+    console.log('[Bookings] Bookings data:', bookings.map(b => ({ name: b.guest_name, date: b.booking_time, status: b.status })));
+  }
 
   const metrics = {
     totalToday: todaysBookings.length,
@@ -187,7 +191,7 @@ const Bookings: React.FC = () => {
   };
 
   // Quick filter helpers
-      const setQuickStatus = (status?: BookingStatus) => {
+  const setQuickStatus = (status?: BookingStatus) => {
     setFilters((prev) => ({
       ...prev,
       status: status ? ([status] as BookingStatus[]) : [],
@@ -494,5 +498,3 @@ const Bookings: React.FC = () => {
 };
 
 export default memo(Bookings);
-
-

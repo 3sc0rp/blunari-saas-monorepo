@@ -50,7 +50,7 @@ export function CateringOrdersManager({ tenantId }: CateringOrdersManagerProps) 
   const [showOrderDetails, setShowOrderDetails] = useState(false);
 
   // Filter orders
-      const filteredOrders = useMemo(() => {
+  const filteredOrders = useMemo(() => {
     let filtered = orders;
 
     if (statusFilter !== 'all') {
@@ -390,5 +390,4 @@ export function CateringOrdersManager({ tenantId }: CateringOrdersManagerProps) 
     </div>
   );
 }
-
 

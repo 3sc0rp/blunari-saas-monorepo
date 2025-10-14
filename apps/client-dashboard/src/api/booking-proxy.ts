@@ -41,8 +41,7 @@ async function getUserAccessToken(supabaseUrl?: string): Promise<string | undefi
       if (token) return token;
     }
   } catch {}
-  // Fallback to querying supabase client
-      if (available (dashboard runtime only)
+  // Fallback to querying supabase client if available (dashboard runtime only)
   try {
     const mod = await import('@/integrations/supabase/client');
     const client = (mod as any)?.supabase;
@@ -51,9 +50,8 @@ async function getUserAccessToken(supabaseUrl?: string): Promise<string | undefi
       return data?.session?.access_token || undefined;
     }
   } catch {}
-  // For development/demo,
-      return a demo user token if available
-      if (import.meta.env.MODE === 'development') {
+  // For development/demo, return a demo user token if available
+  if (import.meta.env.MODE === 'development') {
     try {
       const mod = await import('@/integrations/supabase/client');
       const client = (mod as any)?.supabase;
@@ -72,12 +70,12 @@ async function callEdgeFunction(
 ): Promise<unknown> {
   try {
     // Pull token from URL (public widget runtime)
-      const token = (() => {
+    const token = (() => {
       try { return new URLSearchParams(window.location.search).get('token') || undefined; } catch { return undefined; }
     })();
 
     // Derive slug from body (tenant lookups) or URL path as fallback when token absent
-      const slugFromBody = (body as any)?.slug || (body as any)?.tenant_slug;
+    const slugFromBody = (body as any)?.slug || (body as any)?.tenant_slug;
     const slugFromUrl = (() => { try { return new URL(window.location.href).searchParams.get('slug'); } catch { return undefined; } })();
     const slug = slugFromBody || slugFromUrl || undefined;
 
@@ -98,8 +96,32 @@ async function callEdgeFunction(
 
     const userJwt = await getUserAccessToken(supabaseUrl);
     
-    // Enhanced debug logging    const requestId = crypto.randomUUID();   
-      const response = await fetch(
+    // Enhanced debug logging
+    console.log('[booking-proxy] === API CALL DETAILS ===');
+    console.log('[booking-proxy] Function:', functionName);
+    console.log('[booking-proxy] Auth details:', {
+      hasUserJwt: !!userJwt,
+      userJwtPreview: userJwt ? userJwt.substring(0, 30) + '...' : 'NONE',
+      usingAnonKey: !userJwt,
+      hasWidgetToken: !!requestBody.token,
+      widgetTokenPreview: requestBody.token?.toString().substring(0, 20) + '...',
+      authorizationHeader: userJwt ? 'Using User JWT' : 'Using Anon Key',
+      supabaseUrl,
+      hasSupabaseKey: !!supabaseKey
+    });
+    console.log('[booking-proxy] Request body:', {
+      ...requestBody,
+      token: requestBody.token ? '[REDACTED]' : undefined,
+      hasTenantId: !!requestBody.tenant_id,
+      tenantId: requestBody.tenant_id,
+      hasSlug: !!requestBody.slug,
+      slug: requestBody.slug
+    });
+    
+    const requestId = crypto.randomUUID();
+    console.log('[booking-proxy] Making request with ID:', requestId);
+    
+    const response = await fetch(
       `${supabaseUrl}/functions/v1/${functionName}`,
       {
         method: "POST",
@@ -112,7 +134,16 @@ async function callEdgeFunction(
         },
         body: JSON.stringify(requestBody),
       },
-    );    if (!response.ok) {
+    );
+    
+    console.log('[booking-proxy] Response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      requestId
+    });
+
+    if (!response.ok) {
       let errorText = await response.text();
       console.error('[booking-proxy] API Error Response:', {
         status: response.status,
@@ -136,7 +167,11 @@ async function callEdgeFunction(
     }
 
     // Get response text first for debugging
-      const responseText = await response.text();    // Try to parse JSON
+    const responseText = await response.text();
+    console.log('[booking-proxy] Raw response text:', responseText);
+    console.log('[booking-proxy] Response text length:', responseText.length);
+    
+    // Try to parse JSON
     let data;
     try {
       data = JSON.parse(responseText);
@@ -149,7 +184,13 @@ async function callEdgeFunction(
         responseText,
         parseError
       });
-    }    if ((data as any)?.success === false && (data as any)?.error) {
+    }
+    
+    console.log('[booking-proxy] Response data:', data);
+    console.log('[booking-proxy] Response keys:', Object.keys(data || {}));
+    console.log('[booking-proxy] Response has reservation_id?', !!(data as any)?.reservation_id);
+
+    if ((data as any)?.success === false && (data as any)?.error) {
       const err: any = data as any;
       console.error('[booking-proxy] API returned error:', err);
       throw new BookingAPIError(err.error.code || "API_ERROR", err.error.message, {
@@ -172,16 +213,28 @@ async function callEdgeFunction(
 }
 
 export async function getTenantBySlug(slug: string) {
-  try {    // Check
-      if (we're in a widget context (has token in URL)
-      const urlToken = (() => {
+  try {
+    console.log('[getTenantBySlug] Looking up tenant with slug:', slug);
+    
+    // Check if we're in a widget context (has token in URL)
+    const urlToken = (() => {
       try { 
         return typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null; 
       } catch { 
         return null; 
       }
-    })();    // If widget token present, use edge function to resolve tenant
-      if (urlToken) {      const data = await callEdgeFunction('widget-booking-live', {
+    })();
+    
+    console.log('[getTenantBySlug] Context detection:', {
+      hasUrlToken: !!urlToken,
+      willUseEdgeFunction: !!urlToken,
+      willUseDirectDB: !urlToken
+    });
+    
+    // If widget token present, use edge function to resolve tenant
+    if (urlToken) {
+      console.log('[getTenantBySlug] Using edge function (widget context)');
+      const data = await callEdgeFunction('widget-booking-live', {
         action: 'tenant',
         slug,
       });
@@ -203,20 +256,24 @@ export async function getTenantBySlug(slug: string) {
           deposit_enabled: false,
           revenue_optimization: true,
         },
-      };      return TenantInfoSchema.parse(transformedData);
+      };
+      
+      console.log('[getTenantBySlug] Tenant resolved via edge function:', transformedData.name);
+      return TenantInfoSchema.parse(transformedData);
     }
     
-    // Dashboard context: use direct database query   
-      const { supabase } = await import('@/integrations/supabase/client');
+    // Dashboard context: use direct database query
+    console.log('[getTenantBySlug] Using direct DB query (dashboard context)');
+    const { supabase } = await import('@/integrations/supabase/client');
     
     // Query tenants table directly (without business_hours column that doesn't exist)
-      const { data: tenantRaw, error } = await supabase
+    const { data: tenantRaw, error } = await supabase
       .from('tenants')
       .select('id, slug, name, timezone, currency')
       .eq('slug', slug)
       .maybeSingle();
     // Some generated types may represent errors as data; normalize
-      const tenant: any = tenantRaw && (tenantRaw as any).id ? tenantRaw : (error ? null : tenantRaw);
+    const tenant: any = tenantRaw && (tenantRaw as any).id ? tenantRaw : (error ? null : tenantRaw);
 
     if (error) {
       console.error('[getTenantBySlug] Database error:', error);
@@ -226,7 +283,11 @@ export async function getTenantBySlug(slug: string) {
     if (!tenant) {
       console.error('[getTenantBySlug] Tenant not found for slug:', slug);
       throw new BookingAPIError('TENANT_NOT_FOUND', `Restaurant not found: ${slug}`);
-    }    // Fetch business hours separately from the business_hours table
+    }
+    
+  console.log('[getTenantBySlug] Tenant found via DB:', { id: (tenant as any).id, name: (tenant as any).name });
+    
+    // Fetch business hours separately from the business_hours table
     let businessHours: any[] = [];
     try {
       const { data: bhData } = await supabase
@@ -317,7 +378,12 @@ export async function confirmReservation(
   request: ReservationRequest,
   idempotencyKey: string,
 ) {
-  try {    let rawData = await callEdgeFunction("widget-booking-live", {
+  try {
+    console.log('[confirmReservation] === STARTING CONFIRMATION ===');
+    console.log('[confirmReservation] Request:', JSON.stringify(request, null, 2));
+    console.log('[confirmReservation] Idempotency key:', idempotencyKey);
+    
+    let rawData = await callEdgeFunction("widget-booking-live", {
       action: "confirm",
       idempotency_key: idempotencyKey,
       tenant_id: request.tenant_id,
@@ -326,11 +392,23 @@ export async function confirmReservation(
       table_id: (request as any).table_id,
       deposit: (request as any).deposit,
       source: (request as any).source,
-    });    // CRITICAL CHECK: Is the response wrapped in a 'data' property?
-      if (rawData && (rawData as any).data && typeof (rawData as any).data === 'object') {      rawData = (rawData as any).data;    }
+    });
+
+    console.log('[confirmReservation] ✅ Raw data received from edge function:');
+    console.log(JSON.stringify(rawData, null, 2));
+    console.log('[confirmReservation] Data type:', typeof rawData);
+    console.log('[confirmReservation] Data keys:', rawData ? Object.keys(rawData as any) : 'NO KEYS - data is null/undefined');
+
+    // CRITICAL CHECK: Is the response wrapped in a 'data' property?
+    if (rawData && (rawData as any).data && typeof (rawData as any).data === 'object') {
+      console.log('[confirmReservation] ⚠️  Response is wrapped in a "data" property - unwrapping...');
+      rawData = (rawData as any).data;
+      console.log('[confirmReservation] Unwrapped data:', JSON.stringify(rawData, null, 2));
+      console.log('[confirmReservation] Unwrapped data keys:', Object.keys(rawData as any));
+    }
 
     // CRITICAL CHECK: Is there an error in the response?
-      if (rawData && (rawData as any).error) {
+    if (rawData && (rawData as any).error) {
       console.error('[confirmReservation] ❌ Edge function returned an error:', (rawData as any).error);
       throw new BookingAPIError(
         'EDGE_FUNCTION_ERROR',
@@ -340,7 +418,7 @@ export async function confirmReservation(
     }
 
     // CRITICAL CHECK: Is this an empty object?
-      if (rawData && typeof rawData === 'object' && Object.keys(rawData as any).length === 0) {
+    if (rawData && typeof rawData === 'object' && Object.keys(rawData as any).length === 0) {
       console.error('[confirmReservation] ❌ Edge function returned an empty object!');
       console.error('[confirmReservation] This usually means the edge function failed silently.');
       console.error('[confirmReservation] Request was:', { request, idempotencyKey });
@@ -352,7 +430,12 @@ export async function confirmReservation(
     }
 
     // Normalize any upstream variations into our stable schema
-      const normalized = normalizeReservationResponse(rawData);    // Try to parse and catch detailed Zod errors
+    const normalized = normalizeReservationResponse(rawData);
+    
+    console.log('[confirmReservation] ✅ After normalization:');
+    console.log(JSON.stringify(normalized, null, 2));
+    
+    // Try to parse and catch detailed Zod errors
     let validated;
     try {
       validated = ReservationResponseSchema.parse(normalized);
@@ -370,8 +453,13 @@ export async function confirmReservation(
         'Response from server does not match expected format',
         { zodError, normalized }
       );
-    }    // Critical check:
-      if (!validated.reservation_id) {
+    }
+    
+    console.log('[confirmReservation] ✅ After schema validation:');
+    console.log(JSON.stringify(validated, null, 2));
+    
+    // Critical check: If reservation_id is null, the booking creation failed
+    if (!validated.reservation_id) {
       console.error('[confirmReservation] ❌ CRITICAL: Booking creation failed - no reservation_id returned');
       console.error('[confirmReservation] This means the edge function failed to create the booking');
       throw new BookingAPIError(
@@ -379,7 +467,10 @@ export async function confirmReservation(
         "Booking creation failed. Please try again or contact support.",
         { validated, normalized }
       );
-    }    return validated;
+    }
+    
+    console.log('[confirmReservation] ✅ SUCCESS - Returning validated reservation:', validated.reservation_id);
+    return validated;
   } catch (error) {
     console.error('[confirmReservation] ❌ Error occurred:', error);
     if (error instanceof BookingAPIError) {
@@ -398,9 +489,29 @@ function normalizeReservationResponse(input: any): any {
   try {
     const d = input || {};
 
-    // Debug logging in development    // Extract reservation_id - check all possible field names
-      const reservationId = d.reservation_id || d.reservationId || d.id || d.booking_id;    let confirmationNumber = d.confirmation_number || d.confirmationNumber || d.reference || d.code;
-    let status: string = (d.status || d.state || d.reservation_status || 'pending').toString().toLowerCase();    if (!reservationId) {
+    // Debug logging in development
+    console.log('[normalizeReservationResponse] === RESPONSE NORMALIZATION ===');
+    console.log('[normalizeReservationResponse] Input data keys:', Object.keys(d));
+    console.log('[normalizeReservationResponse] Input data:', JSON.stringify(d, null, 2));
+    
+    // Extract reservation_id - check all possible field names
+    const reservationId = d.reservation_id || d.reservationId || d.id || d.booking_id;
+    
+    console.log('[normalizeReservationResponse] Checking for reservation_id:');
+    console.log('  d.reservation_id:', d.reservation_id);
+    console.log('  d.reservationId:', d.reservationId);
+    console.log('  d.id:', d.id);
+    console.log('  d.booking_id:', d.booking_id);
+    console.log('  => Selected reservationId:', reservationId);
+    console.log('  => Type:', typeof reservationId);
+    
+    let confirmationNumber = d.confirmation_number || d.confirmationNumber || d.reference || d.code;
+    let status: string = (d.status || d.state || d.reservation_status || 'pending').toString().toLowerCase();
+    
+    console.log('[normalizeReservationResponse] Raw status from input:', d.status);
+    console.log('[normalizeReservationResponse] Resolved status:', status);
+    
+    if (!reservationId) {
       console.error('[normalizeReservationResponse] ❌ CRITICAL: No reservation_id found in response!');
       console.error('[normalizeReservationResponse] Available fields to check:', {
         reservation_id: d.reservation_id,
@@ -411,8 +522,7 @@ function normalizeReservationResponse(input: any): any {
         allFields: Object.keys(d)
       });
       console.error('[normalizeReservationResponse] Cannot proceed without reservation_id - throwing error');
-      // Don't
-      return a partial object - throw an error instead
+      // Don't return a partial object - throw an error instead
       throw new BookingAPIError(
         'MISSING_RESERVATION_ID',
         'Server did not return a reservation ID. The booking may not have been created.',
@@ -421,8 +531,12 @@ function normalizeReservationResponse(input: any): any {
     }
     
     const allowed = new Set(['confirmed', 'pending', 'waitlisted']);
-    if (!allowed.has(status)) {      status = 'pending';  // Default to pending for moderation workflow
-    } else {    }
+    if (!allowed.has(status)) {
+      console.log('[normalizeReservationResponse] Status not in allowed set, defaulting to pending for moderation. Original:', status);
+      status = 'pending';  // Default to pending for moderation workflow
+    } else {
+      console.log('[normalizeReservationResponse] Status is valid:', status);
+    }
 
     const summary = d.summary || {};
     let dateLike = summary.date || d.date || d.booking_time || summary.datetime;
@@ -459,7 +573,10 @@ function normalizeReservationResponse(input: any): any {
         deposit_required: Boolean(summary.deposit_required ?? d.deposit_required),
         deposit_amount: Number(summary.deposit_amount ?? d.deposit_amount ?? NaN) || undefined,
       },
-    };    return normalizedResult;
+    };
+
+    console.log('[normalizeReservationResponse] ✅ Final normalized result:', JSON.stringify(normalizedResult, null, 2));
+    return normalizedResult;
   } catch (error) {
     console.error('[normalizeReservationResponse] ❌ Error in normalization:', error);
     console.error('[normalizeReservationResponse] Input was:', input);
@@ -471,9 +588,8 @@ function normalizeReservationResponse(input: any): any {
 
 export async function getTenantPolicies(tenantId: string) {
   try {
-    // For now,
-      return default policies - can be enhanced with database queries
-      const data = {
+    // For now, return default policies - can be enhanced with database queries
+    const data = {
       deposit: {
         enabled: false,
       },
@@ -531,8 +647,9 @@ export async function sendAnalyticsEvent(
     const url = import.meta.env.VITE_BACKGROUND_OPS_URL;
     const apiKey = import.meta.env.VITE_BACKGROUND_OPS_API_KEY;
     if (!url || !apiKey) {
-      // Fallback to console
-      if (not configured      return;
+      // Fallback to console if not configured
+      console.log("Analytics event:", event, data);
+      return;
     }
     const body = {
       type: `widget.${event}`,
@@ -553,7 +670,3 @@ export async function sendAnalyticsEvent(
     // Swallow analytics errors; do not disrupt UX
   }
 }
-
-
-
-

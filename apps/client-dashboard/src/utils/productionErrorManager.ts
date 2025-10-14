@@ -99,7 +99,7 @@ class ProductionErrorManager {
     const key = `${component}:${message}`;
     
     // Check for immediate suppression (completely silent)
-      const immediateMatch = this.IMMEDIATE_SUPPRESS_PATTERNS.find(pattern => pattern.test(message));
+    const immediateMatch = this.IMMEDIATE_SUPPRESS_PATTERNS.find(pattern => pattern.test(message));
     if (immediateMatch) {
       if (!this.suppressedWarnings.has(key)) {
         this.suppressedWarnings.add(key);
@@ -108,9 +108,8 @@ class ProductionErrorManager {
       return true; // Suppress immediately
     }
 
-    // Check
-      if (this warning should be suppressed (with initial occurrences)
-      const matchedPattern = this.SUPPRESSED_PATTERNS.find(pattern => pattern.test(message));
+    // Check if this warning should be suppressed (with initial occurrences)
+    const matchedPattern = this.SUPPRESSED_PATTERNS.find(pattern => pattern.test(message));
     if (matchedPattern) {
       const patternKey = matchedPattern.toString();
       const count = (this.patternCounts.get(patternKey) || 0) + 1;
@@ -140,7 +139,7 @@ class ProductionErrorManager {
     const now = Date.now();
     
     // Rate limiting: Don't log the same error more than once per minute
-      const lastTime = this.lastErrorTime.get(key) || 0;
+    const lastTime = this.lastErrorTime.get(key) || 0;
     if (now - lastTime < 60000) {
       return;
     }
@@ -150,7 +149,7 @@ class ProductionErrorManager {
     this.errorCounts.set(key, count);
 
     // Convert certain errors to info level in production
-      const shouldConvertToInfo = this.INFO_PATTERNS.some(pattern => 
+    const shouldConvertToInfo = this.INFO_PATTERNS.some(pattern => 
       pattern.test(error.message)
     );
 
@@ -269,7 +268,7 @@ export const handleApiError = (
 };
 
 // Override console methods in production to reduce noise
-      if (import.meta.env.PROD) {
+if (import.meta.env.PROD) {
   const originalWarn = console.warn;
   const originalError = console.error;
   const originalLog = console.log;
@@ -304,7 +303,7 @@ export const handleApiError = (
     ).join(' ');
     
     // Suppress known info logs that clutter console
-      if (productionErrorManager.suppressWarning(fullMessage, 'console', { args })) {
+    if (productionErrorManager.suppressWarning(fullMessage, 'console', { args })) {
       return;
     }
     originalLog.apply(console, args);
@@ -339,5 +338,3 @@ export const handleApiError = (
 }
 
 export default productionErrorManager;
-
-

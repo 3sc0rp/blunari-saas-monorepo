@@ -91,7 +91,7 @@ class PerformanceMonitor {
     this.trimBuffer(this.metrics);
 
     // Log critical performance issues
-      if (this.isCriticalMetric(name, value)) {
+    if (this.isCriticalMetric(name, value)) {
       console.warn(`🚨 Critical performance issue: ${name} = ${value}ms`, tags);
     }
   }
@@ -104,7 +104,7 @@ class PerformanceMonitor {
     this.trimBuffer(this.apiCalls);
 
     // Alert on slow API calls
-      if (data.duration > 5000) {
+    if (data.duration > 5000) {
       console.warn(`🐌 Slow API call: ${data.method} ${data.endpoint} took ${data.duration}ms`);
     }
   }
@@ -208,9 +208,13 @@ class PerformanceMonitor {
     this.reportingInterval = setInterval(() => {
       const insights = this.getInsights();
       
-      // Only log
+      // Only log if there are significant insights
       if (insights.recommendations.length > 0) {
-        console.group('📊 Performance Insights');        console.groupEnd();
+        console.group('📊 Performance Insights');
+        console.log('Web Vitals:', insights.webVitals);
+        console.log('API Performance:', insights.apiPerformance);
+        console.log('Recommendations:', insights.recommendations);
+        console.groupEnd();
       }
     }, 5 * 60 * 1000); // Report every 5 minutes
   }
@@ -252,7 +256,3 @@ export const trackUserAction = (action: string, metadata?: Record<string, unknow
 };
 
 export default performanceMonitor;
-
-
-
-

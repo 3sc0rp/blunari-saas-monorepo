@@ -18,11 +18,11 @@ const DashboardLayout: React.FC = () => {
   // - "sidebar": Always show sidebar on all devices
   // - "bottom": Always show bottom navigation on all devices
   // Note: actualLayout already handles auto mode internally in NavigationContext
-      const shouldShowSidebar = actualLayout === "sidebar" && !isFullscreen;
+  const shouldShowSidebar = actualLayout === "sidebar" && !isFullscreen;
   const shouldShowBottomNav = actualLayout === "bottom" && !isFullscreen;
 
   // Check for reduced motion preference
-      const prefersReducedMotion = typeof window !== 'undefined' ? 
+  const prefersReducedMotion = typeof window !== 'undefined' ? 
     window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
 
   return (
@@ -95,4 +95,3 @@ const DashboardLayout: React.FC = () => {
 };
 
 export default DashboardLayout;
-

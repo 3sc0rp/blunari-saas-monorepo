@@ -65,7 +65,7 @@ describe('generateTimeSlots', () => {
     const existing = [{ booking_time: new Date(Date.UTC(future.getUTCFullYear(), future.getUTCMonth(), future.getUTCDate(), 18, 0, 0)).toISOString(), duration_minutes: 120 }];
     const slots = generateTimeSlots(tables, existing as any, 2, future, { start: 'T17:00:00', end: 'T22:00:00' }, 'UTC', { preBufferMin: 10, postBufferMin: 10 });
     // Should avoid slot that would start before existing booking ends + post buffer
-      const has1730 = slots.some(s => new Date(s.time).getUTCHours() === 17 && new Date(s.time).getUTCMinutes() === 30);
+    const has1730 = slots.some(s => new Date(s.time).getUTCHours() === 17 && new Date(s.time).getUTCMinutes() === 30);
     expect(has1730).toBe(false);
   });
 
@@ -76,6 +76,5 @@ describe('generateTimeSlots', () => {
     expect(slots.every(s => s.available_tables === 1)).toBe(true);
   });
 });
-
 
 

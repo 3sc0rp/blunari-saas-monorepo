@@ -69,7 +69,7 @@ import {
 // Real-data-only baseline: start with empty collections. These will be populated via
 // future API calls (Supabase) for employees & shifts.
 // TODO(staff-api): implement fetch + subscription to employees & shifts tables.
-      const initialEmployees: Employee[] = [];
+const initialEmployees: Employee[] = [];
 const initialShifts: Shift[] = [];
 
 const roleOptions: StaffRole[] = [
@@ -106,12 +106,12 @@ const StaffManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // Modal states
-      const [showEmployeeDialog, setShowEmployeeDialog] = useState(false);
+  const [showEmployeeDialog, setShowEmployeeDialog] = useState(false);
   const [showShiftDialog, setShowShiftDialog] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   
   // Form states
-      const [employeeForm, setEmployeeForm] = useState<Partial<CreateEmployeeRequest>>({
+  const [employeeForm, setEmployeeForm] = useState<Partial<CreateEmployeeRequest>>({
     employee_number: "",
     first_name: "",
     last_name: "",
@@ -123,7 +123,7 @@ const StaffManagement: React.FC = () => {
   });
 
   // Filter shifts for selected date
-      const todayShifts = useMemo(() => {
+  const todayShifts = useMemo(() => {
     return shifts.filter(shift => 
       shift.scheduled_start.startsWith(selectedDate)
     ).map(shift => ({
@@ -133,7 +133,7 @@ const StaffManagement: React.FC = () => {
   }, [shifts, employees, selectedDate]);
 
   // Calculate analytics
-      const analytics = useMemo(() => {
+  const analytics = useMemo(() => {
     const activeEmployees = employees.filter(emp => emp.status === "active").length;
     const totalShifts = todayShifts.length;
     const checkedInShifts = todayShifts.filter(shift => shift.status === "checked_in").length;
@@ -787,4 +787,3 @@ const StaffManagement: React.FC = () => {
 };
 
 export default StaffManagement;
-

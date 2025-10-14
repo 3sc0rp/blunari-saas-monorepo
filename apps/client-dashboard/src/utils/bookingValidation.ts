@@ -6,10 +6,10 @@
 import { z } from 'zod';
 
 // Phone number validation (E.164 format)
-      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+const phoneRegex = /^\+?[1-9]\d{1,14}$/;
 
 // Email validation (more strict than HTML5)
-      const emailSchema = z.string()
+const emailSchema = z.string()
   .email('Invalid email address')
   .min(5, 'Email must be at least 5 characters')
   .max(100, 'Email must not exceed 100 characters')
@@ -19,19 +19,19 @@ import { z } from 'zod';
   );
 
 // Phone number validation
-      const phoneSchema = z.string()
+const phoneSchema = z.string()
   .regex(phoneRegex, 'Invalid phone number. Use format: +1234567890')
   .min(10, 'Phone number must be at least 10 digits')
   .max(15, 'Phone number must not exceed 15 digits');
 
 // Party size validation
-      const partySizeSchema = z.number()
+const partySizeSchema = z.number()
   .int('Party size must be a whole number')
   .min(1, 'Party size must be at least 1')
   .max(50, 'Party size cannot exceed 50 guests');
 
 // Special requests validation (XSS protection)
-      const specialRequestsSchema = z.string()
+const specialRequestsSchema = z.string()
   .max(500, 'Special requests must not exceed 500 characters')
   .refine(
     (text) => !/<script|javascript:|onerror=|onclick=/i.test(text),
@@ -40,13 +40,13 @@ import { z } from 'zod';
   .optional();
 
 // Guest name validation
-      const guestNameSchema = z.string()
+const guestNameSchema = z.string()
   .min(2, 'Name must be at least 2 characters')
   .max(100, 'Name must not exceed 100 characters')
   .regex(/^[a-zA-Z\s'-]+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes');
 
 // Date validation (must be future date)
-      const futureDateSchema = z.string()
+const futureDateSchema = z.string()
   .refine(
     (dateStr) => {
       const date = new Date(dateStr);
@@ -58,7 +58,7 @@ import { z } from 'zod';
   );
 
 // Time validation (HH:MM format)
-      const timeSchema = z.string()
+const timeSchema = z.string()
   .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format. Use HH:MM')
   .refine(
     (time) => {
@@ -69,17 +69,17 @@ import { z } from 'zod';
   );
 
 // Duration validation
-      const durationSchema = z.number()
+const durationSchema = z.number()
   .int('Duration must be a whole number')
   .min(15, 'Duration must be at least 15 minutes')
   .max(360, 'Duration cannot exceed 6 hours (360 minutes)')
   .optional();
 
 // Booking source validation
-      const sourceSchema = z.enum(['phone', 'walk_in', 'website', 'social', 'partner']);
+const sourceSchema = z.enum(['phone', 'walk_in', 'website', 'social', 'partner']);
 
 // Deposit validation
-      const depositAmountSchema = z.number()
+const depositAmountSchema = z.number()
   .nonnegative('Deposit amount cannot be negative')
   .max(10000, 'Deposit amount cannot exceed $10,000')
   .optional();
@@ -168,10 +168,10 @@ export function isValidPhone(phone: string): boolean {
  */
 export function formatPhoneE164(phone: string, countryCode: string = '+1'): string {
   // Remove all non-digit characters
-      const digits = phone.replace(/\D/g, '');
+  const digits = phone.replace(/\D/g, '');
   
   // If no country code, add default
-      if (!phone.startsWith('+')) {
+  if (!phone.startsWith('+')) {
     return `${countryCode}${digits}`;
   }
   
@@ -208,4 +208,3 @@ export function isValidPartySize(partySize: number, tableCapacity?: number): boo
 export type BookingFormData = z.infer<typeof bookingFormSchema>;
 export type BookingUpdateData = z.infer<typeof bookingUpdateSchema>;
 export type BulkOperationData = z.infer<typeof bulkOperationSchema>;
-

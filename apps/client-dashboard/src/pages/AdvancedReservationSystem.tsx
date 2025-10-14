@@ -147,7 +147,7 @@ export interface ReservationAnalytics {
 
 // Real-data-only baseline (empty). To be hydrated via future Supabase queries & realtime.
 // TODO(reservations-api): implement fetch + subscription for reservations & tables.
-      const initialReservations: AdvancedReservation[] = [];
+const initialReservations: AdvancedReservation[] = [];
 const initialTables: TableOptimization[] = [];
 
 const statusColors = {
@@ -180,12 +180,12 @@ const AdvancedReservationSystem: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   
   // Modal states
-      const [showReservationDialog, setShowReservationDialog] = useState(false);
+  const [showReservationDialog, setShowReservationDialog] = useState(false);
   const [showOptimizationDialog, setShowOptimizationDialog] = useState(false);
   const [editingReservation, setEditingReservation] = useState<AdvancedReservation | null>(null);
   
   // Form states
-      const [reservationForm, setReservationForm] = useState<Partial<AdvancedReservation>>({
+  const [reservationForm, setReservationForm] = useState<Partial<AdvancedReservation>>({
     customer_name: "",
     customer_email: "",
     customer_phone: "",
@@ -200,7 +200,7 @@ const AdvancedReservationSystem: React.FC = () => {
   });
 
   // Filter reservations
-      const filteredReservations = useMemo(() => {
+  const filteredReservations = useMemo(() => {
     return reservations.filter(reservation => {
       const matchesSearch = 
         reservation.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -216,7 +216,7 @@ const AdvancedReservationSystem: React.FC = () => {
   }, [reservations, searchTerm, statusFilter, selectedDate]);
 
   // Calculate analytics
-      const analytics = useMemo(() => {
+  const analytics = useMemo(() => {
     const todayReservations = reservations.filter(r => 
       r.date === new Date().toISOString().split('T')[0]
     );
@@ -338,17 +338,17 @@ const AdvancedReservationSystem: React.FC = () => {
     score += (reservation.party_size || 0) * 5;
     
     // Special occasions boost
-      if (reservation.special_occasions?.length) {
+    if (reservation.special_occasions?.length) {
       score += reservation.special_occasions.length * 10;
     }
     
     // Business meeting boost
-      if (reservation.special_occasions?.includes("business_meeting")) {
+    if (reservation.special_occasions?.includes("business_meeting")) {
       score += 15;
     }
     
     // Peak time adjustment
-      const hour = parseInt(reservation.time?.split(':')[0] || '19');
+    const hour = parseInt(reservation.time?.split(':')[0] || '19');
     if (hour >= 19 && hour <= 21) { // Peak dinner hours
       score += 10;
     }
@@ -914,4 +914,3 @@ const AdvancedReservationSystem: React.FC = () => {
 };
 
 export default AdvancedReservationSystem;
-

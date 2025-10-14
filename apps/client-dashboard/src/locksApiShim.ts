@@ -13,7 +13,7 @@ const isLocksAPIUnavailable = (() => {
       return true;
     }
     
-    // Test if Locks API is available
+    // Test if Locks API is available and accessible
     if (typeof navigator === 'undefined' || !navigator.locks) {
       return true;
     }
@@ -35,10 +35,8 @@ if (isLocksAPIUnavailable) {
       enumerable: false
     });
   }
+  
+  console.info('[Blunari] Locks API disabled - running in restricted context');
 }
 
 export {};
-
-
-
-

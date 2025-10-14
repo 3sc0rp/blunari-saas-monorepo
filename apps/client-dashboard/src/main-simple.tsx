@@ -5,17 +5,16 @@ import App from './App.tsx'
 import './index.css'
 
 // Get root element
-      const rootElement = document.getElementById('root')
+const rootElement = document.getElementById('root')
 if (!rootElement) {
   throw new Error('Root element not found')
 }
 
 // Create React root and render app
-      const root = ReactDOM.createRoot(rootElement)
+const root = ReactDOM.createRoot(rootElement)
 
 root.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
 )
-

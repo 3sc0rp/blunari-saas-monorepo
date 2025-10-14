@@ -28,7 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 
 // Simple chart placeholder components
-      const SimpleLineChart: React.FC<{ data: any; height?: number }> = ({ data, height = 200 }) => (
+const SimpleLineChart: React.FC<{ data: any; height?: number }> = ({ data, height = 200 }) => (
   <div className={`flex items-end justify-between gap-1 h-${height}`} style={{ height: `${height}px` }}>
     {data.datasets[0].data.map((value: number, index: number) => (
       <div key={index} className="flex flex-col items-center flex-1">
@@ -104,7 +104,7 @@ const WidgetAnalyticsDashboard: React.FC<WidgetAnalyticsDashboardProps> = ({
   const [selectedMetric, setSelectedMetric] = useState<'views' | 'interactions' | 'conversions'>('views');
 
   // Calculate metrics
-      const metrics = useMemo(() => {
+  const metrics = useMemo(() => {
     const conversionRate = analyticsData.totalViews > 0 
       ? (analyticsData.totalConversions / analyticsData.totalViews) * 100 
       : 0;
@@ -122,7 +122,7 @@ const WidgetAnalyticsDashboard: React.FC<WidgetAnalyticsDashboardProps> = ({
   }, [analyticsData]);
 
   // Chart configurations
-      const lineChartData = {
+  const lineChartData = {
     labels: timeRange === '24h' 
       ? analyticsData.hourlyData?.map(d => d.hour) || []
       : analyticsData.weeklyData?.map(d => d.day) || [],
@@ -524,4 +524,3 @@ const WidgetAnalyticsDashboard: React.FC<WidgetAnalyticsDashboardProps> = ({
 };
 
 export default WidgetAnalyticsDashboard;
-

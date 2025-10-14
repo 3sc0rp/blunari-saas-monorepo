@@ -32,7 +32,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 // Lazy load Bookings to avoid double import warning and reduce initial bundle
-      const Bookings = lazy(() => import(/* webpackChunkName: "bookings" */ "./pages/BookingsTabbed"));
+const Bookings = lazy(() => import(/* webpackChunkName: "bookings" */ "./pages/BookingsTabbed"));
 const BookingTracking = lazy(() => import(/* webpackChunkName: "booking-tracking" */ "./pages/BookingTracking"));
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -40,7 +40,7 @@ import NotFound from "./pages/NotFound";
 // 3D feature removed
 
 // Lazy load heavy components with prefetch hints
-      const Analytics = lazy(() => import(/* webpackChunkName: "analytics" */ "./pages/Analytics"));
+const Analytics = lazy(() => import(/* webpackChunkName: "analytics" */ "./pages/Analytics"));
 const Tables = lazy(() => import(/* webpackChunkName: "tables" */ "./pages/Tables"));
 const CommandCenter = lazy(() => import(/* webpackChunkName: "command-center" */ "./pages/CommandCenter"));
 const TestWidget = lazy(() => import(/* webpackChunkName: "test-widget" */ "./pages/test-widget"));
@@ -59,7 +59,7 @@ const WidgetManagement = lazy(() => import(/* webpackChunkName: "widgets" */ "./
 const DashboardHome = lazy(() => import(/* webpackChunkName: "dashboard-home" */ "./pages/DashboardHome"));
 
 // Optimized QueryClient with aggressive performance settings
-      const queryClient = new QueryClient({
+const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 2 * 60 * 1000, // 2 minutes - reduced for fresher data
@@ -68,8 +68,7 @@ const DashboardHome = lazy(() => import(/* webpackChunkName: "dashboard-home" */
       retryDelay: 500, // Faster retry
       refetchOnWindowFocus: false, // Reduce unnecessary refetches
       refetchOnReconnect: true,
-      refetchOnMount: false, // Don't refetch
-      if (data is fresh
+      refetchOnMount: false, // Don't refetch if data is fresh
     },
     mutations: {
       retry: 1,
@@ -89,6 +88,9 @@ function RouterInstrumentation() {
 // Removed legacy public widget routes (/book and /catering).
 
 function App() {
+  if (import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true') {
+    if (import.meta.env.DEV) console.log('🎯 App component rendering with full providers...');
+  }
   // Remove direct calls to router-dependent hooks here (now inside RouterInstrumentation)
   useEffect(() => {
     connectionManager.ensureConnection();
@@ -293,7 +295,4 @@ function App() {
 }
 
 export default App;
-
-
-
 

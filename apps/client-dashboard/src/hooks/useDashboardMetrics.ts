@@ -8,7 +8,7 @@ export const useDashboardMetrics = (tenantId?: string) => {
   const { bookings, isLoading: bookingsLoading } = useTodaysBookings(tenantId);
 
   // Fetch historical data for trends
-      const { data: historicalData, isLoading: historicalLoading } = useQuery({
+  const { data: historicalData, isLoading: historicalLoading } = useQuery({
     queryKey: ["historical-metrics", tenantId],
     queryFn: async () => {
       if (!tenantId) return [];
@@ -30,7 +30,7 @@ export const useDashboardMetrics = (tenantId?: string) => {
   });
 
   // Calculate real-time metrics
-      const metrics: DashboardMetrics = useMemo(() => {
+  const metrics: DashboardMetrics = useMemo(() => {
     if (!bookings || !historicalData) {
       return {
         todayBookings: { count: 0, revenue: 0, trend: 0 },
@@ -54,7 +54,7 @@ export const useDashboardMetrics = (tenantId?: string) => {
     const noshowToday = bookings.filter((b) => b.status === "no_show").length;
 
     const totalRevenue = completedToday * 85; // Average spend estimate
-      const yesterdayRevenue =
+    const yesterdayRevenue =
       historicalData.filter(
         (b) =>
           new Date(b.booking_time).toDateString() === yesterday &&
@@ -63,7 +63,7 @@ export const useDashboardMetrics = (tenantId?: string) => {
 
     const occupancyTarget = 85;
     const currentOccupancy = Math.min((todayBookings / 20) * 100, 100); // Assuming 20 tables max
-      const yesterdayOccupancy = Math.min((yesterdayBookings / 20) * 100, 100);
+    const yesterdayOccupancy = Math.min((yesterdayBookings / 20) * 100, 100);
 
     const averageSpend = completedToday > 0 ? totalRevenue / completedToday : 0;
     const yesterdayAvgSpend =
@@ -120,7 +120,7 @@ export const useDashboardMetrics = (tenantId?: string) => {
   }, [bookings, historicalData]);
 
   // Calculate 7-day performance trends
-      const performanceTrends: PerformanceTrend[] = useMemo(() => {
+  const performanceTrends: PerformanceTrend[] = useMemo(() => {
     if (!historicalData) return [];
 
     const trends: PerformanceTrend[] = [];
@@ -161,4 +161,3 @@ export const useDashboardMetrics = (tenantId?: string) => {
     isLoading: bookingsLoading || historicalLoading,
   };
 };
-

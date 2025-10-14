@@ -74,17 +74,17 @@ class EnterpriseErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundar
     this.setState({ errorInfo });
 
     // Call custom error handler
-      if (onError) {
+    if (onError) {
       onError(error, errorInfo);
     }
 
     // Auto-recovery for non-critical errors
-      if (level !== 'critical' && this.props.enableRecovery !== false) {
+    if (level !== 'critical' && this.props.enableRecovery !== false) {
       this.scheduleRecovery();
     }
 
     // Report to external error service (in production)
-      if (import.meta.env.PROD) {
+    if (import.meta.env.PROD) {
       this.reportToErrorService(error, errorInfo);
     }
   }
@@ -101,7 +101,7 @@ class EnterpriseErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundar
     }
 
     // Progressive delay: 1s, 2s, 4s
-      const delay = Math.min(1000 * Math.pow(2, this.state.retryCount), 10000);
+    const delay = Math.min(1000 * Math.pow(2, this.state.retryCount), 10000);
     
     this.retryTimer = setTimeout(() => {
       logger.info('Attempting automatic recovery', {
@@ -116,7 +116,12 @@ class EnterpriseErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundar
   private reportToErrorService = (error: Error, errorInfo: ErrorInfo) => {
     // Integration point for services like Sentry, LogRocket, etc.
     try {
-      // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });    } catch (reportingError) {
+      // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
+      console.info('Error reported to monitoring service', {
+        errorId: this.state.errorId,
+        message: error.message
+      });
+    } catch (reportingError) {
       logger.error('Failed to report error to external service', reportingError);
     }
   };
@@ -199,7 +204,7 @@ class EnterpriseErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundar
     }
 
     // Component-level error
-      return (
+    return (
       <div className="border-2 border-dashed border-red-200 rounded-lg p-4 bg-red-50">
         <div className="flex">
           <div className="flex-shrink-0">
@@ -262,5 +267,3 @@ export const PageErrorBoundary: React.FC<{ children: ReactNode }> = ({ children 
 );
 
 export default EnterpriseErrorBoundary;
-
-

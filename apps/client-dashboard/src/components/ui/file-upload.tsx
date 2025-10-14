@@ -42,7 +42,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     if (!file || !tenant?.id) return;
 
     // Validate file size
-      if (file.size > maxSize) {
+    if (file.size > maxSize) {
       setError(
         `File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB`,
       );
@@ -208,4 +208,3 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     </div>
   );
 };
-

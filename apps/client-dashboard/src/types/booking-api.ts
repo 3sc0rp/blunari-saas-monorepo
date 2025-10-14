@@ -25,16 +25,13 @@ export const TenantInfoSchema = z.object({
 export const TimeSlotSchema = z.object({
   time: z.string(), // ISO string
   available_tables: z.number(),
-  revenue_projection: z.number().optional(), // Only
-      if (API provides it
-  optimal: z.boolean().optional(), // Only
-      if (API provides it
+  revenue_projection: z.number().optional(), // Only if API provides it
+  optimal: z.boolean().optional(), // Only if API provides it
 });
 
 export const AvailabilityResponseSchema = z.object({
   slots: z.array(TimeSlotSchema),
-  alternatives: z.array(TimeSlotSchema).optional(), // Only
-      if (API provides alternatives
+  alternatives: z.array(TimeSlotSchema).optional(), // Only if API provides alternatives
 });
 
 export const SearchRequestSchema = z.object({
@@ -88,8 +85,7 @@ export const ReservationRequestSchema = z.object({
 });
 
 export const ReservationResponseSchema = z.object({
-  // Upstream may
-      return non-UUID identifiers; accept any non-empty string OR null for failed responses
+  // Upstream may return non-UUID identifiers; accept any non-empty string OR null for failed responses
   reservation_id: z.string().min(1).nullable(),
   confirmation_number: z.string(),
   status: z.enum(["confirmed", "pending", "waitlisted"]),
@@ -161,5 +157,3 @@ export interface APIError {
   message: string;
   details?: Record<string, any>;
 }
-
-

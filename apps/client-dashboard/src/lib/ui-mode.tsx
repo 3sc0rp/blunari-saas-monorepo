@@ -37,7 +37,7 @@ interface ModeProviderProps {
 }
 
 // Utility function for retry logic
-      const withRetry = async <T,>(
+const withRetry = async <T,>(
   operation: () => Promise<T>,
   maxRetries = 2,
   delay = 1000
@@ -67,9 +67,8 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
   const [hasUserPreferences, setHasUserPreferences] = useState<boolean | null>(null);
   const [error, setError] = useState<string>();
 
-  // Check
-      if (tenant_settings table exists and is accessible
-      const checkUserPreferencesTable = useCallback(async () => {
+  // Check if tenant_settings table exists and is accessible
+  const checkUserPreferencesTable = useCallback(async () => {
     if (hasUserPreferences !== null) return hasUserPreferences;
     
     try {
@@ -88,12 +87,11 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
   }, [hasUserPreferences]);
 
   // Get role-based default mode
-      const getRoleBasedDefault = useCallback(async (): Promise<UIMode> => {
+  const getRoleBasedDefault = useCallback(async (): Promise<UIMode> => {
     if (!user) return "management";
 
     try {
-      // Check
-      if (user has a role in employees table
+      // Check if user has a role in employees table
       const { data: employee } = await supabase
         .from('employees')
         .select('role')
@@ -135,7 +133,7 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
   }, [user]);
 
   // Load preference from server or localStorage
-      const loadPreference = useCallback(async (): Promise<UIPreference | null> => {
+  const loadPreference = useCallback(async (): Promise<UIPreference | null> => {
     if (!user || !tenant) return null;
 
     const tableExists = await checkUserPreferencesTable();
@@ -152,7 +150,7 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
         if (!error && data?.setting_value) {
           const preference = data.setting_value as unknown as UIPreference;
           // Validate preference structure and version compatibility
-      if (preference?.mode && 
+          if (preference?.mode && 
               preference?.tenantId === tenant.id && 
               ['operations', 'management'].includes(preference.mode)) {
             return preference;
@@ -164,14 +162,14 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
     }
 
     // Fallback to localStorage
-      if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       try {
         const key = `bln.ui-mode.v1:${tenant.id}`;
         const stored = localStorage.getItem(key);
         if (stored) {
           const preference = JSON.parse(stored) as UIPreference;
           // Validate localStorage data
-      if (preference?.mode && 
+          if (preference?.mode && 
               preference?.tenantId === tenant.id &&
               ['operations', 'management'].includes(preference.mode)) {
             return preference;
@@ -186,7 +184,7 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
   }, [user, tenant, checkUserPreferencesTable]);
 
   // Save preference to server and localStorage with retry logic
-      const savePreference = useCallback(async (preference: UIPreference) => {
+  const savePreference = useCallback(async (preference: UIPreference) => {
     if (!user || !tenant) return;
 
     const tableExists = await checkUserPreferencesTable();
@@ -210,7 +208,7 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
     }
 
     // Always save to localStorage as backup
-      if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       try {
         const key = `bln.ui-mode.v1:${tenant.id}`;
         localStorage.setItem(key, JSON.stringify(preference));
@@ -230,19 +228,20 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
 
       try {
         setError(undefined); // Clear any previous errors
-      const savedPreference = await loadPreference();
+        
+        const savedPreference = await loadPreference();
         
         if (savedPreference && savedPreference.mode) {
           setModeState("management");
           setSeenTour(!!savedPreference.seenTourAt);
         } else {
           // First time - use role-based default
-      const defaultMode = await getRoleBasedDefault();
+          const defaultMode = await getRoleBasedDefault();
           setModeState(defaultMode);
           setSeenTour(false);
           
           // Save the initial preference
-      const newPreference: UIPreference = {
+          const newPreference: UIPreference = {
             mode: defaultMode,
             tenantId: tenant.id,
             version: '1.0'
@@ -262,7 +261,7 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
   }, [user, tenant, loadPreference, savePreference, getRoleBasedDefault]);
 
   // Set mode and persist
-      const setMode = useCallback(async (newMode: UIMode) => {
+  const setMode = useCallback(async (newMode: UIMode) => {
     if (!tenant) return;
 
     setModeState(newMode);
@@ -292,14 +291,13 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
           }
         });
     } catch (error) {
-      // Don't fail
-      if (logging fails
+      // Don't fail if logging fails
       console.debug("Activity logging failed:", error);
     }
   }, [mode, tenant, user, seenTour, savePreference]);
 
   // Mark tour as seen
-      const markTourSeen = useCallback(async () => {
+  const markTourSeen = useCallback(async () => {
     if (!tenant) return;
 
     setSeenTour(true);
@@ -347,5 +345,3 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
     </ModeContext.Provider>
   );
 };
-
-

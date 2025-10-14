@@ -45,16 +45,16 @@ export function useRateLimit(
   const key = storageKey || `ratelimit_${action}`;
   
   // Use ref to maintain state across renders without causing re-renders
-      const requestsRef = useRef<number[]>([]);
+  const requestsRef = useRef<number[]>([]);
   
   // Load from sessionStorage on first mount
-      if (requestsRef.current.length === 0) {
+  if (requestsRef.current.length === 0) {
     try {
       const stored = sessionStorage.getItem(key);
       if (stored) {
         const data: number[] = JSON.parse(stored);
         // Filter out expired timestamps
-      const now = Date.now();
+        const now = Date.now();
         requestsRef.current = data.filter(ts => now - ts < windowMs);
       }
     } catch (error) {
@@ -73,8 +73,8 @@ export function useRateLimit(
       timestamp => now - timestamp < windowMs
     );
 
-    // Check
-      if (requestsRef.current.length >= maxRequests) {
+    // Check if limit exceeded
+    if (requestsRef.current.length >= maxRequests) {
       return false;
     }
 
@@ -154,8 +154,7 @@ export function useGlobalRateLimit(
       return true;
     } catch (error) {
       console.warn('[useGlobalRateLimit] Error:', error);
-      // Fail open - allow request
-      if (storage fails
+      // Fail open - allow request if storage fails
       return true;
     }
   }, [key, maxRequests, windowMs]);
@@ -244,10 +243,7 @@ export function useSharedRateLimit(
   const result = useRateLimit(sharedKey, config);
   
   // Return same result for all actions
-      return Object.fromEntries(
+  return Object.fromEntries(
     actions.map(action => [action, result])
   );
 }
-
-
-

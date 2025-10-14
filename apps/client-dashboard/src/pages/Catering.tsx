@@ -74,10 +74,10 @@ import {
 
 export default function CateringPage() {
   // Get tenant context
-      const { tenant, isLoading: tenantLoading } = useTenant();
+  const { tenant, isLoading: tenantLoading } = useTenant();
 
   // State management
-      const [showOrderForm, setShowOrderForm] = useState(false);
+  const [showOrderForm, setShowOrderForm] = useState(false);
   const [selectedPackage, setSelectedPackage] =
     useState<CateringPackage | null>(null);
   const [showOrderDetails, setShowOrderDetails] =
@@ -89,7 +89,7 @@ export default function CateringPage() {
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
 
   // Hooks - using real data with tenant context
-      const {
+  const {
     packages,
     isLoading: packagesLoading,
     error: packagesError,
@@ -108,7 +108,7 @@ export default function CateringPage() {
   );
 
   // Form state
-      const [orderForm, setOrderForm] = useState<
+  const [orderForm, setOrderForm] = useState<
     Partial<CreateCateringOrderRequest>
   >({
     event_date: "",
@@ -125,7 +125,7 @@ export default function CateringPage() {
   });
 
   // Computed values
-      const filteredPackages = useMemo(() => {
+  const filteredPackages = useMemo(() => {
     return packages.filter((pkg) => {
       const matchesSearch =
         !searchQuery ||
@@ -134,6 +134,7 @@ export default function CateringPage() {
 
       // Since CateringPackage doesn't have service_types array, we'll remove the service type filtering for now
       // In a real implementation, you might have a many-to-many relationship between packages and service types
+
       return matchesSearch;
     });
   }, [packages, searchQuery]);
@@ -159,12 +160,12 @@ export default function CateringPage() {
   }, [orders]);
 
   // Utility functions
-      const formatCurrencyDisplay = (cents: number): string => {
+  const formatCurrencyDisplay = (cents: number): string => {
     return `$${(cents / 100).toFixed(2)}`;
   };
 
   // Event handlers
-      const handlePackageSelect = (pkg: CateringPackage) => {
+  const handlePackageSelect = (pkg: CateringPackage) => {
     setSelectedPackage(pkg);
     setOrderForm((prev) => ({
       ...prev,
@@ -232,7 +233,7 @@ export default function CateringPage() {
   };
 
   // Show loading state while tenant is loading
-      if (tenantLoading) {
+  if (tenantLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex items-center gap-2">
@@ -243,8 +244,8 @@ export default function CateringPage() {
     );
   }
 
-  // Show error
-      if (!tenant) {
+  // Show error if no tenant found
+  if (!tenant) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -726,6 +727,3 @@ export default function CateringPage() {
     </div>
   );
 }
-
-
-

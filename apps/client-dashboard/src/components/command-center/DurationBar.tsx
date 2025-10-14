@@ -18,14 +18,14 @@ export const DurationBar: React.FC<DurationBarProps> = ({
   className
 }) => {
   // Clamp utilization between 0 and 100
-      const safeUtilization = Math.max(0, Math.min(100, utilization));
+  const safeUtilization = Math.max(0, Math.min(100, utilization));
   
   // Get color based on utilization level
-      const getUtilizationColor = (pct: number) => {
+  const getUtilizationColor = (pct: number) => {
     if (pct < 30) return 'bg-blue-400'; // Low utilization
-      if (pct < 70) return 'bg-amber-400'; // Medium utilization  
-      if (pct < 90) return 'bg-orange-400'; // High utilization
-      return 'bg-red-400'; // Over capacity
+    if (pct < 70) return 'bg-amber-400'; // Medium utilization  
+    if (pct < 90) return 'bg-orange-400'; // High utilization
+    return 'bg-red-400'; // Over capacity
   };
 
   const barColor = getUtilizationColor(safeUtilization);
@@ -67,4 +67,3 @@ export const DurationBar: React.FC<DurationBarProps> = ({
 };
 
 export default DurationBar;
-

@@ -19,12 +19,12 @@ export async function safeAsync<T>(
 ): Promise<AsyncResult<T>> {
   try {
     // Create timeout promise
-      const timeoutPromise = new Promise<never>((_, reject) => {
+    const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('Operation timed out')), timeoutMs);
     });
 
     // Race between the actual promise and timeout
-      const data = await Promise.race([promise, timeoutPromise]);
+    const data = await Promise.race([promise, timeoutPromise]);
     
     return {
       success: true,
@@ -61,7 +61,7 @@ export async function withRetry<T>(
     lastError = result.error;
     
     // Don't retry on timeout or on last attempt
-      if (result.timeout || attempt === maxAttempts) {
+    if (result.timeout || attempt === maxAttempts) {
       break;
     }
 
@@ -87,12 +87,12 @@ export class DebouncedAsync<T> {
     delayMs = 300
   ): Promise<AsyncResult<T>> {
     // Clear existing timeout
-      if (this.timeoutId) {
+    if (this.timeoutId) {
       clearTimeout(this.timeoutId);
     }
 
-    // Return existing promise
-      if (this.lastPromise) {
+    // Return existing promise if still pending
+    if (this.lastPromise) {
       return this.lastPromise;
     }
 
@@ -128,9 +128,8 @@ export class ConcurrentManager {
     key: string,
     operation: () => Promise<T>
   ): Promise<AsyncResult<T>> {
-    // If operation is already running,
-      return existing promise
-      if (this.activeOperations.has(key)) {
+    // If operation is already running, return existing promise
+    if (this.activeOperations.has(key)) {
       try {
         const data = await this.activeOperations.get(key)!;
         return { success: true, data };
@@ -143,7 +142,7 @@ export class ConcurrentManager {
     }
 
     // Start new operation
-      const promise = operation();
+    const promise = operation();
     this.activeOperations.set(key, promise);
 
     try {
@@ -195,7 +194,7 @@ export async function processBatch<T, R>(
     results.push(...batchResults);
 
     // Add delay between batches to prevent overwhelming the system
-      if (i + batchSize < items.length && delayBetweenBatches > 0) {
+    if (i + batchSize < items.length && delayBetweenBatches > 0) {
       await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
     }
   }
@@ -239,6 +238,3 @@ export async function safePromiseAll<T>(
     };
   }
 }
-
-
-

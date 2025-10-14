@@ -28,8 +28,8 @@ const MiniSparkline: React.FC<{ data: number[]; tone?: string }> = ({ data, tone
 
   const points = data.map((value, index) => {
     const x = (index / (data.length - 1)) * 40; // 40px width
-      const y = 12 - ((value - min) / range) * 10; // 12px height, 10px range
-      return `${x},${y}`;
+    const y = 12 - ((value - min) / range) * 10; // 12px height, 10px range
+    return `${x},${y}`;
   }).join(' ');
 
   const colorClass = tone === 'success' ? 'stroke-green-400' : 
@@ -164,7 +164,9 @@ export function KpiStrip({ items, loading = false }: KpiStripProps) {
     );
   }
 
-  const handleInfoClick = (cardId: string) => {    // TODO: Show tooltip or modal with more details
+  const handleInfoClick = (cardId: string) => {
+    console.log(`Info clicked for KPI: ${cardId}`);
+    // TODO: Show tooltip or modal with more details
   };
 
   return (
@@ -189,5 +191,3 @@ export function KpiStrip({ items, loading = false }: KpiStripProps) {
     </div>
   );
 }
-
-

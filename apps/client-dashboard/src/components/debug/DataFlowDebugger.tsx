@@ -50,25 +50,25 @@ const DataFlowDebugger: React.FC = () => {
       if (tenantId) {
         try {
           // Test 1: All bookings for tenant
-      const { data: allBookings, error: allError } = await supabase
+          const { data: allBookings, error: allError } = await supabase
             .from('bookings')
             .select('*')
             .eq('tenant_id', tenantId);
           
           // Test 2: Count only
-      const { count: bookingCount, error: countError } = await supabase
+          const { count: bookingCount, error: countError } = await supabase
             .from('bookings')
             .select('*', { count: 'exact', head: true })
             .eq('tenant_id', tenantId);
 
           // Test 3: Tables
-      const { data: tables, error: tablesError } = await supabase
+          const { data: tables, error: tablesError } = await supabase
             .from('restaurant_tables')
             .select('*')
             .eq('tenant_id', tenantId);
 
           // Test 4: Raw auth session
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
           info.apiTests = {
             allBookings: {
@@ -113,9 +113,8 @@ const DataFlowDebugger: React.FC = () => {
     runDebugChecks();
   }, [runDebugChecks]);
 
-  // Always show in development, and show in production
-      if (there are issues
-      const shouldShow = import.meta.env.MODE === 'development' || 
+  // Always show in development, and show in production if there are issues
+  const shouldShow = import.meta.env.MODE === 'development' || 
                     (import.meta.env.MODE === 'production' && 
                      (bookings.length === 0 || tenantLoading || bookingsError));
   
@@ -126,7 +125,7 @@ const DataFlowDebugger: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   // Prevent render errors
-      if (!debugInfo || typeof debugInfo !== 'object') {
+  if (!debugInfo || typeof debugInfo !== 'object') {
     return null;
   }
 
@@ -178,5 +177,3 @@ const DataFlowDebugger: React.FC = () => {
 };
 
 export default DataFlowDebugger;
-
-

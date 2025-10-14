@@ -34,7 +34,10 @@ interface BookingWidgetProps {
   onError?: (error: Error) => void;
 }
 
-const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  const [tenantLoading, setTenantLoading] = useState(true);
+const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {
+  console.log('[BookingWidget] Component mounted with slug:', slug);
+  
+  const [tenantLoading, setTenantLoading] = useState(true);
   const [tenantError, setTenantError] = useState<string | null>(null);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
 
@@ -61,18 +64,41 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
         setTenantLoading(true);
         setTenantError(null);
 
-        // Enhanced debug logging for widget token        const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');        // Check
-      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        // Enhanced debug logging for widget token
+        console.log('[BookingWidget] === WIDGET INITIALIZATION ===');
+        console.log('[BookingWidget] Loading tenant for slug:', slug);
+        console.log('[BookingWidget] Full URL:', window.location.href);
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        console.log('[BookingWidget] Token details:', {
+          present: !!token,
+          length: token?.length,
+          preview: token?.substring(0, 20) + '...',
+          allParams: Object.fromEntries(urlParams.entries())
+        });
+        
+        console.log('[BookingWidget] Environment check:', {
+          hasSupabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
+          hasSupabaseKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+          supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+          enableDevLogs: import.meta.env.VITE_ENABLE_DEV_LOGS,
+          mode: import.meta.env.MODE
+        });
+        
+        // Check if we have required environment variables
+        if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
           throw new Error('Missing Supabase configuration in environment variables');
         }
 
-        // Check
-      if (!token) {
+        // Check if we have a valid token for widget access
+        if (!token) {
           console.warn('[BookingWidget] No widget token found in URL - this may cause API calls to fail');
         }
         
-        const tenantInfo = await getTenantBySlug(slug);        setTenant(tenantInfo);
+        const tenantInfo = await getTenantBySlug(slug);
+        console.log('[BookingWidget] Tenant loaded successfully:', tenantInfo.name);
+        setTenant(tenantInfo);
         setState((prev) => ({ ...prev, tenant: tenantInfo }));
       } catch (err) {
         console.error('[BookingWidget] Tenant loading failed:', err);
@@ -91,7 +117,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
   }, [slug, onError]);
 
   // Track step completion times for gamification
-      const recordStepTime = useCallback(() => {
+  const recordStepTime = useCallback(() => {
     const stepTime =
       Date.now() -
       (state.step_times.reduce((a, b) => a + b, 0) + state.start_time);
@@ -175,7 +201,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
         let errorMessage = error.message;
 
         // Provide more user-friendly error messages
-      if (errorMessage.includes("Invalid UUID")) {
+        if (errorMessage.includes("Invalid UUID")) {
           errorMessage =
             "There was a technical issue with your booking. Please try again.";
         } else if (errorMessage.includes("network")) {
@@ -263,8 +289,8 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
         return;
       }
       if (e.key === 'Enter') {
-        // Attempt to advance to next step
-      if (stepLoading) return;
+        // Attempt to advance to next step if not loading and prerequisites met
+        if (stepLoading) return;
         if (state.step === 1 && state.party_size) {
           // noop: moving to step 2 is controlled by PartySize step completion
         } else if (state.step === 2 && state.selected_slot) {
@@ -277,7 +303,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
       if (["1","2","3","4"].includes(e.key)) {
         const desired = parseInt(e.key, 10) as 1|2|3|4;
         // Only allow navigation to steps whose prerequisites are satisfied
-      const canGo = (
+        const canGo = (
           desired === 1 ||
           (desired === 2 && state.party_size) ||
           (desired === 3 && state.party_size && state.selected_slot) ||
@@ -304,7 +330,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
   };
 
   // Enhanced loading state
-      if (tenantLoading) {
+  if (tenantLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-lg">
@@ -326,7 +352,7 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
   }
 
   // Enhanced error state
-      if (tenantError || !tenant) {
+  if (tenantError || !tenant) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-lg border-destructive/20">
@@ -631,7 +657,3 @@ const BookingWidget: React.FC<BookingWidgetProps> = ({ slug, onError }) => {  co
 };
 
 export default BookingWidget;
-
-
-
-

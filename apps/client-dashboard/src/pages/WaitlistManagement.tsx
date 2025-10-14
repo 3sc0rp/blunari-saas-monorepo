@@ -157,10 +157,10 @@ export interface WaitlistSettings {
 
 // Real-data-only baselines (empty collections). These will be hydrated from Supabase.
 // TODO(waitlist-api): implement fetch + realtime subscriptions for waitlist entries & templates.
-      const initialWaitlistEntries: WaitlistEntry[] = [];
+const initialWaitlistEntries: WaitlistEntry[] = [];
 const initialNotificationTemplates: NotificationTemplate[] = [];
 // Baseline settings until persisted tenant-specific configuration is implemented.
-      const initialSettings: WaitlistSettings = {
+const initialSettings: WaitlistSettings = {
   max_party_size: 0,
   max_wait_time_minutes: 0,
   auto_remove_no_show_minutes: 0,
@@ -204,12 +204,12 @@ const WaitlistManagement: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   
   // Modal states
-      const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [editingEntry, setEditingEntry] = useState<WaitlistEntry | null>(null);
   
   // Form states
-      const [entryForm, setEntryForm] = useState<Partial<WaitlistEntry>>({
+  const [entryForm, setEntryForm] = useState<Partial<WaitlistEntry>>({
     customer_name: "",
     customer_phone: "",
     customer_email: "",
@@ -230,7 +230,7 @@ const WaitlistManagement: React.FC = () => {
   }, []);
 
   // Filter waitlist entries
-      const filteredEntries = useMemo(() => {
+  const filteredEntries = useMemo(() => {
     return waitlistEntries.filter(entry => {
       const matchesSearch = 
         entry.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -252,7 +252,7 @@ const WaitlistManagement: React.FC = () => {
   }, [waitlistEntries, searchTerm, statusFilter]);
 
   // Calculate analytics
-      const analytics = useMemo(() => {
+  const analytics = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     const todayEntries = waitlistEntries.filter(entry => 
       entry.created_at.startsWith(today)
@@ -275,7 +275,7 @@ const WaitlistManagement: React.FC = () => {
     const longestWaitTime = Math.max(...completedWithWaitTime.map(entry => entry.actual_wait_minutes || 0), 0);
 
     // Derive notification response rate from entries that have contact info.
-      const eligibleForNotifications = todayEntries.filter(e => e.customer_phone || e.customer_email).length;
+    const eligibleForNotifications = todayEntries.filter(e => e.customer_phone || e.customer_email).length;
     const responded = todayEntries.filter(e => (e.notification_count || 0) > 0).length;
     const notificationResponseRate = eligibleForNotifications > 0 ? Math.round((responded / eligibleForNotifications) * 100) : 0;
 
@@ -437,7 +437,7 @@ const WaitlistManagement: React.FC = () => {
     let baseTime = position * 15; // 15 minutes per position ahead
     
     // Adjust for party size (larger parties typically wait longer)
-      if (partySize >= 6) baseTime += 10;
+    if (partySize >= 6) baseTime += 10;
     else if (partySize >= 4) baseTime += 5;
     
     return Math.max(baseTime, 5); // Minimum 5 minute wait
@@ -445,7 +445,7 @@ const WaitlistManagement: React.FC = () => {
 
   const determinePriority = (entry: Partial<WaitlistEntry>): WaitlistPriority => {
     // Simple heuristic placeholder until real customer history / loyalty logic is added.
-      if (entry.party_size && entry.party_size >= 8) return "high";
+    if (entry.party_size && entry.party_size >= 8) return "high";
     return "normal";
   };
 
@@ -462,11 +462,11 @@ const WaitlistManagement: React.FC = () => {
       const reordered = activeEntries
         .sort((a, b) => {
           // VIP priority first
-      if (a.priority === "vip" && b.priority !== "vip") return -1;
+          if (a.priority === "vip" && b.priority !== "vip") return -1;
           if (b.priority === "vip" && a.priority !== "vip") return 1;
           
           // Then by join time
-      return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
+          return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
         })
         .map((entry, index) => ({ ...entry, position: index + 1 }));
       
@@ -635,7 +635,7 @@ const WaitlistManagement: React.FC = () => {
                 {filteredEntries
                   .sort((a, b) => {
                     // Active entries first, sorted by position
-      if (["waiting", "table_ready", "notified"].includes(a.status) && 
+                    if (["waiting", "table_ready", "notified"].includes(a.status) && 
                         !["waiting", "table_ready", "notified"].includes(b.status)) {
                       return -1;
                     }
@@ -979,4 +979,3 @@ const WaitlistManagement: React.FC = () => {
 };
 
 export default WaitlistManagement;
-

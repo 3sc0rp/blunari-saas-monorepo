@@ -39,7 +39,7 @@ export function dnsPrefetch() {
 // Defer non-critical scripts
 export function deferNonCriticalScripts() {
   // Mark analytics and non-essential scripts as defer
-      const scripts = document.querySelectorAll('script[data-defer="true"]');
+  const scripts = document.querySelectorAll('script[data-defer="true"]');
   scripts.forEach(script => {
     (script as HTMLScriptElement).defer = true;
   });
@@ -66,14 +66,14 @@ export function preloadCriticalFonts() {
 // Optimize images with loading priority
 export function optimizeImageLoading() {
   // Mark above-the-fold images as priority
-      const priorityImages = document.querySelectorAll('img[data-priority="high"]');
+  const priorityImages = document.querySelectorAll('img[data-priority="high"]');
   priorityImages.forEach(img => {
     (img as HTMLImageElement).loading = 'eager';
     (img as HTMLImageElement).fetchPriority = 'high';
   });
 
   // Lazy load below-the-fold images
-      const lazyImages = document.querySelectorAll('img:not([data-priority="high"])');
+  const lazyImages = document.querySelectorAll('img:not([data-priority="high"])');
   lazyImages.forEach(img => {
     (img as HTMLImageElement).loading = 'lazy';
     (img as HTMLImageElement).fetchPriority = 'low';
@@ -135,7 +135,8 @@ export function cancelIdleCallback(id: number) {
 // Measure and log performance metrics
 export function measurePerformance() {
   if (import.meta.env.PROD) return; // Only in development
-      if ('performance' in window && 'getEntriesByType' in performance) {
+
+  if ('performance' in window && 'getEntriesByType' in performance) {
     requestIdleCallback(() => {
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
       
@@ -149,7 +150,10 @@ export function measurePerformance() {
           domInteractive: Math.round(navigation.domInteractive - navigation.fetchStart),
           domComplete: Math.round(navigation.domComplete - navigation.fetchStart),
           loadComplete: Math.round(navigation.loadEventEnd - navigation.fetchStart),
-        };      }
+        };
+
+        console.log('⚡ Performance Metrics:', metrics);
+      }
 
       // Core Web Vitals (if available)
       if ('PerformanceObserver' in window) {
@@ -157,12 +161,16 @@ export function measurePerformance() {
           // Largest Contentful Paint (LCP)
           new PerformanceObserver((list) => {
             const entries = list.getEntries();
-            const lastEntry = entries[entries.length - 1];          }).observe({ entryTypes: ['largest-contentful-paint'] });
+            const lastEntry = entries[entries.length - 1];
+            console.log('📊 LCP:', Math.round(lastEntry.startTime), 'ms');
+          }).observe({ entryTypes: ['largest-contentful-paint'] });
 
           // First Input Delay (FID)
           new PerformanceObserver((list) => {
             const entries = list.getEntries();
-            entries.forEach(entry => {            });
+            entries.forEach(entry => {
+              console.log('⌨️ FID:', Math.round((entry as any).processingStart - entry.startTime), 'ms');
+            });
           }).observe({ entryTypes: ['first-input'] });
 
           // Cumulative Layout Shift (CLS)
@@ -172,7 +180,9 @@ export function measurePerformance() {
               if (!(entry as any).hadRecentInput) {
                 clsScore += (entry as any).value;
               }
-            }          }).observe({ entryTypes: ['layout-shift'] });
+            }
+            console.log('📐 CLS:', clsScore.toFixed(3));
+          }).observe({ entryTypes: ['layout-shift'] });
         } catch (e) {
           // PerformanceObserver not supported
         }
@@ -214,7 +224,7 @@ export function initializePerformanceOptimizations() {
   dnsPrefetch();
   
   // Run when DOM is ready
-      if (document.readyState === 'loading') {
+  if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       optimizeImageLoading();
       deferNonCriticalScripts();
@@ -231,5 +241,3 @@ export function initializePerformanceOptimizations() {
     });
   });
 }
-
-

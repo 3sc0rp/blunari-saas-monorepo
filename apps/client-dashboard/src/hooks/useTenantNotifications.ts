@@ -17,13 +17,13 @@ function getReadStorageKey(tenantId?: string | null) {
 }
 
 // Sound notification utilities
-      const playNotificationSound = (type: 'new_reservation' | 'general' = 'general') => {
+const playNotificationSound = (type: 'new_reservation' | 'general' = 'general') => {
   try {
     // Create audio context for browser notification sound
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     
     // Different tones for different notification types
-      const frequencies = {
+    const frequencies = {
       new_reservation: [800, 600, 400], // Descending tone for new reservations
       general: [400, 600] // Simple two-tone for general notifications
     };
@@ -48,7 +48,9 @@ function getReadStorageKey(tenantId?: string | null) {
       oscillator.stop(audioContext.currentTime + index * 0.3 + 0.25);
     });
   } catch (error) {
-    // Fallback to system notification sound or silent fail  }
+    // Fallback to system notification sound or silent fail
+    console.log('Notification sound unavailable:', error);
+  }
 };
 
 export function useTenantNotifications() {
@@ -117,7 +119,7 @@ export function useTenantNotifications() {
   useEffect(() => {
     refresh();
     // Realtime subscription for this tenant
-      if (!tenantId) return;
+    if (!tenantId) return;
     try {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
@@ -141,7 +143,7 @@ export function useTenantNotifications() {
             };
             
             // Play notification sound for new notifications
-      const isNewReservation = mapped.type === 'new_reservation' || 
+            const isNewReservation = mapped.type === 'new_reservation' || 
                                   mapped.title?.toLowerCase().includes('reservation') ||
                                   mapped.message?.toLowerCase().includes('reservation');
             
@@ -153,8 +155,8 @@ export function useTenantNotifications() {
             
             setNotifications((prev) => [mapped, ...prev].slice(0, Math.max(pageSize, 50)));
             
-            // Show browser notification
-      if (Notification.permission === 'granted') {
+            // Show browser notification if permission granted
+            if (Notification.permission === 'granted') {
               new Notification(mapped.title || 'New Notification', {
                 body: mapped.message,
                 icon: '/logo.png',
@@ -209,7 +211,7 @@ export function useTenantNotifications() {
 
   const markUnread = async (id: string) => {
     if (!readIds.has(id)) return; // already unread from perspective
-      const next = new Set(readIds);
+    const next = new Set(readIds);
     next.delete(id);
     setReadIds(next);
     persistReadIds(next);
@@ -249,9 +251,5 @@ export function useTenantNotifications() {
     playNotificationSound, // Expose for manual testing
   };
 }
-
-
-
-
 
 

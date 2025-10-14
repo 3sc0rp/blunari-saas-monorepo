@@ -3,8 +3,7 @@ import './sandboxStorageShim'; // must be first to patch storage in sandbox
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import '@/monitoring/sentry';
-// Optional: configure custom error analytics endpoint (no-op
-      if (unset)
+// Optional: configure custom error analytics endpoint (no-op if unset)
 ;(window as any).__ERROR_ANALYTICS_ENDPOINT__ = import.meta.env.VITE_ERROR_ANALYTICS_ENDPOINT || '';
 import './index.css';
 import { registerServiceWorker } from '@/utils/serviceWorkerRegistration';
@@ -14,9 +13,9 @@ import { initializePerformanceOptimizations } from '@/utils/performanceOptimizat
 initializePerformanceOptimizations();
 
 // Temporary runtime instrumentation for diagnosing generic errors
-      if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined') {
   // Avoid duplicate registration (HMR)
-      if (!(window as any).__GLOBAL_ERROR_PATCHED__) {
+  if (!(window as any).__GLOBAL_ERROR_PATCHED__) {
     (window as any).__GLOBAL_ERROR_PATCHED__ = true;
     window.addEventListener('error', (e) => {
       const msg = e.message || '';
@@ -49,10 +48,10 @@ initializePerformanceOptimizations();
 }
 
 // Lazy load the main App component for better initial bundle size
-      const App = React.lazy(() => import('./App'));
+const App = React.lazy(() => import('./App'));
 
 // Get root element
-      const rootElement = document.getElementById('root');
+const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element not found');
 }
@@ -60,7 +59,7 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 
 // Optimized loading fallback
-      const AppLoadingFallback = () => (
+const AppLoadingFallback = () => (
   <div style={{
     display: 'flex',
     alignItems: 'center',
@@ -100,10 +99,8 @@ root.render(
 );
 
 // Register service worker for offline support and caching
-      if (import.meta.env.PROD) {
+if (import.meta.env.PROD) {
   registerServiceWorker().catch((error) => {
     console.warn('Service worker registration failed:', error);
   });
 }
-
-

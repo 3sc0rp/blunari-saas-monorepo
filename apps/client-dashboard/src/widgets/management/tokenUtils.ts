@@ -50,7 +50,7 @@ export async function createWidgetToken(
   } catch {}
 
   // Fallback: local signing in development only (not secure). Avoid in production.
-      const now = Math.floor(Date.now() / 1000);
+  const now = Math.floor(Date.now() / 1000);
   const payload: WidgetTokenPayload = {
     slug,
     configVersion,
@@ -80,22 +80,22 @@ export function validateWidgetToken(token: string): WidgetTokenPayload | null {
     const [encodedHeader, encodedPayload, signature] = parts;
 
     // Decode and verify header
-      const header = JSON.parse(base64UrlDecode(encodedHeader)) as JWTHeder;
+    const header = JSON.parse(base64UrlDecode(encodedHeader)) as JWTHeder;
     if (header.alg !== 'HS256' || header.typ !== 'JWT') {
       return null;
     }
 
     // Decode payload
-      const payload = JSON.parse(base64UrlDecode(encodedPayload)) as WidgetTokenPayload;
+    const payload = JSON.parse(base64UrlDecode(encodedPayload)) as WidgetTokenPayload;
 
     // Check expiration
-      const now = Math.floor(Date.now() / 1000);
+    const now = Math.floor(Date.now() / 1000);
     if (payload.exp && payload.exp < now) {
       return null;
     }
 
     // Verify signature
-      const secret = getJWTSecret();
+    const secret = getJWTSecret();
     const expectedSignature = createHMACSignature(`${encodedHeader}.${encodedPayload}`, secret);
     if (signature !== expectedSignature) {
       return null;
@@ -114,7 +114,7 @@ export function validateWidgetToken(token: string): WidgetTokenPayload | null {
 function getJWTSecret(): string {
   // In production, this should come from environment variables
   // For development, we use a fixed secret (not secure for production!)
-      return import.meta.env.VITE_JWT_SECRET || 'dev-jwt-secret-change-in-production-2025';
+  return import.meta.env.VITE_JWT_SECRET || 'dev-jwt-secret-change-in-production-2025';
 }
 
 /**
@@ -123,7 +123,7 @@ function getJWTSecret(): string {
 function createHMACSignature(data: string, secret: string): string {
   // Simple HMAC implementation for demonstration
   // In production, use a proper crypto library like crypto-js or Node.js crypto
-      const crypto = getCrypto();
+  const crypto = getCrypto();
   if (crypto) {
     const key = crypto.createHmac('sha256', secret);
     key.update(data);
@@ -131,7 +131,7 @@ function createHMACSignature(data: string, secret: string): string {
   }
 
   // Fallback for environments without crypto
-      return simpleHMAC(data, secret);
+  return simpleHMAC(data, secret);
 }
 
 /**
@@ -140,7 +140,7 @@ function createHMACSignature(data: string, secret: string): string {
 function getCrypto(): any {
   if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
     // Browser crypto API - would need proper implementation
-      return null; // For now, use fallback
+    return null; // For now, use fallback
   }
   return null;
 }

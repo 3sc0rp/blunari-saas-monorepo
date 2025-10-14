@@ -56,7 +56,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     root.setAttribute("data-contrast", contrast);
 
     // Also set class for compatibility with existing dark mode detection
-      if (theme === "dark") {
+    if (theme === "dark") {
       root.classList.add("dark");
       root.classList.remove("deep-sea");
     } else if (theme === "deep-sea") {
@@ -111,4 +111,3 @@ export const useTheme = () => {
   }
   return context;
 };
-

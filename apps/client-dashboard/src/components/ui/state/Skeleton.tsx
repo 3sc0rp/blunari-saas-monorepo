@@ -42,12 +42,12 @@ interface SkeletonFormProps {
 }
 
 // Base skeleton component
-      const Skeleton: React.FC<SkeletonProps> = ({ className = "" }) => (
+const Skeleton: React.FC<SkeletonProps> = ({ className = "" }) => (
   <div className={`animate-pulse bg-surface-2 rounded ${className}`} />
 );
 
 // Skeleton line component
-      const SkeletonLine: React.FC<SkeletonLineProps> = ({
+const SkeletonLine: React.FC<SkeletonLineProps> = ({
   width = "100%",
   className = "",
 }) => (
@@ -58,13 +58,13 @@ interface SkeletonFormProps {
 );
 
 // Skeleton circle component
-      const SkeletonCircle: React.FC<SkeletonCircleProps> = ({
+const SkeletonCircle: React.FC<SkeletonCircleProps> = ({
   size = "h-10 w-10",
   className = "",
 }) => <Skeleton className={`${size} rounded-full ${className}`} />;
 
 // Skeleton card component
-      const SkeletonCard: React.FC<SkeletonCardProps> = ({
+const SkeletonCard: React.FC<SkeletonCardProps> = ({
   lines = 3,
   showAvatar = false,
   showActions = false,
@@ -95,7 +95,7 @@ interface SkeletonFormProps {
 );
 
 // Skeleton table component
-      const SkeletonTable: React.FC<SkeletonTableProps> = ({
+const SkeletonTable: React.FC<SkeletonTableProps> = ({
   rows = 5,
   columns = 4,
   showHeader = true,
@@ -141,7 +141,7 @@ interface SkeletonFormProps {
 );
 
 // Skeleton chart component
-      const SkeletonChart: React.FC<SkeletonChartProps> = ({
+const SkeletonChart: React.FC<SkeletonChartProps> = ({
   height = "h-64",
   showLegend = true,
   className = "",
@@ -173,7 +173,7 @@ interface SkeletonFormProps {
 );
 
 // Skeleton form component
-      const SkeletonForm: React.FC<SkeletonFormProps> = ({
+const SkeletonForm: React.FC<SkeletonFormProps> = ({
   fields = 4,
   showButtons = true,
   className = "",
@@ -201,7 +201,7 @@ interface SkeletonFormProps {
 );
 
 // Skeleton list component
-      const SkeletonList: React.FC<{
+const SkeletonList: React.FC<{
   items?: number;
   showAvatars?: boolean;
   className?: string;
@@ -224,7 +224,7 @@ interface SkeletonFormProps {
 );
 
 // Skeleton metrics component
-      const SkeletonMetrics: React.FC<{ count?: number; className?: string }> = ({
+const SkeletonMetrics: React.FC<{ count?: number; className?: string }> = ({
   count = 4,
   className = "",
 }) => (
@@ -261,4 +261,3 @@ export {
   SkeletonList,
   SkeletonMetrics,
 };
-

@@ -7,9 +7,11 @@ export const TenantHookTester: React.FC = () => {
   const [isRunning, setIsRunning] = useState(false);
   
   // Use the actual hook
-      const hookResult = useTenant();
+  const hookResult = useTenant();
 
-  const runDirectApiTest = async (slug: string) => {    try {
+  const runDirectApiTest = async (slug: string) => {
+    console.log(`🧪 Direct API test for: ${slug}`);
+    try {
       const result = await getTenantBySlug(slug);
       return {
         slug,
@@ -144,5 +146,3 @@ export const TenantHookTester: React.FC = () => {
     </div>
   );
 };
-
-

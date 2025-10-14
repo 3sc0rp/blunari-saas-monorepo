@@ -38,7 +38,7 @@ export const useRealtimeBookings = (tenantId?: string) => {
   }, []);
 
   // Fetch bookings
-      const {
+  const {
     data: bookings = [],
     isLoading,
     error,
@@ -146,4 +146,3 @@ export const useTodaysBookings = (tenantId?: string) => {
     error,
   };
 };
-

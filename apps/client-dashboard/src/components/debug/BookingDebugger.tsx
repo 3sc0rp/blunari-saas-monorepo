@@ -15,6 +15,7 @@ export function BookingDebugger() {
     try {
       const now = new Date();
       const bookingTime = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours from now
+      
       const testBooking = {
         tenant_id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
         guest_name: 'Debug Test User',
@@ -24,7 +25,11 @@ export function BookingDebugger() {
         booking_time: bookingTime.toISOString(),
         status: 'confirmed',
         special_requests: 'Created from dashboard debug tool'
-      };      const { data, error } = await supabase
+      };
+      
+      console.log('Creating test booking:', testBooking);
+      
+      const { data, error } = await supabase
         .from('bookings')
         .insert(testBooking)
         .select();
@@ -36,7 +41,9 @@ export function BookingDebugger() {
           description: `Error: ${error.message}`,
           variant: 'destructive'
         });
-      } else {        toast({
+      } else {
+        console.log('Booking created successfully:', data);
+        toast({
           title: 'Test booking created!',
           description: `Booking ID: ${data[0].id}`
         });
@@ -57,7 +64,11 @@ export function BookingDebugger() {
   const queryBookings = async () => {
     setIsQuerying(true);
     try {
-      const tenantId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';      const { data, error } = await supabase
+      const tenantId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+      
+      console.log('Querying bookings for tenant:', tenantId);
+      
+      const { data, error } = await supabase
         .from('bookings')
         .select('*')
         .eq('tenant_id', tenantId)
@@ -71,7 +82,9 @@ export function BookingDebugger() {
           description: `Error: ${error.message}`,
           variant: 'destructive'
         });
-      } else {        toast({
+      } else {
+        console.log('Bookings query successful:', data);
+        toast({
           title: 'Query successful!',
           description: `Found ${data?.length || 0} bookings`
         });
@@ -127,4 +140,3 @@ export function BookingDebugger() {
     </Card>
   );
 }
-

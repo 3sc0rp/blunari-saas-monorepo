@@ -32,7 +32,7 @@ import type { TableRow as LegacyTableRow, Reservation as LegacyReservation } fro
 import SmartBookingWizard from "@/components/booking/SmartBookingWizard";
 
 // Type transformation utilities for converting contract types to legacy component types
-      const transformTableToLegacy = (table: ContractTableRow): LegacyTableRow => ({
+const transformTableToLegacy = (table: ContractTableRow): LegacyTableRow => ({
   id: table.id,
   name: table.name,
   capacity: table.seats, // Map seats to capacity for backward compatibility
@@ -61,12 +61,11 @@ export default function CommandCenter() {
   const tenantTimezone = (tenant as any)?.timezone || 'UTC';
   
   // Add loading timeout to prevent infinite loading state
-      const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   
   useEffect(() => {
-    // Set timeout for 3 seconds -
-      if (still loading, show error
-      const timeoutId = setTimeout(() => {
+    // Set timeout for 3 seconds - if still loading, show error
+    const timeoutId = setTimeout(() => {
       setLoadingTimeout(true);
     }, 3000);
     
@@ -86,7 +85,7 @@ export default function CommandCenter() {
   const [focusTableId, setFocusTableId] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState<string>("");
   // Convert FiltersState to contracts.Filters
-      const contractFilters = useMemo<FiltersType>(() => ({
+  const contractFilters = useMemo<FiltersType>(() => ({
     section: 'all', // Current FiltersState doesn't have section, defaulting to 'all'
     status: filters.status?.length === 1 ? filters.status[0] as any : 'all',
     channel: filters.channel?.length === 1 ? filters.channel[0] as any : 'all',
@@ -97,7 +96,7 @@ export default function CommandCenter() {
   }), [filters]);
 
   // Get reservation actions
-      const {
+  const {
     createReservationAction,
     moveReservationAction,
     cancelReservationAction,
@@ -142,7 +141,7 @@ export default function CommandCenter() {
     const handleKeyDown = (event: KeyboardEvent) => {
       try {
         // Only handle shortcuts when not in an input field
-      if ((event.target as HTMLElement)?.tagName === 'INPUT') return;
+        if ((event.target as HTMLElement)?.tagName === 'INPUT') return;
         
         switch (event.key.toLowerCase()) {
           case 'n':
@@ -154,8 +153,8 @@ export default function CommandCenter() {
             // Focus filters - could implement this
             break;
           case 'escape':
-            // Clear filters
-      if (Object.values(filters).some(v => v && (Array.isArray(v) ? v.length : true))) {
+            // Clear filters if any are active
+            if (Object.values(filters).some(v => v && (Array.isArray(v) ? v.length : true))) {
               setFilters({});
             }
             break;
@@ -174,7 +173,7 @@ export default function CommandCenter() {
   }, [filters, handleNewReservation]);
 
   // Use real-time hook for live data updates
-      const {
+  const {
     bookings: realtimeBookings = [],
     tables: realtimeTables = [],
     metrics,
@@ -185,9 +184,8 @@ export default function CommandCenter() {
     refreshData
   } = useRealtimeCommandCenter({ selectedDate });
 
-  // Fallback to simple hook
-      if (real-time fails
-      const { 
+  // Fallback to simple hook if real-time fails
+  const { 
     kpis = [], 
     tables: simpleTables = [], 
     reservations: simpleReservations = [], 
@@ -198,7 +196,7 @@ export default function CommandCenter() {
   } = useCommandCenterDataSimple();
 
   // Determine which data source to use
-      const tables = realtimeTables.length > 0 ? realtimeTables.map(t => ({
+  const tables = realtimeTables.length > 0 ? realtimeTables.map(t => ({
     id: t.id,
     name: t.name,
     seats: t.capacity,
@@ -207,9 +205,8 @@ export default function CommandCenter() {
   })) : simpleTables;
 
   const reservations = realtimeBookings.length > 0 ? (() => {
-    // Helper: deterministically assign a table
-      if (none was set so reservation becomes visible
-      const autoAssign = (booking: typeof realtimeBookings[number]) => {
+    // Helper: deterministically assign a table if none was set so reservation becomes visible
+    const autoAssign = (booking: typeof realtimeBookings[number]) => {
       if (!booking || booking.table_id) return booking.table_id;
       if (!tables.length) return undefined;
       // Capacity fit first
@@ -253,13 +250,21 @@ export default function CommandCenter() {
 
   // Debug logging for reservation IDs
   useEffect(() => {
-    if (reservations && reservations.length > 0) {    }
+    if (reservations && reservations.length > 0) {
+      console.log('CommandCenter - Reservation ID analysis:', reservations.map(r => ({
+        id: r.id,
+        guestName: r.guestName || 'Unknown',
+        idLength: r.id?.length || 0,
+        isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(r.id || ''),
+        sample: r.id
+      })).slice(0, 3));
+    }
   }, [reservations]);
 
   // Command Center state ready
 
   // Apply filters to reservations before transformation
-      const filteredReservations = useMemo(() => {
+  const filteredReservations = useMemo(() => {
     try {
       if (!reservations || reservations.length === 0) return [];
 
@@ -270,14 +275,14 @@ export default function CommandCenter() {
 
       const filtered = reservations.filter(reservation => {
         // Party size filter
-      if (filters.party && filters.party.length > 0) {
+        if (filters.party && filters.party.length > 0) {
           if (!filters.party.includes(reservation.partySize)) {
             return false;
           }
         }
 
         // Channel filter
-      if (filters.channel && filters.channel.length > 0) {
+        if (filters.channel && filters.channel.length > 0) {
           const reservationChannel = reservation.channel === 'WEB' ? 'WEB' : 
                                    reservation.channel === 'PHONE' ? 'PHONE' : 'WALKIN';
           if (!filters.channel.includes(reservationChannel)) {
@@ -286,7 +291,7 @@ export default function CommandCenter() {
         }
 
         // Status filter
-      if (filters.status && filters.status.length > 0) {
+        if (filters.status && filters.status.length > 0) {
           const lowerStatus = reservation.status.toLowerCase();
           if (!filters.status.includes(lowerStatus)) {
             return false;
@@ -294,20 +299,20 @@ export default function CommandCenter() {
         }
 
         // Deposits filter
-      if (filters.deposits !== null) {
+        if (filters.deposits !== null) {
           const hasDeposit = reservation.depositAmount > 0;
           if (filters.deposits === 'ON' && !hasDeposit) return false;
           if (filters.deposits === 'OFF' && hasDeposit) return false;
         }
 
         // VIP filter
-      if (filters.vip !== null) {
+        if (filters.vip !== null) {
           if (filters.vip && !reservation.vip) return false;
           if (!filters.vip && reservation.vip) return false;
         }
 
         // Search filter
-      if (searchQuery.trim()) {
+        if (searchQuery.trim()) {
           const query = searchQuery.toLowerCase().trim();
           const matchesName = reservation.guestName?.toLowerCase().includes(query);
           const matchesPhone = reservation.guestPhone?.toLowerCase().includes(query);
@@ -335,7 +340,7 @@ export default function CommandCenter() {
   }, [reservations, filters, isConnected, searchQuery]);
 
   // Transform data for legacy components with error handling
-      const legacyTables = useMemo<LegacyTableRow[]>(() => {
+  const legacyTables = useMemo<LegacyTableRow[]>(() => {
     try {
       return tables.map(transformTableToLegacy);
     } catch (error) {
@@ -354,7 +359,7 @@ export default function CommandCenter() {
   }, [filteredReservations]);
 
   // Calculate filter counts based on actual data
-      const filterCounts = useMemo(() => {
+  const filterCounts = useMemo(() => {
     const counts = {
       channels: { WEB: 0, PHONE: 0, WALKIN: 0 },
       statuses: { pending: 0, confirmed: 0, seated: 0, completed: 0, cancelled: 0, no_show: 0 },
@@ -382,7 +387,7 @@ export default function CommandCenter() {
   }, [reservations]);
 
   // Convert KPI data to KpiCard format with enhanced data based on filtered results
-      const kpiCards = useMemo<KpiCard[]>(() => {
+  const kpiCards = useMemo<KpiCard[]>(() => {
     if (!reservations || reservations.length === 0) {
       return kpis.map((item) => ({
         id: item.id,
@@ -397,22 +402,23 @@ export default function CommandCenter() {
     }
 
     // Helper: scope reservations to the currently selected calendar date
-      const dateFilteredReservations = filteredReservations.filter(r => {
+    const dateFilteredReservations = filteredReservations.filter(r => {
       try {
         return new Date(r.start).toISOString().slice(0,10) === selectedDate;
       } catch { return false; }
     });
 
     // Calculate KPIs from date-scoped data to avoid contradictory counts
-      const totalBookingsForSelectedDate = dateFilteredReservations.length;
+    const totalBookingsForSelectedDate = dateFilteredReservations.length;
     const confirmedCount = dateFilteredReservations.filter(r => r.status.toLowerCase() === 'confirmed').length;
     const seatedCount = dateFilteredReservations.filter(r => r.status.toLowerCase() === 'seated').length;
     const completedCount = dateFilteredReservations.filter(r => r.status.toLowerCase() === 'completed').length;
 
     // Guests (scoped vs overall for context tooltip)
-      const totalGuestsForSelectedDate = dateFilteredReservations.reduce((sum, r) => sum + r.partySize, 0);
+    const totalGuestsForSelectedDate = dateFilteredReservations.reduce((sum, r) => sum + r.partySize, 0);
     const totalGuestsAll = filteredReservations.reduce((sum, r) => sum + r.partySize, 0); // used in hint only
-      return [
+
+    return [
       {
         id: 'total-bookings',
         label: 'Total Bookings',
@@ -494,7 +500,7 @@ export default function CommandCenter() {
   };
 
   // Notification trigger: send reminders for today's pending reservations
-      const handleNotify = async () => {
+  const handleNotify = async () => {
     try {
       const todayPending = reservations
         .filter(r => r.status === 'PENDING')
@@ -536,7 +542,7 @@ export default function CommandCenter() {
   };
 
   // Convert error string to ErrorState format
-      const errorState = useMemo(() => {
+  const errorState = useMemo(() => {
     if (!error) return null;
     return {
       message: error,
@@ -829,7 +835,3 @@ export default function CommandCenter() {
     </main>
   );
 }
-
-
-
-

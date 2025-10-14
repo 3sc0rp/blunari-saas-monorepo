@@ -49,17 +49,17 @@ const WidgetCard = memo<WidgetCardProps>(({
   const { isIntersecting } = useIntersectionObserver(cardRef);
 
   // Memoized handlers to prevent unnecessary re-renders
-      const handleEdit = useCallback(() => onEdit(id), [id, onEdit]);
+  const handleEdit = useCallback(() => onEdit(id), [id, onEdit]);
   const handleDelete = useCallback(() => onDelete(id), [id, onDelete]);
   const handleAnalytics = useCallback(() => onAnalytics(id), [id, onAnalytics]);
 
   // Debounced analytics tracking
-      const debouncedAnalyticsTrack = useDebounceCallback((action: string) => {
+  const debouncedAnalyticsTrack = useDebounceCallback((action: string) => {
     logger.debug('Widget interaction tracked', { widgetId: id, action });
   }, 300);
 
   // Memoized computed values
-      const conversionDisplay = useMemo(() => {
+  const conversionDisplay = useMemo(() => {
     return `${(analytics.conversion_rate * 100).toFixed(2)}%`;
   }, [analytics.conversion_rate]);
 
@@ -160,7 +160,7 @@ const WidgetList = memo<WidgetListProps>(({
   const itemHeight = 200;
 
   // Virtual scrolling for performance with large lists
-      const {
+  const {
     visibleItems,
     totalHeight,
     handleScroll
@@ -171,7 +171,7 @@ const WidgetList = memo<WidgetListProps>(({
   });
 
   // Memoized filtered widgets for visible items only
-      const visibleWidgets = useMemo(() => {
+  const visibleWidgets = useMemo(() => {
     return visibleItems.map(item => ({
       ...item,
       widget: widgets[item.index]
@@ -179,7 +179,7 @@ const WidgetList = memo<WidgetListProps>(({
   }, [visibleItems, widgets]);
 
   // Heavy computation for analytics aggregation
-      const aggregatedAnalytics = useHeavyComputation(() => {
+  const aggregatedAnalytics = useHeavyComputation(() => {
     PerformanceCollector.startMeasurement('widget-analytics-aggregation');
     
     const totals = widgets.reduce(
@@ -290,13 +290,13 @@ const WidgetSearch = memo<WidgetSearchProps>(({
   const [filters, setFilters] = useState<{ type?: string; status?: string }>({});
 
   // Debounced search to prevent excessive API calls
-      const debouncedSearch = useDebounceCallback((query: string) => {
+  const debouncedSearch = useDebounceCallback((query: string) => {
     onSearch(query);
     logger.debug('Widget search executed', { query, length: query.length });
   }, 300);
 
   // Throttled filter updates
-      const throttledFilter = useThrottleCallback((newFilters: typeof filters) => {
+  const throttledFilter = useThrottleCallback((newFilters: typeof filters) => {
     onFilter(newFilters);
     logger.debug('Widget filters applied', newFilters);
   }, 500);

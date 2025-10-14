@@ -22,8 +22,12 @@ import { Eye, EyeOff, Loader2, Github, Chrome, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 // Function to validate single-use password setup links
-      const validatePasswordSetupLink = async (linkToken: string) => {
+const validatePasswordSetupLink = async (linkToken: string) => {
   try {
+    if (import.meta.env.DEV) {
+      if (import.meta.env.DEV) console.log("Validating password setup link token:", linkToken);
+    }
+    
     const { data, error } = await supabase.functions.invoke('validate-password-setup-link', {
       body: {
         linkToken,
@@ -36,6 +40,9 @@ import { supabase } from "@/integrations/supabase/client";
       throw error;
     }
 
+    if (import.meta.env.DEV) {
+      if (import.meta.env.DEV) console.log("Link validation response:", data);
+    }
     return data;
   } catch (error) {
     console.error("Link validation failed:", error);
@@ -44,8 +51,12 @@ import { supabase } from "@/integrations/supabase/client";
 };
 
 // Function to consume (mark as used) a password setup link
-      const consumePasswordSetupLink = async (linkToken: string) => {
+const consumePasswordSetupLink = async (linkToken: string) => {
   try {
+    if (import.meta.env.DEV) {
+      if (import.meta.env.DEV) console.log("Consuming password setup link token:", linkToken);
+    }
+    
     const { data, error } = await supabase.functions.invoke('validate-password-setup-link', {
       body: {
         linkToken,
@@ -58,6 +69,9 @@ import { supabase } from "@/integrations/supabase/client";
       throw error;
     }
 
+    if (import.meta.env.DEV) {
+      if (import.meta.env.DEV) console.log("Link consumption response:", data);
+    }
     return data;
   } catch (error) {
     console.error("Link consumption failed:", error);
@@ -120,9 +134,9 @@ const Auth: React.FC = () => {
   const { signIn, user } = useAuth();
   const { logoUrl, restaurantName } = useTenantBranding();
   // Use Blunari branding for login page with fallbacks to tenant branding
-      const brandLogo = "/logo.png"; // Always use Blunari logo on login
-      const brandName = "Blunari"; // Always use Blunari name on login
-      const navigate = useNavigate();
+  const brandLogo = "/logo.png"; // Always use Blunari logo on login
+  const brandName = "Blunari"; // Always use Blunari name on login
+  const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/command-center";
   const { toast } = useToast();
@@ -173,15 +187,20 @@ const Auth: React.FC = () => {
     const hash = window.location.hash;
     const search = window.location.search;
     
+    if (import.meta.env.DEV) console.log("Checking URL for password setup tokens:", { hash: hash.substring(0, 100), search });
+    
     // Check for linkToken in search params first (single-use security)
-      const searchParams = new URLSearchParams(search);
+    const searchParams = new URLSearchParams(search);
     const linkToken = searchParams.get('linkToken');
     
     if (linkToken) {
+      if (import.meta.env.DEV) console.log("Single-use link token detected, validating...");
+      
       // Validate the link token with our security function
       validatePasswordSetupLink(linkToken)
         .then((result) => {
           if (result.valid) {
+            if (import.meta.env.DEV) console.log("Link token is valid:", result);
             setShowPasswordSetup(true);
             setActiveTab('password-setup');
             setRecoveryToken(`link_token=${linkToken}`);
@@ -209,13 +228,20 @@ const Auth: React.FC = () => {
     }
     
     // Check for tokens in URL hash (primary method)
-      if (hash.length > 1) {
+    if (hash.length > 1) {
       const urlParams = new URLSearchParams(hash.substring(1));
       const accessToken = urlParams.get('access_token');
       const refreshToken = urlParams.get('refresh_token');
       const type = urlParams.get('type');
       
+      if (import.meta.env.DEV) console.log("Hash parameters found:", { 
+        hasAccessToken: !!accessToken, 
+        hasRefreshToken: !!refreshToken, 
+        type 
+      });
+      
       if (accessToken && (type === 'recovery' || type === 'invite')) {
+        if (import.meta.env.DEV) console.log("Password setup token detected in hash, setting up form");
         const tokenData = refreshToken ? 
           `access_token=${accessToken}&refresh_token=${refreshToken}&type=${type}` : 
           accessToken;
@@ -231,7 +257,8 @@ const Auth: React.FC = () => {
     }
     
     // Also check for password setup indicators in search params as fallback
-      if (search.includes('passwordSetup=true') || search.includes('type=recovery') || search.includes('type=invite')) {
+    if (search.includes('passwordSetup=true') || search.includes('type=recovery') || search.includes('type=invite')) {
+      if (import.meta.env.DEV) console.log("Password setup indicator found in search params");
       setShowPasswordSetup(true);
       setActiveTab('password-setup');
       // Store a placeholder token since we'll need the user to be authenticated already
@@ -239,19 +266,18 @@ const Auth: React.FC = () => {
     }
   }, []);
 
-  // Additional effect to check
-      if (user was authenticated via password setup link
+  // Additional effect to check if user was authenticated via password setup link
   useEffect(() => {
     // If user becomes authenticated and we have detected password setup tokens,
-    // force them to go through password setup even
-      if (they're already logged in
-      if (user && !showPasswordSetup) {
+    // force them to go through password setup even if they're already logged in
+    if (user && !showPasswordSetup) {
       const hash = window.location.hash;
       const search = window.location.search;
       
-      // Check
+      // Check if this page load was from a password setup link
       if (hash.includes('type=recovery') || hash.includes('type=invite') || 
           search.includes('passwordSetup=true')) {
+        if (import.meta.env.DEV) console.log("User authenticated via password setup link, forcing password setup form");
         setShowPasswordSetup(true);
         setActiveTab('password-setup');
         setRecoveryToken('authenticated_user_password_setup');
@@ -262,11 +288,10 @@ const Auth: React.FC = () => {
     }
   }, [user, showPasswordSetup]);
 
-  // Redirect
-      if (already authenticated, but not during password setup
+  // Redirect if already authenticated, but not during password setup
   useEffect(() => {
-    // Only redirect
-      if (user && !showPasswordSetup && !recoveryToken) {
+    // Only redirect if user is authenticated AND we're not in password setup mode AND no password setup token
+    if (user && !showPasswordSetup && !recoveryToken) {
       navigate(from, { replace: true });
     }
   }, [user, navigate, from, showPasswordSetup, recoveryToken]);
@@ -321,7 +346,7 @@ const Auth: React.FC = () => {
         },
       );
 
-      // Check
+      // Check if response is ok before parsing JSON
       if (!response.ok) {
         const errorText = await response.text();
         let errorMessage = "Failed to send security code";
@@ -425,6 +450,13 @@ const Auth: React.FC = () => {
     setCodeLoading(true);
 
     try {
+      if (import.meta.env.DEV) console.log("Password reset submission:", { 
+        email: data.email, 
+        codeLength: data.code?.length, 
+        hasPassword: !!data.password,
+        passwordsMatch: data.password === data.confirmPassword 
+      });
+
       // Validate all required fields
       if (!data.email) {
         throw new Error("Email is required");
@@ -455,7 +487,9 @@ const Auth: React.FC = () => {
         },
       );
 
-      // Check
+      if (import.meta.env.DEV) console.log("Reset password response status:", response.status);
+
+      // Check if response is ok before parsing JSON
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Reset password error response:", errorText);
@@ -473,14 +507,15 @@ const Auth: React.FC = () => {
       }
 
       const result = await response.json();
+      if (import.meta.env.DEV) console.log("Reset password success:", result);
+
       if (result.success) {
         toast({
           title: "Password reset successful",
           description: "Your password has been updated. You can now sign in.",
         });
 
-        // Reset form and
-      return to signin
+        // Reset form and return to signin
         setShowCodeForm(false);
         setShowPasswordForm(false);
         resetCodeForm();
@@ -517,15 +552,18 @@ const Auth: React.FC = () => {
     setPasswordSetupLoading(true);
 
     try {
-      // Check
+      // Check if this is a single-use link token
       if (recoveryToken.startsWith('link_token=')) {
         const linkToken = recoveryToken.split('=')[1];
+        if (import.meta.env.DEV) console.log("Processing single-use link token password setup");
+        
         // Consume the link token to mark it as used (security measure)
         try {
           const consumeResult = await consumePasswordSetupLink(linkToken);
           if (!consumeResult.valid) {
             throw new Error(consumeResult.message || "Link token could not be consumed");
           }
+          if (import.meta.env.DEV) console.log("Link token consumed successfully:", consumeResult);
         } catch (consumeError) {
           console.error("Failed to consume link token:", consumeError);
           toast({
@@ -536,8 +574,8 @@ const Auth: React.FC = () => {
           return;
         }
         
-        // User should already be authenticated
-      if (!user) {
+        // User should already be authenticated if they got this far, just update password
+        if (!user) {
           toast({
             title: "Authentication Required",
             description: "Please authenticate first before setting your password.",
@@ -567,10 +605,12 @@ const Auth: React.FC = () => {
         return;
       }
       
-      // Check
+      // Check if this is a simple authenticated user password setup (fallback case)
       if (recoveryToken === 'authenticated_user_password_setup') {
+        if (import.meta.env.DEV) console.log("Setting password for already authenticated user");
+        
         // User is already authenticated, just update their password
-      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+        const { data: updateData, error: updateError } = await supabase.auth.updateUser({
           password: data.password,
         });
 
@@ -598,8 +638,16 @@ const Auth: React.FC = () => {
       const refreshToken = urlParams.get('refresh_token');
       const tokenType = urlParams.get('type') || 'recovery';
       
+      if (import.meta.env.DEV) console.log("Processing password setup with token:", { 
+        hasToken: !!actualToken, 
+        hasRefresh: !!refreshToken, 
+        type: tokenType 
+      });
+
       // If user is already authenticated from the token, just update password directly
       if (user) {
+        if (import.meta.env.DEV) console.log("User already authenticated, updating password directly");
+        
         const { data: updateData, error: updateError } = await supabase.auth.updateUser({
           password: data.password,
         });
@@ -632,7 +680,7 @@ const Auth: React.FC = () => {
         console.error("OTP verification failed, trying alternative approach:", verifyError);
         
         // Alternative approach: try to use the token directly for session
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
           access_token: actualToken,
           refresh_token: refreshToken || actualToken
         });
@@ -642,7 +690,7 @@ const Auth: React.FC = () => {
         }
 
         // Now update password with active session
-      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+        const { data: updateData, error: updateError } = await supabase.auth.updateUser({
           password: data.password,
         });
 
@@ -651,6 +699,8 @@ const Auth: React.FC = () => {
         }
 
         if (updateData.user) {
+          if (import.meta.env.DEV) console.log("Password setup successful via session method for user:", updateData.user.id);
+          
           toast({
             title: "Password set successfully",
             description: "Your password has been set. You are now logged in.",
@@ -664,7 +714,9 @@ const Auth: React.FC = () => {
         }
       } else if (verifyData.user) {
         // OTP verification successful, now update password
-      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
+        if (import.meta.env.DEV) console.log("OTP verification successful for user:", verifyData.user.id);
+        
+        const { data: updateData, error: updateError } = await supabase.auth.updateUser({
           password: data.password,
         });
 
@@ -1253,10 +1305,4 @@ const Auth: React.FC = () => {
 };
 
 export default Auth;
-
-
-
-
-
-
 

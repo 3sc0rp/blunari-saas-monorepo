@@ -6,7 +6,7 @@
 import React, { lazy, Suspense } from 'react';
 
 // Loading fallback component
-      const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
+const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -23,8 +23,7 @@ export const Auth = lazy(() => import('@/pages/Auth'));
 // High-priority pages (preloaded)
 export const Bookings = lazy(() => 
   import('@/pages/Bookings').then(module => {
-    // Preload related components
-      if (they exist
+    // Preload related components if they exist
     return module;
   }).catch(() => import('@/pages/Dashboard')) // Fallback to Dashboard
 );
@@ -179,5 +178,3 @@ export const bundleAnalysis = {
 };
 
 export { SuspenseWrapper };
-
-
