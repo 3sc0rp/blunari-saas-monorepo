@@ -697,11 +697,34 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                               <span>{formatPrice(getTotalPrice())}</span>
                             </div>
 
+                            {(!orderForm.event_date || 
+                              !orderForm.event_name.trim() ||
+                              orderForm.guest_count < selectedPackage.min_guests ||
+                              (selectedPackage.max_guests && orderForm.guest_count > selectedPackage.max_guests)) && (
+                              <div className="text-sm text-muted-foreground">
+                                {!orderForm.event_name.trim() && (
+                                  <p>• Please enter an event name</p>
+                                )}
+                                {!orderForm.event_date && (
+                                  <p>• Please select an event date</p>
+                                )}
+                                {orderForm.guest_count < selectedPackage.min_guests && (
+                                  <p>• Minimum {selectedPackage.min_guests} guests required</p>
+                                )}
+                                {selectedPackage.max_guests && orderForm.guest_count > selectedPackage.max_guests && (
+                                  <p>• Maximum {selectedPackage.max_guests} guests allowed</p>
+                                )}
+                              </div>
+                            )}
+
                             <Button
                               onClick={() => setCurrentStep("details")}
                               className="w-full bg-orange-600 hover:bg-orange-700"
                               disabled={
-                                !orderForm.event_date || !orderForm.contact_name
+                                !orderForm.event_date || 
+                                !orderForm.event_name.trim() ||
+                                orderForm.guest_count < selectedPackage.min_guests ||
+                                (selectedPackage.max_guests && orderForm.guest_count > selectedPackage.max_guests)
                               }
                             >
                               Continue
