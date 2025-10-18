@@ -1,0 +1,282 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Blunari Design System - World-Class Enterprise Restaurant SaaS
+Premium hospitality colors, gradients, animations, and typography
+All colors MUST be HSL. Professional-grade visual hierarchy.
+*/
+
+@layer base {
+  :root {
+    /* Brand Colors - Blunari Logo Inspired Premium Palette */
+    --background: 0 0% 100%;
+    --foreground: 215 25% 27%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 27%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 27%;
+
+    /* Primary Brand - Enhanced Vibrant Blue */
+    --primary: 210 100% 56%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 195 100% 70%;
+    --primary-light: 210 100% 97%;
+    --primary-dark: 210 100% 45%;
+
+    /* Secondary - Sophisticated Gray Tones */
+    --secondary: 220 9% 46%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 220 14% 98%;
+    --secondary-dark: 220 15% 35%;
+
+    /* Accent - Premium Cyan Highlights */
+    --accent: 195 100% 70%;
+    --accent-foreground: 215 25% 27%;
+    --accent-light: 195 100% 97%;
+
+    /* Neutral Palette - Enhanced Contrast */
+    --muted: 220 13% 96%;
+    --muted-foreground: 220 13% 46%;
+
+    /* Status Colors - Professional Grade */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --success-light: 142 76% 96%;
+    --warning: 35 84% 62%;
+    --warning-foreground: 220 13% 18%;
+    --warning-light: 35 84% 96%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --destructive-light: 0 84% 96%;
+
+    /* UI Elements - High Quality */
+    --border: 220 14% 91%;
+    --input: 220 14% 91%;
+    --ring: 210 100% 56%;
+
+    /* Premium Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 56%), hsl(195 100% 70%));
+    --gradient-secondary: linear-gradient(135deg, hsl(220 9% 46%), hsl(220 9% 60%));
+    --gradient-hero: linear-gradient(135deg, hsl(210 100% 56%) 0%, hsl(195 100% 70%) 50%, hsl(220 9% 46%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 14% 99%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.8), hsl(220 14% 96% / 0.4));
+
+    /* Professional Shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(210 100% 56% / 0.3);
+    --shadow-glow: 0 0 40px hsl(195 100% 70% / 0.4);
+    --shadow-card: 0 4px 20px -2px hsl(215 25% 27% / 0.08);
+    --shadow-premium: 0 25px 50px -12px hsl(215 25% 27% / 0.25);
+    --shadow-subtle: 0 1px 3px 0 hsl(215 25% 27% / 0.1);
+
+    /* Smooth Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-elastic: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    --radius: 0.75rem;
+
+    /* Sidebar Variables */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark Theme - Enhanced Professional Colors */
+    --background: 220 13% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 220 13% 9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 13% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Primary - Brighter in dark mode */
+    --primary: 210 100% 65%;
+    --primary-foreground: 220 13% 8%;
+    --primary-glow: 195 100% 75%;
+    --primary-light: 210 100% 95%;
+    --primary-dark: 210 100% 45%;
+
+    /* Secondary - Enhanced contrast */
+    --secondary: 220 9% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --secondary-light: 220 14% 96%;
+    --secondary-dark: 220 15% 12%;
+
+    /* Accent - Bright cyan */
+    --accent: 195 100% 75%;
+    --accent-foreground: 220 13% 8%;
+    --accent-light: 195 100% 95%;
+
+    /* Muted - Better contrast */
+    --muted: 220 13% 15%;
+    --muted-foreground: 220 13% 65%;
+
+    /* Status Colors - Enhanced for dark mode */
+    --success: 142 76% 45%;
+    --success-foreground: 220 13% 8%;
+    --success-light: 142 76% 90%;
+    --warning: 35 84% 70%;
+    --warning-foreground: 220 13% 8%;
+    --warning-light: 35 84% 90%;
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 220 13% 8%;
+    --destructive-light: 0 84% 90%;
+
+    /* UI Elements */
+    --border: 220 13% 18%;
+    --input: 220 13% 15%;
+    --ring: 210 100% 65%;
+
+    /* Enhanced Gradients for Dark Mode */
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 65%), hsl(195 100% 75%));
+    --gradient-secondary: linear-gradient(135deg, hsl(220 9% 18%), hsl(220 9% 25%));
+    --gradient-hero: linear-gradient(135deg, hsl(210 100% 65%) 0%, hsl(195 100% 75%) 50%, hsl(220 9% 18%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(220 13% 8%) 0%, hsl(220 13% 10%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(220 13% 8% / 0.8), hsl(220 13% 15% / 0.4));
+
+    /* Enhanced Shadows for Dark Mode */
+    --shadow-elegant: 0 10px 30px -10px hsl(210 100% 65% / 0.4);
+    --shadow-glow: 0 0 40px hsl(195 100% 75% / 0.5);
+    --shadow-card: 0 4px 20px -2px hsl(220 13% 4% / 0.5);
+    --shadow-premium: 0 25px 50px -12px hsl(220 13% 4% / 0.8);
+    --shadow-subtle: 0 1px 3px 0 hsl(220 13% 4% / 0.3);
+
+    /* Sidebar Variables - Dark Mode */
+    --sidebar-background: 220 13% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 100% 65%;
+    --sidebar-primary-foreground: 220 13% 6%;
+    --sidebar-accent: 220 13% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 13% 18%;
+    --sidebar-ring: 210 100% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Professional Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold text-foreground tracking-tight;
+    text-wrap: balance;
+  }
+
+  h1 { @apply text-4xl lg:text-5xl leading-tight; }
+  h2 { @apply text-3xl lg:text-4xl leading-tight; }
+  h3 { @apply text-2xl lg:text-3xl leading-snug; }
+  h4 { @apply text-xl lg:text-2xl leading-snug; }
+  h5 { @apply text-lg lg:text-xl leading-normal; }
+  h6 { @apply text-base lg:text-lg leading-normal; }
+
+  p {
+    @apply leading-relaxed text-muted-foreground;
+    text-wrap: pretty;
+  }
+
+  /* Enhanced Focus States */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer components {
+  /* Glass Morphism Effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-xl border border-white/10;
+  }
+
+  /* Professional Card Styles */
+  .card-premium {
+    @apply bg-card border border-border/50 rounded-lg shadow-card hover:shadow-premium transition-all duration-300;
+  }
+
+  .card-glass {
+    @apply bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl border border-white/20 rounded-lg shadow-elegant;
+  }
+
+  /* Button Enhancements */
+  .btn-glow {
+    @apply bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-elegant transition-all duration-300;
+  }
+
+  .btn-glass {
+    @apply bg-white/10 backdrop-blur-sm border border-white/20 text-foreground hover:bg-white/20 transition-all duration-300;
+  }
+
+  /* Professional Animations */
+  .animate-enter {
+    @apply animate-fade-in-up;
+  }
+
+  .animate-enter-fast {
+    @apply animate-scale-in-center;
+  }
+
+  /* Smooth Hover Effects */
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-elegant;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-glow;
+  }
+
+  /* Professional Loading States */
+  .skeleton {
+    @apply animate-pulse bg-gradient-to-r from-muted via-muted/50 to-muted bg-[length:200%_100%];
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* Status Indicators */
+  .status-online {
+    @apply bg-success text-success-foreground;
+  }
+
+  .status-warning {
+    @apply bg-warning text-warning-foreground;
+  }
+
+  .status-error {
+    @apply bg-destructive text-destructive-foreground;
+  }
+
+  .status-offline {
+    @apply bg-muted text-muted-foreground;
+  }
+}

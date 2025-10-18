@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true
+  },
+  "lint": {
+    "files": {
+      "include": ["index.ts"]
+    }
+  },
+  "fmt": {
+    "files": {
+      "include": ["index.ts"]
+    },
+    "options": {
+      "useTabs": false,
+      "lineWidth": 80,
+      "indentWidth": 2,
+      "semiColons": true,
+      "singleQuote": false,
+      "proseWrap": "preserve"
+    }
+  },
+  "imports": {
+    "supabase": "https://esm.sh/@supabase/supabase-js@2.56.0",
+    "serve": "https://deno.land/std@0.190.0/http/server.ts",
+    "smtp": "https://deno.land/x/denomailer@1.6.0/mod.ts"
+  }
+}

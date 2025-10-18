@@ -1,0 +1,62 @@
+{
+  "name": "blunari-saas",
+  "version": "1.0.0",
+  "description": "Blunari SAAS Platform - Monorepo containing background-ops API, admin dashboard, and client dashboard",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "node dev.js",
+    "start:dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "test": "turbo run test",
+    "type-check": "turbo run type-check",
+  "preview": "turbo run preview --parallel",
+  "preview:client": "npm run preview --workspace=apps/client-dashboard",
+  "preview:admin": "npm run preview --workspace=apps/admin-dashboard",
+  "smoke:provision": "node scripts/preview-provision-smoke.mjs",
+  "ci:smoke": "node scripts/preview-provision-smoke.mjs",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "migrate:all": "turbo run migrate",
+    "deploy:all": "turbo run deploy",
+    "dev:background-ops": "turbo run dev --filter=background-ops",
+    "dev:admin": "turbo run dev --filter=admin-dashboard",
+    "dev:client": "turbo run dev --filter=client-dashboard",
+    "setup": "node dev.js setup",
+    "quality:check": "node dev.js quality:check",
+    "quality:fix": "node dev.js quality:fix",
+  "secrets:setup": "node scripts/setup-secrets.js",
+  "verify:admin-live": "node scripts/live-admin-login-check.mjs",
+  "preflight": "node scripts/preflight-check.mjs",
+  "cleanup:preview": "node scripts/preview-test-bookings.js",
+  "cleanup:test-data": "node scripts/cleanup-test-bookings.js",
+  "cleanup:auto": "node scripts/auto-cleanup.js",
+  "validate:production": "node scripts/production-validation.js",
+  "deploy:functions": "node scripts/deploy-functions.js",
+  "deploy:check": "npm run cleanup:auto && npm run validate:production",
+  "deploy:full": "npm run deploy:functions && npm run deploy:check",
+  "test:production-flow": "node scripts/production-flow-test.js"
+  },
+  "devDependencies": {
+    "@turbo/gen": "^1.10.12",
+    "turbo": "^1.10.12",
+    "typescript": "^5.2.2",
+    "@types/node": "^20.6.0",
+    "prettier": "^3.0.3",
+    "eslint": "^8.48.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "eslint-config-prettier": "^9.0.0",
+  "eslint-plugin-import": "^2.28.1"
+  },
+  "packageManager": "npm@9.0.0",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

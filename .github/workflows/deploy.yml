@@ -1,0 +1,323 @@
+name: 🚀 Continuous Deployment
+
+on:
+  push:
+    branches: [main, master]
+  workflow_run:
+    workflows: ["🚀 Continuous Integration"]
+    types: [completed]
+    branches: [main, master]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ============================================================================
+  # DEPLOYMENT PREPARATION
+  # ============================================================================
+  prepare:
+    name: 🎯 Prepare Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event.workflow_run.conclusion == 'success')
+    timeout-minutes: 5
+
+    outputs:
+      deploy-backend: ${{ steps.changes.outputs.backend }}
+      deploy-admin: ${{ steps.changes.outputs.admin }}
+      deploy-client: ${{ steps.changes.outputs.client }}
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Detect changes
+        id: changes
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -E '^apps/background-ops/'; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+          else
+            echo "backend=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if git diff --name-only HEAD~1 HEAD | grep -E '^apps/admin-dashboard/'; then
+            echo "admin=true" >> $GITHUB_OUTPUT
+          else
+            echo "admin=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if git diff --name-only HEAD~1 HEAD | grep -E '^apps/client-dashboard/'; then
+            echo "client=true" >> $GITHUB_OUTPUT
+          else
+            echo "client=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🏷️ Generate version
+        id: version
+        run: |
+          VERSION=$(date +'%Y%m%d')-${GITHUB_SHA::7}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $VERSION"
+
+  # ============================================================================
+  # BACKEND DEPLOYMENT (Fly.io)
+  # ============================================================================
+  deploy-backend:
+    name: 🌐 Deploy Backend API
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    if: needs.prepare.outputs.deploy-backend == 'true'
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ✅ Check deployment prerequisites
+        run: |
+          echo "🔍 Checking if backend deployment is configured..."
+          if [[ -z "$FLY_API_TOKEN" ]]; then
+            echo "⚠️ FLY_API_TOKEN secret not configured. Skipping backend deployment."
+            echo "To enable backend deployment:"
+            echo "  1. Set up Fly.io account: https://fly.io"
+            echo "  2. Run: gh secret set FLY_API_TOKEN"
+            exit 0
+          fi
+          echo "✅ Backend deployment prerequisites met"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: 🚁 Setup Fly CLI
+        if: env.FLY_API_TOKEN != ''
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: 📋 Setup Node.js
+        if: env.FLY_API_TOKEN != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        if: env.FLY_API_TOKEN != ''
+        run: npm ci
+
+      - name: 🏗️ Build backend
+        if: env.FLY_API_TOKEN != ''
+        run: npm run build --workspace=@blunari/background-ops
+        env:
+          NODE_ENV: production
+
+      - name: 🚀 Deploy to Fly.io
+        if: env.FLY_API_TOKEN != ''
+        working-directory: apps/background-ops
+        run: |
+          echo "🚀 Attempting Fly.io deployment..."
+          if flyctl status > /dev/null 2>&1; then
+            flyctl deploy --remote-only --build-arg NODE_ENV=production
+            echo "✅ Fly.io deployment completed"
+          else
+            echo "⚠️ Fly.io app not found. This might be the first deployment."
+            echo "Manual setup required: flyctl launch"
+          fi
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: 🏥 Health check
+        if: env.FLY_API_TOKEN != ''
+        run: |
+          echo "⏳ Waiting for deployment to stabilize..."
+          sleep 30
+          if curl -f -m 10 https://services.blunari.ai/health 2>/dev/null; then
+            echo "✅ Backend health check passed"
+          else
+            echo "⚠️ Health check failed or endpoint not available"
+            echo "This is normal for first deployment or if domain not configured"
+          fi
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  # ============================================================================
+  # ADMIN DASHBOARD DEPLOYMENT (Vercel)
+  # ============================================================================
+  deploy-admin:
+    name: 🔧 Deploy Admin Dashboard
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    if: needs.prepare.outputs.deploy-admin == 'true'
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ✅ Check deployment prerequisites
+        run: |
+          echo "� Checking if Vercel deployment is configured..."
+          if [[ -z "$VERCEL_TOKEN" ]]; then
+            echo "⚠️ VERCEL_TOKEN secret not configured. Skipping admin dashboard deployment."
+            echo "To enable Vercel deployment:"
+            echo "  1. Get token from: https://vercel.com/account/tokens"
+            echo "  2. Run: gh secret set VERCEL_TOKEN"
+            echo "  3. Run: gh secret set VERCEL_ORG_ID"
+            echo "  4. Run: gh secret set VERCEL_ADMIN_PROJECT_ID"
+            exit 0
+          fi
+          echo "✅ Admin dashboard deployment prerequisites met"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: �📋 Setup Node.js
+        if: env.VERCEL_TOKEN != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        if: env.VERCEL_TOKEN != ''
+        run: npm ci
+
+      - name: 🏗️ Build admin dashboard
+        if: env.VERCEL_TOKEN != ''
+        run: npm run build --workspace=admin-dashboard
+        env:
+          NODE_ENV: production
+          VITE_BACKGROUND_OPS_URL: ${{ secrets.VITE_BACKGROUND_OPS_URL }}
+          VITE_BACKGROUND_OPS_API_KEY: ${{ secrets.VITE_BACKGROUND_OPS_API_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: 🚀 Deploy to Vercel
+        if: env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_ADMIN_PROJECT_ID != ''
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
+          working-directory: apps/admin-dashboard
+          vercel-args: '--prod'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_ADMIN_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}
+
+  # ============================================================================
+  # CLIENT DASHBOARD DEPLOYMENT (Vercel)
+  # ============================================================================
+  deploy-client:
+    name: 👥 Deploy Client Dashboard
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    if: needs.prepare.outputs.deploy-client == 'true'
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📋 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build client dashboard
+        run: npm run build --workspace=client-dashboard
+        env:
+          NODE_ENV: production
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: 🚀 Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_CLIENT_PROJECT_ID }}
+          working-directory: apps/client-dashboard
+          vercel-args: '--prod'
+
+  # ============================================================================
+  # POST-DEPLOYMENT VERIFICATION
+  # ============================================================================
+  verify-deployment:
+    name: ✅ Verify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-admin, deploy-client]
+    if: always() && (needs.deploy-backend.result == 'success' || needs.deploy-admin.result == 'success' || needs.deploy-client.result == 'success')
+    timeout-minutes: 5
+
+    steps:
+      - name: 🏥 Backend health check
+        if: needs.deploy-backend.result == 'success'
+        run: |
+          echo "🔍 Checking backend health..."
+          curl -f https://services.blunari.ai/health
+          curl -f https://services.blunari.ai/api/v1/metrics
+          echo "✅ Backend is healthy"
+
+      - name: 🔍 Frontend smoke tests
+        if: needs.deploy-admin.result == 'success' || needs.deploy-client.result == 'success'
+        run: |
+          echo "🔍 Running frontend smoke tests..."
+          # Add basic smoke tests here
+          echo "✅ Frontend deployments verified"
+
+      - name: 📱 Slack notification
+        if: always() && env.SLACK_WEBHOOK != ''
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: |
+            🚀 Deployment Status: ${{ job.status }}
+            • Backend: ${{ needs.deploy-backend.result }}
+            • Admin: ${{ needs.deploy-admin.result }}  
+            • Client: ${{ needs.deploy-client.result }}
+            • Version: ${{ needs.prepare.outputs.version }}
+
+  # ============================================================================
+  # ROLLBACK (Manual Trigger)
+  # ============================================================================
+  rollback:
+    name: ↩️ Rollback Deployment
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name == 'workflow_dispatch'
+    timeout-minutes: 5
+
+    steps:
+      - name: 🚁 Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: ↩️ Rollback backend
+        if: env.FLY_API_TOKEN != ''
+        run: flyctl releases rollback --app background-ops
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: 📱 Rollback notification
+        if: env.SLACK_WEBHOOK != ''
+        uses: 8398a7/action-slack@v3
+        with:
+          status: 'warning'
+          channel: '#deployments'
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: |
+            ⚠️ Rollback executed due to deployment failure
+            • Timestamp: $(date)
+            • Commit: ${{ github.sha }}

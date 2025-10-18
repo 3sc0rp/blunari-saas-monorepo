@@ -1,0 +1,133 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.next/
+.nuxt/
+.vuepress/dist
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Turbo
+.turbo/
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage directory
+coverage/
+*.lcov
+
+# Temporary folders
+tmp/
+temp/
+
+# Supabase
+**/supabase/.branches
+**/supabase/.temp
+
+# Test results and reports
+test-results/
+playwright-report/
+coverage/
+*.png
+*.jpg
+*.jpeg
+*.gif
+auth-page-analysis.*
+authenticated-simulation.*
+potential-auth-bypass.*
+unexpected-page-analysis.*
+diagnostic-*.*
+production-*.*
+
+# Script outputs
+scripts/*.out.json
+scripts/*.log
+
+# Development and debug files
+*debug*.md
+*DEBUG*.md
+*REPORT*.md
+*ANALYSIS*.md
+*.timestamp-*
+*-test.html
+test-*.html
+*-demo.html
+*-temp.*
+*.backup
+*.bak
+body.json
+*-fixed.*
+*-diagnostic.*
+diagnose-*.sql
+verify-*.sql
+test-*.mjs
+CLEANUP_REPORT_*.md
+
+# Debug and test scripts
+scripts/debug-*.mjs
+scripts/test-*.mjs
+scripts/check-*.mjs
+scripts/diagnose-*.mjs
+scripts/inspect-*.mjs
+scripts/fix-*.mjs
+scripts/fix-*.sql
+scripts/*-temp.*
+
+# Performance audit files
+performance-audit*.json
+performance-audit*.cjs
+
+# Temporary SQL files
+*-fix-only.sql
+demo-*.sql
+temp-*.sql
+*-migration.sql
+migrate-*.sql
+
+# Build artifacts
+*.tsbuildinfo
+.turbo/
+
+# Empty or placeholder files
+MIGRATION_INSTRUCTIONS.md
+SENIOR_DEVELOPER_CODE_REVIEW.md
+widget-migration-verification.md
+*TESTING_PLAN.md
+*TESTING_STATUS.md

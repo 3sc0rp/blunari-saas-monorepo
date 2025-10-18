@@ -1,0 +1,21 @@
+{
+  "name": "@blunari/config",
+  "version": "1.0.0",
+  "description": "Shared configuration for Blunari SAAS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit",
+    "lint": "echo \"No lint configured for config package\"",
+    "lint:fix": "echo \"No lint configured for config package\"",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\""
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}

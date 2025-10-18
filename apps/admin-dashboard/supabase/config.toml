@@ -1,0 +1,59 @@
+project_id = "kbfbbkcaxhzlnbqxwgoz"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[functions.provision-tenant]
+verify_jwt = false
+
+[functions.invite-employee]
+verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.customer-portal]
+verify_jwt = true
+
+[functions.monitor-system]
+verify_jwt = false
+
+[functions.health-check]
+verify_jwt = false
+
+[functions.run-diagnostics]
+verify_jwt = false
+
+[functions.pos-webhook]
+verify_jwt = false
+
+[functions.pos-health-monitor]
+verify_jwt = false
+
+[functions.domain-management]
+verify_jwt = true
+
+[functions.update-settings]
+verify_jwt = false
+
+[functions.test-email]
+verify_jwt = false
+
+[functions.system-health]
+verify_jwt = false
+
+[functions.rate-limiter]
+verify_jwt = false
+
+[functions.log-audit-event]
+verify_jwt = true
+
+[functions.send-credentials-email]
+verify_jwt = false
+
+[functions.manage-tenant-credentials]
+verify_jwt = true

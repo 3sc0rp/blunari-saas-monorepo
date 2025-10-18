@@ -1,0 +1,657 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global Design System - Design Tokens */
+
+@layer base {
+  :root {
+    /* === ENHANCED LIGHT THEME === */
+    
+    /* Brand Colors - Modern vibrant blue */
+    --brand: 217 91% 60%;
+    --brand-foreground: 0 0% 100%;
+    
+    /* Command Center specific variables */
+    --accent: 226 90% 64%;
+    --accent-2: 259 73% 60%;
+    --success: 152 70% 40%;
+    --warning: 38 92% 50%;
+    --muted: 220 10% 20%;
+    --card: 220 12% 12%;
+    --bg: 220 14% 8%;
+    --ring: 226 90% 64%;
+    --shadow-1: 0 4px 16px hsl(220 10% 4% / 0.3);
+    --shadow-2: 0 8px 24px hsl(220 10% 4% / 0.35);
+    
+    /* Surface System - Clean whites with subtle warmth */
+    --surface: 0 0% 100%;
+    --surface-2: 220 14% 98%;
+    --surface-3: 220 14% 95%;
+    
+    /* Text System - Rich charcoal */
+    --text: 222 84% 5%;
+    --text-muted: 215 16% 47%;
+    --text-subtle: 215 13% 65%;
+    
+    /* Semantic Colors - Vibrant and modern */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 95% 44%;
+    --warning-foreground: 0 0% 100%;
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 0% 100%;
+    
+    /* Secondary & Accent - Premium colors */
+    --secondary: 262 83% 58%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Interactive Elements */
+    --ring: 217 91% 60%;
+    
+    /* Radius System */
+    --radius: 0.5rem;
+    
+    /* Shadow System - Softer with color tint */
+    --shadow-elev-1: 0 1px 3px 0 rgb(59 130 246 / 0.08), 0 1px 2px -1px rgb(59 130 246 / 0.08);
+    --shadow-elev-2: 0 4px 6px -1px rgb(59 130 246 / 0.1), 0 2px 4px -2px rgb(59 130 246 / 0.1);
+    --shadow-elev-3: 0 10px 15px -3px rgb(59 130 246 / 0.1), 0 4px 6px -4px rgb(59 130 246 / 0.1);
+    
+    /* Motion System */
+    --motion-fast: 150ms;
+    --motion-normal: 250ms;
+    --motion-slow: 350ms;
+    --motion-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
+    
+    /* Sidebar Variables - Enhanced Light Mode */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 84% 5%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 98%;
+    --sidebar-accent-foreground: 222 84% 5%;
+    --sidebar-border: 220 14% 91%;
+    --sidebar-ring: 217 91% 60%;
+    
+    /* Spacing Scale - Consistent 4/8/12/16px increments */
+    --space-1: 0.25rem; /* 4px */
+    --space-2: 0.5rem;  /* 8px */
+    --space-3: 0.75rem; /* 12px */
+    --space-4: 1rem;    /* 16px */
+    --space-5: 1.25rem; /* 20px */
+    --space-6: 1.5rem;  /* 24px */
+    --space-8: 2rem;    /* 32px */
+    --space-10: 2.5rem; /* 40px */
+    --space-12: 3rem;   /* 48px */
+    --space-16: 4rem;   /* 64px */
+    --space-20: 5rem;   /* 80px */
+    --space-24: 6rem;   /* 96px */
+  }
+
+  /* === ENHANCED DARK THEME === */
+  .dark,
+  [data-theme="dark"] {
+    /* Brand Colors - Vibrant electric blue */
+    --brand: 217 91% 65%;
+    --brand-foreground: 0 0% 100%;
+    
+    /* Command Center Dark Theme */
+    --accent: 226 90% 64%;
+    --accent-2: 259 73% 60%;
+    --success: 152 70% 50%;
+    --warning: 38 92% 60%;
+    --muted: 220 10% 40%;
+    --card: 220 12% 12%;
+    --bg: 220 14% 8%;
+    --ring: 226 90% 64%;
+    --shadow-1: 0 4px 16px hsl(220 10% 4% / 0.5);
+    --shadow-2: 0 8px 24px hsl(220 10% 4% / 0.6);
+    
+    /* Surface System - Rich dark with subtle blue tint */
+    --surface: 222 84% 5%;
+    --surface-2: 222 47% 11%;
+    --surface-3: 222 47% 15%;
+    
+    /* Text System - Crisp whites */
+    --text: 0 0% 100%;
+    --text-muted: 215 20% 65%;
+    --text-subtle: 215 15% 50%;
+    
+    /* Semantic Colors - Bright and clear */
+    --success: 142 76% 55%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 95% 55%;
+    --warning-foreground: 0 0% 100%;
+    --danger: 0 84% 65%;
+    --danger-foreground: 0 0% 100%;
+    
+    /* Secondary & Accent - Electric purple and green */
+    --secondary: 262 83% 65%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 142 76% 55%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Interactive Elements */
+    --ring: 217 91% 65%;
+    
+    /* Shadow System - Deep with blue tint */
+    --shadow-elev-1: 0 1px 3px 0 rgb(59 130 246 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.8);
+    --shadow-elev-2: 0 4px 6px -1px rgb(59 130 246 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.8);
+    --shadow-elev-3: 0 10px 15px -3px rgb(59 130 246 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.8);
+    
+    /* Sidebar Variables - Enhanced Dark Mode */
+    --sidebar-background: 222 84% 4%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 217 91% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 9%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 222 47% 11%;
+    --sidebar-ring: 217 91% 65%;
+  }
+
+  /* Command Center Glass Effect */
+  .glass {
+    @apply bg-[hsl(var(--card)/0.7)] backdrop-blur-md border border-white/10;
+    box-shadow: var(--shadow-1);
+  }
+
+  .dark .glass {
+    @apply bg-[hsl(var(--card)/0.8)] border-white/5;
+  }
+
+  /* === ENHANCED DEEP SEA GREEN THEME === */
+  .deep-sea,
+  [data-theme="deep-sea"] {
+    /* Brand Colors - Vibrant ocean teal */
+    --brand: 174 72% 56%;
+    --brand-foreground: 0 0% 100%;
+    
+    /* Surface System - Rich deep ocean */
+    --surface: 195 100% 3%;
+    --surface-2: 194 100% 6%;
+    --surface-3: 193 100% 10%;
+    
+    /* Text System - Ocean foam whites */
+    --text: 180 25% 95%;
+    --text-muted: 174 20% 70%;
+    --text-subtle: 174 15% 55%;
+    
+    /* Semantic Colors - Marine life inspired */
+    --success: 158 64% 52%;
+    --success-foreground: 0 0% 100%;
+    --warning: 35 91% 65%;
+    --warning-foreground: 0 0% 100%;
+    --danger: 14 91% 65%;
+    --danger-foreground: 0 0% 100%;
+    
+    /* Secondary & Accent - Coral and aqua */
+    --secondary: 191 85% 56%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 158 64% 52%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Interactive Elements */
+    --ring: 174 72% 56%;
+    
+    /* Shadow System - Underwater glow */
+    --shadow-elev-1: 0 1px 3px 0 rgb(6 182 212 / 0.25), 0 1px 2px -1px rgb(0 0 0 / 0.6);
+    --shadow-elev-2: 0 4px 6px -1px rgb(6 182 212 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.6);
+    --shadow-elev-3: 0 10px 15px -3px rgb(6 182 212 / 0.35), 0 4px 6px -4px rgb(0 0 0 / 0.6);
+    
+    /* Sidebar Variables - Enhanced Deep Sea Mode */
+    --sidebar-background: 195 100% 2%;
+    --sidebar-foreground: 180 25% 90%;
+    --sidebar-primary: 174 72% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 194 100% 5%;
+    --sidebar-accent-foreground: 180 25% 90%;
+    --sidebar-border: 194 100% 8%;
+    --sidebar-ring: 174 72% 56%;
+  }
+
+  /* === HIGH CONTRAST MODE === */
+  [data-contrast="high"] {
+    /* Enhanced contrast ratios for accessibility */
+    --text: 0 0% 0%;
+    --text-muted: 0 0% 20%;
+    --surface-2: 0 0% 95%;
+    --surface-3: 0 0% 90%;
+    
+    /* High contrast semantic colors */
+    --success: 120 100% 25%;
+    --warning: 45 100% 35%;
+    --danger: 0 100% 40%;
+    
+    /* Stronger borders and outlines */
+    --ring: 0 0% 0%;
+  }
+
+  .dark[data-contrast="high"],
+  [data-theme="dark"][data-contrast="high"] {
+    /* Dark high contrast */
+    --text: 0 0% 100%;
+    --text-muted: 0 0% 85%;
+    --surface: 0 0% 0%;
+    --surface-2: 0 0% 5%;
+    --surface-3: 0 0% 10%;
+    
+    /* High contrast dark semantic colors */
+    --success: 120 100% 70%;
+    --warning: 45 100% 80%;
+    --danger: 0 100% 80%;
+    
+    /* Stronger contrast in dark mode */
+    --ring: 0 0% 100%;
+  }
+
+  .deep-sea[data-contrast="high"],
+  [data-theme="deep-sea"][data-contrast="high"] {
+    /* Deep Sea high contrast */
+    --text: 160 15% 100%;
+    --text-muted: 160 20% 90%;
+    --surface: 160 40% 5%;
+    --surface-2: 160 40% 8%;
+    --surface-3: 160 40% 12%;
+    
+    /* High contrast deep sea semantic colors */
+    --success: 150 100% 60%;
+    --warning: 45 100% 75%;
+    --danger: 10 100% 75%;
+    
+    /* Stronger contrast in deep sea mode */
+    --ring: 160 50% 80%;
+  }
+
+  /* === TYPOGRAPHY SCALE === */
+  
+  /* Typography tokens - Professional scale */
+  .text-h1 {
+    @apply text-[30px] leading-[36px] font-bold tracking-tight;
+  }
+  
+  .text-h2 {
+    @apply text-[24px] leading-[32px] font-semibold tracking-tight;
+  }
+  
+  .text-h3 {
+    @apply text-[20px] leading-[28px] font-semibold;
+  }
+  
+  .text-h4 {
+    @apply text-[18px] leading-[26px] font-medium;
+  }
+  
+  .text-body {
+    @apply text-[16px] leading-[24px];
+  }
+  
+  .text-body-sm {
+    @apply text-[14px] leading-[20px];
+  }
+  
+  .text-code {
+    @apply text-[13px] leading-[20px] font-mono;
+  }
+  
+  /* Tabular numerals for metrics and data */
+  .font-tabular {
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* === SPACING SCALE === */
+  
+  /* Page section spacing */
+  .page-padding {
+    @apply px-6 py-8;
+  }
+  
+  .page-padding-lg {
+    @apply px-8 py-12;
+  }
+  
+  .section-spacing {
+    @apply space-y-6;
+  }
+  
+  .section-spacing-lg {
+    @apply space-y-8;
+  }
+
+  /* === BASE STYLES === */
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-surface text-text font-sans;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1;
+    transition: background-color var(--motion-normal) var(--motion-easing),
+                color var(--motion-normal) var(--motion-easing);
+  }
+
+  /* === UTILITY CLASSES === */
+  
+  /* Motion utilities */
+  .transition-brand {
+    transition-timing-function: var(--motion-easing);
+  }
+  
+  /* Surface utilities */
+  .surface-1 {
+    @apply bg-surface;
+  }
+  
+  .surface-2 {
+    @apply bg-surface-2;
+  }
+  
+  .surface-3 {
+    @apply bg-surface-3;
+  }
+
+  /* Text utilities */
+  .text-brand {
+    color: hsl(var(--brand));
+  }
+
+  /* Mobile Safe Areas & Bottom Navigation Utilities */
+  .pb-safe-mobile {
+    @apply pb-4 lg:pb-4;
+    /* Fix safe area padding implementation */
+    padding-bottom: max(1rem, calc(env(safe-area-inset-bottom, 0px) + 140px));
+  }
+
+  .h-safe-area-bottom {
+    height: env(safe-area-inset-bottom);
+  }
+
+  /* Scrollbar utilities */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Focus styles for accessibility */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2;
+  }
+
+  /* Global focus-visible styles for all interactive elements */
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  [role="tab"]:focus-visible,
+  [role="option"]:focus-visible,
+  [tabindex]:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Enhanced focus for high contrast mode */
+  [data-contrast="high"] .focus-ring,
+  [data-contrast="high"] button:focus-visible,
+  [data-contrast="high"] input:focus-visible,
+  [data-contrast="high"] select:focus-visible,
+  [data-contrast="high"] textarea:focus-visible,
+  [data-contrast="high"] a:focus-visible,
+  [data-contrast="high"] [role="button"]:focus-visible,
+  [data-contrast="high"] [role="tab"]:focus-visible,
+  [data-contrast="high"] [role="option"]:focus-visible,
+  [data-contrast="high"] [tabindex]:focus-visible {
+    @apply ring-4 ring-offset-4;
+  }
+
+  /* Form validation shake animation - respects reduced motion */
+  @media (prefers-reduced-motion: no-preference) {
+    .animate-shake {
+      animation: shake 0.5s ease-in-out;
+    }
+  }
+
+  /* Reduced Motion Support - Enhanced */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    
+    .animate-shake {
+      animation: none;
+    }
+    
+    /* Disable all motion-based animations */
+    [data-state="open"],
+    [data-state="closed"] {
+      animation: none !important;
+    }
+    
+    /* Disable transform animations that can cause layout issues */
+    .motion-safe\\:animate-pulse,
+    .motion-safe\\:animate-spin,
+    .motion-safe\\:animate-bounce {
+      animation: none !important;
+    }
+  }
+  
+  /* Skip to main content link for screen readers */
+  .skip-to-main {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: hsl(var(--brand));
+    color: hsl(var(--brand-foreground));
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 1000;
+    transition: top 0.2s ease;
+  }
+  
+  .skip-to-main:focus {
+    top: 6px;
+  }
+
+  /* === RESPONSIVE LAYOUT CLASSES === */
+  /* Layout utilities for responsive design */
+  
+  .mobile-layout {
+    --content-padding: 1rem;
+  }
+  
+  .desktop-layout {
+    --content-padding: 1.5rem;
+  }
+  
+  /* SSR Safety - Prevent flash of unstyled content */
+  .ssr-safe {
+    visibility: hidden;
+    animation: fadeInAfterLoad 0.1s ease forwards;
+    animation-delay: 0.05s;
+  }
+  
+  @keyframes fadeInAfterLoad {
+    from {
+      visibility: hidden;
+      opacity: 0;
+    }
+    to {
+      visibility: visible;
+      opacity: 1;
+    }
+  }
+  
+  /* Ensure main content is properly spaced */
+  #main-content {
+    min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
+    transition: padding-bottom 0.3s ease;
+  }
+  
+  /* Bottom navigation space utility */
+  .pb-20 {
+    padding-bottom: 5rem; /* 80px */
+  }
+  
+  /* Smooth transition for navigation mode switching */
+  [data-sidebar] {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Layout transition smoothing */
+  .navigation-transition {
+    transition: transform 0.3s ease, opacity 0.2s ease;
+  }
+  
+  /* Enhanced Bottom Navigation */
+  .shadow-brand {
+    box-shadow: 0 4px 20px 0 hsl(var(--brand) / 0.3);
+  }
+  
+  /* Safe area support for iOS devices */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .h-safe {
+    height: env(safe-area-inset-bottom);
+  }
+  
+  /* Backdrop blur support */
+  .backdrop-blur-xl {
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+  
+  /* Custom scrollbar for bottom nav */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Smooth spring animations */
+  .spring-bounce {
+    animation: springBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+  
+  @keyframes springBounce {
+    0% {
+      transform: scale(0.3) rotate(-10deg);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.1) rotate(2deg);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+  
+  /* Glass morphism effect */
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .dark .glass-effect {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Theme Selection Button Enhancements */
+  .theme-preview-light {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+    color: #1e293b;
+  }
+  
+  .theme-preview-dark {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    color: #f8fafc;
+  }
+  
+  .theme-preview-deep-sea {
+    background: linear-gradient(135deg, #164e63 0%, #0f766e 50%, #047857 100%);
+    color: #a7f3d0;
+  }
+  
+  /* Enhanced theme button states */
+  .theme-button-active {
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px -5px rgba(59, 130, 246, 0.3);
+    border: 2px solid hsl(var(--brand));
+  }
+
+  /* Global enhanced scrollbar theming */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.6) rgba(15, 23, 42, 0.2);
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.2);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, 
+      rgba(100, 116, 139, 0.5) 0%, 
+      rgba(71, 85, 105, 0.6) 100%);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, 
+      rgba(148, 163, 184, 0.7) 0%, 
+      rgba(100, 116, 139, 0.8) 100%);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  *::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(135deg, 
+      rgba(59, 130, 246, 0.6) 0%, 
+      rgba(37, 99, 235, 0.7) 100%);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: rgba(15, 23, 42, 0.3);
+  }
+
+  /* Horizontal scrollbars get slightly different height */
+  *::-webkit-scrollbar:horizontal {
+    height: 8px;
+  }
+}
