@@ -213,6 +213,33 @@ fly deploy
 
 ## Code Patterns & Conventions
 
+### Catering Widget Architecture (Phase 3 - October 2025)
+
+**Context**: The catering widget underwent major refactoring from a 1,320-line monolithic component to a modular architecture.
+
+**Current Structure** (`apps/client-dashboard/src/components/catering/`):
+- `CateringWidget.tsx` (291 lines) - Main wrapper, handles routing/loading/errors
+- `CateringContext.tsx` (304 lines) - State management with React Context
+- `PackageSelection.tsx` (338 lines) - Package grid with animations
+- `CustomizeOrder.tsx` (398 lines) - Event details form with validation
+- `ContactDetails.tsx` (454 lines) - Contact form with submission logic
+- `OrderConfirmation.tsx` (425 lines) - Success screen with animations
+
+**Key Patterns**:
+- **Context API**: All state managed by `CateringProvider`, no prop drilling
+- **Component Isolation**: Each step is self-contained and independently testable
+- **Auto-save**: Form data auto-saves to localStorage with 2-second debounce
+- **Draft Recovery**: Prompts user to restore unsaved drafts on reload
+- **Server-side Analytics**: Tracks events to `analytics_events` table via Edge Function
+- **Type Safety**: All components fully typed with zero TypeScript errors
+
+**When Working on Catering**:
+- Use `useCateringContext()` hook to access/update state
+- All components expect to be wrapped in `<CateringProvider>`
+- Auto-save is automatic - don't manually save form data
+- Analytics tracking is built-in - events fire automatically
+- See `COMPONENT_REFACTORING_COMPLETE.md` for detailed architecture guide
+
 ### Analytics: Real Data Only Policy
 
 **Context**: See `apps/client-dashboard/README.md` section "Real Data Only Policy"
@@ -222,6 +249,7 @@ Client dashboard intentionally **NEVER** fabricates or simulates analytics data.
 - Debug logging gated behind `VITE_ANALYTICS_DEBUG=true` flag
 - Tests assert absence of mock/demo/placeholder strings in analytics payloads
 - Fallback chain: Edge Function → Direct DB query → Empty state (never synthetic data)
+- **Server-side tracking**: Catering widget now tracks events to `analytics_events` table
 
 ### Supabase Client Pattern
 
@@ -315,12 +343,30 @@ npm run test:coverage         # Coverage report
 
 When debugging or extending features, reference these files:
 
+### Core Architecture
 - **Tenant isolation logic**: `supabase/migrations/*tenant*isolation*.sql`
-- **Edge Function patterns**: `supabase/functions/manage-tenant-credentials/index.ts`, `supabase/functions/widget-analytics/index.ts`
+- **Edge Function patterns**: `supabase/functions/manage-tenant-credentials/index.ts`, `supabase/functions/widget-analytics/index.ts`, `supabase/functions/track-catering-analytics/index.ts`
 - **Admin separation**: `ADMIN_TENANT_SEPARATION_COMPLETE.md`, `QUICK_REFERENCE_ADMIN_TENANT_SEPARATION.md`
-- **Analytics architecture**: `apps/client-dashboard/src/widgets/management/useWidgetAnalytics.ts`
-- **CORS handling**: `docs/cors-management.md`
 - **Database schema overview**: `supabase/migrations/20250828052813_*.sql` (initial schema)
+
+### Catering Widget (Phase 3 - October 2025)
+- **Architecture Guide**: `COMPONENT_REFACTORING_COMPLETE.md` (426 lines)
+- **Integration Summary**: `PHASE3_INTEGRATION_COMPLETE.md` (complete metrics)
+- **Continuation Guide**: `CONTINUATION_PROMPT_PHASE3_COMPLETE.md` (testing instructions)
+- **Component Files**: `apps/client-dashboard/src/components/catering/` (6 files, 2,210 lines)
+- **Server Analytics**: `supabase/migrations/20251019_add_analytics_events_table.sql`
+- **Tenant Contact Fields**: `supabase/migrations/20251019_add_tenant_contact_fields.sql`
+
+### Analytics & Widgets
+- **Widget Analytics**: `apps/client-dashboard/src/widgets/management/useWidgetAnalytics.ts`
+- **Catering Analytics**: `apps/client-dashboard/src/utils/catering-analytics.ts`
+- **Server-side Tracking**: `supabase/functions/track-catering-analytics/index.ts`
+- **Analytics Debugging**: `ANALYTICS_DEBUGGING_GUIDE.md`
+
+### Infrastructure
+- **CORS handling**: `docs/cors-management.md`
+- **Vercel deployment**: Root & app-level `vercel.json` files
+- **Supabase config**: `supabase/config.toml`
 
 ## Documentation Notes
 
