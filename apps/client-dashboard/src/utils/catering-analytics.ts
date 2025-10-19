@@ -138,6 +138,7 @@ export const getSessionDuration = (): number => {
 /**
  * Main analytics tracking function
  * Integrates with your analytics provider (e.g., Google Analytics, Mixpanel, PostHog)
+ * Also sends events to server-side Edge Function to bypass ad blockers
  */
 export const trackCateringEvent = (
   event: CateringAnalyticsEvent,
@@ -153,12 +154,11 @@ export const trackCateringEvent = (
   };
 
   // Console logging for development
-  if (import.meta.env.DEV) {
-    console.log('[Catering Analytics]', event, enrichedMetadata);
+  if (import.meta.env.DEV || import.meta.env.VITE_ANALYTICS_DEBUG) {
+    console.log('[Analytics]', event, enrichedMetadata);
   }
 
-  // TODO: Replace with your actual analytics provider
-  // Example integrations:
+  // Client-side analytics providers (can be blocked by ad blockers)
 
   // Google Analytics 4
   if (typeof window !== 'undefined' && (window as any).gtag) {
@@ -175,12 +175,60 @@ export const trackCateringEvent = (
     (window as any).posthog.capture(event, enrichedMetadata);
   }
 
-  // Custom API endpoint (example)
-  // fetch('/api/analytics', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ event, metadata: enrichedMetadata }),
-  // }).catch(console.error);
+  // Server-side tracking (CANNOT be blocked by ad blockers)
+  if (metadata.tenant_id) {
+    trackEventServerSide(event, enrichedMetadata).catch((error) => {
+      // Silently fail - don't break user experience if server tracking fails
+      if (import.meta.env.DEV) {
+        console.error('[Analytics] Server-side tracking failed:', error);
+      }
+    });
+  }
+};
+
+/**
+ * Server-side event tracking via Edge Function
+ * This bypasses ad blockers and provides reliable analytics
+ */
+const trackEventServerSide = async (
+  event: CateringAnalyticsEvent,
+  metadata: CateringEventMetadata
+): Promise<void> => {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Supabase configuration missing');
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/track-catering-analytics`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseAnonKey,
+      },
+      body: JSON.stringify({
+        tenant_id: metadata.tenant_id,
+        event_name: event,
+        event_data: metadata,
+        session_id: metadata.session_id,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Server-side tracking failed');
+    }
+
+    if (import.meta.env.DEV || import.meta.env.VITE_ANALYTICS_DEBUG) {
+      const result = await response.json();
+      console.log('[Analytics] Server-side tracked:', result);
+    }
+  } catch (error) {
+    // Re-throw to be caught by caller
+    throw error;
+  }
 };
 
 /**

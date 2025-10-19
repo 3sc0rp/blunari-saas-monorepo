@@ -9,6 +9,8 @@ type Tenant = {
   slug: string;
   timezone?: string;
   currency?: string;
+  contact_email?: string;
+  contact_phone?: string;
 };
 
 interface UseTenantBySlugReturn {
@@ -40,6 +42,8 @@ export function useTenantBySlug(slug: string): UseTenantBySlugReturn {
           slug: info.slug,
           timezone: info.timezone,
           currency: info.currency,
+          contact_email: info.contact_email,
+          contact_phone: info.contact_phone,
         });
       } catch (err) {
         if (cancelled) return;

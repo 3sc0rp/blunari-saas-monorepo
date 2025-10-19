@@ -787,8 +787,8 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                   ) : (
                     <NoPackagesEmptyState
                       restaurantName={tenant?.name || "this restaurant"}
-                      contactEmail={undefined}
-                      contactPhone={undefined}
+                      contactEmail={tenant?.contact_email}
+                      contactPhone={tenant?.contact_phone}
                       onContactClick={() => {
                         console.log('Contact restaurant clicked');
                         // Track contact attempt
