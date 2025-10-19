@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,9 @@ import {
   FileText,
   Star,
   ArrowLeft,
+  AlertCircle,
+  Save,
+  RefreshCcw,
 } from "lucide-react";
 import { useCateringData } from "@/hooks/useCateringData";
 import { useTenantBySlug } from "@/hooks/useTenantBySlug";
@@ -38,6 +41,23 @@ import {
 } from "@/types/catering";
 import ErrorBoundary from "@/components/booking/ErrorBoundary";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import {
+  sanitizeOrderForm,
+  cateringOrderSchema,
+  emailSchema,
+  phoneSchema,
+  nameSchema,
+  validateField,
+} from "@/utils/catering-validation";
+import {
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  hasDraft,
+  getDraftAge,
+  createAutoSave,
+  cleanupExpiredDrafts,
+} from "@/utils/catering-autosave";
 
 interface CateringWidgetProps {
   slug: string;
@@ -98,11 +118,111 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  // Field validation errors
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  // Auto-save state
+  const [showDraftNotification, setShowDraftNotification] = useState(false);
+  const [draftAge, setDraftAge] = useState<string | null>(null);
+  
+  // Create auto-save function with debouncing
+  const autoSave = useCallback(
+    createAutoSave(slug, 2000),
+    [slug]
+  );
 
   // Enhanced error handling with user feedback
   const displayError = tenantError || cateringError || submitError;
   const isInDemoMode =
     !tablesExist && diagnosticInfo?.cateringTablesAvailable === false;
+
+  // Cleanup expired drafts on mount
+  useEffect(() => {
+    cleanupExpiredDrafts();
+  }, []);
+
+  // Load draft on mount
+  useEffect(() => {
+    if (!slug) return;
+
+    const draft = loadDraft(slug);
+    if (draft) {
+      setShowDraftNotification(true);
+      setDraftAge(getDraftAge(slug));
+    }
+  }, [slug]);
+
+  // Auto-save form data whenever it changes
+  useEffect(() => {
+    if (!slug || orderConfirmed) return;
+    
+    // Don't save empty forms
+    if (!orderForm.event_name && !orderForm.contact_name) return;
+
+    autoSave(orderForm, selectedPackage?.id);
+  }, [orderForm, selectedPackage, slug, orderConfirmed, autoSave]);
+
+  // Clear draft on successful submission
+  useEffect(() => {
+    if (orderConfirmed && slug) {
+      clearDraft(slug);
+    }
+  }, [orderConfirmed, slug]);
+
+  // Field validation with real-time feedback
+  const validateFieldValue = useCallback(async (fieldName: string, value: any) => {
+    let schema;
+    
+    switch (fieldName) {
+      case 'contact_email':
+        schema = emailSchema;
+        break;
+      case 'contact_phone':
+        if (!value) return; // Optional field
+        schema = phoneSchema;
+        break;
+      case 'contact_name':
+      case 'event_name':
+      case 'venue_name':
+        schema = nameSchema;
+        break;
+      default:
+        return;
+    }
+
+    const error = await validateField(fieldName, value, schema);
+    setFieldErrors(prev => ({
+      ...prev,
+      [fieldName]: error || '',
+    }));
+  }, []);
+
+  // Restore draft handler
+  const handleRestoreDraft = useCallback(() => {
+    const draft = loadDraft(slug);
+    if (draft?.data) {
+      setOrderForm(prev => ({
+        ...prev,
+        ...draft.data,
+      }));
+      
+      // If draft has a package ID, try to restore it
+      if (draft.packageId && packages) {
+        const pkg = packages.find(p => p.id === draft.packageId);
+        if (pkg) {
+          setSelectedPackage(pkg);
+        }
+      }
+    }
+    setShowDraftNotification(false);
+  }, [slug, packages]);
+
+  // Dismiss draft handler
+  const handleDismissDraft = useCallback(() => {
+    setShowDraftNotification(false);
+    clearDraft(slug);
+  }, [slug]);
 
   // Loading states with better UX
   if (tenantLoading || packagesLoading) {
@@ -200,74 +320,58 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   const handleOrderSubmit = async () => {
     if (!selectedPackage || !tenant) return;
 
-    // Client-side validation
-    if (!orderForm.event_name.trim()) {
-      setSubmitError("Event name is required");
-      return;
-    }
-
-    if (!orderForm.event_date) {
-      setSubmitError("Event date is required");
-      return;
-    }
-
-    if (!orderForm.contact_name.trim()) {
-      setSubmitError("Contact name is required");
-      return;
-    }
-
-    if (!orderForm.contact_email.trim()) {
-      setSubmitError("Contact email is required");
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(orderForm.contact_email)) {
-      setSubmitError("Please enter a valid email address");
-      return;
-    }
-
-    // Date validation
-    const eventDate = new Date(orderForm.event_date);
-    const minDate = addDays(new Date(), 3);
-    if (eventDate < minDate) {
-      setSubmitError("Event date must be at least 3 days in advance");
-      return;
-    }
-
     setSubmitting(true);
     setSubmitError(null);
+    setFieldErrors({});
 
     try {
+      // Validate using Yup schema
+      const validationSchema = cateringOrderSchema(
+        selectedPackage.min_guests,
+        selectedPackage.max_guests || undefined
+      );
+
+      // Validate form data
+      await validationSchema.validate(orderForm, { abortEarly: false });
+
+      // Sanitize all inputs before submission
+      const sanitizedData = sanitizeOrderForm(orderForm);
+
+      // Create order request
       const orderData: CreateCateringOrderRequest = {
         package_id: selectedPackage.id,
-        event_name: orderForm.event_name.trim(),
-        event_date: orderForm.event_date,
-        event_start_time: orderForm.event_start_time,
-        event_end_time: orderForm.event_end_time,
-        guest_count: orderForm.guest_count,
-        service_type: orderForm.service_type,
-        contact_name: orderForm.contact_name.trim(),
-        contact_email: orderForm.contact_email.trim().toLowerCase(),
-        contact_phone: orderForm.contact_phone?.trim(),
-        venue_name: orderForm.venue_name?.trim(),
-        venue_address: orderForm.venue_address?.trim(),
-        delivery_address: orderForm.delivery_address?.trim(),
-        special_instructions: orderForm.special_instructions?.trim(),
-        dietary_requirements: orderForm.dietary_requirements,
+        ...sanitizedData,
       };
 
+      // Submit order
       await createOrder(orderData);
+      
+      // Success - clear draft and show confirmation
+      clearDraft(slug);
       setOrderConfirmed(true);
       setCurrentStep("confirmation");
     } catch (error) {
       console.error("Error creating catering order:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to submit catering order";
-      setSubmitError(errorMessage);
+      
+      if (error && typeof error === 'object' && 'inner' in error) {
+        // Yup validation errors
+        const validationError = error as { inner: Array<{ path?: string; message: string }> };
+        const errors: Record<string, string> = {};
+        validationError.inner.forEach((err) => {
+          if (err.path) {
+            errors[err.path] = err.message;
+          }
+        });
+        setFieldErrors(errors);
+        setSubmitError("Please fix the errors above and try again.");
+      } else {
+        // Generic error
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Failed to submit catering order. Please try again.";
+        setSubmitError(errorMessage);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -328,9 +432,47 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
-            {/* Progress Steps */}
+            {/* Draft Recovery Notification */}
+            {showDraftNotification && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+              >
+                <div className="flex items-start gap-3">
+                  <Save className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="font-medium text-blue-900 mb-1">
+                      Saved Draft Found
+                    </h3>
+                    <p className="text-sm text-blue-700 mb-3">
+                      We found a draft from {draftAge}. Would you like to continue where you left off?
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleRestoreDraft}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <RefreshCcw className="w-4 h-4 mr-1" />
+                        Restore Draft
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleDismissDraft}
+                      >
+                        Start Fresh
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Progress Steps - Enhanced with ARIA labels */}
             <div className="mb-8">
-              <div className="flex items-center justify-between max-w-2xl mx-auto">
+              <nav aria-label="Catering order progress" className="flex items-center justify-between max-w-2xl mx-auto">
                 {[
                   { key: "packages", label: "Choose Package", icon: ChefHat },
                   { key: "customize", label: "Customize", icon: Users },
@@ -350,7 +492,10 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                   return (
                     <div key={step.key} className="flex items-center">
                       <div
-                        className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all ${
+                        role="status"
+                        aria-current={isActive ? "step" : undefined}
+                        aria-label={`Step ${index + 1}: ${step.label}${isActive ? " (current)" : isCompleted ? " (completed)" : ""}`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all min-h-[44px] ${
                           isActive
                             ? "bg-orange-100 text-orange-700"
                             : isCompleted
@@ -358,7 +503,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                               : "bg-muted text-muted-foreground"
                         }`}
                       >
-                        <IconComponent className="w-4 h-4" />
+                        <IconComponent className="w-5 h-5" aria-hidden="true" />
                         <span className="text-sm font-medium hidden sm:inline">
                           {step.label}
                         </span>
@@ -368,12 +513,13 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                           className={`w-8 h-0.5 mx-2 transition-colors ${
                             isCompleted ? "bg-green-300" : "bg-muted"
                           }`}
+                          aria-hidden="true"
                         />
                       )}
                     </div>
                   );
                 })}
-              </div>
+              </nav>
             </div>
 
             <AnimatePresence mode="wait">
@@ -489,7 +635,8 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
                               <Button
                                 onClick={() => handlePackageSelect(pkg)}
-                                className="w-full bg-orange-600 hover:bg-orange-700"
+                                className="w-full min-h-[44px] bg-orange-600 hover:bg-orange-700 text-base font-medium"
+                                aria-label={`Select ${pkg.name} package`}
                               >
                                 Select Package
                               </Button>
@@ -719,15 +866,16 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
                             <Button
                               onClick={() => setCurrentStep("details")}
-                              className="w-full bg-orange-600 hover:bg-orange-700"
+                              className="w-full min-h-[44px] bg-orange-600 hover:bg-orange-700 text-base font-medium"
                               disabled={
                                 !orderForm.event_date || 
                                 !orderForm.event_name.trim() ||
                                 orderForm.guest_count < selectedPackage.min_guests ||
                                 (selectedPackage.max_guests && orderForm.guest_count > selectedPackage.max_guests)
                               }
+                              aria-label="Continue to contact details"
                             >
-                              Continue
+                              Continue to Contact Details
                             </Button>
                           </div>
                         </CardContent>
@@ -760,17 +908,30 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                       <CardContent className="p-6 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label htmlFor="contact_name">Name *</Label>
+                            <Label htmlFor="contact_name">
+                              Name * <span className="sr-only">Required field</span>
+                            </Label>
                             <Input
                               id="contact_name"
                               value={orderForm.contact_name}
-                              onChange={(e) =>
+                              onChange={(e) => {
                                 setOrderForm((prev) => ({
                                   ...prev,
                                   contact_name: e.target.value,
-                                }))
-                              }
+                                }));
+                                validateFieldValue('contact_name', e.target.value);
+                              }}
+                              onBlur={(e) => validateFieldValue('contact_name', e.target.value)}
+                              aria-invalid={!!fieldErrors.contact_name}
+                              aria-describedby={fieldErrors.contact_name ? "contact_name-error" : undefined}
+                              className={fieldErrors.contact_name ? "border-red-500" : ""}
                             />
+                            {fieldErrors.contact_name && (
+                              <p id="contact_name-error" className="text-sm text-red-600 mt-1" role="alert">
+                                <AlertCircle className="w-3 h-3 inline mr-1" />
+                                {fieldErrors.contact_name}
+                              </p>
+                            )}
                           </div>
                           <div>
                             <Label htmlFor="contact_phone">Phone</Label>
@@ -778,27 +939,51 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                               id="contact_phone"
                               type="tel"
                               value={orderForm.contact_phone || ""}
-                              onChange={(e) =>
+                              onChange={(e) => {
                                 setOrderForm((prev) => ({
                                   ...prev,
                                   contact_phone: e.target.value,
-                                }))
-                              }
+                                }));
+                                validateFieldValue('contact_phone', e.target.value);
+                              }}
+                              onBlur={(e) => validateFieldValue('contact_phone', e.target.value)}
+                              aria-invalid={!!fieldErrors.contact_phone}
+                              aria-describedby={fieldErrors.contact_phone ? "contact_phone-error" : undefined}
+                              className={fieldErrors.contact_phone ? "border-red-500" : ""}
                             />
+                            {fieldErrors.contact_phone && (
+                              <p id="contact_phone-error" className="text-sm text-red-600 mt-1" role="alert">
+                                <AlertCircle className="w-3 h-3 inline mr-1" />
+                                {fieldErrors.contact_phone}
+                              </p>
+                            )}
                           </div>
                           <div className="md:col-span-2">
-                            <Label htmlFor="contact_email">Email *</Label>
+                            <Label htmlFor="contact_email">
+                              Email * <span className="sr-only">Required field</span>
+                            </Label>
                             <Input
                               id="contact_email"
                               type="email"
                               value={orderForm.contact_email}
-                              onChange={(e) =>
+                              onChange={(e) => {
                                 setOrderForm((prev) => ({
                                   ...prev,
                                   contact_email: e.target.value,
-                                }))
-                              }
+                                }));
+                                validateFieldValue('contact_email', e.target.value);
+                              }}
+                              onBlur={(e) => validateFieldValue('contact_email', e.target.value)}
+                              aria-invalid={!!fieldErrors.contact_email}
+                              aria-describedby={fieldErrors.contact_email ? "contact_email-error" : undefined}
+                              className={fieldErrors.contact_email ? "border-red-500" : ""}
                             />
+                            {fieldErrors.contact_email && (
+                              <p id="contact_email-error" className="text-sm text-red-600 mt-1" role="alert">
+                                <AlertCircle className="w-3 h-3 inline mr-1" />
+                                {fieldErrors.contact_email}
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -840,25 +1025,64 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                         </div>
 
                         {submitError && (
-                          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                            <p className="text-sm text-red-600">
-                              {submitError}
-                            </p>
+                          <div 
+                            className="p-4 bg-red-50 border border-red-200 rounded-md" 
+                            role="alert"
+                            aria-live="polite"
+                          >
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-red-900 mb-1">
+                                  Unable to Submit Order
+                                </p>
+                                <p className="text-sm text-red-700">
+                                  {submitError}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {Object.keys(fieldErrors).length > 0 && (
+                          <div 
+                            className="p-4 bg-yellow-50 border border-yellow-200 rounded-md"
+                            role="alert"
+                            aria-live="polite"
+                          >
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-yellow-900 mb-1">
+                                  Please Fix Validation Errors
+                                </p>
+                                <p className="text-sm text-yellow-700">
+                                  Review the highlighted fields above and correct any errors.
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         )}
 
                         <Button
                           onClick={handleOrderSubmit}
-                          className="w-full bg-orange-600 hover:bg-orange-700"
+                          className="w-full min-h-[44px] bg-orange-600 hover:bg-orange-700 text-base font-medium"
                           disabled={
                             !orderForm.contact_name ||
                             !orderForm.contact_email ||
-                            submitting
+                            submitting ||
+                            Object.keys(fieldErrors).some(key => fieldErrors[key])
                           }
+                          aria-label={submitting ? "Submitting your catering request, please wait" : "Submit catering request"}
                         >
-                          {submitting
-                            ? "Submitting..."
-                            : "Submit Catering Request"}
+                          {submitting ? (
+                            <>
+                              <LoadingSpinner className="w-4 h-4 mr-2" />
+                              Submitting Your Request...
+                            </>
+                          ) : (
+                            "Submit Catering Request"
+                          )}
                         </Button>
                       </CardContent>
                     </Card>
