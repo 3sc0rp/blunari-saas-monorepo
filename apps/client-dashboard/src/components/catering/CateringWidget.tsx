@@ -58,6 +58,25 @@ import {
   createAutoSave,
   cleanupExpiredDrafts,
 } from "@/utils/catering-autosave";
+import {
+  trackWidgetViewed,
+  trackPackageViewed,
+  trackPackageSelected,
+  trackStepCompleted,
+  trackFieldFocused,
+  trackFieldCompleted,
+  trackFieldError,
+  trackDraftSaved,
+  trackDraftRestored,
+  trackOrderSubmitted,
+  trackOrderFailed,
+  startStepTimer,
+  setupAbandonmentTracking,
+  getCompletedFields,
+  getSessionDuration,
+} from "@/utils/catering-analytics";
+import { AnimatedPrice, PriceBreakdown } from "./AnimatedPrice";
+import { NoPackagesEmptyState, LoadingErrorEmptyState } from "./EmptyStates";
 
 interface CateringWidgetProps {
   slug: string;
@@ -170,6 +189,58 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
     }
   }, [orderConfirmed, slug]);
 
+  // Track widget view on mount
+  useEffect(() => {
+    if (tenant?.id && slug) {
+      trackWidgetViewed(tenant.id, slug);
+    }
+  }, [tenant?.id, slug]);
+
+  // Track step changes
+  useEffect(() => {
+    if (currentStep) {
+      startStepTimer(currentStep);
+      
+      const stepNumber = 
+        currentStep === 'packages' ? 1 :
+        currentStep === 'customize' ? 2 :
+        currentStep === 'details' ? 3 : 4;
+      
+      if (stepNumber > 1) {
+        const previousStep = 
+          stepNumber === 2 ? 'packages' :
+          stepNumber === 3 ? 'customize' : 'details';
+        trackStepCompleted(previousStep as any, stepNumber - 1);
+      }
+    }
+  }, [currentStep]);
+
+  // Track draft saves
+  useEffect(() => {
+    if (!slug || orderConfirmed) return;
+    if (orderForm.event_name || orderForm.contact_name) {
+      trackDraftSaved();
+    }
+  }, [orderForm.event_name, orderForm.contact_name, slug, orderConfirmed]);
+
+  // Setup abandonment tracking
+  useEffect(() => {
+    const getCurrentStep = () => currentStep;
+    const getCompletedFieldsList = () => getCompletedFields(orderForm);
+    const getTotalFields = () => {
+      const requiredFields = ['event_name', 'event_date', 'guest_count', 'contact_name', 'contact_email'];
+      return requiredFields.length;
+    };
+
+    const cleanup = setupAbandonmentTracking(
+      getCurrentStep,
+      getCompletedFieldsList,
+      getTotalFields
+    );
+
+    return cleanup;
+  }, [currentStep, orderForm]);
+
   // Field validation with real-time feedback
   const validateFieldValue = useCallback(async (fieldName: string, value: any) => {
     let schema;
@@ -192,6 +263,28 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
     }
 
     const error = await validateField(fieldName, value, schema);
+    
+    if (error) {
+      // Track field error
+      trackFieldError(
+        fieldName,
+        fieldName.includes('email') ? 'email' :
+        fieldName.includes('phone') ? 'tel' : 'text',
+        error,
+        'validation',
+        ['contact_name', 'contact_email', 'event_name'].includes(fieldName)
+      );
+    } else if (value) {
+      // Track field completion
+      trackFieldCompleted(
+        fieldName,
+        fieldName.includes('email') ? 'email' :
+        fieldName.includes('phone') ? 'tel' : 'text',
+        typeof value === 'string' ? value.length : 0,
+        ['contact_name', 'contact_email', 'event_name'].includes(fieldName)
+      );
+    }
+    
     setFieldErrors(prev => ({
       ...prev,
       [fieldName]: error || '',
@@ -214,9 +307,14 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
           setSelectedPackage(pkg);
         }
       }
+      
+      // Track draft restoration
+      if (draftAge) {
+        trackDraftRestored(draftAge);
+      }
     }
     setShowDraftNotification(false);
-  }, [slug, packages]);
+  }, [slug, packages, draftAge]);
 
   // Dismiss draft handler
   const handleDismissDraft = useCallback(() => {
@@ -307,6 +405,15 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   }
 
   const handlePackageSelect = (pkg: CateringPackage) => {
+    // Track package selection
+    trackPackageSelected({
+      package_id: pkg.id,
+      package_name: pkg.name,
+      price_per_person: pkg.price_per_person,
+      tenant_id: tenant?.id,
+      tenant_slug: slug,
+    });
+    
     setSelectedPackage(pkg);
     setOrderForm((prev) => ({
       ...prev,
@@ -346,6 +453,21 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
       // Submit order
       await createOrder(orderData);
       
+      // Track successful order submission
+      trackOrderSubmitted({
+        package_id: selectedPackage.id,
+        package_name: selectedPackage.name,
+        guest_count: orderForm.guest_count,
+        service_type: orderForm.service_type,
+        total_price_cents: getTotalPrice(),
+        has_special_instructions: !!orderForm.special_instructions,
+        has_dietary_requirements: orderForm.dietary_requirements.length > 0,
+        time_to_complete_seconds: getSessionDuration(),
+        draft_restored: !!draftAge,
+        tenant_id: tenant?.id,
+        tenant_slug: slug,
+      });
+      
       // Success - clear draft and show confirmation
       clearDraft(slug);
       setOrderConfirmed(true);
@@ -364,6 +486,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
         });
         setFieldErrors(errors);
         setSubmitError("Please fix the errors above and try again.");
+        
+        // Track validation failure
+        trackOrderFailed(
+          'Yup validation errors',
+          'validation_error'
+        );
       } else {
         // Generic error
         const errorMessage =
@@ -371,6 +499,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
             ? error.message
             : "Failed to submit catering order. Please try again.";
         setSubmitError(errorMessage);
+        
+        // Track submission failure
+        trackOrderFailed(
+          errorMessage,
+          error instanceof Error ? error.name : 'unknown_error'
+        );
       }
     } finally {
       setSubmitting(false);
@@ -566,7 +700,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                                 )}
                               </div>
                               <div className="text-2xl font-bold text-orange-600">
-                                {formatPrice(pkg.price_per_person)}
+                                <AnimatedPrice 
+                                  value={pkg.price_per_person}
+                                  currency="$"
+                                  duration={0.5}
+                                  showCents={true}
+                                />
                                 <span className="text-sm text-muted-foreground">
                                   /person
                                 </span>
@@ -646,17 +785,21 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
                       ))}
                     </div>
                   ) : (
-                    <Card className="text-center p-8">
-                      <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">
-                        No Packages Available
-                      </h3>
-                      <p className="text-muted-foreground mb-4">
-                        This restaurant doesn't have catering packages set up
-                        yet. Please contact them directly for custom catering
-                        options.
-                      </p>
-                    </Card>
+                    <NoPackagesEmptyState
+                      restaurantName={tenant?.name || "this restaurant"}
+                      contactEmail={undefined}
+                      contactPhone={undefined}
+                      onContactClick={() => {
+                        console.log('Contact restaurant clicked');
+                        // Track contact attempt
+                        if (window.gtag) {
+                          window.gtag('event', 'catering_no_packages_contact', {
+                            tenant_id: tenant?.id,
+                            tenant_slug: slug,
+                          });
+                        }
+                      }}
+                    />
                   )}
                 </motion.div>
               )}
@@ -826,23 +969,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
                             <Separator />
 
-                            <div className="flex justify-between">
-                              <span>Guests:</span>
-                              <span>{orderForm.guest_count}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Price per person:</span>
-                              <span>
-                                {formatPrice(selectedPackage.price_per_person)}
-                              </span>
-                            </div>
-
-                            <Separator />
-
-                            <div className="flex justify-between font-semibold text-lg">
-                              <span>Estimated Total:</span>
-                              <span>{formatPrice(getTotalPrice())}</span>
-                            </div>
+                            <PriceBreakdown
+                              pricePerPerson={selectedPackage.price_per_person}
+                              guestCount={orderForm.guest_count}
+                              fees={[]}
+                              showDetails={true}
+                            />
 
                             {(!orderForm.event_date || 
                               !orderForm.event_name.trim() ||
@@ -1145,7 +1277,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
                           <div className="flex justify-between font-semibold">
                             <span>Estimated Total:</span>
-                            <span>{formatPrice(getTotalPrice())}</span>
+                            <AnimatedPrice 
+                              value={getTotalPrice()}
+                              currency="$"
+                              duration={0.5}
+                              showCents={true}
+                            />
                           </div>
                         </div>
                       </CardContent>
