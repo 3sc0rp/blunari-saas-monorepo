@@ -367,14 +367,30 @@ const PackageManagement: React.FC = () => {
               </div>
 
               <div className="space-y-2 mb-4">
+                {/* Dynamic pricing display based on pricing_type */}
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">
-                    Price per person:
+                    {pkg.pricing_type === 'per_person' && 'Price per person:'}
+                    {pkg.pricing_type === 'per_tray' && 'Price per tray:'}
+                    {pkg.pricing_type === 'fixed' && 'Fixed price:'}
+                    {!pkg.pricing_type && 'Price per person:'}
                   </span>
                   <span className="font-medium">
-                    {formatCurrency(pkg.price_per_person)}
+                    {pkg.pricing_type === 'per_person' && formatCurrency(pkg.price_per_person)}
+                    {pkg.pricing_type === 'per_tray' && formatCurrency(pkg.base_price || 0)}
+                    {pkg.pricing_type === 'fixed' && formatCurrency(pkg.base_price || 0)}
+                    {!pkg.pricing_type && formatCurrency(pkg.price_per_person)}
                   </span>
                 </div>
+                
+                {/* Show serves count for tray pricing */}
+                {pkg.pricing_type === 'per_tray' && pkg.serves_count && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Serves per tray:</span>
+                    <span className="font-medium">{pkg.serves_count} guests</span>
+                  </div>
+                )}
+                
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Min guests:</span>
                   <span className="font-medium">{pkg.min_guests}</span>
