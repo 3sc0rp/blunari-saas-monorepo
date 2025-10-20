@@ -11,3 +11,7 @@ export * from './usePermissions'
 
 // User Role Management
 export * from './useUserRoles'
+
+// Audit Logging (Week 21-22)
+export * from './useAuditLog'
+export * from './useActivityLogger'
