@@ -11,6 +11,27 @@ import { createSafeLogger, sanitizeBookingsForLog } from "@/utils/productionLogg
 
 const logger = createSafeLogger('useAdvancedBookings');
 
+// Database booking row with optional joined table data
+interface BookingRow {
+  id: string;
+  tenant_id: string;
+  guest_name: string;
+  guest_email: string;
+  guest_phone?: string;
+  party_size: number;
+  booking_time: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+  table_id?: string;
+  special_requests?: string;
+  created_at: string;
+  updated_at: string;
+  source?: string;
+  restaurant_tables?: {
+    id: string;
+    name: string;
+  };
+}
+
 export const useAdvancedBookings = (tenantId?: string) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -52,8 +73,8 @@ export const useAdvancedBookings = (tenantId?: string) => {
 
       // Apply status filter (support legacy no_show in DB)
       if (filters.status.length > 0) {
-        const normalized = filters.status.map((s) => (s === 'noshow' ? 'no_show' : s));
-        query = query.in("status", normalized as any);
+        const normalized = filters.status.map((s) => (s === 'noshow' ? 'no_show' : s)) as ('pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show')[];
+        query = query.in("status", normalized);
       }
 
       // Apply date range filter
@@ -77,7 +98,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
       // Apply source filter
       if (filters.sources && filters.sources.length > 0) {
         const sourceValues = filters.sources as string[];
-        query = (query as any).in('source', sourceValues);
+        query = query.in('source', sourceValues);
       }
 
       // Apply text search across key fields
@@ -129,7 +150,7 @@ export const useAdvancedBookings = (tenantId?: string) => {
             if (devLogs) console.log('[useAdvancedBookings] Fallback successful, got', fallbackData.bookings?.length, 'bookings');
             
             // Return the bookings with basic processing (skip advanced filtering for now)
-            return (fallbackData.bookings || []).map((b: any) => ({
+            return (fallbackData.bookings || []).map((b: BookingRow) => ({
               ...b,
               status: (b.status === 'no_show') ? 'noshow' : b.status,
               table_name: null, // Skip table name lookup for fallback
@@ -147,15 +168,15 @@ export const useAdvancedBookings = (tenantId?: string) => {
       }
       
       const tableIdToName: Record<string, string> = Object.fromEntries(
-        (tablesRes.data || []).map((t: any) => [t.id, t.name])
+        (tablesRes.data || []).map((t) => [t.id, t.name])
       );
 
-      const result = (data || []).map((b: any) => {
-        const joinedName = (b as any)["restaurant_tables"]?.name;
+      const result = (data || []).map((b: BookingRow) => {
+        const joinedName = b.restaurant_tables?.name;
         const mappedName = b.table_id ? tableIdToName[b.table_id] : undefined;
         const normalizedStatus = (b.status === 'no_show') ? 'noshow' : b.status;
         return {
-          ...(b as any),
+          ...b,
           status: normalizedStatus,
           table_name: joinedName || mappedName,
         } as ExtendedBooking;
