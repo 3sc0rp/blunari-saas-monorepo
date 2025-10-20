@@ -65,6 +65,7 @@ import {
   CateringMenuItem,
 } from "@/types/catering";
 import { logger } from "@/lib/logger";
+import { CateringPackageForm } from "@/components/catering/CateringPackageForm";
 
 // Helper functions
 const formatCurrency = (cents: number) => `$${(cents / 100).toFixed(2)}`;
@@ -268,6 +269,52 @@ const OrderCard: React.FC<{
 const PackageManagement: React.FC = () => {
   const { packages, menuItems, menuCategories, loading } =
     useCateringPackages();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<CateringPackage | null>(null);
+
+  const handleCreatePackage = () => {
+    setSelectedPackage(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEditPackage = (pkg: CateringPackage) => {
+    setSelectedPackage(pkg);
+    setIsFormOpen(true);
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setSelectedPackage(null);
+  };
+
+  const handleFormSubmit = async (formData: any) => {
+    try {
+      // TODO: Implement package creation/update API call
+      logger.info("Package form submitted", { formData });
+      
+      // Convert dollar amounts to cents
+      const packageData = {
+        ...formData,
+        price_per_person: Math.round(formData.price_per_person * 100),
+        base_price: Math.round(formData.base_price * 100),
+      };
+
+      if (selectedPackage) {
+        // Update existing package
+        logger.info("Updating package", { id: selectedPackage.id, packageData });
+        // await updatePackageMutation.mutateAsync({ id: selectedPackage.id, ...packageData });
+      } else {
+        // Create new package
+        logger.info("Creating new package", { packageData });
+        // await createPackageMutation.mutateAsync(packageData);
+      }
+
+      handleFormClose();
+    } catch (error) {
+      logger.error("Error submitting package form", { error });
+      throw error; // Let form component handle error display
+    }
+  };
 
   if (loading) {
     return <div className="animate-pulse">Loading packages...</div>;
@@ -277,10 +324,28 @@ const PackageManagement: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Catering Packages</h2>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Package
-        </Button>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={handleCreatePackage}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Package
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedPackage ? "Edit Package" : "Create New Package"}
+              </DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
+              <CateringPackageForm
+                package={selectedPackage}
+                onSubmit={handleFormSubmit}
+                onCancel={handleFormClose}
+              />
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -335,7 +400,12 @@ const PackageManagement: React.FC = () => {
               </div>
 
               <div className="flex space-x-2">
-                <Button size="sm" variant="outline" className="flex-1">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => handleEditPackage(pkg)}
+                >
                   <Edit className="w-4 h-4 mr-1" />
                   Edit
                 </Button>

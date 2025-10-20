@@ -28,7 +28,10 @@ export type DietaryRestriction =
   | "dairy_free"
   | "nut_free"
   | "kosher"
-  | "halal";
+  | "halal"
+  | "keto"
+  | "paleo";
+export type CateringPricingType = "per_person" | "per_tray" | "fixed";
 
 // Core catering interfaces
 export interface CateringEventType {
@@ -85,7 +88,14 @@ export interface CateringPackage {
   tenant_id: string;
   name: string;
   description?: string;
-  price_per_person: number; // in cents
+  
+  // Flexible pricing fields
+  pricing_type: CateringPricingType;
+  price_per_person: number; // in cents (used for per_person pricing)
+  base_price: number; // in cents (used for per_tray and fixed pricing)
+  serves_count: number; // Number of people served per tray (for per_tray pricing)
+  tray_description: string; // Description of tray serving size (e.g., "Serves 8-10 guests")
+  
   min_guests: number;
   max_guests?: number;
   includes_setup: boolean;
@@ -503,4 +513,6 @@ export const DIETARY_RESTRICTION_LABELS: DietaryRestrictionLabel = {
   nut_free: "Nut Free",
   kosher: "Kosher",
   halal: "Halal",
+  keto: "Keto",
+  paleo: "Paleo",
 };
