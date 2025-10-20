@@ -2,13 +2,17 @@
 -- Date: October 20, 2025
 -- Description: Support per-person, per-tray, and fixed pricing models
 
--- Create pricing type enum (drop if exists to ensure clean state)
+-- Step 1: Drop the pricing_type column if it exists (will be recreated with proper enum)
+ALTER TABLE public.catering_packages 
+  DROP COLUMN IF EXISTS pricing_type CASCADE;
+
+-- Step 2: Drop and recreate the enum type
 DROP TYPE IF EXISTS public.catering_pricing_type CASCADE;
 CREATE TYPE public.catering_pricing_type AS ENUM ('per_person', 'per_tray', 'fixed');
 
--- Add new columns to catering_packages
+-- Step 3: Add new columns to catering_packages
 ALTER TABLE public.catering_packages 
-  ADD COLUMN IF NOT EXISTS pricing_type public.catering_pricing_type DEFAULT 'per_person' NOT NULL,
+  ADD COLUMN pricing_type public.catering_pricing_type DEFAULT 'per_person' NOT NULL,
   ADD COLUMN IF NOT EXISTS base_price INTEGER, -- in cents, for per_tray or fixed pricing
   ADD COLUMN IF NOT EXISTS serves_count INTEGER, -- for per_tray, how many people one tray serves
   ADD COLUMN IF NOT EXISTS tray_description TEXT; -- e.g., "Serves 8-10 people"
@@ -25,16 +29,24 @@ COMMENT ON COLUMN public.catering_packages.base_price IS 'Base price in cents (u
 COMMENT ON COLUMN public.catering_packages.serves_count IS 'Number of people served by one tray (used when pricing_type = per_tray)';
 COMMENT ON COLUMN public.catering_packages.tray_description IS 'Description of tray serving size, e.g., "Each tray serves 8-10 guests"';
 
--- Add check constraint to ensure correct pricing fields are set
-ALTER TABLE public.catering_packages
-  ADD CONSTRAINT catering_packages_pricing_check CHECK (
-    CASE 
-      WHEN pricing_type = 'per_person' THEN price_per_person IS NOT NULL AND price_per_person > 0
-      WHEN pricing_type = 'per_tray' THEN base_price IS NOT NULL AND base_price > 0 AND serves_count IS NOT NULL AND serves_count > 0
-      WHEN pricing_type = 'fixed' THEN base_price IS NOT NULL AND base_price > 0
-      ELSE false
-    END
-  );
+-- Step 4: Add check constraint (only if not exists)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'catering_packages_pricing_check'
+  ) THEN
+    ALTER TABLE public.catering_packages
+      ADD CONSTRAINT catering_packages_pricing_check CHECK (
+        CASE 
+          WHEN pricing_type = 'per_person' THEN price_per_person IS NOT NULL AND price_per_person > 0
+          WHEN pricing_type = 'per_tray' THEN base_price IS NOT NULL AND base_price > 0 AND serves_count IS NOT NULL AND serves_count > 0
+          WHEN pricing_type = 'fixed' THEN base_price IS NOT NULL AND base_price > 0
+          ELSE false
+        END
+      );
+  END IF;
+END $$;
 
 -- Create index for filtering by pricing type
 CREATE INDEX IF NOT EXISTS idx_catering_packages_pricing_type 
