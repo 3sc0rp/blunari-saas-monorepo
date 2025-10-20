@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { FileText, Download, Mail, DollarSign } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import type { CateringOrder } from '@/types/catering';
 
 interface QuoteGeneratorProps {
@@ -164,3 +165,36 @@ export function QuoteGenerator({ order, onClose }: QuoteGeneratorProps) {
             <div className="flex justify-between font-semibold text-base">
               <span>Total Amount:</span>
               <span className="text-primary">${(totalAmount / 100).toFixed(2)}</span>
+            </div>
+            
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Deposit ({(depositPercent * 100).toFixed(0)}%):</span>
+              <span>${(depositAmount / 100).toFixed(2)}</span>
+            </div>
+            
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Balance Due:</span>
+              <span>${(balanceDue / 100).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <Button onClick={handleGenerateQuote} className="flex-1">
+            <DollarSign className="w-4 h-4 mr-2" />
+            Save Quote
+          </Button>
+          <Button variant="outline" onClick={handleEmailQuote}>
+            <Mail className="w-4 h-4 mr-2" />
+            Email
+          </Button>
+          <Button variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            PDF
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
