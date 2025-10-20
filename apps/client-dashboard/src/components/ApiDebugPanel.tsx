@@ -43,7 +43,7 @@ export const ApiDebugPanel: React.FC = () => {
           <div className="space-y-2 text-sm">
             <div><strong>Slug:</strong> {tenantSlug || 'N/A'}</div>
             <div><strong>Loading:</strong> {isLoading ? 'Yes' : 'No'}</div>
-            <div><strong>Error:</strong> {error ? error.message : 'None'}</div>
+            <div><strong>Error:</strong> {error || 'None'}</div>
             <div><strong>Tenant Found:</strong> {tenant ? 'Yes' : 'No'}</div>
             {tenant && (
               <div><strong>Tenant Name:</strong> {tenant.name}</div>
