@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { useCateringPackages } from '@/hooks/useCateringPackages';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -17,26 +13,10 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import {
   Package,
@@ -49,8 +29,8 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react';
-import type { CateringPackage, DietaryRestriction } from '@/types/catering';
-import { DIETARY_ACCOMMODATIONS } from '@/types/catering';
+import type { CateringPackage } from '@/types/catering';
+import { CateringPackageForm } from '@/components/catering/CateringPackageForm';
 
 interface CateringPackagesManagerProps {
   tenantId: string;
@@ -72,80 +52,51 @@ export function CateringPackagesManager({ tenantId }: CateringPackagesManagerPro
 
   const [showDialog, setShowDialog] = useState(false);
   const [editingPackage, setEditingPackage] = useState<CateringPackage | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price_per_person: 0,
-    min_guests: 10,
-    max_guests: 500,
-    includes_setup: false,
-    includes_service: false,
-    includes_cleanup: false,
-    dietary_accommodations: [] as DietaryRestriction[],
-    image_url: '',
-    popular: false,
-    active: true,
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreatePackage = () => {
     setEditingPackage(null);
-    setFormData({
-      name: '',
-      description: '',
-      price_per_person: 0,
-      min_guests: 10,
-      max_guests: 500,
-      includes_setup: false,
-      includes_service: false,
-      includes_cleanup: false,
-      dietary_accommodations: [],
-      image_url: '',
-      popular: false,
-      active: true,
-    });
     setShowDialog(true);
   };
 
   const handleEditPackage = (pkg: CateringPackage) => {
     setEditingPackage(pkg);
-    setFormData({
-      name: pkg.name,
-      description: pkg.description || '',
-      price_per_person: pkg.price_per_person / 100, // Convert from cents to dollars
-      min_guests: pkg.min_guests,
-      max_guests: pkg.max_guests || 500,
-      includes_setup: pkg.includes_setup,
-      includes_service: pkg.includes_service,
-      includes_cleanup: pkg.includes_cleanup,
-      dietary_accommodations: pkg.dietary_accommodations || [],
-      image_url: pkg.image_url || '',
-      popular: pkg.popular,
-      active: pkg.active,
-    });
     setShowDialog(true);
   };
 
-  const handleSave = async () => {
-    if (!formData.name || formData.price_per_person <= 0) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
+  const handleFormSubmit = async (formData: any) => {
+    setIsSubmitting(true);
+    try {
+      // Convert dollar amounts to cents
+      const packageData = {
+        ...formData,
+        price_per_person: Math.round(formData.price_per_person * 100),
+        base_price: Math.round(formData.base_price * 100),
+      };
 
-    const packageData = {
-      ...formData,
-      price_per_person: Math.round(formData.price_per_person * 100), // Convert to cents
-    };
-
-    if (editingPackage) {
-      updatePackage({
-        packageId: editingPackage.id,
-        updates: packageData,
-      });
-    } else {
-      createPackage(packageData);
+      if (editingPackage) {
+        await updatePackage({
+          packageId: editingPackage.id,
+          updates: packageData,
+        });
+        toast.success('Package updated successfully!');
+      } else {
+        await createPackage(packageData);
+        toast.success('Package created successfully!');
+      }
+      
+      setShowDialog(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save package');
+      throw error; // Let form component handle error display
+    } finally {
+      setIsSubmitting(false);
     }
-    
+  };
+
+  const handleFormCancel = () => {
     setShowDialog(false);
+    setEditingPackage(null);
   };
 
   const handleDelete = (packageId: string) => {
@@ -290,151 +241,20 @@ export function CateringPackagesManager({ tenantId }: CateringPackagesManagerPro
 
       {/* Create/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>
               {editingPackage ? 'Edit Package' : 'Create New Package'}
             </DialogTitle>
-            <DialogDescription>
-              {editingPackage
-                ? 'Update your catering package details'
-                : 'Create a new catering package for customers'}
-            </DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-6 py-4">
-            {/* Basic Info */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Package Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Corporate Lunch Package"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe what's included in this package..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price Per Person ($) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={formData.price_per_person}
-                    onChange={(e) => setFormData({ ...formData, price_per_person: parseFloat(e.target.value) })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="image_url">Image URL</Label>
-                  <Input
-                    id="image_url"
-                    value={formData.image_url}
-                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    placeholder="https://..."
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="min_guests">Minimum Guests *</Label>
-                  <Input
-                    id="min_guests"
-                    type="number"
-                    value={formData.min_guests}
-                    onChange={(e) => setFormData({ ...formData, min_guests: parseInt(e.target.value) })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="max_guests">Maximum Guests</Label>
-                  <Input
-                    id="max_guests"
-                    type="number"
-                    value={formData.max_guests}
-                    onChange={(e) => setFormData({ ...formData, max_guests: parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Services Included */}
-            <div className="space-y-4">
-              <Label>Services Included</Label>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="setup" className="font-normal">Setup Service</Label>
-                  <Switch
-                    id="setup"
-                    checked={formData.includes_setup}
-                    onCheckedChange={(checked) => setFormData({ ...formData, includes_setup: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="service" className="font-normal">Full Service Staff</Label>
-                  <Switch
-                    id="service"
-                    checked={formData.includes_service}
-                    onCheckedChange={(checked) => setFormData({ ...formData, includes_service: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="cleanup" className="font-normal">Cleanup Service</Label>
-                  <Switch
-                    id="cleanup"
-                    checked={formData.includes_cleanup}
-                    onCheckedChange={(checked) => setFormData({ ...formData, includes_cleanup: checked })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Options */}
-            <div className="space-y-4">
-              <Label>Package Options</Label>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="popular" className="font-normal">Mark as Popular</Label>
-                  <Switch
-                    id="popular"
-                    checked={formData.popular}
-                    onCheckedChange={(checked) => setFormData({ ...formData, popular: checked })}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="active" className="font-normal">Active (Visible to customers)</Label>
-                  <Switch
-                    id="active"
-                    checked={formData.active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)} disabled={isCreating || isUpdating}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isCreating || isUpdating}>
-              {isCreating || isUpdating ? 'Saving...' : editingPackage ? 'Update Package' : 'Create Package'}
-            </Button>
-          </DialogFooter>
+          <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
+            <CateringPackageForm
+              package={editingPackage}
+              onSubmit={handleFormSubmit}
+              onCancel={handleFormCancel}
+              loading={isSubmitting}
+            />
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>
