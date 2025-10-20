@@ -170,11 +170,12 @@ serve(async (req: Request) => {
 
     } catch (twilioError) {
       // Update SMS history with error
+      const twilioErrorMessage = twilioError instanceof Error ? twilioError.message : 'Twilio error';
       await supabase
         .from('sms_history')
         .update({
           status: 'failed',
-          error_message: twilioError.message,
+          error_message: twilioErrorMessage,
         })
         .eq('id', smsHistory.id);
 
@@ -183,10 +184,11 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error('Error sending SMS:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to send SMS';
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: errorMessage,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
