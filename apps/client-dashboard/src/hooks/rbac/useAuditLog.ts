@@ -159,8 +159,6 @@ function getClientContext() {
  * @param filters - Optional filters for querying logs
  */
 export function useAuditLogs(tenantId: string, filters?: Omit<AuditLogFilters, 'tenant_id'>) {
-  const { toast } = useToast()
-
   return useQuery({
     queryKey: auditKeys.list(tenantId, { tenant_id: tenantId, ...filters }),
     queryFn: async (): Promise<AuditLogResponse> => {
@@ -192,13 +190,6 @@ export function useAuditLogs(tenantId: string, filters?: Omit<AuditLogFilters, '
     staleTime: 60000, // 1 minute
     enabled: !!tenantId,
     retry: 2,
-    onError: (error: Error) => {
-      toast({
-        title: 'Failed to fetch audit logs',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
   })
 }
 
@@ -327,8 +318,6 @@ export function useAuditStats(
   tenantId: string,
   dateRange?: { start: string; end: string }
 ) {
-  const { toast } = useToast()
-
   return useQuery({
     queryKey: auditKeys.stats(tenantId, dateRange),
     queryFn: async (): Promise<AuditLogStats> => {
@@ -367,13 +356,6 @@ export function useAuditStats(
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!tenantId,
-    onError: (error: Error) => {
-      toast({
-        title: 'Failed to fetch audit statistics',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
   })
 }
 
@@ -456,8 +438,6 @@ export function useExportAudit(tenantId: string) {
  * @param userId - User ID
  */
 export function useUserActivityTimeline(tenantId: string, userId: string | undefined) {
-  const { toast } = useToast()
-
   return useQuery({
     queryKey: auditKeys.timeline(tenantId, userId || ''),
     queryFn: async (): Promise<AuditLog[]> => {
@@ -490,13 +470,6 @@ export function useUserActivityTimeline(tenantId: string, userId: string | undef
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
     enabled: !!tenantId && !!userId,
-    onError: (error: Error) => {
-      toast({
-        title: 'Failed to fetch user activity',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
   })
 }
 
@@ -515,8 +488,6 @@ export function useResourceHistory(
   resourceType: string | undefined,
   resourceId: string | undefined
 ) {
-  const { toast } = useToast()
-
   return useQuery({
     queryKey: auditKeys.history(tenantId, resourceType || '', resourceId || ''),
     queryFn: async (): Promise<AuditLog[]> => {
@@ -550,12 +521,5 @@ export function useResourceHistory(
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
     enabled: !!tenantId && !!resourceType && !!resourceId,
-    onError: (error: Error) => {
-      toast({
-        title: 'Failed to fetch resource history',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
   })
 }
