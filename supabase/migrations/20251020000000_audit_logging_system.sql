@@ -657,6 +657,9 @@ WHERE al.tags && ARRAY['gdpr']
 COMMENT ON VIEW public.gdpr_user_data_access IS 'GDPR compliance view for user data access tracking';
 
 -- View: Security events
+-- Drop the old table if it exists (from previous migrations)
+DROP TABLE IF EXISTS public.security_events CASCADE;
+
 CREATE OR REPLACE VIEW public.security_events AS
 SELECT
   al.id,
