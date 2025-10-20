@@ -14,6 +14,7 @@ import {
   Plus,
   Calendar,
   MessageSquare,
+  Activity,
 } from 'lucide-react';
 
 // Import sub-components
@@ -23,6 +24,7 @@ import { CateringOrdersManager } from '@/components/catering/management/Catering
 import { CateringAnalyticsDashboard } from '@/components/catering/management/CateringAnalyticsDashboard';
 import { CateringWidgetConfig } from '@/components/catering/management/CateringWidgetConfig';
 import { InboxPanel, EmailTemplates, SMSIntegration } from '@/components/catering/communications';
+import { AdvancedAnalyticsDashboard } from '@/components/catering/analytics';
 
 // Import new components
 import { ActivityFeed } from '@/components/catering/ActivityFeed';
@@ -141,7 +143,7 @@ export default function CateringManagement() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7 lg:w-auto">
+        <TabsList className="grid w-full grid-cols-8 lg:w-auto">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             <span className="hidden sm:inline">Overview</span>
@@ -165,6 +167,10 @@ export default function CateringManagement() {
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             <span className="hidden sm:inline">Analytics</span>
+          </TabsTrigger>
+          <TabsTrigger value="advanced-analytics" className="flex items-center gap-2">
+            <Activity className="w-4 h-4" />
+            <span className="hidden sm:inline">Advanced</span>
           </TabsTrigger>
           <TabsTrigger value="widget" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
@@ -491,6 +497,11 @@ export default function CateringManagement() {
         {/* Analytics Tab */}
         <TabsContent value="analytics">
           <CateringAnalyticsDashboard tenantId={tenant.id} />
+        </TabsContent>
+
+        {/* Advanced Analytics Tab */}
+        <TabsContent value="advanced-analytics">
+          <AdvancedAnalyticsDashboard tenantId={tenant.id} />
         </TabsContent>
 
         {/* Widget Configuration Tab */}
