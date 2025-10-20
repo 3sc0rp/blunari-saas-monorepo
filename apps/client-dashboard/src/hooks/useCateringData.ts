@@ -196,11 +196,28 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       }
 
       try {
+        // Format venue_address as JSONB if it's a string
+        let formattedVenueAddress: any = orderData.venue_address;
+        if (typeof orderData.venue_address === 'string') {
+          formattedVenueAddress = {
+            street: orderData.venue_address,
+            city: "",
+            state: "",
+            zip_code: "",
+            country: "USA"
+          };
+        }
+
+        // Ensure contact_phone is not empty (database requires it)
+        const contactPhone = orderData.contact_phone || "Not provided";
+
         const { data, error } = await (supabase as any)
           .from("catering_orders")
           .insert([
             {
               ...orderData,
+              venue_address: formattedVenueAddress,
+              contact_phone: contactPhone,
               tenant_id: tenantId,
               status: "inquiry",
               created_at: new Date().toISOString(),
@@ -213,7 +230,11 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
           catering_packages (
             id,
             name,
-            price_per_person
+            price_per_person,
+            pricing_type,
+            base_price,
+            serves_count,
+            tray_description
           )
         `,
           )
