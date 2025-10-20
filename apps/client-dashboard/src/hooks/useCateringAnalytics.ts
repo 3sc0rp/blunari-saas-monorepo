@@ -5,7 +5,32 @@ import {
   CateringOrderMetrics,
   CateringRevenueMetrics,
   CateringPerformanceMetrics,
+  CateringServiceType,
 } from "../types/catering";
+
+// Database row types
+interface CateringOrderRow {
+  id: string;
+  tenant_id: string;
+  status: string;
+  event_date: string;
+  created_at: string;
+  guest_count: number;
+  total_amount: number;
+  contact_email: string;
+  service_type: CateringServiceType;
+  deposit_amount?: number;
+  deposit_paid: boolean;
+  catering_packages?: {
+    id: string;
+    name: string;
+    price_per_person: number;
+  };
+  catering_feedback?: Array<{
+    overall_rating: number;
+    created_at: string;
+  }>;
+}
 import { startOfMonth, endOfMonth, subMonths, format } from "date-fns";
 
 export const useCateringAnalytics = (
@@ -54,12 +79,22 @@ export const useCateringAnalytics = (
             average_order_value: 0,
             deposits_collected: 0,
             deposits_pending: 0,
-            revenue_by_service_type: {} as any,
+            revenue_by_service_type: {
+              pickup: 0,
+              delivery: 0,
+              drop_off: 0,
+              full_service: 0,
+            },
           },
           performance: {
             popular_packages: [],
             busiest_days: [],
-            service_type_distribution: {} as any,
+            service_type_distribution: {
+              pickup: 0,
+              delivery: 0,
+              drop_off: 0,
+              full_service: 0,
+            },
             monthly_trend: [],
             customer_satisfaction: 0,
             repeat_customer_rate: 0,
@@ -70,7 +105,7 @@ export const useCateringAnalytics = (
       try {
         // Fetch orders within date range
         const { data: ordersData, error: ordersError } = await supabase
-          .from("catering_orders" as any)
+          .from("catering_orders")
           .select(
             `
             *,
@@ -121,12 +156,22 @@ export const useCateringAnalytics = (
                 average_order_value: 0,
                 deposits_collected: 0,
                 deposits_pending: 0,
-                revenue_by_service_type: {} as any,
+                revenue_by_service_type: {
+                  pickup: 0,
+                  delivery: 0,
+                  drop_off: 0,
+                  full_service: 0,
+                },
               },
               performance: {
                 popular_packages: [],
                 busiest_days: [],
-                service_type_distribution: {} as any,
+                service_type_distribution: {
+                  pickup: 0,
+                  delivery: 0,
+                  drop_off: 0,
+                  full_service: 0,
+                },
                 monthly_trend: [],
                 customer_satisfaction: 0,
                 repeat_customer_rate: 0,
@@ -136,8 +181,8 @@ export const useCateringAnalytics = (
           throw ordersError;
         }
 
-        // Type assertion for the orders data
-        const orders = (ordersData || []) as any[];
+        // Type the orders data properly
+        const orders = (ordersData || []) as CateringOrderRow[];
 
         // Calculate order metrics
         const orderMetrics: CateringOrderMetrics = {
@@ -214,7 +259,12 @@ export const useCateringAnalytics = (
               sum + (!order.deposit_paid ? order.deposit_amount || 0 : 0),
             0,
           ),
-          revenue_by_service_type: {} as any,
+          revenue_by_service_type: {
+            pickup: 0,
+            delivery: 0,
+            drop_off: 0,
+            full_service: 0,
+          },
         };
 
         // Calculate average order value
@@ -225,17 +275,17 @@ export const useCateringAnalytics = (
             : 0;
 
         // Calculate revenue by service type
-        const serviceTypes = [
+        const serviceTypes: CateringServiceType[] = [
           "pickup",
           "delivery",
           "drop_off",
           "full_service",
-        ] as const;
+        ];
         serviceTypes.forEach((serviceType) => {
           const serviceOrders = orders.filter(
             (o) => o.service_type === serviceType,
           );
-          (revenueMetrics.revenue_by_service_type as any)[serviceType] =
+          revenueMetrics.revenue_by_service_type[serviceType] =
             serviceOrders.reduce(
               (sum, order) => sum + (order.total_amount || 0),
               0,
@@ -246,7 +296,12 @@ export const useCateringAnalytics = (
         const performanceMetrics: CateringPerformanceMetrics = {
           popular_packages: [],
           busiest_days: [],
-          service_type_distribution: {} as any,
+          service_type_distribution: {
+            pickup: 0,
+            delivery: 0,
+            drop_off: 0,
+            full_service: 0,
+          },
           monthly_trend: [],
           customer_satisfaction: 0,
           repeat_customer_rate: 0,
@@ -307,7 +362,7 @@ export const useCateringAnalytics = (
           const count = orders.filter(
             (o) => o.service_type === serviceType,
           ).length;
-          (performanceMetrics.service_type_distribution as any)[serviceType] =
+          performanceMetrics.service_type_distribution[serviceType] =
             orders.length > 0 ? (count / orders.length) * 100 : 0;
         });
 
@@ -343,11 +398,11 @@ export const useCateringAnalytics = (
         // Customer satisfaction from feedback
         const feedbackWithRatings = orders
           .flatMap((order) => order.catering_feedback || [])
-          .filter((feedback) => (feedback as any).overall_rating > 0);
+          .filter((feedback) => feedback.overall_rating > 0);
 
         if (feedbackWithRatings.length > 0) {
           const totalRating = feedbackWithRatings.reduce(
-            (sum, feedback) => sum + (feedback as any).overall_rating,
+            (sum, feedback) => sum + feedback.overall_rating,
             0,
           );
           performanceMetrics.customer_satisfaction =
@@ -400,12 +455,22 @@ export const useCateringAnalytics = (
             average_order_value: 0,
             deposits_collected: 0,
             deposits_pending: 0,
-            revenue_by_service_type: {} as any,
+            revenue_by_service_type: {
+              pickup: 0,
+              delivery: 0,
+              drop_off: 0,
+              full_service: 0,
+            },
           },
           performance: {
             popular_packages: [],
             busiest_days: [],
-            service_type_distribution: {} as any,
+            service_type_distribution: {
+              pickup: 0,
+              delivery: 0,
+              drop_off: 0,
+              full_service: 0,
+            },
             monthly_trend: [],
             customer_satisfaction: 0,
             repeat_customer_rate: 0,

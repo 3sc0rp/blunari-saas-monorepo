@@ -12,13 +12,31 @@ type SupabaseTable = "tenants" | "profiles" | "bookings"; // Known existing tabl
 interface DatabaseError extends Error {
   code?: string;
   details?: string;
+  message: string;
+}
+
+interface VenueAddress {
+  street: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  country: string;
+}
+
+interface OrderMetricsRow {
+  tenant_id: string;
+  month: string;
+  total_orders: number;
+  total_revenue: number;
+  avg_order_value: number;
+  popular_service_type: string;
 }
 
 interface UseCateringDataReturn {
   packages: CateringPackage[] | null;
   loading: boolean;
   error: string | null;
-  createOrder: (orderData: CreateCateringOrderRequest) => Promise<any>;
+  createOrder: (orderData: CreateCateringOrderRequest) => Promise<CateringOrder | { id: string; status: string; tenant_id: string; created_at: string; updated_at: string }>;
   refetch: () => Promise<void>;
   // Additional utility functions
   getOrdersByStatus: (status: string) => Promise<CateringOrder[]>;
@@ -53,22 +71,23 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
   const checkTableExistence = useCallback(async (): Promise<boolean> => {
     try {
       // Use a simple existence check by trying to count rows with limit 0
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("catering_packages")
         .select("id", { count: "exact", head: true })
         .limit(0);
 
       if (error) {
+        const dbError = error as DatabaseError;
         if (
-          error.code === "PGRST106" ||
-          error.message?.includes("relation") ||
-          error.message?.includes("does not exist")
+          dbError.code === "PGRST106" ||
+          dbError.message?.includes("relation") ||
+          dbError.message?.includes("does not exist")
         ) {
           setDiagnosticInfo((prev) => ({
             ...prev,
             cateringTablesAvailable: false,
-            lastErrorCode: error.code,
-            lastErrorMessage: error.message,
+            lastErrorCode: dbError.code,
+            lastErrorMessage: dbError.message,
           }));
           return false;
         }
@@ -81,12 +100,13 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
         cateringTablesAvailable: true,
       }));
       return true;
-    } catch (err: any) {
+    } catch (err) {
+      const dbError = err as DatabaseError;
       setDiagnosticInfo((prev) => ({
         ...prev,
         cateringTablesAvailable: false,
-        lastErrorCode: err.code,
-        lastErrorMessage: err.message,
+        lastErrorCode: dbError.code,
+        lastErrorMessage: dbError.message,
       }));
       return false;
     }
@@ -114,9 +134,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       }
 
       // Real database query (only if tables exist)
-      const { data: packagesData, error: packagesError } = await (
-        supabase as any
-      )
+      const { data: packagesData, error: packagesError } = await supabase
         .from("catering_packages")
         .select(
           `
@@ -146,13 +164,14 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       }
 
       setPackages((packagesData as CateringPackage[]) || []);
-    } catch (err: any) {
-      console.error("Error fetching catering packages:", err);
+    } catch (err) {
+      const dbError = err as DatabaseError;
+      console.error("Error fetching catering packages:", dbError);
 
       const isTableError =
-        err.code === "PGRST106" ||
-        err.message?.includes("relation") ||
-        err.message?.includes("does not exist");
+        dbError.code === "PGRST106" ||
+        dbError.message?.includes("relation") ||
+        dbError.message?.includes("does not exist");
 
       if (isTableError) {
         setError(
@@ -197,7 +216,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
 
       try {
         // Format venue_address as JSONB if it's a string
-        let formattedVenueAddress: any = orderData.venue_address;
+        let formattedVenueAddress: VenueAddress | string = orderData.venue_address;
         if (typeof orderData.venue_address === 'string') {
           formattedVenueAddress = {
             street: orderData.venue_address,
@@ -211,7 +230,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
         // Ensure contact_phone is not empty (database requires it)
         const contactPhone = orderData.contact_phone || "Not provided";
 
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from("catering_orders")
           .insert([
             {
@@ -246,7 +265,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
 
         // Create order history entry
         try {
-          await (supabase as any).from("catering_order_history").insert({
+          await supabase.from("catering_order_history").insert({
             order_id: data.id,
             status: "inquiry",
             notes: "Order created by customer",
@@ -256,15 +275,16 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
           // Don't fail the whole operation for history entry failure
         }
 
-        return data;
-      } catch (err: any) {
-        console.error("Error creating catering order:", err);
+        return data as CateringOrder;
+      } catch (err) {
+        const dbError = err as DatabaseError;
+        console.error("Error creating catering order:", dbError);
 
         // Check if it's a table not found error
         if (
-          err.code === "PGRST106" ||
-          err.message?.includes("relation") ||
-          err.message?.includes("does not exist")
+          dbError.code === "PGRST106" ||
+          dbError.message?.includes("relation") ||
+          dbError.message?.includes("does not exist")
         ) {
           throw new Error(
             "Catering functionality is not yet available. Please contact support to enable catering features.",
@@ -289,7 +309,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       }
 
       try {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from("catering_orders")
           .select(
             `
@@ -315,12 +335,13 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
         }
 
         return data as CateringOrder[];
-      } catch (err: any) {
-        console.error("Error fetching orders by status:", err);
+      } catch (err) {
+        const dbError = err as DatabaseError;
+        console.error("Error fetching orders by status:", dbError);
         if (
-          err.code === "PGRST106" ||
-          err.message?.includes("relation") ||
-          err.message?.includes("does not exist")
+          dbError.code === "PGRST106" ||
+          dbError.message?.includes("relation") ||
+          dbError.message?.includes("does not exist")
         ) {
           throw new Error("Catering functionality is not yet available");
         }
@@ -347,7 +368,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
 
       try {
         // Update the order status
-        const { error: updateError } = await (supabase as any)
+        const { error: updateError } = await supabase
           .from("catering_orders")
           .update({
             status,
@@ -362,7 +383,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
 
         // Create history entry
         try {
-          const { error: historyError } = await (supabase as any)
+          const { error: historyError } = await supabase
             .from("catering_order_history")
             .insert({
               order_id: orderId,
@@ -379,12 +400,13 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
             historyErr,
           );
         }
-      } catch (err: any) {
-        console.error("Error updating order status:", err);
+      } catch (err) {
+        const dbError = err as DatabaseError;
+        console.error("Error updating order status:", dbError);
         if (
-          err.code === "PGRST106" ||
-          err.message?.includes("relation") ||
-          err.message?.includes("does not exist")
+          dbError.code === "PGRST106" ||
+          dbError.message?.includes("relation") ||
+          dbError.message?.includes("does not exist")
         ) {
           throw new Error("Catering functionality is not yet available");
         }
@@ -413,7 +435,7 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
 
 // Additional utility hook for catering analytics
 export function useCateringAnalytics(tenantId?: string) {
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<OrderMetricsRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [tablesExist, setTablesExist] = useState(false);
 
@@ -427,16 +449,17 @@ export function useCateringAnalytics(tenantId?: string) {
       setLoading(true);
 
       // Check if analytics tables/views exist
-      const { error: checkError } = await (supabase as any)
+      const { error: checkError } = await supabase
         .from("catering_order_metrics")
         .select("tenant_id", { count: "exact", head: true })
         .limit(0);
 
       if (checkError) {
+        const dbError = checkError as DatabaseError;
         if (
-          checkError.code === "PGRST106" ||
-          checkError.message?.includes("relation") ||
-          checkError.message?.includes("does not exist")
+          dbError.code === "PGRST106" ||
+          dbError.message?.includes("relation") ||
+          dbError.message?.includes("does not exist")
         ) {
           setTablesExist(false);
           // Provide mock analytics for demo
@@ -458,7 +481,7 @@ export function useCateringAnalytics(tenantId?: string) {
       setTablesExist(true);
 
       // Fetch catering analytics from the view
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("catering_order_metrics")
         .select("*")
         .eq("tenant_id", tenantId)
@@ -469,7 +492,7 @@ export function useCateringAnalytics(tenantId?: string) {
         throw error;
       }
 
-      setAnalytics(data || []);
+      setAnalytics((data as OrderMetricsRow[]) || []);
     } catch (err) {
       console.error("Error fetching catering analytics:", err);
       setAnalytics([]);
