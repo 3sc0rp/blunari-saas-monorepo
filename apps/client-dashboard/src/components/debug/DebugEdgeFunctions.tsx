@@ -1,11 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+interface DebugResults {
+  session?: {
+    hasSession: boolean;
+    hasAccessToken: boolean;
+    tokenLength?: number;
+    userId?: string;
+    email?: string;
+  };
+  listTables?: {
+    status: number;
+    statusText: string;
+    ok: boolean;
+  };
+  listTablesData?: unknown;
+  listTablesError?: string;
+  getKpis?: {
+    status: number;
+    statusText: string;
+    ok: boolean;
+  };
+  getKpisData?: unknown;
+  getKpisError?: string;
+  error?: string;
+}
+
 export const DebugEdgeFunctions: React.FC = () => {
+  // Always call hooks at the top - before any conditional returns
   const [status, setStatus] = useState<string>('Initializing...');
-  const [results, setResults] = useState<any>({});
+  const [results, setResults] = useState<DebugResults>({});
 
   useEffect(() => {
+    // Only run test if in development mode
     if (import.meta.env.MODE === 'development') {
       testEdgeFunctions();
     }
@@ -118,6 +145,7 @@ export const DebugEdgeFunctions: React.FC = () => {
     }
   };
 
+  // Early return AFTER hooks are called - this is correct pattern
   if (import.meta.env.MODE !== 'development') return null;
 
   return (
