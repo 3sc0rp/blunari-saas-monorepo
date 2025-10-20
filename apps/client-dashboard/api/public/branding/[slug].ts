@@ -3,6 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 
 // Public branding endpoint used by the widget runtime
 // Returns: { name, primaryColor?, accentColor?, logoUrl? }
+
+interface BrandingSettings {
+  accentColor?: string;
+  [key: string]: unknown;
+}
+
+interface TenantSettingRow {
+  setting_value?: BrandingSettings | null;
+}
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const origin = (req.headers.origin as string | undefined) || '*';
   res.setHeader('Access-Control-Allow-Origin', origin === 'null' ? 'null' : origin || '*');
@@ -53,9 +62,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .eq('tenant_id', tenant.id)
         .eq('setting_key', 'branding')
         .maybeSingle();
-      const branding = settingsRow?.setting_value || null;
+      const typedRow = settingsRow as TenantSettingRow | null;
+      const branding = typedRow?.setting_value || null;
       if (branding && typeof branding.accentColor === 'string') accent = branding.accentColor;
-    } catch {}
+    } catch (error) {
+      console.error('Failed to fetch tenant branding settings:', error);
+      // Continue with undefined accent color
+    }
 
     return res.status(200).json({
       name: tenant.name || slug,

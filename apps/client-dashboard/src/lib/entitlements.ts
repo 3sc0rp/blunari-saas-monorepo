@@ -37,7 +37,10 @@ export function useEntitlement(key: EntitlementKey): { entitled: boolean; loadin
         const s = (t as any)?.settings || {};
         const ent = s?.entitlements || {};
         if (ent && ent[key] === true) return true;
-      } catch {}
+      } catch (error) {
+        console.error('Failed to check entitlements from tenants table:', error);
+        // Try fallback
+      }
 
       // Fallback to tenant_settings row 'entitlements'
       try {

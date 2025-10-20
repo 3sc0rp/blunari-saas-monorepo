@@ -1,11 +1,40 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
-import { Database } from "@/integrations/supabase/types";
 
-// Use actual database types
-type BookingRow = Database['public']['Tables']['bookings']['Row'];
-type RestaurantTableRow = Database['public']['Tables']['restaurant_tables']['Row'];
+// Database type definitions (generated types are empty, defining manually)
+type BookingRow = {
+  id: string;
+  booking_time: string;
+  party_size: number;
+  status: string;
+  table_id?: string | null;
+  guest_name: string;
+  guest_email: string;
+  guest_phone?: string | null;
+  duration_minutes: number;
+  special_requests?: string | null;
+  deposit_amount?: number | null;
+  deposit_paid: boolean;
+  deposit_required: boolean;
+  created_at: string;
+  updated_at: string;
+  tenant_id: string;
+};
+
+type RestaurantTableRow = {
+  id: string;
+  name: string;
+  capacity: number;
+  active: boolean;
+  table_type: string;
+  position_x: number | null;
+  position_y: number | null;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+};
 
 
 export interface TodayData {
@@ -127,22 +156,22 @@ export const useTodayData = () => {
 
         // Build waitlist entries from real data if present: bookings with status 'waiting'
         const waitlistEntries: WaitlistEntryWithProfiles[] = (bookings || [])
-          .filter(b => (b as any).status === 'waiting')
+          .filter(b => b.status === 'waiting')
           .map(b => ({
-            id: (b as any).id,
-            created_at: (b as any).created_at,
-            party_size: (b as any).party_size || 0,
+            id: b.id,
+            created_at: b.created_at,
+            party_size: b.party_size || 0,
             status: 'waiting',
-            customer_name: (b as any).guest_name,
-            phone: (b as any).guest_phone || undefined,
-            special_requests: (b as any).special_requests || undefined,
+            customer_name: b.guest_name,
+            phone: b.guest_phone || undefined,
+            special_requests: b.special_requests || undefined,
             priority: 'standard',
             estimated_wait_minutes: undefined,
             profiles: {
               first_name: undefined,
               last_name: undefined,
-              email: (b as any).guest_email,
-              phone: (b as any).guest_phone || undefined,
+              email: b.guest_email,
+              phone: b.guest_phone || undefined,
               avatar_url: undefined
             }
           }));
@@ -164,8 +193,8 @@ export const useTodayData = () => {
         const bookingsList: BookingWithProfiles[] = (bookings || []).map(booking => ({
           ...booking,
           // Add compatibility fields for existing components
-          customer_name: (booking as any).guest_name,
-          table_number: (booking as any).table_id || undefined,
+          customer_name: booking.guest_name,
+          table_number: booking.table_id || undefined,
         }));
 
         const waitlistList = waitlistEntries || [];
@@ -183,7 +212,7 @@ export const useTodayData = () => {
         const totalCovers = bookingsList.reduce((sum, b) => sum + (b.party_size || 0), 0);
         
         // Reservations based on real statuses; walk-ins not tracked without explicit column
-        const reservations = bookingsList.filter(b => ['confirmed','seated','completed'].includes((b as any).status)).length;
+        const reservations = bookingsList.filter(b => ['confirmed','seated','completed'].includes(b.status)).length;
         const walkIns = 0;
 
         // Calculate average wait time safely
@@ -255,7 +284,12 @@ export const useTodayData = () => {
       .subscribe();
 
     return () => {
-      try { supabase.removeChannel(channel); } catch {}
+      try { 
+        supabase.removeChannel(channel); 
+      } catch (error) {
+        console.error('Failed to remove channel:', error);
+        // Non-critical cleanup error
+      }
     };
   }, [tenant?.id]);
 

@@ -44,7 +44,7 @@ export const sanitizeEmail = (email: string): string => {
  */
 export const sanitizePhone = (phone: string): string => {
   if (!phone) return '';
-  return phone.replace(/[^\d\s\-\(\)\+]/g, '').trim();
+  return phone.replace(/[^\d\s\-()+]/g, '').trim();
 };
 
 /**
@@ -84,7 +84,7 @@ export const phoneSchema = yup
   .nullable()
   .notRequired()
   .matches(
-    /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/,
+    /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/,
     'Please enter a valid phone number'
   );
 

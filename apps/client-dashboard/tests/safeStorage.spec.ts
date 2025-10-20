@@ -23,11 +23,10 @@ describe('safeStorage', () => {
 
     // Clear module cache so detection runs again
     const path = '../src/utils/safeStorage';
-    // @ts-ignore
+    // @ts-expect-error - intentionally manipulating env for testing
     delete import.meta?.env; // ensure no side effect
-    // @ts-ignore
     const modPath = path;
-    // @ts-ignore
+    // @ts-expect-error - intentionally clearing module cache
     delete (await import(modPath));
 
     const fresh = await import('../src/utils/safeStorage');

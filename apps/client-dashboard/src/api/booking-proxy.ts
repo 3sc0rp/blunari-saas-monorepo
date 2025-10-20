@@ -11,6 +11,94 @@ import {
   ReservationRequest,
 } from "@/types/booking-api";
 
+// Type definitions for external module imports and API responses
+interface SupabaseClientModule {
+  supabase?: {
+    auth?: {
+      getSession?: () => Promise<{ data?: { session?: { access_token?: string } } }>;
+    };
+  };
+}
+
+interface EdgeFunctionRequestBody {
+  slug?: string;
+  tenant_slug?: string;
+  tenant_id?: string;
+  token?: string;
+  timestamp?: string;
+  [key: string]: unknown;
+}
+
+interface EdgeFunctionErrorResponse {
+  success: false;
+  error: {
+    code?: string;
+    message: string;
+    [key: string]: unknown;
+  };
+}
+
+interface EdgeFunctionResponse {
+  success?: boolean;
+  error?: {
+    code?: string;
+    message: string;
+    [key: string]: unknown;
+  };
+  data?: unknown;
+  [key: string]: unknown;
+}
+
+interface TenantDatabaseRow {
+  id: string;
+  slug: string;
+  name: string;
+  timezone?: string;
+  currency?: string;
+}
+
+interface BusinessHoursRow {
+  day_of_week: number;
+  is_open: boolean;
+  open_time: string;
+  close_time: string;
+}
+
+interface ReservationSummary {
+  date?: string;
+  datetime?: string;
+  time?: string;
+  party_size?: number;
+  table_info?: string;
+  deposit_required?: boolean;
+  deposit_amount?: number;
+}
+
+interface RawReservationResponse {
+  reservation_id?: string;
+  reservationId?: string;
+  id?: string;
+  booking_id?: string;
+  confirmation_number?: string;
+  confirmationNumber?: string;
+  reference?: string;
+  code?: string;
+  status?: string;
+  state?: string;
+  reservation_status?: string;
+  summary?: ReservationSummary;
+  date?: string;
+  time?: string;
+  booking_time?: string;
+  party_size?: number;
+  guests?: number;
+  covers?: number;
+  table?: string;
+  deposit_required?: boolean;
+  deposit_amount?: number;
+  [key: string]: unknown;
+}
+
 class BookingAPIError extends Error {
   constructor(
     public code: string,
@@ -40,27 +128,36 @@ async function getUserAccessToken(supabaseUrl?: string): Promise<string | undefi
       );
       if (token) return token;
     }
-  } catch {}
+  } catch (error) {
+    console.error('Failed to parse localStorage supabase data:', error);
+    // Continue to next fallback method
+  }
   // Fallback to querying supabase client if available (dashboard runtime only)
   try {
-    const mod = await import('@/integrations/supabase/client');
-    const client = (mod as any)?.supabase;
+    const mod = await import('@/integrations/supabase/client') as SupabaseClientModule;
+    const client = mod?.supabase;
     if (client?.auth?.getSession) {
       const { data } = await client.auth.getSession();
       return data?.session?.access_token || undefined;
     }
-  } catch {}
+  } catch (error) {
+    console.error('Failed to import supabase client or get session:', error);
+    // Continue to next fallback method
+  }
   // For development/demo, return a demo user token if available
   if (import.meta.env.MODE === 'development') {
     try {
-      const mod = await import('@/integrations/supabase/client');
-      const client = (mod as any)?.supabase;
+      const mod = await import('@/integrations/supabase/client') as SupabaseClientModule;
+      const client = mod?.supabase;
       // Try to get current session one more time
-      const session = await client.auth.getSession();
+      const session = await client?.auth?.getSession();
       if (session?.data?.session?.access_token) {
         return session.data.session.access_token;
       }
-    } catch {}
+    } catch (error) {
+      console.error('Failed to get development session:', error);
+      // Return undefined to allow widget to work in unauthenticated mode
+    }
   }
   return undefined;
 }
@@ -75,15 +172,16 @@ async function callEdgeFunction(
     })();
 
     // Derive slug from body (tenant lookups) or URL path as fallback when token absent
-    const slugFromBody = (body as any)?.slug || (body as any)?.tenant_slug;
+    const requestBody = body as EdgeFunctionRequestBody;
+    const slugFromBody = requestBody?.slug || requestBody?.tenant_slug;
     const slugFromUrl = (() => { try { return new URL(window.location.href).searchParams.get('slug'); } catch { return undefined; } })();
     const slug = slugFromBody || slugFromUrl || undefined;
 
-    const requestBody = {
+    const payload: EdgeFunctionRequestBody = {
       ...body,
       token, // server will validate JWT style widget token
-      slug: !token && slug ? slug : (body as any)?.slug, // include slug explicitly when no token so server slug fallback works
-      tenant_id: (body as any)?.tenant_id ?? undefined,
+      slug: !token && slug ? slug : requestBody?.slug, // include slug explicitly when no token so server slug fallback works
+      tenant_id: requestBody?.tenant_id ?? undefined,
       timestamp: new Date().toISOString(),
     };
 
@@ -103,19 +201,19 @@ async function callEdgeFunction(
       hasUserJwt: !!userJwt,
       userJwtPreview: userJwt ? userJwt.substring(0, 30) + '...' : 'NONE',
       usingAnonKey: !userJwt,
-      hasWidgetToken: !!requestBody.token,
-      widgetTokenPreview: requestBody.token?.toString().substring(0, 20) + '...',
+      hasWidgetToken: !!payload.token,
+      widgetTokenPreview: payload.token?.toString().substring(0, 20) + '...',
       authorizationHeader: userJwt ? 'Using User JWT' : 'Using Anon Key',
       supabaseUrl,
       hasSupabaseKey: !!supabaseKey
     });
     console.log('[booking-proxy] Request body:', {
-      ...requestBody,
-      token: requestBody.token ? '[REDACTED]' : undefined,
-      hasTenantId: !!requestBody.tenant_id,
-      tenantId: requestBody.tenant_id,
-      hasSlug: !!requestBody.slug,
-      slug: requestBody.slug
+      ...payload,
+      token: payload.token ? '[REDACTED]' : undefined,
+      hasTenantId: !!payload.tenant_id,
+      tenantId: payload.tenant_id,
+      hasSlug: !!payload.slug,
+      slug: payload.slug
     });
     
     const requestId = crypto.randomUUID();
@@ -132,7 +230,7 @@ async function callEdgeFunction(
           apikey: supabaseKey,
           "x-correlation-id": requestId,
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(payload),
       },
     );
     
@@ -158,11 +256,14 @@ async function callEdgeFunction(
         if (parsed?.error?.code) {
           errorText = `${parsed.error.code}: ${parsed.error.message || ''}`.trim();
         }
-      } catch {}
+      } catch (error) {
+        console.error('Failed to parse error response JSON:', error);
+        // Use original errorText if parsing fails
+      }
       throw new BookingAPIError("HTTP_ERROR", `HTTP ${response.status}: ${errorText}`, {
         requestId,
         endpoint: functionName,
-        requestBody: requestBody,
+        requestBody: payload,
       });
     }
 
@@ -188,15 +289,20 @@ async function callEdgeFunction(
     
     console.log('[booking-proxy] Response data:', data);
     console.log('[booking-proxy] Response keys:', Object.keys(data || {}));
-    console.log('[booking-proxy] Response has reservation_id?', !!(data as any)?.reservation_id);
+    
+    const typedData = data as EdgeFunctionResponse;
+    console.log('[booking-proxy] Response has reservation_id?', !!typedData?.reservation_id);
 
-    if ((data as any)?.success === false && (data as any)?.error) {
-      const err: any = data as any;
-      console.error('[booking-proxy] API returned error:', err);
-      throw new BookingAPIError(err.error.code || "API_ERROR", err.error.message, {
-        ...err.error,
-        requestId,
-      });
+    if (typedData?.success === false && typedData?.error) {
+      console.error('[booking-proxy] API returned error:', typedData.error);
+      throw new BookingAPIError(
+        typedData.error.code || "API_ERROR",
+        typedData.error.message,
+        {
+          ...typedData.error,
+          requestId,
+        }
+      );
     }
 
     if (!data) {
@@ -208,7 +314,11 @@ async function callEdgeFunction(
     if (error instanceof BookingAPIError) {
       throw error;
     }
-    throw new BookingAPIError("NETWORK_ERROR", `Failed to communicate with booking service`, error as any);
+    const err = error as Error;
+    throw new BookingAPIError("NETWORK_ERROR", `Failed to communicate with booking service`, {
+      message: err?.message,
+      name: err?.name,
+    });
   }
 }
 
@@ -240,7 +350,16 @@ export async function getTenantBySlug(slug: string) {
       });
       
       // Transform response to expected format
-      const tenant = data as any;
+      const tenant = data as RawReservationResponse & {
+        tenant_id?: string;
+        slug?: string;
+        name?: string;
+        timezone?: string;
+        currency?: string;
+        business_hours?: BusinessHoursRow[];
+        branding?: { primary_color?: string; secondary_color?: string };
+        features?: { deposit_enabled?: boolean; revenue_optimization?: boolean };
+      };
       const transformedData = {
         tenant_id: tenant.tenant_id || tenant.id,
         slug: tenant.slug || slug,
@@ -272,8 +391,11 @@ export async function getTenantBySlug(slug: string) {
       .select('id, slug, name, timezone, currency')
       .eq('slug', slug)
       .maybeSingle();
+    
     // Some generated types may represent errors as data; normalize
-    const tenant: any = tenantRaw && (tenantRaw as any).id ? tenantRaw : (error ? null : tenantRaw);
+    const tenant = (tenantRaw && (tenantRaw as TenantDatabaseRow).id) 
+      ? (tenantRaw as TenantDatabaseRow) 
+      : null;
 
     if (error) {
       console.error('[getTenantBySlug] Database error:', error);
@@ -285,10 +407,10 @@ export async function getTenantBySlug(slug: string) {
       throw new BookingAPIError('TENANT_NOT_FOUND', `Restaurant not found: ${slug}`);
     }
     
-  console.log('[getTenantBySlug] Tenant found via DB:', { id: (tenant as any).id, name: (tenant as any).name });
+    console.log('[getTenantBySlug] Tenant found via DB:', { id: tenant.id, name: tenant.name });
     
     // Fetch business hours separately from the business_hours table
-    let businessHours: any[] = [];
+    let businessHours: BusinessHoursRow[] = [];
     try {
       const { data: bhData } = await supabase
         .from('business_hours')
@@ -296,7 +418,7 @@ export async function getTenantBySlug(slug: string) {
         .eq('tenant_id', tenant.id);
       
       if (bhData && Array.isArray(bhData)) {
-        businessHours = bhData;
+        businessHours = bhData as BusinessHoursRow[];
       }
     } catch (bhError) {
       console.warn('[getTenantBySlug] Failed to fetch business hours:', bhError);
@@ -304,11 +426,11 @@ export async function getTenantBySlug(slug: string) {
     }
     
     const transformedData = {
-      tenant_id: (tenant as any).id,
-      slug: (tenant as any).slug || slug,
-      name: (tenant as any).name || slug,
-      timezone: (tenant as any).timezone || 'UTC',
-      currency: (tenant as any).currency || 'USD',
+      tenant_id: tenant.id,
+      slug: tenant.slug || slug,
+      name: tenant.name || slug,
+      timezone: tenant.timezone || 'UTC',
+      currency: tenant.currency || 'USD',
       business_hours: businessHours,
       branding: {
         primary_color: '#3b82f6',
@@ -326,10 +448,14 @@ export async function getTenantBySlug(slug: string) {
     if (error instanceof BookingAPIError) {
       throw error;
     }
+    const err = error as Error;
     throw new BookingAPIError(
       "TENANT_LOOKUP_FAILED",
       "Failed to lookup restaurant information",
-      error as any,
+      {
+        message: err?.message,
+        name: err?.name,
+      },
     );
   }
 }
@@ -346,30 +472,39 @@ export async function searchAvailability(request: SearchRequest) {
     const data = await callEdgeFunction("widget-booking-live", payload);
     return AvailabilityResponseSchema.parse(data);
   } catch (error) {
+    const err = error as Error;
     throw new BookingAPIError(
       "AVAILABILITY_SEARCH_FAILED",
       "Failed to search availability",
-      error as any,
+      {
+        message: err?.message,
+        name: err?.name,
+      },
     );
   }
 }
 
 export async function createHold(request: HoldRequest, idempotencyKey?: string) {
   try {
+    const requestBody = request as HoldRequest & { table_id?: string };
     const data = await callEdgeFunction("widget-booking-live", {
       action: "hold",
       tenant_id: request.tenant_id,
       party_size: request.party_size,
       slot: request.slot,
-      table_id: (request as any).table_id,
+      table_id: requestBody.table_id,
       idempotency_key: idempotencyKey,
     });
     return HoldResponseSchema.parse(data);
   } catch (error) {
+    const err = error as Error;
     throw new BookingAPIError(
       "HOLD_CREATION_FAILED",
       "Failed to create booking hold",
-      error as any,
+      {
+        message: err?.message,
+        name: err?.name,
+      },
     );
   }
 }
@@ -383,42 +518,51 @@ export async function confirmReservation(
     console.log('[confirmReservation] Request:', JSON.stringify(request, null, 2));
     console.log('[confirmReservation] Idempotency key:', idempotencyKey);
     
+    const extendedRequest = request as ReservationRequest & {
+      table_id?: string;
+      deposit?: unknown;
+      source?: string;
+    };
+    
     let rawData = await callEdgeFunction("widget-booking-live", {
       action: "confirm",
       idempotency_key: idempotencyKey,
       tenant_id: request.tenant_id,
       hold_id: request.hold_id,
       guest_details: request.guest_details,
-      table_id: (request as any).table_id,
-      deposit: (request as any).deposit,
-      source: (request as any).source,
+      table_id: extendedRequest.table_id,
+      deposit: extendedRequest.deposit,
+      source: extendedRequest.source,
     });
 
     console.log('[confirmReservation] ✅ Raw data received from edge function:');
     console.log(JSON.stringify(rawData, null, 2));
     console.log('[confirmReservation] Data type:', typeof rawData);
-    console.log('[confirmReservation] Data keys:', rawData ? Object.keys(rawData as any) : 'NO KEYS - data is null/undefined');
+    
+    const typedRawData = rawData as EdgeFunctionResponse;
+    console.log('[confirmReservation] Data keys:', rawData ? Object.keys(typedRawData) : 'NO KEYS - data is null/undefined');
 
     // CRITICAL CHECK: Is the response wrapped in a 'data' property?
-    if (rawData && (rawData as any).data && typeof (rawData as any).data === 'object') {
+    if (typedRawData?.data && typeof typedRawData.data === 'object') {
       console.log('[confirmReservation] ⚠️  Response is wrapped in a "data" property - unwrapping...');
-      rawData = (rawData as any).data;
+      rawData = typedRawData.data;
       console.log('[confirmReservation] Unwrapped data:', JSON.stringify(rawData, null, 2));
-      console.log('[confirmReservation] Unwrapped data keys:', Object.keys(rawData as any));
+      console.log('[confirmReservation] Unwrapped data keys:', Object.keys(rawData as EdgeFunctionResponse));
     }
 
     // CRITICAL CHECK: Is there an error in the response?
-    if (rawData && (rawData as any).error) {
-      console.error('[confirmReservation] ❌ Edge function returned an error:', (rawData as any).error);
+    const unwrappedData = rawData as EdgeFunctionResponse;
+    if (unwrappedData?.error) {
+      console.error('[confirmReservation] ❌ Edge function returned an error:', unwrappedData.error);
       throw new BookingAPIError(
         'EDGE_FUNCTION_ERROR',
-        (rawData as any).error?.message || 'Edge function returned an error',
-        { error: (rawData as any).error, rawResponse: rawData }
+        unwrappedData.error?.message || 'Edge function returned an error',
+        { error: unwrappedData.error, rawResponse: rawData }
       );
     }
 
     // CRITICAL CHECK: Is this an empty object?
-    if (rawData && typeof rawData === 'object' && Object.keys(rawData as any).length === 0) {
+    if (unwrappedData && typeof unwrappedData === 'object' && Object.keys(unwrappedData).length === 0) {
       console.error('[confirmReservation] ❌ Edge function returned an empty object!');
       console.error('[confirmReservation] This usually means the edge function failed silently.');
       console.error('[confirmReservation] Request was:', { request, idempotencyKey });
@@ -476,18 +620,22 @@ export async function confirmReservation(
     if (error instanceof BookingAPIError) {
       throw error;
     }
+    const err = error as Error;
     throw new BookingAPIError(
       "RESERVATION_CONFIRMATION_FAILED",
       "Failed to confirm reservation",
-      error as any,
+      {
+        message: err?.message,
+        name: err?.name,
+      },
     );
   }
 }
 
 // Map various upstream payload shapes to our stable schema to avoid UX regressions
-function normalizeReservationResponse(input: any): any {
+function normalizeReservationResponse(input: unknown): RawReservationResponse {
   try {
-    const d = input || {};
+    const d = (input || {}) as RawReservationResponse;
 
     // Debug logging in development
     console.log('[normalizeReservationResponse] === RESPONSE NORMALIZATION ===');
@@ -540,7 +688,7 @@ function normalizeReservationResponse(input: any): any {
 
     const summary = d.summary || {};
     let dateLike = summary.date || d.date || d.booking_time || summary.datetime;
-    let timeLike = summary.time || d.time;
+    const timeLike = summary.time || d.time;
 
     if (!dateLike && typeof d.booking_time === 'string') {
       dateLike = d.booking_time;
@@ -601,10 +749,14 @@ export async function getTenantPolicies(tenantId: string) {
 
     return PolicyResponseSchema.parse(data);
   } catch (error) {
+    const err = error as Error;
     throw new BookingAPIError(
       "POLICY_RETRIEVAL_FAILED",
       "Failed to retrieve policies",
-      error as any,
+      {
+        message: err?.message,
+        name: err?.name,
+      },
     );
   }
 }

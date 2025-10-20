@@ -24,12 +24,12 @@ if (typeof window !== 'undefined') {
         const g = (window as any).__blunariMetrics = (window as any).__blunariMetrics || { suppressedStorageErrors: 0 };
         g.suppressedStorageErrors++;
         if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') {
-          // eslint-disable-next-line no-console
+           
           console.warn('[Suppressed Sandbox Storage Error]', msg, 'count=', g.suppressedStorageErrors);
         }
         return; // swallow
       }
-      // eslint-disable-next-line no-console
+       
       console.error('[GlobalError]', {
         message: msg,
         filename: e.filename,
@@ -39,7 +39,7 @@ if (typeof window !== 'undefined') {
       });
     });
     window.addEventListener('unhandledrejection', (e) => {
-      // eslint-disable-next-line no-console
+       
       console.error('[UnhandledRejection]', {
         reason: (e as any).reason?.stack || (e as any).reason
       });

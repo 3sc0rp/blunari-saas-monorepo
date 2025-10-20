@@ -22,7 +22,10 @@ export async function requireEntitlement(req: VercelRequest, key: 'three_d_floor
       const user = (data as any)?.user;
       tenantId = user?.user_metadata?.tenant_id || null;
     }
-  } catch {}
+  } catch (error) {
+    console.error('Failed to get user from bearer token:', error);
+    // Continue without authenticated tenant ID
+  }
 
   const urlObj = new URL(req.url || '', 'http://localhost');
   const searchParams = urlObj.searchParams;
@@ -48,7 +51,10 @@ export async function requireEntitlement(req: VercelRequest, key: 'three_d_floor
       .maybeSingle();
     const settings = (row as any)?.settings || {};
     entitled = settings?.entitlements?.[key] === true;
-  } catch {}
+  } catch (error) {
+    console.error('Failed to fetch entitlements from tenants table:', error);
+    // Try fallback method
+  }
 
   if (!entitled) {
     try {
@@ -60,7 +66,10 @@ export async function requireEntitlement(req: VercelRequest, key: 'three_d_floor
         .maybeSingle();
       const ent = (ts as any)?.setting_value || {};
       entitled = ent?.[key] === true;
-    } catch {}
+    } catch (error) {
+      console.error('Failed to fetch entitlements from tenant_settings table:', error);
+      // entitled remains false
+    }
   }
 
   if (!entitled) {

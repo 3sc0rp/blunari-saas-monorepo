@@ -83,7 +83,7 @@ export interface FormAbandonedMetadata extends CateringEventMetadata {
 
 // Session tracking
 let sessionStartTime: number | null = null;
-let stepStartTimes: Record<string, number> = {};
+const stepStartTimes: Record<string, number> = {};
 let sessionId: string | null = null;
 
 /**
@@ -194,40 +194,35 @@ const trackEventServerSide = async (
   event: CateringAnalyticsEvent,
   metadata: CateringEventMetadata
 ): Promise<void> => {
-  try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Supabase configuration missing');
-    }
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase configuration missing');
+  }
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/track-catering-analytics`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': supabaseAnonKey,
-      },
-      body: JSON.stringify({
-        tenant_id: metadata.tenant_id,
-        event_name: event,
-        event_data: metadata,
-        session_id: metadata.session_id,
-      }),
-    });
+  const response = await fetch(`${supabaseUrl}/functions/v1/track-catering-analytics`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': supabaseAnonKey,
+    },
+    body: JSON.stringify({
+      tenant_id: metadata.tenant_id,
+      event_name: event,
+      event_data: metadata,
+      session_id: metadata.session_id,
+    }),
+  });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Server-side tracking failed');
-    }
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Server-side tracking failed');
+  }
 
-    if (import.meta.env.DEV || import.meta.env.VITE_ANALYTICS_DEBUG) {
-      const result = await response.json();
-      console.log('[Analytics] Server-side tracked:', result);
-    }
-  } catch (error) {
-    // Re-throw to be caught by caller
-    throw error;
+  if (import.meta.env.DEV || import.meta.env.VITE_ANALYTICS_DEBUG) {
+    const result = await response.json();
+    console.log('[Analytics] Server-side tracked:', result);
   }
 };
 

@@ -158,12 +158,13 @@ const calculatePricePreview = (
         total: pricePerPerson * guestCount,
         breakdown: `$${pricePerPerson.toFixed(2)} × ${guestCount} guests`,
       };
-    case "per_tray":
+    case "per_tray": {
       const traysNeeded = Math.ceil(guestCount / servesCount);
       return {
         total: basePrice * traysNeeded,
         breakdown: `$${basePrice.toFixed(2)} × ${traysNeeded} ${traysNeeded === 1 ? "tray" : "trays"} (${guestCount} guests)`,
       };
+    }
     case "fixed":
       return {
         total: basePrice,

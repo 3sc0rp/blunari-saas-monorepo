@@ -43,14 +43,16 @@ function WidgetApp() {
   }, []);
 
   // Parent postMessage handshake + resize events
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions, no-empty
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const rawParent = params.get('parent_origin') || '';
     let parentOrigin = '';
-    try { if (rawParent) parentOrigin = new URL(rawParent).origin; } catch {}
+    // Intentional empty catch for cross-origin URL parsing failures
+    try { if (rawParent) parentOrigin = new URL(rawParent).origin; } catch { /* cross-origin safe */ }
     // Fallback to document.referrer origin if provided and valid (safer than '*')
     if (!parentOrigin && document.referrer) {
-      try { parentOrigin = new URL(document.referrer).origin; } catch {}
+      try { parentOrigin = new URL(document.referrer).origin; } catch { /* cross-origin safe */ }
     }
     const correlationId = params.get('cid') || '';
     const widgetIdRef = { current: '' } as { current: string };
@@ -70,11 +72,15 @@ function WidgetApp() {
         const cid = d.correlationId || correlationId;
         try {
           const payload = { type: 'widget_loaded', widgetId: widgetIdRef.current, correlationId: cid } as any;
-          // Send to parent (embed case)
-          try { window.parent && window.parent.postMessage(payload, parentOrigin || '*'); } catch {}
+          // Send to parent (embed case) - intentional empty catches for cross-origin postMessage
+          try { 
+            if (window.parent) {
+              window.parent.postMessage(payload, parentOrigin || '*');
+            }
+          } catch { /* cross-origin safe */ }
           // Also send to self (test/top-level case)
-          try { window.postMessage(payload, parentOrigin || '*'); } catch {}
-        } catch {}
+          try { window.postMessage(payload, parentOrigin || '*'); } catch { /* cross-origin safe */ }
+        } catch { /* cross-origin safe */ }
       }
     }
 
@@ -89,14 +95,16 @@ function WidgetApp() {
         const h = Math.max(body ? body.scrollHeight : 0, doc ? doc.scrollHeight : 0);
         if (h && h !== lastHeight) {
           lastHeight = h;
-          window.parent && window.parent.postMessage({ type: 'widget_resize', widgetId: widgetIdRef.current, height: h, correlationId }, parentOrigin || '*');
+          if (window.parent) {
+            window.parent.postMessage({ type: 'widget_resize', widgetId: widgetIdRef.current, height: h, correlationId }, parentOrigin || '*');
+          }
         }
-      } catch {}
+      } catch { /* cross-origin safe */ }
     };
 
     const ro = (window as any).ResizeObserver ? new ResizeObserver(sendResize) : null;
     if (ro) {
-      try { ro.observe(document.documentElement); } catch {}
+      try { ro.observe(document.documentElement); } catch { /* DOM safe */ }
     }
     const interval = window.setInterval(sendResize, 1000);
     window.addEventListener('load', sendResize);
@@ -118,8 +126,8 @@ function WidgetApp() {
       const params = new URLSearchParams(window.location.search);
       const correlationId = params.get('cid') || '';
       const payload = { type: 'widget_loaded', widgetId: '', correlationId } as any;
-      setTimeout(() => { try { window.postMessage(payload, '*'); } catch {} }, 120);
-    } catch {}
+      setTimeout(() => { try { window.postMessage(payload, '*'); } catch { /* cross-origin safe */ } }, 120);
+    } catch { /* cross-origin safe */ }
   }, []);
 
   return (

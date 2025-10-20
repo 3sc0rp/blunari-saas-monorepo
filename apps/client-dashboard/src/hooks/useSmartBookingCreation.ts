@@ -207,7 +207,7 @@ export const useSmartBookingCreation = (tenantId?: string) => {
           
           // Try multiple verification approaches
           let found = false;
-          let verificationAttempts = [];
+          const verificationAttempts = [];
           
           // Attempt 1: Search by reservation ID if available
           if (conf) {

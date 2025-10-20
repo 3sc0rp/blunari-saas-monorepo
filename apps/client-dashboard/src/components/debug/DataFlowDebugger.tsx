@@ -113,6 +113,9 @@ const DataFlowDebugger: React.FC = () => {
     runDebugChecks();
   }, [runDebugChecks]);
 
+  // Hook must be called before any conditional returns
+  const [collapsed, setCollapsed] = useState(false);
+
   // Always show in development, and show in production if there are issues
   const shouldShow = import.meta.env.MODE === 'development' || 
                     (import.meta.env.MODE === 'production' && 
@@ -121,8 +124,6 @@ const DataFlowDebugger: React.FC = () => {
   if (!shouldShow) {
     return null;
   }
-
-  const [collapsed, setCollapsed] = useState(false);
 
   // Prevent render errors
   if (!debugInfo || typeof debugInfo !== 'object') {

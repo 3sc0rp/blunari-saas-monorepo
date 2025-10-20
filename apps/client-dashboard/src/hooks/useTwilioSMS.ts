@@ -183,6 +183,7 @@ export function useTwilioSMS(tenantId: string, filters?: SMSFilters) {
   const calculateSegments = (message: string): number => {
     // GSM-7 encoding: 160 chars per segment for single, 153 for multi-part
     // UCS-2 encoding: 70 chars per segment for single, 67 for multi-part
+    // eslint-disable-next-line no-control-regex
     const hasUnicode = /[^\x00-\x7F]/.test(message);
     const length = message.length;
 

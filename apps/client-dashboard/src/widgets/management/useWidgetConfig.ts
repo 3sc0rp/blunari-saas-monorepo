@@ -41,7 +41,7 @@ export function useWidgetConfig(initialType: WidgetType, tenantId?: string | nul
   const debug = (...args: any[]) => {
     if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') {
       // Prefix to identify hook logs
-      // eslint-disable-next-line no-console
+       
       console.log('[WidgetConfig]', ...args);
     }
   };

@@ -155,7 +155,7 @@ const WidgetManagement: React.FC = () => {
   const [activeWidgetType, setActiveWidgetType] = useState<'booking' | 'catering'>('booking');
   const debugWM = (...args: any[]) => {
     if (import.meta.env.VITE_ANALYTICS_DEBUG === '1') {
-      // eslint-disable-next-line no-console
+       
       console.log('[WidgetManagement]', ...args);
     }
   };
@@ -250,10 +250,10 @@ const WidgetManagement: React.FC = () => {
     }
   }, [showSafeArea, tenantSlug, tenant?.slug]);
 
-  useEffect(() => { try { safeStorage.set(`wm.deploy.format.${tenantSlug || tenant?.slug || 'default'}`, embedType); } catch {} }, [embedType, tenantSlug, tenant?.slug]);
-  useEffect(() => { try { safeStorage.set(`wm.deploy.origin.${tenantSlug || tenant?.slug || 'default'}`, allowedOriginInput || ''); } catch {} }, [allowedOriginInput, tenantSlug, tenant?.slug]);
-  useEffect(() => { try { safeStorage.set(`wm.deploy.sandbox.${tenantSlug || tenant?.slug || 'default'}`, iframeSandbox ? '1' : '0'); } catch {} }, [iframeSandbox, tenantSlug, tenant?.slug]);
-  useEffect(() => { try { safeStorage.set(`wm.deploy.lazy.${tenantSlug || tenant?.slug || 'default'}`, iframeLazy ? '1' : '0'); } catch {} }, [iframeLazy, tenantSlug, tenant?.slug]);
+  useEffect(() => { try { safeStorage.set(`wm.deploy.format.${tenantSlug || tenant?.slug || 'default'}`, embedType); } catch (e) { console.error('Failed to save embed type:', e); } }, [embedType, tenantSlug, tenant?.slug]);
+  useEffect(() => { try { safeStorage.set(`wm.deploy.origin.${tenantSlug || tenant?.slug || 'default'}`, allowedOriginInput || ''); } catch (e) { console.error('Failed to save origin:', e); } }, [allowedOriginInput, tenantSlug, tenant?.slug]);
+  useEffect(() => { try { safeStorage.set(`wm.deploy.sandbox.${tenantSlug || tenant?.slug || 'default'}`, iframeSandbox ? '1' : '0'); } catch (e) { console.error('Failed to save sandbox setting:', e); } }, [iframeSandbox, tenantSlug, tenant?.slug]);
+  useEffect(() => { try { safeStorage.set(`wm.deploy.lazy.${tenantSlug || tenant?.slug || 'default'}`, iframeLazy ? '1' : '0'); } catch (e) { console.error('Failed to save lazy setting:', e); } }, [iframeLazy, tenantSlug, tenant?.slug]);
 
   useEffect(() => {
     const keyBase = `wm.tab.${tenantSlug || tenant?.slug || 'default'}`;
@@ -419,7 +419,7 @@ const WidgetManagement: React.FC = () => {
   const renderCountRef = useRef(0);
   renderCountRef.current++;
   if (import.meta.env.VITE_ANALYTICS_DEBUG === '1' && renderCountRef.current % 25 === 0) {
-    // eslint-disable-next-line no-console
+     
     console.log('[WidgetManagement] Render count', renderCountRef.current);
   }
 

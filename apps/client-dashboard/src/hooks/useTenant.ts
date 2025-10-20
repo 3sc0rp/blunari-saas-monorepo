@@ -49,7 +49,7 @@ export function useTenant() {
   const lastTenantKeyRef = useRef<string | null>(null);
   const RESOLVE_DEBOUNCE_MS = 4000; // suppress identical resolves within 4s window
   const debugEnabled = import.meta.env.MODE === 'development' && import.meta.env.VITE_ENABLE_DEV_LOGS === 'true';
-  const debug = (...args: any[]) => { if (debugEnabled) { /* eslint-disable no-console */ console.log('[useTenant]', ...args); } };
+  const debug = (...args: any[]) => { if (debugEnabled) {   console.log('[useTenant]', ...args); } };
   const shallowTenantEqual = (a: TenantInfo | null, b: TenantInfo | null) => {
     if (a === b) return true; if (!a || !b) return false; return a.id===b.id && a.slug===b.slug && a.name===b.name && a.timezone===b.timezone && a.currency===b.currency; };
 

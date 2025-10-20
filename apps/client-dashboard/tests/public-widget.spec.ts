@@ -61,7 +61,7 @@ test.describe('Public Booking Widget', () => {
   // Try to find a semantic heading OR verify body has some non-empty text after network idle
   const headingCandidate = page.getByRole('heading').first();
   await page.waitForLoadState('networkidle');
-  let bodyText = await page.locator('body').innerText();
+  const bodyText = await page.locator('body').innerText();
   // Minimal assertion: after idle, body should have some text content
   expect(bodyText.trim().length).toBeGreaterThan(0);
 

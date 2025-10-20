@@ -16,7 +16,10 @@ export function prefetchRoute(path: string): void {
     } else {
       setTimeout(() => loader().catch(() => {}), 200);
     }
-  } catch {}
+  } catch (error) {
+    console.error(`Failed to schedule prefetch for route: ${path}`, error);
+    // Non-critical - route will load on demand
+  }
 }
 
 export function prefetchAll(paths: string[]): void {

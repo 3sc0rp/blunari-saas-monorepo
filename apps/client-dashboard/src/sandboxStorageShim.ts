@@ -34,18 +34,22 @@
       try {
         const showDebug = /\b(debug|console)=verbose\b/i.test(window.location.search) || (window as any).__BLUNARI_DEBUG__ === true;
         if (showDebug && typeof console !== 'undefined') {
-          // eslint-disable-next-line no-console
+           
           console.debug('[Blunari sandboxStorageShim] Applied in-memory storage fallback (sandboxed iframe).');
         }
-      } catch {}
+      } catch {
+        // Intentional: Silently ignore debug logging failures in restricted environments
+      }
     } catch (patchErr) {
       try {
         const showDebug = /\b(debug|console)=verbose\b/i.test(window.location.search) || (window as any).__BLUNARI_DEBUG__ === true;
         if (showDebug && typeof console !== 'undefined') {
-          // eslint-disable-next-line no-console
+           
           console.debug('[Blunari sandboxStorageShim] Failed to redefine storages:', patchErr);
         }
-      } catch {}
+      } catch {
+        // Intentional: Silently ignore debug logging failures in restricted environments
+      }
     }
   }
 })();

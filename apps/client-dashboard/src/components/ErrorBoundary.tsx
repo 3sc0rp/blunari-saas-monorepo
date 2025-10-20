@@ -161,7 +161,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             }
           });
           navigator.sendBeacon(endpoint, payload);
-        } catch {}
+        } catch (beaconError) {
+          console.error('Failed to send beacon to monitoring endpoint:', beaconError);
+          // Non-critical - monitoring is best-effort
+        }
       }
     } catch (monitoringError) {
       const monitoringLogContext = {

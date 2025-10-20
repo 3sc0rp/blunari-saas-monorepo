@@ -105,7 +105,10 @@ function App() {
         prefetchRoute('/dashboard/tables');
         prefetchRoute('/dashboard/analytics');
       }, 300);
-    } catch {}
+    } catch (error) {
+      console.error('Failed to register route prefetch:', error);
+      // Non-critical - app will work without prefetching
+    }
   }, []);
   return (
     <ErrorBoundary>

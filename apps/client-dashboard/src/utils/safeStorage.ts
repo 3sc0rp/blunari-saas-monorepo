@@ -30,7 +30,7 @@ export const safeStorage: SafeStorageLike = (() => {
   let isSandboxed = false;
   try {
     // Accessing top may throw in sandbox; treat that as sandboxed indicator
-    // eslint-disable-next-line no-self-compare
+     
     if (window.top !== window.self) {
       // Try simple read test
       const testKey = '__ss_test__';

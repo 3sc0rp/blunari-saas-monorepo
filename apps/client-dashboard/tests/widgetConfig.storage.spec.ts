@@ -20,7 +20,7 @@ describe('widget config storage (sandboxed fallback)', () => {
     mockThrowingLocalStorage();
     // Reset cached safeStorage singleton by deleting module from import cache if possible
     // (In Vitest ESM, re-importing after deletion triggers fresh evaluation.)
-    // @ts-ignore
+    // @ts-expect-error - checking for Vitest SSR import function
     if (typeof __vite_ssr_import__ === 'function') {
       // nothing special; vitest handles fresh modules in isolation per test file
     }

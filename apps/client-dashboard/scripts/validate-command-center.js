@@ -5,6 +5,7 @@
  * Run this in the browser console on the Command Center page.
  */
 
+(function() {
 console.log('🔍 Command Center Filtering Validation');
 console.log('=====================================');
 
@@ -141,3 +142,4 @@ return {
   testFiltering: testFiltering,
   results: results
 };
+})();

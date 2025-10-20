@@ -47,7 +47,10 @@ export async function createWidgetToken(
         if (data?.token) return data.token as string;
       }
     }
-  } catch {}
+  } catch (error) {
+    console.error('Failed to fetch widget token from Edge Function:', error);
+    // Fallback to local signing
+  }
 
   // Fallback: local signing in development only (not secure). Avoid in production.
   const now = Math.floor(Date.now() / 1000);

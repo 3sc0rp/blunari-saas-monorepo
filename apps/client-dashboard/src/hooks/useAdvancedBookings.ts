@@ -182,7 +182,12 @@ export const useAdvancedBookings = (tenantId?: string) => {
       .subscribe();
 
     return () => {
-      try { supabase.removeChannel(channel); } catch {}
+      try { 
+        supabase.removeChannel(channel); 
+      } catch (error) {
+        console.error('Failed to remove Supabase channel:', error);
+        // Non-critical cleanup error
+      }
     };
   }, [tenantId, queryClient]);
 
