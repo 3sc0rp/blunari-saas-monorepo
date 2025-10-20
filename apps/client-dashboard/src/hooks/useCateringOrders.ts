@@ -12,6 +12,30 @@ import {
   CateringOrderFilters,
 } from "../types/catering";
 
+interface CateringOrderRow {
+  id: string;
+  tenant_id: string;
+  status: CateringOrderStatus;
+  event_name: string;
+  event_date: string;
+  guest_count: number;
+  service_type: CateringServiceType;
+  contact_name: string;
+  contact_email: string;
+  contact_phone?: string;
+  venue_address: string | object;
+  created_at: string;
+  updated_at: string;
+  catering_packages?: {
+    id: string;
+    name: string;
+    price_per_person: number;
+    includes_setup?: boolean;
+    includes_service?: boolean;
+    includes_cleanup?: boolean;
+  };
+}
+
 export const useCateringOrders = (tenantId?: string) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -35,7 +59,7 @@ export const useCateringOrders = (tenantId?: string) => {
 
       try {
         let query = supabase
-          .from("catering_orders" as any)
+          .from("catering_orders")
           .select(
             `
             *,
@@ -108,7 +132,7 @@ export const useCateringOrders = (tenantId?: string) => {
   const createOrderMutation = useMutation({
     mutationFn: async (orderData: CreateCateringOrderRequest) => {
       const { data, error } = await supabase
-        .from("catering_orders" as any)
+        .from("catering_orders")
         .insert({
           ...orderData,
           tenant_id: tenantId!,
@@ -120,7 +144,7 @@ export const useCateringOrders = (tenantId?: string) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as CateringOrderRow;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
@@ -128,7 +152,7 @@ export const useCateringOrders = (tenantId?: string) => {
       });
       toast({
         title: "Quote Request Submitted",
-        description: `Your catering inquiry for "${(data as any)?.event_name || "your event"}" has been submitted. We'll contact you within 24 hours.`,
+        description: `Your catering inquiry for "${data.event_name || "your event"}" has been submitted. We'll contact you within 24 hours.`,
       });
     },
     onError: (error) => {
@@ -154,7 +178,7 @@ export const useCateringOrders = (tenantId?: string) => {
       updates: UpdateCateringOrderRequest;
     }) => {
       const { data, error } = await supabase
-        .from("catering_orders" as any)
+        .from("catering_orders")
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
@@ -165,7 +189,7 @@ export const useCateringOrders = (tenantId?: string) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as CateringOrderRow;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
@@ -173,7 +197,7 @@ export const useCateringOrders = (tenantId?: string) => {
       });
       toast({
         title: "Order Updated",
-        description: `Catering order for "${(data as any)?.event_name || "your event"}" has been updated.`,
+        description: `Catering order for "${data.event_name || "your event"}" has been updated.`,
       });
     },
     onError: (error) => {
@@ -191,7 +215,7 @@ export const useCateringOrders = (tenantId?: string) => {
   const cancelOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
       const { data, error } = await supabase
-        .from("catering_orders" as any)
+        .from("catering_orders")
         .update({
           status: "cancelled",
           updated_at: new Date().toISOString(),
@@ -202,7 +226,7 @@ export const useCateringOrders = (tenantId?: string) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as CateringOrderRow;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
@@ -210,7 +234,7 @@ export const useCateringOrders = (tenantId?: string) => {
       });
       toast({
         title: "Order Cancelled",
-        description: `Catering order for "${(data as any)?.event_name || "your event"}" has been cancelled.`,
+        description: `Catering order for "${data.event_name || "your event"}" has been cancelled.`,
       });
     },
     onError: (error) => {

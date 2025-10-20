@@ -7,6 +7,19 @@ import {
   UpdateCateringPackageRequest,
 } from "../types/catering";
 
+interface CateringPackageRow {
+  id: string;
+  name: string;
+  tenant_id: string;
+  active: boolean;
+  popular: boolean;
+  price_per_person: number;
+  min_guests: number;
+  max_guests?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export const useCateringPackages = (tenantId?: string) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -23,9 +36,9 @@ export const useCateringPackages = (tenantId?: string) => {
       if (!tenantId) return [];
 
       try {
-        // Cast to any to bypass TypeScript checking for tables that may not be in schema yet
+        // Fetch catering packages from database
         const { data: packagesData, error } = await supabase
-          .from("catering_packages" as any)
+          .from("catering_packages")
           .select("*")
           .eq("tenant_id", tenantId)
           .eq("active", true)
@@ -60,7 +73,7 @@ export const useCateringPackages = (tenantId?: string) => {
   const createPackageMutation = useMutation({
     mutationFn: async (packageData: CreateCateringPackageRequest) => {
       const { data, error } = await supabase
-        .from("catering_packages" as any)
+        .from("catering_packages")
         .insert({
           ...packageData,
           tenant_id: tenantId!,
@@ -72,7 +85,7 @@ export const useCateringPackages = (tenantId?: string) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as CateringPackageRow;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
@@ -80,7 +93,7 @@ export const useCateringPackages = (tenantId?: string) => {
       });
       toast({
         title: "Package Created",
-        description: `"${(data as any)?.name || "Package"}" has been created successfully.`,
+        description: `"${data.name || "Package"}" has been created successfully.`,
       });
     },
     onError: (error) => {
@@ -104,7 +117,7 @@ export const useCateringPackages = (tenantId?: string) => {
       updates: UpdateCateringPackageRequest;
     }) => {
       const { data, error } = await supabase
-        .from("catering_packages" as any)
+        .from("catering_packages")
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
@@ -115,7 +128,7 @@ export const useCateringPackages = (tenantId?: string) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as CateringPackageRow;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
@@ -123,7 +136,7 @@ export const useCateringPackages = (tenantId?: string) => {
       });
       toast({
         title: "Package Updated",
-        description: `"${(data as any)?.name || "Package"}" has been updated.`,
+        description: `"${data.name || "Package"}" has been updated.`,
       });
     },
     onError: (error) => {
@@ -142,7 +155,7 @@ export const useCateringPackages = (tenantId?: string) => {
     mutationFn: async (packageId: string) => {
       // Soft delete by setting active to false
       const { data, error } = await supabase
-        .from("catering_packages" as any)
+        .from("catering_packages")
         .update({
           active: false,
           updated_at: new Date().toISOString(),
@@ -153,7 +166,7 @@ export const useCateringPackages = (tenantId?: string) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as CateringPackageRow;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
@@ -161,7 +174,7 @@ export const useCateringPackages = (tenantId?: string) => {
       });
       toast({
         title: "Package Deleted",
-        description: `"${(data as any)?.name || "Package"}" has been removed.`,
+        description: `"${data.name || "Package"}" has been removed.`,
       });
     },
     onError: (error) => {
@@ -182,7 +195,7 @@ export const useCateringPackages = (tenantId?: string) => {
       if (!pkg) throw new Error("Package not found");
 
       const { data, error } = await supabase
-        .from("catering_packages" as any)
+        .from("catering_packages")
         .update({
           popular: !pkg.popular,
           updated_at: new Date().toISOString(),
@@ -193,17 +206,17 @@ export const useCateringPackages = (tenantId?: string) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as CateringPackageRow;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: ["catering-packages", tenantId],
       });
       toast({
-        title: (data as any)?.popular
+        title: data.popular
           ? "Marked as Popular"
           : "Removed from Popular",
-        description: `"${(data as any)?.name || "Package"}" has been ${(data as any)?.popular ? "marked as popular" : "removed from popular packages"}.`,
+        description: `"${data.name || "Package"}" has been ${data.popular ? "marked as popular" : "removed from popular packages"}.`,
       });
     },
     onError: (error) => {
