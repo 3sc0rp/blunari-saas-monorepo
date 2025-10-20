@@ -17,7 +17,7 @@ import {
 
 // Import sub-components
 import { CateringPackagesManager } from '@/components/catering/management/CateringPackagesManager';
-import { CateringMenuBuilder } from '@/components/catering/management/CateringMenuBuilder';
+import { MenuBuilder } from '@/components/catering/MenuBuilder';
 import { CateringOrdersManager } from '@/components/catering/management/CateringOrdersManager';
 import { CateringAnalyticsDashboard } from '@/components/catering/management/CateringAnalyticsDashboard';
 import { CateringWidgetConfig } from '@/components/catering/management/CateringWidgetConfig';
@@ -418,7 +418,7 @@ export default function CateringManagement() {
 
         {/* Menu Tab */}
         <TabsContent value="menu">
-          <CateringMenuBuilder tenantId={tenant.id} />
+          <MenuBuilder tenantId={tenant.id} />
         </TabsContent>
 
         {/* Orders Tab */}
