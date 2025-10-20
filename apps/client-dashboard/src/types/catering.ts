@@ -22,6 +22,12 @@ export type DietaryRestriction =
   | "paleo";
 export type CateringDietaryAccommodation = DietaryRestriction;
 
+// Pricing models for catering packages
+export type CateringPricingType = 
+  | "per_person"  // Price multiplied by guest count (e.g., $15/person)
+  | "per_tray"    // Fixed price per tray/batch (e.g., $80/tray serves 8-10)
+  | "fixed";      // One-time flat fee (e.g., $500 total)
+
 // Core interfaces
 export interface CateringEventType {
   id: string;
@@ -79,7 +85,14 @@ export interface CateringPackage {
   tenant_id: string;
   name: string;
   description?: string;
-  price_per_person: number;
+  
+  // Pricing fields
+  pricing_type: CateringPricingType;  // Determines which pricing model to use
+  price_per_person: number;           // Used when pricing_type = 'per_person' (in cents)
+  base_price?: number;                // Used when pricing_type = 'per_tray' or 'fixed' (in cents)
+  serves_count?: number;              // For per_tray: how many people one tray serves
+  tray_description?: string;          // For per_tray: e.g., "Each tray serves 8-10 guests"
+  
   min_guests: number;
   max_guests?: number;
   includes_setup: boolean;

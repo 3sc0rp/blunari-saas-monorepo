@@ -36,6 +36,7 @@ import {
 import { AnimatedPrice } from "./AnimatedPrice";
 import { useCateringContext } from "./CateringContext";
 import { CateringServiceType } from "@/types/catering";
+import { calculateCateringPrice } from "@/utils/catering-pricing";
 
 // ============================================================================
 // Types
@@ -120,11 +121,13 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
     resetForm,
   } = useCateringContext();
 
-  // Calculate total price
-  const totalPrice = useMemo(() => {
-    if (!selectedPackage) return 0;
-    return selectedPackage.price_per_person * orderForm.guest_count;
+  // Calculate total price using new pricing utility
+  const priceCalculation = useMemo(() => {
+    if (!selectedPackage) return null;
+    return calculateCateringPrice(selectedPackage, orderForm.guest_count);
   }, [selectedPackage, orderForm.guest_count]);
+
+  const totalPrice = priceCalculation?.subtotal || 0;
 
   // Format event date
   const formattedDate = useMemo(() => {
@@ -301,8 +304,13 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
 
             <Separator />
 
-            {/* Total Price */}
+            {/* Total Price with Breakdown */}
             <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg p-4">
+              {priceCalculation && priceCalculation.breakdown && (
+                <div className="mb-3 pb-3 border-b border-orange-200">
+                  <p className="text-sm text-muted-foreground">{priceCalculation.breakdown}</p>
+                </div>
+              )}
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">Estimated Total:</span>
                 <div className="text-3xl font-bold text-orange-600">

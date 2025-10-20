@@ -33,6 +33,7 @@ import {
   trackPackageSelected,
 } from "@/utils/catering-analytics";
 import { useCateringContext } from "./CateringContext";
+import { getPackageDisplayPrice } from "@/utils/catering-pricing";
 
 // ============================================================================
 // Types
@@ -128,17 +129,30 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
             )}
           </div>
           
-          <div className="text-2xl font-bold text-orange-600 flex items-baseline gap-1">
-            <AnimatedPrice 
-              value={pkg.price_per_person}
-              currency="$"
-              duration={0.5}
-              showCents={true}
-            />
-            <span className="text-sm text-muted-foreground font-normal">
-              /person
-            </span>
-          </div>
+          {/* Dynamic Price Display */}
+          {(() => {
+            const priceDisplay = getPackageDisplayPrice(pkg);
+            return (
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-orange-600 flex items-baseline gap-1">
+                  <AnimatedPrice 
+                    value={priceDisplay.value}
+                    currency="$"
+                    duration={0.5}
+                    showCents={true}
+                  />
+                  <span className="text-sm text-muted-foreground font-normal">
+                    {priceDisplay.unit}
+                  </span>
+                </div>
+                {priceDisplay.description && (
+                  <p className="text-xs text-muted-foreground italic">
+                    {priceDisplay.description}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -204,7 +218,10 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
           <Button
             onClick={handleSelect}
             className="w-full min-h-[44px] bg-orange-600 hover:bg-orange-700 text-base font-semibold transition-colors"
-            aria-label={`Select ${pkg.name} package for $${pkg.price_per_person} per person`}
+            aria-label={(() => {
+              const priceDisplay = getPackageDisplayPrice(pkg);
+              return `Select ${pkg.name} package for $${priceDisplay.value.toFixed(2)} ${priceDisplay.unit}`;
+            })()}
           >
             Select Package
           </Button>
@@ -238,10 +255,13 @@ export const PackageSelection: React.FC<PackageSelectionProps> = ({
   const handlePackageView = useCallback((pkg: CateringPackage) => {
     const tenantId = getTenantId();
     if (tenantId) {
+      const priceDisplay = getPackageDisplayPrice(pkg);
       trackPackageViewed({
         package_id: pkg.id,
         package_name: pkg.name,
         price_per_person: pkg.price_per_person,
+        pricing_type: pkg.pricing_type || 'per_person',
+        display_price: priceDisplay.value,
         min_guests: pkg.min_guests,
         max_guests: pkg.max_guests,
         tenant_id: tenantId,
@@ -260,10 +280,13 @@ export const PackageSelection: React.FC<PackageSelectionProps> = ({
     
     // Track selection
     if (tenantId) {
+      const priceDisplay = getPackageDisplayPrice(pkg);
       trackPackageSelected({
         package_id: pkg.id,
         package_name: pkg.name,
         price_per_person: pkg.price_per_person,
+        pricing_type: pkg.pricing_type || 'per_person',
+        display_price: priceDisplay.value,
         tenant_id: tenantId,
         session_id: sessionId,
       });

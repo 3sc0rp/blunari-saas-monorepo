@@ -41,6 +41,7 @@ import {
   trackOrderSubmitted,
   trackOrderFailed,
 } from "@/utils/catering-analytics";
+import { calculateTotalPriceCents, calculateCateringPrice } from "@/utils/catering-pricing";
 
 // ============================================================================
 // Types
@@ -252,12 +253,15 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
       // Submit order
       await createOrder(orderRequest);
 
+      // Calculate total price using new pricing utility
+      const totalPriceCents = calculateTotalPriceCents(selectedPackage, orderForm.guest_count);
+
       // Track successful submission
       trackOrderSubmitted({
         package_id: selectedPackage.id,
         guest_count: orderForm.guest_count,
         service_type: orderForm.service_type,
-        total_price_cents: Math.round(selectedPackage.price_per_person * orderForm.guest_count * 100),
+        total_price_cents: totalPriceCents,
         has_special_instructions: Boolean(orderForm.special_instructions),
         has_dietary_requirements: orderForm.dietary_requirements && orderForm.dietary_requirements.length > 0,
         time_to_complete_seconds: 0, // Will be calculated by analytics utility
