@@ -13,6 +13,7 @@ import {
   Menu,
   Plus,
   Calendar,
+  MessageSquare,
 } from 'lucide-react';
 
 // Import sub-components
@@ -21,6 +22,7 @@ import { MenuBuilder } from '@/components/catering/MenuBuilder';
 import { CateringOrdersManager } from '@/components/catering/management/CateringOrdersManager';
 import { CateringAnalyticsDashboard } from '@/components/catering/management/CateringAnalyticsDashboard';
 import { CateringWidgetConfig } from '@/components/catering/management/CateringWidgetConfig';
+import { InboxPanel, EmailTemplates, SMSIntegration } from '@/components/catering/communications';
 
 // Import new components
 import { ActivityFeed } from '@/components/catering/ActivityFeed';
@@ -139,7 +141,7 @@ export default function CateringManagement() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 lg:w-auto">
+        <TabsList className="grid w-full grid-cols-7 lg:w-auto">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             <span className="hidden sm:inline">Overview</span>
@@ -155,6 +157,10 @@ export default function CateringManagement() {
           <TabsTrigger value="orders" className="flex items-center gap-2">
             <ListOrdered className="w-4 h-4" />
             <span className="hidden sm:inline">Orders</span>
+          </TabsTrigger>
+          <TabsTrigger value="communications" className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            <span className="hidden sm:inline">Communications</span>
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
@@ -457,6 +463,29 @@ export default function CateringManagement() {
           ) : (
             <CateringOrdersManager tenantId={tenant.id} />
           )}
+        </TabsContent>
+
+        {/* Communications Tab */}
+        <TabsContent value="communications" className="space-y-4">
+          <Tabs defaultValue="inbox" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="inbox">Inbox</TabsTrigger>
+              <TabsTrigger value="email">Email Templates</TabsTrigger>
+              <TabsTrigger value="sms">SMS</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="inbox">
+              <InboxPanel tenantId={tenant.id} />
+            </TabsContent>
+            
+            <TabsContent value="email">
+              <EmailTemplates tenantId={tenant.id} />
+            </TabsContent>
+            
+            <TabsContent value="sms">
+              <SMSIntegration tenantId={tenant.id} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         {/* Analytics Tab */}
