@@ -2,12 +2,9 @@
 -- Date: October 20, 2025
 -- Description: Support per-person, per-tray, and fixed pricing models
 
--- Create pricing type enum
-DO $$ BEGIN
-  CREATE TYPE public.catering_pricing_type AS ENUM ('per_person', 'per_tray', 'fixed');
-EXCEPTION
-  WHEN duplicate_object THEN null;
-END $$;
+-- Create pricing type enum (drop if exists to ensure clean state)
+DROP TYPE IF EXISTS public.catering_pricing_type CASCADE;
+CREATE TYPE public.catering_pricing_type AS ENUM ('per_person', 'per_tray', 'fixed');
 
 -- Add new columns to catering_packages
 ALTER TABLE public.catering_packages 
@@ -29,19 +26,15 @@ COMMENT ON COLUMN public.catering_packages.serves_count IS 'Number of people ser
 COMMENT ON COLUMN public.catering_packages.tray_description IS 'Description of tray serving size, e.g., "Each tray serves 8-10 guests"';
 
 -- Add check constraint to ensure correct pricing fields are set
-DO $$ BEGIN
-  ALTER TABLE public.catering_packages
-    ADD CONSTRAINT catering_packages_pricing_check CHECK (
-      CASE 
-        WHEN pricing_type = 'per_person' THEN price_per_person IS NOT NULL AND price_per_person > 0
-        WHEN pricing_type = 'per_tray' THEN base_price IS NOT NULL AND base_price > 0 AND serves_count IS NOT NULL AND serves_count > 0
-        WHEN pricing_type = 'fixed' THEN base_price IS NOT NULL AND base_price > 0
-        ELSE false
-      END
-    );
-EXCEPTION
-  WHEN duplicate_object THEN null;
-END $$;
+ALTER TABLE public.catering_packages
+  ADD CONSTRAINT catering_packages_pricing_check CHECK (
+    CASE 
+      WHEN pricing_type = 'per_person' THEN price_per_person IS NOT NULL AND price_per_person > 0
+      WHEN pricing_type = 'per_tray' THEN base_price IS NOT NULL AND base_price > 0 AND serves_count IS NOT NULL AND serves_count > 0
+      WHEN pricing_type = 'fixed' THEN base_price IS NOT NULL AND base_price > 0
+      ELSE false
+    END
+  );
 
 -- Create index for filtering by pricing type
 CREATE INDEX IF NOT EXISTS idx_catering_packages_pricing_type 
