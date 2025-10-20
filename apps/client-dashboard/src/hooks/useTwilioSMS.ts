@@ -126,8 +126,9 @@ export function useTwilioSMS(tenantId: string, filters?: SMSFilters) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(
-        `${supabase.supabaseUrl}/functions/v1/send-sms`,
+        `${supabaseUrl}/functions/v1/send-sms`,
         {
           method: 'POST',
           headers: {

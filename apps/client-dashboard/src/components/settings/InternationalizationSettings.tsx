@@ -80,7 +80,7 @@ export function InternationalizationSettings() {
                 {exchangeRates.slice(0, 5).map((rate) => (
                   <div key={`${rate.from_currency}-${rate.to_currency}`}>
                     {formatExchangeRate(
-                      rate.rate,
+                      rate.rate.toString(),
                       rate.from_currency,
                       rate.to_currency
                     )}

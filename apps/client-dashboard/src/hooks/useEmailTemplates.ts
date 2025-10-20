@@ -162,8 +162,9 @@ export function useEmailTemplates(tenantId: string) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(
-        `${supabase.supabaseUrl}/functions/v1/send-email`,
+        `${supabaseUrl}/functions/v1/send-email`,
         {
           method: 'POST',
           headers: {
