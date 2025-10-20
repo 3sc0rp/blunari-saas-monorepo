@@ -93,7 +93,7 @@ export function calculateCateringPrice(
  * Shows either "$X.XX /person", "$X.XX /tray", or "$X.XX total"
  * 
  * @param pkg - Catering package
- * @returns Object with price value and unit text
+ * @returns Object with price value IN CENTS (for AnimatedPrice component) and unit text
  */
 export function getPackageDisplayPrice(pkg: CateringPackage): { 
   value: number; 
@@ -105,7 +105,7 @@ export function getPackageDisplayPrice(pkg: CateringPackage): {
   switch (pricingType) {
     case 'per_person':
       return {
-        value: pkg.price_per_person / 100,
+        value: pkg.price_per_person, // Return in cents (AnimatedPrice will divide by 100)
         unit: '/person'
       };
       
@@ -114,9 +114,9 @@ export function getPackageDisplayPrice(pkg: CateringPackage): {
         throw new Error('Package missing base_price for per_tray pricing');
       }
       return {
-        value: pkg.base_price / 100,
+        value: pkg.base_price, // Return in cents (AnimatedPrice will divide by 100)
         unit: '/tray',
-        description: pkg.tray_description || (pkg.serves_count ? `Serves ${pkg.serves_count} guests` : undefined)
+        description: pkg.tray_description || (pkg.serves_count ? `Each tray serves ${pkg.serves_count} guests` : undefined)
       };
       
     case 'fixed':
@@ -124,7 +124,7 @@ export function getPackageDisplayPrice(pkg: CateringPackage): {
         throw new Error('Package missing base_price for fixed pricing');
       }
       return {
-        value: pkg.base_price / 100,
+        value: pkg.base_price, // Return in cents (AnimatedPrice will divide by 100)
         unit: 'total'
       };
       
