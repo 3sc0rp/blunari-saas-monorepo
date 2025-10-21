@@ -12,12 +12,12 @@ import {
 import { useCateringData } from "@/hooks/useCateringData";
 import { useTenantBySlug } from "@/hooks/useTenantBySlug";
 import ErrorBoundary from "@/components/booking/ErrorBoundary";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { CateringProvider, useCateringContext } from "./CateringContext";
 import { PackageSelection } from "./PackageSelection";
 import { CustomizeOrder } from "./CustomizeOrder";
 import { ContactDetails } from "./ContactDetails";
 import { OrderConfirmation } from "./OrderConfirmation";
+import { CateringWidgetSkeleton } from "./Skeletons";
 
 interface CateringWidgetProps {
   slug: string;
@@ -49,34 +49,9 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   const isInDemoMode =
     !tablesExist && diagnosticInfo?.cateringTablesAvailable === false;
 
-  // Loading states with better UX
+  // Loading states with content-aware skeletons
   if (tenantLoading || packagesLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/20">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center">
-            <LoadingSpinner className="w-8 h-8 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold mb-2">
-              {tenantLoading
-                ? "Finding Restaurant..."
-                : "Loading Catering Services"}
-            </h2>
-            <p className="text-muted-foreground">
-              {tenantLoading
-                ? "Please wait while we verify the restaurant details..."
-                : "Please wait while we load your catering options..."}
-            </p>
-            {isInDemoMode && (
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-700">
-                  🎭 Demo mode with sample packages
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <CateringWidgetSkeleton step="packages" />;
   }
 
   // Enhanced error states with better messaging
@@ -153,7 +128,7 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 interface CateringWidgetContentProps {
   tenant: { id: string; name: string; contact_email?: string; contact_phone?: string };
   packages: any[];
-  createOrder: (data: any) => Promise<void>;
+  createOrder: (data: any) => Promise<any>;
   loading: boolean;
 }
 

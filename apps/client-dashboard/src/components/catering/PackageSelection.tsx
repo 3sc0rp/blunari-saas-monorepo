@@ -24,6 +24,7 @@ import {
   CheckCircle,
   Users,
   Star,
+  ChefHat,
 } from "lucide-react";
 import { CateringPackage } from "@/types/catering";
 import { AnimatedPrice } from "./AnimatedPrice";
@@ -34,6 +35,8 @@ import {
 } from "@/utils/catering-analytics";
 import { useCateringContext } from "./CateringContext";
 import { getPackageDisplayPrice } from "@/utils/catering-pricing";
+import { OptimizedImage, DEFAULT_BLUR_DATA_URL } from "@/components/ui/optimized-image";
+import { PackageGridSkeleton } from "./Skeletons";
 
 // ============================================================================
 // Types
@@ -112,22 +115,45 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
       onMouseEnter={handleCardHover}
       onFocus={handleCardHover}
     >
-      <Card className="h-full cursor-pointer hover:shadow-xl transition-all border-2 hover:border-orange-200 focus-within:border-orange-300">
-        <CardHeader>
-          <div className="flex items-start justify-between mb-2">
-            <CardTitle className="text-lg font-bold leading-tight">
-              {pkg.name}
-            </CardTitle>
+      <Card className="h-full cursor-pointer hover:shadow-xl transition-all border-2 hover:border-orange-200 focus-within:border-orange-300 overflow-hidden">
+        {/* Package Image */}
+        {pkg.image_url ? (
+          <div className="relative h-48 w-full">
+            <OptimizedImage
+              src={pkg.image_url}
+              alt={`${pkg.name} catering package`}
+              aspectRatio="16/9"
+              objectFit="cover"
+              blurDataURL={DEFAULT_BLUR_DATA_URL}
+              className="transition-transform duration-300 hover:scale-110"
+            />
             {pkg.popular && (
-              <Badge
-                variant="secondary"
-                className="bg-orange-100 text-orange-700 font-semibold"
-              >
-                <Star className="w-3 h-3 mr-1" fill="currentColor" />
-                Popular
-              </Badge>
+              <div className="absolute top-3 right-3">
+                <Badge className="bg-orange-600 text-white shadow-lg px-3 py-1.5 min-h-[32px]">
+                  <Star className="w-4 h-4 mr-1" fill="currentColor" />
+                  Popular
+                </Badge>
+              </div>
             )}
           </div>
+        ) : (
+          <div className="relative h-48 w-full bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
+            <ChefHat className="w-16 h-16 text-orange-300" aria-hidden="true" />
+            {pkg.popular && (
+              <div className="absolute top-3 right-3">
+                <Badge className="bg-orange-600 text-white shadow-lg px-3 py-1.5 min-h-[32px]">
+                  <Star className="w-4 h-4 mr-1" fill="currentColor" />
+                  Popular
+                </Badge>
+              </div>
+            )}
+          </div>
+        )}
+        
+        <CardHeader>
+          <CardTitle className="text-lg font-bold leading-tight">
+            {pkg.name}
+          </CardTitle>
           
           {/* Dynamic Price Display */}
           {(() => {
@@ -163,7 +189,7 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
 
           {/* Guest Range */}
           <div className="flex items-center gap-2 text-sm text-foreground">
-            <Users className="w-4 h-4 text-muted-foreground flex-shrink-0" aria-hidden="true" />
+            <Users className="w-5 h-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
             <span>
               {pkg.min_guests}
               {pkg.max_guests ? ` - ${pkg.max_guests}` : "+"} guests
@@ -172,22 +198,22 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
 
           {/* Included Services */}
           {(pkg.includes_setup || pkg.includes_service || pkg.includes_cleanup) && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {pkg.includes_setup && (
                 <div className="flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                  <CheckCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                   <span>Setup included</span>
                 </div>
               )}
               {pkg.includes_service && (
                 <div className="flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                  <CheckCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                   <span>Service staff included</span>
                 </div>
               )}
               {pkg.includes_cleanup && (
                 <div className="flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                  <CheckCircle className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                   <span>Cleanup included</span>
                 </div>
               )}
@@ -200,12 +226,12 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
               <p className="text-xs text-muted-foreground mb-2 font-medium">
                 Dietary accommodations:
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {pkg.dietary_accommodations.map((diet) => (
                   <Badge
                     key={diet}
                     variant="outline"
-                    className="text-xs font-normal"
+                    className="text-xs font-normal px-3 py-1.5 min-h-[28px]"
                   >
                     {diet.replace(/_/g, " ")}
                   </Badge>
@@ -305,8 +331,13 @@ export const PackageSelection: React.FC<PackageSelectionProps> = ({
     });
   }, [packages]);
 
+  // Show loading skeleton while fetching packages
+  if (loading) {
+    return <PackageGridSkeleton />;
+  }
+
   // Show empty state if no packages
-  if (!loading && packages.length === 0) {
+  if (packages.length === 0) {
     return (
       <NoPackagesEmptyState
         restaurantName={restaurantName}
