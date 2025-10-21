@@ -1,17 +1,21 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   CheckCircle,
   ChefHat,
   Users,
   FileText,
   ArrowLeft,
+  WifiOff,
+  Wifi,
 } from "lucide-react";
 import { useCateringData } from "@/hooks/useCateringData";
 import { useTenantBySlug } from "@/hooks/useTenantBySlug";
 import ErrorBoundary from "@/components/booking/ErrorBoundary";
+import { offlineDetector } from "@/utils/error-handler";
 import { CateringProvider, useCateringContext } from "./CateringContext";
 import { PackageSelection } from "./PackageSelection";
 import { CustomizeOrder } from "./CustomizeOrder";
@@ -139,9 +143,54 @@ const CateringWidgetContent: React.FC<CateringWidgetContentProps> = ({
   loading,
 }) => {
   const { currentStep, setCurrentStep } = useCateringContext();
+  const [isOffline, setIsOffline] = useState(!offlineDetector.isOnline());
+  const [showOnlineNotification, setShowOnlineNotification] = useState(false);
+
+  // Monitor online/offline status
+  useEffect(() => {
+    const unsubscribe = offlineDetector.subscribe((isOnline) => {
+      const wasOffline = isOffline;
+      setIsOffline(!isOnline);
+
+      // Show brief "back online" notification
+      if (wasOffline && isOnline) {
+        setShowOnlineNotification(true);
+        setTimeout(() => setShowOnlineNotification(false), 3000);
+      }
+    });
+
+    return unsubscribe;
+  }, [isOffline]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
+      {/* Offline Banner */}
+      {isOffline && (
+        <div className="bg-yellow-600 text-white py-2 px-4 text-center text-sm font-medium">
+          <WifiOff className="w-4 h-4 inline mr-2" />
+          You're currently offline. Some features may not be available.
+        </div>
+      )}
+
+      {/* Back Online Notification */}
+      <AnimatePresence>
+        {showOnlineNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 right-4 z-50"
+          >
+            <Alert className="bg-green-600 text-white border-green-700">
+              <Wifi className="w-4 h-4" />
+              <AlertDescription>
+                You're back online!
+              </AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="bg-white border-b shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">

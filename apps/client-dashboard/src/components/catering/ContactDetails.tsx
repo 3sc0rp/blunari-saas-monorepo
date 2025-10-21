@@ -29,6 +29,8 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ArrowLeft, AlertCircle, Mail, Phone, MapPin, User } from "lucide-react";
 import { useCateringContext } from "./CateringContext";
 import { useCateringData } from "@/hooks/useCateringData";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { ErrorRecoveryUI } from "@/components/ui/error-recovery-ui";
 import {
   emailSchema,
   phoneSchema,
@@ -172,7 +174,26 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
   const { createOrder } = useCateringData(tenantId || getTenantId());
 
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Error handler with retry logic
+  const {
+    error: submitError,
+    isRetrying,
+    retryAttempt,
+    isOffline,
+    executeWithRetry,
+    handleError: setSubmitError,
+    clearError: clearSubmitError,
+  } = useErrorHandler({
+    maxRetries: 3,
+    initialDelay: 2000,
+    onRetry: (attempt, delay) => {
+      console.log(`Retrying order submission (attempt ${attempt}) in ${delay}ms...`);
+    },
+    onRecovery: () => {
+      console.log('Order submission recovered successfully');
+    },
+  });
 
   // Field change handler with validation
   const handleFieldChange = useCallback((
@@ -221,36 +242,39 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
     }
   }, [onBack, setCurrentStep]);
 
-  // Handle order submission
+  // Handle order submission with retry logic
   const handleSubmit = useCallback(async () => {
     if (!selectedPackage || !canSubmit(orderForm, fieldErrors)) {
       return;
     }
 
     setSubmitting(true);
-    setSubmitError(null);
+    clearSubmitError();
 
     try {
-      // Create order request
-      const orderRequest = {
-        package_id: selectedPackage.id,
-        event_name: orderForm.event_name,
-        event_date: orderForm.event_date,
-        event_start_time: orderForm.event_start_time,
-        event_end_time: orderForm.event_end_time,
-        guest_count: orderForm.guest_count,
-        service_type: orderForm.service_type,
-        contact_name: orderForm.contact_name,
-        contact_email: orderForm.contact_email,
-        contact_phone: orderForm.contact_phone,
-        venue_name: orderForm.venue_name,
-        venue_address: orderForm.venue_address,
-        special_instructions: orderForm.special_instructions,
-        dietary_requirements: orderForm.dietary_requirements,
-      };
+      // Execute with automatic retry on failure
+      await executeWithRetry(async () => {
+        // Create order request
+        const orderRequest = {
+          package_id: selectedPackage.id,
+          event_name: orderForm.event_name,
+          event_date: orderForm.event_date,
+          event_start_time: orderForm.event_start_time,
+          event_end_time: orderForm.event_end_time,
+          guest_count: orderForm.guest_count,
+          service_type: orderForm.service_type,
+          contact_name: orderForm.contact_name,
+          contact_email: orderForm.contact_email,
+          contact_phone: orderForm.contact_phone,
+          venue_name: orderForm.venue_name,
+          venue_address: orderForm.venue_address,
+          special_instructions: orderForm.special_instructions,
+          dietary_requirements: orderForm.dietary_requirements,
+        };
 
-      // Submit order
-      await createOrder(orderRequest);
+        // Submit order
+        return await createOrder(orderRequest);
+      });
 
       // Calculate total price using new pricing utility
       const totalPriceCents = calculateTotalPriceCents(selectedPackage, orderForm.guest_count);
@@ -274,12 +298,10 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
       setCurrentStep("confirmation");
 
     } catch (error: any) {
-      const errorMessage = error.message || "An unexpected error occurred. Please try again.";
-      setSubmitError(errorMessage);
-
-      // Track failed submission
+      // Error is already handled by useErrorHandler
+      // Just track the failure
       trackOrderFailed(
-        errorMessage,
+        error.userMessage || error.message || "An unexpected error occurred",
         error.code || "unknown"
       );
 
@@ -290,9 +312,14 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
     selectedPackage,
     orderForm,
     fieldErrors,
+    executeWithRetry,
     createOrder,
     setOrderConfirmed,
     setCurrentStep,
+    clearSubmitError,
+    tenantId,
+    getTenantId,
+    getSessionId,
   ]);
 
   // Check if form can be submitted
@@ -439,18 +466,19 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
             </FormField>
           </div>
 
-          {/* Error Messages */}
-          {submitError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-5 w-5" />
-              <AlertDescription>
-                <p className="font-medium">Unable to Submit Order</p>
-                <p className="text-sm mt-1">{submitError}</p>
-              </AlertDescription>
-            </Alert>
-          )}
+          {/* Error Recovery UI */}
+          <ErrorRecoveryUI
+            error={submitError}
+            isRetrying={isRetrying}
+            retryAttempt={retryAttempt}
+            isOffline={isOffline}
+            onRetry={handleSubmit}
+            onDismiss={clearSubmitError}
+            showDismiss={!isRetrying}
+          />
 
-          {errorCount > 0 && (
+          {/* Validation Errors */}
+          {errorCount > 0 && !submitError && (
             <Alert variant="destructive">
               <AlertCircle className="h-5 w-5" />
               <AlertDescription>
