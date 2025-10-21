@@ -89,6 +89,20 @@ export default defineConfig(({ mode }) => {
       sourcemap: true,
       // Use esbuild for now (faster & simpler) while diagnosing runtime function errors
       minify: isProduction ? 'esbuild' : false,
+      // Ensure modules load in correct order
+      modulePreload: {
+        polyfill: true,
+        resolveDependencies: (filename, deps, { hostId, hostType }) => {
+          // Ensure React loads before any other chunks
+          return deps.sort((a, b) => {
+            const aIsReact = a.includes('react');
+            const bIsReact = b.includes('react');
+            if (aIsReact && !bIsReact) return -1;
+            if (!aIsReact && bIsReact) return 1;
+            return 0;
+          });
+        }
+      },
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
