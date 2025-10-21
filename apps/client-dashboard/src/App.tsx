@@ -1,10 +1,9 @@
-import React, { Suspense, lazy, useEffect } from "react";
+import React, { Suspense, lazy, useEffect, useMemo } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { REACT_QUERY_CONFIG } from '@/config/cache.config';
 import ScrollToTop from "@/components/ScrollToTop";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantBrandingProvider } from "@/contexts/TenantBrandingContext";
@@ -59,8 +58,37 @@ const AIBusinessInsights = lazy(() => import(/* webpackChunkName: "ai-insights" 
 const WidgetManagement = lazy(() => import(/* webpackChunkName: "widgets" */ "./pages/WidgetManagement"));
 const DashboardHome = lazy(() => import(/* webpackChunkName: "dashboard-home" */ "./pages/DashboardHome"));
 
-// Optimized QueryClient with centralized cache configuration
-const queryClient = new QueryClient(REACT_QUERY_CONFIG);
+// Optimized QueryClient with inline configuration to prevent module loading issues
+// Lazy initialization ensures React is fully loaded before QueryClient is created
+let queryClientInstance: QueryClient | null = null;
+
+const getQueryClient = () => {
+  if (!queryClientInstance) {
+    queryClientInstance = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 0, // Always fresh by default
+          gcTime: 5 * 60 * 1000, // 5 minutes garbage collection
+          refetchOnWindowFocus: true,
+          refetchOnReconnect: true,
+          refetchOnMount: true,
+          retry: 2,
+          retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
+          networkMode: 'online' as const,
+          meta: {
+            errorMessage: 'Failed to fetch data',
+          },
+        },
+        mutations: {
+          retry: 1,
+          retryDelay: 1000,
+          networkMode: 'online' as const,
+        },
+      },
+    });
+  }
+  return queryClientInstance;
+};
 
 // Local component to safely run router-dependent hooks after BrowserRouter context exists
 function RouterInstrumentation() {
@@ -95,6 +123,9 @@ function App() {
       // Non-critical - app will work without prefetching
     }
   }, []);
+  
+  const queryClient = useMemo(() => getQueryClient(), []);
+  
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
