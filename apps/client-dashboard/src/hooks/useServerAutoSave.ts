@@ -83,12 +83,15 @@ export const useServerAutoSave = (config: UseServerAutoSaveConfig) => {
     if (!enabled) return null;
 
     try {
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const url = `${getEdgeFunctionUrl("load")}?sessionId=${sessionId}&tenantId=${tenantId}`;
       
       const response = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`,
         },
       });
 
@@ -142,10 +145,13 @@ export const useServerAutoSave = (config: UseServerAutoSaveConfig) => {
     try {
       setSyncStatus("saving");
 
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const response = await fetch(getEdgeFunctionUrl("save"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`,
         },
         body: JSON.stringify({
           sessionId,
@@ -223,10 +229,13 @@ export const useServerAutoSave = (config: UseServerAutoSaveConfig) => {
     if (!enabled) return;
 
     try {
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const response = await fetch(getEdgeFunctionUrl("clear"), {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
+          "apikey": supabaseAnonKey,
+          "Authorization": `Bearer ${supabaseAnonKey}`,
         },
         body: JSON.stringify({
           sessionId,

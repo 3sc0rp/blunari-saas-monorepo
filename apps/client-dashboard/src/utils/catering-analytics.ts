@@ -206,6 +206,7 @@ const trackEventServerSide = async (
     headers: {
       'Content-Type': 'application/json',
       'apikey': supabaseAnonKey,
+      'Authorization': `Bearer ${supabaseAnonKey}`,
     },
     body: JSON.stringify({
       tenant_id: metadata.tenant_id,
