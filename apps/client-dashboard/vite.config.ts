@@ -71,7 +71,9 @@ export default defineConfig(({ mode }) => {
         ],
         // Don't exclude anything to prevent chunk reference issues
         exclude: [],
-      
+        // Force React to be in the entry chunk
+        entries: ['src/main.tsx']
+      },
       // Enable esbuild optimizations
       esbuildOptions: {
         target: 'es2020',
@@ -125,10 +127,11 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             // Vendor chunks
             if (id.includes('node_modules')) {
+              // DO NOT split React - keep it in main bundle to prevent loading race
               // React ecosystem - CRITICAL: keep as first chunk
-              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler') || id.includes('react/jsx-runtime')) {
-                return 'react-vendor';
-              }
+              // if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler') || id.includes('react/jsx-runtime')) {
+              //   return 'react-vendor';
+              // }
               // Supabase
               if (id.includes('@supabase')) {
                 return 'supabase';
