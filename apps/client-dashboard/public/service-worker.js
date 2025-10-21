@@ -3,9 +3,16 @@
  * Provides offline caching and performance optimization
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2'; // Enhanced caching with monitoring
 const CACHE_NAME = `blunari-client-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
+
+// Cache statistics
+const CACHE_STATS = {
+  hits: 0,
+  misses: 0,
+  errors: 0,
+};
 
 // Assets to cache immediately on install
 const PRECACHE_ASSETS = [
@@ -139,6 +146,8 @@ async function cacheFirst(request, cacheName, options = {}) {
   const cached = await cache.match(request);
   
   if (cached) {
+    CACHE_STATS.hits++;
+    
     // Check if cached response is still fresh
     if (options.maxAge) {
       const cachedDate = new Date(cached.headers.get('date') || 0).getTime();
@@ -147,6 +156,7 @@ async function cacheFirst(request, cacheName, options = {}) {
       
       if (age > options.maxAge) {
         // Cache expired, fetch fresh
+        CACHE_STATS.misses++;
         const fresh = await fetchAndCache(request, cache);
         return fresh || cached; // Fallback to stale cache if fetch fails
       }
@@ -155,6 +165,7 @@ async function cacheFirst(request, cacheName, options = {}) {
     return cached;
   }
   
+  CACHE_STATS.misses++;
   return await fetchAndCache(request, cache);
 }
 
@@ -177,6 +188,7 @@ async function networkFirst(request, cacheName, options = {}) {
     // Only cache successful responses
     if (response.ok) {
       cache.put(request, response.clone());
+      CACHE_STATS.misses++;
     }
     
     return response;
@@ -185,9 +197,11 @@ async function networkFirst(request, cacheName, options = {}) {
     // Fallback to cache
     const cached = await cache.match(request);
     if (cached) {
+      CACHE_STATS.hits++;
       return cached;
     }
     
+    CACHE_STATS.errors++;
     throw error;
   }
 }
@@ -220,11 +234,63 @@ self.addEventListener('message', (event) => {
         return Promise.all(
           cacheNames.map((cacheName) => caches.delete(cacheName))
         );
+      }).then(() => {
+        // Reset stats
+        CACHE_STATS.hits = 0;
+        CACHE_STATS.misses = 0;
+        CACHE_STATS.errors = 0;
       })
     );
   }
   
   if (event.data.type === 'GET_VERSION') {
     event.ports[0].postMessage({ version: CACHE_VERSION });
+  }
+  
+  if (event.data.type === 'GET_STATS') {
+    const total = CACHE_STATS.hits + CACHE_STATS.misses;
+    const hitRate = total > 0 ? (CACHE_STATS.hits / total * 100).toFixed(2) : 0;
+    
+    event.ports[0].postMessage({
+      ...CACHE_STATS,
+      total,
+      hitRate: parseFloat(hitRate),
+    });
+  }
+  
+  if (event.data.type === 'GET_CACHE_SIZE') {
+    event.waitUntil(
+      caches.keys().then(async (cacheNames) => {
+        let totalSize = 0;
+        const cacheDetails = [];
+        
+        for (const cacheName of cacheNames) {
+          const cache = await caches.open(cacheName);
+          const keys = await cache.keys();
+          
+          let cacheSize = 0;
+          for (const request of keys) {
+            const response = await cache.match(request);
+            if (response) {
+              const blob = await response.blob();
+              cacheSize += blob.size;
+            }
+          }
+          
+          cacheDetails.push({
+            name: cacheName,
+            size: cacheSize,
+            entries: keys.length,
+          });
+          
+          totalSize += cacheSize;
+        }
+        
+        event.ports[0].postMessage({
+          totalSize,
+          caches: cacheDetails,
+        });
+      })
+    );
   }
 });

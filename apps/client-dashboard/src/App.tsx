@@ -58,24 +58,10 @@ const AIBusinessInsights = lazy(() => import(/* webpackChunkName: "ai-insights" 
 const WidgetManagement = lazy(() => import(/* webpackChunkName: "widgets" */ "./pages/WidgetManagement"));
 const DashboardHome = lazy(() => import(/* webpackChunkName: "dashboard-home" */ "./pages/DashboardHome"));
 
-// Optimized QueryClient with aggressive performance settings
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 2 * 60 * 1000, // 2 minutes - reduced for fresher data
-      gcTime: 10 * 60 * 1000, // 10 minutes - reduced to free memory faster
-      retry: 1, // Single retry for faster failure handling
-      retryDelay: 500, // Faster retry
-      refetchOnWindowFocus: false, // Reduce unnecessary refetches
-      refetchOnReconnect: true,
-      refetchOnMount: false, // Don't refetch if data is fresh
-    },
-    mutations: {
-      retry: 1,
-      retryDelay: 500,
-    },
-  },
-});
+import { REACT_QUERY_CONFIG } from '@/config/cache.config';
+
+// Optimized QueryClient with centralized cache configuration
+const queryClient = new QueryClient(REACT_QUERY_CONFIG);
 
 // Local component to safely run router-dependent hooks after BrowserRouter context exists
 function RouterInstrumentation() {
