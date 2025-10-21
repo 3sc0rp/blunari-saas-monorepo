@@ -45,35 +45,34 @@ export default defineConfig(({ mode }) => {
       __COMMIT_HASH__: JSON.stringify(process.env.VITE_COMMIT_HASH || 'dev')
     },
 
-      // Dependency optimization - enhanced for performance
-      optimizeDeps: {
-        include: [
-          // Core React libraries - force bundling together
-          'react',
-          'react-dom',
-          'react/jsx-runtime',
-          'react-router-dom',
-          'scheduler',
-          
-          // Essential UI libraries
-          'lucide-react',
-          'clsx',
-          'class-variance-authority',
-          
-          // Utilities
-          'date-fns',
-          'date-fns/format',
-          'date-fns/parseISO',
-          'zustand',
-          
-          // Supabase (pre-bundle for faster loading)
-          '@supabase/supabase-js'
-        ],
-        // Don't exclude anything to prevent chunk reference issues
-        exclude: [],
-        // Force React to be in the entry chunk
-        entries: ['src/main.tsx']
-      },
+    // Dependency optimization - enhanced for performance
+    optimizeDeps: {
+      include: [
+        // Core React libraries - force bundling together
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'react-router-dom',
+        'scheduler',
+        
+        // Essential UI libraries
+        'lucide-react',
+        'clsx',
+        'class-variance-authority',
+        
+        // Utilities
+        'date-fns',
+        'date-fns/format',
+        'date-fns/parseISO',
+        'zustand',
+        
+        // Supabase (pre-bundle for faster loading)
+        '@supabase/supabase-js'
+      ],
+      // Don't exclude anything to prevent chunk reference issues
+      exclude: [],
+      // Force React to be in the entry chunk
+      entries: ['src/main.tsx'],
       // Enable esbuild optimizations
       esbuildOptions: {
         target: 'es2020',
