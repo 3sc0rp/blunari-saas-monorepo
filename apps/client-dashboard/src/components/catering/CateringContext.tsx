@@ -20,6 +20,7 @@ import {
   trackDraftRestored,
   setupAbandonmentTracking,
 } from "@/utils/catering-analytics";
+import { useServerAutoSave, getOrCreateSessionId, SyncStatus } from "@/hooks/useServerAutoSave";
 
 // ============================================================================
 // Types
@@ -56,6 +57,10 @@ export interface CateringContextValue {
   fieldErrors: Record<string, string>;
   showDraftNotification: boolean;
   draftAge: string | null;
+
+  // Server auto-save state
+  syncStatus: SyncStatus;
+  lastSyncTime: Date | null;
 
   // Actions
   setCurrentStep: (step: CateringStep) => void;
@@ -133,12 +138,34 @@ export const CateringProvider: React.FC<CateringProviderProps> = ({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showDraftNotification, setShowDraftNotification] = useState(false);
   const [draftAge, setDraftAge] = useState<string | null>(null);
-  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [sessionId] = useState(() => getOrCreateSessionId());
 
-  // Auto-save function with debouncing
+  // Server auto-save hook
+  const {
+    syncStatus,
+    lastSyncTime,
+    serverDraft,
+    autoSave: serverAutoSave,
+    loadServerDraft,
+    clearServerDraft,
+  } = useServerAutoSave({
+    tenantId: tenantId || "",
+    tenantSlug: slug,
+    sessionId,
+    currentStep,
+    enabled: !!tenantId, // Only enable if we have tenantId
+  });
+
+  // Auto-save function with debouncing (fallback to local if server unavailable)
   const autoSave = useCallback(
-    createAutoSave(slug, 2000),
-    [slug]
+    (formData: Partial<OrderForm>, packageId?: string) => {
+      if (tenantId) {
+        serverAutoSave(formData, packageId);
+      } else {
+        createAutoSave(slug, 2000)(formData, packageId);
+      }
+    },
+    [slug, tenantId, serverAutoSave]
   );
 
   // Wrapped setCurrentStep to trigger onStepChange callback
@@ -269,6 +296,10 @@ export const CateringProvider: React.FC<CateringProviderProps> = ({
     fieldErrors,
     showDraftNotification,
     draftAge,
+
+    // Server auto-save state
+    syncStatus,
+    lastSyncTime,
 
     // Actions
     setCurrentStep,

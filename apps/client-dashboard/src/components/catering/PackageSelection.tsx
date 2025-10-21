@@ -115,7 +115,7 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
       onMouseEnter={handleCardHover}
       onFocus={handleCardHover}
     >
-      <Card className="h-full cursor-pointer hover:shadow-xl transition-all border-2 hover:border-orange-200 focus-within:border-orange-300 overflow-hidden">
+      <Card className="h-full cursor-pointer hover:shadow-xl dark:hover:shadow-orange-900/20 transition-all border-2 hover:border-orange-200 dark:hover:border-orange-700 focus-within:border-orange-300 dark:focus-within:border-orange-600 overflow-hidden dark:bg-slate-800 dark:border-slate-700">
         {/* Package Image */}
         {pkg.image_url ? (
           <div className="relative h-48 w-full">
@@ -129,7 +129,7 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
             />
             {pkg.popular && (
               <div className="absolute top-3 right-3">
-                <Badge className="bg-orange-600 text-white shadow-lg px-3 py-1.5 min-h-[32px]">
+                <Badge className="bg-orange-600 dark:bg-orange-500 text-white shadow-lg px-3 py-1.5 min-h-[32px]">
                   <Star className="w-5 h-5 mr-1" fill="currentColor" />
                   Popular
                 </Badge>
@@ -137,11 +137,11 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
             )}
           </div>
         ) : (
-          <div className="relative h-48 w-full bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
-            <ChefHat className="w-16 h-16 text-orange-300" aria-hidden="true" />
+          <div className="relative h-48 w-full bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 flex items-center justify-center">
+            <ChefHat className="w-16 h-16 text-orange-300 dark:text-orange-600" aria-hidden="true" />
             {pkg.popular && (
               <div className="absolute top-3 right-3">
-                <Badge className="bg-orange-600 text-white shadow-lg px-3 py-1.5 min-h-[32px]">
+                <Badge className="bg-orange-600 dark:bg-orange-500 text-white shadow-lg px-3 py-1.5 min-h-[32px]">
                   <Star className="w-5 h-5 mr-1" fill="currentColor" />
                   Popular
                 </Badge>
@@ -160,19 +160,19 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
             const priceDisplay = getPackageDisplayPrice(pkg);
             return (
               <div className="space-y-1">
-                <div className="text-2xl font-bold text-orange-600 flex items-baseline gap-1">
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 flex items-baseline gap-1">
                   <AnimatedPrice 
                     value={priceDisplay.value}
                     currency="$"
                     duration={0.5}
                     showCents={true}
                   />
-                  <span className="text-sm text-muted-foreground font-normal">
+                  <span className="text-sm text-muted-foreground dark:text-slate-400 font-normal">
                     {priceDisplay.unit}
                   </span>
                 </div>
                 {priceDisplay.description && (
-                  <p className="text-xs text-muted-foreground italic">
+                  <p className="text-xs text-muted-foreground dark:text-slate-500 italic">
                     {priceDisplay.description}
                   </p>
                 )}

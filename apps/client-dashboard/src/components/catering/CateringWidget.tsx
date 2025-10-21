@@ -19,6 +19,10 @@ import { offlineDetector } from "@/utils/error-handler";
 import { preloadOnIdle } from "@/utils/component-preloader";
 import { CateringProvider, useCateringContext } from "./CateringContext";
 import { CateringWidgetSkeleton, PackageGridSkeleton, FormSkeleton, ConfirmationSkeleton } from "./Skeletons";
+import { CompactThemeToggle } from "@/components/ui/theme-toggle";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { KeyboardShortcutsHelp } from "@/components/ui/keyboard-shortcuts-help";
+import { FooterSyncStatus } from "@/components/ui/sync-status-indicator";
 
 // Lazy load catering step components for better code splitting
 const PackageSelectionLoader = () => import("./PackageSelection").then(m => ({ default: m.PackageSelection }));
@@ -69,21 +73,21 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
   // Enhanced error states with better messaging
   if (displayError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/20">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-muted/20 dark:bg-slate-900">
+        <Card className="w-full max-w-md dark:bg-slate-800 dark:border-slate-700">
           <CardContent className="p-8 text-center">
             <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-lg font-semibold mb-2">
+            <h2 className="text-lg font-semibold mb-2 dark:text-white">
               {tenantError ? "Restaurant Not Found" : "Service Issue"}
             </h2>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-muted-foreground dark:text-slate-400 mb-4">
               {tenantError
                 ? `The restaurant "${slug}" could not be found or is not available for catering.`
                 : displayError}
             </p>
             {isInDemoMode && (
-              <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
-                <p className="text-sm text-yellow-700">
+              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 dark:border dark:border-yellow-700 rounded-lg">
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">
                   ℹ️ This is a demo environment. Contact support for full
                   functionality.
                 </p>
@@ -104,12 +108,12 @@ const CateringWidget: React.FC<CateringWidgetProps> = ({ slug }) => {
 
   if (!tenant) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/20">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-muted/20 dark:bg-slate-900">
+        <Card className="w-full max-w-md dark:bg-slate-800 dark:border-slate-700">
           <CardContent className="p-8 text-center">
             <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-lg font-semibold mb-2">Invalid Restaurant</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-lg font-semibold mb-2 dark:text-white">Invalid Restaurant</h2>
+            <p className="text-muted-foreground dark:text-slate-400">
               Please check the catering link and try again.
             </p>
           </CardContent>
@@ -150,9 +154,10 @@ const CateringWidgetContent: React.FC<CateringWidgetContentProps> = ({
   createOrder,
   loading,
 }) => {
-  const { currentStep, setCurrentStep } = useCateringContext();
+  const { currentStep, setCurrentStep, syncStatus, lastSyncTime } = useCateringContext();
   const [isOffline, setIsOffline] = useState(!offlineDetector.isOnline());
   const [showOnlineNotification, setShowOnlineNotification] = useState(false);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
 
   // Monitor online/offline status
   useEffect(() => {
@@ -180,11 +185,24 @@ const CateringWidgetContent: React.FC<CateringWidgetContentProps> = ({
     ]);
   }, []);
 
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    currentStep,
+    setCurrentStep,
+    onShowHelp: () => setShowKeyboardHelp(true),
+    onClose: () => {
+      // Return to packages or close if already on packages
+      if (currentStep !== "packages") {
+        setCurrentStep("packages");
+      }
+    },
+  });
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       {/* Offline Banner */}
       {isOffline && (
-        <div className="bg-yellow-600 text-white py-2 px-4 text-center text-sm font-medium">
+        <div className="bg-yellow-600 dark:bg-yellow-700 text-white py-2 px-4 text-center text-sm font-medium">
           <WifiOff className="w-4 h-4 inline mr-2" />
           You're currently offline. Some features may not be available.
         </div>
@@ -210,28 +228,33 @@ const CateringWidgetContent: React.FC<CateringWidgetContentProps> = ({
       </AnimatePresence>
 
       {/* Header */}
-      <div className="bg-white border-b shadow-sm sticky top-0 z-50">
+      <div className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <ChefHat className="w-8 h-8 text-orange-500" />
+              <ChefHat className="w-8 h-8 text-orange-500 dark:text-orange-400" />
               <div>
-                <h1 className="text-xl font-bold">{tenant.name}</h1>
-                <p className="text-sm text-muted-foreground">
+                <h1 className="text-xl font-bold dark:text-white">{tenant.name}</h1>
+                <p className="text-sm text-muted-foreground dark:text-slate-400">
                   Catering Services
                 </p>
               </div>
             </div>
-            {currentStep !== "packages" && (
-              <Button
-                variant="ghost"
-                onClick={() => setCurrentStep("packages")}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Packages
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <CompactThemeToggle />
+              
+              {currentStep !== "packages" && (
+                <Button
+                  variant="ghost"
+                  onClick={() => setCurrentStep("packages")}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Back to Packages</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -265,10 +288,10 @@ const CateringWidgetContent: React.FC<CateringWidgetContentProps> = ({
                       aria-label={`Step ${index + 1}: ${step.label}${isActive ? " (current)" : isCompleted ? " (completed)" : ""}`}
                       className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all min-h-[44px] ${
                         isActive
-                          ? "bg-orange-100 text-orange-700"
+                          ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
                           : isCompleted
-                            ? "bg-green-100 text-green-700"
-                            : "bg-muted text-muted-foreground"
+                            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                            : "bg-muted dark:bg-slate-700 text-muted-foreground dark:text-slate-400"
                       }`}
                     >
                       <IconComponent className="w-5 h-5" aria-hidden="true" />
@@ -279,7 +302,7 @@ const CateringWidgetContent: React.FC<CateringWidgetContentProps> = ({
                     {index < 3 && (
                       <div
                         className={`w-8 h-0.5 mx-2 transition-colors ${
-                          isCompleted ? "bg-green-300" : "bg-muted"
+                          isCompleted ? "bg-green-300 dark:bg-green-700" : "bg-muted dark:bg-slate-700"
                         }`}
                         aria-hidden="true"
                       />
@@ -327,15 +350,30 @@ const CateringWidgetContent: React.FC<CateringWidgetContentProps> = ({
           </AnimatePresence>
 
           {/* Footer */}
-          <div className="mt-12 text-center text-sm text-muted-foreground">
+          <div className="mt-12 text-center text-sm text-muted-foreground dark:text-slate-400">
             <div className="flex items-center justify-center gap-4">
               <span>🔒 Secure & Private</span>
               <span>⚡ Quick Response</span>
               <span>📱 Mobile Optimized</span>
             </div>
+            <div className="mt-3 flex items-center justify-center gap-4">
+              <FooterSyncStatus status={syncStatus} lastSyncTime={lastSyncTime} />
+              <button
+                onClick={() => setShowKeyboardHelp(true)}
+                className="text-xs text-muted-foreground dark:text-slate-500 hover:text-orange-600 dark:hover:text-orange-400 underline"
+              >
+                Keyboard Shortcuts (?)
+              </button>
+            </div>
           </div>
         </div>
       </div>
+      
+      {/* Keyboard Shortcuts Help Panel */}
+      <KeyboardShortcutsHelp
+        isOpen={showKeyboardHelp}
+        onClose={() => setShowKeyboardHelp(false)}
+      />
     </div>
   );
 };
