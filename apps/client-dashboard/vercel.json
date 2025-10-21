@@ -38,34 +38,34 @@
       ]
     },
     {
-      "source": "/assets/(.*\\.(js|mjs))",
+      "source": "/assets/:path*",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     },
     {
-      "source": "/chunks/(.*\\.(js|mjs))",
+      "source": "/chunks/:path*",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     },
     {
-      "source": "/styles/(.*\\.css)",
+      "source": "/styles/:path*",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     },
     {
-      "source": "/fonts/(.*\\.(woff2|woff|ttf|eot|otf))",
+      "source": "/fonts/:path*",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     },
     {
-      "source": "/images/(.*\\.(png|jpg|jpeg|gif|webp|svg|ico))",
+      "source": "/images/:path*",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
