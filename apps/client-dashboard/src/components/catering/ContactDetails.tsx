@@ -245,7 +245,6 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
         contact_phone: orderForm.contact_phone,
         venue_name: orderForm.venue_name,
         venue_address: orderForm.venue_address,
-        delivery_address: orderForm.delivery_address,
         special_instructions: orderForm.special_instructions,
         dietary_requirements: orderForm.dietary_requirements,
       };

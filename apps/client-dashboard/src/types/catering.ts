@@ -249,10 +249,9 @@ export interface CreateCateringOrderRequest {
   contact_email: string;
   contact_phone?: string;
   venue_name?: string;
-  venue_address?: string;
-  delivery_address?: string;
+  venue_address?: string | { street: string; city: string; state: string; zip_code: string; country: string };
   special_instructions?: string;
-  dietary_requirements: DietaryRestriction[];
+  dietary_requirements?: DietaryRestriction[] | string;
 }
 
 export interface UpdateCateringOrderRequest {

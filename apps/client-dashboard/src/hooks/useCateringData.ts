@@ -215,11 +215,22 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
       }
 
       try {
-        // Format venue_address as JSONB if it's a string
-        let formattedVenueAddress: VenueAddress | string = orderData.venue_address;
-        if (typeof orderData.venue_address === 'string') {
+        // Format venue_address as JSONB (required field in DB)
+        let formattedVenueAddress: VenueAddress;
+        if (typeof orderData.venue_address === 'string' && orderData.venue_address.trim()) {
           formattedVenueAddress = {
-            street: orderData.venue_address,
+            street: orderData.venue_address.trim(),
+            city: "",
+            state: "",
+            zip_code: "",
+            country: "USA"
+          };
+        } else if (typeof orderData.venue_address === 'object' && orderData.venue_address !== null) {
+          formattedVenueAddress = orderData.venue_address as VenueAddress;
+        } else {
+          // Default value if not provided
+          formattedVenueAddress = {
+            street: "Not specified",
             city: "",
             state: "",
             zip_code: "",
@@ -228,21 +239,41 @@ export function useCateringData(tenantId?: string): UseCateringDataReturn {
         }
 
         // Ensure contact_phone is not empty (database requires it)
-        const contactPhone = orderData.contact_phone || "Not provided";
+        const contactPhone = orderData.contact_phone?.trim() || "Not provided";
+
+        // Format dietary_requirements as TEXT (comma-separated string)
+        const dietaryRequirements = Array.isArray(orderData.dietary_requirements) 
+          ? orderData.dietary_requirements.join(', ')
+          : orderData.dietary_requirements || '';
+
+        // Build database-compatible payload (remove fields that don't exist in schema)
+        const dbPayload = {
+          package_id: orderData.package_id,
+          event_type_id: orderData.event_type_id,
+          event_name: orderData.event_name,
+          event_date: orderData.event_date,
+          event_start_time: orderData.event_start_time,
+          event_end_time: orderData.event_end_time,
+          guest_count: orderData.guest_count,
+          service_type: orderData.service_type,
+          contact_name: orderData.contact_name,
+          contact_email: orderData.contact_email,
+          contact_phone: contactPhone,
+          venue_name: orderData.venue_name || null,
+          venue_address: formattedVenueAddress,
+          special_instructions: orderData.special_instructions || null,
+          dietary_requirements: dietaryRequirements,
+          tenant_id: tenantId,
+          status: "inquiry",
+          subtotal: 0, // Will be calculated by backend
+          total_amount: 0, // Will be calculated by backend
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
 
         const { data, error } = await supabase
           .from("catering_orders")
-          .insert([
-            {
-              ...orderData,
-              venue_address: formattedVenueAddress,
-              contact_phone: contactPhone,
-              tenant_id: tenantId,
-              status: "inquiry",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ])
+          .insert([dbPayload])
           .select(
             `
           *,
