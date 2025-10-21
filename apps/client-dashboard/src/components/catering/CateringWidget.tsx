@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,20 @@ import { useCateringData } from "@/hooks/useCateringData";
 import { useTenantBySlug } from "@/hooks/useTenantBySlug";
 import ErrorBoundary from "@/components/booking/ErrorBoundary";
 import { offlineDetector } from "@/utils/error-handler";
+import { preloadOnIdle } from "@/utils/component-preloader";
 import { CateringProvider, useCateringContext } from "./CateringContext";
-import { PackageSelection } from "./PackageSelection";
-import { CustomizeOrder } from "./CustomizeOrder";
-import { ContactDetails } from "./ContactDetails";
-import { OrderConfirmation } from "./OrderConfirmation";
-import { CateringWidgetSkeleton } from "./Skeletons";
+import { CateringWidgetSkeleton, PackageGridSkeleton, FormSkeleton, ConfirmationSkeleton } from "./Skeletons";
+
+// Lazy load catering step components for better code splitting
+const PackageSelectionLoader = () => import("./PackageSelection").then(m => ({ default: m.PackageSelection }));
+const CustomizeOrderLoader = () => import("./CustomizeOrder").then(m => ({ default: m.CustomizeOrder }));
+const ContactDetailsLoader = () => import("./ContactDetails").then(m => ({ default: m.ContactDetails }));
+const OrderConfirmationLoader = () => import("./OrderConfirmation").then(m => ({ default: m.OrderConfirmation }));
+
+const PackageSelection = lazy(PackageSelectionLoader);
+const CustomizeOrder = lazy(CustomizeOrderLoader);
+const ContactDetails = lazy(ContactDetailsLoader);
+const OrderConfirmation = lazy(OrderConfirmationLoader);
 
 interface CateringWidgetProps {
   slug: string;
@@ -162,6 +170,16 @@ const CateringWidgetContent: React.FC<CateringWidgetContentProps> = ({
     return unsubscribe;
   }, [isOffline]);
 
+  // Preload next step components when idle
+  useEffect(() => {
+    // Preload all steps after initial mount for smooth transitions
+    preloadOnIdle([
+      CustomizeOrderLoader,
+      ContactDetailsLoader,
+      OrderConfirmationLoader,
+    ]);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50">
       {/* Offline Banner */}
@@ -273,30 +291,38 @@ const CateringWidgetContent: React.FC<CateringWidgetContentProps> = ({
           </div>
 
           <AnimatePresence mode="wait">
-            {/* Step 1: Package Selection - NEW COMPONENT */}
+            {/* Step 1: Package Selection - Lazy Loaded */}
             {currentStep === "packages" && (
-              <PackageSelection
-                packages={packages}
-                loading={loading}
-                restaurantName={tenant.name}
-                contactEmail={tenant.contact_email}
-                contactPhone={tenant.contact_phone}
-              />
+              <Suspense fallback={<PackageGridSkeleton />}>
+                <PackageSelection
+                  packages={packages}
+                  loading={loading}
+                  restaurantName={tenant.name}
+                  contactEmail={tenant.contact_email}
+                  contactPhone={tenant.contact_phone}
+                />
+              </Suspense>
             )}
 
-            {/* Step 2: Customize Package - NEW COMPONENT */}
+            {/* Step 2: Customize Package - Lazy Loaded */}
             {currentStep === "customize" && (
-              <CustomizeOrder />
+              <Suspense fallback={<FormSkeleton />}>
+                <CustomizeOrder />
+              </Suspense>
             )}
 
-            {/* Step 3: Contact Details - NEW COMPONENT */}
+            {/* Step 3: Contact Details - Lazy Loaded */}
             {currentStep === "details" && (
-              <ContactDetails tenantId={tenant.id} />
+              <Suspense fallback={<FormSkeleton />}>
+                <ContactDetails tenantId={tenant.id} />
+              </Suspense>
             )}
 
-            {/* Step 4: Confirmation - NEW COMPONENT */}
+            {/* Step 4: Confirmation - Lazy Loaded */}
             {currentStep === "confirmation" && (
-              <OrderConfirmation />
+              <Suspense fallback={<ConfirmationSkeleton />}>
+                <OrderConfirmation />
+              </Suspense>
             )}
           </AnimatePresence>
 

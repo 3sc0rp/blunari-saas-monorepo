@@ -95,7 +95,7 @@ export default defineConfig(({ mode }) => {
           'public-widget': path.resolve(__dirname, 'public-widget.html')
         },
         output: {
-          // Let Vite handle automatic chunking to avoid module resolution issues
+          // Optimized chunking strategy for better code splitting
           chunkFileNames: 'chunks/[name]-[hash].js',
           entryFileNames: 'assets/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
@@ -106,6 +106,48 @@ export default defineConfig(({ mode }) => {
             if (/css/i.test(ext)) return `styles/[name]-[hash].${ext}`;
             if (/woff2?|eot|ttf|otf/i.test(ext)) return `fonts/[name]-[hash].${ext}`;
             return `assets/[name]-[hash].${ext}`;
+          },
+          // Manual chunk splitting for optimal loading
+          manualChunks: (id) => {
+            // Vendor chunks
+            if (id.includes('node_modules')) {
+              // React ecosystem
+              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+                return 'react';
+              }
+              // Supabase
+              if (id.includes('@supabase')) {
+                return 'supabase';
+              }
+              // UI libraries
+              if (id.includes('lucide-react') || id.includes('framer-motion')) {
+                return 'ui-libs';
+              }
+              // Radix UI components
+              if (id.includes('@radix-ui')) {
+                return 'radix';
+              }
+              // Charts
+              if (id.includes('recharts') || id.includes('d3-')) {
+                return 'charts';
+              }
+              // Date utilities
+              if (id.includes('date-fns')) {
+                return 'date-utils';
+              }
+              // Other vendors
+              return 'vendor';
+            }
+            
+            // Catering widget components (lazy-loaded)
+            if (id.includes('/catering/') && !id.includes('CateringWidget.tsx')) {
+              return 'catering-components';
+            }
+            
+            // Analytics and widgets
+            if (id.includes('/widgets/') || id.includes('Analytics')) {
+              return 'analytics';
+            }
           }
         }
       },
