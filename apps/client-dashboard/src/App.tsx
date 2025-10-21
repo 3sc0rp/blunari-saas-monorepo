@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { REACT_QUERY_CONFIG } from '@/config/cache.config';
 import ScrollToTop from "@/components/ScrollToTop";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantBrandingProvider } from "@/contexts/TenantBrandingContext";
@@ -57,8 +58,6 @@ const InventoryManagement = lazy(() => import(/* webpackChunkName: "inventory" *
 const AIBusinessInsights = lazy(() => import(/* webpackChunkName: "ai-insights" */ "./pages/AIBusinessInsights"));
 const WidgetManagement = lazy(() => import(/* webpackChunkName: "widgets" */ "./pages/WidgetManagement"));
 const DashboardHome = lazy(() => import(/* webpackChunkName: "dashboard-home" */ "./pages/DashboardHome"));
-
-import { REACT_QUERY_CONFIG } from '@/config/cache.config';
 
 // Optimized QueryClient with centralized cache configuration
 const queryClient = new QueryClient(REACT_QUERY_CONFIG);
