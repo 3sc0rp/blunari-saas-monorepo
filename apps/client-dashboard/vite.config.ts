@@ -93,10 +93,10 @@ export default defineConfig(({ mode }) => {
       modulePreload: {
         polyfill: true,
         resolveDependencies: (filename, deps, { hostId, hostType }) => {
-          // Ensure React loads before any other chunks
+          // CRITICAL: React vendor chunk MUST load first, always
           return deps.sort((a, b) => {
-            const aIsReact = a.includes('react');
-            const bIsReact = b.includes('react');
+            const aIsReact = a.includes('react-vendor');
+            const bIsReact = b.includes('react-vendor');
             if (aIsReact && !bIsReact) return -1;
             if (!aIsReact && bIsReact) return 1;
             return 0;
@@ -125,9 +125,9 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             // Vendor chunks
             if (id.includes('node_modules')) {
-              // React ecosystem
-              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-                return 'react';
+              // React ecosystem - CRITICAL: keep as first chunk
+              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler') || id.includes('react/jsx-runtime')) {
+                return 'react-vendor';
               }
               // Supabase
               if (id.includes('@supabase')) {
