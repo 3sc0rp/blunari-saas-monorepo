@@ -138,10 +138,10 @@ const FormField: React.FC<FormFieldProps> = ({
     {error && (
       <p 
         id={`${id}-error`}
-        className="text-sm text-red-600 flex items-center gap-1" 
+        className="text-sm text-red-600 flex items-center gap-2" 
         role="alert"
       >
-        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+        <AlertCircle className="w-5 h-5 flex-shrink-0" />
         {error}
       </p>
     )}
@@ -338,7 +338,7 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
               label="Full Name"
               required
               error={fieldErrors.contact_name}
-              icon={<User className="w-4 h-4 text-muted-foreground" />}
+              icon={<User className="w-5 h-5 text-muted-foreground" />}
             >
               <Input
                 id="contact_name"
@@ -358,7 +358,7 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
               id="contact_phone"
               label="Phone Number"
               error={fieldErrors.contact_phone}
-              icon={<Phone className="w-4 h-4 text-muted-foreground" />}
+              icon={<Phone className="w-5 h-5 text-muted-foreground" />}
             >
               <Input
                 id="contact_phone"
@@ -380,7 +380,7 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
                 label="Email Address"
                 required
                 error={fieldErrors.contact_email}
-                icon={<Mail className="w-4 h-4 text-muted-foreground" />}
+                icon={<Mail className="w-5 h-5 text-muted-foreground" />}
               >
                 <Input
                   id="contact_email"
@@ -442,7 +442,7 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
           {/* Error Messages */}
           {submitError && (
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle className="h-5 w-5" />
               <AlertDescription>
                 <p className="font-medium">Unable to Submit Order</p>
                 <p className="text-sm mt-1">{submitError}</p>
@@ -452,7 +452,7 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
 
           {errorCount > 0 && (
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle className="h-5 w-5" />
               <AlertDescription>
                 <p className="font-medium">Please Fix Validation Errors</p>
                 <p className="text-sm mt-1">
@@ -468,21 +468,23 @@ export const ContactDetails: React.FC<ContactDetailsProps> = ({
               variant="outline"
               onClick={handleBack}
               disabled={submitting}
+              size="lg"
               className="flex items-center gap-2 sm:w-auto"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" />
               Back to Order Details
             </Button>
 
             <Button
               onClick={handleSubmit}
               disabled={!isSubmittable || submitting}
-              className="flex-1 min-h-[44px] bg-orange-600 hover:bg-orange-700 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              size="lg"
+              className="flex-1 bg-orange-600 hover:bg-orange-700 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label={submitting ? "Submitting your catering request, please wait" : "Submit catering request"}
             >
               {submitting ? (
                 <>
-                  <LoadingSpinner className="w-4 h-4 mr-2" />
+                  <LoadingSpinner className="w-5 h-5 mr-2" />
                   Submitting Your Request...
                 </>
               ) : (

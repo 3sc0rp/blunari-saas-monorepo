@@ -130,7 +130,7 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
             {pkg.popular && (
               <div className="absolute top-3 right-3">
                 <Badge className="bg-orange-600 text-white shadow-lg px-3 py-1.5 min-h-[32px]">
-                  <Star className="w-4 h-4 mr-1" fill="currentColor" />
+                  <Star className="w-5 h-5 mr-1" fill="currentColor" />
                   Popular
                 </Badge>
               </div>
@@ -142,7 +142,7 @@ const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, onSelect, onVie
             {pkg.popular && (
               <div className="absolute top-3 right-3">
                 <Badge className="bg-orange-600 text-white shadow-lg px-3 py-1.5 min-h-[32px]">
-                  <Star className="w-4 h-4 mr-1" fill="currentColor" />
+                  <Star className="w-5 h-5 mr-1" fill="currentColor" />
                   Popular
                 </Badge>
               </div>

@@ -129,8 +129,8 @@ const FormField: React.FC<FormFieldProps> = ({ id, label, required, error, child
     </Label>
     {children}
     {error && (
-      <p className="text-sm text-red-500 flex items-center gap-1" role="alert">
-        <AlertCircle className="w-3 h-3" />
+      <p className="text-sm text-red-500 flex items-center gap-2" role="alert">
+        <AlertCircle className="w-5 h-5" />
         {error}
       </p>
     )}
@@ -383,9 +383,10 @@ export const CustomizeOrder: React.FC<CustomizeOrderProps> = ({ onBack }) => {
             <Button
               variant="outline"
               onClick={handleBack}
+              size="lg"
               className="flex items-center gap-2"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" />
               Back to Packages
             </Button>
           </div>
@@ -419,7 +420,7 @@ export const CustomizeOrder: React.FC<CustomizeOrderProps> = ({ onBack }) => {
               {/* Validation Errors */}
               {!validation.isValid && validation.errors.length > 0 && (
                 <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
+                  <AlertCircle className="h-5 w-5" />
                   <AlertDescription>
                     <ul className="text-sm space-y-1 mt-1">
                       {validation.errors.map((error, index) => (
@@ -434,7 +435,8 @@ export const CustomizeOrder: React.FC<CustomizeOrderProps> = ({ onBack }) => {
               <Button
                 onClick={handleContinue}
                 disabled={!validation.isValid}
-                className="w-full min-h-[44px] bg-orange-600 hover:bg-orange-700 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                size="lg"
+                className="w-full bg-orange-600 hover:bg-orange-700 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Continue to contact details"
               >
                 Continue to Contact Details

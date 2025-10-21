@@ -224,7 +224,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
             {/* Order Details */}
             <div className="space-y-2">
               <OrderDetailRow
-                icon={<ChefHat className="w-4 h-4" />}
+                icon={<ChefHat className="w-5 h-5" />}
                 label="Package"
                 value={
                   <div className="text-right">
@@ -237,7 +237,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
               />
 
               <OrderDetailRow
-                icon={<Users className="w-4 h-4" />}
+                icon={<Users className="w-5 h-5" />}
                 label="Guests"
                 value={orderForm.guest_count}
               />
@@ -259,14 +259,14 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
               <h3 className="font-semibold mb-3">Contact Information</h3>
               
               <OrderDetailRow
-                icon={<Mail className="w-4 h-4" />}
+                icon={<Mail className="w-5 h-5" />}
                 label="Email"
                 value={orderForm.contact_email}
               />
 
               {orderForm.contact_phone && (
                 <OrderDetailRow
-                  icon={<Phone className="w-4 h-4" />}
+                  icon={<Phone className="w-5 h-5" />}
                   label="Phone"
                   value={orderForm.contact_phone}
                 />
@@ -274,7 +274,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
 
               {orderForm.venue_name && (
                 <OrderDetailRow
-                  icon={<MapPin className="w-4 h-4" />}
+                  icon={<MapPin className="w-5 h-5" />}
                   label="Venue"
                   value={
                     <div className="text-right">
@@ -345,7 +345,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
             variant="outline"
             className="gap-2"
           >
-            <RefreshCcw className="w-4 h-4" />
+            <RefreshCcw className="w-5 h-5" />
             Place Another Order
           </Button>
         </div>
