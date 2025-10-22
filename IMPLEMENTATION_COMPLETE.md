@@ -52,7 +52,7 @@ VALUES (gen_random_uuid(), 'Test', 'test', NULL);
 ---
 
 ### 2. Production Tenant Owner Separation 🔴
-**Status**: ⏳ **AWAITING EXECUTION**  
+**Status**: ✅ **READY TO EXECUTE**  
 **Risk**: CRITICAL - All production tenants currently share same owner user
 
 **Current State**:
@@ -64,81 +64,44 @@ FROM tenants t;
 -- Result: shared_count = 4 for all ❌
 ```
 
-**Execution Plan**:
+**Execution Resources Created**:
+- ✅ `fix-tenant-owner` Edge Function deployed to Supabase
+- ✅ `EXECUTE_TENANT_OWNER_SEPARATION.js` - Browser console script
+- ✅ `VERIFY_TENANT_OWNERS.sql` - SQL verification queries
+- ✅ `REMAINING_FIXES_CHECKLIST.md` - Step-by-step execution guide
 
-#### Step 1: Open Admin Dashboard Console
-```
-URL: https://admin.blunari.ai
-Login with admin credentials
-Press F12 to open Developer Console
-```
+**Quick Start**:
+1. Open `REMAINING_FIXES_CHECKLIST.md` 
+2. Follow Step 1-5 (30 minutes total)
+3. Complete verification and testing
 
-#### Step 2: Run Fix Script
-```javascript
-// Get all production tenants
-const { data: tenants, error } = await supabase
-  .from('tenants')
-  .select('id, name, slug, email')
-  .order('created_at');
+**Detailed Instructions**:
 
-console.table(tenants);
+#### Step 1: Verify Current State (2 min)
+Open Supabase SQL Editor and run the summary query from `VERIFY_TENANT_OWNERS.sql`
 
-// Fix each tenant with unique email
-const results = [];
+#### Step 2: Execute Separation (10 min)
+1. Open https://admin.blunari.ai
+2. Login with admin credentials
+3. Open Developer Console (F12)
+4. Copy entire `EXECUTE_TENANT_OWNER_SEPARATION.js` script
+5. Paste into console and press Enter
+6. **SAVE ALL GENERATED PASSWORDS SECURELY!**
 
-for (const tenant of tenants) {
-  const uniqueEmail = `${tenant.slug}-owner@blunari.ai`;
-  
-  console.log(`\n🔧 Fixing ${tenant.name}...`);
-  
-  const { data, error } = await supabase.functions.invoke('fix-tenant-owner', {
-    body: {
-      tenantId: tenant.id,
-      newOwnerEmail: uniqueEmail
-    }
-  });
-  
-  if (error) {
-    console.error(`❌ Failed:`, error);
-    results.push({ tenant: tenant.name, status: 'FAILED', error });
-  } else {
-    console.log(`✅ Success!`);
-    console.log(`   Email: ${uniqueEmail}`);
-    console.log(`   Password: ${data.temporaryPassword}`);
-    results.push({ 
-      tenant: tenant.name, 
-      email: uniqueEmail,
-      password: data.temporaryPassword,
-      status: 'SUCCESS' 
-    });
-  }
-  
-  await new Promise(resolve => setTimeout(resolve, 500));
-}
+#### Step 3: Verify Success (3 min)
+Run verification queries from `VERIFY_TENANT_OWNERS.sql`
+Expected: All tenants show unique owner_id
 
-console.log('\n📊 RESULTS:');
-console.table(results);
+#### Step 4: Test Logins (10 min)
+Test login for each tenant with new credentials
 
-// ⚠️ IMPORTANT: Copy and save all passwords securely!
-```
-
-#### Step 3: Verify Separation
-```sql
--- Check no shared owners
-SELECT owner_id, COUNT(*) as tenant_count
-FROM tenants
-WHERE owner_id IS NOT NULL
-GROUP BY owner_id
-HAVING COUNT(*) > 1;
-
--- Expected: 0 rows ✅
-```
-
-#### Step 4: Notify Tenant Owners
-Send email to each tenant owner with their new credentials.
+#### Step 5: Notify Owners (5 min)
+Send credentials to tenant owners (email template in checklist)
 
 **Estimated Time**: 30 minutes  
 **Risk**: LOW (fix-tenant-owner is production-safe, creates new users without deleting data)
+
+**See**: `REMAINING_FIXES_CHECKLIST.md` for complete execution guide
 
 ---
 
