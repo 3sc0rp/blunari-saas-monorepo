@@ -366,18 +366,37 @@ const handler = async (req: Request): Promise<Response> => {
       case "update_email":
         if (!newEmail) throw new Error("New email required");
 
-  console.log(`[CREDENTIALS][${correlationId}] Updating email from auth.users for user ${tenantOwnerId}`);
+        console.log(`[CREDENTIALS][${correlationId}] Updating email from auth.users for user ${tenantOwnerId}`);
         
         // Update user email in Supabase Auth
-        const { error: emailError } =
+        const { data: emailUpdateData, error: emailError } =
           await supabaseAdmin.auth.admin.updateUserById(tenantOwnerId, {
             email: newEmail,
           });
 
         if (emailError) {
-          console.error(`[CREDENTIALS][${correlationId}] Auth email update failed:`, emailError);
-          throw new Error(`Failed to update email in auth: ${emailError.message}`);
+          console.error(`[CREDENTIALS][${correlationId}] Auth email update failed:`, {
+            error: emailError,
+            code: emailError.code,
+            status: emailError.status,
+            message: emailError.message,
+          });
+          
+          // Provide more specific error messages based on error type
+          let userMessage = `Failed to update email in auth: ${emailError.message}`;
+          
+          if (emailError.message?.includes('duplicate') || emailError.message?.includes('already exists')) {
+            userMessage = `Email ${newEmail} is already registered to another user. Please use a different email.`;
+          } else if (emailError.message?.includes('not found') || emailError.message?.includes('User not found')) {
+            userMessage = `Tenant owner user account not found. Please contact support.`;
+          } else if (emailError.message?.includes('invalid') || emailError.message?.includes('malformed')) {
+            userMessage = `Invalid email format: ${newEmail}`;
+          }
+          
+          throw new Error(userMessage);
         }
+        
+        console.log(`[CREDENTIALS][${correlationId}] Auth email updated successfully:`, emailUpdateData?.user?.email);
 
         console.log(`[CREDENTIALS][${correlationId}] Updating email in profiles table`);
         

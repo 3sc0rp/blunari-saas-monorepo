@@ -143,6 +143,7 @@ serve(async (req: Request) => {
   try {
     // Generate a request id for tracing
     const requestId = crypto.randomUUID();
+    console.log("[tenant-provisioning] Request started:", requestId);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -157,7 +158,10 @@ serve(async (req: Request) => {
 
     // Verify admin access
     const authHeader = req.headers.get("Authorization");
+    console.log("[tenant-provisioning] Auth header present:", !!authHeader);
+    
     if (!authHeader) {
+      console.error("[tenant-provisioning] Missing Authorization header");
       return new Response(
         JSON.stringify({
           success: false,
@@ -173,15 +177,35 @@ serve(async (req: Request) => {
         },
       );
     }
+    
     const token = authHeader.replace(/^Bearer\s+/i, "");
+    console.log("[tenant-provisioning] Getting user from token...");
+    
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      throw new Error("Unauthorized");
+      console.error("[tenant-provisioning] Authentication failed:", authError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Invalid or expired authentication token",
+            details: authError?.message,
+            requestId,
+          },
+        }),
+        {
+          status: 401,
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+        },
+      );
     }
+
+    console.log("[tenant-provisioning] User authenticated:", user.id);
 
     // CRITICAL SECURITY: Check if user is an admin
     const { data: employee, error: employeeError } = await supabase

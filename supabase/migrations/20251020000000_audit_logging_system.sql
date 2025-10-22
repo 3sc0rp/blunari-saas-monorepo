@@ -496,16 +496,31 @@ BEGIN
   IF TG_OP = 'INSERT' THEN
     v_action := 'create';
     v_new_values := to_jsonb(NEW);
-    v_tenant_id := (v_new_values->>'tenant_id')::UUID;
+    -- Special case: for tenants table, use 'id' as tenant_id
+    IF TG_TABLE_NAME = 'tenants' THEN
+      v_tenant_id := (v_new_values->>'id')::UUID;
+    ELSE
+      v_tenant_id := (v_new_values->>'tenant_id')::UUID;
+    END IF;
   ELSIF TG_OP = 'UPDATE' THEN
     v_action := 'update';
     v_old_values := to_jsonb(OLD);
     v_new_values := to_jsonb(NEW);
-    v_tenant_id := (v_new_values->>'tenant_id')::UUID;
+    -- Special case: for tenants table, use 'id' as tenant_id
+    IF TG_TABLE_NAME = 'tenants' THEN
+      v_tenant_id := (v_new_values->>'id')::UUID;
+    ELSE
+      v_tenant_id := (v_new_values->>'tenant_id')::UUID;
+    END IF;
   ELSIF TG_OP = 'DELETE' THEN
     v_action := 'delete';
     v_old_values := to_jsonb(OLD);
-    v_tenant_id := (v_old_values->>'tenant_id')::UUID;
+    -- Special case: for tenants table, use 'id' as tenant_id
+    IF TG_TABLE_NAME = 'tenants' THEN
+      v_tenant_id := (v_old_values->>'id')::UUID;
+    ELSE
+      v_tenant_id := (v_old_values->>'tenant_id')::UUID;
+    END IF;
   END IF;
 
   -- Log the activity (async via PERFORM to avoid blocking)
