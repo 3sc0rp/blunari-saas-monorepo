@@ -218,31 +218,43 @@ const handler = async (req: Request): Promise<Response> => {
       // Generate a unique email if tenant email doesn't exist or matches an admin
       let newOwnerEmail = tenant.email;
       
-      // Check if tenant email is already used by an admin
-      const { data: existingProfile } = await supabaseAdmin
-        .from("profiles")
-        .select("user_id, email")
-        .eq("email", tenant.email)
-        .maybeSingle();
-
-      if (existingProfile?.user_id) {
-        const { data: isExistingAdmin } = await supabaseAdmin
-          .from("employees")
-          .select("id")
-          .eq("user_id", existingProfile.user_id)
-          .eq("status", "ACTIVE")
+      if (!newOwnerEmail || newOwnerEmail.trim().length === 0) {
+        // No email on tenant - use system email
+        newOwnerEmail = `tenant-${tenantId}@blunari-system.local`;
+        console.log(`[CREDENTIALS][${correlationId}] No tenant email, using system email: ${newOwnerEmail}`);
+      } else {
+        // Check if tenant email is already used by an admin or another user
+        const { data: existingProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("user_id, email")
+          .eq("email", tenant.email)
           .maybeSingle();
 
-        if (isExistingAdmin) {
-          // Tenant email matches admin - generate unique email
-          newOwnerEmail = `tenant-${tenantId}@blunari-system.local`;
-          console.log(`[CREDENTIALS][${correlationId}] Tenant email matches admin, using system email: ${newOwnerEmail}`);
+        if (existingProfile?.user_id) {
+          const { data: isExistingAdmin } = await supabaseAdmin
+            .from("employees")
+            .select("id")
+            .eq("user_id", existingProfile.user_id)
+            .eq("status", "ACTIVE")
+            .maybeSingle();
+
+          if (isExistingAdmin) {
+            // Tenant email matches admin - generate unique email
+            newOwnerEmail = `tenant-${tenantId}@blunari-system.local`;
+            console.log(`[CREDENTIALS][${correlationId}] Tenant email matches admin, using system email: ${newOwnerEmail}`);
+          } else {
+            // Email belongs to another non-admin user, still use system email to be safe
+            newOwnerEmail = `tenant-${tenantId}@blunari-system.local`;
+            console.log(`[CREDENTIALS][${correlationId}] Tenant email already in use, using system email: ${newOwnerEmail}`);
+          }
         }
       }
 
       // Create new auth user for tenant owner
       const newPassword = generateSecurePassword();
       temporaryPasswordGenerated = newPassword; // Store for return in response
+      
+      console.log(`[CREDENTIALS][${correlationId}] Creating auth user with email: ${newOwnerEmail}`);
       
       const { data: newOwner, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: newOwnerEmail,
@@ -258,7 +270,12 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       if (createError || !newOwner?.user) {
-        console.error(`[CREDENTIALS][${correlationId}] Failed to create tenant owner:`, createError);
+        console.error(`[CREDENTIALS][${correlationId}] Failed to create tenant owner:`, {
+          error: createError,
+          message: createError?.message,
+          code: createError?.code,
+          status: createError?.status,
+        });
         throw new Error(`Failed to create tenant owner: ${createError?.message || 'Unknown error'}`);
       }
 

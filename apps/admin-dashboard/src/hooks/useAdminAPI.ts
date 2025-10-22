@@ -42,6 +42,8 @@ export const useAdminAPI = () => {
           
           const code = (errObj as { code?: string })?.code || "";
           const details = (errObj as { details?: unknown })?.details;
+          const hint = (errObj as { hint?: string })?.hint;
+          const correlationId = (errObj as { correlation_id?: string })?.correlation_id;
           
           // Build detailed error message
           let errorMsg = message;
@@ -59,12 +61,17 @@ export const useAdminAPI = () => {
               errorMsg += ` - ${details}`;
             }
           }
+          if (hint) {
+            errorMsg += ` [Hint: ${hint}]`;
+          }
           
           console.error('Edge function error details:', {
             functionName,
             code,
             message,
             details,
+            hint,
+            correlationId,
             fullResponse: data
           });
           
@@ -384,6 +391,13 @@ export const useAdminAPI = () => {
 
       console.log('Updating tenant:', tenantId, 'with data:', cleanUpdates);
 
+      // Special handling for email updates - sync with auth user
+      const isEmailUpdate = 'email' in cleanUpdates && cleanUpdates.email;
+      
+      if (isEmailUpdate) {
+        console.log('Email update detected, will sync with auth user after database update');
+      }
+
       // Perform the database update
       const { data, error } = await supabase
         .from("tenants")
@@ -419,13 +433,35 @@ export const useAdminAPI = () => {
 
       console.log('Tenant updated successfully in database:', data);
 
+      // If email was updated, sync with auth user
+      if (isEmailUpdate) {
+        try {
+          console.log('Syncing email with tenant owner auth account...');
+          await callEdgeFunction('manage-tenant-credentials', {
+            tenantId,
+            action: 'update_email',
+            newEmail: cleanUpdates.email,
+          });
+          console.log('Auth user email synced successfully');
+        } catch (authError) {
+          console.error('Failed to sync auth user email:', authError);
+          // Log the error but don't fail the entire operation
+          // The database was updated successfully, auth sync can be retried
+          toast({
+            title: "Warning",
+            description: "Tenant email updated, but owner account email sync failed. Use the Credentials tab to manually update the owner email.",
+            variant: "default",
+          });
+        }
+      }
+
       // Verify the update by fetching fresh data with analytics
       const updatedTenant = await getTenant(tenantId);
       console.log('Fetched updated tenant with analytics:', updatedTenant);
       
       return updatedTenant;
     },
-    [getTenant],
+    [getTenant, callEdgeFunction, toast],
   );
 
   const listTenants = useCallback(
