@@ -368,6 +368,12 @@ const handler = async (req: Request): Promise<Response> => {
 
         console.log(`[CREDENTIALS][${correlationId}] Updating email from auth.users for user ${tenantOwnerId}`);
         
+        // Verify tenantOwnerId is valid before attempting update
+        if (!tenantOwnerId) {
+          console.error(`[CREDENTIALS][${correlationId}] Cannot update email: tenantOwnerId is null or undefined`);
+          throw new Error("Tenant owner account is not properly configured. Please contact support.");
+        }
+        
         // Update user email in Supabase Auth
         const { data: emailUpdateData, error: emailError } =
           await supabaseAdmin.auth.admin.updateUserById(tenantOwnerId, {
@@ -377,26 +383,29 @@ const handler = async (req: Request): Promise<Response> => {
         if (emailError) {
           console.error(`[CREDENTIALS][${correlationId}] Auth email update failed:`, {
             error: emailError,
-            code: emailError.code,
-            status: emailError.status,
-            message: emailError.message,
+            code: emailError?.code || 'NO_CODE',
+            status: emailError?.status || 'NO_STATUS',
+            message: emailError?.message || 'Unknown error',
+            tenantOwnerId: tenantOwnerId,
           });
           
           // Provide more specific error messages based on error type
-          let userMessage = `Failed to update email in auth: ${emailError.message}`;
+          let userMessage = `Failed to update email in auth: ${emailError?.message || 'Unknown error'}`;
           
-          if (emailError.message?.includes('duplicate') || emailError.message?.includes('already exists')) {
+          if (emailError?.message?.includes('duplicate') || emailError?.message?.includes('already exists')) {
             userMessage = `Email ${newEmail} is already registered to another user. Please use a different email.`;
-          } else if (emailError.message?.includes('not found') || emailError.message?.includes('User not found')) {
-            userMessage = `Tenant owner user account not found. Please contact support.`;
-          } else if (emailError.message?.includes('invalid') || emailError.message?.includes('malformed')) {
+          } else if (emailError?.message?.includes('not found') || emailError?.message?.includes('User not found')) {
+            userMessage = `Tenant owner user account not found (ID: ${tenantOwnerId}). Please contact support.`;
+          } else if (emailError?.message?.includes('invalid') || emailError?.message?.includes('malformed')) {
             userMessage = `Invalid email format: ${newEmail}`;
+          } else if (emailError?.message?.includes('Error updating user')) {
+            userMessage = `Unable to update user account. The tenant may not have a valid owner account configured. Please contact support.`;
           }
           
           throw new Error(userMessage);
         }
         
-        console.log(`[CREDENTIALS][${correlationId}] Auth email updated successfully:`, emailUpdateData?.user?.email);
+        console.log(`[CREDENTIALS][${correlationId}] Auth email updated successfully for user:`, tenantOwnerId);
 
         console.log(`[CREDENTIALS][${correlationId}] Updating email in profiles table`);
         
