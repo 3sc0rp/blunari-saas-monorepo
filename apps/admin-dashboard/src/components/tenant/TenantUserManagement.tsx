@@ -211,11 +211,13 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
 
       // Check for errors in response
       if (error) {
+        console.error("Edge Function error:", error);
         throw new Error(error.message || 'Failed to update email');
       }
       
       // Check if response data contains an error
       if (data?.error) {
+        console.error("Edge Function returned error:", data);
         throw new Error(data.error);
       }
 
@@ -230,6 +232,11 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
       setConfirmDialog({ ...confirmDialog, open: false });
     } catch (error) {
       console.error("Error updating email:", error);
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to update email",

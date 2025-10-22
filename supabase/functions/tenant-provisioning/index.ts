@@ -483,8 +483,10 @@ serve(async (req: Request) => {
             if (checkUserResponse.ok) {
               const checkData = await checkUserResponse.json();
               if (checkData.users && checkData.users.length > 0) {
-                console.log("Found existing user for tenant owner:", checkData.users[0].id);
-                return { userId: checkData.users[0].id, isNewUser: false };
+                // CRITICAL: DO NOT reuse existing users for tenant owners!
+                // Each tenant MUST have its own dedicated owner account
+                console.error("Email already exists:", email, "- user:", checkData.users[0].id);
+                throw new Error(`Email ${email} is already registered. Each tenant must have a unique owner email address.`);
               }
             }
 
