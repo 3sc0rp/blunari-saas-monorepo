@@ -1,21 +1,23 @@
 -- =============================================================================
--- PRODUCTION FIX: Create Separate Owner Users for Existing Tenants
+-- PRODUCTION SAFE: Separate Shared Tenant Owners
 -- =============================================================================
--- This script will create NEW dedicated owner users for each tenant
--- WITHOUT deleting any tenant data or affecting operations
+-- This script separates production tenants that currently share the same owner_id
+-- Safe to run - creates NEW auth users, doesn't modify existing ones
+-- UPDATED: Use fix-tenant-owner Edge Function (RECOMMENDED)
 -- =============================================================================
 
--- Step 1: See current state - all tenants sharing same owner
+-- Step 1: Verify current state (CHECK ONLY - NO CHANGES)
+-- Run this first to see which tenants need fixing
 SELECT 
   t.id as tenant_id,
   t.name as tenant_name,
   t.slug,
-  t.owner_id as current_shared_owner_id,
-  t.email as tenant_email,
-  p.email as current_owner_login_email,
-  'All showing same email - needs fix' as issue
+  t.owner_id,
+  p.email as current_owner_email,
+  COUNT(*) OVER (PARTITION BY t.owner_id) as tenants_sharing_this_owner
 FROM tenants t
 LEFT JOIN profiles p ON t.owner_id = p.user_id
+WHERE t.owner_id IS NOT NULL
 ORDER BY t.created_at;
 
 -- =============================================================================

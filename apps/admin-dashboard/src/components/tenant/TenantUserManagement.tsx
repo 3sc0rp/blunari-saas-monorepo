@@ -196,6 +196,20 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
   const handleEmailUpdate = async () => {
     if (!newEmail || !userData) return;
 
+    // Check if email change will create a new user
+    const emailChanged = newEmail !== userData.email;
+    
+    if (emailChanged && !confirmDialog.open) {
+      // Show warning dialog before creating new account
+      setConfirmDialog({
+        open: true,
+        action: "email",
+        title: "⚠️ Email Change Creates New Account",
+        description: `Changing the email to ${newEmail} will create a new tenant owner account with a generated password. You'll need to securely communicate the new credentials to the tenant owner. This operation cannot be undone. Continue?`,
+      });
+      return;
+    }
+
     setUpdatingEmail(true);
     try {
       const { data, error } = await supabase.functions.invoke(
@@ -221,10 +235,38 @@ export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
         throw new Error(data.error);
       }
 
-      toast({
-        title: "Success",
-        description: "Email updated successfully",
-      });
+      // Show success with password if user was created
+      if (data.userCreated && data.temporaryPassword) {
+        toast({
+          title: "✅ New Owner Account Created",
+          description: (
+            <div className="space-y-2">
+              <p>Email updated to: {newEmail}</p>
+              <div className="p-3 bg-muted rounded-md">
+                <p className="text-xs font-medium mb-1">Temporary Password:</p>
+                <p className="font-mono text-sm break-all">{data.temporaryPassword}</p>
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="w-full"
+                onClick={() => copyToClipboard(data.temporaryPassword, "Password")}
+              >
+                Copy Password
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                ⚠️ Save this password securely before closing
+              </p>
+            </div>
+          ),
+          duration: 60000, // 60 seconds to copy password
+        });
+      } else {
+        toast({
+          title: "✅ Email Updated",
+          description: `Email changed to ${newEmail}`,
+        });
+      }
 
       setUserData({ ...userData, email: newEmail });
       setIsEditingEmail(false);

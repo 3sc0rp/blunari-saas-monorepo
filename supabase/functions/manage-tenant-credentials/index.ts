@@ -113,6 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
     let tenantOwnerId: string | null = null;
     let ownerEmail: string | null = null;
     let tenantOwnerCreated = false;
+    let temporaryPasswordGenerated: string | undefined = undefined;
 
     // Step 1: Get tenant information
     console.log(`[CREDENTIALS][${correlationId}] Looking up tenant ${tenantId}`);
@@ -241,6 +242,8 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Create new auth user for tenant owner
       const newPassword = generateSecurePassword();
+      temporaryPasswordGenerated = newPassword; // Store for return in response
+      
       const { data: newOwner, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: newOwnerEmail,
         password: newPassword,
@@ -437,7 +440,12 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         console.log(`[CREDENTIALS][${correlationId}] Email update completed successfully`);
-        result = { message: "Email updated successfully", newEmail };
+        result = { 
+          message: "Email updated successfully", 
+          newEmail,
+          userCreated: tenantOwnerCreated,
+          temporaryPassword: temporaryPasswordGenerated
+        };
         break;
 
       case "update_password":
