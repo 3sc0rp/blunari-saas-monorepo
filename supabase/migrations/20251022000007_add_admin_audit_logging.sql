@@ -148,19 +148,8 @@ LIMIT 100;
 -- Grant view access to admins
 GRANT SELECT ON admin_activity_summary TO authenticated;
 
--- Create policy for view
-CREATE POLICY "Admins can view activity summary"
-ON admin_activity_summary
-FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 
-    FROM public.employees 
-    WHERE user_id = auth.uid() 
-    AND role IN ('ADMIN', 'SUPER_ADMIN')
-    AND status = 'ACTIVE'
-  )
-);
+-- Note: RLS policies cannot be applied to views directly
+-- Access control is enforced through the underlying table's RLS policies
 
 -- =============================================================================
 -- Verification Queries

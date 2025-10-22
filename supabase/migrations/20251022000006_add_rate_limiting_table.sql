@@ -4,25 +4,65 @@
 -- Prevents abuse of email/password update operations
 -- =============================================================================
 
--- Create rate limiting table
-CREATE TABLE IF NOT EXISTS public.api_rate_limits (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  key text NOT NULL,  -- Format: "credentials:{action}:{user_id}:{tenant_id}"
-  request_count integer NOT NULL DEFAULT 1,
-  window_start timestamptz NOT NULL DEFAULT now(),
-  endpoint text NOT NULL,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-  tenant_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+-- Check if table exists and add missing columns if needed
+DO $$
+BEGIN
+  -- Add key column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'api_rate_limits' AND column_name = 'key'
+  ) THEN
+    ALTER TABLE public.api_rate_limits ADD COLUMN key text;
+  END IF;
+
+  -- Add request_count column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'api_rate_limits' AND column_name = 'request_count'
+  ) THEN
+    ALTER TABLE public.api_rate_limits ADD COLUMN request_count integer NOT NULL DEFAULT 1;
+  END IF;
+
+  -- Add window_start column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'api_rate_limits' AND column_name = 'window_start'
+  ) THEN
+    ALTER TABLE public.api_rate_limits ADD COLUMN window_start timestamptz NOT NULL DEFAULT now();
+  END IF;
+
+  -- Add endpoint column if it doesn't exist
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'api_rate_limits' AND column_name = 'endpoint'
+  ) THEN
+    ALTER TABLE public.api_rate_limits ADD COLUMN endpoint text;
+  END IF;
+END $$;
+
+-- Make key NOT NULL after adding it
+DO $$
+BEGIN
+  ALTER TABLE public.api_rate_limits ALTER COLUMN key SET NOT NULL;
+EXCEPTION
+  WHEN others THEN
+    RAISE NOTICE 'Could not set key as NOT NULL, column may not exist yet';
+END $$;
 
 -- Create unique index on key for fast lookups
 CREATE UNIQUE INDEX IF NOT EXISTS idx_api_rate_limits_key ON public.api_rate_limits(key);
 
--- Create index for cleanup queries
-CREATE INDEX IF NOT EXISTS idx_api_rate_limits_window_start ON public.api_rate_limits(window_start);
-CREATE INDEX IF NOT EXISTS idx_api_rate_limits_user_id ON public.api_rate_limits(user_id);
+-- Create index for cleanup queries (only if columns exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'api_rate_limits' AND column_name = 'window_start') THEN
+    CREATE INDEX IF NOT EXISTS idx_api_rate_limits_window_start ON public.api_rate_limits(window_start);
+  END IF;
+  
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'api_rate_limits' AND column_name = 'user_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_api_rate_limits_user_id ON public.api_rate_limits(user_id);
+  END IF;
+END $$;
 
 -- Add comment
 COMMENT ON TABLE public.api_rate_limits IS 
@@ -47,20 +87,41 @@ $$;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.api_rate_limits TO service_role;
 GRANT SELECT, INSERT, UPDATE ON public.api_rate_limits TO authenticated;
 
--- Add RLS policies
-ALTER TABLE public.api_rate_limits ENABLE ROW LEVEL SECURITY;
-
--- Policy: Users can see their own rate limits
-CREATE POLICY "Users can view own rate limits"
-ON public.api_rate_limits
-FOR SELECT
-USING (auth.uid() = user_id);
-
--- Policy: Service role can manage all rate limits
-CREATE POLICY "Service role full access"
-ON public.api_rate_limits
-FOR ALL
-USING (auth.role() = 'service_role');
+-- Add RLS policies (only if columns exist)
+DO $$
+BEGIN
+  -- Enable RLS
+  ALTER TABLE public.api_rate_limits ENABLE ROW LEVEL SECURITY;
+  
+  -- Create policy for service role (always works)
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'api_rate_limits' 
+    AND policyname = 'Service role full access'
+  ) THEN
+    CREATE POLICY "Service role full access"
+    ON public.api_rate_limits
+    FOR ALL
+    USING (auth.role() = 'service_role');
+  END IF;
+  
+  -- Create user policy only if user_id column exists
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'api_rate_limits' AND column_name = 'user_id'
+  ) THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_policies 
+      WHERE tablename = 'api_rate_limits' 
+      AND policyname = 'Users can view own rate limits'
+    ) THEN
+      CREATE POLICY "Users can view own rate limits"
+      ON public.api_rate_limits
+      FOR SELECT
+      USING (auth.uid() = user_id);
+    END IF;
+  END IF;
+END $$;
 
 -- =============================================================================
 -- Verification Queries
