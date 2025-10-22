@@ -34,6 +34,7 @@ interface BasicInfo {
 
 interface OwnerInfo {
   email: string;
+  name?: string;
 }
 
 interface TenantProvisioningRequest {
@@ -54,16 +55,15 @@ const RESERVED_SLUGS = [
 
 /**
  * Sanitizes and validates a tenant slug
- * Ensures slug is safe, follows conventions, and is not reserved
  */
 const sanitizeSlug = (input: string): string => {
   return input
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9-]/g, '') // Remove invalid characters
-    .replace(/^-+|-+$/g, '')     // Remove leading/trailing dashes
-    .replace(/-{2,}/g, '-')      // Replace consecutive dashes with single dash
-    .substring(0, 50);           // Max length 50 characters
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-')
+    .substring(0, 50);
 };
 
 /**
@@ -79,7 +79,7 @@ const validateSlug = (slug: string): { valid: boolean; error?: string } => {
   }
   
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    return { valid: false, error: "Slug must be lowercase alphanumeric with hyphens (no leading/trailing hyphens)" };
+    return { valid: false, error: "Slug must be lowercase alphanumeric with hyphens" };
   }
   
   if (RESERVED_SLUGS.includes(slug)) {
@@ -90,30 +90,26 @@ const validateSlug = (slug: string): { valid: boolean; error?: string } => {
 };
 
 /**
- * Generates a secure random password for new tenant owners
- * Password requirements: 16 chars, mixed case, numbers, special chars
+ * Generates a secure random password
  */
 const generateSecurePassword = (): string => {
   const length = 16;
-  const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // Excluding I, O for clarity
-  const lowercase = 'abcdefghijkmnopqrstuvwxyz'; // Excluding l for clarity
-  const numbers = '23456789'; // Excluding 0, 1 for clarity
+  const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijkmnopqrstuvwxyz';
+  const numbers = '23456789';
   const special = '!@#$%^&*-_=+';
   const allChars = uppercase + lowercase + numbers + special;
   
-  // Ensure at least one of each type
   let password = '';
   password += uppercase[Math.floor(Math.random() * uppercase.length)];
   password += lowercase[Math.floor(Math.random() * lowercase.length)];
   password += numbers[Math.floor(Math.random() * numbers.length)];
   password += special[Math.floor(Math.random() * special.length)];
   
-  // Fill the rest randomly
   for (let i = password.length; i < length; i++) {
     password += allChars[Math.floor(Math.random() * allChars.length)];
   }
   
-  // Shuffle the password to avoid predictable pattern
   return password.split('').sort(() => Math.random() - 0.5).join('');
 };
 
@@ -123,15 +119,11 @@ serve(async (req: Request) => {
     return new Response(null, { headers: createCorsHeaders(req.headers.get("Origin")) });
   }
 
-  // Allow only POST requests
   if (req.method !== "POST") {
     return new Response(
       JSON.stringify({
         success: false,
-        error: {
-          code: "METHOD_NOT_ALLOWED",
-          message: "Only POST is allowed",
-        },
+        error: { code: "METHOD_NOT_ALLOWED", message: "Only POST is allowed" },
       }),
       {
         status: 405,
@@ -141,7 +133,6 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Generate a request id for tracing
     const requestId = crypto.randomUUID();
     console.log("[tenant-provisioning] Request started:", requestId);
 
@@ -158,18 +149,12 @@ serve(async (req: Request) => {
 
     // Verify admin access
     const authHeader = req.headers.get("Authorization");
-    console.log("[tenant-provisioning] Auth header present:", !!authHeader);
     
     if (!authHeader) {
-      console.error("[tenant-provisioning] Missing Authorization header");
       return new Response(
         JSON.stringify({
           success: false,
-          error: {
-            code: "UNAUTHORIZED",
-            message: "Missing Authorization header",
-            requestId,
-          },
+          error: { code: "UNAUTHORIZED", message: "Missing Authorization header", requestId },
         }),
         {
           status: 401,
@@ -179,24 +164,13 @@ serve(async (req: Request) => {
     }
     
     const token = authHeader.replace(/^Bearer\s+/i, "");
-    console.log("[tenant-provisioning] Getting user from token...");
-    
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      console.error("[tenant-provisioning] Authentication failed:", authError);
       return new Response(
         JSON.stringify({
           success: false,
-          error: {
-            code: "UNAUTHORIZED",
-            message: "Invalid or expired authentication token",
-            details: authError?.message,
-            requestId,
-          },
+          error: { code: "UNAUTHORIZED", message: "Invalid or expired token", requestId },
         }),
         {
           status: 401,
@@ -205,25 +179,18 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log("[tenant-provisioning] User authenticated:", user.id);
-
-    // CRITICAL SECURITY: Check if user is an admin
+    // Check if user is admin
     const { data: employee, error: employeeError } = await supabase
       .from("employees")
       .select("role, status")
       .eq("user_id", user.id)
       .single();
 
-    if (employeeError || !employee) {
-      console.warn("Non-employee attempted provisioning:", user.id);
+    if (employeeError || !employee || !["SUPER_ADMIN", "ADMIN"].includes(employee.role) || employee.status !== "ACTIVE") {
       return new Response(
         JSON.stringify({
           success: false,
-          error: {
-            code: "FORBIDDEN",
-            message: "Only administrators can provision tenants",
-            requestId,
-          },
+          error: { code: "FORBIDDEN", message: "Admin privileges required", requestId },
         }),
         {
           status: 403,
@@ -232,132 +199,21 @@ serve(async (req: Request) => {
       );
     }
 
-    const isAdmin = ["SUPER_ADMIN", "ADMIN"].includes(employee.role);
-    const isActive = employee.status === "ACTIVE";
-
-    if (!isAdmin || !isActive) {
-      console.warn("Insufficient permissions for provisioning:", { 
-        userId: user.id, 
-        role: employee.role, 
-        status: employee.status 
-      });
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: "FORBIDDEN",
-            message: isActive 
-              ? "Insufficient permissions. Admin role required." 
-              : "Account is not active",
-            requestId,
-          },
-        }),
-        {
-          status: 403,
-          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    console.log("Admin authorization verified:", { userId: user.id, role: employee.role });
-
-    const requestData = await req.json();
+    const requestData: TenantProvisioningRequest = await req.json();
     
-    // SECURITY: Sanitize slug on backend (don't trust client)
+    // Sanitize slug
     if (requestData.basics?.slug) {
-      const originalSlug = requestData.basics.slug;
-      requestData.basics.slug = sanitizeSlug(originalSlug);
-      
-      if (originalSlug !== requestData.basics.slug) {
-        console.log("Slug sanitized:", { original: originalSlug, sanitized: requestData.basics.slug });
-      }
+      requestData.basics.slug = sanitizeSlug(requestData.basics.slug);
     }
     
-    // Clean up empty strings to undefined for optional fields
-    const cleanOptional = (value: unknown) => {
-      if (typeof value === 'string' && value.trim() === '') return undefined;
-      return value;
-    };
-    
-    if (requestData.basics) {
-      requestData.basics.description = cleanOptional(requestData.basics.description);
-      requestData.basics.email = cleanOptional(requestData.basics.email);
-      requestData.basics.phone = cleanOptional(requestData.basics.phone);
-      requestData.basics.website = cleanOptional(requestData.basics.website);
-      requestData.basics.cuisineTypeId = cleanOptional(requestData.basics.cuisineTypeId);
-      
-      if (requestData.basics.address) {
-        requestData.basics.address.street = cleanOptional(requestData.basics.address.street);
-        requestData.basics.address.city = cleanOptional(requestData.basics.address.city);
-        requestData.basics.address.state = cleanOptional(requestData.basics.address.state);
-        requestData.basics.address.zipCode = cleanOptional(requestData.basics.address.zipCode);
-        requestData.basics.address.country = cleanOptional(requestData.basics.address.country);
-      }
-    }
-    
-    // Validate minimally to avoid shape mismatches
-    const Schema = z.object({
-      basics: z.object({
-        name: z.string(),
-        slug: z.string(),
-        timezone: z.string(),
-        currency: z.string(),
-        description: z.string().optional(),
-        email: z.string().email().optional(),
-        phone: z.string().optional(),
-        website: z.string().url().optional(),
-        cuisineTypeId: z.string().uuid().optional(),
-        address: z
-          .object({
-            street: z.string().optional(),
-            city: z.string().optional(),
-            state: z.string().optional(),
-            zipCode: z.string().optional(),
-            country: z.string().optional(),
-          })
-          .optional(),
-      }),
-      owner: z
-        .object({
-          email: z.string().email(),
-        })
-        .optional(),
-      access: z
-        .object({
-          mode: z.string(),
-        })
-        .optional(),
-      seed: z
-        .object({
-          seatingPreset: z.string(),
-          enablePacing: z.boolean(),
-          enableDepositPolicy: z.boolean(),
-        })
-        .optional(),
-      billing: z
-        .object({
-          createSubscription: z.boolean(),
-          plan: z.string(),
-        })
-        .optional(),
-      sms: z
-        .object({
-          startRegistration: z.boolean(),
-        })
-        .optional(),
-      idempotencyKey: z.string().uuid().optional(),
-    });
-    const parsed = Schema.safeParse(requestData);
-    if (!parsed.success) {
+    // Basic validation
+    if (!requestData.basics?.name || !requestData.basics?.slug) {
       return new Response(
         JSON.stringify({
           success: false,
           error: {
             code: "VALIDATION_ERROR",
-            message: parsed.error.issues
-              .map((i: { message: string }) => i.message)
-              .join("; "),
-            details: parsed.error.issues,
+            message: "Tenant name and slug are required",
             requestId,
           },
         }),
@@ -368,17 +224,13 @@ serve(async (req: Request) => {
       );
     }
 
-    // Additional slug validation after parsing
+    // Validate slug
     const slugValidation = validateSlug(requestData.basics.slug);
     if (!slugValidation.valid) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: {
-            code: "INVALID_SLUG",
-            message: slugValidation.error,
-            requestId,
-          },
+          error: { code: "INVALID_SLUG", message: slugValidation.error, requestId },
         }),
         {
           status: 400,
@@ -387,32 +239,55 @@ serve(async (req: Request) => {
       );
     }
 
-    // Check slug uniqueness in BOTH auto_provisioning AND tenants tables
-    const [autoprovCheck, tenantCheck] = await Promise.all([
-      supabase
-        .from("auto_provisioning")
-        .select("restaurant_slug")
-        .eq("restaurant_slug", requestData.basics.slug)
-        .limit(1),
-      supabase
-        .from("tenants")
-        .select("slug")
-        .eq("slug", requestData.basics.slug)
-        .limit(1),
-    ]);
+    const ownerEmail = requestData.owner?.email;
+    
+    if (!ownerEmail) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: "OWNER_EMAIL_REQUIRED", message: "Owner email is required", requestId },
+        }),
+        {
+          status: 400,
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+        },
+      );
+    }
 
-    const slugExists = 
-      (autoprovCheck.data && autoprovCheck.data.length > 0) ||
-      (tenantCheck.data && tenantCheck.data.length > 0);
+    const idempotencyKey = requestData.idempotencyKey || crypto.randomUUID();
+    const ownerPassword = generateSecurePassword();
+    
+    console.log("[tenant-provisioning] Starting atomic provisioning", { slug: requestData.basics.slug, ownerEmail, idempotencyKey });
 
-    if (slugExists) {
-      console.log("Slug already exists:", requestData.basics.slug);
+    // Pre-flight email validation
+    const { data: emailCheckResult, error: emailCheckError } = await supabase.rpc(
+      "check_owner_email_availability",
+      { p_email: ownerEmail }
+    );
+    
+    if (emailCheckError) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: "VALIDATION_ERROR", message: "Failed to validate email", requestId },
+        }),
+        {
+          status: 500,
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+        },
+      );
+    }
+    
+    const emailCheck = Array.isArray(emailCheckResult) ? emailCheckResult[0] : emailCheckResult;
+    
+    if (!emailCheck?.available) {
       return new Response(
         JSON.stringify({
           success: false,
           error: {
-            code: "DUPLICATE_SLUG",
-            message: `The slug "${requestData.basics.slug}" is already taken. Please choose a different name.`,
+            code: "EMAIL_UNAVAILABLE",
+            message: emailCheck?.reason || "Email is already in use",
+            hint: "Each tenant must have a unique owner email",
             requestId,
           },
         }),
@@ -423,293 +298,163 @@ serve(async (req: Request) => {
       );
     }
 
-    console.log("Tenant provisioning request:", {
-      requestId,
-      idempotencyKey: requestData.idempotencyKey,
-      tenantName: requestData.basics?.name,
-    });
-
-    // Check idempotency
-    if (requestData.idempotencyKey) {
-      const { data: existing } = await supabase
-        .from("auto_provisioning")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("restaurant_slug", requestData.basics.slug)
-        .single();
-
-      if (existing) {
-        console.log("Idempotent request detected, returning existing result");
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: "Tenant already provisioned (idempotent)",
-            tenantId: existing.tenant_id,
-            slug: existing.restaurant_slug,
-            requestId,
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-    }
-
-    // Check if owner user already exists, create if not
-    // We need to create the user so they can be linked to the tenant
-    let ownerUserId: string | null = null;
-    let ownerPassword: string | null = null;
-    const ownerEmail: string | undefined = requestData.owner?.email;
-    
-    if (ownerEmail) {
-      // Generate secure password for new owner
-      ownerPassword = generateSecurePassword();
-      
-      // RACE CONDITION FIX: Retry logic with exponential backoff
-      const createUserWithRetry = async (email: string, password: string, maxRetries = 3): Promise<{ userId: string; isNewUser: boolean }> => {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          try {
-            // Check if user exists using REST Admin API
-            const checkUserResponse = await fetch(
-              `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
-              {
-                headers: {
-                  "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-                  "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-                }
-              }
-            );
-            
-            if (checkUserResponse.ok) {
-              const checkData = await checkUserResponse.json();
-              if (checkData.users && checkData.users.length > 0) {
-                // CRITICAL: DO NOT reuse existing users for tenant owners!
-                // Each tenant MUST have its own dedicated owner account
-                console.error("Email already exists:", email, "- user:", checkData.users[0].id);
-                throw new Error(`Email ${email} is already registered. Each tenant must have a unique owner email address.`);
-              }
-            }
-
-            // Try to create user using REST Admin API
-            console.log(`Creating new owner user account (attempt ${attempt}):`, email);
-            const createUserResponse = await fetch(
-              `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/users`,
-              {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-                  "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  email: email,
-                  password: password, // Set the generated password
-                  email_confirm: true, // Auto-confirm so they can log in immediately
-                  user_metadata: {
-                    role: 'owner',
-                    full_name: requestData.basics.name + ' Owner',
-                    provisioned_at: new Date().toISOString(),
-                  },
-                }),
-              }
-            );
-
-            if (!createUserResponse.ok) {
-              const createUserError = await createUserResponse.json();
-              // Check if error is due to duplicate (race condition)
-              if (createUserError.message && 
-                  (createUserError.message.includes('duplicate') || 
-                   createUserError.message.includes('already exists') ||
-                   createUserError.message.includes('unique constraint'))) {
-                
-                console.log("Duplicate user detected (race condition), fetching existing user...");
-                
-                // Wait a bit for the other request to complete
-                await new Promise(resolve => setTimeout(resolve, 100 * attempt));
-                
-                // Fetch the user that was just created by another request via REST API
-                const retryCheckResponse = await fetch(
-                  `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
-                  {
-                    headers: {
-                      "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-                      "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-                    }
-                  }
-                );
-                if (retryCheckResponse.ok) {
-                  const retryData = await retryCheckResponse.json();
-                  if (retryData.users && retryData.users.length > 0) {
-                    console.log("Successfully recovered from race condition:", retryData.users[0].id);
-                    return { userId: retryData.users[0].id, isNewUser: false };
-                  }
-                }
-              }
-              
-              // If not the last attempt and retriable error, retry
-              if (attempt < maxRetries) {
-                console.log(`User creation failed, retrying (${attempt}/${maxRetries})...`);
-                await new Promise(resolve => setTimeout(resolve, 100 * attempt)); // Exponential backoff
-                continue;
-              }
-              
-              throw new Error(`Failed to create owner user: ${createUserError.message || 'Unknown error'}`);
-            }
-
-            const newUser = await createUserResponse.json();
-            if (!newUser?.id) {
-              throw new Error("Failed to create owner user: No user returned");
-            }
-
-            console.log("Created owner user successfully:", newUser.id);
-            return { userId: newUser.id, isNewUser: true };
-            
-          } catch (error) {
-            if (attempt === maxRetries) {
-              console.error("All user creation attempts failed:", error);
-              throw error;
-            }
-            console.log(`Attempt ${attempt} failed, retrying...`);
-            await new Promise(resolve => setTimeout(resolve, 100 * attempt));
-          }
-        }
-        
-        throw new Error("Failed to create user after all retries");
-      };
-
-      try {
-        const userResult = await createUserWithRetry(ownerEmail, ownerPassword);
-        ownerUserId = userResult.userId;
-        
-        // If user already existed, clear the password since we didn't set it
-        if (!userResult.isNewUser) {
-          ownerPassword = null;
-        }
-      } catch (e) {
-        console.error("Owner user creation failed after retries:", e);
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: {
-              code: "USER_CREATION_FAILED",
-              message: e instanceof Error ? e.message : "Failed to create owner user",
-              requestId,
-            },
-          }),
-          {
-            status: 500,
-            headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
-          },
-        );
-      }
-    }
-    
-    // Owner user is required - don't fall back to admin
-    if (!ownerUserId) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: "OWNER_EMAIL_REQUIRED",
-            message: "Owner email is required to provision a tenant",
-            requestId,
-          },
-        }),
-        {
-          status: 400,
-          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Call the provision_tenant database function using the new signature
-    // New signature: provision_tenant(p_tenant_data jsonb, p_owner_email text, p_owner_user_id uuid)
-    const { data: provisionResult, error: provisionError } = await supabase.rpc(
-      "provision_tenant",
+    // Call atomic provisioning function
+    const { data: atomicResult, error: atomicError } = await supabase.rpc(
+      "provision_tenant_atomic",
       {
-        p_tenant_data: {
-          slug: requestData.basics.slug,
-          name: requestData.basics.name,
-          address: requestData.basics.address?.street ?? null,
-          city: requestData.basics.address?.city ?? null,
-          state: requestData.basics.address?.state ?? null,
-          country: requestData.basics.address?.country ?? null,
-          postal_code: requestData.basics.address?.postalCode ?? null,
-          plan_tier: 'premium',
-          plan_status: 'trialing',
-          billing_cycle: 'monthly',
-          owner_name: requestData.owner?.name ?? 'Owner',
-        },
+        p_idempotency_key: idempotencyKey,
+        p_admin_user_id: user.id,
+        p_tenant_name: requestData.basics.name,
+        p_tenant_slug: requestData.basics.slug,
         p_owner_email: ownerEmail,
-        p_owner_user_id: ownerUserId,
+        p_owner_password: ownerPassword,
+        p_tenant_data: {
+          address: requestData.basics.address?.street || null,
+          city: requestData.basics.address?.city || null,
+          state: requestData.basics.address?.state || null,
+          country: requestData.basics.address?.country || null,
+          postal_code: requestData.basics.address?.zipCode || null,
+          phone: requestData.basics.phone || null,
+          website: requestData.basics.website || null,
+          description: requestData.basics.description || null,
+          timezone: requestData.basics.timezone || 'UTC',
+          currency: requestData.basics.currency || 'USD',
+        },
       },
     );
 
-    if (provisionError) {
-      const msg = provisionError.message?.includes("duplicate key")
-        ? "Slug already exists. Choose a different slug."
-        : provisionError.message;
+    if (atomicError) {
+      console.error("[tenant-provisioning] Atomic provisioning failed:", atomicError);
+      
+      const errorMessage = atomicError.message || "Unknown error";
+      let errorCode = "PROVISIONING_FAILED";
+      let statusCode = 500;
+      
+      if (errorMessage.includes("Email validation failed")) {
+        errorCode = "EMAIL_VALIDATION_FAILED";
+        statusCode = 400;
+      } else if (errorMessage.includes("Slug") && errorMessage.includes("already taken")) {
+        errorCode = "DUPLICATE_SLUG";
+        statusCode = 400;
+      } else if (errorMessage.includes("not authorized")) {
+        errorCode = "FORBIDDEN";
+        statusCode = 403;
+      } else if (errorMessage.includes("already in progress")) {
+        errorCode = "DUPLICATE_REQUEST";
+        statusCode = 409;
+      }
+      
       return new Response(
         JSON.stringify({
           success: false,
-          error: {
-            code: "DB_ERROR",
-            message: `Provisioning failed: ${msg}`,
-            requestId,
-          },
+          error: { code: errorCode, message: errorMessage, requestId },
         }),
         {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: statusCode,
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
 
-    // Extract tenant_id from the result
-    // The function returns: { success: true, tenant_id: uuid, tenant_slug: text, tenant_name: text, owner_employee_id: uuid }
-    const tenantId = provisionResult?.tenant_id;
+    const tenantId = atomicResult?.tenant_id;
+    const ownerId = atomicResult?.owner_id;
     
-    if (!tenantId) {
+    if (!tenantId || !ownerId) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: {
-            code: "DB_ERROR",
-            message: "Provisioning failed: No tenant ID returned",
-            requestId,
-          },
+          error: { code: "PROVISIONING_FAILED", message: "Missing tenant or owner ID", requestId },
         }),
         {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
         },
       );
     }
 
-  // Manual email sending: disabled automatic emails. Use Admin UI button instead.
+    // Create auth user
+    console.log("[tenant-provisioning] Creating auth user", { ownerId, ownerEmail });
+    
+    const { data: authUser, error: authUserError } = await supabase.auth.admin.createUser({
+      email: ownerEmail,
+      password: ownerPassword,
+      email_confirm: true,
+      user_metadata: {
+        role: 'tenant_owner',
+        tenant_id: tenantId,
+        name: requestData.owner?.name || 'Owner',
+      },
+    });
 
-    const responseData = {
-      runId: crypto.randomUUID(),
-      tenantId,
-      slug: requestData.basics.slug,
-      primaryUrl:
-        Deno.env.get("CLIENT_BASE_URL") ??
-        Deno.env.get("APP_BASE_URL") ??
-        "https://app.blunari.ai",
-      message: "Tenant provisioned successfully",
-      // Include owner credentials if a new user was created
-      ownerCredentials: ownerPassword ? {
+    if (authUserError) {
+      console.error("[tenant-provisioning] Auth user creation failed:", authUserError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: "AUTH_USER_CREATION_FAILED", message: authUserError.message, requestId },
+        }),
+        {
+          status: 500,
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    if (!authUser?.user) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: "AUTH_USER_CREATION_FAILED", message: "No user returned", requestId },
+        }),
+        {
+          status: 500,
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Update tenant with actual auth user ID
+    await supabase
+      .from('tenants')
+      .update({ owner_id: authUser.user.id, status: 'active' })
+      .eq('id', tenantId);
+    
+    // Update auto_provisioning
+    await supabase
+      .from('auto_provisioning')
+      .update({ user_id: authUser.user.id, status: 'completed' })
+      .eq('tenant_id', tenantId);
+    
+    // Create profile
+    await supabase
+      .from('profiles')
+      .upsert({
+        user_id: authUser.user.id,
         email: ownerEmail,
-        password: ownerPassword,
-        temporaryPassword: true,
-        message: "Save these credentials securely. The password will not be shown again."
-      } : null,
-    };
+        role: 'tenant_owner',
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false,
+      });
+
+    console.log("[tenant-provisioning] Completed successfully", { tenantId, ownerId: authUser.user.id });
 
     return new Response(
       JSON.stringify({
         success: true,
-        data: responseData,
+        data: {
+          runId: crypto.randomUUID(),
+          tenantId,
+          slug: requestData.basics.slug,
+          primaryUrl: Deno.env.get("CLIENT_BASE_URL") ?? "https://app.blunari.ai",
+          message: "Tenant provisioned successfully",
+          ownerCredentials: {
+            email: ownerEmail,
+            password: ownerPassword,
+            temporaryPassword: true,
+            message: "Save these credentials securely. The password will not be shown again."
+          },
+        },
         requestId,
       }),
       {
@@ -719,40 +464,23 @@ serve(async (req: Request) => {
   } catch (error) {
     console.error("Tenant provisioning error:", error);
     
-    // Enhanced error handling with proper codes
     const errId = crypto.randomUUID();
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    
-    // Determine appropriate error code based on error message
     let errorCode = "PROVISIONING_FAILED";
     let statusCode = 500;
     
     if (errorMessage.includes("slug") && errorMessage.includes("already exists")) {
       errorCode = "DUPLICATE_SLUG";
       statusCode = 400;
-    } else if (errorMessage.includes("Unauthorized") || errorMessage.includes("permission")) {
-      errorCode = "FORBIDDEN";
-      statusCode = 403;
-    } else if (errorMessage.includes("validation") || errorMessage.includes("Invalid")) {
+    } else if (errorMessage.includes("validation")) {
       errorCode = "VALIDATION_ERROR";
-      statusCode = 400;
-    } else if (errorMessage.includes("user") && errorMessage.includes("failed")) {
-      errorCode = "USER_CREATION_FAILED";
-      statusCode = 500;
-    } else if (errorMessage.includes("duplicate key")) {
-      errorCode = "DUPLICATE_SLUG";
       statusCode = 400;
     }
     
     return new Response(
       JSON.stringify({
         success: false,
-        error: {
-          code: errorCode,
-          message: errorMessage,
-          requestId: errId,
-        },
-        requestId: errId,
+        error: { code: errorCode, message: errorMessage, requestId: errId },
       }),
       {
         status: statusCode,

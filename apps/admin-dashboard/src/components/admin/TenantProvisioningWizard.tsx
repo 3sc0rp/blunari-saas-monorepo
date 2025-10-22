@@ -332,6 +332,26 @@ export function TenantProvisioningWizard({
           title: 'Database Error',
           description: errorObj?.message || 'A database error occurred.',
           action: 'This may be a duplicate slug. Try a different name.'
+        },
+        'EMAIL_UNAVAILABLE': {
+          title: 'Email Already In Use',
+          description: 'This email address is already registered to another tenant or user.',
+          action: 'Please use a unique email address for each tenant owner.'
+        },
+        'EMAIL_VALIDATION_FAILED': {
+          title: 'Email Validation Failed',
+          description: 'Unable to validate the owner email address.',
+          action: 'Please check the email format and try again.'
+        },
+        'DUPLICATE_REQUEST': {
+          title: 'Provisioning Already In Progress',
+          description: 'A provisioning request with this information is already being processed.',
+          action: 'Please wait for the current request to complete, or refresh the page.'
+        },
+        'AUTH_USER_CREATION_FAILED': {
+          title: 'Owner Account Creation Failed',
+          description: 'Unable to create the authentication account for the tenant owner.',
+          action: 'The email may be in use. Try a different owner email or contact support.'
         }
       };
 

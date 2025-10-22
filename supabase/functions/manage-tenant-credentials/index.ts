@@ -43,11 +43,27 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { tenantId, action, newEmail, newPassword }: CredentialUpdateRequest =
-      await req.json();
+    let requestBody: any;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      console.error(`[CREDENTIALS][${correlationId}] Failed to parse request body:`, parseError);
+      throw new Error("Invalid JSON in request body");
+    }
 
-  console.log(`[CREDENTIALS][${correlationId}] Starting ${action} for tenant ${tenantId}`);
-  console.log(`[CREDENTIALS][${correlationId}] Request body:`, { tenantId, action, hasNewEmail: !!newEmail, hasNewPassword: !!newPassword });
+    const { tenantId, action, newEmail, newPassword }: CredentialUpdateRequest = requestBody;
+
+    console.log(`[CREDENTIALS][${correlationId}] Starting ${action} for tenant ${tenantId}`);
+    console.log(`[CREDENTIALS][${correlationId}] Request body:`, { tenantId, action, hasNewEmail: !!newEmail, hasNewPassword: !!newPassword });
+
+    // Validate required fields
+    if (!tenantId || typeof tenantId !== 'string') {
+      throw new Error("tenantId is required and must be a string");
+    }
+    
+    if (!action || !['update_email', 'update_password', 'generate_password', 'reset_password'].includes(action)) {
+      throw new Error(`Invalid action: ${action}. Must be one of: update_email, update_password, generate_password, reset_password`);
+    }
 
     // Verify admin access
     const authHeader = req.headers.get("Authorization");
@@ -256,35 +272,69 @@ const handler = async (req: Request): Promise<Response> => {
       
       console.log(`[CREDENTIALS][${correlationId}] Creating auth user with email: ${newOwnerEmail}`);
       
-      const { data: newOwner, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: newOwnerEmail,
-        password: newPassword,
-        email_confirm: true,
-        user_metadata: {
-          is_tenant_owner: true,
-          tenant_id: tenantId,
-          tenant_name: tenant.name,
-          created_by: user.email,
-          created_at: new Date().toISOString(),
-        },
-      });
-
-      if (createError || !newOwner?.user) {
-        console.error(`[CREDENTIALS][${correlationId}] Failed to create tenant owner:`, {
-          error: createError,
-          message: createError?.message,
-          code: createError?.code,
-          status: createError?.status,
-        });
-        throw new Error(`Failed to create tenant owner: ${createError?.message || 'Unknown error'}`);
+      // Check if this email already exists in auth
+      try {
+        const { data: existingAuthUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+        if (!listError && existingAuthUsers?.users) {
+          const emailExists = existingAuthUsers.users.some((u: any) => u.email === newOwnerEmail);
+          if (emailExists) {
+            console.warn(`[CREDENTIALS][${correlationId}] Email ${newOwnerEmail} already exists in auth, will try to find and use existing user`);
+            const existingUser = existingAuthUsers.users.find((u: any) => u.email === newOwnerEmail);
+            if (existingUser) {
+              tenantOwnerId = existingUser.id;
+              ownerEmail = existingUser.email!;
+              console.log(`[CREDENTIALS][${correlationId}] Using existing auth user: ${ownerEmail} (ID: ${tenantOwnerId})`);
+              
+              // Update tenant.owner_id
+              await supabaseAdmin
+                .from("tenants")
+                .update({ owner_id: tenantOwnerId })
+                .eq("id", tenantId);
+              
+              // Skip to the action execution
+              tenantOwnerCreated = false;
+              // Jump to after owner creation logic
+            } else {
+              throw new Error(`Email exists but user not found - data inconsistency`);
+            }
+          }
+        }
+      } catch (checkError: any) {
+        console.warn(`[CREDENTIALS][${correlationId}] Could not check for existing auth users:`, checkError);
+        // Continue with creation attempt
       }
+      
+      // Only create if we didn't find an existing user
+      if (!tenantOwnerId) {
+        const { data: newOwner, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email: newOwnerEmail,
+          password: newPassword,
+          email_confirm: true,
+          user_metadata: {
+            is_tenant_owner: true,
+            tenant_id: tenantId,
+            tenant_name: tenant.name,
+            created_by: user.email,
+            created_at: new Date().toISOString(),
+          },
+        });
 
-      tenantOwnerId = newOwner.user.id;
-      ownerEmail = newOwner.user.email;
-      tenantOwnerCreated = true;
+        if (createError || !newOwner?.user) {
+          console.error(`[CREDENTIALS][${correlationId}] Failed to create tenant owner:`, {
+            error: createError,
+            message: createError?.message,
+            code: createError?.code,
+            status: createError?.status,
+          });
+          throw new Error(`Failed to create tenant owner: ${createError?.message || 'Unknown error'}`);
+        }
 
-      console.log(`[CREDENTIALS][${correlationId}] ✅ Created new tenant owner: ${ownerEmail} (ID: ${tenantOwnerId})`);
+        tenantOwnerId = newOwner.user.id;
+        ownerEmail = newOwner.user.email;
+        tenantOwnerCreated = true;
 
+        console.log(`[CREDENTIALS][${correlationId}] ✅ Created new tenant owner: ${ownerEmail} (ID: ${tenantOwnerId})`);
+      }
       // Create profile for new owner
       const { error: profileInsertError } = await supabaseAdmin.from("profiles").insert({
         user_id: tenantOwnerId,
