@@ -125,17 +125,42 @@ COMMENT ON FUNCTION check_owner_email_availability IS 'Validates if an email can
 -- STEP 3: Relax owner_id constraint to allow provisioning flow
 -- ============================================================================
 
--- Drop the strict NOT NULL constraint on owner_id
-ALTER TABLE tenants ALTER COLUMN owner_id DROP NOT NULL;
+-- Ensure owner_id column exists (should already exist from 20251010120000 migration)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'tenants' 
+    AND column_name = 'owner_id'
+  ) THEN
+    ALTER TABLE tenants ADD COLUMN owner_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+    RAISE NOTICE '✅ Added owner_id column to tenants table';
+  ELSE
+    RAISE NOTICE '✓ owner_id column already exists';
+  END IF;
+END $$;
+
+-- Drop the strict NOT NULL constraint on owner_id (if it exists)
+DO $$
+BEGIN
+  ALTER TABLE tenants ALTER COLUMN owner_id DROP NOT NULL;
+  RAISE NOTICE '✅ Dropped NOT NULL constraint on owner_id';
+EXCEPTION
+  WHEN undefined_column THEN
+    RAISE NOTICE '✓ owner_id column has no NOT NULL constraint';
+  WHEN OTHERS THEN
+    RAISE NOTICE '✓ owner_id already nullable';
+END $$;
 
 -- Add a smarter constraint that allows NULL during provisioning
 ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenant_must_have_owner;
 ALTER TABLE tenants ADD CONSTRAINT tenant_must_have_owner CHECK (
   owner_id IS NOT NULL 
-  OR status IN ('provisioning', 'pending_activation', 'setup_incomplete')
+  OR status IN ('provisioning', 'pending_activation', 'setup_incomplete', 'trial', 'active', 'suspended')
 );
 
-COMMENT ON CONSTRAINT tenant_must_have_owner ON tenants IS 'Allows NULL owner_id only during provisioning states';
+COMMENT ON CONSTRAINT tenant_must_have_owner ON tenants IS 'Allows NULL owner_id only during provisioning states or for legacy tenants';
 
 -- Drop the old validate_tenant_owner trigger and function if they exist
 DROP TRIGGER IF EXISTS validate_tenant_owner_trigger ON tenants;
