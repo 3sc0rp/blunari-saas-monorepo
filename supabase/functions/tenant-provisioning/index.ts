@@ -1,5 +1,3 @@
-/// <reference path="../shared-types.d.ts" />
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
@@ -143,6 +141,14 @@ serve(async (req: Request) => {
         auth: {
           autoRefreshToken: false,
           persistSession: false
+        },
+        db: {
+          schema: 'public'
+        },
+        global: {
+          headers: {
+            'x-my-custom-header': 'tenant-provisioning-service'
+          }
         }
       }
     );
@@ -179,14 +185,27 @@ serve(async (req: Request) => {
       );
     }
 
-    // Check if user is admin
-    const { data: employee, error: employeeError } = await supabase
-      .from("employees")
-      .select("role, status")
-      .eq("user_id", user.id)
-      .single();
+    // Check if user is admin - use raw SQL to bypass RLS issues
+    console.log("[tenant-provisioning] Checking admin privileges for user:", user.id);
+    
+    const { data: employeeData, error: employeeError } = await supabase
+      .rpc('get_employee_by_user_id', { p_user_id: user.id });
+
+    const employee = Array.isArray(employeeData) ? employeeData[0] : employeeData;
+    
+    console.log("[tenant-provisioning] Employee query result:", { employee, employeeError });
 
     if (employeeError || !employee || !["SUPER_ADMIN", "ADMIN"].includes(employee.role) || employee.status !== "ACTIVE") {
+      console.log("[tenant-provisioning] Admin check failed:", {
+        hasError: !!employeeError,
+        errorMessage: employeeError?.message,
+        hasEmployee: !!employee,
+        role: employee?.role,
+        status: employee?.status,
+        isValidRole: employee?.role ? ["SUPER_ADMIN", "ADMIN"].includes(employee.role) : false,
+        isActive: employee?.status === "ACTIVE"
+      });
+      
       return new Response(
         JSON.stringify({
           success: false,
@@ -198,6 +217,8 @@ serve(async (req: Request) => {
         },
       );
     }
+    
+    console.log("[tenant-provisioning] Admin check passed for user:", user.id);
 
     const requestData: TenantProvisioningRequest = await req.json();
     
