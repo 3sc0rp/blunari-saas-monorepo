@@ -307,13 +307,6 @@ export function TenantProvisioningFormV2() {
     setProgress(0);
     
     try {
-      // Get current session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        throw new Error("You must be logged in to provision tenants");
-      }
-      
       // Progress: 10%
       setProgress(10);
       
@@ -351,14 +344,11 @@ export function TenantProvisioningFormV2() {
       // Progress: 30%
       setProgress(30);
       
-      // Call Edge Function
+      // Call Edge Function (authorization is handled automatically by Supabase client)
       const { data, error: functionError } = await supabase.functions.invoke(
         "tenant-provisioning-v2",
         {
           body: payload,
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
         }
       );
       
@@ -366,11 +356,29 @@ export function TenantProvisioningFormV2() {
       setProgress(70);
       
       if (functionError) {
+        logger.error("Edge Function error", {
+          component: "TenantProvisioningFormV2",
+          error: functionError,
+        });
         throw new Error(functionError.message);
       }
       
+      if (!data) {
+        logger.error("No data returned from Edge Function", {
+          component: "TenantProvisioningFormV2",
+        });
+        throw new Error("No response from server");
+      }
+      
+      logger.info("Edge Function response", {
+        component: "TenantProvisioningFormV2",
+        data,
+      });
+      
       if (!data.success) {
-        throw new Error(data.error?.message || "Provisioning failed");
+        const errorMsg = data.error?.message || "Provisioning failed";
+        const errorHint = data.error?.hint ? ` - ${data.error.hint}` : "";
+        throw new Error(errorMsg + errorHint);
       }
       
       // Progress: 100%
