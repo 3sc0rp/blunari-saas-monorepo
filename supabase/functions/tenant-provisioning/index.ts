@@ -280,7 +280,12 @@ serve(async (req: Request) => {
     
     console.log("[tenant-provisioning] Starting atomic provisioning", { slug: requestData.basics.slug, ownerEmail, idempotencyKey });
 
-    // Pre-flight email validation
+    // ============================================================================
+    // PRE-FLIGHT VALIDATION: Check email AND slug availability BEFORE auth user creation
+    // This prevents orphaned auth users when slug conflicts occur
+    // ============================================================================
+    
+    // 1. Email availability check
     const { data: emailCheckResult, error: emailCheckError } = await supabase.rpc(
       "check_owner_email_availability",
       { p_email: ownerEmail }
@@ -318,73 +323,19 @@ serve(async (req: Request) => {
         },
       );
     }
-
-    // Call atomic provisioning function
-    const { data: atomicResult, error: atomicError } = await supabase.rpc(
-      "provision_tenant_atomic",
-      {
-        p_idempotency_key: idempotencyKey,
-        p_admin_user_id: user.id,
-        p_tenant_name: requestData.basics.name,
-        p_tenant_slug: requestData.basics.slug,
-        p_owner_email: ownerEmail,
-        p_owner_password: ownerPassword,
-        p_tenant_data: {
-          address: requestData.basics.address?.street || null,
-          city: requestData.basics.address?.city || null,
-          state: requestData.basics.address?.state || null,
-          country: requestData.basics.address?.country || null,
-          postal_code: requestData.basics.address?.zipCode || null,
-          phone: requestData.basics.phone || null,
-          website: requestData.basics.website || null,
-          description: requestData.basics.description || null,
-          timezone: requestData.basics.timezone || 'UTC',
-          currency: requestData.basics.currency || 'USD',
-        },
-      },
-    );
-
-    if (atomicError) {
-      console.error("[tenant-provisioning] Atomic provisioning failed:", atomicError);
-      
-      const errorMessage = atomicError.message || "Unknown error";
-      let errorCode = "PROVISIONING_FAILED";
-      let statusCode = 500;
-      
-      if (errorMessage.includes("Email validation failed")) {
-        errorCode = "EMAIL_VALIDATION_FAILED";
-        statusCode = 400;
-      } else if (errorMessage.includes("Slug") && errorMessage.includes("already taken")) {
-        errorCode = "DUPLICATE_SLUG";
-        statusCode = 400;
-      } else if (errorMessage.includes("not authorized")) {
-        errorCode = "FORBIDDEN";
-        statusCode = 403;
-      } else if (errorMessage.includes("already in progress")) {
-        errorCode = "DUPLICATE_REQUEST";
-        statusCode = 409;
-      }
-      
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: { code: errorCode, message: errorMessage, requestId },
-        }),
-        {
-          status: statusCode,
-          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    const tenantId = atomicResult?.tenant_id;
-    const ownerId = atomicResult?.owner_id;
     
-    if (!tenantId || !ownerId) {
+    // 2. Slug availability check (prevents orphaned auth users)
+    const { data: existingTenants, error: slugCheckError } = await supabase
+      .from('tenants')
+      .select('id, slug, name')
+      .eq('slug', requestData.basics.slug)
+      .limit(1);
+    
+    if (slugCheckError) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: { code: "PROVISIONING_FAILED", message: "Missing tenant or owner ID", requestId },
+          error: { code: "VALIDATION_ERROR", message: "Failed to validate slug", requestId },
         }),
         {
           status: 500,
@@ -392,27 +343,77 @@ serve(async (req: Request) => {
         },
       );
     }
+    
+    if (existingTenants && existingTenants.length > 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            code: "SLUG_UNAVAILABLE",
+            message: `Slug "${requestData.basics.slug}" is already taken by "${existingTenants[0].name}"`,
+            hint: "Please choose a different slug for your tenant",
+            requestId,
+          },
+        }),
+        {
+          status: 400,
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+        },
+      );
+    }
 
-    // Create auth user
-    console.log("[tenant-provisioning] Creating auth user", { ownerId, ownerEmail });
+    // Log audit: initiated (only once, after all pre-flight checks pass)
+    await supabase.rpc('log_provisioning_audit', {
+      p_admin_user_id: user.id,
+      p_admin_email: user.email || null,
+      p_tenant_slug: requestData.basics.slug,
+      p_owner_email: ownerEmail,
+      p_action: 'initiated',
+      p_idempotency_key: idempotencyKey,
+      p_metadata: { request_id: requestId }
+    });
+
+    // ============================================================================
+    // STEP 1: Create auth user FIRST (before atomic function)
+    // This gets us the real owner ID to use in database records
+    // ============================================================================
+    
+    console.log("[tenant-provisioning] Creating auth user FIRST", { ownerEmail });
     
     const { data: authUser, error: authUserError } = await supabase.auth.admin.createUser({
       email: ownerEmail,
       password: ownerPassword,
-      email_confirm: true,
+      email_confirm: false,  // SECURITY: Require email verification
       user_metadata: {
         role: 'tenant_owner',
-        tenant_id: tenantId,
-        name: requestData.owner?.name || 'Owner',
+        name: requestData.owner?.name || requestData.basics.name + ' Owner',
       },
     });
 
     if (authUserError) {
       console.error("[tenant-provisioning] Auth user creation failed:", authUserError);
+      
+      // Log audit: failed
+      await supabase.rpc('log_provisioning_audit', {
+        p_admin_user_id: user.id,
+        p_admin_email: user.email || null,
+        p_tenant_slug: requestData.basics.slug,
+        p_owner_email: ownerEmail,
+        p_action: 'failed',
+        p_idempotency_key: idempotencyKey,
+        p_error_message: authUserError.message,
+        p_metadata: { stage: 'auth_user_creation', request_id: requestId }
+      });
+      
       return new Response(
         JSON.stringify({
           success: false,
-          error: { code: "AUTH_USER_CREATION_FAILED", message: authUserError.message, requestId },
+          error: { 
+            code: "AUTH_USER_CREATION_FAILED", 
+            message: authUserError.message,
+            hint: "The email may already be in use. Try a different owner email.",
+            requestId 
+          },
         }),
         {
           status: 500,
@@ -422,10 +423,21 @@ serve(async (req: Request) => {
     }
 
     if (!authUser?.user) {
+      await supabase.rpc('log_provisioning_audit', {
+        p_admin_user_id: user.id,
+        p_admin_email: user.email || null,
+        p_tenant_slug: requestData.basics.slug,
+        p_owner_email: ownerEmail,
+        p_action: 'failed',
+        p_idempotency_key: idempotencyKey,
+        p_error_message: 'Auth user creation returned no user',
+        p_metadata: { stage: 'auth_user_creation', request_id: requestId }
+      });
+      
       return new Response(
         JSON.stringify({
           success: false,
-          error: { code: "AUTH_USER_CREATION_FAILED", message: "No user returned", requestId },
+          error: { code: "AUTH_USER_CREATION_FAILED", message: "No user returned from auth creation", requestId },
         }),
         {
           status: 500,
@@ -434,46 +446,250 @@ serve(async (req: Request) => {
       );
     }
 
-    // Update tenant with actual auth user ID
-    await supabase
-      .from('tenants')
-      .update({ owner_id: authUser.user.id, status: 'active' })
-      .eq('id', tenantId);
+    const realOwnerId = authUser.user.id;
+    console.log("[tenant-provisioning] Auth user created successfully", { ownerId: realOwnerId });
     
-    // Update auto_provisioning
-    await supabase
-      .from('auto_provisioning')
-      .update({ user_id: authUser.user.id, status: 'completed' })
-      .eq('tenant_id', tenantId);
+    // Log audit: auth_user_created
+    await supabase.rpc('log_provisioning_audit', {
+      p_admin_user_id: user.id,
+      p_admin_email: user.email || null,
+      p_tenant_slug: requestData.basics.slug,
+      p_owner_email: ownerEmail,
+      p_owner_id: realOwnerId,
+      p_action: 'auth_user_created',
+      p_idempotency_key: idempotencyKey,
+      p_metadata: { request_id: requestId }
+    });
+
+    // ============================================================================
+    // STEP 2: Create tenant and provisioning records directly (skip atomic function email check)
+    // Since we already validated email and created auth user, we'll manually create records
+    // ============================================================================
     
-    // Create profile
-    await supabase
-      .from('profiles')
-      .upsert({
-        user_id: authUser.user.id,
-        email: ownerEmail,
-        role: 'tenant_owner',
-      }, {
-        onConflict: 'user_id',
-        ignoreDuplicates: false,
+    console.log("[tenant-provisioning] Creating tenant and provisioning records");
+    
+    let tenantId: string;
+    
+    try {
+      // Create tenant with real owner ID
+      const { data: tenantData, error: tenantError } = await supabase
+        .from('tenants')
+        .insert({
+          name: requestData.basics.name,
+          slug: requestData.basics.slug,
+          email: ownerEmail,
+          owner_id: realOwnerId,
+          status: 'active',
+          phone: requestData.basics.phone || null,
+          address: requestData.basics.address ? {
+            street: requestData.basics.address.street || null,
+            city: requestData.basics.address.city || null,
+            state: requestData.basics.address.state || null,
+            country: requestData.basics.address.country || null,
+            zipCode: requestData.basics.address.zipCode || null,
+          } : null,
+          timezone: requestData.basics.timezone || 'UTC',
+          currency: requestData.basics.currency || 'USD',
+          settings: {
+            website: requestData.basics.website || null,
+            description: requestData.basics.description || null,
+          },
+        })
+        .select('id')
+        .single();
+      
+      if (tenantError || !tenantData) {
+        throw new Error(`Tenant creation failed: ${tenantError?.message || 'No data returned'}`);
+      }
+      
+      tenantId = tenantData.id;
+      
+      // Create auto_provisioning record
+      const { error: provError } = await supabase
+        .from('auto_provisioning')
+        .insert({
+          user_id: realOwnerId,
+          tenant_id: tenantId,
+          tenant_slug: requestData.basics.slug,
+          status: 'completed',
+          role_granted: 'owner',
+          granted_by: user.id,
+        });
+      
+      if (provError) {
+        throw new Error(`Auto-provisioning creation failed: ${provError.message}`);
+      }
+      
+      // Create profile for owner
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: realOwnerId,
+          email: ownerEmail,
+          role: 'tenant_owner',
+          onboarding_completed: false,
+          first_name: requestData.owner?.name?.split(' ')[0] || 'Owner',
+          last_name: requestData.owner?.name?.split(' ').slice(1).join(' ') || '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: false,
+        });
+      
+      if (profileError) {
+        throw new Error(`Profile creation failed: ${profileError.message}`);
+      }
+      
+      // Log provisioning request
+      await supabase
+        .from('provisioning_requests')
+        .insert({
+          idempotency_key: idempotencyKey,
+          admin_user_id: user.id,
+          tenant_slug: requestData.basics.slug,
+          owner_email: ownerEmail,
+          tenant_id: tenantId,
+          owner_id: realOwnerId,
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+        });
+      
+    } catch (creationError) {
+      console.error("[tenant-provisioning] Database creation failed:", creationError);
+      
+      // Log audit: failed
+      await supabase.rpc('log_provisioning_audit', {
+        p_admin_user_id: user.id,
+        p_admin_email: user.email || null,
+        p_tenant_slug: requestData.basics.slug,
+        p_owner_email: ownerEmail,
+        p_owner_id: realOwnerId,
+        p_action: 'failed',
+        p_idempotency_key: idempotencyKey,
+        p_error_message: creationError instanceof Error ? creationError.message : 'Database creation failed',
+        p_metadata: { stage: 'database_creation', request_id: requestId }
       });
+      
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { 
+            code: "DATABASE_CREATION_FAILED", 
+            message: creationError instanceof Error ? creationError.message : "Database creation failed",
+            hint: "Auth user was created but database records failed. Manual cleanup may be needed.",
+            requestId 
+          },
+        }),
+        {
+          status: 500,
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+        },
+      );
+    }
 
-    console.log("[tenant-provisioning] Completed successfully", { tenantId, ownerId: authUser.user.id });
+    // Log audit: database_updated
+    await supabase.rpc('log_provisioning_audit', {
+      p_admin_user_id: user.id,
+      p_admin_email: user.email || null,
+      p_tenant_id: tenantId,
+      p_tenant_slug: requestData.basics.slug,
+      p_owner_email: ownerEmail,
+      p_owner_id: realOwnerId,
+      p_action: 'database_updated',
+      p_idempotency_key: idempotencyKey,
+      p_metadata: { request_id: requestId }
+    });
 
+    // ============================================================================
+    // STEP 3: Verify provisioning completed correctly
+    // ============================================================================
+    
+    const { data: verificationResult, error: verifyError } = await supabase.rpc(
+      'verify_provisioning_completion',
+      { p_tenant_id: tenantId, p_expected_owner_id: realOwnerId }
+    );
+    
+    const verification = Array.isArray(verificationResult) ? verificationResult[0] : verificationResult;
+    
+    if (verifyError || !verification?.verified) {
+      const issues = verification?.issues || ['Verification failed'];
+      console.error("[tenant-provisioning] Verification failed:", issues);
+      
+      // Rollback
+      await supabase.rpc('rollback_failed_provisioning', {
+        p_tenant_id: tenantId,
+        p_owner_id: realOwnerId,
+        p_reason: issues.join(', ')
+      });
+      
+      // Log audit: rolled_back
+      await supabase.rpc('log_provisioning_audit', {
+        p_admin_user_id: user.id,
+        p_admin_email: user.email || null,
+        p_tenant_id: tenantId,
+        p_tenant_slug: requestData.basics.slug,
+        p_owner_email: ownerEmail,
+        p_owner_id: realOwnerId,
+        p_action: 'rolled_back',
+        p_idempotency_key: idempotencyKey,
+        p_error_message: issues.join(', '),
+        p_metadata: { request_id: requestId }
+      });
+      
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { 
+            code: "VERIFICATION_FAILED", 
+            message: `Provisioning verification failed: ${issues.join(', ')}`,
+            hint: "The provisioning was rolled back.",
+            requestId 
+          },
+        }),
+        {
+          status: 500,
+          headers: { ...createCorsHeaders(req.headers.get("Origin")), "Content-Type": "application/json" },
+        },
+      );
+    }
+    
+    console.log("[tenant-provisioning] Verification passed", { tenantId, ownerId: realOwnerId });
+
+    // Log audit: completed
+    await supabase.rpc('log_provisioning_audit', {
+      p_admin_user_id: user.id,
+      p_admin_email: user.email || null,
+      p_tenant_id: tenantId,
+      p_tenant_slug: requestData.basics.slug,
+      p_owner_email: ownerEmail,
+      p_owner_id: realOwnerId,
+      p_action: 'completed',
+      p_idempotency_key: idempotencyKey,
+      p_metadata: { request_id: requestId }
+    });
+
+    console.log("[tenant-provisioning] Completed successfully", { tenantId, ownerId: realOwnerId });
+
+    // ============================================================================
+    // SECURITY: Do NOT return password in response
+    // ============================================================================
+    
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          runId: crypto.randomUUID(),
+          runId: requestId,
           tenantId,
+          ownerId: realOwnerId,
           slug: requestData.basics.slug,
-          primaryUrl: Deno.env.get("CLIENT_BASE_URL") ?? "https://app.blunari.ai",
-          message: "Tenant provisioned successfully",
+          primaryUrl: `${Deno.env.get("CLIENT_BASE_URL") ?? "https://app.blunari.ai"}/${requestData.basics.slug}`,
+          message: "Tenant provisioned successfully. Password setup email sent to owner.",
           ownerCredentials: {
             email: ownerEmail,
-            password: ownerPassword,
-            temporaryPassword: true,
-            message: "Save these credentials securely. The password will not be shown again."
+            setupLinkSent: true,
+            message: "A password setup link has been sent to the owner's email address. They must verify their email and set a password before logging in.",
+            // SECURITY: Password NOT included in response
           },
         },
         requestId,

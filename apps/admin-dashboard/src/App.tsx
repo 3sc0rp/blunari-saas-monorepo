@@ -21,7 +21,7 @@ import Unauthorized from "@/pages/Unauthorized";
 // Lazy-loaded pages - loaded on demand
 const TenantsPage = lazy(() => import("@/pages/TenantsPage"));
 const TenantDetailPage = lazy(() => import("@/pages/TenantDetailPage"));
-const TenantProvisioningPage = lazy(() => import("@/pages/TenantProvisioningPage"));
+const TenantProvisioningPageV2 = lazy(() => import("@/pages/TenantProvisioningPageV2"));
 const EmployeesPage = lazy(() => import("@/pages/EmployeesPage").then(m => ({ default: m.EmployeesPage })));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const BillingPage = lazy(() => import("@/pages/BillingPage"));
@@ -104,7 +104,7 @@ function App() {
                       path="tenants/provision"
                       element={
                         <Suspense fallback={<PageLoader />}>
-                          <TenantProvisioningPage />
+                          <TenantProvisioningPageV2 />
                         </Suspense>
                       }
                     />
