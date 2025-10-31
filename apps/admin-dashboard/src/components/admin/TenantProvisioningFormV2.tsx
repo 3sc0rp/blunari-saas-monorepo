@@ -216,7 +216,7 @@ export function TenantProvisioningFormV2() {
         if (error) throw error;
         
         const result = Array.isArray(data) ? data[0] : data;
-        setSlugValidation(result);
+        setSlugValidation(result as ValidationResult);
       } catch (err) {
         logger.error("Slug validation error", { error: err });
       } finally {
@@ -249,7 +249,7 @@ export function TenantProvisioningFormV2() {
         if (error) throw error;
         
         const result = Array.isArray(data) ? data[0] : data;
-        setEmailValidation(result);
+        setEmailValidation(result as ValidationResult);
       } catch (err) {
         logger.error("Email validation error", { error: err });
       } finally {
