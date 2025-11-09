@@ -654,4 +654,14 @@
   *::-webkit-scrollbar:horizontal {
     height: 8px;
   }
+
+  /* Shimmer animation for loading skeletons */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
 }
