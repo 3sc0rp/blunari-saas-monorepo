@@ -34,6 +34,8 @@ const MarketplaceLandingPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[Marketplace] Component mounted, user:', user ? 'logged in' : 'anonymous');
+    
     // Always fetch restaurants first for public visitors
     fetchFeaturedRestaurants();
     
@@ -46,6 +48,8 @@ const MarketplaceLandingPage = () => {
   const checkUserRole = async () => {
     if (!user) return;
     
+    console.log('[Marketplace] Checking user role for user:', user.id);
+    
     // Check if user has tenant access (employee or owner)
     const { data: provisioning } = await supabase
       .from("auto_provisioning")
@@ -56,13 +60,17 @@ const MarketplaceLandingPage = () => {
 
     if (provisioning) {
       // User is tenant owner/employee, redirect to dashboard
+      console.log('[Marketplace] User is tenant owner/employee, redirecting to dashboard');
       navigate("/dashboard");
+    } else {
+      console.log('[Marketplace] User is consumer, showing marketplace');
     }
     // Consumer user or no auth - show marketplace (already loaded)
   };
 
   const fetchFeaturedRestaurants = async () => {
     setLoading(true);
+    console.log('[Marketplace] Fetching featured restaurants...');
     try {
       const { data, error } = await supabase
         .from("tenants")
@@ -74,9 +82,10 @@ const MarketplaceLandingPage = () => {
         .limit(8);
 
       if (error) throw error;
+      console.log('[Marketplace] Fetched restaurants:', data?.length || 0);
       setFeaturedRestaurants((data as Restaurant[]) || []);
     } catch (error) {
-      console.error("Error fetching restaurants:", error);
+      console.error("[Marketplace] Error fetching restaurants:", error);
     } finally {
       setLoading(false);
     }
