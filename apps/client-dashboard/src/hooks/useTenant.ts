@@ -163,6 +163,25 @@ export function useTenant() {
           component: 'useTenant'
         });
         
+        // Check if we're on a public route (marketplace, restaurant pages)
+        const publicRoutes = ['/', '/discover', '/restaurant'];
+        const isPublicRoute = publicRoutes.some(route => 
+          window.location.pathname === route || 
+          window.location.pathname.startsWith(route + '/')
+        );
+        
+        // For public routes, don't redirect - just return null tenant
+        if (isPublicRoute) {
+          if (!signal.aborted) {
+            commitTenant(null, 'no-session-public-route');
+          }
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
+          return;
+        }
+        
         // Instead of redirecting immediately, try to create a demo tenant for development
         if (import.meta.env.MODE === 'development') {
           const fallbackTenant: TenantInfo = {

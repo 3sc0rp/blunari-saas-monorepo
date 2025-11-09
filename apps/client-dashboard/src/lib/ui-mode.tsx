@@ -128,7 +128,7 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
       return "management";
     } catch (error) {
       console.error("Error determining role-based default:", error);
-      return "operations";
+      return "management";
     }
   }, [user]);
 
@@ -221,7 +221,13 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
   // Initialize mode from preferences or role-based default
   useEffect(() => {
     const initializeMode = async () => {
-      if (!user || !tenant) {
+      // For public routes without tenant, just mark as ready
+      if (!tenant) {
+        setReady(true);
+        return;
+      }
+      
+      if (!user) {
         setReady(true);
         return;
       }
@@ -251,7 +257,7 @@ export const ModeProvider: React.FC<ModeProviderProps> = ({ children }) => {
       } catch (error) {
         console.error("Error initializing UI mode:", error);
         setError("Failed to load UI preferences");
-        setModeState("operations"); // Safe default
+        setModeState("management"); // Safe default
       } finally {
         setReady(true);
       }
