@@ -58,6 +58,10 @@ const AIBusinessInsights = lazy(() => import(/* webpackChunkName: "ai-insights" 
 const WidgetManagement = lazy(() => import(/* webpackChunkName: "widgets" */ "./pages/WidgetManagement"));
 const DashboardHome = lazy(() => import(/* webpackChunkName: "dashboard-home" */ "./pages/DashboardHome"));
 
+// Marketplace pages (consumer-facing)
+const RestaurantDiscoveryPage = lazy(() => import(/* webpackChunkName: "discovery" */ "./pages/RestaurantDiscoveryPage"));
+const RestaurantProfilePage = lazy(() => import(/* webpackChunkName: "restaurant-profile" */ "./pages/RestaurantProfilePage"));
+
 // Optimized QueryClient with inline configuration to prevent module loading issues
 // Lazy initialization ensures React is fully loaded before QueryClient is created
 let queryClientInstance: QueryClient | null = null;
@@ -146,6 +150,18 @@ function App() {
                             {/* Non-protected routes with minimal loading */}
                             <Route path="/" element={<Index />} />
                             <Route path="/auth/*" element={<Auth />} />
+                            
+                            {/* Public marketplace routes */}
+                            <Route path="/discover" element={
+                              <Suspense fallback={<LazyLoadingFallback component="Restaurant Discovery" />}>
+                                <RestaurantDiscoveryPage />
+                              </Suspense>
+                            } />
+                            <Route path="/restaurant/:slug" element={
+                              <Suspense fallback={<LazyLoadingFallback component="Restaurant Profile" />}>
+                                <RestaurantProfilePage />
+                              </Suspense>
+                            } />
                             
                             {/* Public order/booking tracking */}
                             <Route path="/booking/:bookingId" element={
