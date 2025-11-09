@@ -34,11 +34,12 @@ const MarketplaceLandingPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // If user is logged in as tenant owner/employee, redirect to dashboard
+    // Always fetch restaurants first for public visitors
+    fetchFeaturedRestaurants();
+    
+    // If user is logged in as tenant owner/employee, check role and redirect
     if (user) {
       checkUserRole();
-    } else {
-      fetchFeaturedRestaurants();
     }
   }, [user]);
 
@@ -56,10 +57,8 @@ const MarketplaceLandingPage = () => {
     if (provisioning) {
       // User is tenant owner/employee, redirect to dashboard
       navigate("/dashboard");
-    } else {
-      // Consumer user, show marketplace
-      fetchFeaturedRestaurants();
     }
+    // Consumer user or no auth - show marketplace (already loaded)
   };
 
   const fetchFeaturedRestaurants = async () => {
