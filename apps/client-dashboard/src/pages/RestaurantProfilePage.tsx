@@ -294,14 +294,14 @@ const RestaurantProfilePage = () => {
               <Maximize2 className="w-5 h-5" />
             </motion.button>
 
-            {/* Navigation arrows */}
+            {/* Navigation arrows - Mobile-friendly */}
             {allImages.length > 1 && (
               <>
                 <motion.button
                   whileHover={{ scale: 1.1, x: -2 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedImage(selectedImage === 0 ? allImages.length - 1 : selectedImage - 1)}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-900/80 backdrop-blur-sm text-white p-3 rounded-full border border-slate-700 hover:border-amber-500 transition-all opacity-0 group-hover:opacity-100"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-900/80 backdrop-blur-sm text-white p-4 w-14 h-14 min-w-[56px] min-h-[56px] rounded-full border border-slate-700 hover:border-amber-500 transition-all opacity-0 group-hover:opacity-100 touch-manipulation flex items-center justify-center"
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </motion.button>
@@ -309,23 +309,23 @@ const RestaurantProfilePage = () => {
                   whileHover={{ scale: 1.1, x: 2 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedImage(selectedImage === allImages.length - 1 ? 0 : selectedImage + 1)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-900/80 backdrop-blur-sm text-white p-3 rounded-full border border-slate-700 hover:border-amber-500 transition-all opacity-0 group-hover:opacity-100"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-900/80 backdrop-blur-sm text-white p-4 w-14 h-14 min-w-[56px] min-h-[56px] rounded-full border border-slate-700 hover:border-amber-500 transition-all opacity-0 group-hover:opacity-100 touch-manipulation flex items-center justify-center"
                 >
                   <ChevronRight className="w-6 h-6" />
                 </motion.button>
               </>
             )}
             
-            {/* Enhanced image thumbnails */}
+            {/* Enhanced image thumbnails - Mobile-friendly */}
             {allImages.length > 1 && (
-              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 max-w-4xl overflow-x-auto px-4 scrollbar-none">
+              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-3 max-w-4xl overflow-x-auto px-4 scrollbar-none">
                 {allImages.map((img, idx) => (
                   <motion.button
                     key={idx}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setSelectedImage(idx)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
+                    className={`flex-shrink-0 w-24 h-24 min-w-[96px] min-h-[96px] sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all touch-manipulation ${
                       selectedImage === idx 
                         ? "border-amber-500 scale-105 shadow-lg shadow-amber-500/50" 
                         : "border-slate-700 opacity-60 hover:opacity-100 hover:border-amber-400"
@@ -390,14 +390,14 @@ const RestaurantProfilePage = () => {
               <X className="w-6 h-6" />
             </motion.button>
 
-            {/* Navigation in lightbox */}
+            {/* Navigation in lightbox - Mobile-friendly */}
             {allImages.length > 1 && (
               <>
                 <motion.button
                   whileHover={{ scale: 1.1, x: -5 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedImage(selectedImage === 0 ? allImages.length - 1 : selectedImage - 1)}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-900/80 backdrop-blur-sm text-white p-4 rounded-full border border-slate-700 hover:border-amber-500 transition-all"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-900/80 backdrop-blur-sm text-white p-5 w-16 h-16 min-w-[64px] min-h-[64px] rounded-full border border-slate-700 hover:border-amber-500 transition-all touch-manipulation flex items-center justify-center"
                 >
                   <ChevronLeft className="w-8 h-8" />
                 </motion.button>
@@ -405,13 +405,13 @@ const RestaurantProfilePage = () => {
                   whileHover={{ scale: 1.1, x: 5 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedImage(selectedImage === allImages.length - 1 ? 0 : selectedImage + 1)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-900/80 backdrop-blur-sm text-white p-4 rounded-full border border-slate-700 hover:border-amber-500 transition-all"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-900/80 backdrop-blur-sm text-white p-5 w-16 h-16 min-w-[64px] min-h-[64px] rounded-full border border-slate-700 hover:border-amber-500 transition-all touch-manipulation flex items-center justify-center"
                 >
                   <ChevronRight className="w-8 h-8" />
                 </motion.button>
 
                 {/* Counter in lightbox */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-slate-700 text-white font-medium">
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-sm px-6 py-3 rounded-lg border border-slate-700 text-white font-medium text-base sm:text-lg">
                   {selectedImage + 1} / {allImages.length}
                 </div>
               </>
@@ -499,7 +499,7 @@ const RestaurantProfilePage = () => {
               <TabsList className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 w-full justify-start p-1 rounded-xl">
                 <TabsTrigger 
                   value="overview" 
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 transition-all duration-300 rounded-lg font-semibold"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 transition-all duration-300 rounded-lg font-semibold h-11 min-h-[44px] px-4 sm:px-6 text-sm sm:text-base touch-manipulation"
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
                   Overview
@@ -507,7 +507,7 @@ const RestaurantProfilePage = () => {
                 {restaurant.accepts_reservations && (
                   <TabsTrigger 
                     value="book" 
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 transition-all duration-300 rounded-lg font-semibold"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 transition-all duration-300 rounded-lg font-semibold h-11 min-h-[44px] px-4 sm:px-6 text-sm sm:text-base touch-manipulation"
                   >
                     <Calendar className="w-4 h-4 mr-2" />
                     Book a Table
@@ -516,7 +516,7 @@ const RestaurantProfilePage = () => {
                 {restaurant.accepts_catering && (
                   <TabsTrigger 
                     value="catering" 
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 transition-all duration-300 rounded-lg font-semibold"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 transition-all duration-300 rounded-lg font-semibold h-11 min-h-[44px] px-4 sm:px-6 text-sm sm:text-base touch-manipulation"
                   >
                     <Utensils className="w-4 h-4 mr-2" />
                     Catering
@@ -524,7 +524,7 @@ const RestaurantProfilePage = () => {
                 )}
                 <TabsTrigger 
                   value="reviews" 
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 transition-all duration-300 rounded-lg font-semibold"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 transition-all duration-300 rounded-lg font-semibold h-11 min-h-[44px] px-4 sm:px-6 text-sm sm:text-base touch-manipulation"
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Reviews ({restaurant.total_reviews || 0})
@@ -843,7 +843,7 @@ const RestaurantProfilePage = () => {
                   whileHover={{ scale: 1.1, y: -3 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
-                  className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all shadow-lg hover:shadow-blue-600/50"
+                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all shadow-lg hover:shadow-blue-600/50 touch-manipulation flex items-center justify-center"
                 >
                   <Facebook className="w-5 h-5" />
                 </motion.button>
@@ -851,7 +851,7 @@ const RestaurantProfilePage = () => {
                   whileHover={{ scale: 1.1, y: -3 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=Check%20out%20${encodeURIComponent(restaurant.name)}%20on%20Blunari!`, '_blank')}
-                  className="p-3 bg-sky-500 hover:bg-sky-600 text-white rounded-full transition-all shadow-lg hover:shadow-sky-500/50"
+                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-sky-500 hover:bg-sky-600 text-white rounded-full transition-all shadow-lg hover:shadow-sky-500/50 touch-manipulation flex items-center justify-center"
                 >
                   <Twitter className="w-5 h-5" />
                 </motion.button>
@@ -859,7 +859,7 @@ const RestaurantProfilePage = () => {
                   whileHover={{ scale: 1.1, y: -3 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleShare}
-                  className="p-3 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full transition-all shadow-lg hover:shadow-purple-600/50"
+                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full transition-all shadow-lg hover:shadow-purple-600/50 touch-manipulation flex items-center justify-center"
                 >
                   <Instagram className="w-5 h-5" />
                 </motion.button>
@@ -869,7 +869,7 @@ const RestaurantProfilePage = () => {
                   onClick={() => {
                     window.location.href = `mailto:?subject=Check out ${restaurant.name}&body=I found this amazing restaurant: ${window.location.href}`;
                   }}
-                  className="p-3 bg-slate-700 hover:bg-slate-600 text-white rounded-full transition-all shadow-lg hover:shadow-slate-600/50"
+                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-slate-700 hover:bg-slate-600 text-white rounded-full transition-all shadow-lg hover:shadow-slate-600/50 touch-manipulation flex items-center justify-center"
                 >
                   <Mail className="w-5 h-5" />
                 </motion.button>
@@ -910,7 +910,7 @@ const RestaurantProfilePage = () => {
                 <Button
                   size="lg"
                   onClick={() => setSelectedTab("book")}
-                  className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-bold shadow-lg hover:shadow-amber-500/50 transition-all"
+                  className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-bold shadow-lg hover:shadow-amber-500/50 transition-all h-14 min-h-[56px] px-6 text-base sm:text-lg touch-manipulation"
                 >
                   <Calendar className="w-5 h-5 mr-2" />
                   Book Now
