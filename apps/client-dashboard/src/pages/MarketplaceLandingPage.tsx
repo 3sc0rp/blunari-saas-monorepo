@@ -189,16 +189,17 @@ const MarketplaceLandingPage = () => {
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
-                className="text-white hover:text-amber-500 hover:bg-white/10 transition-all duration-300"
+                className="text-white hover:text-amber-500 hover:bg-white/10 transition-all duration-300 h-10 min-h-[40px] px-4 sm:px-6 touch-manipulation text-sm sm:text-base"
                 onClick={() => navigate("/auth")}
               >
                 Sign In
               </Button>
               <Button
-                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300"
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300 h-10 min-h-[40px] px-4 sm:px-6 touch-manipulation text-sm sm:text-base"
                 onClick={() => navigate("/discover")}
               >
-                Explore Restaurants
+                <span className="hidden sm:inline">Explore Restaurants</span>
+                <span className="sm:hidden">Explore</span>
                 <Sparkles className="ml-2 w-4 h-4" />
               </Button>
             </div>
@@ -316,7 +317,7 @@ const MarketplaceLandingPage = () => {
                       >
                         <Badge
                           variant="secondary"
-                          className="cursor-pointer hover:bg-amber-500 hover:text-black hover:scale-110 transition-all duration-300 px-5 py-2.5 text-sm font-semibold border border-slate-200 hover:border-amber-500 hover:shadow-lg hover:shadow-amber-500/20"
+                          className="cursor-pointer hover:bg-amber-500 hover:text-black hover:scale-110 transition-all duration-300 px-5 py-3 min-h-[44px] text-sm sm:text-base font-semibold border border-slate-200 hover:border-amber-500 hover:shadow-lg hover:shadow-amber-500/20 touch-manipulation"
                           onClick={() => navigate(`/discover?cuisine=${cuisine}`)}
                         >
                           {cuisine}
@@ -631,7 +632,7 @@ const MarketplaceLandingPage = () => {
             <Button
               size="lg"
               onClick={() => navigate("/discover")}
-              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold h-12 min-h-[48px] px-8 touch-manipulation text-base sm:text-lg"
             >
               View All Restaurants
               <ArrowRight className="ml-2 w-5 h-5" />
@@ -757,7 +758,7 @@ const MarketplaceLandingPage = () => {
                   <Button
                     size="lg"
                     onClick={() => navigate("/discover")}
-                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-bold text-lg px-8 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105 transition-all duration-300"
+                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-bold text-lg px-8 h-14 min-h-[56px] shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105 transition-all duration-300 touch-manipulation"
                   >
                     <Sparkles className="mr-2 w-5 h-5" />
                     Explore Restaurants
@@ -766,7 +767,7 @@ const MarketplaceLandingPage = () => {
                     size="lg"
                     variant="outline"
                     onClick={() => navigate("/auth")}
-                    className="border-2 border-white text-white hover:bg-white hover:text-black font-bold text-lg transition-all duration-300"
+                    className="border-2 border-white text-white hover:bg-white hover:text-black font-bold text-lg h-14 min-h-[56px] transition-all duration-300 touch-manipulation"
                   >
                     For Restaurant Owners
                     <ArrowRight className="ml-2 w-5 h-5" />
@@ -816,7 +817,7 @@ const MarketplaceLandingPage = () => {
                     aria-label={social.label}
                     whileHover={{ scale: 1.1, y: -2 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-800 hover:bg-amber-500 text-slate-400 hover:text-black border border-slate-700 hover:border-amber-500 transition-all duration-300"
+                    className="flex items-center justify-center w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg bg-slate-800 hover:bg-amber-500 text-slate-400 hover:text-black border border-slate-700 hover:border-amber-500 transition-all duration-300 touch-manipulation"
                   >
                     <social.icon className="w-5 h-5" />
                   </motion.a>
@@ -838,7 +839,7 @@ const MarketplaceLandingPage = () => {
                   <li key={link.label}>
                     <a 
                       href={link.href} 
-                      className="text-slate-400 hover:text-amber-500 text-sm transition-colors duration-300 flex items-center gap-2 group"
+                      className="text-slate-400 hover:text-amber-500 text-sm transition-colors duration-300 flex items-center gap-2 group py-1.5 min-h-[36px] touch-manipulation"
                     >
                       <span className="w-0 h-px bg-amber-500 group-hover:w-4 transition-all duration-300" />
                       {link.label}
@@ -861,7 +862,7 @@ const MarketplaceLandingPage = () => {
                   <li key={link.label}>
                     <a 
                       href={link.href} 
-                      className="text-slate-400 hover:text-amber-500 text-sm transition-colors duration-300 flex items-center gap-2 group"
+                      className="text-slate-400 hover:text-amber-500 text-sm transition-colors duration-300 flex items-center gap-2 group py-1.5 min-h-[36px] touch-manipulation"
                     >
                       <span className="w-0 h-px bg-amber-500 group-hover:w-4 transition-all duration-300" />
                       {link.label}
@@ -884,7 +885,7 @@ const MarketplaceLandingPage = () => {
                   <li key={link.label}>
                     <a 
                       href={link.href} 
-                      className="text-slate-400 hover:text-amber-500 text-sm transition-colors duration-300 flex items-center gap-2 group"
+                      className="text-slate-400 hover:text-amber-500 text-sm transition-colors duration-300 flex items-center gap-2 group py-1.5 min-h-[36px] touch-manipulation"
                     >
                       <span className="w-0 h-px bg-amber-500 group-hover:w-4 transition-all duration-300" />
                       {link.label}
