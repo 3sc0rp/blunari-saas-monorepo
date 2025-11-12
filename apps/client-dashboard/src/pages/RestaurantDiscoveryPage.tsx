@@ -321,14 +321,206 @@ const RestaurantDiscoveryPage = () => {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="bg-slate-900 border-slate-800 w-80 overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle className="text-white">Filters</SheetTitle>
-                  <SheetDescription className="text-slate-400">
-                    Refine your restaurant search
-                  </SheetDescription>
+              <SheetContent side="left" className="bg-slate-900 border-slate-800 w-[85vw] max-w-md overflow-y-auto">
+                <SheetHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <SheetTitle className="text-white text-lg">Filters</SheetTitle>
+                      <SheetDescription className="text-slate-400 text-sm">
+                        Refine your restaurant search
+                      </SheetDescription>
+                    </div>
+                    {activeFiltersCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearFilters}
+                        className="h-10 min-h-[40px] text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 touch-manipulation"
+                      >
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
                 </SheetHeader>
-                {/* Mobile filter content will go here - keeping existing */}
+
+                {/* Mobile-optimized filters with larger touch targets */}
+                <div className="space-y-6 py-4">
+                  {/* Cuisine Types */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles className="w-5 h-5 text-blue-400" />
+                      <Label className="text-white font-semibold text-base">Cuisine</Label>
+                      {selectedCuisines.length > 0 && (
+                        <Badge variant="secondary" className="bg-blue-500/20 text-blue-400 border-blue-500/50 text-xs">
+                          {selectedCuisines.length}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+                      {CUISINE_TYPES.map((cuisine) => (
+                        <div key={cuisine} className="flex items-center space-x-3 group">
+                          <Checkbox
+                            id={`mobile-cuisine-${cuisine}`}
+                            checked={selectedCuisines.includes(cuisine)}
+                            onCheckedChange={() => toggleCuisine(cuisine)}
+                            className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 h-5 w-5"
+                          />
+                          <label
+                            htmlFor={`mobile-cuisine-${cuisine}`}
+                            className="text-base text-slate-300 cursor-pointer hover:text-white transition-all group-hover:translate-x-1 flex-1 py-2"
+                          >
+                            {cuisine}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Separator className="bg-slate-800" />
+
+                  {/* Price Range */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-green-400 text-xl">$</span>
+                      <Label className="text-white font-semibold text-base">Price Range</Label>
+                      {selectedPriceRanges.length > 0 && (
+                        <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/50 text-xs">
+                          {selectedPriceRanges.length}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      {["$", "$$", "$$$", "$$$$"].map((price) => (
+                        <div key={price} className="flex items-center space-x-3 group">
+                          <Checkbox
+                            id={`mobile-price-${price}`}
+                            checked={selectedPriceRanges.includes(price)}
+                            onCheckedChange={() => togglePriceRange(price)}
+                            className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 h-5 w-5"
+                          />
+                          <label
+                            htmlFor={`mobile-price-${price}`}
+                            className="text-base text-slate-300 cursor-pointer hover:text-white transition-all group-hover:translate-x-1 font-medium flex-1 py-2"
+                          >
+                            {price}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Separator className="bg-slate-800" />
+
+                  {/* Dietary Options */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle2 className="w-5 h-5 text-purple-400" />
+                      <Label className="text-white font-semibold text-base">Dietary Options</Label>
+                      {selectedDietary.length > 0 && (
+                        <Badge variant="secondary" className="bg-purple-500/20 text-purple-400 border-purple-500/50 text-xs">
+                          {selectedDietary.length}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      {DIETARY_OPTIONS.map((dietary) => (
+                        <div key={dietary} className="flex items-center space-x-3 group">
+                          <Checkbox
+                            id={`mobile-dietary-${dietary}`}
+                            checked={selectedDietary.includes(dietary)}
+                            onCheckedChange={() => toggleDietary(dietary)}
+                            className="data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500 h-5 w-5"
+                          />
+                          <label
+                            htmlFor={`mobile-dietary-${dietary}`}
+                            className="text-base text-slate-300 cursor-pointer hover:text-white transition-all group-hover:translate-x-1 flex-1 py-2"
+                          >
+                            {dietary}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Separator className="bg-slate-800" />
+
+                  {/* Features */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Clock className="w-5 h-5 text-amber-400" />
+                      <Label className="text-white font-semibold text-base">Features</Label>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3 group">
+                        <Checkbox
+                          id="mobile-featured"
+                          checked={onlyFeatured}
+                          onCheckedChange={(checked) => setOnlyFeatured(checked as boolean)}
+                          className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 h-5 w-5"
+                        />
+                        <label htmlFor="mobile-featured" className="text-base text-slate-300 cursor-pointer hover:text-white transition-all group-hover:translate-x-1 flex-1 py-2">
+                          Featured Only
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-3 group">
+                        <Checkbox
+                          id="mobile-reservations"
+                          checked={hasReservations}
+                          onCheckedChange={(checked) => setHasReservations(checked as boolean)}
+                          className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 h-5 w-5"
+                        />
+                        <label htmlFor="mobile-reservations" className="text-base text-slate-300 cursor-pointer hover:text-white transition-all group-hover:translate-x-1 flex-1 py-2">
+                          Accepts Reservations
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-3 group">
+                        <Checkbox
+                          id="mobile-catering"
+                          checked={hasCatering}
+                          onCheckedChange={(checked) => setHasCatering(checked as boolean)}
+                          className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 h-5 w-5"
+                        />
+                        <label htmlFor="mobile-catering" className="text-base text-slate-300 cursor-pointer hover:text-white transition-all group-hover:translate-x-1 flex-1 py-2">
+                          Catering Available
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-3 group">
+                        <Checkbox
+                          id="mobile-outdoor"
+                          checked={hasOutdoorSeating}
+                          onCheckedChange={(checked) => setHasOutdoorSeating(checked as boolean)}
+                          className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 h-5 w-5"
+                        />
+                        <label htmlFor="mobile-outdoor" className="text-base text-slate-300 cursor-pointer hover:text-white transition-all group-hover:translate-x-1 flex-1 py-2">
+                          Outdoor Seating
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-3 group">
+                        <Checkbox
+                          id="mobile-parking"
+                          checked={hasParking}
+                          onCheckedChange={(checked) => setHasParking(checked as boolean)}
+                          className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 h-5 w-5"
+                        />
+                        <label htmlFor="mobile-parking" className="text-base text-slate-300 cursor-pointer hover:text-white transition-all group-hover:translate-x-1 flex-1 py-2">
+                          Parking Available
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom sticky apply button for mobile */}
+                <div className="sticky bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 -mx-6 -mb-6 mt-6">
+                  <Button
+                    className="w-full h-12 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-bold text-base"
+                    onClick={() => {
+                      // Sheet will auto-close, filters already applied
+                    }}
+                  >
+                    Show {restaurants.length} Result{restaurants.length !== 1 ? "s" : ""}
+                  </Button>
+                </div>
               </SheetContent>
             </Sheet>
           </div>
@@ -642,15 +834,15 @@ const RestaurantDiscoveryPage = () => {
                         >
                           <Badge
                             variant="secondary"
-                            className="bg-blue-500/20 text-blue-400 border-blue-500/50 hover:bg-blue-500/30 hover:scale-105 cursor-pointer transition-all duration-200 px-3 py-1.5 gap-1.5"
+                            className="bg-blue-500/20 text-blue-400 border-blue-500/50 hover:bg-blue-500/30 hover:scale-105 cursor-pointer transition-all duration-200 px-3 py-2 gap-1.5 min-h-[36px] touch-manipulation"
                             onClick={() => toggleCuisine(cuisine)}
                           >
-                            <span className="font-medium">{cuisine}</span>
+                            <span className="font-medium text-sm sm:text-base">{cuisine}</span>
                             <motion.div
                               whileHover={{ scale: 1.2, rotate: 90 }}
                               transition={{ duration: 0.2 }}
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <X className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                             </motion.div>
                           </Badge>
                         </motion.div>
@@ -665,15 +857,15 @@ const RestaurantDiscoveryPage = () => {
                         >
                           <Badge
                             variant="secondary"
-                            className="bg-green-500/20 text-green-400 border-green-500/50 hover:bg-green-500/30 hover:scale-105 cursor-pointer transition-all duration-200 px-3 py-1.5 gap-1.5"
+                            className="bg-green-500/20 text-green-400 border-green-500/50 hover:bg-green-500/30 hover:scale-105 cursor-pointer transition-all duration-200 px-3 py-2 gap-1.5 min-h-[36px] touch-manipulation"
                             onClick={() => togglePriceRange(price)}
                           >
-                            <span className="font-medium">{price}</span>
+                            <span className="font-medium text-sm sm:text-base">{price}</span>
                             <motion.div
                               whileHover={{ scale: 1.2, rotate: 90 }}
                               transition={{ duration: 0.2 }}
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <X className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                             </motion.div>
                           </Badge>
                         </motion.div>
@@ -688,22 +880,22 @@ const RestaurantDiscoveryPage = () => {
                         >
                           <Badge
                             variant="secondary"
-                            className="bg-purple-500/20 text-purple-400 border-purple-500/50 hover:bg-purple-500/30 hover:scale-105 cursor-pointer transition-all duration-200 px-3 py-1.5 gap-1.5"
+                            className="bg-purple-500/20 text-purple-400 border-purple-500/50 hover:bg-purple-500/30 hover:scale-105 cursor-pointer transition-all duration-200 px-3 py-2 gap-1.5 min-h-[36px] touch-manipulation"
                             onClick={() => toggleDietary(option)}
                           >
-                            <span className="font-medium">{option}</span>
+                            <span className="font-medium text-sm sm:text-base">{option}</span>
                             <motion.div
                               whileHover={{ scale: 1.2, rotate: 90 }}
                               transition={{ duration: 0.2 }}
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <X className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                             </motion.div>
                           </Badge>
                         </motion.div>
                       ))}
                     </AnimatePresence>
                     
-                    {/* Clear All Button */}
+                    {/* Clear All Button - Mobile-friendly */}
                     {activeFiltersCount > 1 && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
@@ -714,9 +906,9 @@ const RestaurantDiscoveryPage = () => {
                           variant="ghost"
                           size="sm"
                           onClick={clearFilters}
-                          className="h-8 px-3 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700 hover:border-slate-600 transition-all duration-200"
+                          className="h-9 min-h-[36px] px-4 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700 hover:border-slate-600 transition-all duration-200 touch-manipulation"
                         >
-                          <X className="w-3.5 h-3.5 mr-1.5" />
+                          <X className="w-4 h-4 mr-2" />
                           Clear All
                         </Button>
                       </motion.div>
