@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { RestaurantCard } from "@/components/RestaurantCard";
+import PullToRefresh from "react-simple-pull-to-refresh";
 
 interface Restaurant {
   id: string;
@@ -108,6 +109,12 @@ const RestaurantDiscoveryPage = () => {
   useEffect(() => {
     fetchRestaurants();
   }, [debouncedSearch, selectedCuisines, selectedPriceRanges, selectedDietary, onlyFeatured, hasReservations, hasCatering, hasOutdoorSeating, hasParking, sortBy]);
+
+  // Pull-to-refresh handler
+  const handleRefresh = async () => {
+    await fetchRestaurants();
+    return Promise.resolve();
+  };
 
   const fetchRestaurants = async () => {
     setLoading(true);
@@ -759,18 +766,40 @@ const RestaurantDiscoveryPage = () => {
             </div>
           </div>
 
-          {/* Main Content */}
+          {/* Main Content with Pull-to-Refresh */}
           <div className="flex-1">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between mb-6">
+            <PullToRefresh
+              onRefresh={handleRefresh}
+              pullingContent={
+                <div className="text-center py-4 text-slate-400 flex flex-col items-center gap-2">
+                  <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 1, repeat: Infinity }}>
+                    <ArrowLeft className="w-5 h-5 rotate-90" />
+                  </motion.div>
+                  <span className="text-sm">Pull to refresh</span>
+                </div>
+              }
+              refreshingContent={
+                <div className="text-center py-4 text-amber-500 flex flex-col items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm">Refreshing...</span>
+                </div>
+              }
+              resistance={2}
+              maxPullDownDistance={120}
+              pullDownThreshold={80}
+              className="min-h-screen"
+            >
               <div>
-                <h1 className="text-2xl font-bold text-white mb-1">
-                  Restaurants in Atlanta
-                </h1>
-                <p className="text-slate-400">
-                  {loading ? "Loading..." : `${restaurants.length} restaurants found`}
-                </p>
-              </div>
+                {/* Toolbar */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h1 className="text-2xl font-bold text-white mb-1">
+                      Restaurants in Atlanta
+                    </h1>
+                    <p className="text-slate-400">
+                      {loading ? "Loading..." : `${restaurants.length} restaurants found`}
+                    </p>
+                  </div>
 
               <div className="flex items-center gap-3">
                 {/* Mobile Filters */}
@@ -1017,6 +1046,8 @@ const RestaurantDiscoveryPage = () => {
                 ))}
               </div>
             )}
+              </div>
+            </PullToRefresh>
           </div>
         </div>
       </div>
