@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useSwipeable } from "react-swipeable";
 import {
   ArrowLeft, MapPin, Phone, Globe, Clock, Star, Heart, Share2, 
   Calendar, Users, Utensils, ChefHat, Image as ImageIcon, MessageSquare,
@@ -84,6 +85,51 @@ const RestaurantProfilePage = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [showBookingCTA, setShowBookingCTA] = useState(false);
+
+  // Swipe handlers for image gallery navigation
+  const handleSwipeLeft = () => {
+    if (!restaurant) return;
+    const allImages = [
+      restaurant.hero_image_url,
+      ...(restaurant.gallery_images || [])
+    ].filter(Boolean) as string[];
+    
+    if (allImages.length > 1) {
+      setSelectedImage((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
+    }
+  };
+
+  const handleSwipeRight = () => {
+    if (!restaurant) return;
+    const allImages = [
+      restaurant.hero_image_url,
+      ...(restaurant.gallery_images || [])
+    ].filter(Boolean) as string[];
+    
+    if (allImages.length > 1) {
+      setSelectedImage((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
+    }
+  };
+
+  // Configure swipe handlers for gallery
+  const gallerySwipeHandlers = useSwipeable({
+    onSwipedLeft: handleSwipeLeft,
+    onSwipedRight: handleSwipeRight,
+    trackMouse: false, // Only track touch, not mouse
+    trackTouch: true,
+    preventScrollOnSwipe: true,
+    delta: 50, // Minimum swipe distance in pixels
+  });
+
+  // Configure swipe handlers for lightbox
+  const lightboxSwipeHandlers = useSwipeable({
+    onSwipedLeft: handleSwipeLeft,
+    onSwipedRight: handleSwipeRight,
+    trackMouse: false,
+    trackTouch: true,
+    preventScrollOnSwipe: true,
+    delta: 50,
+  });
 
   useEffect(() => {
     if (slug) {
@@ -270,10 +316,10 @@ const RestaurantProfilePage = () => {
         </div>
       </motion.header>
 
-      {/* Enhanced Hero Gallery with Lightbox - Lazy loaded */}
+      {/* Enhanced Hero Gallery with Lightbox - Lazy loaded with Swipe Support */}
       <section className="relative h-[500px] bg-slate-900 group">
         {allImages.length > 0 ? (
-          <div className="relative h-full">
+          <div {...gallerySwipeHandlers} className="relative h-full touch-pan-y">
             <motion.div
               key={selectedImage}
               initial={{ opacity: 0, scale: 1.1 }}
@@ -354,6 +400,22 @@ const RestaurantProfilePage = () => {
                 {selectedImage + 1} / {allImages.length}
               </motion.div>
             )}
+
+            {/* Mobile swipe hint - Fades after first interaction */}
+            {allImages.length > 1 && (
+              <motion.div
+                initial={{ opacity: 1 }}
+                animate={{ opacity: [1, 0.5, 1] }}
+                transition={{ duration: 2, repeat: 3, repeatDelay: 1 }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none lg:hidden"
+              >
+                <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-sm px-4 py-2 rounded-full border border-amber-500/50 shadow-lg">
+                  <ChevronLeft className="w-4 h-4 text-amber-400" />
+                  <span className="text-white text-xs font-medium">Swipe</span>
+                  <ChevronRight className="w-4 h-4 text-amber-400" />
+                </div>
+              </motion.div>
+            )}
           </div>
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-amber-500/20 via-rose-500/20 to-purple-500/20 flex items-center justify-center">
@@ -367,7 +429,7 @@ const RestaurantProfilePage = () => {
         )}
       </section>
 
-      {/* Lightbox Modal */}
+      {/* Lightbox Modal with Swipe Support */}
       {lightboxOpen && allImages.length > 0 && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -376,7 +438,7 @@ const RestaurantProfilePage = () => {
           className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setLightboxOpen(false)}
         >
-          <div className="relative max-w-7xl w-full max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+          <div {...lightboxSwipeHandlers} className="relative max-w-7xl w-full max-h-[90vh] touch-pan-y" onClick={(e) => e.stopPropagation()}>
             <motion.img
               key={selectedImage}
               initial={{ opacity: 0, scale: 0.9 }}
