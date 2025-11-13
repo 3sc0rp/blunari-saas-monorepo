@@ -14,7 +14,7 @@ interface Restaurant {
   slug: string;
   description: string | null;
   cuisine_types: string[] | null;
-  price_range: number | null;
+  price_range: string | null;
   average_rating: number | null;
   total_reviews: number | null;
   hero_image_url: string | null;
@@ -23,6 +23,9 @@ interface Restaurant {
   is_featured: boolean | null;
   accepts_reservations: boolean | null;
   accepts_catering: boolean | null;
+  outdoor_seating: boolean | null;
+  parking_available: boolean | null;
+  dietary_options: string[] | null;
 }
 
 interface RestaurantCardProps {
@@ -33,8 +36,10 @@ interface RestaurantCardProps {
 export const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, index }) => {
   const { handleMouseEnter, handleMouseLeave, handleClick } = useRestaurantPrefetch(restaurant.slug);
 
-  const formatPriceRange = (priceRange: number) => {
-    return '$'.repeat(Math.min(Math.max(priceRange, 1), 4));
+  // Price range is already a string like "$", "$$", "$$$" from database
+  // No need to format - just display as-is
+  const formatPriceRange = (priceRange: string) => {
+    return priceRange;
   };
 
   return (

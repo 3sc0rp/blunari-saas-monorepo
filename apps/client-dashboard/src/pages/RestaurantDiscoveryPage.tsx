@@ -28,8 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
-import { LazyImage } from "@/components/LazyImage";
-import { getImagePlaceholder } from "@/utils/image-utils";
+import { RestaurantCard } from "@/components/RestaurantCard";
 
 interface Restaurant {
   id: string;
@@ -1010,163 +1009,11 @@ const RestaurantDiscoveryPage = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {restaurants.map((restaurant, index) => (
-                  <motion.div
+                  <RestaurantCard
                     key={restaurant.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.05 }}
-                    whileHover={{ y: -8 }}
-                  >
-                    <Card
-                      className="bg-slate-900/50 backdrop-blur-sm border-slate-800 hover:border-amber-500 transition-all duration-300 cursor-pointer group overflow-hidden h-full hover:shadow-2xl hover:shadow-amber-500/20"
-                      onClick={() => navigate(`/restaurant/${restaurant.slug}`)}
-                    >
-                      {/* Image with gradient overlay - Lazy loaded */}
-                      <div className="relative h-56 overflow-hidden">
-                        {restaurant.hero_image_url ? (
-                          <div className="relative w-full h-full group-hover:scale-110 transition-transform duration-500">
-                            <LazyImage
-                              src={restaurant.hero_image_url}
-                              alt={restaurant.name}
-                              className="w-full h-full"
-                              blurDataURL={getImagePlaceholder(restaurant.hero_image_url)}
-                            />
-                            {/* Gradient overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
-                          </div>
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-amber-500/20 to-rose-500/20 flex items-center justify-center">
-                            <ChefHat className="w-20 h-20 text-slate-600 group-hover:scale-110 transition-transform duration-300" />
-                          </div>
-                        )}
-                        
-                        {/* Featured badge */}
-                        {restaurant.is_featured && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="absolute top-3 left-3"
-                          >
-                            <Badge className="bg-amber-500 text-black border-0 shadow-lg font-semibold">
-                              <TrendingUp className="w-3 h-3 mr-1" />
-                              Featured
-                            </Badge>
-                          </motion.div>
-                        )}
-
-                        {/* Quick action button (visible on hover) */}
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          whileHover={{ opacity: 1, y: 0 }}
-                          className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300"
-                        >
-                          <Button
-                            size="sm"
-                            className="bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-lg"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/restaurant/${restaurant.slug}`);
-                            }}
-                          >
-                            View Details
-                            <ChevronRight className="w-4 h-4 ml-1" />
-                          </Button>
-                        </motion.div>
-                      </div>
-
-                      <CardContent className="p-5">
-                        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-amber-400 transition-colors line-clamp-1">
-                          {restaurant.name}
-                        </h3>
-                        
-                        {/* Description */}
-                        {restaurant.description && (
-                          <p className="text-slate-400 text-sm mb-3 line-clamp-2 leading-relaxed">
-                            {restaurant.description}
-                          </p>
-                        )}
-
-                        {/* Cuisine badges */}
-                        {restaurant.cuisine_types && restaurant.cuisine_types.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mb-3">
-                            {restaurant.cuisine_types.slice(0, 3).map((cuisine, idx) => (
-                              <Badge 
-                                key={cuisine} 
-                                variant="secondary" 
-                                className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/30 hover:bg-blue-500/20 transition-colors"
-                              >
-                                {cuisine}
-                              </Badge>
-                            ))}
-                            {restaurant.cuisine_types.length > 3 && (
-                              <Badge variant="secondary" className="text-xs bg-slate-800 text-slate-400">
-                                +{restaurant.cuisine_types.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Rating and price */}
-                        <div className="flex items-center justify-between text-sm mb-3 pb-3 border-b border-slate-800">
-                          <div className="flex items-center gap-1">
-                            {/* 5-star visualization */}
-                            <div className="flex items-center gap-0.5">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <Star
-                                  key={star}
-                                  className={`w-4 h-4 ${
-                                    star <= Math.round(restaurant.average_rating || 0)
-                                      ? "fill-amber-500 text-amber-500"
-                                      : "text-slate-700"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            <span className="font-semibold text-white ml-1">
-                              {restaurant.average_rating ? restaurant.average_rating.toFixed(1) : "New"}
-                            </span>
-                            {restaurant.total_reviews && restaurant.total_reviews > 0 && (
-                              <span className="text-slate-500">({restaurant.total_reviews})</span>
-                            )}
-                          </div>
-                          {restaurant.price_range && (
-                            <span className="text-green-400 font-bold text-base">{restaurant.price_range}</span>
-                          )}
-                        </div>
-
-                        {/* Location */}
-                        {restaurant.location_neighborhood && (
-                          <p className="text-slate-400 text-sm flex items-center gap-1.5 mb-3">
-                            <MapPin className="w-4 h-4 text-slate-500" />
-                            {restaurant.location_neighborhood}
-                          </p>
-                        )}
-
-                        {/* Action badges */}
-                        <div className="flex flex-wrap gap-2">
-                          {restaurant.accepts_reservations && (
-                            <Badge variant="outline" className="text-xs border-emerald-500/50 text-emerald-400 bg-emerald-500/5">
-                              <CheckCircle2 className="w-3 h-3 mr-1" />
-                              Reservations
-                            </Badge>
-                          )}
-                          {restaurant.accepts_catering && (
-                            <Badge variant="outline" className="text-xs border-purple-500/50 text-purple-400 bg-purple-500/5">
-                              <Sparkles className="w-3 h-3 mr-1" />
-                              Catering
-                            </Badge>
-                          )}
-                          {restaurant.outdoor_seating && (
-                            <Badge variant="outline" className="text-xs border-blue-500/50 text-blue-400 bg-blue-500/5">
-                              <Clock className="w-3 h-3 mr-1" />
-                              Outdoor
-                            </Badge>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                    restaurant={restaurant}
+                    index={index}
+                  />
                 ))}
               </div>
             )}
