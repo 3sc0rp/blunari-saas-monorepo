@@ -3,18 +3,20 @@ import { useLocation } from 'react-router-dom';
 
 /**
  * Web Vitals metrics tracking
- * Monitors Core Web Vitals: CLS, LCP, FID, TTFB, INP
+ * Monitors Core Web Vitals: CLS, LCP, INP, TTFB, FCP
  * 
  * Thresholds (Google recommendations):
  * - LCP (Largest Contentful Paint): Good < 2.5s, Poor > 4s
- * - FID (First Input Delay): Good < 100ms, Poor > 300ms
  * - CLS (Cumulative Layout Shift): Good < 0.1, Poor > 0.25
- * - TTFB (Time to First Byte): Good < 800ms, Poor > 1800ms
  * - INP (Interaction to Next Paint): Good < 200ms, Poor > 500ms
+ * - TTFB (Time to First Byte): Good < 800ms, Poor > 1800ms
+ * - FCP (First Contentful Paint): Good < 1.8s, Poor > 3s
+ * 
+ * Note: FID (First Input Delay) deprecated in web-vitals v4, replaced by INP
  */
 
 export interface WebVitalsMetric {
-  name: 'CLS' | 'LCP' | 'FID' | 'TTFB' | 'INP' | 'FCP';
+  name: 'CLS' | 'LCP' | 'TTFB' | 'INP' | 'FCP';
   value: number;
   rating: 'good' | 'needs-improvement' | 'poor';
   delta: number;
@@ -45,8 +47,6 @@ const getRating = (name: string, value: number): 'good' | 'needs-improvement' | 
   switch (name) {
     case 'LCP':
       return value <= 2500 ? 'good' : value <= 4000 ? 'needs-improvement' : 'poor';
-    case 'FID':
-      return value <= 100 ? 'good' : value <= 300 ? 'needs-improvement' : 'poor';
     case 'CLS':
       return value <= 0.1 ? 'good' : value <= 0.25 ? 'needs-improvement' : 'poor';
     case 'TTFB':
@@ -133,14 +133,15 @@ export const useWebVitals = (options: WebVitalsOptions = {}) => {
     if (!opts.enabled || hasTrackedRef.current) return;
 
     // Dynamically import web-vitals library
-    import('web-vitals').then(({ onCLS, onLCP, onFID, onTTFB, onINP, onFCP }) => {
-      // Track all Core Web Vitals
-      onCLS((metric) => handleMetric(metric as WebVitalsMetric));
-      onLCP((metric) => handleMetric(metric as WebVitalsMetric));
-      onFID((metric) => handleMetric(metric as WebVitalsMetric));
-      onTTFB((metric) => handleMetric(metric as WebVitalsMetric));
-      onINP((metric) => handleMetric(metric as WebVitalsMetric));
-      onFCP((metric) => handleMetric(metric as WebVitalsMetric));
+    import('web-vitals').then((webVitalsModule) => {
+      const { onCLS, onLCP, onTTFB, onINP, onFCP } = webVitalsModule;
+      
+      // Track all Core Web Vitals (FID removed in web-vitals v4, replaced by INP)
+      onCLS((metric: any) => handleMetric(metric as WebVitalsMetric));
+      onLCP((metric: any) => handleMetric(metric as WebVitalsMetric));
+      onTTFB((metric: any) => handleMetric(metric as WebVitalsMetric));
+      onINP((metric: any) => handleMetric(metric as WebVitalsMetric));
+      onFCP((metric: any) => handleMetric(metric as WebVitalsMetric));
 
       hasTrackedRef.current = true;
 
