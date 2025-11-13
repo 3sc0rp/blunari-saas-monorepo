@@ -12,6 +12,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { LazyImage } from "@/components/LazyImage";
+import { getImagePlaceholder } from "@/utils/image-utils";
 
 interface Restaurant {
   id: string;
@@ -471,19 +473,19 @@ const MarketplaceLandingPage = () => {
                     {/* Hover glow effect */}
                     <div className="absolute inset-0 bg-gradient-to-br from-amber-500/0 via-amber-500/0 to-amber-500/0 group-hover:from-amber-500/5 group-hover:via-transparent group-hover:to-rose-500/5 transition-all duration-500 pointer-events-none" />
                     
-                    {/* Image */}
+                    {/* Image - Lazy loaded */}
                     <div className="relative h-56 overflow-hidden">
                       {restaurant.hero_image_url ? (
-                        <>
-                          <img
+                        <div className="relative w-full h-full group-hover:scale-110 transition-transform duration-700 ease-out">
+                          <LazyImage
                             src={restaurant.hero_image_url}
                             alt={restaurant.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
-                            loading="lazy"
+                            className="w-full h-full"
+                            blurDataURL={getImagePlaceholder(restaurant.hero_image_url)}
                           />
                           {/* Image overlay gradient */}
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
-                        </>
+                        </div>
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-amber-500/20 via-rose-500/20 to-purple-500/20 flex items-center justify-center relative overflow-hidden">
                           <motion.div

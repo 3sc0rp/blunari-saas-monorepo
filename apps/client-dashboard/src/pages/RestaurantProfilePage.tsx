@@ -16,6 +16,8 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { LazyImage } from "@/components/LazyImage";
+import { getImagePlaceholder } from "@/utils/image-utils";
 
 // Import existing booking and catering widgets
 import BookingWidget from "@/components/booking/BookingWidget";
@@ -268,19 +270,24 @@ const RestaurantProfilePage = () => {
         </div>
       </motion.header>
 
-      {/* Enhanced Hero Gallery with Lightbox */}
+      {/* Enhanced Hero Gallery with Lightbox - Lazy loaded */}
       <section className="relative h-[500px] bg-slate-900 group">
         {allImages.length > 0 ? (
           <div className="relative h-full">
-            <motion.img
+            <motion.div
               key={selectedImage}
               initial={{ opacity: 0, scale: 1.1 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
-              src={allImages[selectedImage]}
-              alt={restaurant.name}
-              className="w-full h-full object-cover"
-            />
+              className="w-full h-full"
+            >
+              <LazyImage
+                src={allImages[selectedImage]}
+                alt={restaurant.name}
+                className="w-full h-full"
+                blurDataURL={getImagePlaceholder(allImages[selectedImage])}
+              />
+            </motion.div>
             {/* Enhanced gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent" />
             

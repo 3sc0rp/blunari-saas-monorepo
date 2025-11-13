@@ -26,7 +26,10 @@ import {
 } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { LazyImage } from "@/components/LazyImage";
+import { getImagePlaceholder } from "@/utils/image-utils";
 
 interface Restaurant {
   id: string;
@@ -1018,18 +1021,19 @@ const RestaurantDiscoveryPage = () => {
                       className="bg-slate-900/50 backdrop-blur-sm border-slate-800 hover:border-amber-500 transition-all duration-300 cursor-pointer group overflow-hidden h-full hover:shadow-2xl hover:shadow-amber-500/20"
                       onClick={() => navigate(`/restaurant/${restaurant.slug}`)}
                     >
-                      {/* Image with gradient overlay */}
+                      {/* Image with gradient overlay - Lazy loaded */}
                       <div className="relative h-56 overflow-hidden">
                         {restaurant.hero_image_url ? (
-                          <>
-                            <img
+                          <div className="relative w-full h-full group-hover:scale-110 transition-transform duration-500">
+                            <LazyImage
                               src={restaurant.hero_image_url}
                               alt={restaurant.name}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              className="w-full h-full"
+                              blurDataURL={getImagePlaceholder(restaurant.hero_image_url)}
                             />
                             {/* Gradient overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
-                          </>
+                          </div>
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-amber-500/20 to-rose-500/20 flex items-center justify-center">
                             <ChefHat className="w-20 h-20 text-slate-600 group-hover:scale-110 transition-transform duration-300" />
