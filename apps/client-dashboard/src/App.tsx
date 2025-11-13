@@ -26,6 +26,7 @@ import LazyLoadingFallback, {
   AnalyticsLoadingFallback, 
   DashboardLoadingFallback 
 } from "@/components/LazyLoadingFallback";
+import { WebVitalsMonitor } from "@/components/WebVitalsMonitor";
 
 // Immediate load components (small, essential)
 import Index from "./pages/Index";
@@ -307,6 +308,16 @@ function App() {
                           {/* Toast notifications */}
                           <Toaster />
                           <Sonner />
+                          
+                          {/* Web Vitals monitoring (enabled in all environments) */}
+                          <WebVitalsMonitor 
+                            enabled={true}
+                            debug={import.meta.env.DEV}
+                            reportToConsole={import.meta.env.DEV}
+                            reportToAnalytics={import.meta.env.PROD}
+                            sampleRate={1.0}
+                          />
+                          
                           {import.meta.env.MODE === 'development' && (
                             <>
                               <PerformanceMonitor />
