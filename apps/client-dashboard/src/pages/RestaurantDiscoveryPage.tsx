@@ -87,6 +87,13 @@ const RestaurantDiscoveryPage = () => {
   // Sorting
   const [sortBy, setSortBy] = useState<string>("relevance");
 
+  // Infinite scroll pagination
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const ITEMS_PER_PAGE = 12;
+
   // Debounced search effect
   useEffect(() => {
     if (searchTimeoutRef.current) {
@@ -107,17 +114,53 @@ const RestaurantDiscoveryPage = () => {
   }, [searchQuery]);
 
   useEffect(() => {
-    fetchRestaurants();
+    // Reset to first page when filters change
+    setPage(0);
+    setRestaurants([]);
+    setHasMore(true);
+    fetchRestaurants(0, true);
   }, [debouncedSearch, selectedCuisines, selectedPriceRanges, selectedDietary, onlyFeatured, hasReservations, hasCatering, hasOutdoorSeating, hasParking, sortBy]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!loadMoreRef.current || loading || loadingMore || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: '100px' }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => observer.disconnect();
+  }, [loading, loadingMore, hasMore, page]);
 
   // Pull-to-refresh handler
   const handleRefresh = async () => {
-    await fetchRestaurants();
+    setPage(0);
+    setRestaurants([]);
+    setHasMore(true);
+    await fetchRestaurants(0, true);
     return Promise.resolve();
   };
 
-  const fetchRestaurants = async () => {
-    setLoading(true);
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    await fetchRestaurants(nextPage, false);
+  };
+
+  const fetchRestaurants = async (pageNum: number = 0, reset: boolean = false) => {
+    if (reset) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     try {
       let query = supabase
         .from("tenants")
@@ -178,14 +221,32 @@ const RestaurantDiscoveryPage = () => {
                        .order("average_rating", { ascending: false, nullsFirst: false });
       }
 
+      // Pagination
+      const from = pageNum * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      query = query.range(from, to);
+
       const { data, error } = await query;
 
       if (error) throw error;
-      setRestaurants((data as Restaurant[]) || []);
+      
+      const newRestaurants = (data as Restaurant[]) || [];
+      
+      // Check if we got fewer items than requested (end of results)
+      if (newRestaurants.length < ITEMS_PER_PAGE) {
+        setHasMore(false);
+      }
+
+      if (reset) {
+        setRestaurants(newRestaurants);
+      } else {
+        setRestaurants(prev => [...prev, ...newRestaurants]);
+      }
     } catch (error) {
       console.error("Error fetching restaurants:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -1036,15 +1097,49 @@ const RestaurantDiscoveryPage = () => {
                 </Card>
               </motion.div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {restaurants.map((restaurant, index) => (
-                  <RestaurantCard
-                    key={restaurant.id}
-                    restaurant={restaurant}
-                    index={index}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {restaurants.map((restaurant, index) => (
+                    <RestaurantCard
+                      key={restaurant.id}
+                      restaurant={restaurant}
+                      index={index}
+                    />
+                  ))}
+                </div>
+
+                {/* Infinite scroll trigger & loading indicator */}
+                {hasMore && (
+                  <div ref={loadMoreRef} className="mt-12 text-center">
+                    {loadingMore && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex flex-col items-center gap-3 py-8"
+                      >
+                        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                        <p className="text-slate-400 text-sm">Loading more restaurants...</p>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+
+                {/* End of results message */}
+                {!hasMore && restaurants.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-12 text-center py-8"
+                  >
+                    <div className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800/50 border border-slate-700 rounded-full">
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                      <span className="text-slate-300 text-sm font-medium">
+                        You've seen all {restaurants.length} restaurants
+                      </span>
+                    </div>
+                  </motion.div>
+                )}
+              </>
             )}
               </div>
             </PullToRefresh>
