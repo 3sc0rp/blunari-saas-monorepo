@@ -30,7 +30,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { useFavorites } from "@/contexts/FavoritesContext";
-import type { GuideRestaurant } from "@/types/dining-guide";
+import type { GuideRestaurant, Tag } from "@/types/dining-guide";
 import { mapTenantsToGuideRestaurants } from "@/data/atlanta-guide";
 
 type TenantBase = Omit<GuideRestaurant, "blunari_score" | "tags" | "meta">;
@@ -60,6 +60,9 @@ const RestaurantDiscoveryPage = () => {
   // Filters
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>(
     searchParams.get("cuisine") ? [searchParams.get("cuisine")!] : []
+  );
+  const [selectedTag, setSelectedTag] = useState<string | null>(
+    searchParams.get("tag"),
   );
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([]);
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
@@ -216,7 +219,15 @@ const RestaurantDiscoveryPage = () => {
       if (error) throw error;
 
       const tenants = (data ?? []) as TenantBase[];
-      const newRestaurants = mapTenantsToGuideRestaurants(tenants);
+      let newRestaurants = mapTenantsToGuideRestaurants(tenants);
+
+      // Client-side tag filter (derived from guide tags)
+      if (selectedTag) {
+        const tag = selectedTag as Tag;
+        newRestaurants = newRestaurants.filter((restaurant) =>
+          restaurant.tags.includes(tag),
+        );
+      }
       
       // Check if we got fewer items than requested (end of results)
       if (newRestaurants.length < ITEMS_PER_PAGE) {
@@ -270,6 +281,7 @@ const RestaurantDiscoveryPage = () => {
     setHasCatering(false);
     setHasOutdoorSeating(false);
     setHasParking(false);
+    setSelectedTag(null);
     setSearchQuery("");
     setSearchParams({});
   };
@@ -278,6 +290,7 @@ const RestaurantDiscoveryPage = () => {
     selectedCuisines.length + 
     selectedPriceRanges.length + 
     selectedDietary.length + 
+    (selectedTag ? 1 : 0) +
     (onlyFeatured ? 1 : 0) + 
     (hasReservations ? 1 : 0) + 
     (hasCatering ? 1 : 0) + 
