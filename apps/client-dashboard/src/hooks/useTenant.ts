@@ -163,8 +163,9 @@ export function useTenant() {
           component: 'useTenant'
         });
         
-        // Check if we're on a public route (marketplace, restaurant pages)
-        const publicRoutes = ['/', '/discover', '/restaurant'];
+        // Check if we're on a public route (public consumer surfaces should not force auth)
+        // Include home, list index, restaurant directory/detail, catering, and claim flows
+        const publicRoutes = ['/', '/discover', '/restaurants', '/restaurant', '/lists', '/catering', '/booking', '/catering-order'];
         const isPublicRoute = publicRoutes.some(route => 
           window.location.pathname === route || 
           window.location.pathname.startsWith(route + '/')
