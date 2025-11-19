@@ -123,6 +123,8 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
               type="button"
               aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
               onClick={(event) => {
+                // Prevent card navigation when toggling favorites
+                event.preventDefault();
                 event.stopPropagation();
                 onToggleFavorite();
               }}
