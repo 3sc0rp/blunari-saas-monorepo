@@ -51,7 +51,7 @@ const CateringGuidePage: React.FC = () => {
                 className="space-y-6"
                 onSubmit={handleSubmit}
               >
-                <div className="space-y-2">
+                  <div className="space-y-2">
                   <Label htmlFor="email">Get early access</Label>
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <Input
@@ -61,17 +61,18 @@ const CateringGuidePage: React.FC = () => {
                       placeholder="name@company.com"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
-                      className="border-slate-700 bg-slate-900 text-sm"
+                      aria-label="Email address for early access"
+                      className="flex-1 border-slate-700 bg-slate-900 text-sm focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/40"
                     />
                     <Button
                       type="submit"
-                      className="h-11 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-6 text-sm font-semibold text-black shadow shadow-amber-500/40 hover:from-amber-500 hover:to-amber-700"
+                      className="h-11 w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-6 text-sm font-semibold text-black shadow shadow-amber-500/40 hover:from-amber-500 hover:to-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 sm:w-auto"
                     >
                       Notify me
                     </Button>
                   </div>
                   <p className="text-[11px] text-slate-500">
-                    We’ll only email you about Blunari Catering. No spam, ever.
+                    We'll only email you about Blunari Catering. No spam, ever.
                   </p>
                 </div>
               </form>

@@ -164,7 +164,7 @@ export function useTenant() {
         });
         
         // Check if we're on a public route (public consumer surfaces should not force auth)
-        // Include home, list/index, restaurant directory/detail, catering, booking tracking, and claim flows
+        // Include home, list/index, restaurant directory/detail, catering, booking tracking, claim, and favorites flows
         const publicRoutes = [
           '/',
           '/discover',
@@ -175,6 +175,7 @@ export function useTenant() {
           '/booking',
           '/catering-order',
           '/claim',
+          '/favorites',
         ];
         const isPublicRoute = publicRoutes.some(route => 
           window.location.pathname === route || 

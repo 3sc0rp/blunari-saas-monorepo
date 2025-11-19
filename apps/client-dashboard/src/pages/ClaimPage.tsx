@@ -160,15 +160,15 @@ const ClaimPage: React.FC = () => {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between gap-4 pt-2">
-                    <p className="text-[11px] text-slate-500">
-                      We’ll never share your contact details outside of
+                  <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-[11px] text-slate-500 sm:max-w-md">
+                      We'll never share your contact details outside of
                       Blunari. A member of our team will email you within 1–2
                       business days.
                     </p>
                     <Button
                       type="submit"
-                      className="rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-6 text-sm font-semibold text-black shadow shadow-amber-500/40 hover:from-amber-500 hover:to-amber-700"
+                      className="w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-6 text-sm font-semibold text-black shadow shadow-amber-500/40 hover:from-amber-500 hover:to-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 sm:w-auto"
                     >
                       Submit claim
                     </Button>

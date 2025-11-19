@@ -338,7 +338,8 @@ const RestaurantProfilePage = () => {
                   variant="ghost"
                   size="icon"
                   onClick={handleShare}
-                  className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+                  aria-label="Share restaurant"
+                  className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                 >
                   <Share2 className="w-4 h-4" />
                 </Button>
@@ -353,8 +354,9 @@ const RestaurantProfilePage = () => {
                   variant="ghost"
                   size="icon"
                   onClick={toggleFavorite}
-                  className={`transition-all ${
-                    isFavorite ? "text-red-500 hover:text-red-400" : "text-slate-400 hover:text-white"
+                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                  className={`transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 ${
+                    isFavorite ? "text-rose-500 hover:text-rose-400" : "text-slate-400 hover:text-white"
                   } hover:bg-slate-800`}
                 >
                   <Heart className={`w-4 h-4 ${isFavorite ? "fill-current" : ""}`} />
@@ -1117,14 +1119,25 @@ const RestaurantProfilePage = () => {
                   Blunari reservations and catering tools.
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-full border-amber-500 text-sm font-semibold text-amber-300 hover:bg-amber-500 hover:text-black"
-                onClick={() => navigate("/claim")}
-              >
-                Claim this restaurant
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full border-amber-500 text-sm font-semibold text-amber-300 hover:bg-amber-500 hover:text-black transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                  onClick={() => navigate("/claim")}
+                >
+                  Claim this restaurant
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full text-xs font-medium text-slate-400 hover:text-amber-300"
+                  onClick={() => navigate("/auth")}
+                >
+                  Sign in as restaurant
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </section>
@@ -1152,7 +1165,8 @@ const RestaurantProfilePage = () => {
                       "_blank",
                     )
                   }
-                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all shadow-lg hover:shadow-blue-600/50 touch-manipulation flex items-center justify-center"
+                  aria-label="Share on Facebook"
+                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all shadow-lg hover:shadow-blue-600/50 touch-manipulation flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
                   <Facebook className="w-5 h-5" />
                 </motion.button>
@@ -1165,7 +1179,8 @@ const RestaurantProfilePage = () => {
                       "_blank",
                     )
                   }
-                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-sky-500 hover:bg-sky-600 text-white rounded-full transition-all shadow-lg hover:shadow-sky-500/50 touch-manipulation flex items-center justify-center"
+                  aria-label="Share on Twitter"
+                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-sky-500 hover:bg-sky-600 text-white rounded-full transition-all shadow-lg hover:shadow-sky-500/50 touch-manipulation flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
                 >
                   <Twitter className="w-5 h-5" />
                 </motion.button>
@@ -1173,7 +1188,8 @@ const RestaurantProfilePage = () => {
                   whileHover={{ scale: 1.1, y: -3 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleShare}
-                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full transition-all shadow-lg hover:shadow-purple-600/50 touch-manipulation flex items-center justify-center"
+                  aria-label="Share on Instagram"
+                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full transition-all shadow-lg hover:shadow-purple-600/50 touch-manipulation flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
                 >
                   <Instagram className="w-5 h-5" />
                 </motion.button>
@@ -1183,7 +1199,8 @@ const RestaurantProfilePage = () => {
                   onClick={() => {
                     window.location.href = `mailto:?subject=Check out ${restaurant.name}&body=I found this amazing restaurant: ${window.location.href}`;
                   }}
-                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-slate-700 hover:bg-slate-600 text-white rounded-full transition-all shadow-lg hover:shadow-slate-600/50 touch-manipulation flex items-center justify-center"
+                  aria-label="Share via email"
+                  className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-slate-700 hover:bg-slate-600 text-white rounded-full transition-all shadow-lg hover:shadow-slate-600/50 touch-manipulation flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
                 >
                   <Mail className="w-5 h-5" />
                 </motion.button>

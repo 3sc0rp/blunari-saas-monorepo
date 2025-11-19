@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
+  Heart,
   MapPin,
   Search,
   Sparkles,
@@ -25,7 +26,7 @@ type TenantBase = Omit<GuideRestaurant, "blunari_score" | "tags" | "meta">;
 
 const Index: React.FC = () => {
   const navigate = useNavigate();
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [trending, setTrending] = useState<GuideRestaurant[]>([]);
@@ -133,13 +134,15 @@ const Index: React.FC = () => {
                   if (event.key === "Enter") handleSearch();
                 }}
                 placeholder="Search restaurants, cuisines, neighborhoods…"
-                className="h-11 rounded-full border border-slate-700 bg-slate-900/80 pl-11 pr-32 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/40"
+                aria-label="Search restaurants"
+                className="h-11 rounded-full border border-slate-700 bg-slate-900/80 pl-11 pr-32 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/40 transition-all"
               />
               <Button
                 type="button"
                 size="sm"
                 onClick={handleSearch}
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-9 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-4 text-xs font-semibold text-black shadow shadow-amber-500/40 hover:from-amber-500 hover:to-amber-700"
+                aria-label="Submit search"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-9 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-4 text-xs font-semibold text-black shadow shadow-amber-500/40 hover:from-amber-500 hover:to-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
               >
                 Search
               </Button>
@@ -151,6 +154,21 @@ const Index: React.FC = () => {
               <MapPin className="h-3 w-3" />
               Atlanta
             </Badge>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/favorites")}
+              className="rounded-full px-4 text-xs font-medium text-slate-200 hover:text-rose-300 hover:bg-rose-500/10"
+            >
+              <Heart className="mr-1.5 h-3.5 w-3.5" />
+              Saved
+              {favorites.length > 0 && (
+                <Badge className="ml-1.5 h-4 min-w-[16px] rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                  {favorites.length}
+                </Badge>
+              )}
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -201,13 +219,15 @@ const Index: React.FC = () => {
                     if (event.key === "Enter") handleSearch();
                   }}
                   placeholder="Search restaurants, cuisines, neighborhoods…"
-                  className="h-11 rounded-full border border-slate-700 bg-slate-900/80 pl-11 pr-28 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/40"
+                  aria-label="Search restaurants"
+                  className="h-12 rounded-full border border-slate-700 bg-slate-900/80 pl-11 pr-28 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/40 transition-all"
                 />
                 <Button
                   type="button"
                   size="sm"
                   onClick={handleSearch}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-9 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-4 text-xs font-semibold text-black shadow shadow-amber-500/40 hover:from-amber-500 hover:to-amber-700"
+                  aria-label="Submit search"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-4 text-xs font-semibold text-black shadow shadow-amber-500/40 hover:from-amber-500 hover:to-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                 >
                   Search
                 </Button>
@@ -216,35 +236,44 @@ const Index: React.FC = () => {
 
             {/* CTAs */}
             <div className="flex flex-wrap gap-3 pt-2">
-              <Button
-                type="button"
-                onClick={() => navigate("/restaurants")}
-                className="h-11 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-6 text-sm font-semibold text-black shadow shadow-amber-500/40 hover:from-amber-500 hover:to-amber-700"
-              >
-                Explore all restaurants
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate("/lists/top-20-atlanta-restaurants-2025")}
-                className="h-11 rounded-full border-slate-700 bg-transparent px-6 text-sm font-semibold text-slate-100 hover:border-amber-500 hover:text-amber-300"
-              >
-                View Blunari Picks
-              </Button>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="button"
+                  onClick={() => navigate("/restaurants")}
+                  className="h-12 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-8 text-sm font-semibold text-black shadow-lg shadow-amber-500/40 hover:from-amber-500 hover:to-amber-700 hover:shadow-xl hover:shadow-amber-500/50 transition-all"
+                >
+                  Explore all restaurants
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/lists/top-20-atlanta-restaurants-2025")}
+                  className="h-12 rounded-full border-2 border-slate-700 bg-transparent px-8 text-sm font-semibold text-slate-100 hover:border-amber-500 hover:bg-amber-500/10 hover:text-amber-300 transition-all"
+                >
+                  View Blunari Picks
+                </Button>
+              </motion.div>
             </div>
 
             {/* Quick hero chips */}
             <div className="mt-4 flex flex-wrap gap-2">
-              {heroCategories.map((category) => (
-                <button
+              {heroCategories.map((category, idx) => (
+                <motion.button
                   key={category.label}
                   type="button"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: 0.2 + idx * 0.05 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => handleCategoryClick(category)}
-                  className="rounded-full border border-slate-700/80 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-slate-100 shadow-sm hover:border-amber-500 hover:text-amber-300"
+                  className="rounded-full border border-slate-700/80 bg-slate-900/80 px-4 py-2 text-xs font-medium text-slate-100 shadow-sm hover:border-amber-500 hover:bg-amber-500/10 hover:text-amber-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 >
                   {category.label}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -366,11 +395,17 @@ const Index: React.FC = () => {
           <h2 className="text-lg font-semibold text-white sm:text-xl">
             Explore by category
           </h2>
-          <div className="flex flex-wrap gap-2">
-            {exploreCategories.map((category) => (
-              <button
+          <div className="flex flex-wrap gap-3">
+            {exploreCategories.map((category, idx) => (
+              <motion.button
                 key={category.label}
                 type="button"
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: idx * 0.05 }}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() =>
                   handleCategoryClick({
                     label: category.label,
@@ -378,10 +413,10 @@ const Index: React.FC = () => {
                     tagParam: category.tagParam,
                   })
                 }
-                className="rounded-full border border-slate-700/80 bg-slate-900/80 px-4 py-2 text-xs font-medium text-slate-100 hover:border-amber-500 hover:text-amber-300"
+                className="rounded-full border border-slate-700/80 bg-slate-900/80 px-5 py-2.5 text-sm font-medium text-slate-100 hover:border-amber-500 hover:bg-amber-500/10 hover:text-amber-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
                 {category.label}
-              </button>
+              </motion.button>
             ))}
           </div>
         </section>

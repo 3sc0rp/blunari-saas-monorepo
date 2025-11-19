@@ -63,6 +63,7 @@ const DashboardHome = lazy(() => import(/* webpackChunkName: "dashboard-home" */
 // Marketplace pages (consumer-facing)
 const RestaurantDiscoveryPage = lazy(() => import(/* webpackChunkName: "discovery" */ "./pages/RestaurantDiscoveryPage"));
 const RestaurantProfilePage = lazy(() => import(/* webpackChunkName: "restaurant-profile" */ "./pages/RestaurantProfilePage"));
+const FavoritesPage = lazy(() => import(/* webpackChunkName: "favorites" */ "./pages/FavoritesPage"));
 const ListsPage = lazy(() => import(/* webpackChunkName: "lists" */ "./pages/ListsPage"));
 const ListDetailPage = lazy(() => import(/* webpackChunkName: "list-detail" */ "./pages/ListDetailPage"));
 const ClaimPage = lazy(() => import(/* webpackChunkName: "claim" */ "./pages/ClaimPage"));
@@ -225,6 +226,14 @@ function App() {
                               element={
                                 <Suspense fallback={<LazyLoadingFallback component="Catering" />}>
                                   <CateringGuidePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="/favorites"
+                              element={
+                                <Suspense fallback={<LazyLoadingFallback component="Favorites" />}>
+                                  <FavoritesPage />
                                 </Suspense>
                               }
                             />

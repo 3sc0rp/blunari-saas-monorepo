@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, MapPin, Star, ChefHat, SlidersHorizontal, X, Utensils, ArrowLeft, 
-  TrendingUp, Sparkles, Clock, CheckCircle2, Filter, ArrowUpDown, Loader2, ChevronRight
+  TrendingUp, Sparkles, Clock, CheckCircle2, Filter, ArrowUpDown, Loader2, ChevronRight, Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -338,6 +338,16 @@ const RestaurantDiscoveryPage = () => {
                 <MapPin className="w-3 h-3 mr-1" />
                 Atlanta, GA
               </Badge>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/favorites")}
+                className="rounded-full px-3 text-xs font-medium text-slate-200 hover:text-rose-300 hover:bg-rose-500/10"
+              >
+                <Heart className="mr-1.5 h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Saved</span>
+              </Button>
             </div>
           </div>
 
@@ -372,7 +382,8 @@ const RestaurantDiscoveryPage = () => {
               <SheetTrigger asChild>
                 <Button
                   variant="outline"
-                  className="h-14 px-5 border-2 border-slate-700 bg-slate-800 hover:bg-slate-700 text-white lg:hidden"
+                  aria-label={`Open filters${activeFiltersCount > 0 ? ` (${activeFiltersCount} active)` : ''}`}
+                  className="h-14 px-5 border-2 border-slate-700 bg-slate-800 hover:bg-slate-700 text-white lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                 >
                   <SlidersHorizontal className="w-5 h-5 mr-2" />
                   Filters

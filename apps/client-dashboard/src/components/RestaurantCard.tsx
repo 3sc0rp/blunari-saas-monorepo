@@ -56,9 +56,19 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
       whileHover={{ y: -8, scale: 1.01 }}
+      className="h-full"
     >
       <Card
-        className="bg-slate-950/60 backdrop-blur-xl border border-slate-800/70 hover:border-amber-500/70 transition-all duration-300 cursor-pointer group overflow-hidden h-full hover:shadow-2xl hover:shadow-amber-500/20 rounded-2xl"
+        role="article"
+        tabIndex={0}
+        aria-label={`${restaurant.name} - ${neighborhood || 'Atlanta'}`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+        className="bg-slate-950/60 backdrop-blur-xl border border-slate-800/70 hover:border-amber-500/70 transition-all duration-300 cursor-pointer group overflow-hidden h-full hover:shadow-2xl hover:shadow-amber-500/20 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}

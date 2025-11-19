@@ -168,9 +168,13 @@ const ListDetailPage: React.FC = () => {
                 );
 
                 return (
-                  <div
+                  <motion.div
                     key={restaurant.id}
-                    className="grid gap-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-3 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)]"
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="grid gap-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,2fr)] hover:border-slate-700 transition-colors"
                   >
                     <RestaurantCard
                       restaurant={restaurant}
@@ -178,23 +182,26 @@ const ListDetailPage: React.FC = () => {
                       isFavorite={isFavorite(restaurant.slug)}
                       onToggleFavorite={() => toggleFavorite(restaurant.slug)}
                     />
-                    <div className="flex flex-col justify-between gap-3 px-1 py-2 text-sm text-slate-300">
-                      <div className="space-y-2">
-                        <p className="font-semibold text-white">
-                          Why we love it
-                        </p>
-                        <p className="text-sm text-slate-300">
+                    <div className="flex flex-col justify-between gap-4 px-2 py-2 text-sm text-slate-300">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1 w-8 rounded-full bg-gradient-to-r from-amber-500 to-rose-500" />
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            Why we love it
+                          </p>
+                        </div>
+                        <p className="text-sm leading-relaxed text-slate-200">
                           {commentary?.commentary ??
                             "A standout in its category and a reliable go-to for locals."}
                         </p>
                         {commentary?.highlightTags &&
                           commentary.highlightTags.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-2 text-[11px]">
+                            <div className="mt-2 flex flex-wrap gap-2">
                               {commentary.highlightTags.map((tag) => (
                                 <Badge
                                   key={tag}
                                   variant="outline"
-                                  className="border-slate-700 bg-slate-900/60 text-slate-200"
+                                  className="border-slate-700 bg-slate-900/60 text-xs text-slate-200"
                                 >
                                   {tag}
                                 </Badge>
@@ -210,14 +217,14 @@ const ListDetailPage: React.FC = () => {
                           onClick={() =>
                             navigate(`/restaurants/${restaurant.slug}`)
                           }
-                          className="inline-flex items-center gap-1 px-0 text-xs font-medium text-amber-300 hover:text-amber-200"
+                          className="inline-flex items-center gap-1 px-0 text-xs font-medium text-amber-300 hover:text-amber-200 hover:gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                         >
                           View full profile
                           <ArrowRight className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
