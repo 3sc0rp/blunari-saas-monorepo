@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ScrollToTop from "@/components/ScrollToTop";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantBrandingProvider } from "@/contexts/TenantBrandingContext";
@@ -27,6 +27,7 @@ import LazyLoadingFallback, {
   DashboardLoadingFallback 
 } from "@/components/LazyLoadingFallback";
 import { WebVitalsMonitor } from "@/components/WebVitalsMonitor";
+import { FavoritesProvider } from "@/contexts/FavoritesContext";
 
 // Immediate load components (small, essential)
 import Index from "./pages/Index";
@@ -62,6 +63,10 @@ const DashboardHome = lazy(() => import(/* webpackChunkName: "dashboard-home" */
 // Marketplace pages (consumer-facing)
 const RestaurantDiscoveryPage = lazy(() => import(/* webpackChunkName: "discovery" */ "./pages/RestaurantDiscoveryPage"));
 const RestaurantProfilePage = lazy(() => import(/* webpackChunkName: "restaurant-profile" */ "./pages/RestaurantProfilePage"));
+const ListsPage = lazy(() => import(/* webpackChunkName: "lists" */ "./pages/ListsPage"));
+const ListDetailPage = lazy(() => import(/* webpackChunkName: "list-detail" */ "./pages/ListDetailPage"));
+const ClaimPage = lazy(() => import(/* webpackChunkName: "claim" */ "./pages/ClaimPage"));
+const CateringGuidePage = lazy(() => import(/* webpackChunkName: "catering-guide" */ "./pages/CateringGuidePage"));
 
 // Optimized QueryClient with inline configuration to prevent module loading issues
 // Lazy initialization ensures React is fully loaded before QueryClient is created
@@ -140,11 +145,12 @@ function App() {
             {/* Public widget routes are served by a separate entry (widget-main). */}
             <TenantBrandingProvider>
               <AuthProvider>
-                <ModeProvider>
-                  <ModeTransitionProvider>
-                    <NavigationProvider>
-                      <FullscreenProvider>
-                        <TooltipProvider>
+                <FavoritesProvider>
+                  <ModeProvider>
+                    <ModeTransitionProvider>
+                      <NavigationProvider>
+                        <FullscreenProvider>
+                          <TooltipProvider>
                         <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
                           <ScrollToTop />
                           <Routes>
@@ -153,16 +159,75 @@ function App() {
                             <Route path="/auth/*" element={<Auth />} />
                             
                             {/* Public marketplace routes */}
-                            <Route path="/discover" element={
-                              <Suspense fallback={<LazyLoadingFallback component="Restaurant Discovery" />}>
-                                <RestaurantDiscoveryPage />
-                              </Suspense>
-                            } />
-                            <Route path="/restaurant/:slug" element={
-                              <Suspense fallback={<LazyLoadingFallback component="Restaurant Profile" />}>
-                                <RestaurantProfilePage />
-                              </Suspense>
-                            } />
+                            <Route
+                              path="/restaurants"
+                              element={
+                                <Suspense fallback={<LazyLoadingFallback component="Restaurant Discovery" />}>
+                                  <RestaurantDiscoveryPage />
+                                </Suspense>
+                              }
+                            />
+                            {/* Backwards-compatible legacy routes */}
+                            <Route
+                              path="/discover"
+                              element={
+                                <Suspense fallback={<LazyLoadingFallback component="Restaurant Discovery" />}>
+                                  <RestaurantDiscoveryPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="/restaurants/:slug"
+                              element={
+                                <Suspense fallback={<LazyLoadingFallback component="Restaurant Profile" />}>
+                                  <RestaurantProfilePage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="/restaurant/:slug"
+                              element={
+                                <Suspense fallback={<LazyLoadingFallback component="Restaurant Profile" />}>
+                                  <RestaurantProfilePage />
+                                </Suspense>
+                              }
+                            />
+
+                            {/* Curated lists */}
+                            <Route
+                              path="/lists"
+                              element={
+                                <Suspense fallback={<LazyLoadingFallback component="Curated Lists" />}>
+                                  <ListsPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="/lists/:slug"
+                              element={
+                                <Suspense fallback={<LazyLoadingFallback component="Curated List Detail" />}>
+                                  <ListDetailPage />
+                                </Suspense>
+                              }
+                            />
+
+                            {/* Claim + catering placeholder */}
+                            <Route
+                              path="/claim"
+                              element={
+                                <Suspense fallback={<LazyLoadingFallback component="Claim Restaurant" />}>
+                                  <ClaimPage />
+                                </Suspense>
+                              }
+                            />
+                            <Route
+                              path="/catering"
+                              element={
+                                <Suspense fallback={<LazyLoadingFallback component="Catering" />}>
+                                  <CateringGuidePage />
+                                </Suspense>
+                              }
+                            />
                             
                             {/* Public order/booking tracking */}
                             <Route path="/booking/:bookingId" element={
@@ -326,11 +391,12 @@ function App() {
                             </>
                           )}
                         </div>
-                        </TooltipProvider>
-                      </FullscreenProvider>
-                    </NavigationProvider>
-                  </ModeTransitionProvider>
-                </ModeProvider>
+                          </TooltipProvider>
+                        </FullscreenProvider>
+                      </NavigationProvider>
+                    </ModeTransitionProvider>
+                  </ModeProvider>
+                </FavoritesProvider>
               </AuthProvider>
             </TenantBrandingProvider>
           </BrowserRouter>

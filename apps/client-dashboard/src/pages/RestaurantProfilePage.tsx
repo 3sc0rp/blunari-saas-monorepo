@@ -1,13 +1,40 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useSwipeable } from "react-swipeable";
 import {
-  ArrowLeft, MapPin, Phone, Globe, Clock, Star, Heart, Share2, 
-  Calendar, Users, Utensils, ChefHat, Image as ImageIcon, MessageSquare,
-  Check, X, Wifi, ParkingCircle, Music, Accessibility, UtensilsCrossed,
-  ThumbsUp, Facebook, Twitter, Instagram, Mail, Maximize2, ChevronLeft, ChevronRight,
-  Sparkles, TrendingUp, CheckCircle2
+  ArrowLeft,
+  MapPin,
+  Phone,
+  Globe,
+  Clock,
+  Star,
+  Heart,
+  Share2,
+  Calendar,
+  Users,
+  Utensils,
+  ChefHat,
+  Image as ImageIcon,
+  MessageSquare,
+  Check,
+  X,
+  Wifi,
+  ParkingCircle,
+  Music,
+  Accessibility,
+  UtensilsCrossed,
+  ThumbsUp,
+  Facebook,
+  Twitter,
+  Instagram,
+  Mail,
+  Maximize2,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  TrendingUp,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,43 +46,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { LazyImage } from "@/components/LazyImage";
 import { getImagePlaceholder } from "@/utils/image-utils";
+import { RestaurantCard } from "@/components/RestaurantCard";
+import type { GuideRestaurant } from "@/types/dining-guide";
+import { mapTenantToGuideRestaurant, mapTenantsToGuideRestaurants } from "@/data/atlanta-guide";
+import { useFavorites } from "@/contexts/FavoritesContext";
 
 // Import existing booking and catering widgets
 import BookingWidget from "@/components/booking/BookingWidget";
 import CateringWidget from "@/components/catering/CateringWidget";
 
-interface Restaurant {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  cuisine_types: string[] | null;
-  price_range: string | null;
-  hero_image_url: string | null;
-  gallery_images: string[] | null;
-  location_address: string | null;
-  location_city: string | null;
-  location_state: string | null;
-  location_zip: string | null;
-  location_neighborhood: string | null;
-  average_rating: number | null;
-  total_reviews: number | null;
-  total_bookings: number | null;
-  accepts_reservations: boolean | null;
-  accepts_catering: boolean | null;
-  parking_available: boolean | null;
-  outdoor_seating: boolean | null;
-  private_dining: boolean | null;
-  live_music: boolean | null;
-  wifi_available: boolean | null;
-  wheelchair_accessible: boolean | null;
-  dress_code: string | null;
-  website_url: string | null;
-  contact_phone: string | null;
-  contact_email: string | null;
-  menu_url: string | null;
-  dietary_options: string[] | null;
-}
+type Restaurant = GuideRestaurant;
+type TenantBase = Omit<GuideRestaurant, "blunari_score" | "tags" | "meta">;
 
 interface Review {
   id: string;
@@ -76,11 +77,12 @@ const RestaurantProfilePage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isFavorite: isFavoriteGlobal, toggleFavorite: toggleFavoriteGlobal } = useFavorites();
   
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [similar, setSimilar] = useState<Restaurant[]>([]);
   const [selectedTab, setSelectedTab] = useState("overview");
   const [selectedImage, setSelectedImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -157,7 +159,10 @@ const RestaurantProfilePage = () => {
         .single();
 
       if (error) throw error;
-      setRestaurant(data as Restaurant);
+      const tenant = data as TenantBase;
+      const guideRestaurant = mapTenantToGuideRestaurant(tenant);
+      setRestaurant(guideRestaurant);
+      void fetchSimilar(guideRestaurant);
     } catch (error) {
       console.error("Error fetching restaurant:", error);
       toast({
@@ -165,9 +170,41 @@ const RestaurantProfilePage = () => {
         description: "The restaurant you're looking for doesn't exist.",
         variant: "destructive",
       });
-      navigate("/discover");
+      navigate("/restaurants");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSimilar = async (base: Restaurant) => {
+    try {
+      let query = supabase
+        .from("tenants")
+        .select("*")
+        .eq("is_published", true)
+        .neq("slug", base.slug);
+
+      if (base.location_city) {
+        query = query.eq("location_city", base.location_city);
+      }
+
+      const primaryCuisine = base.cuisine_types?.[0];
+      if (primaryCuisine) {
+        query = query.overlaps("cuisine_types", [primaryCuisine]);
+      }
+
+      if (base.price_range) {
+        query = query.eq("price_range", base.price_range);
+      }
+
+      const { data, error } = await query.limit(4);
+      if (error) throw error;
+
+      const tenants = (data ?? []) as TenantBase[];
+      const mapped = mapTenantsToGuideRestaurants(tenants);
+      setSimilar(mapped as Restaurant[]);
+    } catch (error) {
+      console.error("Error fetching similar restaurants:", error);
     }
   };
 
@@ -212,11 +249,20 @@ const RestaurantProfilePage = () => {
     }
   };
 
+  const isFavorite = useMemo(
+    () => (restaurant ? isFavoriteGlobal(restaurant.slug) : false),
+    [isFavoriteGlobal, restaurant],
+  );
+
   const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
+    if (!restaurant) return;
+    const next = !isFavorite;
+    toggleFavoriteGlobal(restaurant.slug);
     toast({
-      title: isFavorite ? "Removed from favorites" : "Added to favorites",
-      description: isFavorite ? "You can add it back anytime" : "Find it in your favorites list",
+      title: next ? "Added to favorites" : "Removed from favorites",
+      description: next
+        ? "Find it in your favorites on the home and lists pages."
+        : "You can add it back anytime.",
     });
   };
 
@@ -237,7 +283,7 @@ const RestaurantProfilePage = () => {
 
   const allImages = [
     restaurant.hero_image_url,
-    ...(restaurant.gallery_images || [])
+    ...(restaurant.gallery_images || []),
   ].filter(Boolean) as string[];
 
   const features = [
@@ -247,7 +293,10 @@ const RestaurantProfilePage = () => {
     { icon: Music, label: "Live Music", available: restaurant.live_music },
     { icon: Wifi, label: "WiFi", available: restaurant.wifi_available },
     { icon: Accessibility, label: "Accessible", available: restaurant.wheelchair_accessible },
-  ].filter(f => f.available);
+  ].filter((f) => f.available);
+
+  const highlights = restaurant.meta?.highlights ?? [];
+  const picks = restaurant.meta?.recommendedDishes ?? [];
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -264,7 +313,7 @@ const RestaurantProfilePage = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => navigate("/discover")}
+                  onClick={() => navigate("/restaurants")}
                   className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
@@ -485,7 +534,7 @@ const RestaurantProfilePage = () => {
                 </div>
               </>
             )}
-          </div>
+        </div>
         </motion.div>
       )}
 
@@ -493,7 +542,7 @@ const RestaurantProfilePage = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Restaurant Header */}
+              {/* Restaurant Header */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -519,15 +568,34 @@ const RestaurantProfilePage = () => {
                 </div>
               </div>
 
-              {/* Rating */}
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-lg">
+              {/* Score & Rating */}
+              <div className="flex flex-wrap items-center gap-4 mb-4">
+                {restaurant.blunari_score != null && (
+                  <div className="flex items-center gap-3 rounded-full bg-slate-900/90 px-4 py-2 border border-amber-500/50 shadow-sm shadow-amber-500/20">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-bold text-black">
+                      {restaurant.blunari_score}
+                    </div>
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-xs font-semibold text-slate-200">
+                        Blunari Score
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        {restaurant.meta?.badge ?? "Editor’s pick for Atlanta"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 rounded-full bg-slate-800 px-4 py-2">
                   <Star className="w-5 h-5 text-amber-500 fill-current" />
                   <span className="text-2xl font-bold text-white">
-                    {restaurant.average_rating ? restaurant.average_rating.toFixed(1) : "New"}
+                    {restaurant.average_rating
+                      ? restaurant.average_rating.toFixed(1)
+                      : "New"}
                   </span>
                   {restaurant.total_reviews && restaurant.total_reviews > 0 && (
-                    <span className="text-slate-400">({restaurant.total_reviews} reviews)</span>
+                    <span className="text-slate-400">
+                      ({restaurant.total_reviews} reviews)
+                    </span>
                   )}
                 </div>
                 {restaurant.total_bookings && restaurant.total_bookings > 0 && (
@@ -538,8 +606,53 @@ const RestaurantProfilePage = () => {
                 )}
               </div>
 
+              {/* Primary CTAs */}
+              <div className="mt-2 flex flex-wrap gap-3">
+                {restaurant.menu_url && (
+                  <Button
+                    className="rounded-full bg-amber-500 px-5 text-sm font-semibold text-black hover:bg-amber-600"
+                    onClick={() =>
+                      window.open(restaurant.menu_url as string, "_blank")
+                    }
+                  >
+                    <Utensils className="mr-2 h-4 w-4" />
+                    View menu
+                  </Button>
+                )}
+                {restaurant.contact_phone && (
+                  <Button
+                    variant="outline"
+                    className="rounded-full border-slate-700 px-4 text-sm text-slate-100 hover:border-amber-500 hover:text-amber-300"
+                    onClick={() => {
+                      window.location.href = `tel:${restaurant.contact_phone}`;
+                    }}
+                  >
+                    <Phone className="mr-2 h-4 w-4" />
+                    Call to reserve
+                  </Button>
+                )}
+                {restaurant.location_address && (
+                  <Button
+                    variant="outline"
+                    className="rounded-full border-slate-700 px-4 text-sm text-slate-100 hover:border-amber-500 hover:text-amber-300"
+                    onClick={() => {
+                      const query = encodeURIComponent(
+                        `${restaurant.name} ${restaurant.location_address} ${restaurant.location_city ?? ""}`,
+                      );
+                      window.open(
+                        `https://www.google.com/maps/search/?api=1&query=${query}`,
+                        "_blank",
+                      );
+                    }}
+                  >
+                    <MapPin className="mr-2 h-4 w-4" />
+                    Directions
+                  </Button>
+                )}
+              </div>
+
               {/* Quick Actions */}
-              <div className="flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                 {restaurant.accepts_reservations && (
                   <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/50">
                     <Check className="w-3 h-3 mr-1" />
@@ -552,12 +665,13 @@ const RestaurantProfilePage = () => {
                     Catering Services
                   </Badge>
                 )}
-                {features.length > 0 && features.slice(0, 2).map((feature) => (
-                  <Badge key={feature.label} variant="secondary">
-                    <feature.icon className="w-3 h-3 mr-1" />
-                    {feature.label}
-                  </Badge>
-                ))}
+                {features.length > 0 &&
+                  features.slice(0, 2).map((feature) => (
+                    <Badge key={feature.label} variant="secondary">
+                      <feature.icon className="w-3 h-3 mr-1" />
+                      {feature.label}
+                    </Badge>
+                  ))}
               </div>
             </motion.div>
 
@@ -608,6 +722,77 @@ const RestaurantProfilePage = () => {
                     <CardContent className="p-6">
                       <h3 className="text-xl font-semibold text-white mb-3">About</h3>
                       <p className="text-slate-300 leading-relaxed">{restaurant.description}</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Highlights */}
+                {highlights.length > 0 && (
+                  <Card className="bg-slate-900/60 border-slate-800">
+                    <CardContent className="p-6 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-amber-400" />
+                        <h3 className="text-xl font-semibold text-white">
+                          Highlights
+                        </h3>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {highlights.map((item) => (
+                          <Badge
+                            key={item}
+                            variant="outline"
+                            className="rounded-full border-slate-700 bg-slate-900/80 text-xs text-slate-200"
+                          >
+                            {item}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Blunari Picks */}
+                {picks.length > 0 && (
+                  <Card className="bg-slate-900/60 border-slate-800">
+                    <CardContent className="p-6 space-y-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-emerald-400" />
+                          <h3 className="text-xl font-semibold text-white">
+                            Blunari Picks
+                          </h3>
+                        </div>
+                        <span className="text-xs text-slate-400">
+                          Recommended dishes from our editors
+                        </span>
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {picks.map((dish) => (
+                          <div
+                            key={dish.name}
+                            className="rounded-xl bg-slate-900/80 p-4 border border-slate-800/80"
+                          >
+                            <p className="text-sm font-semibold text-white">
+                              {dish.name}
+                            </p>
+                            {dish.highlightTagline && (
+                              <p className="mt-1 text-xs text-emerald-300">
+                                {dish.highlightTagline}
+                              </p>
+                            )}
+                            {dish.description && (
+                              <p className="mt-1 text-xs text-slate-400">
+                                {dish.description}
+                              </p>
+                            )}
+                            {dish.price && (
+                              <p className="mt-2 text-xs font-medium text-slate-200">
+                                {dish.price}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -894,6 +1079,56 @@ const RestaurantProfilePage = () => {
           </div>
         </div>
 
+        {/* Similar places */}
+        {similar.length > 0 && (
+          <section className="mt-12 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-xl font-semibold text-white">
+                Similar places
+              </h3>
+              <span className="text-xs text-slate-400">
+                Based on neighborhood, cuisine, and vibe
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {similar.map((item, index) => (
+                <RestaurantCard
+                  key={item.id}
+                  restaurant={item}
+                  index={index}
+                  isFavorite={isFavoriteGlobal(item.slug)}
+                  onToggleFavorite={() => toggleFavoriteGlobal(item.slug)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Claim profile CTA */}
+        <section className="mt-12">
+          <Card className="bg-slate-900/70 border-slate-800">
+            <CardContent className="flex flex-col items-start justify-between gap-4 p-6 md:flex-row md:items-center">
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  Own this restaurant? Claim your profile.
+                </h3>
+                <p className="mt-1 text-sm text-slate-400">
+                  Verify ownership to update details, photos, and connect your
+                  Blunari reservations and catering tools.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full border-amber-500 text-sm font-semibold text-amber-300 hover:bg-amber-500 hover:text-black"
+                onClick={() => navigate("/claim")}
+              >
+                Claim this restaurant
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Social Sharing Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -911,7 +1146,12 @@ const RestaurantProfilePage = () => {
                 <motion.button
                   whileHover={{ scale: 1.1, y: -3 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
+                  onClick={() =>
+                    window.open(
+                      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`,
+                      "_blank",
+                    )
+                  }
                   className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all shadow-lg hover:shadow-blue-600/50 touch-manipulation flex items-center justify-center"
                 >
                   <Facebook className="w-5 h-5" />
@@ -919,7 +1159,12 @@ const RestaurantProfilePage = () => {
                 <motion.button
                   whileHover={{ scale: 1.1, y: -3 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=Check%20out%20${encodeURIComponent(restaurant.name)}%20on%20Blunari!`, '_blank')}
+                  onClick={() =>
+                    window.open(
+                      `https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=Check%20out%20${encodeURIComponent(restaurant.name)}%20on%20Blunari!`,
+                      "_blank",
+                    )
+                  }
                   className="p-4 w-14 h-14 min-w-[56px] min-h-[56px] bg-sky-500 hover:bg-sky-600 text-white rounded-full transition-all shadow-lg hover:shadow-sky-500/50 touch-manipulation flex items-center justify-center"
                 >
                   <Twitter className="w-5 h-5" />

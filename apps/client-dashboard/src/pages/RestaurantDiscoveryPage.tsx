@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -29,27 +29,11 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { RestaurantCard } from "@/components/RestaurantCard";
-import PullToRefresh from "react-simple-pull-to-refresh";
+import { useFavorites } from "@/contexts/FavoritesContext";
+import type { GuideRestaurant } from "@/types/dining-guide";
+import { mapTenantsToGuideRestaurants } from "@/data/atlanta-guide";
 
-interface Restaurant {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  cuisine_types: string[] | null;
-  price_range: string | null;
-  hero_image_url: string | null;
-  location_city: string | null;
-  location_neighborhood: string | null;
-  average_rating: number | null;
-  total_reviews: number | null;
-  is_featured: boolean | null;
-  accepts_reservations: boolean | null;
-  accepts_catering: boolean | null;
-  outdoor_seating: boolean | null;
-  parking_available: boolean | null;
-  dietary_options: string[] | null;
-}
+type TenantBase = Omit<GuideRestaurant, "blunari_score" | "tags" | "meta">;
 
 const CUISINE_TYPES = [
   "Italian", "Japanese", "American", "Mexican", "Chinese", 
@@ -64,8 +48,9 @@ const DIETARY_OPTIONS = [
 const RestaurantDiscoveryPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { isFavorite, toggleFavorite } = useFavorites();
   
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [restaurants, setRestaurants] = useState<GuideRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
@@ -166,7 +151,7 @@ const RestaurantDiscoveryPage = () => {
         .from("tenants")
         .select("*")
         .eq("is_published", true)
-        .eq("location_city", "Atlanta");
+        .in("location_city", ["Atlanta", "Decatur"]);
 
       // Search query (using debounced value)
       if (debouncedSearch) {
@@ -229,8 +214,9 @@ const RestaurantDiscoveryPage = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      
-      const newRestaurants = (data as Restaurant[]) || [];
+
+      const tenants = (data ?? []) as TenantBase[];
+      const newRestaurants = mapTenantsToGuideRestaurants(tenants);
       
       // Check if we got fewer items than requested (end of results)
       if (newRestaurants.length < ITEMS_PER_PAGE) {
@@ -335,17 +321,10 @@ const RestaurantDiscoveryPage = () => {
               </motion.div>
             </div>
             <div className="flex items-center gap-3">
-              <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20 hidden sm:flex">
+              <Badge className="hidden items-center gap-1 bg-amber-500/10 text-amber-500 border-amber-500/20 sm:flex">
                 <MapPin className="w-3 h-3 mr-1" />
                 Atlanta, GA
               </Badge>
-              <Button
-                variant="ghost"
-                className="text-white hover:text-amber-500 hover:bg-slate-800"
-                onClick={() => navigate("/auth")}
-              >
-                Sign In
-              </Button>
             </div>
           </div>
 
@@ -1104,6 +1083,8 @@ const RestaurantDiscoveryPage = () => {
                       key={restaurant.id}
                       restaurant={restaurant}
                       index={index}
+                      isFavorite={isFavorite(restaurant.slug)}
+                      onToggleFavorite={() => toggleFavorite(restaurant.slug)}
                     />
                   ))}
                 </div>

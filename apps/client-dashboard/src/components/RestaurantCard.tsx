@@ -1,204 +1,212 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { TrendingUp, Star, MapPin, ChefHat, ChevronRight } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { LazyImage } from '@/components/LazyImage';
-import { getImagePlaceholder } from '@/utils/image-utils';
-import { useRestaurantPrefetch } from '@/hooks/usePrefetch';
-
-interface Restaurant {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  cuisine_types: string[] | null;
-  price_range: string | null;
-  average_rating: number | null;
-  total_reviews: number | null;
-  hero_image_url: string | null;
-  location_city: string | null;
-  location_neighborhood: string | null;
-  is_featured: boolean | null;
-  accepts_reservations: boolean | null;
-  accepts_catering: boolean | null;
-  outdoor_seating: boolean | null;
-  parking_available: boolean | null;
-  dietary_options: string[] | null;
-}
+import React from "react";
+import { motion } from "framer-motion";
+import {
+  Heart,
+  MapPin,
+  Star,
+  Utensils,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { LazyImage } from "@/components/LazyImage";
+import { getImagePlaceholder } from "@/utils/image-utils";
+import type { GuideRestaurant, Tag } from "@/types/dining-guide";
+import { useRestaurantPrefetch } from "@/hooks/usePrefetch";
 
 interface RestaurantCardProps {
-  restaurant: Restaurant;
+  restaurant: GuideRestaurant;
   index: number;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
 }
 
-export const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, index }) => {
-  const { handleMouseEnter, handleMouseLeave, handleClick } = useRestaurantPrefetch(restaurant.slug);
+const renderTagBadge = (tag: Tag) => {
+  switch (tag) {
+    case "Fine dining":
+      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+    case "Romantic":
+      return "bg-rose-500/15 text-rose-200 border-rose-500/30";
+    case "Brunch":
+      return "bg-pink-500/15 text-pink-200 border-pink-500/30";
+    case "Group-friendly":
+      return "bg-emerald-500/15 text-emerald-200 border-emerald-500/30";
+    case "Late night":
+      return "bg-purple-500/15 text-purple-200 border-purple-500/30";
+    default:
+      return "bg-slate-800/60 text-slate-200 border-slate-700";
+  }
+};
 
-  // Price range is already a string like "$", "$$", "$$$" from database
-  // No need to format - just display as-is
-  const formatPriceRange = (priceRange: string) => {
-    return priceRange;
-  };
+export const RestaurantCard: React.FC<RestaurantCardProps> = ({
+  restaurant,
+  index,
+  isFavorite,
+  onToggleFavorite,
+}) => {
+  const { handleMouseEnter, handleMouseLeave, handleClick } =
+    useRestaurantPrefetch(restaurant.slug);
+
+  const neighborhood =
+    restaurant.location_neighborhood || restaurant.location_city;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
-      whileHover={{ y: -8 }}
+      whileHover={{ y: -8, scale: 1.01 }}
     >
       <Card
-        className="bg-slate-900/50 backdrop-blur-sm border-slate-800 hover:border-amber-500 transition-all duration-300 cursor-pointer group overflow-hidden h-full hover:shadow-2xl hover:shadow-amber-500/20"
+        className="bg-slate-950/60 backdrop-blur-xl border border-slate-800/70 hover:border-amber-500/70 transition-all duration-300 cursor-pointer group overflow-hidden h-full hover:shadow-2xl hover:shadow-amber-500/20 rounded-2xl"
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Image with gradient overlay - Lazy loaded & prefetched */}
-        <div className="relative h-56 overflow-hidden">
+        {/* Image with overlay & score */}
+        <div className="relative aspect-video overflow-hidden">
           {restaurant.hero_image_url ? (
-            <div className="relative w-full h-full group-hover:scale-110 transition-transform duration-500">
+            <div className="relative w-full h-full group-hover:scale-110 transition-transform duration-700 ease-out">
               <LazyImage
                 src={restaurant.hero_image_url}
                 alt={restaurant.name}
                 className="w-full h-full"
                 blurDataURL={getImagePlaceholder(restaurant.hero_image_url)}
               />
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-80 group-hover:opacity-60 transition-opacity duration-300" />
             </div>
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-amber-500/20 to-rose-500/20 flex items-center justify-center">
-              <ChefHat className="w-20 h-20 text-slate-600 group-hover:scale-110 transition-transform duration-300" />
+            <div className="w-full h-full bg-gradient-to-br from-amber-500/20 via-rose-500/20 to-indigo-500/20 flex items-center justify-center">
+              <Utensils className="w-16 h-16 text-slate-700" />
             </div>
           )}
-          
-          {/* Featured badge */}
-          {restaurant.is_featured && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="absolute top-3 left-3"
-            >
-              <Badge className="bg-amber-500 text-black border-0 shadow-lg font-semibold">
-                <TrendingUp className="w-3 h-3 mr-1" />
-                Featured
-              </Badge>
-            </motion.div>
+
+          {/* Blunari Score */}
+          {restaurant.blunari_score != null && (
+            <div className="absolute top-3 left-3">
+              <div className="rounded-full bg-slate-950/80 border border-amber-500/60 px-3 py-1.5 flex items-center gap-2 shadow-lg shadow-black/40">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-bold text-sm">
+                  {restaurant.blunari_score}
+                </div>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-xs text-slate-300 font-semibold">
+                    Blunari Score
+                  </span>
+                  {restaurant.average_rating != null && (
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                      {restaurant.average_rating.toFixed(1)}
+                      {restaurant.total_reviews != null &&
+                        restaurant.total_reviews > 0 && (
+                          <span className="text-slate-500">
+                            · {restaurant.total_reviews.toLocaleString()} reviews
+                          </span>
+                        )}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
 
-          {/* Quick action button (visible on hover) */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileHover={{ opacity: 1, y: 0 }}
-            className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300"
-          >
-            <Button
-              size="sm"
-              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-lg"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleClick();
+          {/* Neighborhood badge */}
+          {neighborhood && (
+            <Badge className="absolute bottom-3 left-3 bg-slate-950/80 text-slate-100 border-slate-700/80 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-1 text-xs font-medium">
+              <MapPin className="w-3 h-3 text-amber-400" />
+              {neighborhood}
+            </Badge>
+          )}
+
+          {/* Favorite toggle */}
+          {onToggleFavorite && (
+            <button
+              type="button"
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleFavorite();
               }}
+              className="absolute top-3 right-3 rounded-full bg-slate-950/80 border border-slate-700/80 p-2 text-slate-300 hover:text-rose-400 hover:border-rose-500/70 hover:bg-slate-900/90 transition-all duration-200"
             >
-              View Details
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </motion.div>
+              <Heart
+                className={`w-4 h-4 ${
+                  isFavorite ? "fill-rose-500 text-rose-500" : ""
+                }`}
+              />
+            </button>
+          )}
         </div>
 
-        <CardContent className="p-5">
-          <h3 className="text-xl font-bold text-white mb-2 group-hover:text-amber-400 transition-colors line-clamp-1">
+        <CardContent className="p-5 space-y-3">
+          <h3 className="text-lg font-semibold text-white group-hover:text-amber-300 transition-colors line-clamp-1">
             {restaurant.name}
           </h3>
-          
-          {/* Description */}
-          {restaurant.description && (
-            <p className="text-slate-400 text-sm mb-3 line-clamp-2">
-              {restaurant.description}
+
+          {restaurant.meta?.tagline || restaurant.description ? (
+            <p className="text-sm text-slate-400 line-clamp-2">
+              {restaurant.meta?.tagline ?? restaurant.description}
             </p>
-          )}
+          ) : null}
 
-          {/* Enhanced rating display */}
-          <div className="flex items-center gap-3 mb-3 pb-3 border-b border-slate-800">
-            {restaurant.average_rating ? (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`w-4 h-4 ${
-                        star <= Math.round(restaurant.average_rating!)
-                          ? "fill-amber-500 text-amber-500"
-                          : "text-slate-600"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="font-bold text-white">{restaurant.average_rating.toFixed(1)}</span>
-              </div>
-            ) : (
-              <span className="text-slate-500 text-sm">No reviews yet</span>
-            )}
-            {restaurant.total_reviews && restaurant.total_reviews > 0 && (
-              <span className="text-slate-500 text-sm">({restaurant.total_reviews} reviews)</span>
-            )}
-          </div>
-
-          {/* Cuisine types */}
-          {restaurant.cuisine_types && restaurant.cuisine_types.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {restaurant.cuisine_types.slice(0, 3).map((cuisine) => (
-                <Badge 
-                  key={cuisine} 
-                  variant="secondary" 
-                  className="text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+          {/* Info pills: cuisines, price, tags */}
+          <div className="flex flex-wrap gap-2 pt-1">
+            {(restaurant.cuisine_types ?? [])
+              .slice(0, 2)
+              .map((cuisine) => (
+                <Badge
+                  key={cuisine}
+                  variant="outline"
+                  className="text-[11px] border-slate-700 text-slate-200 bg-slate-900/60"
                 >
                   {cuisine}
                 </Badge>
               ))}
-              {restaurant.cuisine_types.length > 3 && (
-                <Badge 
-                  variant="secondary" 
-                  className="text-xs bg-slate-800 text-slate-500"
-                >
-                  +{restaurant.cuisine_types.length - 3}
-                </Badge>
-              )}
-            </div>
-          )}
-
-          {/* Location & Price */}
-          <div className="flex items-center justify-between text-sm text-slate-400 mb-3">
-            <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4 text-amber-500" />
-              <span className="font-medium">{restaurant.location_neighborhood || restaurant.location_city}</span>
-            </div>
             {restaurant.price_range && (
-              <span className="text-amber-500 font-bold">{formatPriceRange(restaurant.price_range)}</span>
+              <Badge
+                variant="outline"
+                className="text-[11px] border-amber-500/60 text-amber-300 bg-amber-500/10"
+              >
+                {restaurant.price_range}
+              </Badge>
             )}
+            {restaurant.tags.slice(0, 3).map((tag) => (
+              <Badge
+                key={tag}
+                variant="outline"
+                className={`text-[11px] border ${renderTagBadge(tag)}`}
+              >
+                {tag}
+              </Badge>
+            ))}
           </div>
 
-          {/* Action badges */}
-          <div className="flex flex-wrap gap-2">
-            {restaurant.accepts_reservations && (
-              <Badge 
-                variant="outline" 
-                className="text-xs border-emerald-500/50 text-emerald-400 bg-emerald-500/5"
-              >
-                Reservations
-              </Badge>
-            )}
-            {restaurant.accepts_catering && (
-              <Badge 
-                variant="outline" 
-                className="text-xs border-amber-500/50 text-amber-400 bg-amber-500/5"
-              >
-                Catering
-              </Badge>
-            )}
+          {/* Subtle footer with reservations / catering */}
+          <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
+            <div className="flex items-center gap-2">
+              {restaurant.accepts_reservations && (
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  Reservations
+                </span>
+              )}
+              {restaurant.accepts_catering && (
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  Catering
+                </span>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-3 text-[11px] text-amber-300 hover:text-black hover:bg-amber-400/90"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleClick();
+              }}
+            >
+              View details
+            </Button>
           </div>
         </CardContent>
       </Card>

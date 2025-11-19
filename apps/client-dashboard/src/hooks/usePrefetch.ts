@@ -1,5 +1,5 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Hook for prefetching restaurant profile page on hover
@@ -32,17 +32,17 @@ export const useRestaurantPrefetch = (slug: string) => {
     timerRef.current = setTimeout(() => {
       try {
         // Prefetch the route component
-        import('../pages/RestaurantProfilePage').catch(() => {
+        import("../pages/RestaurantProfilePage").catch(() => {
           // Silent fail - route will load normally on click
         });
 
         // Optionally prefetch restaurant data here
         // Could call supabase to warm cache
-        
+
         prefetchedRef.current = true;
       } catch (error) {
         // Non-critical error
-        console.debug('Prefetch failed:', error);
+        console.debug("Prefetch failed:", error);
       }
     }, 200);
   }, []);
@@ -59,7 +59,7 @@ export const useRestaurantPrefetch = (slug: string) => {
       if (e) {
         e.stopPropagation();
       }
-      navigate(`/restaurant/${slug}`);
+      navigate(`/restaurants/${slug}`);
     },
     [navigate, slug]
   );
